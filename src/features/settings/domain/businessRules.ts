@@ -63,7 +63,7 @@ export function createDefaultSettings(): SettingsData {
     return {
         appName: 'electis Space',
         appSubtitle: '',
-        spaceType: 'chair',
+        spaceType: 'office',
         workingMode: 'SFTP',
         csvConfig: {
             delimiter: ',',

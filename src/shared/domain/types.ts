@@ -22,7 +22,7 @@ export interface AppData {
 }
 
 /**
- * Space entity (chairs/rooms in dental/medical centers)
+ * Space entity (chairs/rooms)
  */
 export interface Space {
     id: string;
@@ -114,5 +114,5 @@ export interface SFTPCredentials {
 export interface AppSettings {
     name: string;
     subtitle: string;
-    spaceType: 'chair' | 'room';
+    spaceType: 'office' | 'room' | 'chair' | 'person-tag';
 }

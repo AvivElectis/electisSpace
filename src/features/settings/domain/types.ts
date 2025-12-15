@@ -11,7 +11,7 @@ export interface SettingsData {
     // App configuration
     appName: string;
     appSubtitle: string;
-    spaceType: 'chair' | 'room';
+    spaceType: 'office' | 'room' | 'chair' | 'person-tag';
 
     // Working mode
     workingMode: import('@shared/domain/types').WorkingMode;
