@@ -184,14 +184,16 @@ export function useSettingsController() {
      * Export settings to file
      */
     const exportSettingsToFile = useCallback(
-        (password: string): ExportedSettings => {
+        (password?: string): ExportedSettings => {
             logger.info('SettingsController', 'Exporting settings');
 
-            // Validate password
-            const validation = validatePassword(password);
-            if (!validation.valid) {
-                const errorMsg = validation.errors.map(e => e.message).join(', ');
-                throw new Error(`Validation failed: ${errorMsg}`);
+            // Validate password if provided
+            if (password) {
+                const validation = validatePassword(password);
+                if (!validation.valid) {
+                    const errorMsg = validation.errors.map(e => e.message).join(', ');
+                    throw new Error(`Validation failed: ${errorMsg}`);
+                }
             }
 
             const exported = exportSettings(settings, password);
@@ -206,7 +208,7 @@ export function useSettingsController() {
      * Import settings from file
      */
     const importSettingsFromFile = useCallback(
-        (exported: ExportedSettings, password: string): void => {
+        (exported: ExportedSettings, password?: string): void => {
             logger.info('SettingsController', 'Importing settings');
 
             try {

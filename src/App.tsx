@@ -1,35 +1,32 @@
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
+import { Suspense } from 'react';
 import theme from './theme';
-import { SimpleLayout } from './shared/presentation/components/SimpleLayout';
+import { MainLayout } from './shared/presentation/layouts/MainLayout';
+import { LoadingFallback } from './shared/presentation/components/LoadingFallback';
 import { AppRoutes } from './AppRoutes';
-import { useSettingsController } from '@features/settings/application/useSettingsController';
 import './index.css';
 
-function AppContent() {
-  const settingsController = useSettingsController();
-  const navigate = useNavigate();
-
-  return (
-    <SimpleLayout
-      title={settingsController.settings.appName}
-      subtitle={settingsController.settings.appSubtitle}
-      onLanguageClick={() => console.log('Language clicked')}
-      onHelpClick={() => console.log('Help clicked')}
-      onSettingsClick={() => navigate('/settings')}
-    >
-      <AppRoutes />
-    </SimpleLayout>
-  );
-}
-
+/**
+ * Main App Component
+ * 
+ * Wraps the application with:
+ * - Theme provider for Material-UI
+ * - Router for navigation
+ * - Main layout with header and navigation
+ * - Suspense boundary for lazy-loaded routes
+ */
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <AppContent />
+        <MainLayout>
+          <Suspense fallback={<LoadingFallback />}>
+            <AppRoutes />
+          </Suspense>
+        </MainLayout>
       </BrowserRouter>
     </ThemeProvider>
   );

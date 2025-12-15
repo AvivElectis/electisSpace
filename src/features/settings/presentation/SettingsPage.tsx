@@ -48,26 +48,48 @@ export function SettingsPage() {
         }
     };
 
-    const handleExport = async () => {
+    const handleExport = () => {
         try {
             const password = window.prompt('Enter a password to encrypt the export (optional):');
-            await settingsController.exportSettings(password || undefined);
+            if (password === null) return; // User cancelled
+
+            const exported = settingsController.exportSettingsToFile(password || undefined);
+
+            // Create and download the file
+            const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `settings-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
             alert('Settings exported successfully!');
         } catch (error) {
             alert(`Export failed: ${error}`);
         }
     };
 
-    const handleImport = async () => {
+    const handleImport = () => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json,.zip';
+        input.accept = '.json';
         input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
                 try {
-                    const password = window.prompt('Enter the password if the file is encrypted (leave empty if not):');
-                    await settingsController.importSettings(file, password || undefined);
+                    const fileContent = await file.text();
+                    const exported = JSON.parse(fileContent);
+
+                    let password: string | undefined;
+                    if (exported.encrypted) {
+                        const passwordInput = window.prompt('Enter the password to decrypt the settings:');
+                        if (passwordInput === null) return; // User cancelled
+                        password = passwordInput;
+                    }
+
+                    settingsController.importSettingsFromFile(exported, password);
+
                     alert('Settings imported successfully!');
                     // Reload state
                     setAppName(settingsController.settings.appName);

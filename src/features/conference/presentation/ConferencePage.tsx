@@ -26,6 +26,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useState } from 'react';
 import { useConferenceController } from '../application/useConferenceController';
+import { ConferenceRoomDialog } from './ConferenceRoomDialog';
 import type { ConferenceRoom } from '@shared/domain/types';
 
 /**
@@ -36,6 +37,8 @@ export function ConferencePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<ConferenceRoom | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [editingRoom, setEditingRoom] = useState<ConferenceRoom | undefined>(undefined);
 
     // Filter rooms based on search query
     const filteredRooms = conferenceController.conferenceRooms.filter((room) => {
@@ -62,6 +65,25 @@ export function ConferencePage() {
         setDetailsOpen(true);
     };
 
+    const handleAdd = () => {
+        setEditingRoom(undefined);
+        setDialogOpen(true);
+    };
+
+    const handleEdit = (room: ConferenceRoom) => {
+        setEditingRoom(room);
+        setDialogOpen(true);
+        setDetailsOpen(false); // Close details if open
+    };
+
+    const handleSave = async (roomData: Partial<ConferenceRoom>) => {
+        if (editingRoom) {
+            await conferenceController.updateConferenceRoom(editingRoom.id, roomData);
+        } else {
+            await conferenceController.addConferenceRoom(roomData);
+        }
+    };
+
     const occupiedRooms = conferenceController.conferenceRooms.filter(r => r.hasMeeting).length;
     const availableRooms = conferenceController.conferenceRooms.length - occupiedRooms;
 
@@ -86,6 +108,7 @@ export function ConferencePage() {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
+                    onClick={handleAdd}
                     sx={{ minWidth: { xs: '100%', sm: '140px' } }}
                 >
                     Add Room
@@ -310,7 +333,11 @@ export function ConferencePage() {
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <Tooltip title="Edit">
-                                                <IconButton size="small" color="primary">
+                                                <IconButton
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => handleEdit(room)}
+                                                >
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
@@ -410,13 +437,25 @@ export function ConferencePage() {
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setDetailsOpen(false)}>Close</Button>
-                            <Button variant="contained" startIcon={<EditIcon />}>
+                            <Button
+                                variant="contained"
+                                startIcon={<EditIcon />}
+                                onClick={() => handleEdit(selectedRoom)}
+                            >
                                 Edit Room
                             </Button>
                         </DialogActions>
                     </>
                 )}
             </Dialog>
+
+            {/* Add/Edit Dialog */}
+            <ConferenceRoomDialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                onSave={handleSave}
+                room={editingRoom}
+            />
         </Box>
     );
 }

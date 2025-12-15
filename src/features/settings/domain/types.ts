@@ -36,7 +36,8 @@ export interface SettingsData {
 export interface ExportedSettings {
     version: string;
     timestamp: string;
-    data: string;  // Encrypted JSON of SettingsData
+    data: string;  // Encrypted or plain JSON of SettingsData
+    encrypted?: boolean;  // Whether the data is encrypted
 }
 
 export const MAX_LOGO_SIZE = 2 * 1024 * 1024;  // 2MB

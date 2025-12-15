@@ -26,6 +26,7 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import { useState } from 'react';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
+import { SpaceDialog } from './SpaceDialog';
 import type { Space } from '@shared/domain/types';
 
 /**
@@ -38,6 +39,8 @@ export function SpacesPage() {
     });
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
 
     // Filter spaces based on search query
     const filteredSpaces = spaceController.spaces.filter((space) => {
@@ -70,6 +73,24 @@ export function SpacesPage() {
         }
     };
 
+    const handleAdd = () => {
+        setEditingSpace(undefined);
+        setDialogOpen(true);
+    };
+
+    const handleEdit = (space: Space) => {
+        setEditingSpace(space);
+        setDialogOpen(true);
+    };
+
+    const handleSave = async (spaceData: Partial<Space>) => {
+        if (editingSpace) {
+            await spaceController.updateSpace(editingSpace.id, spaceData);
+        } else {
+            await spaceController.addSpace(spaceData);
+        }
+    };
+
     return (
         <Box>
             {/* Header Section */}
@@ -91,6 +112,7 @@ export function SpacesPage() {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
+                    onClick={handleAdd}
                     sx={{ minWidth: { xs: '100%', sm: '140px' } }}
                 >
                     Add {spaceTypeLabel}
@@ -220,7 +242,11 @@ export function SpacesPage() {
                                     <TableCell align="right">
                                         <Stack direction="row" spacing={1} justifyContent="flex-end">
                                             <Tooltip title="Edit">
-                                                <IconButton size="small" color="primary">
+                                                <IconButton
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => handleEdit(space)}
+                                                >
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
@@ -241,6 +267,16 @@ export function SpacesPage() {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Add/Edit Dialog */}
+            <SpaceDialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                onSave={handleSave}
+                space={editingSpace}
+                csvConfig={settingsController.settings.csvConfig}
+                spaceTypeLabel={spaceTypeLabel}
+            />
         </Box>
     );
 }
