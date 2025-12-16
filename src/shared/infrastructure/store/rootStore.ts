@@ -11,9 +11,17 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
+import { useNotificationStore, useNotifications } from './notificationStore';
 
 // Re-export all feature stores for centralized access
-export { useSettingsStore, useSpacesStore, useSyncStore, useConferenceStore };
+export {
+    useSettingsStore,
+    useSpacesStore,
+    useSyncStore,
+    useConferenceStore,
+    useNotificationStore,
+    useNotifications,
+};
 
 /**
  * Root Store Hook
