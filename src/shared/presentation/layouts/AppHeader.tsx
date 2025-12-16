@@ -2,6 +2,7 @@ import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 interface AppHeaderProps {
     onSettingsClick?: () => void;
@@ -10,7 +11,7 @@ interface AppHeaderProps {
 
 /**
  * Global Application Header
- * Displays logos, app title (centered), and settings icon
+ * Displays logos, app title (centered), language switcher, and settings icon
  * Title and subtitle are configurable through app settings
  */
 export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
@@ -98,7 +99,7 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                     )}
                 </Box>
 
-                {/* Right Logo + Settings */}
+                {/* Right Logo + Language Switcher + Settings */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box
                         component="img"
@@ -110,6 +111,7 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                             objectFit: 'contain',
                         }}
                     />
+                    <LanguageSwitcher />
                     <IconButton
                         color="primary"
                         onClick={onSettingsClick}

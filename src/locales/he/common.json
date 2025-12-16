@@ -1,0 +1,120 @@
+{
+    "app": {
+        "title": "אלקטיס ספייס",
+        "subtitle": "מערכת ניהול ESL"
+    },
+    "navigation": {
+        "dashboard": "לוח בקרה",
+        "spaces": "חללים",
+        "conference": "חדרי ישיבות",
+        "sync": "סינכרון"
+    },
+    "common": {
+        "save": "שמור",
+        "cancel": "ביטול",
+        "delete": "מחק",
+        "edit": "ערוך",
+        "add": "הוסף",
+        "close": "סגור",
+        "search": "חיפוש",
+        "filter": "סינון",
+        "reset": "איפוס",
+        "apply": "החל",
+        "confirm": "אישור",
+        "back": "חזור",
+        "next": "הבא",
+        "loading": "טוען...",
+        "error": "שגיאה",
+        "success": "הצלחה",
+        "warning": "אזהרה",
+        "info": "מידע"
+    },
+    "dashboard": {
+        "title": "לוח בקרה",
+        "overview": "סקירה כללית",
+        "totalSpaces": "סה\"כ חללים",
+        "conferenceRooms": "חדרי ישיבות",
+        "lastSync": "סינכרון אחרון",
+        "quickActions": "פעולות מהירות",
+        "addSpace": "הוסף חלל",
+        "addRoom": "הוסף חדר",
+        "syncNow": "סנכרן כעת"
+    },
+    "spaces": {
+        "title": "חללים",
+        "addSpace": "הוסף חלל",
+        "editSpace": "ערוך חלל",
+        "deleteSpace": "מחק חלל",
+        "spaceName": "שם חלל",
+        "spaceNumber": "מספר חלל",
+        "floor": "קומה",
+        "building": "בניין",
+        "capacity": "קיבולת",
+        "status": "סטטוס",
+        "active": "פעיל",
+        "inactive": "לא פעיל",
+        "noSpaces": "לא נמצאו חללים",
+        "confirmDelete": "האם אתה בטוח שברצונך למחוק חלל זה?"
+    },
+    "conference": {
+        "title": "חדרי ישיבות",
+        "addRoom": "הוסף חדר",
+        "editRoom": "ערוך חדר",
+        "deleteRoom": "מחק חדר",
+        "roomName": "שם חדר",
+        "schedule": "לוח זמנים",
+        "book": "הזמן",
+        "available": "פנוי",
+        "occupied": "תפוס",
+        "noRooms": "לא נמצאו חדרים"
+    },
+    "sync": {
+        "title": "סינכרון",
+        "syncNow": "סנכרן כעת",
+        "lastSync": "סינכרון אחרון",
+        "status": "מצב",
+        "connected": "מחובר",
+        "disconnected": "מנותק",
+        "syncing": "מסנכרן...",
+        "mode": "מצב",
+        "sftpMode": "מצב SFTP",
+        "solumMode": "מצב SoluM API"
+    },
+    "settings": {
+        "title": "הגדרות",
+        "appSettings": "הגדרות אפליקציה",
+        "sftpSettings": "הגדרות SFTP",
+        "solumSettings": "הגדרות SoluM",
+        "logoSettings": "הגדרות לוגו",
+        "securitySettings": "הגדרות אבטחה",
+        "logViewer": "צפייה בלוג",
+        "applicationName": "שם אפליקציה",
+        "applicationSubtitle": "כותרת משנה",
+        "spaceType": "סוג חלל",
+        "workingMode": "מצב עבודה",
+        "autoSync": "סינכרון אוטומטי",
+        "saveSettings": "שמור הגדרות"
+    },
+    "errors": {
+        "required": "שדה זה הוא חובה",
+        "invalid": "ערך לא תקין",
+        "connectionFailed": "החיבור נכשל",
+        "saveFailed": "השמירה נכשלה",
+        "loadFailed": "הטעינה נכשלה",
+        "unknownError": "אירעה שגיאה לא ידועה"
+    },
+    "messages": {
+        "saved": "נשמר בהצלחה",
+        "deleted": "נמחק בהצלחה",
+        "updated": "עודכן בהצלחה",
+        "syncComplete": "הסינכרון הושלם",
+        "syncFailed": "הסינכרון נכשל"
+    },
+    "notFound": {
+        "title": "404",
+        "heading": "דף לא נמצא",
+        "message": "הדף שאתה מחפש לא קיים או הועבר.",
+        "goToDashboard": "עבור ללוח בקרה",
+        "goBack": "חזור"
+    }
+}
