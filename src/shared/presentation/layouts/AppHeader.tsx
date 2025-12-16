@@ -77,7 +77,7 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                     }}
                 >
                     <Typography
-                        variant="h6"
+                        variant="h1"
                         sx={{
                             fontWeight: 600,
                             color: 'text.primary',
