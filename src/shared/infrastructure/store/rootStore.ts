@@ -8,12 +8,12 @@
  */
 
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { usePersonnelStore } from '@features/space/infrastructure/personnelStore';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 
 // Re-export all feature stores for centralized access
-export { useSettingsStore, usePersonnelStore, useSyncStore, useConferenceStore };
+export { useSettingsStore, useSpacesStore, useSyncStore, useConferenceStore };
 
 /**
  * Root Store Hook
@@ -28,7 +28,7 @@ export function useRootStore() {
     const settings = useSettingsStore((state) => state.settings);
     const workingMode = useSyncStore((state) => state.workingMode);
     const syncState = useSyncStore((state) => state.syncState);
-    const personnel = usePersonnelStore((state) => state.personnel);
+    const spaces = useSpacesStore((state) => state.spaces);
     const conferenceRooms = useConferenceStore((state) => state.conferenceRooms);
 
     return {
@@ -43,7 +43,7 @@ export function useRootStore() {
         syncStatus: syncState.status,
 
         // Data counts (useful for dashboard)
-        personnelCount: personnel.length,
+        spacesCount: spaces.length,
         conferenceRoomCount: conferenceRooms.length,
     };
 }
@@ -56,13 +56,13 @@ export function useRootStore() {
  */
 export function useStoreHydration() {
     const settingsHydrated = useSettingsStore.persist?.hasHydrated();
-    const personnelHydrated = usePersonnelStore.persist?.hasHydrated();
+    const spacesHydrated = useSpacesStore.persist?.hasHydrated();
     const syncHydrated = useSyncStore.persist?.hasHydrated();
 
     return {
-        isHydrated: settingsHydrated && personnelHydrated && syncHydrated,
+        isHydrated: settingsHydrated && spacesHydrated && syncHydrated,
         settingsHydrated,
-        personnelHydrated,
+        spacesHydrated,
         syncHydrated,
     };
 }
@@ -75,7 +75,7 @@ export function useStoreHydration() {
  */
 export function clearAllStores() {
     useSettingsStore.getState().resetSettings();
-    usePersonnelStore.persist?.clearStorage();
+    useSpacesStore.persist?.clearStorage();
     useSyncStore.persist?.clearStorage();
     useConferenceStore.persist?.clearStorage();
 }

@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useSpaceStore } from '../infrastructure/spaceStore';
+import { useSpacesStore } from '../infrastructure/spacesStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
 import type { Space, CSVConfig } from '@shared/domain/types';
-import type { SpaceList } from '../domain/types';
+import type { SpacesList } from '../domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 
 /**
@@ -23,16 +23,16 @@ export function useSpaceController({
 }: UseSpaceControllerProps) {
     const {
         spaces,
-        spaceLists,
+        spacesLists,
         setSpaces,
         addSpace: addToStore,
         updateSpace: updateInStore,
         deleteSpace: deleteFromStore,
-        addSpaceList,
-        updateSpaceList,
-        deleteSpaceList,
-        loadSpaceList,
-    } = useSpaceStore();
+        addSpacesList,
+        updateSpacesList,
+        deleteSpacesList,
+        loadSpacesList,
+    } = useSpacesStore();
 
     /**
      * Add new space
@@ -191,13 +191,13 @@ export function useSpaceController({
     }, [spaces]);
 
     /**
-     * Save current spaces as space list
+     * Save current spaces as spaces list
      */
-    const saveSpaceList = useCallback(
+    const saveSpacesList = useCallback(
         (name: string, id?: string): void => {
-            logger.info('SpaceController', 'Saving space list', { name, id });
+            logger.info('SpaceController', 'Saving spaces list', { name, id });
 
-            const spaceList: SpaceList = {
+            const spacesList: SpacesList = {
                 id: id || uuidv4(),
                 name,
                 createdAt: new Date().toISOString(),
@@ -206,37 +206,37 @@ export function useSpaceController({
 
             if (id) {
                 // Update existing
-                updateSpaceList(id, spaceList);
+                updateSpacesList(id, spacesList);
             } else {
                 // Create new
-                addSpaceList(spaceList);
+                addSpacesList(spacesList);
             }
 
-            logger.info('SpaceController', 'Space list saved', { id: spaceList.id });
+            logger.info('SpaceController', 'Spaces list saved', { id: spacesList.id });
         },
-        [spaces, addSpaceList, updateSpaceList]
+        [spaces, addSpacesList, updateSpacesList]
     );
 
     /**
      * Load space list (replaces current spaces)
      */
-    const loadSavedSpaceList = useCallback(
+    const loadSavedSpacesList = useCallback(
         (id: string): void => {
             logger.info('SpaceController', 'Loading space list', { id });
-            loadSpaceList(id);
+            loadSpacesList(id);
         },
-        [loadSpaceList]
+        [loadSpacesList]
     );
 
     /**
      * Delete space list
      */
-    const deleteSavedSpaceList = useCallback(
+    const deleteSavedSpacesList = useCallback(
         (id: string): void => {
             logger.info('SpaceController', 'Deleting space list', { id });
-            deleteSpaceList(id);
+            deleteSpacesList(id);
         },
-        [deleteSpaceList]
+        [deleteSpacesList]
     );
 
     return {
@@ -250,9 +250,9 @@ export function useSpaceController({
         spaces,
 
         // Space list operations
-        saveSpaceList,
-        loadSpaceList: loadSavedSpaceList,
-        deleteSpaceList: deleteSavedSpaceList,
-        spaceLists,
+        saveSpacesList,
+        loadSpacesList: loadSavedSpacesList,
+        deleteSpacesList: deleteSavedSpacesList,
+        spacesLists,
     };
 }

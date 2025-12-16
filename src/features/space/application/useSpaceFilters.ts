@@ -40,7 +40,14 @@ export function useSpaceFilters({
      */
     const filteredSpaces = useMemo((): Space[] => {
         const { searchQuery, ...otherFilters } = filters;
-        return filterSpaces(spaces, searchQuery, otherFilters);
+        // Filter out undefined values for strict type checking
+        const cleanFilters: Record<string, string> = {};
+        for (const [key, value] of Object.entries(otherFilters)) {
+            if (value !== undefined) {
+                cleanFilters[key] = value;
+            }
+        }
+        return filterSpaces(spaces, searchQuery, cleanFilters);
     }, [spaces, filters]);
 
     /**

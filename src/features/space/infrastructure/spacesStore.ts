@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Space } from '@shared/domain/types';
-import type { SpaceList } from '../domain/types';
+import type { SpacesList } from '../domain/types';
 
-interface SpaceStore {
+interface SpacesStore {
     // State
     spaces: Space[];
-    spaceLists: SpaceList[];
+    spacesLists: SpacesList[];
 
     // Actions
     setSpaces: (spaces: Space[]) => void;
@@ -14,19 +14,19 @@ interface SpaceStore {
     updateSpace: (id: string, updates: Partial<Space>) => void;
     deleteSpace: (id: string) => void;
 
-    // Space lists
-    addSpaceList: (spaceList: SpaceList) => void;
-    updateSpaceList: (id: string, updates: Partial<SpaceList>) => void;
-    deleteSpaceList: (id: string) => void;
-    loadSpaceList: (id: string) => void;
+    // Spaces lists
+    addSpacesList: (spacesList: SpacesList) => void;
+    updateSpacesList: (id: string, updates: Partial<SpacesList>) => void;
+    deleteSpacesList: (id: string) => void;
+    loadSpacesList: (id: string) => void;
 }
 
-export const useSpaceStore = create<SpaceStore>()(
+export const useSpacesStore = create<SpacesStore>()(
     persist(
         (set, get) => ({
             // Initial state
             spaces: [],
-            spaceLists: [],
+            spacesLists: [],
 
             // Actions
             setSpaces: (spaces) => set({ spaces }),
@@ -48,36 +48,36 @@ export const useSpaceStore = create<SpaceStore>()(
                     spaces: state.spaces.filter((s) => s.id !== id),
                 })),
 
-            // Space lists
-            addSpaceList: (spaceList) =>
+            // Spaces lists
+            addSpacesList: (spacesList) =>
                 set((state) => ({
-                    spaceLists: [...state.spaceLists, spaceList],
+                    spacesLists: [...state.spacesLists, spacesList],
                 })),
 
-            updateSpaceList: (id, updates) =>
+            updateSpacesList: (id, updates) =>
                 set((state) => ({
-                    spaceLists: state.spaceLists.map((list) =>
+                    spacesLists: state.spacesLists.map((list) =>
                         list.id === id ? { ...list, ...updates, updatedAt: new Date().toISOString() } : list
                     ),
                 })),
 
-            deleteSpaceList: (id) =>
+            deleteSpacesList: (id) =>
                 set((state) => ({
-                    spaceLists: state.spaceLists.filter((list) => list.id !== id),
+                    spacesLists: state.spacesLists.filter((list) => list.id !== id),
                 })),
 
-            loadSpaceList: (id) => {
-                const spaceList = get().spaceLists.find((list) => list.id === id);
-                if (spaceList) {
-                    set({ spaces: spaceList.spaces });
+            loadSpacesList: (id) => {
+                const spacesList = get().spacesLists.find((list) => list.id === id);
+                if (spacesList) {
+                    set({ spaces: spacesList.spaces });
                 }
             },
         }),
         {
-            name: 'space-store',
+            name: 'spaces-store',
             partialize: (state) => ({
                 spaces: state.spaces,
-                spaceLists: state.spaceLists,
+                spacesLists: state.spacesLists,
             }),
         }
     )
