@@ -1,6 +1,7 @@
 import { Box, Typography, Button, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { useTranslation } from 'react-i18next';
 
 /**
  * 404 Not Found Page
@@ -9,6 +10,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
  */
 export function NotFoundPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     return (
         <Container maxWidth="sm">
@@ -31,13 +33,13 @@ export function NotFoundPage() {
                     }}
                 />
                 <Typography variant="h2" component="h1" gutterBottom>
-                    404
+                    {t('notFound.title')}
                 </Typography>
                 <Typography variant="h5" color="text.secondary" gutterBottom>
-                    Page Not Found
+                    {t('notFound.heading')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary" paragraph>
-                    The page you're looking for doesn't exist or has been moved.
+                    {t('notFound.message')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                     <Button
@@ -45,14 +47,14 @@ export function NotFoundPage() {
                         onClick={() => navigate('/')}
                         size="large"
                     >
-                        Go to Dashboard
+                        {t('notFound.goToDashboard')}
                     </Button>
                     <Button
                         variant="outlined"
                         onClick={() => navigate(-1)}
                         size="large"
                     >
-                        Go Back
+                        {t('notFound.goBack')}
                     </Button>
                 </Box>
             </Box>

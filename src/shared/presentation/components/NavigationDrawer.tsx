@@ -13,24 +13,23 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import SyncIcon from '@mui/icons-material/Sync';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const DRAWER_WIDTH = 240;
 
 interface NavigationItem {
-    label: string;
+    labelKey: string;
     path: string;
     icon: React.ReactElement;
 }
 
 const navigationItems: NavigationItem[] = [
-    { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-    { label: 'Spaces', path: '/spaces', icon: <BusinessIcon /> },
-    { label: 'Conference Rooms', path: '/conference', icon: <ConferenceIcon /> },
-    { label: 'Sync Status', path: '/sync', icon: <SyncIcon /> },
-    { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
+    { labelKey: 'navigation.dashboard', path: '/', icon: <DashboardIcon /> },
+    { labelKey: 'navigation.spaces', path: '/spaces', icon: <BusinessIcon /> },
+    { labelKey: 'navigation.conference', path: '/conference', icon: <ConferenceIcon /> },
+    { labelKey: 'navigation.sync', path: '/sync', icon: <SyncIcon /> },
 ];
 
 interface NavigationDrawerProps {
@@ -46,6 +45,7 @@ interface NavigationDrawerProps {
 export function NavigationDrawer({ open, onClose, variant = 'permanent' }: NavigationDrawerProps) {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t } = useTranslation();
 
     const handleNavigate = (path: string) => {
         navigate(path);
@@ -79,7 +79,7 @@ export function NavigationDrawer({ open, onClose, variant = 'permanent' }: Navig
                                 onClick={() => handleNavigate(item.path)}
                             >
                                 <ListItemIcon>{item.icon}</ListItemIcon>
-                                <ListItemText primary={item.label} />
+                                <ListItemText primary={t(item.labelKey)} />
                             </ListItemButton>
                         </ListItem>
                     ))}
