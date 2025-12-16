@@ -76,7 +76,7 @@ export function importSettings(exported: ExportedSettings, password?: string): S
 export function createDefaultSettings(): SettingsData {
     return {
         appName: 'electis Space',
-        appSubtitle: '',
+        appSubtitle: 'ESL Management System',
         spaceType: 'office',
         workingMode: 'SFTP',
         csvConfig: {

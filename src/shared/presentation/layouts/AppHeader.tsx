@@ -11,17 +11,15 @@ interface AppHeaderProps {
 /**
  * Global Application Header
  * Displays logos, app title (centered), and settings icon
+ * Title and subtitle are configurable through app settings
  */
 export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
-    // Get logos from settings store
-    const logos = useSettingsStore((state) => state.settings.logos);
+    // Get settings from store
+    const settings = useSettingsStore((state) => state.settings);
 
     // Use dynamic logos or fall back to defaults
-    const leftLogo = logos.logo1 || '/solum.png';
-    const rightLogo = logos.logo2 || '/electis.png';
-
-    // Debug: Log logo values
-    console.log('AppHeader logos:', { logo1: logos.logo1 ? 'exists' : 'not set', logo2: logos.logo2 ? 'exists' : 'not set' });
+    const leftLogo = settings.logos.logo1 || '/solum.png';
+    const rightLogo = settings.logos.logo2 || '/electis.png';
 
     return (
         <AppBar
@@ -64,7 +62,7 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                     }}
                 />
 
-                {/* Centered App Title */}
+                {/* Centered App Title (Dynamic from Settings) */}
                 <Box
                     sx={{
                         flex: 1,
@@ -84,18 +82,20 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                             fontSize: { xs: '2rem', sm: '2.25rem' },
                         }}
                     >
-                        electis Space
+                        {settings.appName}
                     </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: 'text.secondary',
-                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                            display: { xs: 'none', sm: 'block' },
-                        }}
-                    >
-                        ESL Management System
-                    </Typography>
+                    {settings.appSubtitle && (
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: 'text.secondary',
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                display: { xs: 'none', sm: 'block' },
+                            }}
+                        >
+                            {settings.appSubtitle}
+                        </Typography>
+                    )}
                 </Box>
 
                 {/* Right Logo + Settings */}
