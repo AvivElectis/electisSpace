@@ -1,122 +1,122 @@
-import { AppBar, Toolbar, Typography, IconButton, Box, Tooltip, Badge } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
-import LanguageIcon from '@mui/icons-material/Language';
-import SyncIcon from '@mui/icons-material/Sync';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { useNavigate } from 'react-router-dom';
-import { useRootStore } from '@shared/infrastructure/store/rootStore';
+import MenuIcon from '@mui/icons-material/Menu';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 
 interface AppHeaderProps {
+    onSettingsClick?: () => void;
     onMenuClick?: () => void;
 }
 
 /**
- * App Header Component
- * 
- * Main application header with:
- * - App title and subtitle from settings
- * - Quick actions (sync, language, settings, help)  
- * - Sync status indicator
- * - Mobile menu toggle
+ * Global Application Header
+ * Displays logos, app title (centered), and settings icon
  */
-export function AppHeader({ onMenuClick }: AppHeaderProps) {
-    const navigate = useNavigate();
-    const { appName, appSubtitle, isConnected, syncStatus } = useRootStore();
+export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
+    // Get logos from settings store
+    const logos = useSettingsStore((state) => state.settings.logos);
 
-    const handleSettingsClick = () => {
-        navigate('/settings');
-    };
+    // Use dynamic logos or fall back to defaults
+    const leftLogo = logos.logo1 || '/solum.png';
+    const rightLogo = logos.logo2 || '/electis.png';
 
-    const handleLanguageClick = () => {
-        // TODO: Implement language toggle
-        console.log('Language toggle - to be implemented');
-    };
-
-    const handleHelpClick = () => {
-        // TODO: Implement help dialog
-        console.log('Help - to be implemented');
-    };
-
-    const handleSyncClick = () => {
-        // TODO: Trigger manual sync
-        console.log('Manual sync - to be implemented');
-    };
-
-    const getSyncStatusColor = () => {
-        if (syncStatus === 'syncing') return 'warning';
-        if (syncStatus === 'error') return 'error';
-        if (isConnected) return 'success';
-        return 'default';
-    };
+    // Debug: Log logo values
+    console.log('AppHeader logos:', { logo1: logos.logo1 ? 'exists' : 'not set', logo2: logos.logo2 ? 'exists' : 'not set' });
 
     return (
-        <AppBar position="static" color="default" elevation={1}>
-            <Toolbar sx={{ gap: 2 }}>
-                {/* Mobile Menu Button */}
+        <AppBar
+            position="static"
+            color="default"
+            elevation={0}
+            sx={{
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.paper',
+            }}
+        >
+            <Toolbar sx={{
+                justifyContent: 'space-between',
+                minHeight: { xs: 56, sm: 64 },
+                px: { xs: 2, sm: 3 },
+            }}>
+                {/* Mobile Menu Button (left side on mobile) */}
                 {onMenuClick && (
                     <IconButton
                         edge="start"
                         color="inherit"
                         aria-label="menu"
                         onClick={onMenuClick}
-                        sx={{ display: { md: 'none' } }}
+                        sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }}
                     >
                         <MenuIcon />
                     </IconButton>
                 )}
 
-                {/* App Title */}
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                        {appName}
+                {/* Left Logo */}
+                <Box
+                    component="img"
+                    src={leftLogo}
+                    alt="Left Logo"
+                    sx={{
+                        height: { xs: 140, sm: 120 },
+                        maxWidth: { xs: 180, sm: 200 },
+                        objectFit: 'contain',
+                    }}
+                />
+
+                {/* Centered App Title */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        px: 2,
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            fontWeight: 600,
+                            color: 'text.primary',
+                            fontSize: { xs: '2rem', sm: '2.25rem' },
+                        }}
+                    >
+                        electis Space
                     </Typography>
-                    {appSubtitle && (
-                        <Typography variant="caption" color="text.secondary">
-                            {appSubtitle}
-                        </Typography>
-                    )}
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: 'text.secondary',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            display: { xs: 'none', sm: 'block' },
+                        }}
+                    >
+                        ESL Management System
+                    </Typography>
                 </Box>
 
-                {/* Action Buttons */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    {/* Sync Status & Button */}
-                    <Tooltip title={isConnected ? 'Connected - Click to sync' : 'Disconnected'}>
-                        <IconButton
-                            color="inherit"
-                            onClick={handleSyncClick}
-                            disabled={!isConnected}
-                        >
-                            <Badge
-                                variant="dot"
-                                color={getSyncStatusColor()}
-                                overlap="circular"
-                            >
-                                <SyncIcon />
-                            </Badge>
-                        </IconButton>
-                    </Tooltip>
-
-                    {/* Language Switcher */}
-                    <Tooltip title="Change language">
-                        <IconButton color="inherit" onClick={handleLanguageClick}>
-                            <LanguageIcon />
-                        </IconButton>
-                    </Tooltip>
-
-                    {/* Help */}
-                    <Tooltip title="Help">
-                        <IconButton color="inherit" onClick={handleHelpClick}>
-                            <HelpOutlineIcon />
-                        </IconButton>
-                    </Tooltip>
-
-                    {/* Settings */}
-                    <Tooltip title="Settings">
-                        <IconButton color="inherit" onClick={handleSettingsClick}>
-                            <SettingsIcon />
-                        </IconButton>
-                    </Tooltip>
+                {/* Right Logo + Settings */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                        component="img"
+                        src={rightLogo}
+                        alt="Right Logo"
+                        sx={{
+                            height: { xs: 140, sm: 120 },
+                            maxWidth: { xs: 180, sm: 200 },
+                            objectFit: 'contain',
+                        }}
+                    />
+                    <IconButton
+                        color="primary"
+                        onClick={onSettingsClick}
+                        sx={{ ml: 1 }}
+                    >
+                        <SettingsIcon />
+                    </IconButton>
                 </Box>
             </Toolbar>
         </AppBar>

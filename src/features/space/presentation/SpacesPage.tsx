@@ -26,17 +26,19 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import { useState } from 'react';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SpaceDialog } from './SpaceDialog';
 import type { Space } from '@shared/domain/types';
 
 /**
- * Spaces Page - Clean and Responsive Design
+ * Spaces Page - Clean and Responsive Design with Dynamic Labels
  */
 export function SpacesPage() {
     const settingsController = useSettingsController();
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
     });
+    const { getLabel } = useSpaceTypeLabels();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,21 +56,12 @@ export function SpacesPage() {
         );
     });
 
-    // Get space type label
-    const spaceTypeLabels: Record<string, string> = {
-        'office': 'Office',
-        'room': 'Room',
-        'chair': 'Chair',
-        'person-tag': 'Person Tag',
-    };
-    const spaceTypeLabel = spaceTypeLabels[settingsController.settings.spaceType] || 'Space';
-
     const handleDelete = async (id: string) => {
-        if (window.confirm(`Are you sure you want to delete this ${spaceTypeLabel.toLowerCase()}?`)) {
+        if (window.confirm(`Are you sure you want to delete this ${getLabel('singular').toLowerCase()}?`)) {
             try {
                 await spaceController.deleteSpace(id);
             } catch (error) {
-                alert(`Failed to delete ${spaceTypeLabel.toLowerCase()}: ${error}`);
+                alert(`Failed to delete ${getLabel('singular').toLowerCase()}: ${error}`);
             }
         }
     };
@@ -103,10 +96,10 @@ export function SpacesPage() {
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                        {spaceTypeLabel} Management
+                        {getLabel('plural')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Manage and monitor all {spaceTypeLabels[settingsController.settings.spaceType]?.toLowerCase()}s
+                        Manage your {getLabel('plural').toLowerCase()} and label assignments
                     </Typography>
                 </Box>
                 <Button
@@ -115,7 +108,7 @@ export function SpacesPage() {
                     onClick={handleAdd}
                     sx={{ minWidth: { xs: '100%', sm: '140px' } }}
                 >
-                    Add {spaceTypeLabel}
+                    {getLabel('add')}
                 </Button>
             </Stack>
 
@@ -128,7 +121,7 @@ export function SpacesPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary">
-                            Total {spaceTypeLabel}s
+                            Total {getLabel('plural')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main' }}>
                             {spaceController.spaces.length}
@@ -160,7 +153,7 @@ export function SpacesPage() {
             {/* Search Bar */}
             <TextField
                 fullWidth
-                placeholder={`Search ${spaceTypeLabel.toLowerCase()}s...`}
+                placeholder={`Search ${getLabel('plural').toLowerCase()}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
@@ -192,8 +185,8 @@ export function SpacesPage() {
                                 <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {searchQuery
-                                            ? `No ${spaceTypeLabel.toLowerCase()}s found matching "${searchQuery}"`
-                                            : `No ${spaceTypeLabel.toLowerCase()}s yet. Click "Add ${spaceTypeLabel}" to get started.`}
+                                            ? `No ${getLabel('plural').toLowerCase()} found matching "${searchQuery}"`
+                                            : `No ${getLabel('plural').toLowerCase()} yet. Click "${getLabel('add')}" to get started.`}
                                     </Typography>
                                 </TableCell>
                             </TableRow>
@@ -275,7 +268,7 @@ export function SpacesPage() {
                 onSave={handleSave}
                 space={editingSpace}
                 csvConfig={settingsController.settings.csvConfig}
-                spaceTypeLabel={spaceTypeLabel}
+                spaceTypeLabel={getLabel('singular')}
             />
         </Box>
     );

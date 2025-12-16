@@ -162,7 +162,7 @@ export function FeatureTestDemo() {
                 }}>
                     {`Spaces: ${spaceController.spaces.length}
 Conference Rooms: ${conferenceController.conferenceRooms.length}
-Space Lists: ${spaceController.spaceLists.length}
+Space Lists: ${spaceController.spacesLists.length}
 Working Mode: ${settingsController.settings.workingMode}
 Sync Status: ${syncController.syncState.status}
 Auto-sync: ${settingsController.settings.autoSyncEnabled ? 'Enabled' : 'Disabled'}`}

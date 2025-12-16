@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { SimpleAppHeader } from './SimpleAppHeader';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
-import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import SyncIcon from '@mui/icons-material/Sync';
+import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import type { ReactNode } from 'react';
 
 interface SimpleLayoutProps {
@@ -26,7 +26,7 @@ interface NavTab {
 const navTabs: NavTab[] = [
     { label: 'Dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
     { label: 'Spaces', value: '/spaces', icon: <BusinessIcon fontSize="small" /> },
-    { label: 'Conference', value: '/conference', icon: <MeetingRoomIcon fontSize="small" /> },
+    { label: 'Conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
     { label: 'Sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
 ];
 

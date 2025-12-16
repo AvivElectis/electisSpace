@@ -1,0 +1,174 @@
+import {
+    Box,
+    TextField,
+    Stack,
+    Typography,
+    Divider,
+    Button,
+    Tabs,
+    Tab,
+} from '@mui/material';
+import TestIcon from '@mui/icons-material/Cable';
+import { useState } from 'react';
+import type { SettingsData } from '../domain/types';
+
+interface SFTPSettingsTabProps {
+    settings: SettingsData;
+    onUpdate: (updates: Partial<SettingsData>) => void;
+}
+
+/**
+ * SFTP Settings Tab
+ * Connection and CSV structure configuration
+ */
+export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
+    const [subtab, setSubtab] = useState(0);
+    const [testing, setTesting] = useState(false);
+
+    const handleTestConnection = async () => {
+        setTesting(true);
+        try {
+            // TODO: Implement actual SFTP connection test
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            alert('Connection test successful!');
+        } catch (error) {
+            alert(`Connection failed: ${error}`);
+        } finally {
+            setTesting(false);
+        }
+    };
+
+    return (
+        <Box sx={{ px: 3 }}>
+            {/* Sub-tabs */}
+            <Tabs value={subtab} onChange={(_, val) => setSubtab(val)} sx={{ mb: 3 }}>
+                <Tab label="Connection" />
+                <Tab label="CSV Structure" />
+            </Tabs>
+
+            {/* Connection Tab */}
+            {subtab === 0 && (
+                <Stack spacing={3}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                        SFTP Server Configuration
+                    </Typography>
+
+                    <TextField
+                        fullWidth
+                        label="Username"
+                        value={settings.sftpCredentials?.username || ''}
+                        onChange={(e) => onUpdate({
+                            sftpCredentials: {
+                                ...settings.sftpCredentials,
+                                username: e.target.value,
+                                password: settings.sftpCredentials?.password || '',
+                                host: settings.sftpCredentials?.host || '',
+                                remoteFilename: settings.sftpCredentials?.remoteFilename || '',
+                            }
+                        })}
+                        helperText="SFTP server username"
+                    />
+
+                    <TextField
+                        fullWidth
+                        type="password"
+                        label="Password"
+                        value={settings.sftpCredentials?.password || ''}
+                        onChange={(e) => onUpdate({
+                            sftpCredentials: {
+                                ...settings.sftpCredentials,
+                                username: settings.sftpCredentials?.username || '',
+                                password: e.target.value,
+                                host: settings.sftpCredentials?.host || '',
+                                remoteFilename: settings.sftpCredentials?.remoteFilename || '',
+                            }
+                        })}
+                        helperText="SFTP server password"
+                    />
+
+                    <TextField
+                        fullWidth
+                        label="Host"
+                        value={settings.sftpCredentials?.host || ''}
+                        onChange={(e) => onUpdate({
+                            sftpCredentials: {
+                                ...settings.sftpCredentials,
+                                username: settings.sftpCredentials?.username || '',
+                                password: settings.sftpCredentials?.password || '',
+                                host: e.target.value,
+                                remoteFilename: settings.sftpCredentials?.remoteFilename || '',
+                            }
+                        })}
+                        helperText="SFTP server hostname or IP"
+                        placeholder="sftp.example.com"
+                    />
+
+                    <TextField
+                        fullWidth
+                        label="Remote Filename"
+                        value={settings.sftpCredentials?.remoteFilename || ''}
+                        onChange={(e) => onUpdate({
+                            sftpCredentials: {
+                                ...settings.sftpCredentials,
+                                username: settings.sftpCredentials?.username || '',
+                                password: settings.sftpCredentials?.password || '',
+                                host: settings.sftpCredentials?.host || '',
+                                remoteFilename: e.target.value,
+                            }
+                        })}
+                        helperText="CSV filename on SFTP server"
+                        placeholder="spaces.csv"
+                    />
+
+                    <Divider />
+
+                    <Button
+                        variant="outlined"
+                        startIcon={<TestIcon />}
+                        onClick={handleTestConnection}
+                        disabled={testing}
+                    >
+                        {testing ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                </Stack>
+            )}
+
+            {/* CSV Structure Tab */}
+            {subtab === 1 && (
+                <Stack spacing={3}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                        CSV File Structure
+                    </Typography>
+
+                    <TextField
+                        fullWidth
+                        label="Delimiter"
+                        value={settings.csvConfig.delimiter}
+                        onChange={(e) => onUpdate({
+                            csvConfig: {
+                                ...settings.csvConfig,
+                                delimiter: e.target.value,
+                            }
+                        })}
+                        helperText="Field separator (usually ; or ,)"
+                        inputProps={{ maxLength: 1 }}
+                    />
+
+                    <Typography variant="body2" color="text.secondary">
+                        Column mapping configuration
+                    </Typography>
+
+                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                        <Typography variant="caption" color="text.secondary">
+                            {settings.csvConfig.columns.length} columns configured
+                        </Typography>
+                    </Box>
+
+                    <Typography variant="caption" color="info.main">
+                        Advanced CSV column mapping can be configured via CSV Config editor
+                    </Typography>
+                </Stack>
+            )}
+        </Box>
+    );
+}

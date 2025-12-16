@@ -7,14 +7,14 @@ import {
     ListItemIcon,
     ListItemText,
     Toolbar,
-    Divider,
     Box,
+    Divider,
 } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import ChairIcon from '@mui/icons-material/Chair';
-import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import BusinessIcon from '@mui/icons-material/Business';
 import SyncIcon from '@mui/icons-material/Sync';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const DRAWER_WIDTH = 240;
@@ -26,10 +26,10 @@ interface NavigationItem {
 }
 
 const navigationItems: NavigationItem[] = [
-    { label: 'Dashboard', path: '/', icon: <HomeIcon /> },
-    { label: 'Spaces', path: '/spaces', icon: <ChairIcon /> },
-    { label: 'Conference Rooms', path: '/conference', icon: <MeetingRoomIcon /> },
-    { label: 'Sync', path: '/sync', icon: <SyncIcon /> },
+    { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
+    { label: 'Spaces', path: '/spaces', icon: <BusinessIcon /> },
+    { label: 'Conference Rooms', path: '/conference', icon: <ConferenceIcon /> },
+    { label: 'Sync Status', path: '/sync', icon: <SyncIcon /> },
     { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
 ];
 

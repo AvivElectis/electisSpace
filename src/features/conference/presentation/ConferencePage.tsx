@@ -4,7 +4,6 @@ import {
     CardContent,
     Typography,
     Button,
-    Grid,
     IconButton,
     Chip,
     Stack,
@@ -15,15 +14,16 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useState } from 'react';
 import { useConferenceController } from '../application/useConferenceController';
 import { ConferenceRoomDialog } from './ConferenceRoomDialog';
@@ -129,7 +129,7 @@ export function ConferencePage() {
                                         display: 'flex',
                                     }}
                                 >
-                                    <MeetingRoomIcon sx={{ color: 'white' }} />
+                                    <ConferenceIcon sx={{ color: 'white' }} />
                                 </Box>
                                 <Box>
                                     <Typography variant="h4" sx={{ fontWeight: 500 }}>
@@ -243,7 +243,7 @@ export function ConferencePage() {
             {filteredRooms.length === 0 ? (
                 <Card>
                     <CardContent sx={{ py: 8, textAlign: 'center' }}>
-                        <MeetingRoomIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                        <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                         <Typography variant="h6" gutterBottom>
                             {searchQuery ? 'No rooms found' : 'No conference rooms yet'}
                         </Typography>

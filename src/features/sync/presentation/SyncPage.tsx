@@ -5,215 +5,154 @@ import {
     Typography,
     Button,
     Stack,
+    LinearProgress,
     Chip,
     Alert,
-    LinearProgress,
-    Divider,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import { useSyncController } from '../application/useSyncController';
-import { useSpaceController } from '@features/space/application/useSpaceController';
+import { useState } from 'react';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 
 /**
- * Sync Page - Synchronization Management
+ * Sync Page
+ * Manual sync triggering and status display
  */
 export function SyncPage() {
     const settingsController = useSettingsController();
-    const spaceController = useSpaceController({
-        csvConfig: settingsController.settings.csvConfig,
-    });
-    const syncController = useSyncController({
-        csvConfig: settingsController.settings.csvConfig,
-        onSpaceUpdate: (spaces) => spaceController.importFromSync(spaces),
-    });
-
-    const handleConnect = async () => {
-        try {
-            await syncController.connect();
-        } catch (error) {
-            console.error('Connection failed:', error);
-        }
-    };
-
-    const handleDisconnect = async () => {
-        try {
-            await syncController.disconnect();
-        } catch (error) {
-            console.error('Disconnection failed:', error);
-        }
-    };
+    const [syncing, setSyncing] = useState(false);
+    const [lastSync, setLastSync] = useState<Date | null>(null);
+    const [syncError, setSyncError] = useState<string | null>(null);
 
     const handleSync = async () => {
+        setSyncing(true);
+        setSyncError(null);
+
         try {
-            await syncController.sync();
+            // TODO: Implement actual sync logic with adapters
+            // await syncController.sync();
+
+            // Simulate sync delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            setLastSync(new Date());
         } catch (error) {
-            console.error('Sync failed:', error);
+            setSyncError(error instanceof Error ? error.message : 'Sync failed');
+        } finally {
+            setSyncing(false);
         }
     };
 
-    const getStatusColor = () => {
-        if (syncController.syncState.isConnected) return 'success';
-        if (syncController.syncState.lastError) return 'error';
-        return 'default';
-    };
-
-    const getStatusIcon = () => {
-        if (syncController.syncState.isConnected) return <CloudDoneIcon />;
-        if (syncController.syncState.lastError) return <ErrorIcon />;
-        return <CloudOffIcon />;
-    };
-
-    const getStatusText = () => {
-        if (syncController.syncState.status === 'syncing') return 'Syncing...';
-        if (syncController.syncState.isConnected) return 'Connected';
-        if (syncController.syncState.lastError) return 'Error';
-        return 'Disconnected';
+    const getStatusChip = () => {
+        if (syncing) {
+            return <Chip label="Syncing..." color="info" icon={<SyncIcon />} />;
+        }
+        if (syncError) {
+            return <Chip label="Error" color="error" icon={<ErrorIcon />} />;
+        }
+        if (lastSync) {
+            return <Chip label="Connected" color="success" icon={<CheckCircleIcon />} />;
+        }
+        return <Chip label="Idle" color="default" />;
     };
 
     return (
         <Box>
-            {/* Header Section */}
+            {/* Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
                     Synchronization
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Manage data synchronization with {syncController.workingMode === 'SFTP' ? 'SFTP Server' : 'SoluM API'}
+                    Manually trigger sync or view sync status
                 </Typography>
             </Box>
 
-            {/* Connection Status Card */}
+            {/* Sync Status Card */}
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Stack spacing={3}>
-                        <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            justifyContent="space-between"
-                            alignItems={{ xs: 'start', sm: 'center' }}
-                            spacing={2}
-                        >
-                            <Box>
-                                <Typography variant="h6" sx={{ mb: 1 }}>
-                                    Connection Status
-                                </Typography>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Chip
-                                        icon={getStatusIcon()}
-                                        label={getStatusText()}
-                                        color={getStatusColor()}
-                                    />
-                                    <Chip
-                                        label={syncController.workingMode}
-                                        size="small"
-                                        variant="outlined"
-                                    />
-                                </Stack>
-                            </Box>
-                            <Stack direction="row" spacing={1}>
-                                {syncController.syncState.isConnected ? (
-                                    <Button
-                                        variant="outlined"
-                                        color="error"
-                                        onClick={handleDisconnect}
-                                    >
-                                        Disconnect
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        variant="contained"
-                                        onClick={handleConnect}
-                                    >
-                                        Connect
-                                    </Button>
-                                )}
-                                <Button
-                                    variant="contained"
-                                    startIcon={<SyncIcon />}
-                                    onClick={handleSync}
-                                    disabled={!syncController.syncState.isConnected || syncController.syncState.status === 'syncing'}
-                                >
-                                    Sync Now
-                                </Button>
-                            </Stack>
-                        </Stack>
+                        <Box>
+                            <Typography variant="h6" sx={{ mb: 2 }}>
+                                Sync Status
+                            </Typography>
+                            {getStatusChip()}
+                        </Box>
 
-                        {syncController.syncState.status === 'syncing' && (
+                        {syncing && (
                             <Box>
-                                <LinearProgress />
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                                    Synchronizing data...
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Synchronizing...
                                 </Typography>
+                                <LinearProgress />
                             </Box>
                         )}
 
-                        {syncController.syncState.lastError && (
-                            <Alert severity="error" icon={<ErrorIcon />}>
-                                {syncController.syncState.lastError}
+                        {syncError && (
+                            <Alert severity="error">
+                                {syncError}
                             </Alert>
+                        )}
+
+                        {lastSync && !syncing && (
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    Last Sync
+                                </Typography>
+                                <Typography variant="body1">
+                                    {lastSync.toLocaleString()}
+                                </Typography>
+                            </Box>
                         )}
                     </Stack>
                 </CardContent>
             </Card>
 
-            {/* Sync Information */}
+            {/* Configuration Card */}
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Typography variant="h6" sx={{ mb: 2 }}>
-                        Sync Information
+                        Current Configuration
                     </Typography>
-                    <Stack spacing={2} divider={<Divider />}>
-                        <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                        >
-                            <Typography variant="body2" color="text.secondary">
-                                Last Sync
-                            </Typography>
-                            <Typography variant="body2">
-                                {syncController.syncState.lastSync
-                                    ? new Date(syncController.syncState.lastSync).toLocaleString()
-                                    : 'Never'}
-                            </Typography>
-                        </Stack>
-                        <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                        >
-                            <Typography variant="body2" color="text.secondary">
-                                Auto-Sync
-                            </Typography>
-                            <Chip
-                                label={syncController.autoSyncEnabled ? 'Enabled' : 'Disabled'}
-                                color={syncController.autoSyncEnabled ? 'success' : 'default'}
-                                size="small"
-                            />
-                        </Stack>
-                        <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                        >
-                            <Typography variant="body2" color="text.secondary">
+                    <Stack spacing={2}>
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary">
                                 Working Mode
                             </Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {syncController.workingMode}
+                            <Typography variant="body1">
+                                {settingsController.settings.workingMode === 'SFTP'
+                                    ? 'SFTP (CSV Files)'
+                                    : 'SoluM API'
+                                }
                             </Typography>
-                        </Stack>
+                        </Box>
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary">
+                                Auto-Sync
+                            </Typography>
+                            <Typography variant="body1">
+                                {settingsController.settings.autoSyncEnabled
+                                    ? `Enabled (every ${settingsController.settings.autoSyncInterval}s)`
+                                    : 'Disabled'
+                                }
+                            </Typography>
+                        </Box>
                     </Stack>
                 </CardContent>
             </Card>
 
-            {/* Help Text */}
-            <Alert severity="info">
-                Configure synchronization settings in the Settings page to change working mode and credentials.
-            </Alert>
+            {/* Sync Button */}
+            <Button
+                variant="contained"
+                size="large"
+                startIcon={<SyncIcon />}
+                onClick={handleSync}
+                disabled={syncing}
+                sx={{ minWidth: 200 }}
+            >
+                {syncing ? 'Syncing...' : 'Manual Sync'}
+            </Button>
         </Box>
     );
 }

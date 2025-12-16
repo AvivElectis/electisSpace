@@ -89,6 +89,7 @@ export interface SolumConfig {
     password: string;
     storeNumber: string;
     baseUrl: string;
+    customBaseUrl?: string;  // Custom URL when baseUrl is 'custom'
     syncInterval: number;  // in seconds
 }
 
