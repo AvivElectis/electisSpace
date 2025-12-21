@@ -153,13 +153,13 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                     startIcon: {
                         paddingInlineEnd: '8px',
                         '& > *': {
-                            filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15))',
+                            filter: 'drop-shadow(0 0px 3px rgba(0, 0, 0, 0.5))',
                         },
                     },
                     endIcon: {
                         paddingInlineStart: '8px',
                         '& > *': {
-                            filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15))',
+                            filter: 'drop-shadow(0 0px 3px rgba(0, 0, 0, 0.5))',
                         },
                     },
                     contained: {
