@@ -79,7 +79,10 @@
         "noResults": "No spaces found matching",
         "getStarted": "Click to get started",
         "edit": "Edit",
-        "delete": "Delete"
+        "delete": "Delete",
+        "totalSpaces": "Total",
+        "noSpacesMatching": "No {{spaces}} found matching",
+        "noSpacesYet": "No {{spaces}} yet. Click {{button}} to get started."
     },
     "conference": {
         "title": "Conference Rooms",
@@ -106,7 +109,12 @@
         "participant": "participant",
         "close": "Close",
         "noRoomsYet": "No conference rooms yet",
-        "noRoomsMatching": "No conference rooms matching"
+        "noRoomsMatching": "No conference rooms matching",
+        "noRoomsFound": "No rooms found",
+        "clickAddRoom": "Click {{button}} to create your first conference room",
+        "editRoomButton": "Edit Room",
+        "active": "Active",
+        "inactive": "Inactive"
     },
     "sync": {
         "title": "Synchronization",
@@ -251,5 +259,39 @@
         "message": "The page you're looking for doesn't exist or has been moved.",
         "goToDashboard": "Go to Dashboard",
         "goBack": "Go Back"
+    },
+    "spaceTypes": {
+        "office": {
+            "singular": "Office",
+            "plural": "Offices",
+            "add": "Add Office",
+            "edit": "Edit Office",
+            "delete": "Delete Office",
+            "list": "Office List"
+        },
+        "room": {
+            "singular": "Room",
+            "plural": "Rooms",
+            "add": "Add Room",
+            "edit": "Edit Room",
+            "delete": "Delete Room",
+            "list": "Room List"
+        },
+        "chair": {
+            "singular": "Chair",
+            "plural": "Chairs",
+            "add": "Add Chair",
+            "edit": "Edit Chair",
+            "delete": "Delete Chair",
+            "list": "Chair List"
+        },
+        "personTag": {
+            "singular": "Person Tag",
+            "plural": "Person Tags",
+            "add": "Add Person Tag",
+            "edit": "Edit Person Tag",
+            "delete": "Delete Person Tag",
+            "list": "Person Tag List"
+        }
     }
 }

@@ -327,12 +327,16 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                 styleOverrides: {
                     root: {
                         textTransform: 'none',
-                        fontSize: '0.9375rem',
+                        fontSize: '1rem',
                         fontWeight: 500,
                         minHeight: '48px',
-                        padding: '12px 20px',
-                        gap: '12px',
+                        padding: '12px 12px',
+                        gap: 8,
+                        transition: 'all 0.2s ease-in-out',
                         '&.Mui-selected': {
+                            fontWeight: 600,
+                        },
+                        '&:hover': {
                             fontWeight: 600,
                         },
                     },

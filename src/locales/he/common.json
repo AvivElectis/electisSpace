@@ -79,7 +79,10 @@
         "noResults": "לא נמצאו חללים התואמים",
         "getStarted": "לחץ כדי להתחיל",
         "edit": "ערוך",
-        "delete": "מחק"
+        "delete": "מחק",
+        "totalSpaces": "סה\"כ",
+        "noSpacesMatching": "לא נמצאו {{spaces}} התואמים",
+        "noSpacesYet": "עדיין אין {{spaces}}. לחץ על {{button}} כדי להתחיל."
     },
     "conference": {
         "title": "חדרי ישיבות",
@@ -106,7 +109,12 @@
         "participant": "משתתף",
         "close": "סגור",
         "noRoomsYet": "עדיין אין חדרי ישיבות",
-        "noRoomsMatching": "לא נמצאו חדרי ישיבות התואמים"
+        "noRoomsMatching": "לא נמצאו חדרי ישיבות התואמים",
+        "noRoomsFound": "לא נמצאו חדרים",
+        "clickAddRoom": "לחץ על {{button}} כדי ליצור את חדר הישיבות הראשון שלך",
+        "editRoomButton": "ערוך חדר",
+        "active": "פעיל",
+        "inactive": "לא פעיל"
     },
     "sync": {
         "title": "סינכרון",
@@ -251,5 +259,39 @@
         "message": "הדף שאתה מחפש לא קיים או הועבר.",
         "goToDashboard": "עבור ללוח בקרה",
         "goBack": "חזור"
+    },
+    "spaceTypes": {
+        "office": {
+            "singular": "משרד",
+            "plural": "משרדים",
+            "add": "הוסף משרד",
+            "edit": "ערוך משרד",
+            "delete": "מחק משרד",
+            "list": "רשימת משרדים"
+        },
+        "room": {
+            "singular": "חדר",
+            "plural": "חדרים",
+            "add": "הוסף חדר",
+            "edit": "ערוך חדר",
+            "delete": "מחק חדר",
+            "list": "רשימת חדרים"
+        },
+        "chair": {
+            "singular": "כיסא",
+            "plural": "כיסאות",
+            "add": "הוסף כיסא",
+            "edit": "ערוך כיסא",
+            "delete": "מחק כיסא",
+            "list": "רשימת כיסאות"
+        },
+        "personTag": {
+            "singular": "תג אישי",
+            "plural": "תגים אישיים",
+            "add": "הוסף תג אישי",
+            "edit": "ערוך תג אישי",
+            "delete": "מחק תג אישי",
+            "list": "רשימת תגים אישיים"
+        }
     }
 }

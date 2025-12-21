@@ -1,4 +1,5 @@
 import { useSettingsController } from '../application/useSettingsController';
+import { useTranslation } from 'react-i18next';
 
 type LabelKey = 'singular' | 'plural' | 'add' | 'edit' | 'delete' | 'list';
 
@@ -8,46 +9,32 @@ type LabelKey = 'singular' | 'plural' | 'add' | 'edit' | 'delete' | 'list';
  */
 export function useSpaceTypeLabels() {
     const settingsController = useSettingsController();
+    const { t } = useTranslation();
 
     const getLabel = (key: LabelKey): string => {
         const type = settingsController.settings.spaceType;
 
-        const labels: Record<string, Record<LabelKey, string>> = {
-            office: {
-                singular: 'Office',
-                plural: 'Offices',
-                add: 'Add Office',
-                edit: 'Edit Office',
-                delete: 'Delete Office',
-                list: 'Office List',
-            },
-            room: {
-                singular: 'Room',
-                plural: 'Rooms',
-                add: 'Add Room',
-                edit: 'Edit Room',
-                delete: 'Delete Room',
-                list: 'Room List',
-            },
-            chair: {
-                singular: 'Chair',
-                plural: 'Chairs',
-                add: 'Add Chair',
-                edit: 'Edit Chair',
-                delete: 'Delete Chair',
-                list: 'Chair List',
-            },
-            'person-tag': {
-                singular: 'Person Tag',
-                plural: 'Person Tags',
-                add: 'Add Person Tag',
-                edit: 'Edit Person Tag',
-                delete: 'Delete Person Tag',
-                list: 'Person Tag List',
-            },
+        // Map of space type to translation key prefixes
+        const typeKeyMap: Record<string, string> = {
+            office: 'spaceTypes.office',
+            room: 'spaceTypes.room',
+            chair: 'spaceTypes.chair',
+            'person-tag': 'spaceTypes.personTag',
         };
 
-        return labels[type]?.[key] || labels.room[key];
+        const typeKey = typeKeyMap[type] || typeKeyMap.room;
+
+        // Map label keys to translation suffixes
+        const labelKeyMap: Record<LabelKey, string> = {
+            singular: 'singular',
+            plural: 'plural',
+            add: 'add',
+            edit: 'edit',
+            delete: 'delete',
+            list: 'list',
+        };
+
+        return t(`${typeKey}.${labelKeyMap[key]}`);
     };
 
     return { getLabel, spaceType: settingsController.settings.spaceType };

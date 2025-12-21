@@ -123,7 +123,7 @@ export function SpacesPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary">
-                            Total {getLabel('plural')}
+                            {t('spaces.totalSpaces')} {getLabel('plural')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main' }}>
                             {spaceController.spaces.length}
@@ -143,7 +143,7 @@ export function SpacesPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary">
-                            Without Labels
+                            {t('spaces.withoutLabels')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'warning.main' }}>
                             {spaceController.spaces.filter(s => !s.labelCode).length}
@@ -187,8 +187,8 @@ export function SpacesPage() {
                                 <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {searchQuery
-                                            ? `No ${getLabel('plural').toLowerCase()} found matching "${searchQuery}"`
-                                            : `No ${getLabel('plural').toLowerCase()} yet. Click "${getLabel('add')}" to get started.`}
+                                            ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
+                                            : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
                                     </Typography>
                                 </TableCell>
                             </TableRow>
@@ -229,7 +229,7 @@ export function SpacesPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={space.labelCode ? 'Active' : 'Inactive'}
+                                            label={space.labelCode ? t('spaces.active') : t('spaces.inactive')}
                                             color={space.labelCode ? 'success' : 'default'}
                                             size="small"
                                         />

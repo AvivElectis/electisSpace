@@ -53,7 +53,7 @@ export function ConferencePage() {
     });
 
     const handleDelete = async (id: string) => {
-        if (window.confirm('Are you sure you want to delete this conference room?')) {
+        if (window.confirm(t('conference.confirmDelete'))) {
             try {
                 await conferenceController.deleteConferenceRoom(id);
             } catch (error) {
@@ -247,12 +247,12 @@ export function ConferencePage() {
                     <CardContent sx={{ py: 8, textAlign: 'center' }}>
                         <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                         <Typography variant="h6" gutterBottom>
-                            {searchQuery ? 'No rooms found' : 'No conference rooms yet'}
+                            {searchQuery ? t('conference.noRoomsFound') : t('conference.noRoomsYet')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             {searchQuery
-                                ? `No conference rooms matching "${searchQuery}"`
-                                : 'Click "Add Room" to create your first conference room'}
+                                ? t('conference.noRoomsMatching') + ` "${searchQuery}"`
+                                : t('conference.clickAddRoom', { button: `"${t('conference.addRoom')}"` })}
                         </Typography>
                     </CardContent>
                 </Card>
@@ -322,7 +322,7 @@ export function ConferencePage() {
                                         ) : (
                                             <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    No scheduled meetings
+                                                    {t('conference.noScheduledMeetings')}
                                                 </Typography>
                                             </Box>
                                         )}
@@ -334,7 +334,7 @@ export function ConferencePage() {
                                             justifyContent="flex-end"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <Tooltip title="Edit">
+                                            <Tooltip title={t('common.edit')}>
                                                 <IconButton
                                                     size="small"
                                                     color="primary"
@@ -343,7 +343,7 @@ export function ConferencePage() {
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
-                                            <Tooltip title="Delete">
+                                            <Tooltip title={t('common.delete')}>
                                                 <IconButton
                                                     size="small"
                                                     color="error"
@@ -388,14 +388,14 @@ export function ConferencePage() {
                             <Stack spacing={2}>
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
-                                        Room ID
+                                        {t('conference.roomId')}
                                     </Typography>
                                     <Typography variant="body1">{selectedRoom.id}</Typography>
                                 </Box>
                                 {selectedRoom.labelCode && (
                                     <Box>
                                         <Typography variant="caption" color="text.secondary">
-                                            Label Code
+                                            {t('conference.labelCode')}
                                         </Typography>
                                         <Typography variant="body1">{selectedRoom.labelCode}</Typography>
                                     </Box>
@@ -404,13 +404,13 @@ export function ConferencePage() {
                                     <>
                                         <Box>
                                             <Typography variant="caption" color="text.secondary">
-                                                Meeting Name
+                                                {t('conference.meetingName')}
                                             </Typography>
                                             <Typography variant="body1">{selectedRoom.meetingName}</Typography>
                                         </Box>
                                         <Box>
                                             <Typography variant="caption" color="text.secondary">
-                                                Time
+                                                {t('conference.time')}
                                             </Typography>
                                             <Typography variant="body1">
                                                 {selectedRoom.startTime} - {selectedRoom.endTime}
@@ -419,7 +419,7 @@ export function ConferencePage() {
                                         {selectedRoom.participants.length > 0 && (
                                             <Box>
                                                 <Typography variant="caption" color="text.secondary">
-                                                    Participants
+                                                    {t('conference.participants')}
                                                 </Typography>
                                                 <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                                                     {selectedRoom.participants.map((participant, index) => (
@@ -438,13 +438,13 @@ export function ConferencePage() {
                             </Stack>
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+                            <Button onClick={() => setDetailsOpen(false)}>{t('common.close')}</Button>
                             <Button
                                 variant="contained"
                                 startIcon={<EditIcon />}
                                 onClick={() => handleEdit(selectedRoom)}
                             >
-                                Edit Room
+                                {t('conference.editRoomButton')}
                             </Button>
                         </DialogActions>
                     </>
