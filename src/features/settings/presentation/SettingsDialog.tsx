@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState, type SyntheticEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AppSettingsTab } from './AppSettingsTab';
 import { SFTPSettingsTab } from './SFTPSettingsTab';
 import { SolumSettingsTab } from './SolumSettingsTab';
@@ -51,6 +52,7 @@ function TabPanel(props: TabPanelProps) {
  * Comprehensive settings UI for all app configuration
  */
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
+    const { t } = useTranslation();
     const settingsController = useSettingsController();
     const [currentTab, setCurrentTab] = useState(0);
     const [hasChanges, setHasChanges] = useState(false);
@@ -93,13 +95,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             }}
         >
             <DialogTitle>
-                Settings
+                {t('settings.title')}
                 <IconButton
                     aria-label="close"
                     onClick={handleClose}
                     sx={{
                         position: 'absolute',
-                        right: 8,
+                        insetInlineEnd: 8,
                         top: 8,
                     }}
                 >
@@ -114,18 +116,18 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     variant="scrollable"
                     scrollButtons="auto"
                 >
-                    <Tab label="App" />
+                    <Tab label={t('settings.appSettings')} />
                     <Tab
-                        label="SFTP"
+                        label={t('settings.sftpSettings')}
                         disabled={settingsController.settings.workingMode !== 'SFTP'}
                     />
                     <Tab
-                        label="SoluM"
+                        label={t('settings.solumSettings')}
                         disabled={settingsController.settings.workingMode !== 'SOLUM_API'}
                     />
-                    <Tab label="Logo" />
-                    <Tab label="Security" />
-                    <Tab label="Logs" />
+                    <Tab label={t('settings.logoSettings')} />
+                    <Tab label={t('settings.securitySettings')} />
+                    <Tab label={t('settings.logViewer')} />
                 </Tabs>
             </Box>
 
@@ -191,11 +193,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
             <DialogActions>
                 <Button onClick={handleClose}>
-                    {hasChanges ? 'Cancel' : 'Close'}
+                    {hasChanges ? t('common.cancel') : t('common.close')}
                 </Button>
                 {hasChanges && (
                     <Button variant="contained" onClick={handleSave}>
-                        Save Changes
+                        {t('settings.saveSettings')}
                     </Button>
                 )}
             </DialogActions>

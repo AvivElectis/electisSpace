@@ -12,6 +12,7 @@ import {
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SecuritySettingsTabProps {
     isPasswordProtected: boolean;
@@ -32,6 +33,7 @@ export function SecuritySettingsTab({
     onLock,
     onUnlock,
 }: SecuritySettingsTabProps) {
+    const { t } = useTranslation();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [unlockPassword, setUnlockPassword] = useState('');
@@ -128,13 +130,13 @@ export function SecuritySettingsTab({
                 {!isLocked && (
                     <Box>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                            {isPasswordProtected ? 'Change Password' : 'Set Password'}
+                            {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
                         </Typography>
                         <Stack spacing={2}>
                             <TextField
                                 fullWidth
                                 type="password"
-                                label="New Password"
+                                label={t('settings.newPassword')}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 helperText={strength.text}
@@ -145,7 +147,7 @@ export function SecuritySettingsTab({
                             <TextField
                                 fullWidth
                                 type="password"
-                                label="Confirm Password"
+                                label={t('settings.confirmPassword')}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                             />
@@ -154,7 +156,7 @@ export function SecuritySettingsTab({
                                 onClick={handleSetPassword}
                                 disabled={!newPassword || !confirmPassword}
                             >
-                                {isPasswordProtected ? 'Change Password' : 'Set Password'}
+                                {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
                             </Button>
                         </Stack>
                     </Box>
@@ -165,7 +167,7 @@ export function SecuritySettingsTab({
                 {/* Lock/Unlock */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        App Lock
+                        {t('settings.unlockSettings')}
                     </Typography>
 
                     {isLocked ? (
@@ -173,7 +175,7 @@ export function SecuritySettingsTab({
                             <TextField
                                 fullWidth
                                 type="password"
-                                label="Enter Password to Unlock"
+                                label={t('settings.enterPasswordToUnlock')}
                                 value={unlockPassword}
                                 onChange={(e) => setUnlockPassword(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
@@ -184,7 +186,7 @@ export function SecuritySettingsTab({
                                 onClick={handleUnlock}
                                 disabled={!unlockPassword}
                             >
-                                Unlock App
+                                {t('settings.unlock')} App
                             </Button>
                         </Stack>
                     ) : (
@@ -195,7 +197,7 @@ export function SecuritySettingsTab({
                             onClick={handleLock}
                             disabled={!isPasswordProtected}
                         >
-                            Lock App
+                            {t('settings.lock')} App
                         </Button>
                     )}
 
@@ -212,11 +214,11 @@ export function SecuritySettingsTab({
                 {/* Additional Options */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Security Options
+                        {t('settings.autoLockSettings')}
                     </Typography>
                     <FormControlLabel
                         control={<Switch disabled />}
-                        label="Auto-lock after inactivity"
+                        label={t('settings.autoLockAfterInactivity')}
                     />
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4 }}>
                         Coming soon: Automatically lock app after period of inactivity

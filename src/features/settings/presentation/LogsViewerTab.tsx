@@ -16,6 +16,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger, type LogLevel } from '@shared/infrastructure/services/logger';
 
 /**
@@ -23,6 +24,7 @@ import { logger, type LogLevel } from '@shared/infrastructure/services/logger';
  * Display and filter application logs
  */
 export function LogsViewerTab() {
+    const { t } = useTranslation();
     const [levelFilter, setLevelFilter] = useState<LogLevel | 'all'>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [logs, setLogs] = useState(logger.getLogs());
@@ -65,10 +67,10 @@ export function LogsViewerTab() {
                 {/* Controls */}
                 <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
                     <FormControl sx={{ minWidth: 150 }}>
-                        <InputLabel>Level</InputLabel>
+                        <InputLabel>{t('settings.levelFilter')}</InputLabel>
                         <Select
                             value={levelFilter}
-                            label="Level"
+                            label={t('settings.levelFilter')}
                             onChange={(e) => setLevelFilter(e.target.value as any)}
                             size="small"
                         >
@@ -81,10 +83,10 @@ export function LogsViewerTab() {
                     </FormControl>
 
                     <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Category</InputLabel>
+                        <InputLabel>{t('settings.categoryFilter')}</InputLabel>
                         <Select
                             value={categoryFilter}
-                            label="Category"
+                            label={t('settings.categoryFilter')}
                             onChange={(e) => setCategoryFilter(e.target.value)}
                             size="small"
                         >
@@ -103,7 +105,7 @@ export function LogsViewerTab() {
                         onClick={handleRefresh}
                         size="small"
                     >
-                        Refresh
+                        {t('settings.refreshLogs')}
                     </Button>
 
                     <Button
@@ -113,7 +115,7 @@ export function LogsViewerTab() {
                         onClick={handleClear}
                         size="small"
                     >
-                        Clear Logs
+                        {t('settings.clearLogs')}
                     </Button>
                 </Stack>
 
@@ -122,7 +124,7 @@ export function LogsViewerTab() {
                     {filteredLogs.length === 0 ? (
                         <Box sx={{ p: 3, textAlign: 'center' }}>
                             <Typography color="text.secondary">
-                                No logs to display
+                                {t('settings.noLogsFound')}
                             </Typography>
                         </Box>
                     ) : (

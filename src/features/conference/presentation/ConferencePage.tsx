@@ -120,9 +120,9 @@ export function ConferencePage() {
             {/* Stats Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
+                    <Card >
                         <CardContent>
-                            <Stack direction="row" spacing={2} alignItems="center">
+                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
                                     sx={{
                                         bgcolor: 'primary.main',
@@ -148,7 +148,7 @@ export function ConferencePage() {
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
-                            <Stack direction="row" spacing={2} alignItems="center">
+                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
                                     sx={{
                                         bgcolor: 'success.main',
@@ -174,7 +174,7 @@ export function ConferencePage() {
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
-                            <Stack direction="row" spacing={2} alignItems="center">
+                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
                                     sx={{
                                         bgcolor: 'warning.main',
@@ -200,7 +200,7 @@ export function ConferencePage() {
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card>
                         <CardContent>
-                            <Stack direction="row" spacing={2} alignItems="center">
+                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
                                     sx={{
                                         bgcolor: 'info.main',

@@ -12,6 +12,7 @@ import {
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SettingsData } from '../domain/types';
 import { MAX_LOGO_SIZE, ALLOWED_LOGO_FORMATS } from '../domain/types';
 
@@ -25,6 +26,7 @@ interface LogoSettingsTabProps {
  * Upload and manage application logos
  */
 export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
+    const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const fileInput1 = useRef<HTMLInputElement>(null);
     const fileInput2 = useRef<HTMLInputElement>(null);
@@ -76,7 +78,7 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
             <Card>
                 <CardContent>
                     <Typography variant="h6" gutterBottom>
-                        Logo {logoIndex}
+                        {t('settings.mainLogo')} {logoIndex}
                     </Typography>
 
                     {logo ? (
@@ -128,7 +130,7 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
                         startIcon={<UploadIcon />}
                         onClick={() => inputRef.current?.click()}
                     >
-                        {logo ? 'Replace' : 'Upload'}
+                        {logo ? 'Replace' : t('settings.uploadLogo')}
                     </Button>
                     {logo && (
                         <IconButton
@@ -149,7 +151,7 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
             <Stack spacing={3}>
                 {/* Info */}
                 <Alert severity="info">
-                    Upload up to 2 logos for your application. Supported formats: PNG, JPEG. Max size: 2MB.
+                    {t('settings.recommendedFormat')}
                 </Alert>
 
                 {/* Error */}

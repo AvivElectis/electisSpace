@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SettingsData } from '../domain/types';
 
 interface SolumSettingsTabProps {
@@ -27,6 +28,7 @@ interface SolumSettingsTabProps {
  * SoluM API configuration
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
+    const { t } = useTranslation();
     const [fetchingSchema, setFetchingSchema] = useState(false);
 
     const handleFetchSchema = async () => {
@@ -48,14 +50,14 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 {/* API Configuration */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        SoluM API Configuration
+                        {t('settings.solumApiConfig')}
                     </Typography>
                     <Stack spacing={2}>
                         <FormControl fullWidth>
-                            <InputLabel>API Cluster</InputLabel>
+                            <InputLabel>{t('settings.apiCluster')}</InputLabel>
                             <Select
                                 value={settings.solumConfig?.baseUrl || ''}
-                                label="API Cluster"
+                                label={t('settings.apiCluster')}
                                 onChange={(e) => onUpdate({
                                     solumConfig: {
                                         ...settings.solumConfig,
@@ -68,18 +70,18 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     }
                                 })}
                             >
-                                <MenuItem value="https://common.solumesl.com">Common (Cluster 1)</MenuItem>
-                                <MenuItem value="https://cluster2.solumesl.com">Cluster 2</MenuItem>
-                                <MenuItem value="https://cluster3.solumesl.com">Cluster 3</MenuItem>
-                                <MenuItem value="https://cluster4.solumesl.com">Cluster 4</MenuItem>
-                                <MenuItem value="custom">Custom URL</MenuItem>
+                                <MenuItem value="https://common.solumesl.com">{t('settings.commonCluster1')}</MenuItem>
+                                <MenuItem value="https://cluster2.solumesl.com">{t('settings.cluster2')}</MenuItem>
+                                <MenuItem value="https://cluster3.solumesl.com">{t('settings.cluster3')}</MenuItem>
+                                <MenuItem value="https://cluster4.solumesl.com">{t('settings.cluster4')}</MenuItem>
+                                <MenuItem value="custom">{t('settings.customUrl')}</MenuItem>
                             </Select>
                         </FormControl>
 
                         {settings.solumConfig?.baseUrl === 'custom' && (
                             <TextField
                                 fullWidth
-                                label="Custom API Base URL"
+                                label={t('settings.customApiUrl')}
                                 value={settings.solumConfig?.customBaseUrl || ''}
                                 onChange={(e) => onUpdate({
                                     solumConfig: {
@@ -94,7 +96,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     }
                                 })}
                                 placeholder="https://your-cluster.solumesl.com"
-                                helperText="Enter custom SoluM API cluster URL"
+                                helperText={t('settings.enterCustomUrl')}
                             />
                         )}
                     </Stack>
@@ -105,12 +107,12 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 {/* Credentials */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Authentication
+                        {t('settings.authentication')}
                     </Typography>
                     <Stack spacing={2}>
                         <TextField
                             fullWidth
-                            label="Company Code"
+                            label={t('settings.companyCode')}
                             value={settings.solumConfig?.companyName || ''}
                             onChange={(e) => onUpdate({
                                 solumConfig: {
@@ -128,7 +130,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                         <TextField
                             fullWidth
-                            label="Store Number"
+                            label={t('settings.storeNumber')}
                             value={settings.solumConfig?.storeNumber || ''}
                             onChange={(e) => onUpdate({
                                 solumConfig: {
@@ -146,7 +148,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                         <TextField
                             fullWidth
-                            label="Username"
+                            label={t('settings.username')}
                             value={settings.solumConfig?.username || ''}
                             onChange={(e) => onUpdate({
                                 solumConfig: {
@@ -165,7 +167,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         <TextField
                             fullWidth
                             type="password"
-                            label="Password"
+                            label={t('settings.password')}
                             value={settings.solumConfig?.password || ''}
                             onChange={(e) => onUpdate({
                                 solumConfig: {
@@ -188,7 +190,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 {/* Sync Settings */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Synchronization
+                        {t('settings.synchronization')}
                     </Typography>
                     <Stack spacing={2}>
                         <Box>
@@ -221,7 +223,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                         <FormControlLabel
                             control={<Switch />}
-                            label="Simple Conference Mode"
+                            label={t('settings.simpleConferenceMode')}
                         />
 
                         <Typography variant="caption" color="text.secondary">
@@ -235,7 +237,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 {/* Schema */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Article Format Schema
+                        {t('settings.articleFormatSchema')}
                     </Typography>
 
                     <Button
@@ -245,7 +247,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         disabled={fetchingSchema}
                         fullWidth
                     >
-                        {fetchingSchema ? 'Fetching Schema...' : 'Fetch Article Schema from SoluM'}
+                        {fetchingSchema ? t('settings.fetchingSchema') : t('settings.fetchArticleSchema')}
                     </Button>
 
                     <Typography variant="caption" color="info.main" sx={{ mt: 1, display: 'block' }}>
