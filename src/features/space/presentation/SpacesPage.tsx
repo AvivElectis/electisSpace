@@ -24,6 +24,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -34,6 +35,7 @@ import type { Space } from '@shared/domain/types';
  * Spaces Page - Clean and Responsive Design with Dynamic Labels
  */
 export function SpacesPage() {
+    const { t } = useTranslation();
     const settingsController = useSettingsController();
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
@@ -99,7 +101,7 @@ export function SpacesPage() {
                         {getLabel('plural')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Manage your {getLabel('plural').toLowerCase()} and label assignments
+                        {t('spaces.manage')}
                     </Typography>
                 </Box>
                 <Button
@@ -131,7 +133,7 @@ export function SpacesPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary">
-                            With Labels
+                            {t('spaces.withLabels')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'success.main' }}>
                             {spaceController.spaces.filter(s => s.labelCode).length}
@@ -153,7 +155,7 @@ export function SpacesPage() {
             {/* Search Bar */}
             <TextField
                 fullWidth
-                placeholder={`Search ${getLabel('plural').toLowerCase()}...`}
+                placeholder={t('spaces.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
@@ -171,12 +173,12 @@ export function SpacesPage() {
                 <Table>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'background.default' }}>
-                            <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Label Code</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Template</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.id')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.name')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.labelCode')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.template')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.status')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }} align="right">{t('spaces.actions')}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

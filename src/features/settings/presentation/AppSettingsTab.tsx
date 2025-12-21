@@ -14,6 +14,7 @@ import {
     Alert,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { useTranslation } from 'react-i18next';
 import type { SettingsData } from '../domain/types';
 
 interface AppSettingsTabProps {
@@ -27,28 +28,29 @@ interface AppSettingsTabProps {
  * General application configuration with mode navigation
  */
 export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSettingsTabProps) {
+    const { t } = useTranslation();
     return (
         <Box sx={{ px: 3 }}>
             <Stack spacing={3}>
                 {/* Application Info */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Application Information
+                        {t('settings.applicationInfo')}
                     </Typography>
                     <Stack spacing={2}>
                         <TextField
                             fullWidth
-                            label="Application Name"
+                            label={t('settings.applicationName')}
                             value={settings.appName}
                             onChange={(e) => onUpdate({ appName: e.target.value })}
-                            helperText="Displayed in header and title bar"
+                            helperText={t('settings.displayedInHeader')}
                         />
                         <TextField
                             fullWidth
-                            label="Application Subtitle"
+                            label={t('settings.applicationSubtitle')}
                             value={settings.appSubtitle}
                             onChange={(e) => onUpdate({ appSubtitle: e.target.value })}
-                            helperText="Displayed below app name"
+                            helperText={t('settings.displayedBelowAppName')}
                         />
                     </Stack>
                 </Box>
@@ -58,23 +60,23 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                 {/* Space Type */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Space Type Configuration
+                        {t('settings.spaceTypeConfig')}
                     </Typography>
                     <FormControl fullWidth>
-                        <InputLabel>Space Type</InputLabel>
+                        <InputLabel>{t('settings.spaceType')}</InputLabel>
                         <Select
                             value={settings.spaceType}
-                            label="Space Type"
+                            label={t('settings.spaceType')}
                             onChange={(e) => onUpdate({ spaceType: e.target.value as any })}
                         >
-                            <MenuItem value="office">Offices</MenuItem>
-                            <MenuItem value="room">Rooms</MenuItem>
-                            <MenuItem value="chair">Chairs</MenuItem>
-                            <MenuItem value="person-tag">Person Tags</MenuItem>
+                            <MenuItem value="office">{t('settings.offices')}</MenuItem>
+                            <MenuItem value="room">{t('settings.rooms')}</MenuItem>
+                            <MenuItem value="chair">{t('settings.chairs')}</MenuItem>
+                            <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
                         </Select>
                     </FormControl>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        This affects labels throughout the application (e.g., "Add Room" vs "Add Chair")
+                        {t('settings.affectsLabels')}
                     </Typography>
                 </Box>
 
@@ -83,30 +85,30 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                 {/* Working Mode */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Synchronization Mode
+                        {t('settings.syncMode')}
                     </Typography>
 
                     <FormControl fullWidth>
-                        <InputLabel>Working Mode</InputLabel>
+                        <InputLabel>{t('settings.workingMode')}</InputLabel>
                         <Select
                             value={settings.workingMode}
-                            label="Working Mode"
+                            label={t('settings.workingMode')}
                             onChange={(e) => onUpdate({ workingMode: e.target.value as any })}
                         >
-                            <MenuItem value="SFTP">SFTP (CSV Files)</MenuItem>
-                            <MenuItem value="SOLUM_API">SoluM API</MenuItem>
+                            <MenuItem value="SFTP">{t('sync.sftpMode')}</MenuItem>
+                            <MenuItem value="SOLUM_API">{t('sync.solumMode')}</MenuItem>
                         </Select>
                     </FormControl>
 
                     {/* Mode Info Alert */}
                     <Alert severity="info" sx={{ mt: 2 }}>
                         <strong>
-                            {settings.workingMode === 'SFTP' ? 'SFTP Mode Active' : 'SoluM API Mode Active'}
+                            {settings.workingMode === 'SFTP' ? t('settings.sftpModeActive') : t('settings.solumModeActive')}
                         </strong>
                         <br />
                         {settings.workingMode === 'SFTP'
-                            ? 'Using CSV file synchronization via SFTP server. SoluM settings are disabled.'
-                            : 'Using SoluM ESL API integration. SFTP settings are disabled.'
+                            ? t('settings.usingCsvSync')
+                            : t('settings.usingSolumApi')
                         }
                     </Alert>
 
@@ -119,7 +121,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             onClick={() => onNavigateToTab(settings.workingMode === 'SFTP' ? 1 : 2)}
                             sx={{ mt: 2 }}
                         >
-                            Go to {settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM'} Settings
+                            {t('settings.goToSettings').replace('{mode}', settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM')}
                         </Button>
                     )}
                 </Box>
@@ -129,7 +131,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                 {/* Auto-Sync */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Auto-Sync Settings
+                        {t('settings.autoSyncSettings')}
                     </Typography>
                     <Stack spacing={2}>
                         <FormControlLabel
@@ -139,17 +141,17 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                                     onChange={(e) => onUpdate({ autoSyncEnabled: e.target.checked })}
                                 />
                             }
-                            label="Enable Auto-Sync"
+                            label={t('settings.enableAutoSync')}
                         />
                         {settings.autoSyncEnabled && (
                             <TextField
                                 fullWidth
                                 type="number"
-                                label="Auto-Sync Interval (seconds)"
+                                label={t('settings.autoSyncInterval')}
                                 value={settings.autoSyncInterval}
                                 onChange={(e) => onUpdate({ autoSyncInterval: Number(e.target.value) })}
                                 inputProps={{ min: 30, max: 3600 }}
-                                helperText="Frequency of automatic synchronization (30-3600 seconds)"
+                                helperText={t('settings.syncFrequency')}
                             />
                         )}
                     </Stack>

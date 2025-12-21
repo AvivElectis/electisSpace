@@ -25,6 +25,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useConferenceController } from '../application/useConferenceController';
 import { ConferenceRoomDialog } from './ConferenceRoomDialog';
 import type { ConferenceRoom } from '@shared/domain/types';
@@ -33,6 +34,7 @@ import type { ConferenceRoom } from '@shared/domain/types';
  * Conference Rooms Page - Clean Card-based Design
  */
 export function ConferencePage() {
+    const { t } = useTranslation();
     const conferenceController = useConferenceController({});
     const [searchQuery, setSearchQuery] = useState('');
     const [detailsOpen, setDetailsOpen] = useState(false);
@@ -99,10 +101,10 @@ export function ConferencePage() {
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                        Conference Rooms
+                        {t('conference.title')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Manage meeting rooms and schedules
+                        {t('conference.manage')}
                     </Typography>
                 </Box>
                 <Button
@@ -111,7 +113,7 @@ export function ConferencePage() {
                     onClick={handleAdd}
                     sx={{ minWidth: { xs: '100%', sm: '140px' } }}
                 >
-                    Add Room
+                    {t('conference.addRoom')}
                 </Button>
             </Stack>
 
@@ -136,7 +138,7 @@ export function ConferencePage() {
                                         {conferenceController.conferenceRooms.length}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Total Rooms
+                                        {t('conference.totalRooms')}
                                     </Typography>
                                 </Box>
                             </Stack>
@@ -162,7 +164,7 @@ export function ConferencePage() {
                                         {availableRooms}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Available
+                                        {t('conference.available')}
                                     </Typography>
                                 </Box>
                             </Stack>
@@ -188,7 +190,7 @@ export function ConferencePage() {
                                         {occupiedRooms}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Occupied
+                                        {t('conference.occupied')}
                                     </Typography>
                                 </Box>
                             </Stack>
@@ -214,7 +216,7 @@ export function ConferencePage() {
                                         {conferenceController.conferenceRooms.filter(r => r.labelCode).length}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        With Labels
+                                        {t('conference.withLabels')}
                                     </Typography>
                                 </Box>
                             </Stack>
@@ -226,7 +228,7 @@ export function ConferencePage() {
             {/* Search Bar */}
             <TextField
                 fullWidth
-                placeholder="Search conference rooms..."
+                placeholder={t('conference.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
@@ -287,7 +289,7 @@ export function ConferencePage() {
                                                 </Typography>
                                             </Box>
                                             <Chip
-                                                label={room.hasMeeting ? 'Occupied' : 'Available'}
+                                                label={room.hasMeeting ? t('conference.occupied') : t('conference.available')}
                                                 color={room.hasMeeting ? 'warning' : 'success'}
                                                 size="small"
                                             />
@@ -376,7 +378,7 @@ export function ConferencePage() {
                             >
                                 <Typography variant="h6">{selectedRoom.roomName}</Typography>
                                 <Chip
-                                    label={selectedRoom.hasMeeting ? 'Occupied' : 'Available'}
+                                    label={selectedRoom.hasMeeting ? t('conference.occupied') : t('conference.available')}
                                     color={selectedRoom.hasMeeting ? 'warning' : 'success'}
                                     size="small"
                                 />

@@ -1,6 +1,7 @@
 import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { type ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -13,16 +14,16 @@ interface MainLayoutProps {
 }
 
 interface NavTab {
-    label: string;
+    labelKey: string;
     value: string;
     icon: React.ReactElement;
 }
 
 const navTabs: NavTab[] = [
-    { label: 'Dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
-    { label: 'Spaces', value: '/spaces', icon: <BusinessIcon fontSize="small" /> },
-    { label: 'Conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
-    { label: 'Sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
+    { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
+    { labelKey: 'navigation.spaces', value: '/spaces', icon: <BusinessIcon fontSize="small" /> },
+    { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
+    { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
 ];
 
 /**
@@ -38,6 +39,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const { t } = useTranslation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -87,7 +89,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                         <ListItemIcon>
                                             {tab.icon}
                                         </ListItemIcon>
-                                        <ListItemText primary={tab.label} />
+                                        <ListItemText primary={t(tab.labelKey)} />
                                     </ListItemButton>
                                 </ListItem>
                             ))}
@@ -110,7 +112,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         {navTabs.map(tab => (
                             <Tab
                                 key={tab.value}
-                                label={tab.label}
+                                label={t(tab.labelKey)}
                                 value={tab.value}
                                 icon={tab.icon}
                                 iconPosition="start"

@@ -13,6 +13,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 
 /**
@@ -20,6 +21,7 @@ import { useSettingsController } from '@features/settings/application/useSetting
  * Manual sync triggering and status display
  */
 export function SyncPage() {
+    const { t } = useTranslation();
     const settingsController = useSettingsController();
     const [syncing, setSyncing] = useState(false);
     const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -46,15 +48,15 @@ export function SyncPage() {
 
     const getStatusChip = () => {
         if (syncing) {
-            return <Chip label="Syncing..." color="info" icon={<SyncIcon />} />;
+            return <Chip label={t('sync.syncing')} color="info" icon={<SyncIcon />} />;
         }
         if (syncError) {
-            return <Chip label="Error" color="error" icon={<ErrorIcon />} />;
+            return <Chip label={t('sync.error')} color="error" icon={<ErrorIcon />} />;
         }
         if (lastSync) {
-            return <Chip label="Connected" color="success" icon={<CheckCircleIcon />} />;
+            return <Chip label={t('sync.connected')} color="success" icon={<CheckCircleIcon />} />;
         }
-        return <Chip label="Idle" color="default" />;
+        return <Chip label={t('sync.idle')} color="default" />;
     };
 
     return (
@@ -62,10 +64,10 @@ export function SyncPage() {
             {/* Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                    Synchronization
+                    {t('sync.title')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Manually trigger sync or view sync status
+                    {t('sync.manualTrigger')}
                 </Typography>
             </Box>
 
@@ -75,7 +77,7 @@ export function SyncPage() {
                     <Stack spacing={3}>
                         <Box>
                             <Typography variant="h6" sx={{ mb: 2 }}>
-                                Sync Status
+                                {t('sync.syncStatus')}
                             </Typography>
                             {getStatusChip()}
                         </Box>
@@ -83,7 +85,7 @@ export function SyncPage() {
                         {syncing && (
                             <Box>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                    Synchronizing...
+                                    {t('sync.synchronizing')}
                                 </Typography>
                                 <LinearProgress />
                             </Box>
@@ -98,7 +100,7 @@ export function SyncPage() {
                         {lastSync && !syncing && (
                             <Box>
                                 <Typography variant="subtitle2" color="text.secondary">
-                                    Last Sync
+                                    {t('sync.lastSync')}
                                 </Typography>
                                 <Typography variant="body1">
                                     {lastSync.toLocaleString()}
@@ -113,28 +115,28 @@ export function SyncPage() {
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Typography variant="h6" sx={{ mb: 2 }}>
-                        Current Configuration
+                        {t('sync.currentConfig')}
                     </Typography>
                     <Stack spacing={2}>
                         <Box>
                             <Typography variant="subtitle2" color="text.secondary">
-                                Working Mode
+                                {t('sync.workingMode')}
                             </Typography>
                             <Typography variant="body1">
                                 {settingsController.settings.workingMode === 'SFTP'
-                                    ? 'SFTP (CSV Files)'
-                                    : 'SoluM API'
+                                    ? t('sync.sftpMode')
+                                    : t('sync.solumMode')
                                 }
                             </Typography>
                         </Box>
                         <Box>
                             <Typography variant="subtitle2" color="text.secondary">
-                                Auto-Sync
+                                {t('sync.autoSync')}
                             </Typography>
                             <Typography variant="body1">
                                 {settingsController.settings.autoSyncEnabled
-                                    ? `Enabled (every ${settingsController.settings.autoSyncInterval}s)`
-                                    : 'Disabled'
+                                    ? `${t('sync.enabled')} (${t('sync.every')} ${settingsController.settings.autoSyncInterval}s)`
+                                    : t('sync.disabled')
                                 }
                             </Typography>
                         </Box>
@@ -151,7 +153,7 @@ export function SyncPage() {
                 disabled={syncing}
                 sx={{ minWidth: 200 }}
             >
-                {syncing ? 'Syncing...' : 'Manual Sync'}
+                {syncing ? t('sync.syncing') : t('sync.manualSync')}
             </Button>
         </Box>
     );

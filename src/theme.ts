@@ -143,10 +143,23 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         padding: '10px 20px',
                         minHeight: '44px',
                         minWidth: '100px',
+                        marginInline: '8px',
                         fontWeight: 500,
                         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                         '&:active': {
                             transform: 'scale(0.97)',
+                        },
+                    },
+                    startIcon: {
+                        paddingInlineEnd: '8px',
+                        '& > *': {
+                            filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15))',
+                        },
+                    },
+                    endIcon: {
+                        paddingInlineStart: '8px',
+                        '& > *': {
+                            filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15))',
                         },
                     },
                     contained: {
@@ -194,7 +207,7 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                     },
                     text: {
                         fontWeight: 700,
-                        padding: '0px',
+                        padding: '8px 12px',
                         position: 'relative',
                         '&::after': {
                             content: '""',
@@ -317,6 +330,8 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         fontSize: '0.9375rem',
                         fontWeight: 500,
                         minHeight: '48px',
+                        padding: '12px 20px',
+                        gap: '12px',
                         '&.Mui-selected': {
                             fontWeight: 600,
                         },

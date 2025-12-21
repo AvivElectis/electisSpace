@@ -6,6 +6,7 @@ import {
     Stack,
     Chip,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { useSpaceController } from '@features/space/application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -15,6 +16,7 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
  * Overview of app status and quick stats
  */
 export function DashboardPage() {
+    const { t } = useTranslation();
     const settingsController = useSettingsController();
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
@@ -30,10 +32,10 @@ export function DashboardPage() {
             {/* Dashboard Header */}
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                    Dashboard
+                    {t('dashboard.title')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Welcome to {settingsController.settings.appName}
+                    {t('dashboard.welcome')} {settingsController.settings.appName}
                 </Typography>
             </Box>
 
@@ -47,7 +49,7 @@ export function DashboardPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Total {getLabel('plural')}
+                            {t('dashboard.total')} {getLabel('plural')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main' }}>
                             {totalSpaces}
@@ -59,7 +61,7 @@ export function DashboardPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                            With Labels
+                            {t('dashboard.withLabels')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'success.main' }}>
                             {spacesWithLabels}
@@ -71,7 +73,7 @@ export function DashboardPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Without Labels
+                            {t('dashboard.withoutLabels')}
                         </Typography>
                         <Typography variant="h3" sx={{ fontWeight: 500, color: 'warning.main' }}>
                             {spacesWithoutLabels}
@@ -83,10 +85,10 @@ export function DashboardPage() {
                 <Card sx={{ flex: 1 }}>
                     <CardContent>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Working Mode
+                            {t('dashboard.workingMode')}
                         </Typography>
                         <Chip
-                            label={settingsController.settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM API'}
+                            label={settingsController.settings.workingMode === 'SFTP' ? t('sync.sftpMode') : t('sync.solumMode')}
                             color="primary"
                             sx={{ mt: 1, fontSize: '1rem', height: 36 }}
                         />
@@ -98,12 +100,12 @@ export function DashboardPage() {
             <Card>
                 <CardContent>
                     <Typography variant="h6" sx={{ mb: 2 }}>
-                        Application Information
+                        {t('dashboard.applicationInfo')}
                     </Typography>
                     <Stack spacing={2}>
                         <Box>
                             <Typography variant="subtitle2" color="text.secondary">
-                                Space Type
+                                {t('dashboard.spaceType')}
                             </Typography>
                             <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
                                 {settingsController.settings.spaceType}
@@ -111,12 +113,12 @@ export function DashboardPage() {
                         </Box>
                         <Box>
                             <Typography variant="subtitle2" color="text.secondary">
-                                Auto-Sync
+                                {t('dashboard.autoSync')}
                             </Typography>
                             <Typography variant="body1">
                                 {settingsController.settings.autoSyncEnabled
-                                    ? `Enabled (every ${settingsController.settings.autoSyncInterval}s)`
-                                    : 'Disabled'
+                                    ? `${t('dashboard.enabled')} (${t('dashboard.every')} ${settingsController.settings.autoSyncInterval}s)`
+                                    : t('dashboard.disabled')
                                 }
                             </Typography>
                         </Box>

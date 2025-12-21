@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import TestIcon from '@mui/icons-material/Cable';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SettingsData } from '../domain/types';
 
 interface SFTPSettingsTabProps {
@@ -22,6 +23,7 @@ interface SFTPSettingsTabProps {
  * Connection and CSV structure configuration
  */
 export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
+    const { t } = useTranslation();
     const [subtab, setSubtab] = useState(0);
     const [testing, setTesting] = useState(false);
 
@@ -42,8 +44,8 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         <Box sx={{ px: 3 }}>
             {/* Sub-tabs */}
             <Tabs value={subtab} onChange={(_, val) => setSubtab(val)} sx={{ mb: 3 }}>
-                <Tab label="Connection" />
-                <Tab label="CSV Structure" />
+                <Tab label={t('settings.connection')} />
+                <Tab label={t('settings.csvStructure')} />
             </Tabs>
 
             {/* Connection Tab */}
@@ -55,7 +57,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     <TextField
                         fullWidth
-                        label="Username"
+                        label={t('settings.username')}
                         value={settings.sftpCredentials?.username || ''}
                         onChange={(e) => onUpdate({
                             sftpCredentials: {
@@ -72,7 +74,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                     <TextField
                         fullWidth
                         type="password"
-                        label="Password"
+                        label={t('settings.password')}
                         value={settings.sftpCredentials?.password || ''}
                         onChange={(e) => onUpdate({
                             sftpCredentials: {
@@ -88,7 +90,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     <TextField
                         fullWidth
-                        label="Host"
+                        label={t('settings.host')}
                         value={settings.sftpCredentials?.host || ''}
                         onChange={(e) => onUpdate({
                             sftpCredentials: {
@@ -105,7 +107,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     <TextField
                         fullWidth
-                        label="Remote Filename"
+                        label={t('settings.remoteFilename')}
                         value={settings.sftpCredentials?.remoteFilename || ''}
                         onChange={(e) => onUpdate({
                             sftpCredentials: {
@@ -128,7 +130,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                         onClick={handleTestConnection}
                         disabled={testing}
                     >
-                        {testing ? 'Testing...' : 'Test Connection'}
+                        {testing ? t('common.loading') : t('settings.testConnection')}
                     </Button>
                 </Stack>
             )}
@@ -142,7 +144,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     <TextField
                         fullWidth
-                        label="Delimiter"
+                        label={t('settings.delimiter')}
                         value={settings.csvConfig.delimiter}
                         onChange={(e) => onUpdate({
                             csvConfig: {
