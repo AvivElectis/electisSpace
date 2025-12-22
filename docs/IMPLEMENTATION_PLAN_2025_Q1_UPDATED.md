@@ -100,12 +100,12 @@
    - Added Base URL input field for transparency
 
 2. ✅ **Implemented Cluster-Aware URL Construction**
-   - Cluster changes the path in the API URL
-   - When cluster is "common": uses base URL directly
-   - When cluster is "c1": adds `/c1` prefix to all paths
+   - Cluster changes the path by inserting `/c1` prefix
+   - When cluster is "common": base URL + path
+   - When cluster is "c1": base URL + `/c1` + path
    - Example:
-     - Common: `https://eu.common.solumesl.com/api/v2/auth/login`
-     - C1: `https://eu.common.solumesl.com/c1/api/v2/auth/login`
+     - Common: `https://eu.common.solumesl.com/common/api/v2/token`
+     - C1: `https://eu.common.solumesl.com/c1/common/api/v2/token`
 
 3. ✅ **Updated SoluM Service**
    - Added `buildUrl()` helper function for cluster-aware URLs
