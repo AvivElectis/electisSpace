@@ -152,15 +152,9 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                     },
                     startIcon: {
                         paddingInlineEnd: '8px',
-                        '& > *': {
-                            filter: 'drop-shadow(0 0px 3px rgba(0, 0, 0, 0.5))',
-                        },
                     },
                     endIcon: {
                         paddingInlineStart: '8px',
-                        '& > *': {
-                            filter: 'drop-shadow(0 0px 3px rgba(0, 0, 0, 0.5))',
-                        },
                     },
                     contained: {
                         boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
@@ -175,6 +169,11 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         color: '#FFFFFF',
                         textShadow: '0 0px 3px rgba(0, 0, 0, 1)',
                         animation: 'gradientAnimation 20s ease infinite',
+                        '& .MuiButton-startIcon, & .MuiButton-endIcon': {
+                            '& > *': {
+                                filter: 'drop-shadow(0 0px 1px rgba(0, 0, 0, 0.8))',
+                            },
+                        },
                         '&:hover': {
                             backgroundPosition: 'right center',
                             animation: 'gradientAnimation 5s ease infinite',
@@ -186,6 +185,12 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                             color: 'rgba(0, 0, 0, 0.26) !important',
                             boxShadow: 'none !important',
                             animation: 'none',
+                            textShadow: 'none',
+                            '& .MuiButton-startIcon, & .MuiButton-endIcon': {
+                                '& > *': {
+                                    filter: 'none',
+                                },
+                            },
                         },
                     },
                     containedSecondary: {

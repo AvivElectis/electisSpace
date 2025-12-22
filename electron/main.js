@@ -8,10 +8,26 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const log = require('electron-log');
+const { autoUpdater } = require('electron-updater');
 
 // Configure logging
 log.transports.file.level = 'info';
 log.transports.console.level = 'debug';
+
+// Configure auto-updater
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
+
+// TODO: Replace with your actual GitHub username and repo
+autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'YOUR_GITHUB_USERNAME',
+    repo: 'electisSpace'
+});
+
+// Auto-updater settings
+autoUpdater.autoDownload = false; // Manual download control
+autoUpdater.autoInstallOnAppQuit = true;
 
 // Keep a global reference of the window object
 let mainWindow = null;
@@ -210,6 +226,97 @@ ipcMain.handle('get-platform-info', () => {
         electron: process.versions.electron,
         chrome: process.versions.chrome,
     };
+});
+
+/**
+ * Auto-Updater IPC Handlers
+ */
+
+// Check for updates
+ipcMain.handle('check-for-updates', async () => {
+    try {
+        log.info('Checking for updates...');
+        const result = await autoUpdater.checkForUpdates();
+        return { success: true, updateInfo: result?.updateInfo };
+    } catch (error) {
+        log.error('Error checking for updates:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Download update
+ipcMain.handle('download-update', async () => {
+    try {
+        log.info('Downloading update...');
+        await autoUpdater.downloadUpdate();
+        return { success: true };
+    } catch (error) {
+        log.error('Error downloading update:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Quit and install
+ipcMain.handle('quit-and-install', () => {
+    log.info('Quitting and installing update...');
+    autoUpdater.quitAndInstall(false, true);
+});
+
+/**
+ * Auto-Updater Events
+ * Forward events to renderer process
+ */
+
+autoUpdater.on('checking-for-update', () => {
+    log.info('Checking for update...');
+    if (mainWindow) {
+        mainWindow.webContents.send('checking-for-update');
+    }
+});
+
+autoUpdater.on('update-available', (info) => {
+    log.info('Update available:', info);
+    if (mainWindow) {
+        mainWindow.webContents.send('update-available', {
+            version: info.version,
+            releaseDate: info.releaseDate,
+            releaseNotes: info.releaseNotes,
+            platform: 'windows',
+        });
+    }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+    log.info('Update not available:', info);
+    if (mainWindow) {
+        mainWindow.webContents.send('update-not-available');
+    }
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    log.info(`Download progress: ${progressObj.percent}%`);
+    if (mainWindow) {
+        mainWindow.webContents.send('download-progress', {
+            percent: progressObj.percent,
+            bytesPerSecond: progressObj.bytesPerSecond,
+            transferred: progressObj.transferred,
+            total: progressObj.total,
+        });
+    }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    log.info('Update downloaded:', info);
+    if (mainWindow) {
+        mainWindow.webContents.send('update-downloaded');
+    }
+});
+
+autoUpdater.on('error', (error) => {
+    log.error('Auto-updater error:', error);
+    if (mainWindow) {
+        mainWindow.webContents.send('update-error', error.message);
+    }
 });
 
 /**
