@@ -7,14 +7,35 @@ import { logger } from './logger';
  */
 
 /**
+ * Build cluster-aware URL
+ * Replaces '.common.' with '.{cluster}.' in the base URL if cluster is not 'common'
+ * @param config - SoluM configuration
+ * @param path - API path (e.g., '/api/v2/auth/login')
+ * @returns Full URL with cluster-aware subdomain
+ */
+function buildUrl(config: SolumConfig, path: string): string {
+    const { baseUrl, cluster } = config;
+
+    // If cluster is 'c1', replace '.common.' with '.c1.' in the base URL
+    const clusterUrl = cluster === 'c1'
+        ? baseUrl.replace('.common.', '.c1.')
+        : baseUrl;
+
+    return `${clusterUrl}${path}`;
+}
+
+/**
  * Login to SoluM API
  * @param config - SoluM configuration
  * @returns Access and refresh tokens
  */
 export async function login(config: SolumConfig): Promise<SolumTokens> {
-    logger.info('SolumService', 'Logging in to SoluM API', { company: config.companyName });
+    logger.info('SolumService', 'Logging in to SoluM API', {
+        company: config.companyName,
+        cluster: config.cluster
+    });
 
-    const url = `${config.baseUrl}/api/v2/auth/login`;
+    const url = buildUrl(config, '/api/v2/auth/login');
 
     const response = await fetch(url, {
         method: 'POST',
@@ -58,7 +79,7 @@ export async function refreshToken(
 ): Promise<SolumTokens> {
     logger.info('SolumService', 'Refreshing token');
 
-    const url = `${config.baseUrl}/api/v2/auth/refresh`;
+    const url = buildUrl(config, '/api/v2/auth/refresh');
 
     const response = await fetch(url, {
         method: 'POST',
@@ -102,7 +123,7 @@ export async function fetchArticles(
 ): Promise<any[]> {
     logger.info('SolumService', 'Fetching articles', { storeId });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/articles`;
+    const url = buildUrl(config, `/api/v2/stores/${storeId}/articles`);
 
     const response = await fetch(url, {
         method: 'GET',
@@ -138,7 +159,7 @@ export async function pushArticles(
 ): Promise<void> {
     logger.info('SolumService', 'Pushing articles', { storeId, count: articles.length });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/articles`;
+    const url = buildUrl(config, `/api/v2/stores/${storeId}/articles`);
 
     const response = await fetch(url, {
         method: 'PUT',
@@ -172,7 +193,7 @@ export async function getLabels(
 ): Promise<any[]> {
     logger.info('SolumService', 'Fetching labels', { storeId });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/labels`;
+    const url = buildUrl(config, `/api/v2/stores/${storeId}/labels`);
 
     const response = await fetch(url, {
         method: 'GET',
@@ -212,7 +233,7 @@ export async function assignLabel(
 ): Promise<void> {
     logger.info('SolumService', 'Assigning label', { labelCode, articleId, templateName });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/labels/${labelCode}/assign`;
+    const url = buildUrl(config, `/api/v2/stores/${storeId}/labels/${labelCode}/assign`);
 
     const response = await fetch(url, {
         method: 'POST',
@@ -252,7 +273,7 @@ export async function updateLabelPage(
 ): Promise<void> {
     logger.info('SolumService', 'Updating label page', { labelCode, page });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/labels/${labelCode}/page`;
+    const url = buildUrl(config, `/api/v2/stores/${storeId}/labels/${labelCode}/page`);
 
     const response = await fetch(url, {
         method: 'PUT',
@@ -288,7 +309,7 @@ export async function getLabelDetail(
 ): Promise<any> {
     logger.info('SolumService', 'Fetching label detail', { labelCode });
 
-    const url = `${config.baseUrl}/api/v2/common/labels/unassigned/detail?labelCode=${labelCode}&storeCode=${storeId}`;
+    const url = buildUrl(config, `/api/v2/common/labels/unassigned/detail?labelCode=${labelCode}&storeCode=${storeId}`);
 
     const response = await fetch(url, {
         method: 'GET',

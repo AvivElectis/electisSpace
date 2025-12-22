@@ -56,7 +56,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         <FormControl fullWidth>
                             <InputLabel>{t('settings.apiCluster')}</InputLabel>
                             <Select
-                                value={settings.solumConfig?.baseUrl || ''}
+                                value={settings.solumConfig?.cluster || 'common'}
                                 label={t('settings.apiCluster')}
                                 onChange={(e) => onUpdate({
                                     solumConfig: {
@@ -65,40 +65,36 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         username: settings.solumConfig?.username || '',
                                         password: settings.solumConfig?.password || '',
                                         storeNumber: settings.solumConfig?.storeNumber || '',
-                                        baseUrl: e.target.value,
+                                        cluster: e.target.value as 'common' | 'c1',
+                                        baseUrl: settings.solumConfig?.baseUrl || '',
                                         syncInterval: settings.solumConfig?.syncInterval || 60,
                                     }
                                 })}
                             >
-                                <MenuItem value="https://common.solumesl.com">{t('settings.commonCluster1')}</MenuItem>
-                                <MenuItem value="https://cluster2.solumesl.com">{t('settings.cluster2')}</MenuItem>
-                                <MenuItem value="https://cluster3.solumesl.com">{t('settings.cluster3')}</MenuItem>
-                                <MenuItem value="https://cluster4.solumesl.com">{t('settings.cluster4')}</MenuItem>
-                                <MenuItem value="custom">{t('settings.customUrl')}</MenuItem>
+                                <MenuItem value="common">{t('settings.commonCluster')}</MenuItem>
+                                <MenuItem value="c1">{t('settings.c1Cluster')}</MenuItem>
                             </Select>
                         </FormControl>
 
-                        {settings.solumConfig?.baseUrl === 'custom' && (
-                            <TextField
-                                fullWidth
-                                label={t('settings.customApiUrl')}
-                                value={settings.solumConfig?.customBaseUrl || ''}
-                                onChange={(e) => onUpdate({
-                                    solumConfig: {
-                                        ...settings.solumConfig,
-                                        companyName: settings.solumConfig?.companyName || '',
-                                        username: settings.solumConfig?.username || '',
-                                        password: settings.solumConfig?.password || '',
-                                        storeNumber: settings.solumConfig?.storeNumber || '',
-                                        baseUrl: 'custom',
-                                        customBaseUrl: e.target.value,
-                                        syncInterval: settings.solumConfig?.syncInterval || 60,
-                                    }
-                                })}
-                                placeholder="https://your-cluster.solumesl.com"
-                                helperText={t('settings.enterCustomUrl')}
-                            />
-                        )}
+                        <TextField
+                            fullWidth
+                            label={t('settings.baseUrl')}
+                            value={settings.solumConfig?.baseUrl || ''}
+                            onChange={(e) => onUpdate({
+                                solumConfig: {
+                                    ...settings.solumConfig,
+                                    companyName: settings.solumConfig?.companyName || '',
+                                    username: settings.solumConfig?.username || '',
+                                    password: settings.solumConfig?.password || '',
+                                    storeNumber: settings.solumConfig?.storeNumber || '',
+                                    cluster: settings.solumConfig?.cluster || 'common',
+                                    baseUrl: e.target.value,
+                                    syncInterval: settings.solumConfig?.syncInterval || 60,
+                                }
+                            })}
+                            placeholder="https://eu.common.solumesl.com"
+                            helperText={t('settings.baseUrlHelper')}
+                        />
                     </Stack>
                 </Box>
 
@@ -121,6 +117,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     username: settings.solumConfig?.username || '',
                                     password: settings.solumConfig?.password || '',
                                     storeNumber: settings.solumConfig?.storeNumber || '',
+                                    cluster: settings.solumConfig?.cluster || 'common',
                                     baseUrl: settings.solumConfig?.baseUrl || '',
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
@@ -139,6 +136,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     username: settings.solumConfig?.username || '',
                                     password: settings.solumConfig?.password || '',
                                     storeNumber: e.target.value,
+                                    cluster: settings.solumConfig?.cluster || 'common',
                                     baseUrl: settings.solumConfig?.baseUrl || '',
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
@@ -157,6 +155,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     username: e.target.value,
                                     password: settings.solumConfig?.password || '',
                                     storeNumber: settings.solumConfig?.storeNumber || '',
+                                    cluster: settings.solumConfig?.cluster || 'common',
                                     baseUrl: settings.solumConfig?.baseUrl || '',
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
@@ -176,6 +175,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     username: settings.solumConfig?.username || '',
                                     password: e.target.value,
                                     storeNumber: settings.solumConfig?.storeNumber || '',
+                                    cluster: settings.solumConfig?.cluster || 'common',
                                     baseUrl: settings.solumConfig?.baseUrl || '',
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
@@ -206,6 +206,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         username: settings.solumConfig?.username || '',
                                         password: settings.solumConfig?.password || '',
                                         storeNumber: settings.solumConfig?.storeNumber || '',
+                                        cluster: settings.solumConfig?.cluster || 'common',
                                         baseUrl: settings.solumConfig?.baseUrl || '',
                                         syncInterval: value as number,
                                     }

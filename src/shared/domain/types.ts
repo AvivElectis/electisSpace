@@ -88,6 +88,7 @@ export interface SolumConfig {
     username: string;
     password: string;
     storeNumber: string;
+    cluster: 'common' | 'c1';  // API cluster selection
     baseUrl: string;
     customBaseUrl?: string;  // Custom URL when baseUrl is 'custom'
     syncInterval: number;  // in seconds
