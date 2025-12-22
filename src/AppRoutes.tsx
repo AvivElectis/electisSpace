@@ -1,22 +1,38 @@
 import { Routes, Route } from 'react-router-dom';
-import { DashboardPage } from '@features/dashboard/DashboardPage';
-import { SpacesPage } from '@features/space/presentation/SpacesPage';
-import { ConferencePage } from '@features/conference/presentation/ConferencePage';
-import { SyncPage } from '@features/sync/presentation/SyncPage';
-import { NotFoundPage } from '@shared/presentation/pages/NotFoundPage';
+import { lazy, Suspense } from 'react';
+import { LoadingFallback } from '@shared/presentation/components/LoadingFallback';
+
+// Lazy load all page components for code splitting
+const DashboardPage = lazy(() =>
+    import('@features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))
+);
+const SpacesPage = lazy(() =>
+    import('@features/space/presentation/SpacesPage').then(m => ({ default: m.SpacesPage }))
+);
+const ConferencePage = lazy(() =>
+    import('@features/conference/presentation/ConferencePage').then(m => ({ default: m.ConferencePage }))
+);
+const SyncPage = lazy(() =>
+    import('@features/sync/presentation/SyncPage').then(m => ({ default: m.SyncPage }))
+);
+const NotFoundPage = lazy(() =>
+    import('@shared/presentation/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
+);
 
 /**
- * Application routing configuration  
+ * Application routing configuration with lazy loading
  * Settings dialog is opened via icon in Dashboard/header, not a separate route
  */
 export function AppRoutes() {
     return (
-        <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/spaces" element={<SpacesPage />} />
-            <Route path="/conference" element={<ConferencePage />} />
-            <Route path="/sync" element={<SyncPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/spaces" element={<SpacesPage />} />
+                <Route path="/conference" element={<ConferencePage />} />
+                <Route path="/sync" element={<SyncPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+        </Suspense>
     );
 }

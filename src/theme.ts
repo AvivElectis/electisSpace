@@ -58,13 +58,13 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
 
         typography: {
             fontFamily: [
-                'Assistant',  // Hebrew font
+                '"Assistant"',  // Hebrew font (quoted for proper CSS handling)
                 '-apple-system',
                 'BlinkMacSystemFont',
-                'SF Pro Display',
-                'SF Pro Text',
-                'Helvetica Neue',
-                'sans-serif',
+                '"SF Pro Display"',
+                '"SF Pro Text"',
+                '"Helvetica Neue"',
+                'Arial',
             ].join(','),
 
             h1: {
