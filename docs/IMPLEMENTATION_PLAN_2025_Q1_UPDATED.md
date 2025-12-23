@@ -417,20 +417,60 @@ SoluM API requires Bearer token authentication with automatic refresh. Current i
 - ✅ Added English translations for connect/disconnect
 - ✅ Fixed login API bug (company parameter in query string)
 
-**Remaining Work:**
-- ❌ Add Hebrew translations for connect/disconnect
-- ❌ Wire connect button to actually call `connectToSolum()` from controller
-- ❌ Update `solumSchemaAdapter` to use stored tokens instead of calling login()
-- ❌ Test full token refresh flow
-- ❌ Test 403 retry mechanism
+---
+### 6. SoluM Advanced Data Mapping & Architecture Refactor - ⚠️ **IN PROGRESS** (Dec 23, 2024)
+**Status:** Phase 6 - Planning Complete
+**Estimated Effort:** ~8-10 hours
 
-**Estimated Remaining:** 1.5 hours
+**Problem Statement:**
+SoluM integration requires flexible data mapping to transform generic "articles" into specific "Spaces" (Products) and "Conference Rooms" (Labels).
+Currently, the app lacks:
+1.  Way to select which field acts as the Unique ID.
+2.  Friendly naming for columns (English/Hebrew).
+3.  Segregation of Conference Rooms (ID starting with "C") from regular Spaces.
+4.  Specific mapping for Conference fields (Meeting Name, Time, Participants).
+5.  Automatic syncing on load.
 
-**Completion Date:** Expected Dec 23-24, 2024
+**Architecture Refactor:**
+To avoid complexity, we will separate UI components by mode:
+- **SpacesPage**: Switches between `SFTPSpacesView` and `SolumSpacesView`.
+- **ConferencePage**: Switches between `SFTPConferenceView` and `SolumConferenceView`.
+
+**Implementation Plan:**
+
+#### 6.1 Domain & Configuration (2h)
+- Add `SolumMappingConfig` to Settings:
+  - `uniqueIdField`: Selector for the ID column.
+  - `fields`: Map of field keys to `{ friendlyNameHe, friendlyNameEn, visible }`.
+  - `conferenceMapping`: Selectors for `meetingName`, `meetingTime`, `participants` fields.
+- Default segregation rule: **IDs starting with "C" = Conference Room**.
+
+#### 6.2 Settings UI (3h)
+- **Field Mapping Editor**: Table to rename and toggle visibility of SoluM fields.
+- **Unique ID Selector**: Dropdown.
+- **Conference Mapper**: 3 Dropdowns for meeting details.
+- **Input Locking**: Disable all configuration inputs (cluster, URL, creds) and mapping editors when `isConnected` is true. Users must "Disconnect" to edit.
+
+#### 6.3 Application Logic (2h)
+- Update `useSpaceController`:
+  - Fetch all articles.
+  - **Filter OUT** IDs starting with "C".
+  - Map remaining to `Space` objects using friendly names.
+- Update `useConferenceController`:
+  - Fetch all articles.
+  - **Filter IN** IDs starting with "C".
+  - Map to `ConferenceRoom` (parse Time "START-END", split Participants by comma).
+
+#### 6.4 Presentation Layer (3h)
+- Create `SolumSpacesView`: Auto-sync on mount, dynamic columns.
+- Create `SolumConferenceView`: Auto-sync on mount, read-only cards (synced).
+- Refactor main pages to switch views based on `workingMode`.
+
+**Completion Date:** Expected Dec 24-25, 2024
 
 ---
 
-### 6. Testing Infrastructure - **MEDIUM PRIORITY**
+### 7. Testing Infrastructure - **MEDIUM PRIORITY**
 **Status:** Testing libraries installed, ZERO tests exist
 
 **Current State:**
