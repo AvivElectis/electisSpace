@@ -92,6 +92,13 @@ export interface SolumConfig {
     baseUrl: string;
     customBaseUrl?: string;  // Custom URL when baseUrl is 'custom'
     syncInterval: number;  // in seconds
+
+    // Token management
+    tokens?: SolumTokens;      // Active access and refresh tokens
+    isConnected?: boolean;      // Connection state
+    lastConnected?: number;     // Timestamp of last successful connection
+    lastRefreshed?: number;     // Timestamp of last token refresh
+    storeSummary?: any;         // Store configuration and statistics from API
 }
 
 export interface SolumTokens {

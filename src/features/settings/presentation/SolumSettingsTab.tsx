@@ -12,12 +12,15 @@ import {
     FormControlLabel,
     Switch,
     Slider,
-    Paper,
+    Alert,
 } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@shared/infrastructure/store/rootStore';
+import { useSettingsController } from '../application/useSettingsController';
+import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
+import { ArticleFormatEditor } from '@features/configuration/presentation/ArticleFormatEditor';
 import type { SettingsData } from '../domain/types';
 
 interface SolumSettingsTabProps {
@@ -32,16 +35,15 @@ interface SolumSettingsTabProps {
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
     const { showSuccess, showError } = useNotifications();
+    const { articleFormat, fetchArticleFormat, saveArticleFormat } = useConfigurationController();
+    const { connectToSolum, disconnectFromSolum } = useSettingsController();
     const [fetchingSchema, setFetchingSchema] = useState(false);
-    const [schema, setSchema] = useState<object | null>(null);
+    const [connecting, setConnecting] = useState(false);
 
     const handleFetchSchema = async () => {
         setFetchingSchema(true);
         try {
-            // TODO: Implement actual schema fetching from SoluM API
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            const mockSchema = { format: 'example', fields: ['name', 'price', 'barcode'] };
-            setSchema(mockSchema);
+            await fetchArticleFormat();
             showSuccess(t('settings.schemaFetchedSuccess'));
         } catch (error) {
             showError(t('settings.schemaFetchedError', { error: String(error) }));
@@ -189,21 +191,45 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                             helperText={t('settings.passwordHelper')}
                         />
 
-                        <Button
-                            variant="contained"
-                            onClick={async () => {
-                                try {
-                                    // TODO: Implement actual connection test
-                                    await new Promise(resolve => setTimeout(resolve, 1000));
-                                    showSuccess(t('settings.connectionSuccess'));
-                                } catch (error) {
-                                    showError(t('settings.connectionError', { error: String(error) }));
-                                }
-                            }}
-                            fullWidth
-                        >
-                            {t('settings.testConnection')}
-                        </Button>
+                        {settings.solumConfig?.isConnected ? (
+                            <>
+                                <Alert severity="success" sx={{ mb: 1 }}>
+                                    {t('settings.connectedToSolum')}
+                                </Alert>
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={() => {
+                                        disconnectFromSolum();
+                                        showSuccess(t('settings.disconnected'));
+                                    }}
+                                    fullWidth
+                                >
+                                    {t('settings.disconnect')}
+                                </Button>
+                            </>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                onClick={async () => {
+                                    setConnecting(true);
+                                    try {
+                                        await connectToSolum();
+                                        showSuccess(t('settings.connectionSuccess'));
+                                    } catch (error) {
+                                        showError(t('settings.connectionError', {
+                                            error: error instanceof Error ? error.message : String(error)
+                                        }));
+                                    } finally {
+                                        setConnecting(false);
+                                    }
+                                }}
+                                disabled={connecting}
+                                fullWidth
+                            >
+                                {connecting ? t('settings.connecting') : t('settings.connect')}
+                            </Button>
+                        )}
                     </Stack>
                 </Box>
 
@@ -281,26 +307,22 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         variant="outlined"
                         startIcon={<CloudSyncIcon />}
                         onClick={handleFetchSchema}
-                        disabled={fetchingSchema}
+                        disabled={fetchingSchema || !settings.solumConfig?.isConnected}
                         fullWidth
+                        sx={{ mb: 2 }}
                     >
                         {fetchingSchema ? t('settings.fetchingSchema') : t('settings.fetchArticleSchema')}
                     </Button>
 
-                    <Typography variant="caption" color="info.main" sx={{ mt: 1, display: 'block' }}>
+                    <Typography variant="caption" color="info.main" sx={{ mb: 2, display: 'block' }}>
                         {t('settings.fetchesConfig')}
                     </Typography>
 
-                    {schema && (
-                        <Paper sx={{ mt: 2, p: 2, bgcolor: 'grey.50' }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                                {t('settings.fetchedSchema')}
-                            </Typography>
-                            <Box component="pre" sx={{ m: 0, fontSize: '0.75rem', overflow: 'auto' }}>
-                                {JSON.stringify(schema, null, 2)}
-                            </Box>
-                        </Paper>
-                    )}
+                    <ArticleFormatEditor
+                        schema={articleFormat}
+                        onSave={saveArticleFormat}
+                        readOnly={false}
+                    />
                 </Box>
             </Stack>
         </Box>

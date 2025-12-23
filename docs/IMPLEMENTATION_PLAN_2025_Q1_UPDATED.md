@@ -154,7 +154,125 @@
 
 ---
 
-### 2. Platform Support (Electron & Android) - ✅ **COMPLETED**
+### 4. Configuration Management Feature - ✅ **COMPLETED**
+**Status:** Phase 4 - Fully Completed (Dec 23, 2024)
+**Actual Effort:** ~11 hours
+
+**Problem Statement:**
+Three critical configuration features are missing or incomplete:
+1. ❌ **SoluM Article Format Management** - Currently shows mock data instead of real API fetch
+2. ❌ **Article Format JSON Editor** - No way to view/edit fetched schema
+3. ⚠️ **CSV Structure Configuration** - Tab exists but no functional column mapping UI
+
+**Architecture Requirements:**
+- ✅ Follow feature-based vertical slice architecture
+- ✅ Strict mode separation: `sftpCsvConfig` (SFTP only) vs `solumArticleFormat` (SoluM only)
+- ✅ Spaces feature remains mode-agnostic (works with `Person[]` interface)
+
+**Implementation Plan:**
+
+#### 4.1 Domain Layer (2h) ✅
+**Files Created:**
+- ✅ `src/features/configuration/domain/types.ts`
+  - `ArticleFormat` interface (SoluM mode only)
+  - `CSVColumn` interface (SFTP mode only)
+  - `FieldMapping` type
+- ✅ `src/features/configuration/domain/validation.ts`
+  - `validateArticleFormat()` - Verify SoluM schema
+  - `validateCSVStructure()` - Verify SFTP columns
+
+#### 4.2 Infrastructure Layer (3h) ✅
+**Files Created:**
+- ✅ `src/features/configuration/infrastructure/solumSchemaAdapter.ts`
+  - `fetchSchema()` - Real SoluM API integration (`/common/api/v2/common/articles/upload/format`)
+  - `updateSchema()` - POST schema updates (editing enabled)
+
+**Files Modified:**
+- ✅ `src/features/settings/domain/types.ts`
+  - Added `sftpCsvConfig?: CSVConfig` (SFTP mode)
+  - Added `solumArticleFormat?: ArticleFormat` (SoluM mode)
+  - Enforced mode separation in SettingsData
+
+#### 4.3 Application Layer (2-3h) ✅
+**Files Created:**
+- ✅ `src/features/configuration/application/useConfigurationController.ts`
+  - `fetchArticleFormat()` - Fetch from real API
+  - `saveArticleFormat()` - Save with validation
+  - `saveCSVStructure()` - Persist SFTP columns
+
+#### 4.4 Presentation Layer (3-4h) ✅
+**Files Created:**
+- ✅ `src/features/configuration/presentation/ArticleFormatEditor.tsx`
+  - Uses `vanilla-jsoneditor` for JSON editing
+  - Editable mode (user requirement)
+  - Save functionality with validation
+  
+- ✅ `src/features/configuration/presentation/CSVStructureEditor.tsx`
+  - **Dual reordering:** Drag-drop + up/down buttons
+  - Add/remove/edit columns
+  - Field type selection (text/number/email/phone/url)
+  - Mandatory field checkbox
+  - Uses `react-beautiful-dnd` for drag-drop
+
+#### 4.5 Integration (1-2h) ✅
+**Files Modified:**
+- ✅ `src/features/settings/presentation/SolumSettingsTab.tsx`
+  - Replaced mock schema with `ArticleFormatEditor`
+  - Integrated `useConfigurationController`
+  
+- ✅ `src/features/settings/presentation/SFTPSettingsTab.tsx`
+  - Replaced placeholder with `CSVStructureEditor`
+  - Tab 2 (CSV Structure) now fully functional
+
+#### 4.6 Dependencies ✅
+```json
+{
+  "dependencies": {
+    "vanilla-jsoneditor": "^3.11.0",
+    "react-beautiful-dnd": "^13.1.1"
+  },
+  "devDependencies": {
+    "@types/react-beautiful-dnd": "^13.1.8"
+  }
+}
+```
+
+**Mode Separation Architecture:**
+```typescript
+// ✅ CORRECT - No shared structural data
+interface SettingsData {
+  sftpCsvConfig?: CSVConfig;          // SFTP mode only
+  solumArticleFormat?: ArticleFormat; // SoluM mode only
+  workingMode: 'SFTP' | 'SOLUM_API';
+}
+
+// Spaces feature is mode-agnostic
+features/spaces/  → Works with Person[] only
+features/sync/adapters/
+  ├── SFTPSyncAdapter   → CSV ↔ Person[] (uses sftpCsvConfig)
+  └── SolumSyncAdapter  → Articles ↔ Person[] (uses solumArticleFormat)
+```
+
+**Completion Criteria:**
+- [x] Real SoluM API fetch (not mock) ✓
+- [x] JSON editor functional with save capability ✓
+- [x] CSV structure editor with add/remove/reorder ✓
+- [x] Dual reordering (drag-drop + buttons) ✓
+- [x] Mode separation enforced (no shared data) ✓
+- [x] Settings persist correctly ✓
+- [x] Validation working ✓
+- [x] TypeScript compilation successful ✓
+- [x] **ArticleFormatEditor integrated** ✓
+- [x] **CSVStructureEditor integrated** ✓
+
+**Build Status:** ✅ TypeScript compiles with 0 errors
+**Completion Date:** December 23, 2024
+**Integration:** ✅ **COMPLETE** - All components integrated into settings tabs
+
+---
+
+### 5. Testing Infrastructure - **MEDIUM PRIORITY**
+
 **Status:** COMPLETED (Dec 22, 2024)
 
 **Completed Changes:**
@@ -281,7 +399,38 @@
 
 ---
 
-### 4. Testing Infrastructure - **MEDIUM PRIORITY**
+### 5. SoluM API Token Management - ⚠️ **IN PROGRESS** (Dec 23, 2024)
+**Status:** Phase 5 - 70% Complete
+**Actual Effort:** ~2.5 hours (of estimated 4 hours)
+
+**Problem Statement:**
+SoluM API requires Bearer token authentication with automatic refresh. Current implementation logs in every API call instead of storing and managing tokens.
+
+**Completed:**
+- ✅ Added token storage fields to `SolumConfig` (`tokens`, `isConnected`, `lastConnected`, `lastRefreshed`)
+- ✅ Created `withTokenRefresh()` wrapper for automatic 403 retry with token refresh
+- ✅ Added `isTokenExpired()` and `shouldRefreshToken()` utility functions
+- ✅ Created `useTokenRefresh` hook for automatic 3-hour token refresh
+- ✅ Added `connectToSolum()`, `disconnectFromSolum()`, `refreshSolumTokens()` to settings controller
+- ✅ Updated `SolumSettingsTab` with Connect/Disconnect button (red for disconnect)
+- ✅ Integrated `useTokenRefresh` hook in `App.tsx`
+- ✅ Added English translations for connect/disconnect
+- ✅ Fixed login API bug (company parameter in query string)
+
+**Remaining Work:**
+- ❌ Add Hebrew translations for connect/disconnect
+- ❌ Wire connect button to actually call `connectToSolum()` from controller
+- ❌ Update `solumSchemaAdapter` to use stored tokens instead of calling login()
+- ❌ Test full token refresh flow
+- ❌ Test 403 retry mechanism
+
+**Estimated Remaining:** 1.5 hours
+
+**Completion Date:** Expected Dec 23-24, 2024
+
+---
+
+### 6. Testing Infrastructure - **MEDIUM PRIORITY**
 **Status:** Testing libraries installed, ZERO tests exist
 
 **Current State:**
@@ -372,6 +521,100 @@
 - Field-level error display
 
 **Estimated Effort:** 5-6 hours
+
+---
+
+### 8. Security Enhancements - **HIGH PRIORITY** ⚠️ NEW
+**Status:** Partially complete, needs enhancement
+**Estimated Effort:** 8-10 hours
+
+**Current State:**
+- ✅ Settings password protection exists
+- ✅ Lock/unlock functionality working
+- ❌ No app-level password lock
+- ❌ No admin override password for settings
+- ❌ Import/export settings incomplete
+
+**Required Enhancements:**
+
+#### 8.1 App Lock with Password (3-4h)
+**Goal:** Protect entire app with optional password
+
+**Features Needed:**
+- App-level password (separate from settings password)
+- Lock screen that appears on:
+  - App startup (if password set)
+  - Manual lock action
+  - Auto-lock after inactivity
+- Biometric unlock support (future: fingerprint/face for mobile)
+- Persistent lock state across restarts
+
+**Implementation:**
+- New `AppLockScreen` component
+- New `useAppLock` hook in security feature
+- Store app lock password hash separately
+- Update `App.tsx` to show lock screen when locked
+
+#### 8.2 Settings Menu Lock with Admin Override (3-4h)
+**Goal:** Protect settings menu with optional password + safety admin password
+
+**Features Needed:**
+- Settings-specific password (current implementation)
+- **Safety admin password:** `REDACTED_PASSWORD` (hardcoded, never changes)
+  - Always works even if user forgets their password
+  - Allows access to settings for troubleshooting
+  - Should be documented but hidden from UI
+- Both passwords should unlock settings
+- Clear indication when settings are locked
+
+**Implementation:**
+- Update `SecuritySettingsTab` to add admin password check
+- Modify `useSettingsController.unlock()`:
+  ```typescript
+  const ADMIN_PASSWORD = 'REDACTED_PASSWORD';
+  if (password === ADMIN_PASSWORD) {
+    setLocked(false);
+    return true;
+  }
+  // ... then check user password
+  ```
+- Add admin password documentation in `SecuritySettingsTab` (small info icon/tooltip)
+
+#### 8.3 Import/Export Settings (2-3h)
+**Goal:** Allow backup and restore of all settings
+
+**Export Should Include:**
+- ✅ App name, subtitle, space type
+- ✅ Working mode (SFTP/SoluM)
+- ✅ Logos (base64 encoded)
+- ✅ SFTP credentials (encrypted or user choice)
+- ✅ SoluM credentials (encrypted or user choice)
+- ✅ CSV structure configuration
+- ✅ SoluM article format
+- ❌ **Passwords are NEVER exported** (security)
+
+**Import Should:**
+- Validate JSON structure
+- Merge settings (not overwrite entirely)
+- Ask user to confirm credential import
+- Show preview of what will be imported
+- Require unlock if settings are locked
+
+**Implementation:**
+- Update `exportSettings()` in business rules
+  - Add option: export with/without credentials
+  - Always exclude password hashes
+- Update `importSettings()`:
+  - Add validation
+  - Add preview UI
+  - Add merge strategy option
+- Add import/export buttons to `SecuritySettingsTab`
+
+**UI Location:**
+- Security Settings tab
+- Two buttons side-by-side:
+  - "Export Settings" → Opens dialog with options
+  - "Import Settings" → File picker + preview dialog
 
 ---
 
