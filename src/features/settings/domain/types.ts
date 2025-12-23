@@ -31,6 +31,10 @@ export interface SettingsData {
     // Auto-sync settings
     autoSyncEnabled: boolean;
     autoSyncInterval: number;  // in seconds
+
+    // Auto-update settings
+    autoUpdateEnabled?: boolean;
+    updateCheckInterval?: number;  // in hours
 }
 
 export interface ExportedSettings {

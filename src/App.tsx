@@ -5,6 +5,7 @@ import { createAppTheme } from './theme';
 import { AppRoutes } from './AppRoutes';
 import { MainLayout } from './shared/presentation/layouts/MainLayout';
 import { NotificationContainer } from './shared/presentation/components/NotificationContainer';
+import { UpdateNotification } from './features/update/presentation/UpdateNotification';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useEffect } from 'react';
 
@@ -35,6 +36,7 @@ function App() {
           <AppRoutes />
         </MainLayout>
         <NotificationContainer />
+        <UpdateNotification />
       </BrowserRouter>
     </ThemeProvider>
   );

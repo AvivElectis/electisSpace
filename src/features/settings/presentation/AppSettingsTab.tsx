@@ -156,6 +156,65 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                         )}
                     </Stack>
                 </Box>
+
+                <Divider />
+
+                {/* Update Settings */}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                        {t('update.updateSettings')}
+                    </Typography>
+                    <Stack spacing={2}>
+                        {/* Current Version */}
+                        <TextField
+                            fullWidth
+                            label={t('update.currentVersion')}
+                            value="v0.1.0"
+                            InputProps={{
+                                readOnly: true,
+                            }}
+                            variant="filled"
+                        />
+
+                        {/* Auto-Update Toggle */}
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={settings.autoUpdateEnabled ?? true}
+                                    onChange={(e) => onUpdate({ autoUpdateEnabled: e.target.checked })}
+                                />
+                            }
+                            label={t('update.autoUpdate')}
+                        />
+
+                        {/* Check Interval */}
+                        {(settings.autoUpdateEnabled ?? true) && (
+                            <TextField
+                                fullWidth
+                                type="number"
+                                label={t('update.checkInterval')}
+                                value={settings.updateCheckInterval ?? 24}
+                                onChange={(e) => onUpdate({ updateCheckInterval: Number(e.target.value) })}
+                                inputProps={{ min: 12, max: 168 }}
+                                helperText={t('update.checkIntervalHelper')}
+                            />
+                        )}
+
+                        {/* Manual Check Button */}
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => {
+                                // Manual check will be triggered via useUpdateController
+                                // For now, just show a notification
+                                console.log('Manual update check triggered');
+                            }}
+                            sx={{ alignSelf: 'flex-start' }}
+                        >
+                            {t('update.checkForUpdates')}
+                        </Button>
+                    </Stack>
+                </Box>
             </Stack>
         </Box>
     );
