@@ -6,6 +6,7 @@ import { AppRoutes } from './AppRoutes';
 import { MainLayout } from './shared/presentation/layouts/MainLayout';
 import { NotificationContainer } from './shared/presentation/components/NotificationContainer';
 import { UpdateNotification } from './features/update/presentation/UpdateNotification';
+import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useEffect } from 'react';
 
@@ -27,6 +28,9 @@ function App() {
     document.dir = direction;
     document.documentElement.setAttribute('lang', i18n.language);
   }, [direction, i18n.language]);
+
+  // Initialize automatic token refresh for SoluM API
+  useTokenRefresh();
 
   return (
     <ThemeProvider theme={theme}>

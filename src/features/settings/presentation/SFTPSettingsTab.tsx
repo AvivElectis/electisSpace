@@ -11,6 +11,8 @@ import {
 import TestIcon from '@mui/icons-material/Cable';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
+import { CSVStructureEditor } from '@features/configuration/presentation/CSVStructureEditor';
 import type { SettingsData } from '../domain/types';
 
 interface SFTPSettingsTabProps {
@@ -24,6 +26,7 @@ interface SFTPSettingsTabProps {
  */
 export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
     const { t } = useTranslation();
+    const { csvColumns, saveCSVStructure } = useConfigurationController();
     const [subtab, setSubtab] = useState(0);
     const [testing, setTesting] = useState(false);
 
@@ -156,19 +159,12 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                         inputProps={{ maxLength: 1 }}
                     />
 
-                    <Typography variant="body2" color="text.secondary">
-                        Column mapping configuration
-                    </Typography>
+                    <Divider />
 
-                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                            {settings.csvConfig.columns.length} columns configured
-                        </Typography>
-                    </Box>
-
-                    <Typography variant="caption" color="info.main">
-                        Advanced CSV column mapping can be configured via CSV Config editor
-                    </Typography>
+                    <CSVStructureEditor
+                        columns={csvColumns}
+                        onColumnsChange={saveCSVStructure}
+                    />
                 </Stack>
             )}
         </Box>

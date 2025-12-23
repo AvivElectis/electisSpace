@@ -2,6 +2,8 @@
  * Settings Feature Domain Types
  */
 
+import type { ArticleFormat, CSVColumn, FieldMapping } from '@features/configuration/domain/types';
+
 export interface LogoConfig {
     logo1?: string;  // Base64 encoded image
     logo2?: string;  // Base64 encoded image
@@ -16,7 +18,19 @@ export interface SettingsData {
     // Working mode
     workingMode: import('@shared/domain/types').WorkingMode;
 
-    // CSV Configuration
+    // MODE SEPARATION: Each mode has its own configuration
+    // SFTP Mode: CSV structure configuration
+    sftpCsvConfig?: {
+        delimiter: string;
+        columns: CSVColumn[];
+        mapping: FieldMapping;
+        conferenceEnabled: boolean;
+    };
+
+    // SoluM Mode: Article format schema
+    solumArticleFormat?: ArticleFormat;
+
+    // Legacy CSV Config (deprecated, keeping for migration)
     csvConfig: import('@shared/domain/types').CSVConfig;
 
     // SFTP Configuration (encrypted)

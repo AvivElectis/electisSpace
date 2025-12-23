@@ -9,6 +9,7 @@ import {
     verifySettingsPassword,
     sanitizeSettings
 } from '../domain/businessRules';
+import { login, refreshToken as refreshSolumToken, getStoreSummary } from '@shared/infrastructure/services/solumService';
 import type { SettingsData, ExportedSettings } from '../domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 
@@ -245,6 +246,118 @@ export function useSettingsController() {
         resetSettings();
     }, [resetSettings]);
 
+    /**
+     * Connect to SoluM API
+     * Authenticates and stores tokens
+     */
+    const connectToSolum = useCallback(async (): Promise<boolean> => {
+        logger.info('SettingsController', 'Connecting to SoluM API');
+
+        if (!settings.solumConfig) {
+            throw new Error('SoluM configuration is required');
+        }
+
+        try {
+            // Step 1: Authenticate with SoluM API
+            const tokens = await login(settings.solumConfig);
+
+            // Step 2: Verify connection and get store data
+            const storeSummary = await getStoreSummary(
+                settings.solumConfig,
+                settings.solumConfig.storeNumber,
+                tokens.accessToken
+            );
+
+            // Step 3: Store tokens and connection state with store data
+            updateInStore({
+                solumConfig: {
+                    ...settings.solumConfig,
+                    tokens,
+                    isConnected: true,
+                    lastConnected: Date.now(),
+                    lastRefreshed: Date.now(),
+                    storeSummary, // Store the summary data
+                },
+            });
+
+            logger.info('SettingsController', 'Connected to SoluM API successfully', {
+                store: settings.solumConfig.storeNumber,
+                totalLabels: storeSummary.totalLabelCount,
+                totalProducts: storeSummary.totalProductCount
+            });
+            return true;
+        } catch (error: any) {
+            console.error('[Connection Error]', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+            logger.error('SettingsController', 'Failed to connect to SoluM API', {
+                message: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }, [settings.solumConfig, updateInStore]);
+
+    /**
+     * Disconnect from SoluM API
+     * Clears tokens and connection state
+     */
+    const disconnectFromSolum = useCallback((): void => {
+        logger.info('SettingsController', 'Disconnecting from SoluM API');
+
+        if (!settings.solumConfig) {
+            return;
+        }
+
+        updateInStore({
+            solumConfig: {
+                ...settings.solumConfig,
+                tokens: undefined,
+                isConnected: false,
+                lastConnected: undefined,
+                lastRefreshed: undefined,
+            },
+        });
+
+        logger.info('SettingsController', 'Disconnected from SoluM API');
+    }, [settings.solumConfig, updateInStore]);
+
+    /**
+     * Refresh SoluM tokens manually
+     */
+    const refreshSolumTokens = useCallback(async (): Promise<void> => {
+        logger.info('SettingsController', 'Manually refreshing SoluM tokens');
+
+        if (!settings.solumConfig?.tokens) {
+            throw new Error('No active tokens to refresh');
+        }
+
+        try {
+            const newTokens = await refreshSolumToken(
+                settings.solumConfig,
+                settings.solumConfig.tokens.refreshToken
+            );
+
+            updateInStore({
+                solumConfig: {
+                    ...settings.solumConfig,
+                    tokens: newTokens,
+                    lastRefreshed: Date.now(),
+                },
+            });
+
+            logger.info('SettingsController', 'Tokens refreshed successfully');
+        } catch (error) {
+            logger.error('SettingsController', 'Failed to refresh tokens', error);
+
+            // Disconnect on refresh failure
+            disconnectFromSolum();
+            throw error;
+        }
+    }, [settings.solumConfig, updateInStore, disconnectFromSolum]);
+
     return {
         // State
         settings,
@@ -269,5 +382,10 @@ export function useSettingsController() {
         // Import/Export
         exportSettingsToFile,
         importSettingsFromFile,
+
+        // SoluM API Connection
+        connectToSolum,
+        disconnectFromSolum,
+        refreshSolumTokens,
     };
 }
