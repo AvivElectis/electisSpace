@@ -91,7 +91,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             maxWidth="md"
             fullWidth
             PaperProps={{
-                sx: { height: '80vh' }
+                sx: {
+                    height: '80vh',
+                    maxHeight: '800px'
+                }
             }}
         >
             <DialogTitle>

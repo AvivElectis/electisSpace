@@ -146,16 +146,7 @@ export function useUpdateController() {
         clearUpdate();
     }, [clearUpdate]);
 
-    /**
-     * Check if it's time to check for updates
-     */
-    const shouldCheckForUpdates = useCallback((): boolean => {
-        if (!settings.enabled) return false;
-        if (!settings.lastCheckTime) return true;
 
-        const hoursSinceLastCheck = (Date.now() - settings.lastCheckTime) / (1000 * 60 * 60);
-        return hoursSinceLastCheck >= settings.checkInterval;
-    }, [settings]);
 
     /**
      * Auto-check on startup and periodically
@@ -189,10 +180,15 @@ export function useUpdateController() {
     /**
      * Check on mount if needed
      */
+    /**
+     * Check on mount
+     * Requirement: Check only when app loads, ignoring intervals
+     */
     useEffect(() => {
-        if (shouldCheckForUpdates()) {
+        if (settings.enabled) {
             checkForUpdates();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount
 
     return {
