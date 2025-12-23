@@ -19,8 +19,9 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
     const settings = useSettingsStore((state) => state.settings);
 
     // Use dynamic logos or fall back to defaults
-    const leftLogo = settings.logos.logo1 || '/solum.png';
-    const rightLogo = settings.logos.logo2 || '/electis.png';
+    const leftLogo = settings.logos.logo1 || '/logos/CI_SOLUMLogo_WithClaim-Blue.png';
+    const rightLogo = settings.logos.logo2 || '/logos/logo_fixed_02.png';
+
 
     return (
         <AppBar

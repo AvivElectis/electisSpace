@@ -12,10 +12,12 @@ import {
     FormControlLabel,
     Switch,
     Slider,
+    Paper,
 } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNotifications } from '@shared/infrastructure/store/rootStore';
 import type { SettingsData } from '../domain/types';
 
 interface SolumSettingsTabProps {
@@ -29,16 +31,20 @@ interface SolumSettingsTabProps {
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
+    const { showSuccess, showError } = useNotifications();
     const [fetchingSchema, setFetchingSchema] = useState(false);
+    const [schema, setSchema] = useState<object | null>(null);
 
     const handleFetchSchema = async () => {
         setFetchingSchema(true);
         try {
             // TODO: Implement actual schema fetching from SoluM API
             await new Promise(resolve => setTimeout(resolve, 1500));
-            alert('Schema fetched successfully!');
+            const mockSchema = { format: 'example', fields: ['name', 'price', 'barcode'] };
+            setSchema(mockSchema);
+            showSuccess(t('settings.schemaFetchedSuccess'));
         } catch (error) {
-            alert(`Failed to fetch schema: ${error}`);
+            showError(t('settings.schemaFetchedError', { error: String(error) }));
         } finally {
             setFetchingSchema(false);
         }
@@ -122,7 +128,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText="Your SoluM company identifier"
+                            helperText={t('settings.companyCodeHelper')}
                         />
 
                         <TextField
@@ -141,7 +147,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText="Store identifier"
+                            helperText={t('settings.storeNumberHelper')}
                         />
 
                         <TextField
@@ -160,7 +166,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText="SoluM API username"
+                            helperText={t('settings.usernameHelper')}
                         />
 
                         <TextField
@@ -180,8 +186,24 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText="SoluM API password"
+                            helperText={t('settings.passwordHelper')}
                         />
+
+                        <Button
+                            variant="contained"
+                            onClick={async () => {
+                                try {
+                                    // TODO: Implement actual connection test
+                                    await new Promise(resolve => setTimeout(resolve, 1000));
+                                    showSuccess(t('settings.connectionSuccess'));
+                                } catch (error) {
+                                    showError(t('settings.connectionError', { error: String(error) }));
+                                }
+                            }}
+                            fullWidth
+                        >
+                            {t('settings.testConnection')}
+                        </Button>
                     </Stack>
                 </Box>
 
@@ -195,7 +217,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     <Stack spacing={2}>
                         <Box>
                             <Typography variant="body2" gutterBottom>
-                                Sync Interval: {settings.solumConfig?.syncInterval || 60} seconds
+                                {t('settings.syncIntervalLabel', { interval: settings.solumConfig?.syncInterval || 60 })}
                             </Typography>
                             <Slider
                                 value={settings.solumConfig?.syncInterval || 60}
@@ -212,23 +234,37 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     }
                                 })}
                                 min={30}
-                                max={600}
-                                step={30}
+                                max={180}
+                                step={15}
                                 marks={[
                                     { value: 30, label: '30s' },
-                                    { value: 300, label: '5m' },
-                                    { value: 600, label: '10m' },
+                                    { value: 60, label: '1m' },
+                                    { value: 120, label: '2m' },
+                                    { value: 180, label: '3m' },
                                 ]}
                             />
                         </Box>
 
                         <FormControlLabel
-                            control={<Switch />}
+                            control={
+                                <Switch
+                                    checked={settings.csvConfig?.conferenceEnabled || false}
+                                    onChange={(e) => onUpdate({
+                                        csvConfig: {
+                                            ...settings.csvConfig,
+                                            delimiter: settings.csvConfig?.delimiter || ',',
+                                            columns: settings.csvConfig?.columns || [],
+                                            mapping: settings.csvConfig?.mapping || {},
+                                            conferenceEnabled: e.target.checked,
+                                        }
+                                    })}
+                                />
+                            }
                             label={t('settings.simpleConferenceMode')}
                         />
 
                         <Typography variant="caption" color="text.secondary">
-                            When enabled, conference rooms show only Occupied/Available toggle
+                            {t('settings.simpleConferenceModeDesc')}
                         </Typography>
                     </Stack>
                 </Box>
@@ -252,8 +288,19 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     </Button>
 
                     <Typography variant="caption" color="info.main" sx={{ mt: 1, display: 'block' }}>
-                        Fetches the current article format configuration from SoluM API
+                        {t('settings.fetchesConfig')}
                     </Typography>
+
+                    {schema && (
+                        <Paper sx={{ mt: 2, p: 2, bgcolor: 'grey.50' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                                {t('settings.fetchedSchema')}
+                            </Typography>
+                            <Box component="pre" sx={{ m: 0, fontSize: '0.75rem', overflow: 'auto' }}>
+                                {JSON.stringify(schema, null, 2)}
+                            </Box>
+                        </Paper>
+                    )}
                 </Box>
             </Stack>
         </Box>

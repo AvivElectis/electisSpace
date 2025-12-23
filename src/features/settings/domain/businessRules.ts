@@ -85,11 +85,21 @@ export function createDefaultSettings(): SettingsData {
             mapping: {},
             conferenceEnabled: false,
         },
+        solumConfig: {
+            companyName: '',
+            username: '',
+            password: '',
+            storeNumber: '',
+            cluster: 'common',
+            baseUrl: 'https://eu.common.solumesl.com',
+            syncInterval: 60,
+        },
         logos: {},
         autoSyncEnabled: false,
         autoSyncInterval: 300,  // 5 minutes
     };
 }
+
 
 /**
  * Hash settings password for storage

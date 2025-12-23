@@ -224,6 +224,35 @@ export function SecuritySettingsTab({
                         Coming soon: Automatically lock app after period of inactivity
                     </Typography>
                 </Box>
+
+                <Divider />
+
+                {/* Clear Storage */}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                        {t('settings.clearAppData')}
+                    </Typography>
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                        {t('settings.clearStorageWarning')}
+                    </Alert>
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                            if (window.confirm(t('settings.clearStorageConfirm'))) {
+                                // Clear all localStorage
+                                localStorage.clear();
+                                // Reload the page
+                                window.location.reload();
+                            }
+                        }}
+                    >
+                        {t('settings.clearAllStorage')}
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                        {t('settings.clearStorageHelper')}
+                    </Typography>
+                </Box>
             </Stack>
         </Box>
     );
