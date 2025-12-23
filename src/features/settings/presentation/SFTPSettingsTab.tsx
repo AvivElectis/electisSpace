@@ -44,86 +44,88 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
     };
 
     return (
-        <Box sx={{ px: 3 }}>
+        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
             {/* Sub-tabs */}
-            <Tabs value={subtab} onChange={(_, val) => setSubtab(val)} sx={{ mb: 3 }}>
+            <Tabs value={subtab} onChange={(_, val) => setSubtab(val)} sx={{ mb: 2 }}>
                 <Tab label={t('settings.connection')} />
                 <Tab label={t('settings.csvStructure')} />
             </Tabs>
 
             {/* Connection Tab */}
             {subtab === 0 && (
-                <Stack spacing={3}>
-                    <Typography variant="subtitle2" color="text.secondary">
+                <Stack spacing={2}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                         SFTP Server Configuration
                     </Typography>
 
-                    <TextField
-                        fullWidth
-                        label={t('settings.username')}
-                        value={settings.sftpCredentials?.username || ''}
-                        onChange={(e) => onUpdate({
-                            sftpCredentials: {
-                                ...settings.sftpCredentials,
-                                username: e.target.value,
-                                password: settings.sftpCredentials?.password || '',
-                                host: settings.sftpCredentials?.host || '',
-                                remoteFilename: settings.sftpCredentials?.remoteFilename || '',
-                            }
-                        })}
-                        helperText="SFTP server username"
-                    />
+                    <Stack spacing={1.5}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={t('settings.username')}
+                            value={settings.sftpCredentials?.username || ''}
+                            onChange={(e) => onUpdate({
+                                sftpCredentials: {
+                                    ...settings.sftpCredentials,
+                                    username: e.target.value,
+                                    password: settings.sftpCredentials?.password || '',
+                                    host: settings.sftpCredentials?.host || '',
+                                    remoteFilename: settings.sftpCredentials?.remoteFilename || '',
+                                }
+                            })}
+                        />
 
-                    <TextField
-                        fullWidth
-                        type="password"
-                        label={t('settings.password')}
-                        value={settings.sftpCredentials?.password || ''}
-                        onChange={(e) => onUpdate({
-                            sftpCredentials: {
-                                ...settings.sftpCredentials,
-                                username: settings.sftpCredentials?.username || '',
-                                password: e.target.value,
-                                host: settings.sftpCredentials?.host || '',
-                                remoteFilename: settings.sftpCredentials?.remoteFilename || '',
-                            }
-                        })}
-                        helperText="SFTP server password"
-                    />
+                        <TextField
+                            fullWidth
+                            size="small"
+                            type="password"
+                            label={t('settings.password')}
+                            value={settings.sftpCredentials?.password || ''}
+                            onChange={(e) => onUpdate({
+                                sftpCredentials: {
+                                    ...settings.sftpCredentials,
+                                    username: settings.sftpCredentials?.username || '',
+                                    password: e.target.value,
+                                    host: settings.sftpCredentials?.host || '',
+                                    remoteFilename: settings.sftpCredentials?.remoteFilename || '',
+                                }
+                            })}
+                        />
 
-                    <TextField
-                        fullWidth
-                        label={t('settings.host')}
-                        value={settings.sftpCredentials?.host || ''}
-                        onChange={(e) => onUpdate({
-                            sftpCredentials: {
-                                ...settings.sftpCredentials,
-                                username: settings.sftpCredentials?.username || '',
-                                password: settings.sftpCredentials?.password || '',
-                                host: e.target.value,
-                                remoteFilename: settings.sftpCredentials?.remoteFilename || '',
-                            }
-                        })}
-                        helperText="SFTP server hostname or IP"
-                        placeholder="sftp.example.com"
-                    />
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={t('settings.host')}
+                            value={settings.sftpCredentials?.host || ''}
+                            onChange={(e) => onUpdate({
+                                sftpCredentials: {
+                                    ...settings.sftpCredentials,
+                                    username: settings.sftpCredentials?.username || '',
+                                    password: settings.sftpCredentials?.password || '',
+                                    host: e.target.value,
+                                    remoteFilename: settings.sftpCredentials?.remoteFilename || '',
+                                }
+                            })}
+                            placeholder="sftp.example.com"
+                        />
 
-                    <TextField
-                        fullWidth
-                        label={t('settings.remoteFilename')}
-                        value={settings.sftpCredentials?.remoteFilename || ''}
-                        onChange={(e) => onUpdate({
-                            sftpCredentials: {
-                                ...settings.sftpCredentials,
-                                username: settings.sftpCredentials?.username || '',
-                                password: settings.sftpCredentials?.password || '',
-                                host: settings.sftpCredentials?.host || '',
-                                remoteFilename: e.target.value,
-                            }
-                        })}
-                        helperText="CSV filename on SFTP server"
-                        placeholder="spaces.csv"
-                    />
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={t('settings.remoteFilename')}
+                            value={settings.sftpCredentials?.remoteFilename || ''}
+                            onChange={(e) => onUpdate({
+                                sftpCredentials: {
+                                    ...settings.sftpCredentials,
+                                    username: settings.sftpCredentials?.username || '',
+                                    password: settings.sftpCredentials?.password || '',
+                                    host: settings.sftpCredentials?.host || '',
+                                    remoteFilename: e.target.value,
+                                }
+                            })}
+                            placeholder="spaces.csv"
+                        />
+                    </Stack>
 
                     <Divider />
 
@@ -132,6 +134,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                         startIcon={<TestIcon />}
                         onClick={handleTestConnection}
                         disabled={testing}
+                        sx={{ alignSelf: 'flex-start' }}
                     >
                         {testing ? t('common.loading') : t('settings.testConnection')}
                     </Button>
@@ -140,13 +143,14 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
             {/* CSV Structure Tab */}
             {subtab === 1 && (
-                <Stack spacing={3}>
-                    <Typography variant="subtitle2" color="text.secondary">
+                <Stack spacing={2}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                         CSV File Structure
                     </Typography>
 
                     <TextField
                         fullWidth
+                        size="small"
                         label={t('settings.delimiter')}
                         value={settings.csvConfig.delimiter}
                         onChange={(e) => onUpdate({

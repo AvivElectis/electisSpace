@@ -69,8 +69,8 @@ export function UpdateNotification() {
         <>
             <Snackbar
                 open={open}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                autoHideDuration={null}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} // RTL might swap this visually if theme is RTL
+                autoHideDuration={60000} // 1 minute
                 onClose={(_event, reason) => {
                     if (reason === 'clickaway') {
                         return;
@@ -84,6 +84,8 @@ export function UpdateNotification() {
                     sx={{
                         width: '400px',
                         maxWidth: '90vw',
+                        // Ensure RTL friendly text alignment if not handled by theme
+                        textAlign: 'start',
                     }}
                     action={null}
                 >

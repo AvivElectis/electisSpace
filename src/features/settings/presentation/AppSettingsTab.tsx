@@ -30,16 +30,17 @@ interface AppSettingsTabProps {
 export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSettingsTabProps) {
     const { t } = useTranslation();
     return (
-        <Box sx={{ px: 3 }}>
-            <Stack spacing={3}>
+        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
+            <Stack spacing={2}>
                 {/* Application Info */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.applicationInfo')}
                     </Typography>
-                    <Stack spacing={2}>
+                    <Stack spacing={1.5}>
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('settings.applicationName')}
                             value={settings.appName}
                             onChange={(e) => onUpdate({ appName: e.target.value })}
@@ -47,6 +48,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                         />
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('settings.applicationSubtitle')}
                             value={settings.appSubtitle}
                             onChange={(e) => onUpdate({ appSubtitle: e.target.value })}
@@ -59,10 +61,10 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
 
                 {/* Space Type */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.spaceTypeConfig')}
                     </Typography>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth size="small">
                         <InputLabel>{t('settings.spaceType')}</InputLabel>
                         <Select
                             value={settings.spaceType}
@@ -75,7 +77,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
                         </Select>
                     </FormControl>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                         {t('settings.affectsLabels')}
                     </Typography>
                 </Box>
@@ -84,11 +86,11 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
 
                 {/* Working Mode */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.syncMode')}
                     </Typography>
 
-                    <FormControl fullWidth>
+                    <FormControl fullWidth size="small">
                         <InputLabel>{t('settings.workingMode')}</InputLabel>
                         <Select
                             value={settings.workingMode}
@@ -101,15 +103,17 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                     </FormControl>
 
                     {/* Mode Info Alert */}
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                        <strong>
-                            {settings.workingMode === 'SFTP' ? t('settings.sftpModeActive') : t('settings.solumModeActive')}
-                        </strong>
-                        <br />
-                        {settings.workingMode === 'SFTP'
-                            ? t('settings.usingCsvSync')
-                            : t('settings.usingSolumApi')
-                        }
+                    <Alert severity="info" sx={{ mt: 1.5, py: 0, px: 2 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                            <strong>
+                                {settings.workingMode === 'SFTP' ? t('settings.sftpModeActive') : t('settings.solumModeActive')}
+                            </strong>
+                            {' - '}
+                            {settings.workingMode === 'SFTP'
+                                ? t('settings.usingCsvSync')
+                                : t('settings.usingSolumApi')
+                            }
+                        </Typography>
                     </Alert>
 
                     {/* Navigate to Mode Settings */}
@@ -119,7 +123,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             color="primary"
                             endIcon={<ArrowForwardIcon />}
                             onClick={() => onNavigateToTab(settings.workingMode === 'SFTP' ? 1 : 2)}
-                            sx={{ mt: 2 }}
+                            sx={{ mt: 1, width: 'fit-content' }}
                         >
                             {t('settings.goToSettings').replace('{mode}', settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM')}
                         </Button>
@@ -130,22 +134,24 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
 
                 {/* Auto-Sync */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.autoSyncSettings')}
                     </Typography>
-                    <Stack spacing={2}>
+                    <Stack spacing={1.5}>
                         <FormControlLabel
                             control={
                                 <Switch
+                                    size="small"
                                     checked={settings.autoSyncEnabled}
                                     onChange={(e) => onUpdate({ autoSyncEnabled: e.target.checked })}
                                 />
                             }
-                            label={t('settings.enableAutoSync')}
+                            label={<Typography variant="body2">{t('settings.enableAutoSync')}</Typography>}
                         />
                         {settings.autoSyncEnabled && (
                             <TextField
                                 fullWidth
+                                size="small"
                                 type="number"
                                 label={t('settings.autoSyncInterval')}
                                 value={settings.autoSyncInterval}
@@ -161,13 +167,14 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
 
                 {/* Update Settings */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('update.updateSettings')}
                     </Typography>
-                    <Stack spacing={2}>
+                    <Stack spacing={1.5}>
                         {/* Current Version */}
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('update.currentVersion')}
                             value="v0.1.0"
                             InputProps={{
@@ -180,25 +187,16 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                         <FormControlLabel
                             control={
                                 <Switch
+                                    size="small"
                                     checked={settings.autoUpdateEnabled ?? true}
                                     onChange={(e) => onUpdate({ autoUpdateEnabled: e.target.checked })}
                                 />
                             }
-                            label={t('update.autoUpdate')}
+                            label={<Typography variant="body2">{t('update.autoUpdate')}</Typography>}
                         />
 
-                        {/* Check Interval */}
-                        {(settings.autoUpdateEnabled ?? true) && (
-                            <TextField
-                                fullWidth
-                                type="number"
-                                label={t('update.checkInterval')}
-                                value={settings.updateCheckInterval ?? 24}
-                                onChange={(e) => onUpdate({ updateCheckInterval: Number(e.target.value) })}
-                                inputProps={{ min: 12, max: 168 }}
-                                helperText={t('update.checkIntervalHelper')}
-                            />
-                        )}
+                        {/* Check Interval - Removed as we only check on load */}
+
 
                         {/* Manual Check Button */}
                         <Button

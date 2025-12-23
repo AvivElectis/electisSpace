@@ -110,6 +110,8 @@ export function ArticleFormatEditor({
                     border: '1px solid',
                     borderColor: 'divider',
                     borderRadius: 1,
+                    direction: 'ltr', // Force LTR for code/json
+                    textAlign: 'left',
                     '& .jse-main': {
                         borderRadius: 1,
                     }

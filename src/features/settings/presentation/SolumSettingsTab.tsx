@@ -11,7 +11,6 @@ import {
     MenuItem,
     FormControlLabel,
     Switch,
-    Slider,
     Alert,
 } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
@@ -53,15 +52,15 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     };
 
     return (
-        <Box sx={{ px: 3 }}>
-            <Stack spacing={3}>
+        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
+            <Stack spacing={2}>
                 {/* API Configuration */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.solumApiConfig')}
                     </Typography>
-                    <Stack spacing={2}>
-                        <FormControl fullWidth>
+                    <Stack spacing={1.5}>
+                        <FormControl fullWidth size="small">
                             <InputLabel>{t('settings.apiCluster')}</InputLabel>
                             <Select
                                 value={settings.solumConfig?.cluster || 'common'}
@@ -86,6 +85,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('settings.baseUrl')}
                             value={settings.solumConfig?.baseUrl || ''}
                             onChange={(e) => onUpdate({
@@ -101,7 +101,6 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                 }
                             })}
                             placeholder="https://eu.common.solumesl.com"
-                            helperText={t('settings.baseUrlHelper')}
                         />
                     </Stack>
                 </Box>
@@ -110,12 +109,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                 {/* Credentials */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.authentication')}
                     </Typography>
-                    <Stack spacing={2}>
+                    <Stack spacing={1.5}>
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('settings.companyCode')}
                             value={settings.solumConfig?.companyName || ''}
                             onChange={(e) => onUpdate({
@@ -130,11 +130,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText={t('settings.companyCodeHelper')}
                         />
 
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('settings.storeNumber')}
                             value={settings.solumConfig?.storeNumber || ''}
                             onChange={(e) => onUpdate({
@@ -149,11 +149,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText={t('settings.storeNumberHelper')}
                         />
 
                         <TextField
                             fullWidth
+                            size="small"
                             label={t('settings.username')}
                             value={settings.solumConfig?.username || ''}
                             onChange={(e) => onUpdate({
@@ -168,11 +168,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText={t('settings.usernameHelper')}
                         />
 
                         <TextField
                             fullWidth
+                            size="small"
                             type="password"
                             label={t('settings.password')}
                             value={settings.solumConfig?.password || ''}
@@ -188,12 +188,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     syncInterval: settings.solumConfig?.syncInterval || 60,
                                 }
                             })}
-                            helperText={t('settings.passwordHelper')}
                         />
 
                         {settings.solumConfig?.isConnected ? (
                             <>
-                                <Alert severity="success" sx={{ mb: 1 }}>
+                                <Alert severity="success" sx={{ py: 0, px: 2, alignItems: 'center' }}>
                                     {t('settings.connectedToSolum')}
                                 </Alert>
                                 <Button
@@ -203,7 +202,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         disconnectFromSolum();
                                         showSuccess(t('settings.disconnected'));
                                     }}
-                                    fullWidth
+                                    sx={{ width: 'fit-content' }}
                                 >
                                     {t('settings.disconnect')}
                                 </Button>
@@ -225,7 +224,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     }
                                 }}
                                 disabled={connecting}
-                                fullWidth
+                                sx={{ width: 'fit-content' }}
                             >
                                 {connecting ? t('settings.connecting') : t('settings.connect')}
                             </Button>
@@ -237,17 +236,17 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                 {/* Sync Settings */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.synchronization')}
                     </Typography>
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography variant="body2" gutterBottom>
-                                {t('settings.syncIntervalLabel', { interval: settings.solumConfig?.syncInterval || 60 })}
-                            </Typography>
-                            <Slider
+                    <Stack spacing={1.5}>
+                        <FormControl fullWidth size="small">
+                            <InputLabel id="sync-interval-label">{t('settings.syncInterval')}</InputLabel>
+                            <Select
+                                labelId="sync-interval-label"
                                 value={settings.solumConfig?.syncInterval || 60}
-                                onChange={(_, value) => onUpdate({
+                                label={t('settings.syncInterval')}
+                                onChange={(e) => onUpdate({
                                     solumConfig: {
                                         ...settings.solumConfig,
                                         companyName: settings.solumConfig?.companyName || '',
@@ -256,24 +255,24 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         storeNumber: settings.solumConfig?.storeNumber || '',
                                         cluster: settings.solumConfig?.cluster || 'common',
                                         baseUrl: settings.solumConfig?.baseUrl || '',
-                                        syncInterval: value as number,
+                                        syncInterval: Number(e.target.value),
                                     }
                                 })}
-                                min={30}
-                                max={180}
-                                step={15}
-                                marks={[
-                                    { value: 30, label: '30s' },
-                                    { value: 60, label: '1m' },
-                                    { value: 120, label: '2m' },
-                                    { value: 180, label: '3m' },
-                                ]}
-                            />
-                        </Box>
+                            >
+                                <MenuItem value={30}>30s</MenuItem>
+                                <MenuItem value={60}>1m</MenuItem>
+                                <MenuItem value={300}>5m</MenuItem>
+                                <MenuItem value={600}>10m</MenuItem>
+                                <MenuItem value={1800}>30m</MenuItem>
+                                <MenuItem value={3600}>1h</MenuItem>
+                                <MenuItem value={10800}>3h</MenuItem>
+                            </Select>
+                        </FormControl>
 
                         <FormControlLabel
                             control={
                                 <Switch
+                                    size="small"
                                     checked={settings.csvConfig?.conferenceEnabled || false}
                                     onChange={(e) => onUpdate({
                                         csvConfig: {
@@ -286,10 +285,10 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     })}
                                 />
                             }
-                            label={t('settings.simpleConferenceMode')}
+                            label={<Typography variant="body2">{t('settings.simpleConferenceMode')}</Typography>}
                         />
 
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: '-8px !important', ml: '38px !important' }}>
                             {t('settings.simpleConferenceModeDesc')}
                         </Typography>
                     </Stack>
@@ -299,7 +298,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                 {/* Schema */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.articleFormatSchema')}
                     </Typography>
 
@@ -308,13 +307,12 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         startIcon={<CloudSyncIcon />}
                         onClick={handleFetchSchema}
                         disabled={fetchingSchema || !settings.solumConfig?.isConnected}
-                        fullWidth
-                        sx={{ mb: 2 }}
+                        sx={{ mb: 1, width: 'fit-content' }}
                     >
                         {fetchingSchema ? t('settings.fetchingSchema') : t('settings.fetchArticleSchema')}
                     </Button>
 
-                    <Typography variant="caption" color="info.main" sx={{ mb: 2, display: 'block' }}>
+                    <Typography variant="caption" color="info.main" sx={{ mb: 1, display: 'block' }}>
                         {t('settings.fetchesConfig')}
                     </Typography>
 

@@ -107,10 +107,10 @@ export function SecuritySettingsTab({
     const strength = getPasswordStrength(newPassword);
 
     return (
-        <Box sx={{ px: 3 }}>
-            <Stack spacing={3}>
+        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
+            <Stack spacing={2}>
                 {/* Status */}
-                <Alert severity={isLocked ? 'warning' : 'info'}>
+                <Alert severity={isLocked ? 'warning' : 'info'} sx={{ py: 0, px: 2, alignItems: 'center' }}>
                     {isLocked
                         ? '🔒 App is currently locked'
                         : isPasswordProtected
@@ -121,7 +121,7 @@ export function SecuritySettingsTab({
 
                 {/* Error */}
                 {error && (
-                    <Alert severity="error" onClose={() => setError(null)}>
+                    <Alert severity="error" onClose={() => setError(null)} sx={{ py: 0, px: 2 }}>
                         {error}
                     </Alert>
                 )}
@@ -129,23 +129,25 @@ export function SecuritySettingsTab({
                 {/* Set/Change Password */}
                 {!isLocked && (
                     <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                             {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
                         </Typography>
-                        <Stack spacing={2}>
+                        <Stack spacing={1.5}>
                             <TextField
                                 fullWidth
+                                size="small"
                                 type="password"
                                 label={t('settings.newPassword')}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 helperText={strength.text}
                                 FormHelperTextProps={{
-                                    sx: { color: `${strength.color}.main` }
+                                    sx: { color: `${strength.color}.main`, m: 0 }
                                 }}
                             />
                             <TextField
                                 fullWidth
+                                size="small"
                                 type="password"
                                 label={t('settings.confirmPassword')}
                                 value={confirmPassword}
@@ -155,6 +157,7 @@ export function SecuritySettingsTab({
                                 variant="contained"
                                 onClick={handleSetPassword}
                                 disabled={!newPassword || !confirmPassword}
+                                sx={{ width: 'fit-content' }}
                             >
                                 {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
                             </Button>
@@ -166,14 +169,15 @@ export function SecuritySettingsTab({
 
                 {/* Lock/Unlock */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.unlockSettings')}
                     </Typography>
 
                     {isLocked ? (
-                        <Stack spacing={2}>
+                        <Stack spacing={1.5}>
                             <TextField
                                 fullWidth
+                                size="small"
                                 type="password"
                                 label={t('settings.enterPasswordToUnlock')}
                                 value={unlockPassword}
@@ -185,6 +189,7 @@ export function SecuritySettingsTab({
                                 startIcon={<LockOpenIcon />}
                                 onClick={handleUnlock}
                                 disabled={!unlockPassword}
+                                sx={{ width: 'fit-content' }}
                             >
                                 {t('settings.unlock')} App
                             </Button>
@@ -196,6 +201,7 @@ export function SecuritySettingsTab({
                             startIcon={<LockIcon />}
                             onClick={handleLock}
                             disabled={!isPasswordProtected}
+                            sx={{ width: 'fit-content' }}
                         >
                             {t('settings.lock')} App
                         </Button>
@@ -213,12 +219,12 @@ export function SecuritySettingsTab({
 
                 {/* Additional Options */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.autoLockSettings')}
                     </Typography>
                     <FormControlLabel
-                        control={<Switch disabled />}
-                        label={t('settings.autoLockAfterInactivity')}
+                        control={<Switch size="small" disabled />}
+                        label={<Typography variant="body2">{t('settings.autoLockAfterInactivity')}</Typography>}
                     />
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4 }}>
                         Coming soon: Automatically lock app after period of inactivity
@@ -229,10 +235,10 @@ export function SecuritySettingsTab({
 
                 {/* Clear Storage */}
                 <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.clearAppData')}
                     </Typography>
-                    <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Alert severity="warning" sx={{ mb: 1.5, py: 0, px: 2 }}>
                         {t('settings.clearStorageWarning')}
                     </Alert>
                     <Button

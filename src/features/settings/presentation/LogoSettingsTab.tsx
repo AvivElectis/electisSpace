@@ -126,7 +126,6 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
                         }}
                     />
                     <Button
-                        size="small"
                         startIcon={<UploadIcon />}
                         onClick={() => inputRef.current?.click()}
                     >
@@ -134,7 +133,6 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
                     </Button>
                     {logo && (
                         <IconButton
-                            size="small"
                             color="error"
                             onClick={() => handleDelete(logoIndex)}
                         >
@@ -147,16 +145,16 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
     };
 
     return (
-        <Box sx={{ px: 3 }}>
-            <Stack spacing={3}>
+        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
+            <Stack spacing={2}>
                 {/* Info */}
-                <Alert severity="info">
-                    {t('settings.recommendedFormat')}
+                <Alert severity="info" sx={{ py: 0, px: 2 }}>
+                    <Typography variant="body2">{t('settings.recommendedFormat')}</Typography>
                 </Alert>
 
                 {/* Error */}
                 {error && (
-                    <Alert severity="error" onClose={() => setError(null)}>
+                    <Alert severity="error" onClose={() => setError(null)} sx={{ py: 0, px: 2 }}>
                         {error}
                     </Alert>
                 )}
