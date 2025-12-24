@@ -122,3 +122,68 @@ export function validateSettings(settings: Partial<SettingsData>): ValidationRes
         errors,
     };
 }
+
+/**
+ * Validate SoluM Mapping Configuration
+ */
+export function validateSolumMappingConfig(
+    config: Partial<import('./types').SolumMappingConfig> | undefined,
+    availableFields: string[]
+): ValidationResult {
+    const errors: ValidationError[] = [];
+
+    if (!config) {
+        errors.push({ field: 'solumMappingConfig', message: 'SoluM mapping configuration is required' });
+        return { valid: false, errors };
+    }
+
+    // Validate uniqueIdField
+    if (!config.uniqueIdField || config.uniqueIdField.trim() === '') {
+        errors.push({ field: 'uniqueIdField', message: 'Unique ID field is required' });
+    } else if (!availableFields.includes(config.uniqueIdField)) {
+        errors.push({ field: 'uniqueIdField', message: `Field "${config.uniqueIdField}" does not exist in article format` });
+    }
+
+    // Validate fields mapping
+    if (!config.fields || Object.keys(config.fields).length === 0) {
+        errors.push({ field: 'fields', message: 'At least one field mapping is required' });
+    } else {
+        Object.entries(config.fields).forEach(([fieldKey, mapping]) => {
+            if (!availableFields.includes(fieldKey)) {
+                errors.push({ field: `fields.${fieldKey}`, message: `Field "${fieldKey}" does not exist in article format` });
+            }
+            if (!mapping.friendlyNameEn || mapping.friendlyNameEn.trim() === '') {
+                errors.push({ field: `fields.${fieldKey}.friendlyNameEn`, message: 'English name is required' });
+            }
+            if (!mapping.friendlyNameHe || mapping.friendlyNameHe.trim() === '') {
+                errors.push({ field: `fields.${fieldKey}.friendlyNameHe`, message: 'Hebrew name is required' });
+            }
+        });
+    }
+
+    // Validate conference mapping
+    if (config.conferenceMapping) {
+        if (!config.conferenceMapping.meetingName || config.conferenceMapping.meetingName.trim() === '') {
+            errors.push({ field: 'conferenceMapping.meetingName', message: 'Meeting name field is required' });
+        } else if (!availableFields.includes(config.conferenceMapping.meetingName)) {
+            errors.push({ field: 'conferenceMapping.meetingName', message: `Field "${config.conferenceMapping.meetingName}" does not exist` });
+        }
+
+        if (!config.conferenceMapping.meetingTime || config.conferenceMapping.meetingTime.trim() === '') {
+            errors.push({ field: 'conferenceMapping.meetingTime', message: 'Meeting time field is required' });
+        } else if (!availableFields.includes(config.conferenceMapping.meetingTime)) {
+            errors.push({ field: 'conferenceMapping.meetingTime', message: `Field "${config.conferenceMapping.meetingTime}" does not exist` });
+        }
+
+        if (!config.conferenceMapping.participants || config.conferenceMapping.participants.trim() === '') {
+            errors.push({ field: 'conferenceMapping.participants', message: 'Participants field is required' });
+        } else if (!availableFields.includes(config.conferenceMapping.participants)) {
+            errors.push({ field: 'conferenceMapping.participants', message: `Field "${config.conferenceMapping.participants}" does not exist` });
+        }
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors
+    };
+}

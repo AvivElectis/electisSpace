@@ -423,48 +423,84 @@ SoluM API requires Bearer token authentication with automatic refresh. Current i
 **Estimated Effort:** ~8-10 hours
 
 **Problem Statement:**
-SoluM integration requires flexible data mapping to transform generic "articles" into specific "Spaces" (Products) and "Conference Rooms" (Labels).
-Currently, the app lacks:
-1.  Way to select which field acts as the Unique ID.
-2.  Friendly naming for columns (English/Hebrew).
-3.  Segregation of Conference Rooms (ID starting with "C") from regular Spaces.
-4.  Specific mapping for Conference fields (Meeting Name, Time, Participants).
-5.  Automatic syncing on load.
+## Phase 6: SoluM Advanced Data Mapping & Architecture Refactor
 
-**Architecture Refactor:**
-To avoid complexity, we will separate UI components by mode:
-- **SpacesPage**: Switches between `SFTPSpacesView` and `SolumSpacesView`.
-- **ConferencePage**: Switches between `SFTPConferenceView` and `SolumConferenceView`.
+**Status**: Phase 6 - In Progress (Dec 24, 2024)
+**Estimated Completion**: 85% complete
 
-**Implementation Plan:**
+### Overview
+Implement flexible data mapping for SoluM articles with proper separation between Spaces and Conference Rooms. Split SoluM configuration UI into nested tabs for better UX.
 
-#### 6.1 Domain & Configuration (2h)
-- Add `SolumMappingConfig` to Settings:
-  - `uniqueIdField`: Selector for the ID column.
-  - `fields`: Map of field keys to `{ friendlyNameHe, friendlyNameEn, visible }`.
-  - `conferenceMapping`: Selectors for `meetingName`, `meetingTime`, `participants` fields.
-- Default segregation rule: **IDs starting with "C" = Conference Room**.
+### 6.1 Domain & Configuration ✓
 
-#### 6.2 Settings UI (3h)
-- **Field Mapping Editor**: Table to rename and toggle visibility of SoluM fields.
-- **Unique ID Selector**: Dropdown.
-- **Conference Mapper**: 3 Dropdowns for meeting details.
-- **Input Locking**: Disable all configuration inputs (cluster, URL, creds) and mapping editors when `isConnected` is true. Users must "Disconnect" to edit.
+**Files**:
+- [COMPLETED] `src/features/settings/domain/types.ts` - Added `SolumMappingConfig`, `SolumFieldMapping`, and `globalFieldAssignments`
+- [COMPLETED] `src/features/settings/domain/validation.ts` - Added `validateSolumMappingConfig`
 
-#### 6.3 Application Logic (2h)
-- Update `useSpaceController`:
-  - Fetch all articles.
-  - **Filter OUT** IDs starting with "C".
-  - Map remaining to `Space` objects using friendly names.
-- Update `useConferenceController`:
-  - Fetch all articles.
-  - **Filter IN** IDs starting with "C".
-  - Map to `ConferenceRoom` (parse Time "START-END", split Participants by comma).
+**Features**:
+- ✅ Unique ID field selection
+- ✅ Friendly names (English + Hebrew) for each field
+- ✅ Visibility toggle for fields
+- ✅ Conference-specific field mapping (meeting name, time, participants)
+- ✅ Global field assignments for permanent values
 
-#### 6.4 Presentation Layer (3h)
-- Create `SolumSpacesView`: Auto-sync on mount, dynamic columns.
-- Create `SolumConferenceView`: Auto-sync on mount, read-only cards (synced).
-- Refactor main pages to switch views based on `workingMode`.
+### 6.2 Settings UI Components ✓
+
+**Files**:
+- [COMPLETED] `src/features/settings/presentation/SolumSettingsTab.tsx` - Nested tabs (Connection, Field Mapping)
+- [COMPLETED] `src/features/settings/presentation/SolumFieldMappingTable.tsx` - Field mapping editor with exclusions
+- [COMPLETED] `src/features/settings/presentation/SolumMappingSelectors.tsx` - Unique ID & conference selectors
+- [COMPLETED] `src/features/settings/presentation/SolumGlobalFieldsEditor.tsx` - Global assignments UI
+- [COMPLETED] `src/features/settings/presentation/SettingsDialog.tsx` - Removed save/cancel (instant save)
+- [COMPLETED] `src/locales/en/common.json` & `src/locales/he/common.json` - All translations added
+
+**Features**:
+- ✅ Nested tabs: Connection tab & Field Mapping tab
+- ✅ Field Mapping tab disabled when not connected
+- ✅ Inverted lock logic: credentials locked when connected, mapping editable when connected
+- ✅ Only `articleData` fields shown (not `articleBasicInfo`)
+- ✅ Global field assignments UI
+- ✅ Fields with global assignments excluded from mapping table
+- ✅ Instant save (no save/cancel buttons)
+
+### 6.3 Application Logic - IN PROGRESS
+
+**Files**:
+- [COMPLETED] `src/features/space/application/useSpaceController.ts` - `fetchFromSolum` method
+- [COMPLETED] `src/features/conference/application/useConferenceController.ts` - `fetchFromSolum` method
+- [IN PROGRESS] Article format editor save functionality
+- [TODO] Apply friendly names in UI display
+- [TODO] Apply global field assignments to fetched articles
+- [TODO] Handle unique ID field display
+
+**Remaining Work**:
+1. **Article Format Editor** - Fix save functionality, clear mapping/global data on schema change
+2. **UI Display** - Use friendly names (EN/HE) instead of raw field keys in Spaces/Conference UI
+3. **Unique ID Handling** - Exclude from mapping table, show as "Unique ID" in UI, strip "C" prefix for conferences
+
+### 6.4 Integration & Testing - NOT STARTED
+
+- [ ] Test end-to-end flow: fetch schema → map fields → sync articles → display in UI
+- [ ] Verify friendly names display correctly
+- [ ] Verify conference room segregation (IDs starting with "C")
+- [ ] Verify global assignments apply to all articles
+- [ ] Test schema update workflow
+
+### 6.5 Mode Switching Safety ✓
+
+**Files**:
+- [COMPLETED] Mode switching prompts implemented in `AppSettingsTab.tsx`
+
+--- File: `settings/presentation/AppSettingsTab.tsx`
+- Detect mode change in working mode dropdown
+- Check for existing data:
+  - **SFTP mode**: Check if `sftpCredentials` or `sftpCsvConfig` exists
+  - **SoluM mode**: Check if `solumConfig.isConnected` or `solumMappingConfig` exists
+- **If data exists**: Show confirmation dialog
+  - Message: "Switching modes will disconnect and clear [current mode] configuration. Continue?"
+  - Cancel: Revert mode selection
+  - Confirm: Disconnect (if SoluM) + clear mode-specific settings
+- **If no data**: Switch silently without prompt
 
 **Completion Date:** Expected Dec 24-25, 2024
 
