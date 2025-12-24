@@ -3,6 +3,7 @@ import { useConferenceStore } from '../infrastructure/conferenceStore';
 import { validateConferenceRoom, isConferenceRoomIdUnique } from '../domain/validation';
 import { generateConferenceRoomId, createEmptyConferenceRoom, toggleMeetingStatus } from '../domain/businessRules';
 import type { ConferenceRoom, SolumConfig } from '@shared/domain/types';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import * as solumService from '@shared/infrastructure/services/solumService';
 
@@ -15,12 +16,14 @@ interface UseConferenceControllerProps {
     onSync?: () => Promise<void>;  // Callback to trigger sync after changes
     solumConfig?: SolumConfig;     // For SoluM label page flipping
     solumToken?: string;            // Current SoluM access token
+    solumMappingConfig?: SolumMappingConfig; // SoluM field mappings
 }
 
 export function useConferenceController({
     onSync,
     solumConfig,
     solumToken,
+    solumMappingConfig,
 }: UseConferenceControllerProps) {
     const {
         conferenceRooms,
@@ -239,6 +242,94 @@ export function useConferenceController({
         return conferenceRooms;
     }, [conferenceRooms]);
 
+    /**
+     * Fetch conference rooms from SoluM API
+     * Fetches all articles, filters IN those with 'C' prefix,
+     * and maps them to ConferenceRoom entities using solumMappingConfig
+     */
+    const fetchFromSolum = useCallback(
+        async (): Promise<void> => {
+            if (!solumConfig || !solumToken || !solumMappingConfig) {
+                throw new Error('SoluM configuration, token, or mapping config not available');
+            }
+
+            logger.info('ConferenceController', 'Fetching conference rooms from SoluM');
+
+            try {
+                // Fetch all articles from SoluM
+                const articles = await solumService.fetchArticles(
+                    solumConfig,
+                    solumConfig.storeNumber,
+                    solumToken
+                );
+
+                // Filter IN articles where uniqueIdField starts with 'C' (conference rooms)
+                const { uniqueIdField, fields, conferenceMapping } = solumMappingConfig;
+                const conferenceArticles = articles.filter((article: any) => {
+                    const uniqueId = article[uniqueIdField];
+                    return uniqueId && String(uniqueId).toUpperCase().startsWith('C');
+                });
+
+                // Map articles to ConferenceRoom entities
+                const mappedRooms: ConferenceRoom[] = conferenceArticles.map((article: any) => {
+                    const id = String(article[uniqueIdField] || '');
+                    const roomName = article[fields['roomName']?.friendlyNameEn || 'roomName'] || id;
+
+                    // Parse meeting time (expected format: "START-END", e.g., "09:00-10:30")
+                    const meetingTimeRaw = article[conferenceMapping.meetingTime] || '';
+                    const [startTime, endTime] = String(meetingTimeRaw)
+                        .split('-')
+                        .map(t => t.trim());
+
+                    // Parse participants (expected format: comma-separated, e.g., "John,Jane,Bob")
+                    const participantsRaw = article[conferenceMapping.participants] || '';
+                    const participants = String(participantsRaw)
+                        .split(',')
+                        .map(p => p.trim())
+                        .filter(p => p.length > 0);
+
+                    // Meeting name
+                    const meetingName = article[conferenceMapping.meetingName] || '';
+
+                    // Build dynamic data object from visible fields
+                    const data: Record<string, string> = {};
+                    Object.keys(fields).forEach(fieldKey => {
+                        const mapping = fields[fieldKey];
+                        if (mapping.visible && article[fieldKey] !== undefined) {
+                            data[fieldKey] = String(article[fieldKey]);
+                        }
+                    });
+
+                    return {
+                        id,
+                        roomName,
+                        hasMeeting: !!meetingName,
+                        meetingName,
+                        startTime: startTime || '',
+                        endTime: endTime || '',
+                        participants,
+                        labelCode: article.labelCode,
+                        data,
+                    };
+                });
+
+                // Import mapped conference rooms
+                importFromSync(mappedRooms);
+
+                logger.info('ConferenceController', 'Conference rooms fetched from SoluM', {
+                    total: articles.length,
+                    conferenceRooms: mappedRooms.length,
+                    spaces: articles.length - mappedRooms.length
+                });
+            } catch (error) {
+                logger.error('ConferenceController', 'Failed to fetch from SoluM', { error });
+                throw error;
+            }
+        },
+        [solumConfig, solumToken, solumMappingConfig, importFromSync]
+    );
+
+
     return {
         // Conference operations
         addConferenceRoom,
@@ -247,6 +338,7 @@ export function useConferenceController({
         toggleMeeting,
         flipLabelPage,
         importFromSync,
+        fetchFromSolum,
         getAllConferenceRooms,
         conferenceRooms,
     };

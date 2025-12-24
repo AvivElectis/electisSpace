@@ -3,9 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
-import type { Space, CSVConfig } from '@shared/domain/types';
+import type { Space, CSVConfig, SolumConfig } from '@shared/domain/types';
 import type { SpacesList } from '../domain/types';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+import * as solumService from '@shared/infrastructure/services/solumService';
 
 /**
  * Space Controller Hook
@@ -15,11 +17,17 @@ import { logger } from '@shared/infrastructure/services/logger';
 interface UseSpaceControllerProps {
     csvConfig: CSVConfig;
     onSync?: () => Promise<void>;  // Callback to trigger sync after changes
+    solumConfig?: SolumConfig;
+    solumToken?: string;
+    solumMappingConfig?: SolumMappingConfig;
 }
 
 export function useSpaceController({
     csvConfig,
     onSync,
+    solumConfig,
+    solumToken,
+    solumMappingConfig,
 }: UseSpaceControllerProps) {
     const {
         spaces,
@@ -191,6 +199,74 @@ export function useSpaceController({
     }, [spaces]);
 
     /**
+     * Fetch spaces from SoluM API
+     * Fetches all articles, filters OUT those with 'C' prefix (conference rooms),
+     * and maps them to Space entities using solumMappingConfig
+     */
+    const fetchFromSolum = useCallback(
+        async (): Promise<void> => {
+            if (!solumConfig || !solumToken || !solumMappingConfig) {
+                throw new Error('SoluM configuration, token, or mapping config not available');
+            }
+
+            logger.info('SpaceController', 'Fetching spaces from SoluM');
+
+            try {
+                // Fetch all articles from SoluM
+                const articles = await solumService.fetchArticles(
+                    solumConfig,
+                    solumConfig.storeNumber,
+                    solumToken
+                );
+
+                // Filter OUT articles where uniqueIdField starts with 'C' (those are conference rooms)
+                const { uniqueIdField, fields } = solumMappingConfig;
+                const spaceArticles = articles.filter((article: any) => {
+                    const uniqueId = article[uniqueIdField];
+                    return uniqueId && !String(uniqueId).toUpperCase().startsWith('C');
+                });
+
+                // Map articles to Space entities
+                const mappedSpaces: Space[] = spaceArticles.map((article: any) => {
+                    const id = String(article[uniqueIdField] || '');
+                    const roomName = article[fields['roomName']?.friendlyNameEn || 'roomName'] || id;
+
+                    // Build dynamic data object from visible fields
+                    const data: Record<string, string> = {};
+                    Object.keys(fields).forEach(fieldKey => {
+                        const mapping = fields[fieldKey];
+                        if (mapping.visible && article[fieldKey] !== undefined) {
+                            data[fieldKey] = String(article[fieldKey]);
+                        }
+                    });
+
+                    return {
+                        id,
+                        roomName,
+                        data,
+                        labelCode: article.labelCode,
+                        templateName: article.templateName,
+                    };
+                });
+
+                // Import mapped spaces
+                importFromSync(mappedSpaces);
+
+                logger.info('SpaceController', 'Spaces fetched from SoluM', {
+                    total: articles.length,
+                    spaces: mappedSpaces.length,
+                    conferenceRooms: articles.length - mappedSpaces.length
+                });
+            } catch (error) {
+                logger.error('SpaceController', 'Failed to fetch from SoluM', { error });
+                throw error;
+            }
+        },
+        [solumConfig, solumToken, solumMappingConfig, importFromSync]
+    );
+
+
+    /**
      * Save current spaces as spaces list
      */
     const saveSpacesList = useCallback(
@@ -246,6 +322,7 @@ export function useSpaceController({
         deleteSpace,
         findSpaceById,
         importFromSync,
+        fetchFromSolum,
         getAllSpaces,
         spaces,
 

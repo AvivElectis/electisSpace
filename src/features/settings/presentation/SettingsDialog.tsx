@@ -55,39 +55,17 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const { t } = useTranslation();
     const settingsController = useSettingsController();
     const [currentTab, setCurrentTab] = useState(0);
-    const [hasChanges, setHasChanges] = useState(false);
 
     const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
         setCurrentTab(newValue);
     };
 
-    const handleSave = () => {
-        try {
-            // Settings are saved in real-time through controller
-            // This just confirms and closes
-            setHasChanges(false);
-            onClose();
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            alert(`Failed to save settings: ${error}`);
-        }
-    };
 
-    const handleClose = () => {
-        if (hasChanges) {
-            if (window.confirm('You have unsaved changes. Are you sure you want to close?')) {
-                setHasChanges(false);
-                onClose();
-            }
-        } else {
-            onClose();
-        }
-    };
 
     return (
         <Dialog
             open={open}
-            onClose={handleClose}
+            onClose={onClose}
             maxWidth="md"
             fullWidth
             PaperProps={{
@@ -101,7 +79,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 {t('settings.title')}
                 <IconButton
                     aria-label="close"
-                    onClick={handleClose}
+                    onClick={onClose}
                     sx={{
                         position: 'absolute',
                         insetInlineEnd: 8,
@@ -138,10 +116,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 <TabPanel value={currentTab} index={0}>
                     <AppSettingsTab
                         settings={settingsController.settings}
-                        onUpdate={(updates) => {
-                            settingsController.updateSettings(updates);
-                            setHasChanges(true);
-                        }}
+                        onUpdate={(updates) => settingsController.updateSettings(updates)}
                         onNavigateToTab={(tabIndex) => setCurrentTab(tabIndex)}
                     />
                 </TabPanel>
@@ -149,30 +124,21 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 <TabPanel value={currentTab} index={1}>
                     <SFTPSettingsTab
                         settings={settingsController.settings}
-                        onUpdate={(updates) => {
-                            settingsController.updateSettings(updates);
-                            setHasChanges(true);
-                        }}
+                        onUpdate={(updates) => settingsController.updateSettings(updates)}
                     />
                 </TabPanel>
 
                 <TabPanel value={currentTab} index={2}>
                     <SolumSettingsTab
                         settings={settingsController.settings}
-                        onUpdate={(updates) => {
-                            settingsController.updateSettings(updates);
-                            setHasChanges(true);
-                        }}
+                        onUpdate={(updates) => settingsController.updateSettings(updates)}
                     />
                 </TabPanel>
 
                 <TabPanel value={currentTab} index={3}>
                     <LogoSettingsTab
                         settings={settingsController.settings}
-                        onUpdate={(updates) => {
-                            settingsController.updateSettings(updates);
-                            setHasChanges(true);
-                        }}
+                        onUpdate={(updates) => settingsController.updateSettings(updates)}
                     />
                 </TabPanel>
 
@@ -180,10 +146,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     <SecuritySettingsTab
                         isPasswordProtected={settingsController.isPasswordProtected}
                         isLocked={settingsController.isLocked}
-                        onSetPassword={(password) => {
-                            settingsController.setPassword(password);
-                            setHasChanges(true);
-                        }}
+                        onSetPassword={(password) => settingsController.setPassword(password)}
                         onLock={() => settingsController.lock()}
                         onUnlock={(password) => settingsController.unlock(password)}
                     />
@@ -193,16 +156,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     <LogsViewerTab />
                 </TabPanel>
             </DialogContent>
-
             <DialogActions>
-                <Button onClick={handleClose}>
-                    {hasChanges ? t('common.cancel') : t('common.close')}
+                <Button onClick={onClose}>
+                     {t('common.close')}
                 </Button>
-                {hasChanges && (
-                    <Button variant="contained" onClick={handleSave}>
-                        {t('settings.saveSettings')}
-                    </Button>
-                )}
             </DialogActions>
         </Dialog>
     );

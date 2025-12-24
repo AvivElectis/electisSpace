@@ -9,6 +9,27 @@ export interface LogoConfig {
     logo2?: string;  // Base64 encoded image
 }
 
+/**
+ * SoluM Field Mapping Configuration
+ * Defines how SoluM article fields map to app display
+ */
+export interface SolumFieldMapping {
+    friendlyNameEn: string;
+    friendlyNameHe: string;
+    visible: boolean;
+}
+
+export interface SolumMappingConfig {
+    uniqueIdField: string; // The field from SoluM article to use as unique ID
+    fields: { [fieldKey: string]: SolumFieldMapping; }; // Map of all fields to their friendly names and visibility
+    conferenceMapping: { // Specific fields for conference rooms
+        meetingName: string;
+        meetingTime: string; // Expected "START-END" format
+        participants: string; // Expected comma-separated
+    };
+    globalFieldAssignments?: { [fieldKey: string]: string; }; // Global values to assign to all articles (e.g., NFC_URL: "https://...")
+}
+
 export interface SettingsData {
     // App configuration
     appName: string;
@@ -38,6 +59,9 @@ export interface SettingsData {
 
     // SoluM Configuration (encrypted)
     solumConfig?: import('@shared/domain/types').SolumConfig;
+
+    // SoluM Field Mapping (SoluM mode only)
+    solumMappingConfig?: SolumMappingConfig;
 
     // Logo configuration
     logos: LogoConfig;
