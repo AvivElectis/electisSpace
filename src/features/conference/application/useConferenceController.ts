@@ -264,7 +264,7 @@ export function useConferenceController({
                 );
 
                 // Filter IN articles where uniqueIdField starts with 'C' (conference rooms)
-                const { uniqueIdField, fields, conferenceMapping } = solumMappingConfig;
+                const { uniqueIdField, fields, conferenceMapping, globalFieldAssignments } = solumMappingConfig;
                 const conferenceArticles = articles.filter((article: any) => {
                     const uniqueId = article[uniqueIdField];
                     return uniqueId && String(uniqueId).toUpperCase().startsWith('C');
@@ -272,31 +272,46 @@ export function useConferenceController({
 
                 // Map articles to ConferenceRoom entities
                 const mappedRooms: ConferenceRoom[] = conferenceArticles.map((article: any) => {
-                    const id = String(article[uniqueIdField] || '');
-                    const roomName = article[fields['roomName']?.friendlyNameEn || 'roomName'] || id;
+                    // Strip 'C' prefix from ID for display
+                    const rawId = String(article[uniqueIdField] || '');
+                    const id = rawId.toUpperCase().startsWith('C') ? rawId.substring(1) : rawId;
+
+                    // Apply global field assignments
+                    const mergedArticle = {
+                        ...article,
+                        ...(globalFieldAssignments || {}),
+                    };
 
                     // Parse meeting time (expected format: "START-END", e.g., "09:00-10:30")
-                    const meetingTimeRaw = article[conferenceMapping.meetingTime] || '';
+                    const meetingTimeRaw = mergedArticle[conferenceMapping.meetingTime] || '';
                     const [startTime, endTime] = String(meetingTimeRaw)
                         .split('-')
                         .map(t => t.trim());
 
                     // Parse participants (expected format: comma-separated, e.g., "John,Jane,Bob")
-                    const participantsRaw = article[conferenceMapping.participants] || '';
+                    const participantsRaw = mergedArticle[conferenceMapping.participants] || '';
                     const participants = String(participantsRaw)
                         .split(',')
                         .map(p => p.trim())
                         .filter(p => p.length > 0);
 
                     // Meeting name
-                    const meetingName = article[conferenceMapping.meetingName] || '';
+                    const meetingName = mergedArticle[conferenceMapping.meetingName] || '';
 
-                    // Build dynamic data object from visible fields
+                    // Build dynamic data object from visible fields with actual article values
                     const data: Record<string, string> = {};
+                    let roomName = id; // Default to ID (without C prefix)
+
                     Object.keys(fields).forEach(fieldKey => {
                         const mapping = fields[fieldKey];
-                        if (mapping.visible && article[fieldKey] !== undefined) {
-                            data[fieldKey] = String(article[fieldKey]);
+                        if (mapping.visible && mergedArticle[fieldKey] !== undefined) {
+                            const fieldValue = String(mergedArticle[fieldKey]);
+                            data[fieldKey] = fieldValue;
+
+                            // Use first visible field as roomName
+                            if (roomName === id) {
+                                roomName = fieldValue;
+                            }
                         }
                     });
 

@@ -227,6 +227,7 @@
         "clickFetchSchemaToStart": "Click 'Fetch Article Schema' to load the configuration",
         "editorReadOnly": "This editor is in read-only mode",
         "unsavedChanges": "You have unsaved changes",
+        "saving": "Saving...",
         "addColumn": "Add Column",
         "columnOrder": "Order",
         "field Name": "Field Name",

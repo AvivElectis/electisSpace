@@ -29,16 +29,19 @@ export function validateArticleFormat(schema: ArticleFormat): ValidationResult {
         errors.push('Article Name mapping is required');
     }
 
-    // Validate basic info includes all mapped fields
-    const requiredBasicFields = [
-        schema.mappingInfo.store,
-        schema.mappingInfo.articleId,
-        schema.mappingInfo.articleName,
-    ].filter(Boolean);
+    // Validate basic info includes all mapped fields (using the keys, not values)
+    // articleBasicInfo contains logical field names like 'store', 'articleId', etc.
+    // mappingInfo maps these to actual data field keys like 'STORE_ID', 'ARTICLE_ID', etc.
+    const requiredBasicFields = ['store', 'articleId', 'articleName'];
 
     for (const field of requiredBasicFields) {
         if (!schema.articleBasicInfo.includes(field)) {
             errors.push(`Basic info missing required field: ${field}`);
+        }
+
+        // Also verify the mapping exists
+        if (!schema.mappingInfo[field as keyof typeof schema.mappingInfo]) {
+            errors.push(`Mapping missing for required field: ${field}`);
         }
     }
 

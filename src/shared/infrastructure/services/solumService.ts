@@ -99,7 +99,7 @@ export async function refreshToken(
         url,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: { refreshToken: '***' }
+        body: { refresh_token: '***' }  // Use underscore to match login response format
     });
 
     const response = await fetch(url, {
@@ -108,7 +108,7 @@ export async function refreshToken(
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            refreshToken,
+            refresh_token: refreshToken,  // Changed from refreshToken to refresh_token
         }),
     });
 
@@ -119,11 +119,12 @@ export async function refreshToken(
     }
 
     const data = await response.json();
+    const tokenData = data.responseMessage;  // Match login response structure
 
     const tokens: SolumTokens = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresAt: Date.now() + (data.expires_in * 1000),
+        accessToken: tokenData.access_token,  // Use underscore field names
+        refreshToken: tokenData.refresh_token,
+        expiresAt: Date.now() + (tokenData.expires_in * 1000),
     };
 
     logger.info('SolumService', 'Token refreshed successfully');
