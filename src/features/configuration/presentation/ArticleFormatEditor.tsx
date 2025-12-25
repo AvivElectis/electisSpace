@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { createJSONEditor, type JSONEditorPropsOptional, Mode } from 'vanilla-jsoneditor';
+import { createJSONEditor, Mode, type Content } from 'vanilla-jsoneditor';
 import { Box, Typography, Button, Stack, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { ArticleFormat } from '../domain/types';
@@ -37,55 +37,90 @@ export function ArticleFormatEditor({
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Initialize editor
+    // Initialize and manage editor
     useEffect(() => {
-        if (editorRef.current && !jsonEditorRef.current) {
-            const editorProps: JSONEditorPropsOptional = {
-                content: { json: schema || {} },
-                readOnly,
-                mode: Mode.tree,
-                onChange: () => {
-                    if (!readOnly) {
-                        setHasChanges(true);
-                    }
-                },
-            };
-
+        // Create editor if it doesn't exist
+        if (editorRef.current && !jsonEditorRef.current && schema) {
+            console.log('[ArticleFormatEditor] Creating new editor');
+            const content: Content = { json: schema };
             jsonEditorRef.current = createJSONEditor({
                 target: editorRef.current,
-                ...editorProps
+                props: {
+                    content,
+                    readOnly,
+                    mode: Mode.tree,
+                    onChange: (updatedContent: Content) => {
+                        console.log('[ArticleFormatEditor] onChange fired', { readOnly, updatedContent });
+                        if (!readOnly) {
+                            console.log('[ArticleFormatEditor] Setting hasChanges to true');
+                            setHasChanges(true);
+                        }
+                    },
+                }
             });
-        }
-
-        return () => {
-            jsonEditorRef.current?.destroy();
-            jsonEditorRef.current = null;
-        };
-    }, [readOnly]);
-
-    // Update editor content when schema changes
-    useEffect(() => {
-        if (jsonEditorRef.current && schema) {
-            jsonEditorRef.current.update({ json: schema });
             setHasChanges(false);
         }
-    }, [schema]);
+        // Update content when schema changes (if editor exists)
+        else if (jsonEditorRef.current && schema) {
+            console.log('[ArticleFormatEditor] Updating existing editor content');
+            const content: Content = { json: schema };
+            jsonEditorRef.current.update(content);
+            // Don't set hasChanges to false here - let the onChange handler manage it
+            // setHasChanges(false); // Removed - this was preventing saves
+        }
+
+        // Cleanup on unmount
+        return () => {
+            if (jsonEditorRef.current) {
+                jsonEditorRef.current.destroy();
+                jsonEditorRef.current = null;
+            }
+        };
+    }, [schema, readOnly]);
 
     const handleSave = async () => {
+        console.log('[ArticleFormatEditor] handleSave called', {
+            hasEditor: !!jsonEditorRef.current,
+            hasOnSave: !!onSave,
+            hasChanges,
+            isSaving
+        });
+
         if (jsonEditorRef.current && onSave) {
             try {
                 setIsSaving(true);
+                console.log('[ArticleFormatEditor] Getting content from editor');
                 const content = jsonEditorRef.current.get();
+                console.log('[ArticleFormatEditor] Content retrieved', { content });
 
+                let jsonData: ArticleFormat;
+
+                // Handle both json and text formats
                 if ('json' in content) {
-                    const success = await onSave(content.json as ArticleFormat);
-                    if (success) {
-                        setHasChanges(false);
-                    }
+                    jsonData = content.json as ArticleFormat;
+                } else if ('text' in content) {
+                    // Parse text to JSON
+                    console.log('[ArticleFormatEditor] Parsing text content to JSON');
+                    jsonData = JSON.parse(content.text) as ArticleFormat;
+                } else {
+                    console.warn('[ArticleFormatEditor] Content has neither json nor text property', content);
+                    return;
                 }
+
+                console.log('[ArticleFormatEditor] Calling onSave with JSON');
+                const success = await onSave(jsonData);
+                console.log('[ArticleFormatEditor] onSave returned', { success });
+                if (success) {
+                    setHasChanges(false);
+                }
+            } catch (error) {
+                console.error('[ArticleFormatEditor] Save error', error);
+                throw error; // Re-throw so the error notification shows
             } finally {
                 setIsSaving(false);
             }
+        } else {
+            console.warn('[ArticleFormatEditor] Cannot save - missing editor or onSave callback');
         }
     };
 

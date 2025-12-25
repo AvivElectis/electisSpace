@@ -42,8 +42,11 @@ export function useConfigurationController() {
         try {
             const schema = await SolumSchemaAdapter.fetchSchema(settings.solumConfig);
 
-            // Persist to settings
-            updateSettings({ solumArticleFormat: schema });
+            // Persist to settings and clear mappings (new schema, old mappings invalid)
+            updateSettings({
+                solumArticleFormat: schema,
+                solumMappingConfig: undefined // Clear field mappings when schema changes
+            });
 
             showSuccess('Article format fetched successfully');
             return schema;
@@ -74,8 +77,11 @@ export function useConfigurationController() {
         try {
             await SolumSchemaAdapter.updateSchema(settings.solumConfig, schema);
 
-            // Update local settings
-            updateSettings({ solumArticleFormat: schema });
+            // Update local settings and clear mapping config (schema changed, old mappings invalid)
+            updateSettings({
+                solumArticleFormat: schema,
+                solumMappingConfig: undefined // Clear field mappings when schema changes
+            });
 
             showSuccess('Article format saved successfully');
             return true;

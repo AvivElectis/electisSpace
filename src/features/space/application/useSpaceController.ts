@@ -220,7 +220,7 @@ export function useSpaceController({
                 );
 
                 // Filter OUT articles where uniqueIdField starts with 'C' (those are conference rooms)
-                const { uniqueIdField, fields } = solumMappingConfig;
+                const { uniqueIdField, fields, globalFieldAssignments } = solumMappingConfig;
                 const spaceArticles = articles.filter((article: any) => {
                     const uniqueId = article[uniqueIdField];
                     return uniqueId && !String(uniqueId).toUpperCase().startsWith('C');
@@ -229,14 +229,27 @@ export function useSpaceController({
                 // Map articles to Space entities
                 const mappedSpaces: Space[] = spaceArticles.map((article: any) => {
                     const id = String(article[uniqueIdField] || '');
-                    const roomName = article[fields['roomName']?.friendlyNameEn || 'roomName'] || id;
 
-                    // Build dynamic data object from visible fields
+                    // Apply global field assignments
+                    const mergedArticle = {
+                        ...article,
+                        ...(globalFieldAssignments || {}),
+                    };
+
+                    // Build dynamic data object from visible fields with actual article values
                     const data: Record<string, string> = {};
+                    let roomName = id; // Default to ID
+
                     Object.keys(fields).forEach(fieldKey => {
                         const mapping = fields[fieldKey];
-                        if (mapping.visible && article[fieldKey] !== undefined) {
-                            data[fieldKey] = String(article[fieldKey]);
+                        if (mapping.visible && mergedArticle[fieldKey] !== undefined) {
+                            const fieldValue = String(mergedArticle[fieldKey]);
+                            data[fieldKey] = fieldValue;
+
+                            // Use first visible field as roomName
+                            if (roomName === id) {
+                                roomName = fieldValue;
+                            }
                         }
                     });
 
