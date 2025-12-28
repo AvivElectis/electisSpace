@@ -12,7 +12,6 @@ import {
     TableRow,
     Paper,
     IconButton,
-    Chip,
     Stack,
     TextField,
     InputAdornment,
@@ -22,13 +21,13 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import QrCodeIcon from '@mui/icons-material/QrCode';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SpaceDialog } from './SpaceDialog';
+import { DynamicFieldDisplay } from '@shared/presentation/components/DynamicFieldDisplay';
 import type { Space } from '@shared/domain/types';
 
 /**
@@ -114,43 +113,17 @@ export function SpacesPage() {
                 </Button>
             </Stack>
 
-            {/* Stats Cards */}
-            <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-                sx={{ mb: 3 }}
-            >
-                <Card sx={{ flex: 1 }}>
-                    <CardContent>
-                        <Typography variant="body2" color="text.secondary">
-                            {t('spaces.totalSpaces')} {getLabel('plural')}
-                        </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main' }}>
-                            {spaceController.spaces.length}
-                        </Typography>
-                    </CardContent>
-                </Card>
-                <Card sx={{ flex: 1 }}>
-                    <CardContent>
-                        <Typography variant="body2" color="text.secondary">
-                            {t('spaces.withLabels')}
-                        </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 500, color: 'success.main' }}>
-                            {spaceController.spaces.filter(s => s.labelCode).length}
-                        </Typography>
-                    </CardContent>
-                </Card>
-                <Card sx={{ flex: 1 }}>
-                    <CardContent>
-                        <Typography variant="body2" color="text.secondary">
-                            {t('spaces.withoutLabels')}
-                        </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 500, color: 'warning.main' }}>
-                            {spaceController.spaces.filter(s => !s.labelCode).length}
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Stack>
+            {/* Stats Card */}
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Typography variant="body2" color="text.secondary">
+                        {t('spaces.total')} {getLabel('plural')}
+                    </Typography>
+                    <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main' }}>
+                        {spaceController.spaces.length}
+                    </Typography>
+                </CardContent>
+            </Card>
 
             {/* Search Bar */}
             <TextField
@@ -175,16 +148,14 @@ export function SpacesPage() {
                         <TableRow sx={{ bgcolor: 'background.default' }}>
                             <TableCell sx={{ fontWeight: 600 }}>{t('spaces.id')}</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>{t('spaces.name')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.labelCode')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.template')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.status')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{t('common.info')}</TableCell>
                             <TableCell sx={{ fontWeight: 600 }} align="right">{t('spaces.actions')}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {filteredSpaces.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {searchQuery
                                             ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
@@ -211,27 +182,12 @@ export function SpacesPage() {
                                         <Typography variant="body2">{space.roomName}</Typography>
                                     </TableCell>
                                     <TableCell>
-                                        {space.labelCode ? (
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <QrCodeIcon fontSize="small" color="primary" />
-                                                <Typography variant="body2">{space.labelCode}</Typography>
-                                            </Stack>
-                                        ) : (
-                                            <Typography variant="body2" color="text.secondary">
-                                                —
-                                            </Typography>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2">
-                                            {space.templateName || '—'}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={space.labelCode ? t('spaces.active') : t('spaces.inactive')}
-                                            color={space.labelCode ? 'success' : 'default'}
-                                            size="small"
+                                        <DynamicFieldDisplay
+                                            data={space.data}
+                                            mode={settingsController.settings.workingMode === 'SOLUM_API' ? 'solum' : 'sftp'}
+                                            solumMappingConfig={settingsController.settings.solumMappingConfig}
+                                            sftpCsvColumns={settingsController.settings.sftpCsvConfig?.columns}
+                                            variant="table"
                                         />
                                     </TableCell>
                                     <TableCell align="right">
@@ -269,6 +225,8 @@ export function SpacesPage() {
                 onClose={() => setDialogOpen(false)}
                 onSave={handleSave}
                 space={editingSpace}
+                workingMode={settingsController.settings.workingMode}
+                solumMappingConfig={settingsController.settings.solumMappingConfig}
                 csvConfig={settingsController.settings.csvConfig}
                 spaceTypeLabel={getLabel('singular')}
             />

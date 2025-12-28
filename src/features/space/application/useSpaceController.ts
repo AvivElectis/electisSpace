@@ -151,6 +151,23 @@ export function useSpaceController({
                 throw new Error('Space not found');
             }
 
+            // Delete from AIMS if using SoluM mode  
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    logger.info('SpaceController', 'Deleting article from AIMS', { id });
+                    await solumService.deleteArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [id]  // Delete this space article
+                    );
+                    logger.info('SpaceController', 'Article deleted from AIMS successfully', { id });
+                } catch (error) {
+                    logger.error('SpaceController', 'Failed to delete article from AIMS', { error });
+                    throw new Error(`Failed to delete from AIMS: ${error}`);
+                }
+            }
+
             // Delete from store
             deleteFromStore(id);
 

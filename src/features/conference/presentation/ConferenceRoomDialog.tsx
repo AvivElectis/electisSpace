@@ -13,6 +13,7 @@ import {
     Typography,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ConferenceRoom } from '@shared/domain/types';
 
 interface ConferenceRoomDialogProps {
@@ -31,6 +32,7 @@ export function ConferenceRoomDialog({
     onSave,
     room,
 }: ConferenceRoomDialogProps) {
+    const { t } = useTranslation();
     const [id, setId] = useState('');
     const [roomName, setRoomName] = useState('');
     const [hasMeeting, setHasMeeting] = useState(false);
@@ -38,7 +40,6 @@ export function ConferenceRoomDialog({
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [participantsText, setParticipantsText] = useState('');
-    const [labelCode, setLabelCode] = useState('');
     const [saving, setSaving] = useState(false);
 
     // Initialize form when dialog opens
@@ -53,7 +54,6 @@ export function ConferenceRoomDialog({
                 setStartTime(room.startTime);
                 setEndTime(room.endTime);
                 setParticipantsText(room.participants.join(', '));
-                setLabelCode(room.labelCode || '');
             } else {
                 // Add mode - reset
                 setId('');
@@ -63,7 +63,6 @@ export function ConferenceRoomDialog({
                 setStartTime('');
                 setEndTime('');
                 setParticipantsText('');
-                setLabelCode('');
             }
         }
     }, [open, room]);
@@ -76,15 +75,22 @@ export function ConferenceRoomDialog({
                 .map(p => p.trim())
                 .filter(p => p.length > 0);
 
+            // Auto-format conference room ID: ensure C prefix
+            let finalId = room ? room.id : id.toUpperCase().trim();
+            if (finalId && !finalId.startsWith('C')) {
+                // Add C prefix if not present
+                finalId = 'C' + finalId;
+            }
+
             const roomData: Partial<ConferenceRoom> = {
-                id: room ? room.id : id, // Don't allow ID change in edit mode
+                id: finalId,
                 roomName,
                 hasMeeting,
                 meetingName: hasMeeting ? meetingName : '',
                 startTime: hasMeeting ? startTime : '',
                 endTime: hasMeeting ? endTime : '',
                 participants: hasMeeting ? participants : [],
-                labelCode: labelCode || undefined,
+                data: room?.data || {},  // Preserve existing dynamic data
             };
 
             await onSave(roomData);
@@ -99,42 +105,33 @@ export function ConferenceRoomDialog({
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>
-                {room ? 'Edit Conference Room' : 'Add Conference Room'}
+                {room ? t('conference.editRoom') : t('conference.addRoom')}
             </DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ mt: 1 }}>
                     {/* ID - only editable in add mode */}
                     <TextField
                         fullWidth
-                        label="Room ID"
+                        label={t('conference.roomId')}
                         value={id}
-                        onChange={(e) => setId(e.target.value)}
+                        onChange={(e) => setId(e.target.value.toUpperCase().trim())}
                         disabled={!!room}
                         required
-                        helperText={room ? 'ID cannot be changed' : 'Unique identifier (e.g., C01)'}
+                        helperText={room ? t('conference.idCannotChange') : t('conference.idAutoFormat')}
                     />
 
                     {/* Room Name */}
                     <TextField
                         fullWidth
-                        label="Room Name"
+                        label={t('conference.roomName')}
                         value={roomName}
                         onChange={(e) => setRoomName(e.target.value)}
                         required
-                        placeholder="Conference Room A"
-                    />
-
-                    {/* Label Code */}
-                    <TextField
-                        fullWidth
-                        label="Label Code"
-                        value={labelCode}
-                        onChange={(e) => setLabelCode(e.target.value)}
-                        helperText="ESL label barcode (optional)"
+                        placeholder={t('conference.roomNamePlaceholder')}
                     />
 
                     <Typography variant="subtitle2" color="text.secondary" sx={{ pt: 1 }}>
-                        Meeting Information
+                        {t('conference.meetingInfo')}
                     </Typography>
 
                     {/* Has Meeting Toggle */}
@@ -145,7 +142,7 @@ export function ConferenceRoomDialog({
                                 onChange={(e) => setHasMeeting(e.target.checked)}
                             />
                         }
-                        label="Room has active meeting"
+                        label={t('conference.hasActiveMeeting')}
                     />
 
                     {hasMeeting && (
@@ -218,7 +215,7 @@ export function ConferenceRoomDialog({
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} disabled={saving}>
-                    Cancel
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
@@ -230,7 +227,7 @@ export function ConferenceRoomDialog({
                         (hasMeeting && (!meetingName || !startTime || !endTime))
                     }
                 >
-                    {saving ? 'Saving...' : 'Save'}
+                    {saving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
         </Dialog>

@@ -240,8 +240,20 @@ export async function fetchArticles(
     }
 
     const data = await response.json();
-    logger.info('SolumService', 'Articles fetched', { count: data.length });
-    return data;
+
+    // Debug: Log the raw response to see structure
+    console.log('[DEBUG] AIMS API Raw Response:', JSON.stringify(data, null, 2));
+    console.log('[DEBUG] Response is array?', Array.isArray(data));
+    console.log('[DEBUG] Response.articleList exists?', !!data.articleList);
+
+    // The API returns an object with articleList array
+    // Example: { totalArticleCnt: 1, articleList: [...], responseCode: "200" }
+    const articles = Array.isArray(data) ? data : (data.articleList || data.content || data.data || []);
+
+    console.log('[DEBUG] Extracted articles:', articles);
+
+    logger.info('SolumService', 'Articles fetched', { count: articles.length });
+    return articles;
 }
 
 /**
@@ -262,7 +274,7 @@ export async function pushArticles(
     const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
 
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -277,6 +289,43 @@ export async function pushArticles(
     }
 
     logger.info('SolumService', 'Articles pushed successfully');
+}
+
+/**
+ * Delete articles from SoluM API
+ * @param config - SoluM configuration
+ * @param storeId - Store number
+ * @param token - Access token
+ * @param articleIds - Array of article IDs to delete
+ */
+export async function deleteArticles(
+    config: SolumConfig,
+    storeId: string,
+    token: string,
+    articleIds: string[]
+): Promise<void> {
+    logger.info('SolumService', 'Deleting articles', { storeId, count: articleIds.length, ids: articleIds });
+
+    const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
+
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            articleDeleteList: articleIds
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        logger.error('SolumService', 'Delete articles failed', { status: response.status, error });
+        throw new Error(`Delete articles failed: ${response.status}`);
+    }
+
+    logger.info('SolumService', 'Articles deleted successfully');
 }
 
 /**
