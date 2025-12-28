@@ -16,6 +16,7 @@ import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SettingsData } from '../domain/types';
+import { ImportExportSection } from '@features/import-export/presentation/ImportExportSection';
 
 interface SecuritySettingsTabProps {
     isPasswordProtected: boolean;
@@ -166,7 +167,7 @@ export function SecuritySettingsTab({
                                     variant="contained"
                                     onClick={handleSetPassword}
                                     disabled={!newPassword || !confirmPassword}
-                                    sx={{ width: 'fit-content'}}
+                                    sx={{ width: 'fit-content' }}
                                 >
                                     {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
                                 </Button>
@@ -262,7 +263,7 @@ export function SecuritySettingsTab({
                         {t('settings.clearStorageWarning')}
                     </Alert>
                     <Button
-                        variant="outlined"
+                        variant="text"
                         color="error"
                         onClick={() => {
                             if (window.confirm(t('settings.clearStorageConfirm'))) {
@@ -279,6 +280,11 @@ export function SecuritySettingsTab({
                         {t('settings.clearStorageHelper')}
                     </Typography>
                 </Box>
+
+                <Divider />
+
+                {/* Import/Export Settings */}
+                <ImportExportSection />
             </Stack>
         </Box>
     );
