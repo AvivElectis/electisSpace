@@ -2,6 +2,8 @@ import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSyncStore } from '@features/sync/infrastructure/syncStore';
+import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 interface AppHeaderProps {
@@ -19,6 +21,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
     const isLocked = useSettingsStore((state) => state.isLocked);
+    const { syncState, workingMode } = useSyncStore();
 
     // Use dynamic logos or fall back to defaults
     const leftLogo = settings.logos.logo1 || '/logos/CI_SOLUMLogo_WithClaim-Blue.png';
@@ -80,6 +83,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                         textAlign: 'center',
                         px: 2,
                     }}
+
                 >
                     <Typography
                         variant="h1"
@@ -117,11 +121,21 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                             objectFit: 'contain',
                         }}
                     />
+                    <SyncStatusIndicator
+                        status={
+                            syncState.status === 'syncing' ? 'syncing' :
+                                syncState.status === 'error' ? 'error' :
+                                    syncState.isConnected ? 'connected' : 'disconnected'
+                        }
+                        lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
+                        workingMode={workingMode === 'SFTP' ? 'SFTP' : 'SoluM'}
+                        errorMessage={syncState.lastError}
+                    />
                     <LanguageSwitcher />
                     <IconButton
                         color={iconColor}
                         onClick={onSettingsClick}
-                        sx={{ ml: 1 }}
+                        sx={{ mx: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }}
                     >
                         <SettingsIcon />
                     </IconButton>

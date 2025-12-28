@@ -34,8 +34,8 @@ export function DashboardPage() {
                 <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
                     {t('dashboard.title')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    {t('dashboard.welcome')} {settingsController.settings.appName}
+                <Typography variant="body2" color="text.secondary" >
+                    {settingsController.settings.appName}
                 </Typography>
             </Box>
 
