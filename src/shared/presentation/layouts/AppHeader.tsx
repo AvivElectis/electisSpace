@@ -2,8 +2,8 @@ import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { useSyncStore } from '@features/sync/infrastructure/syncStore';
-import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
+// import { useSyncStore } from '@features/sync/infrastructure/syncStore';
+// import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 interface AppHeaderProps {
@@ -21,7 +21,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
     const isLocked = useSettingsStore((state) => state.isLocked);
-    const { syncState, workingMode } = useSyncStore();
+    // Sync state moved to MainLayout
 
     // Use dynamic logos or fall back to defaults
     const leftLogo = settings.logos.logo1 || '/logos/CI_SOLUMLogo_WithClaim-Blue.png';
@@ -121,16 +121,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                             objectFit: 'contain',
                         }}
                     />
-                    <SyncStatusIndicator
-                        status={
-                            syncState.status === 'syncing' ? 'syncing' :
-                                syncState.status === 'error' ? 'error' :
-                                    syncState.isConnected ? 'connected' : 'disconnected'
-                        }
-                        lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
-                        workingMode={workingMode === 'SFTP' ? 'SFTP' : 'SoluM'}
-                        errorMessage={syncState.lastError}
-                    />
+                    {/* Sync Indicator moved to MainLayout */}
                     <LanguageSwitcher />
                     <IconButton
                         color={iconColor}

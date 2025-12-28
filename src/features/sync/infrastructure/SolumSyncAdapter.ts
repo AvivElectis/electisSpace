@@ -29,6 +29,15 @@ export class SolumSyncAdapter implements SyncAdapter {
         this.csvConfig = csvConfig;
         this.onTokenUpdate = onTokenUpdate;
         this.tokens = initialTokens || null;
+
+        // Initialize state if tokens are present
+        if (this.tokens) {
+            this.state = {
+                status: 'connected',
+                isConnected: true,
+                lastSync: config.lastConnected ? new Date(config.lastConnected) : undefined
+            };
+        }
     }
 
     async connect(): Promise<void> {
