@@ -5,6 +5,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import { useState } from 'react';
 import type { MouseEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'syncing' | 'error';
 
@@ -37,6 +38,7 @@ export function SyncStatusIndicator({
     errorMessage,
     onSyncClick,
 }: SyncStatusIndicatorProps) {
+    const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const handleClick = (event: MouseEvent<HTMLElement>) => {
@@ -55,25 +57,25 @@ export function SyncStatusIndicator({
                 return {
                     color: 'success' as const,
                     icon: <CheckCircleIcon fontSize="small" />,
-                    label: 'Connected',
+                    label: t('sync.connected'),
                 };
             case 'disconnected':
                 return {
                     color: 'default' as const,
                     icon: <CloudOffIcon fontSize="small" />,
-                    label: 'Disconnected',
+                    label: t('sync.disconnected'),
                 };
             case 'syncing':
                 return {
                     color: 'primary' as const,
                     icon: <CircularProgress size={16} />,
-                    label: 'Syncing...',
+                    label: t('sync.syncing'),
                 };
             case 'error':
                 return {
                     color: 'error' as const,
                     icon: <ErrorIcon fontSize="small" />,
-                    label: 'Error',
+                    label: t('sync.error'),
                 };
         }
     };
@@ -82,14 +84,21 @@ export function SyncStatusIndicator({
 
     return (
         <>
-            <Tooltip title="Click for details">
+            <Tooltip title={t('sync.syncStatus')}>
                 <Chip
                     icon={config.icon}
                     label={config.label}
                     color={config.color}
                     size="small"
                     onClick={handleClick}
-                    sx={{ cursor: 'pointer', fontWeight: 500 }}
+                    sx={{ cursor: 'pointer', 
+                        fontWeight: 500, 
+                        px: 3, 
+                        paddingInlineEnd: 2, 
+                        borderRadius: 2, 
+                        py:3, 
+                        border: '1px solid #007AFF', 
+                        bgcolor: 'rgba(255, 255, 255, 0.8)',}}
                 />
             </Tooltip>
 
@@ -98,12 +107,12 @@ export function SyncStatusIndicator({
                 anchorEl={anchorEl}
                 onClose={handleClose}
                 anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
+                    vertical: 'top',
+                    horizontal: 'left',
                 }}
                 transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
+                    vertical: 'bottom',
+                    horizontal: 'left',
                 }}
             >
                 <Box sx={{ p: 2.5, minWidth: 280 }}>
@@ -111,7 +120,7 @@ export function SyncStatusIndicator({
                         {/* Status */}
                         <Box>
                             <Typography variant="caption" color="text.secondary" display="block">
-                                Status
+                                {t('sync.status')}
                             </Typography>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                                 {config.icon}
@@ -126,10 +135,10 @@ export function SyncStatusIndicator({
                         {/* Working Mode */}
                         <Box>
                             <Typography variant="caption" color="text.secondary" display="block">
-                                Working Mode
+                                {t('sync.workingMode')}
                             </Typography>
                             <Typography variant="body2" fontWeight={500}>
-                                {workingMode}
+                                {workingMode === 'SFTP' ? t('sync.sftpMode') : t('sync.solumMode')}
                             </Typography>
                         </Box>
 
@@ -137,7 +146,7 @@ export function SyncStatusIndicator({
                         {lastSyncTime && (
                             <Box>
                                 <Typography variant="caption" color="text.secondary" display="block">
-                                    Last Sync
+                                    {t('sync.lastSync')}
                                 </Typography>
                                 <Typography variant="body2">{lastSyncTime}</Typography>
                             </Box>
@@ -147,7 +156,7 @@ export function SyncStatusIndicator({
                         {status === 'error' && errorMessage && (
                             <Box>
                                 <Typography variant="caption" color="error.main" display="block">
-                                    Error Details
+                                    {t('common.error')}
                                 </Typography>
                                 <Typography variant="body2" color="error.main">
                                     {errorMessage}
@@ -170,7 +179,7 @@ export function SyncStatusIndicator({
                                     }}
                                 >
                                     <SyncIcon fontSize="small" />
-                                    <Typography variant="caption">Manual Sync</Typography>
+                                    <Typography variant="caption">{t('sync.manualSync')}</Typography>
                                 </IconButton>
                             </>
                         )}

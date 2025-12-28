@@ -1,5 +1,5 @@
 import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -8,6 +8,11 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { SettingsDialog } from '../../../features/settings/presentation/SettingsDialog';
+import { useSyncStore } from '@features/sync/infrastructure/syncStore';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { useSyncController } from '@features/sync/application/useSyncController';
+import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 interface MainLayoutProps {
     children: ReactNode;
@@ -42,6 +47,24 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { t } = useTranslation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const { syncState, workingMode, setWorkingMode } = useSyncStore();
+    const settings = useSettingsStore(state => state.settings);
+    const setSpaces = useSpacesStore(state => state.setSpaces);
+
+    // Initialize global sync controller
+    useSyncController({
+        sftpCredentials: settings.sftpCredentials,
+        solumConfig: settings.solumConfig,
+        csvConfig: settings.sftpCsvConfig as any, // Cast for legacy compatibility
+        onSpaceUpdate: setSpaces,
+    });
+
+    // Force migration from SFTP to SoluM since SFTP is disabled
+    useEffect(() => {
+        if (workingMode === 'SFTP') {
+            setWorkingMode('SOLUM_API');
+        }
+    }, [workingMode, setWorkingMode]);
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
@@ -103,14 +126,14 @@ export function MainLayout({ children }: MainLayoutProps) {
                     borderColor: 'divider',
                     px: { xs: 2, sm: 3, md: 4 },
                     py: 2,
-                    
+
                 }}>
                     <Tabs
                         value={currentTab}
                         onChange={handleTabChange}
                         variant="scrollable"
                         scrollButtons="auto"
-                        sx={{ 
+                        sx={{
                             borderBottom: 0,
                             '& .MuiTab-root': {
                                 border: '1px solid transparent',
@@ -132,7 +155,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 value={tab.value}
                                 icon={tab.icon}
                                 iconPosition="start"
-                                sx={{p: 1, paddingInlineEnd: 2}}
+                                sx={{ p: 1, paddingInlineEnd: 2 }}
                             />
                         ))}
                     </Tabs>
@@ -147,6 +170,20 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <Container maxWidth={false} sx={{ flex: 1, py: 3 }}>
                     {children}
                 </Container>
+            </Box>
+
+            {/* Sync Status Indicator - Fixed at bottom left (End in RTL) */}
+            <Box sx={{ position: 'fixed', bottom: 24, left: 24, zIndex: 1200 }}>
+                <SyncStatusIndicator
+                    status={
+                        syncState.status === 'syncing' ? 'syncing' :
+                            syncState.status === 'error' ? 'error' :
+                                syncState.isConnected ? 'connected' : 'disconnected'
+                    }
+                    lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
+                    workingMode="SoluM"
+                    errorMessage={syncState.lastError}
+                />
             </Box>
 
             {/* Settings Dialog */}

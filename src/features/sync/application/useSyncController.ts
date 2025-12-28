@@ -66,8 +66,28 @@ export function useSyncController({
             );
         }
 
+        if (!adapterRef.current) {
+            // Should not happen as we throw above if config missing
+            throw new Error('Adapter initialization failed');
+        }
         return adapterRef.current;
     }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, setSolumTokens]);
+
+    /**
+     * Initialize state from adapter on mount/change
+     */
+    useEffect(() => {
+        try {
+            const adapter = getAdapter();
+            const status = adapter.getStatus();
+            // Only update if connected to avoid overwriting error states with idle
+            if (status.isConnected) {
+                setSyncState(status);
+            }
+        } catch (e) {
+            // Ignore initialization errors (e.g. missing credentials)
+        }
+    }, [getAdapter, setSyncState]);
 
     /**
      * Connect to external system
