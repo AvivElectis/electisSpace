@@ -144,6 +144,8 @@ export function useConferenceController({
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
+                    // AIMS API structure: root-level articleId/articleName always use these names
+                    // Mapped field names only apply to the data object
                     const aimsArticle = {
                         articleId: finalRoom.id,
                         articleName: finalRoom.roomName || finalRoom.id,
@@ -302,6 +304,8 @@ export function useConferenceController({
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
+                    // AIMS API structure: root-level articleId/articleName always use these names
+                    // Mapped field names only apply to the data object
                     const aimsArticle = {
                         articleId: room.id,
                         articleName: room.roomName || room.id,

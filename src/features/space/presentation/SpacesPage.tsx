@@ -21,7 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
@@ -36,14 +36,35 @@ import type { Space } from '@shared/domain/types';
 export function SpacesPage() {
     const { t } = useTranslation();
     const settingsController = useSettingsController();
+
+    // Get SoluM access token if available (same pattern as ConferencePage)
+    const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
+
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
+        solumConfig: settingsController.settings.solumConfig,
+        solumToken,
+        solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
     const { getLabel } = useSpaceTypeLabels();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
+
+    // Fetch spaces from AIMS on mount when in SoluM mode
+    useEffect(() => {
+        if (
+            settingsController.settings.workingMode === 'SOLUM_API' &&
+            solumToken &&
+            settingsController.settings.solumMappingConfig
+        ) {
+            spaceController.fetchFromSolum().catch((error) => {
+                console.error('Failed to fetch spaces from AIMS:', error);
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Filter spaces based on search query
     const filteredSpaces = spaceController.spaces.filter((space) => {

@@ -2,7 +2,7 @@
  * Settings Feature Domain Types
  */
 
-import type { ArticleFormat, CSVColumn, FieldMapping } from '@features/configuration/domain/types';
+import type { ArticleFormat, CSVColumn, FieldMapping, MappingInfo } from '@features/configuration/domain/types';
 
 export interface LogoConfig {
     logo1?: string;  // Base64 encoded image
@@ -28,6 +28,7 @@ export interface SolumMappingConfig {
         participants: string; // Expected comma-separated
     };
     globalFieldAssignments?: { [fieldKey: string]: string; }; // Global values to assign to all articles (e.g., NFC_URL: "https://...")
+    mappingInfo?: MappingInfo; // Field name mappings from article format (e.g., articleId -> ARTICLE_ID)
 }
 
 export interface SettingsData {

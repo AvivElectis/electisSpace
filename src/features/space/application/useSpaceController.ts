@@ -101,16 +101,51 @@ export function useSpaceController({
                         }
                     });
 
-                    // Apply global field assignments
+
+
                     if (solumMappingConfig.globalFieldAssignments) {
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    const aimsArticle = {
-                        articleId: space.id,
-                        articleName: space.roomName || space.id,
+                    // Use mappingInfo to populate root-level fields from articleData
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+
+                    // DEBUG: Log what we have
+                    console.log('[DEBUG addSpace] mappingInfo:', mappingInfo);
+                    console.log('[DEBUG addSpace] articleData:', articleData);
+                    console.log('[DEBUG addSpace] space.roomName:', space.roomName);
+
+                    const aimsArticle: any = {
                         data: articleData
                     };
+
+                    // Populate root-level fields using mappingInfo
+                    if (mappingInfo?.articleId && articleData[mappingInfo.articleId]) {
+                        aimsArticle.articleId = String(articleData[mappingInfo.articleId]);
+                        console.log('[DEBUG addSpace] Using mapped articleId:', aimsArticle.articleId);
+                    } else {
+                        aimsArticle.articleId = space.id;
+                        console.log('[DEBUG addSpace] Using fallback articleId:', aimsArticle.articleId);
+                    }
+
+                    if (mappingInfo?.articleName && articleData[mappingInfo.articleName]) {
+                        aimsArticle.articleName = String(articleData[mappingInfo.articleName]);
+                        console.log('[DEBUG addSpace] Using mapped articleName:', aimsArticle.articleName);
+                    } else {
+                        aimsArticle.articleName = space.roomName || space.id;
+                        console.log('[DEBUG addSpace] Using fallback articleName:', aimsArticle.articleName);
+                    }
+
+                    if (mappingInfo?.store && articleData[mappingInfo.store]) {
+                        aimsArticle.store = String(articleData[mappingInfo.store]);
+                    }
+
+                    if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
+                        aimsArticle.nfcUrl = String(articleData[mappingInfo.nfcUrl]);
+                    }
+
+                    console.log('[DEBUG addSpace] Final aimsArticle:', aimsArticle);
+
 
                     await solumService.pushArticles(
                         solumConfig,
@@ -125,8 +160,18 @@ export function useSpaceController({
                 }
             }
 
-            // Add to store
-            addToStore(space);
+            // Refresh from AIMS to get the latest state
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    await fetchFromSolum();
+                    logger.info('SpaceController', 'Refreshed from AIMS after add');
+                } catch (error) {
+                    logger.warn('SpaceController', 'Failed to refresh from AIMS after add', { error });
+                }
+            } else {
+                // For non-SoluM modes, add to store directly
+                addToStore(space);
+            }
 
             // Trigger sync if configured
             if (onSync) {
@@ -139,7 +184,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space added successfully', { id: space.id });
         },
-        [spaces, csvConfig, addToStore, onSync]
+        [spaces, csvConfig, addToStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -176,8 +221,91 @@ export function useSpaceController({
                 }
             }
 
-            // Update in store
-            updateInStore(id, updatedSpace);
+            // Push to AIMS if using SoluM mode
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    logger.info('SpaceController', 'Pushing updated article to AIMS', { id });
+
+                    const space = updatedSpace as Space;
+                    const articleData: Record<string, any> = {};
+
+                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
+                        if (fieldConfig.visible) {
+                            let value: any = undefined;
+                            const fieldKeyLower = fieldKey.toLowerCase();
+
+                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
+                                value = space.id;
+                            } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
+                                value = space.roomName;
+                            } else if (space.data && space.data[fieldKey] !== undefined) {
+                                value = space.data[fieldKey];
+                            } else if ((space as any)[fieldKey] !== undefined) {
+                                value = (space as any)[fieldKey];
+                            }
+
+                            if (value !== undefined && value !== null && value !== '') {
+                                articleData[fieldKey] = value;
+                            }
+                        }
+                    });
+
+                    if (solumMappingConfig.globalFieldAssignments) {
+                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
+                    }
+
+                    // Use mappingInfo to populate root-level fields from articleData
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+                    const aimsArticle: any = {
+                        data: articleData
+                    };
+
+                    // Populate root-level fields using mappingInfo
+                    if (mappingInfo?.articleId && articleData[mappingInfo.articleId]) {
+                        aimsArticle.articleId = String(articleData[mappingInfo.articleId]);
+                    } else {
+                        aimsArticle.articleId = space.id;
+                    }
+
+                    if (mappingInfo?.articleName && articleData[mappingInfo.articleName]) {
+                        aimsArticle.articleName = String(articleData[mappingInfo.articleName]);
+                    } else {
+                        aimsArticle.articleName = space.roomName || space.id;
+                    }
+
+                    if (mappingInfo?.store && articleData[mappingInfo.store]) {
+                        aimsArticle.store = String(articleData[mappingInfo.store]);
+                    }
+
+                    if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
+                        aimsArticle.nfcUrl = String(articleData[mappingInfo.nfcUrl]);
+                    }
+
+                    await solumService.pushArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [aimsArticle]
+                    );
+                    logger.info('SpaceController', 'Article updated in AIMS successfully', { id });
+                } catch (error) {
+                    logger.error('SpaceController', 'Failed to update article in AIMS', { error });
+                    throw new Error(`Failed to update in AIMS: ${error}`);
+                }
+            }
+
+            // Refresh from AIMS to get the latest state
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    await fetchFromSolum();
+                    logger.info('SpaceController', 'Refreshed from AIMS after update');
+                } catch (error) {
+                    logger.warn('SpaceController', 'Failed to refresh from AIMS after update', { error });
+                }
+            } else {
+                // For non-SoluM modes, update store directly
+                updateInStore(id, updatedSpace);
+            }
 
             // Trigger sync
             if (onSync) {
@@ -190,7 +318,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space updated successfully', { id });
         },
-        [spaces, csvConfig, updateInStore, onSync]
+        [spaces, csvConfig, updateInStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -222,8 +350,18 @@ export function useSpaceController({
                 }
             }
 
-            // Delete from store
-            deleteFromStore(id);
+            // Refresh from AIMS to get the latest state
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    await fetchFromSolum();
+                    logger.info('SpaceController', 'Refreshed from AIMS after delete');
+                } catch (error) {
+                    logger.warn('SpaceController', 'Failed to refresh from AIMS after delete', { error });
+                }
+            } else {
+                // For non-SoluM modes, delete from store directly
+                deleteFromStore(id);
+            }
 
             // Trigger sync
             if (onSync) {
@@ -236,7 +374,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space deleted successfully', { id });
         },
-        [spaces, deleteFromStore, onSync]
+        [spaces, deleteFromStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -290,16 +428,17 @@ export function useSpaceController({
                     solumToken
                 );
 
-                // Filter OUT articles where uniqueIdField starts with 'C' (those are conference rooms)
-                const { uniqueIdField, fields, globalFieldAssignments } = solumMappingConfig;
+                // Filter OUT articles where articleId starts with 'C' (those are conference rooms)
+                // IMPORTANT: Check article.articleId (root level from AIMS), not article[uniqueIdField]
+                const { fields, globalFieldAssignments } = solumMappingConfig;
                 const spaceArticles = articles.filter((article: any) => {
-                    const uniqueId = article[uniqueIdField];
-                    return uniqueId && !String(uniqueId).toUpperCase().startsWith('C');
+                    const articleId = article.articleId; // Use root-level articleId from AIMS
+                    return articleId && !String(articleId).toUpperCase().startsWith('C');
                 });
 
                 // Map articles to Space entities
                 const mappedSpaces: Space[] = spaceArticles.map((article: any) => {
-                    const id = String(article[uniqueIdField] || '');
+                    const id = String(article.articleId || ''); // Use articleId from AIMS
 
                     // Apply global field assignments
                     const mergedArticle = {
@@ -307,19 +446,28 @@ export function useSpaceController({
                         ...(globalFieldAssignments || {}),
                     };
 
-                    // Build dynamic data object from visible fields with actual article values
+                    // Build dynamic data object from visible fields
+                    // Check both root level and article.data for field values
+                    const articleData = article.data || {};
                     const data: Record<string, string> = {};
-                    let roomName = id; // Default to ID
+                    let roomName = article.articleName || id; // Use articleName from AIMS
 
                     Object.keys(fields).forEach(fieldKey => {
                         const mapping = fields[fieldKey];
-                        if (mapping.visible && mergedArticle[fieldKey] !== undefined) {
-                            const fieldValue = String(mergedArticle[fieldKey]);
-                            data[fieldKey] = fieldValue;
+                        if (mapping.visible) {
+                            // Check article.data first, then root level
+                            const fieldValue = articleData[fieldKey] !== undefined
+                                ? articleData[fieldKey]
+                                : mergedArticle[fieldKey];
 
-                            // Use first visible field as roomName
-                            if (roomName === id) {
-                                roomName = fieldValue;
+                            if (fieldValue !== undefined) {
+                                const valueStr = String(fieldValue);
+                                data[fieldKey] = valueStr;
+
+                                // Use first visible field as roomName if it looks like a name
+                                if (fieldKey.toLowerCase().includes('name') && valueStr) {
+                                    roomName = valueStr;
+                                }
                             }
                         }
                     });
