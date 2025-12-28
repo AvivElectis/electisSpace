@@ -1,5 +1,6 @@
 import type { SyncAdapter, SyncState } from '../domain/types';
 import type { Space, SolumConfig, SolumTokens, CSVConfig } from '@shared/domain/types';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import * as solumService from '@shared/infrastructure/services/solumService';
 
@@ -16,6 +17,7 @@ export class SolumSyncAdapter implements SyncAdapter {
     private tokens: SolumTokens | null = null;
 
     private config: SolumConfig;
+    private mappingConfig: SolumMappingConfig | undefined;
     private csvConfig: CSVConfig;
     private onTokenUpdate: (tokens: SolumTokens) => void;
 
@@ -23,10 +25,12 @@ export class SolumSyncAdapter implements SyncAdapter {
         config: SolumConfig,
         csvConfig: CSVConfig,
         onTokenUpdate: (tokens: SolumTokens) => void,
-        initialTokens?: SolumTokens
+        initialTokens?: SolumTokens,
+        mappingConfig?: SolumMappingConfig
     ) {
         this.config = config;
         this.csvConfig = csvConfig;
+        this.mappingConfig = mappingConfig;
         this.onTokenUpdate = onTokenUpdate;
         this.tokens = initialTokens || null;
 
@@ -38,6 +42,14 @@ export class SolumSyncAdapter implements SyncAdapter {
                 lastSync: config.lastConnected ? new Date(config.lastConnected) : undefined
             };
         }
+
+
+        logger.info('SolumSyncAdapter', 'Initialized', {
+            hasConfig: !!config,
+            hasCsvConfig: !!csvConfig,
+            hasMappingConfig: !!mappingConfig,
+            fieldCount: mappingConfig?.fields ? Object.keys(mappingConfig.fields).length : 0
+        });
     }
 
     async connect(): Promise<void> {
@@ -103,6 +115,9 @@ export class SolumSyncAdapter implements SyncAdapter {
      */
     private mapArticlesToSpaces(articles: any[], labels: any[]): Space[] {
         const spaces: Space[] = [];
+        // Use mapping config if available, fallback to CSV config (legacy behavior support if needed, or just empty)
+        const fields = this.mappingConfig?.fields || {};
+        const globalFieldAssignments = this.mappingConfig?.globalFieldAssignments || {};
 
         for (const article of articles) {
             // Skip conference rooms (articles with ID starting with 'C')
@@ -113,16 +128,51 @@ export class SolumSyncAdapter implements SyncAdapter {
             // Find assigned label
             const label = labels.find(l => l.articleId === article.articleId);
 
-            // Build dynamic data from article fields based on CSV mapping
+            // Apply global field assignments
+            const mergedArticle = {
+                ...article,
+                ...globalFieldAssignments,
+            };
+
+            const articleData = article.data || {};
             const data: Record<string, string> = {};
-            const mapping = this.csvConfig?.mapping || {};
-            for (const [fieldName] of Object.entries(mapping)) {
-                data[fieldName] = article[fieldName] || article.articleData?.[fieldName] || '';
+            // Default roomName to articleName or ID
+            let roomName = article.articleName || article.articleId || '';
+
+            // Map fields based on configuration
+            if (this.mappingConfig) {
+                Object.keys(fields).forEach(fieldKey => {
+                    const mapping = fields[fieldKey];
+                    if (mapping.visible) {
+                        // Check article.data first, then root level/merged
+                        const fieldValue = articleData[fieldKey] !== undefined
+                            ? articleData[fieldKey]
+                            : mergedArticle[fieldKey];
+
+                        if (fieldValue !== undefined) {
+                            const valueStr = String(fieldValue);
+                            data[fieldKey] = valueStr;
+
+                            // Use first visible field as roomName if it looks like a name
+                            if (fieldKey.toLowerCase().includes('name') && valueStr) {
+                                roomName = valueStr;
+                            }
+                        }
+                    }
+                });
+            } else {
+                logger.warn('SolumSyncAdapter', 'No mapping config, falling back to CSV config');
+                // Fallback to CSV config mapping if no SolumMappingConfig provided (Legacy)
+                const mapping = this.csvConfig?.mapping || {};
+                for (const [fieldName] of Object.entries(mapping)) {
+                    data[fieldName] = article[fieldName] || article.articleData?.[fieldName] || '';
+                }
+                roomName = article.articleName || data['roomName'] || '';
             }
 
             const space: Space = {
                 id: article.articleId,
-                roomName: article.articleName || data['roomName'] || '',
+                roomName,
                 data,
                 labelCode: label?.labelCode,
                 templateName: article.templateName,

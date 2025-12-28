@@ -458,5 +458,24 @@
             "delete": "Delete Person Tag",
             "list": "Person Tag List"
         }
+    },
+    "lists": {
+        "manage": "Manage Lists",
+        "save": "Save List",
+        "manageLists": "Manage Lists",
+        "saveList": "Save Current Spaces as List",
+        "spacesCount": "spaces",
+        "noListsFound": "No saved lists found.",
+        "listName": "List Name",
+        "enterListName": "Enter list name",
+        "namePlaceholder": "e.g., Summer Setup",
+        "load": "Load",
+        "delete": "Delete",
+        "errorEmptyName": "List name cannot be empty",
+        "errorDuplicateName": "A list with this name already exists",
+        "confirmLoad": "Loading this list will update existing spaces and add new ones. No spaces will be removed. Continue?",
+        "loadSuccess": "List loaded and synced successfully!",
+        "deleteSuccess": "List deleted successfully",
+        "confirmDelete": "Are you sure you want to delete this list?"
     }
 }

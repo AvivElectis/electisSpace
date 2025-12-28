@@ -13,6 +13,7 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useSyncController } from '@features/sync/application/useSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 
 interface MainLayoutProps {
     children: ReactNode;
@@ -56,6 +57,12 @@ export function MainLayout({ children }: MainLayoutProps) {
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
 
+    console.log('[DEBUG MainLayout] settings:', {
+        hasSolumConfig: !!settings.solumConfig,
+        hasMappingConfig: !!settings.solumMappingConfig,
+        mappingFields: settings.solumMappingConfig?.fields ? Object.keys(settings.solumMappingConfig.fields).length : 0
+    });
+
     // Initialize global sync controller
     const syncController = useSyncController({
         sftpCredentials: settings.sftpCredentials,
@@ -63,7 +70,12 @@ export function MainLayout({ children }: MainLayoutProps) {
         csvConfig: settings.sftpCsvConfig as any, // Cast for legacy compatibility
         autoSyncEnabled: settings.autoSyncEnabled,
         onSpaceUpdate: setSpaces,
+        solumMappingConfig: settings.solumMappingConfig,
     });
+
+    // Get active list name for tab label
+
+    const { getLabel } = useSpaceTypeLabels();
 
     const { sync } = syncController;
 
@@ -122,7 +134,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                                             <ListItemIcon>
                                                 {tab.icon}
                                             </ListItemIcon>
-                                            <ListItemText primary={t(tab.labelKey)} />
+                                            <ListItemText
+                                                primary={
+                                                    tab.value === '/spaces'
+                                                        ? getLabel('plural')
+                                                        : t(tab.labelKey)
+                                                }
+                                            />
                                         </ListItemButton>
                                     </ListItem>
                                 ))}
@@ -160,7 +178,11 @@ export function MainLayout({ children }: MainLayoutProps) {
                             {navTabs.map(tab => (
                                 <Tab
                                     key={tab.value}
-                                    label={t(tab.labelKey)}
+                                    label={
+                                        tab.value === '/spaces'
+                                            ? getLabel('plural')
+                                            : t(tab.labelKey)
+                                    }
                                     value={tab.value}
                                     icon={tab.icon}
                                     iconPosition="start"

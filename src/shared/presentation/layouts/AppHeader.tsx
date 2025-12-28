@@ -2,6 +2,7 @@ import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+
 // import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 // import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
@@ -18,6 +19,7 @@ interface AppHeaderProps {
  * Title and subtitle are configurable through app settings
  */
 export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHeaderProps) {
+    // Get settings from store
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
     const isLocked = useSettingsStore((state) => state.isLocked);
@@ -107,6 +109,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                             {settings.appSubtitle}
                         </Typography>
                     )}
+
                 </Box>
 
                 {/* Right Logo + Language Switcher + Settings */}

@@ -1,7 +1,5 @@
 import {
     Box,
-    Card,
-    CardContent,
     Typography,
     Button,
     Table,
@@ -16,6 +14,7 @@ import {
     TextField,
     InputAdornment,
     Tooltip,
+    Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,6 +28,11 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 import { SpaceDialog } from './SpaceDialog';
 import type { Space } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { ListsManagerDialog } from '@features/lists/presentation/ListsManagerDialog';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { SaveListDialog } from '@features/lists/presentation/SaveListDialog';
+import FolderIcon from '@mui/icons-material/Folder';
+import SaveIcon from '@mui/icons-material/Save';
 
 /**
  * Spaces Page - Clean and Responsive Design with Dynamic Labels
@@ -37,6 +41,7 @@ export function SpacesPage() {
     const { t, i18n } = useTranslation();
     const settingsController = useSettingsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const activeListName = useSpacesStore((state) => state.activeListName);
 
     // Get SoluM access token if available (same pattern as ConferencePage)
     const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
@@ -49,9 +54,18 @@ export function SpacesPage() {
     });
     const { getLabel } = useSpaceTypeLabels();
 
+    console.log('[DEBUG SpacesPage] settings:', {
+        hasMappingConfig: !!settingsController.settings.solumMappingConfig,
+        mappingFields: settingsController.settings.solumMappingConfig?.fields ? Object.keys(settingsController.settings.solumMappingConfig.fields).length : 0
+    });
+
     const [searchQuery, setSearchQuery] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
+
+    // Lists Dialogs State
+    const [listsManagerOpen, setListsManagerOpen] = useState(false);
+    const [saveListOpen, setSaveListOpen] = useState(false);
 
     // Fetch spaces from AIMS on mount when in SoluM mode
     useEffect(() => {
@@ -153,49 +167,57 @@ export function SpacesPage() {
                 sx={{ mb: 3 }}
             >
                 <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                        {getLabel('plural')}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" mb={0.5}>
+                        <Typography variant="h4" sx={{ fontWeight: 500 }}>
+                            {getLabel('plural')}
+                        </Typography>
+                        {activeListName && (
+                            <Typography variant="h6" sx={{
+                                    fontWeight: 600,
+                                    bgcolor: 'primary.main',
+                                    color: 'primary.contrastText',
+                                    borderRadius: .5,
+                                    px: 1,
+                                    py: 0,
+                                    mx: 2,
+                                }}>
+                                {activeListName}
+                            </Typography>   
+                        )}
+                    </Stack>
                     <Typography variant="body2" color="text.secondary">
-                        {t('spaces.manage')}
+                        {t('spaces.total')} {getLabel('plural')} - {spaceController.spaces.length}
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAdd}
-                    sx={{ minWidth: { xs: '100%', sm: '140px' } }}
-                >
-                    {getLabel('add')}
-                </Button>
+                <Stack direction="row" spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAdd}
+                    >
+                        {getLabel('add')}
+                    </Button>
+                </Stack>
             </Stack>
-
-            {/* Stats Card */}
-            <Card sx={{ mb: 3 }}>
-                <CardContent>
-                    <Typography variant="body2" color="text.secondary">
-                        {t('spaces.total')} {getLabel('plural')}
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main' }}>
-                        {spaceController.spaces.length}
-                    </Typography>
-                </CardContent>
-            </Card>
 
             {/* Search Bar */}
             <TextField
-                fullWidth
                 placeholder={t('spaces.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
                     startAdornment: (
-                        <InputAdornment position="start">
+                        <InputAdornment position="start" >
                             <SearchIcon />
                         </InputAdornment>
                     ),
                 }}
-                sx={{ mb: 3 }}
+                sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                        borderRadius: 4,
+                    }
+                }}
             />
 
             {/* Spaces Table */}
@@ -273,6 +295,22 @@ export function SpacesPage() {
                     </TableBody>
                 </Table>
             </TableContainer>
+            <Box sx={{ mt: 2 }}>
+                <Button
+                    variant="outlined"
+                    startIcon={<FolderIcon />}
+                    onClick={() => setListsManagerOpen(true)}
+                >
+                    {t('lists.manage')}
+                </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<SaveIcon />}
+                    onClick={() => setSaveListOpen(true)}
+                >
+                    {t('lists.save')}
+                </Button>
+            </Box>
 
             {/* Add/Edit Dialog */}
             <SpaceDialog
@@ -286,6 +324,16 @@ export function SpacesPage() {
                 spaceTypeLabel={getLabel('singular')}
             />
             <ConfirmDialog />
+
+            {/* Lists Dialogs */}
+            <ListsManagerDialog
+                open={listsManagerOpen}
+                onClose={() => setListsManagerOpen(false)}
+            />
+            <SaveListDialog
+                open={saveListOpen}
+                onClose={() => setSaveListOpen(false)}
+            />
         </Box>
     );
 }
