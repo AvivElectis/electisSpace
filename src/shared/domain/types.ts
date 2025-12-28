@@ -27,9 +27,9 @@ export interface AppData {
 export interface Space {
     id: string;
     roomName: string;
-    data: Record<string, string>;  // Dynamic fields from CSV config
-    labelCode?: string;            // SoluM ESL label code
-    templateName?: string;         // SoluM template name
+    data: Record<string, string>;  // Dynamic fields from CSV or SoluM
+    labelCode?: string;  // Optional - for display only, assigned separately
+    templateName?: string;  // Optional - for display only
 }
 
 /**
@@ -44,7 +44,7 @@ export interface ConferenceRoom {
     endTime: string;         // HH:mm format
     participants: string[];
     labelCode?: string;
-    data?: Record<string, string>;
+    data: Record<string, string>;  // Additional dynamic fields
 }
 
 /**

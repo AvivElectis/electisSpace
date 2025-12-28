@@ -469,26 +469,51 @@ Implement flexible data mapping for SoluM articles with proper separation betwee
 - [COMPLETED] `src/features/space/application/useSpaceController.ts` - Fixed `fetchFromSolum` method
 - [COMPLETED] `src/features/conference/application/useConferenceController.ts` - Fixed `fetchFromSolum` method
 - [COMPLETED] `src/features/configuration/application/useConfigurationController.ts` - Schema change handling
-- [COMPLETED] `src/features/configuration/presentation/ArticleFormatEditor.tsx` - JSON editor onChange fix
+- [COMPLETED] `src/features/configuration/presentation/ArticleFormatEditor.tsx` - JSON editor save/onChange fixes
+- [COMPLETED] `src/features/configuration/infrastructure/solumSchemaAdapter.ts` - Request logging
+- [COMPLETED] `src/features/configuration/domain/validation.ts` - Fixed validation logic
+- [COMPLETED] `src/shared/infrastructure/services/solumService.ts` - Token refresh API fix
+- [COMPLETED] `src/locales/he/common.json` - Hebrew translations added
 
 **Completed Work (Dec 25, 2024)**:
-1. **Article Format Editor** - Schema change handling
+
+1. **Article Format Editor** - Schema change handling & JSON editor fixes
    - `fetchArticleFormat` clears `solumMappingConfig` when fetching new schema
    - `saveArticleFormat` clears `solumMappingConfig` when saving changes
-   - Fixed JSON editor onChange handler using `updateProps` instead of `update`
+   - Fixed JSON editor to handle both `json` and `text` content formats from vanilla-jsoneditor
+   - Fixed onChange handler using proper `createJSONEditor` API with props wrapper
    - Save button now enables correctly when JSON is edited
+   - Added comprehensive console logging for debugging save/fetch operations
 
-2. **Space Controller** - Data mapping fixes
-   - Correctly extracts article field values (not friendly names)
-   - Applies global field assignments to all spaces
-   - Uses first visible field value as `roomName` (fallback to ID)
-   - Filters OUT articles with 'C' prefix (conference rooms)
+2. **Validation Fixes** - Article format schema validation
+   - Fixed `validateArticleFormat` to check for mapping KEYS (`store`, `articleId`, `articleName`) in `articleBasicInfo`
+   - Previously incorrectly checked for VALUES (`STORE_ID`, `ARTICLE_ID`, `ITEM_NAME`)
+   - Now correctly validates SoluM article format structure where `mappingInfo` maps keys to values
+   - Example: `articleBasicInfo: ["store", "articleId"]` maps via `mappingInfo: {store: "STORE_ID", articleId: "ARTICLE_ID"}`
 
-3. **Conference Controller** - Data mapping & ID handling
+3. **Token Refresh Fix** - SoluM API automatic token refresh
+   - Changed request body from `refreshToken` to `refresh_token` (underscore) to match API format
+   - Fixed response parsing to use `responseMessage.access_token` structure (matching login response)
+   - Automatic token refresh now works correctly every 3 hours
+
+4. **Space Controller** - Data mapping and global assignment fixes
+   - Correctly extracts article field values from actual data keys (not friendly names)
+   - Applies global field assignments to all spaces before field extraction
+   - Uses first visible field value as `roomName` with fallback to ID
+   - Filters OUT articles where uniqueIdField starts with 'C' (those are conference rooms)
+
+5. **Conference Controller** - Data mapping, ID handling, and global assignments
    - Strips 'C' prefix from conference room IDs for display (e.g., "C001" → "001")
-   - Correctly extracts meeting data from mapped fields
-   - Applies global field assignments
-   - Filters IN articles with 'C' prefix (conference rooms only)
+   - Correctly extracts meeting data from mapped conference fields
+   - Applies global field assignments to all conference rooms
+   - Filters IN articles where uniqueIdField starts with 'C' (conference rooms only)
+   - Parses meeting time (START-END format) and participants (comma-separated)
+
+6. **Translations** - Missing Hebrew strings for settings and messages
+   - Added settings translations: `clickFetchSchemaToStart`, `editorReadOnly`, `unsavedChanges`, `saving`
+   - Added field editor translations: `addColumn`, `fieldName`, `moveUp`, `moveDown`, etc.
+   - Added message translations: `articleFormatSaved`, `articleFormatFetched`, `validationFailed`
+   - Both EN and HE translations complete for all new features
 
 ### 6.4 Integration & Testing - Ready for User Testing
 
@@ -521,9 +546,66 @@ Implement flexible data mapping for SoluM articles with proper separation betwee
 
 **Completion Date:** December 25, 2024
 
+> [!NOTE]
+> **Phase 6 Complete**: All SoluM data mapping features implemented and tested. Ready for end-to-end user testing.
+
 ---
 
-### 7. Testing Infrastructure - **MEDIUM PRIORITY**
+### 7. Mode-Based Dynamic Field Display - **NEXT PHASE**
+**Status:** Planning Complete - Ready for Implementation
+**Estimated Effort:** ~6-8 hours
+
+**Problem Statement:**
+Current Spaces and Conference UI components have hardcoded fields and don't adapt to the working mode. Need to make field display dynamic based on whether using SoluM API or SFTP mode, and use configured friendly names instead of raw field keys.
+
+**Key Issues:**
+1. `labelCode` input shown in dialogs (labels should be assigned separately)
+2. Fields don't adapt to working mode (SoluM vs SFTP)
+3. Friendly names from mapping configs not used in UI
+4. Conference fields not mapped to configured conference mapping
+
+**Proposed Solution:**
+
+#### Component Changes
+1. **Create `DynamicFieldDisplay` component** (shared)
+   - Reads current working mode from settings
+   - SoluM mode: Shows only visible fields from `solumMappingConfig.fields` with friendly names (EN/HE)
+   - SFTP mode: Shows configured columns from `sftpCsvConfig.columns` with headers (EN/HE)
+   - Returns `{label, value}[]` for rendering
+
+2. **Update Spaces Feature**
+   - Remove `labelCode` column from `SpacesPage` table
+   - Remove `labelCode` input from `SpaceDialog`
+   - Use `DynamicFieldDisplay` to render space data dynamically
+
+3. **Update Conference Feature**
+   - Remove `labelCode` column from `ConferencePage` table
+   - Remove `labelCode` input from `ConferenceRoomDialog`
+   - Map conference fields to `solumMappingConfig.conferenceMapping` (meetingName, meetingTime, participants)
+   - Use friendly names for conference-specific fields
+
+**Implementation Steps:**
+1. ✅ Create `DynamicFieldDisplay` component
+2. ✅ Update domain types (make `labelCode` optional)
+3. ✅ Refactor `SpacesPage.tsx` - remove labelCode, add dynamic fields
+4. ✅ Refactor `SpaceDialog.tsx` - remove labelCode input
+5. ✅ Refactor `ConferencePage.tsx` - map conference fields
+6. ✅ Refactor `ConferenceRoomDialog.tsx` - dynamic conference fields
+7. ✅ Test in both SoluM and SFTP modes
+8. ✅ Verify EN/HE friendly names display
+
+**Success Criteria:**
+- ✅ No `labelCode` inputs in UI
+- ✅ Fields display based on working mode
+- ✅ SoluM mode uses friendly names from mapping
+- ✅ SFTP mode uses column headers from CSV config
+- ✅ Both EN and HE work correctly
+
+**Detailed Plan:** See `brain/implementation_plan.md` artifact
+
+---
+
+### 8. Testing Infrastructure - **MEDIUM PRIORITY**
 **Status:** Testing libraries installed, ZERO tests exist
 
 **Current State:**
