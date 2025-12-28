@@ -21,20 +21,19 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SpaceDialog } from './SpaceDialog';
-import { DynamicFieldDisplay } from '@shared/presentation/components/DynamicFieldDisplay';
 import type { Space } from '@shared/domain/types';
 
 /**
  * Spaces Page - Clean and Responsive Design with Dynamic Labels
  */
 export function SpacesPage() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const settingsController = useSettingsController();
 
     // Get SoluM access token if available (same pattern as ConferencePage)
@@ -65,6 +64,27 @@ export function SpacesPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Get visible fields from mapping config for dynamic table columns
+    // Exclude ID fields since we have a dedicated ID column
+    const visibleFields = useMemo(() => {
+        if (!settingsController.settings.solumMappingConfig?.fields) return [];
+
+        const idFieldKey = settingsController.settings.solumMappingConfig.mappingInfo?.articleId;
+
+        return Object.entries(settingsController.settings.solumMappingConfig.fields)
+            .filter(([fieldKey, config]) => {
+                // Exclude the ID field since we show it in the dedicated ID column
+                if (idFieldKey && fieldKey === idFieldKey) return false;
+                // Only show visible fields
+                return config.visible;
+            })
+            .map(([fieldKey, config]) => ({
+                key: fieldKey,
+                labelEn: config.friendlyNameEn,
+                labelHe: config.friendlyNameHe
+            }));
+    }, [settingsController.settings.solumMappingConfig]);
 
     // Filter spaces based on search query
     const filteredSpaces = spaceController.spaces.filter((space) => {
@@ -167,16 +187,19 @@ export function SpacesPage() {
                 <Table>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'background.default' }}>
-                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.id')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>{t('spaces.name')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>{t('common.info')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }} align="right">{t('spaces.actions')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.id')}</TableCell>
+                            {visibleFields.map(field => (
+                                <TableCell key={field.key} sx={{ fontWeight: 600 }} align="center">
+                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                </TableCell>
+                            ))}
+                            <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.actions')}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {filteredSpaces.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                <TableCell colSpan={visibleFields.length + 2} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {searchQuery
                                             ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
@@ -194,25 +217,20 @@ export function SpacesPage() {
                                         },
                                     }}
                                 >
-                                    <TableCell>
+                                    <TableCell align="center">
                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                             {space.id}
                                         </Typography>
                                     </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2">{space.roomName}</Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DynamicFieldDisplay
-                                            data={space.data}
-                                            mode={settingsController.settings.workingMode === 'SOLUM_API' ? 'solum' : 'sftp'}
-                                            solumMappingConfig={settingsController.settings.solumMappingConfig}
-                                            sftpCsvColumns={settingsController.settings.sftpCsvConfig?.columns}
-                                            variant="table"
-                                        />
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                    {visibleFields.map(field => (
+                                        <TableCell key={field.key} align="center">
+                                            <Typography variant="body2">
+                                                {space.data[field.key] || '-'}
+                                            </Typography>
+                                        </TableCell>
+                                    ))}
+                                    <TableCell align="center">
+                                        <Stack direction="row" spacing={1} justifyContent="center">
                                             <Tooltip title="Edit">
                                                 <IconButton
                                                     size="small"
