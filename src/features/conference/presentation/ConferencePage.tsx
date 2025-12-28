@@ -30,6 +30,7 @@ import { useConferenceController } from '../application/useConferenceController'
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { ConferenceRoomDialog } from './ConferenceRoomDialog';
 import type { ConferenceRoom } from '@shared/domain/types';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 /**
  * Conference Rooms Page - Clean Card-based Design
@@ -37,6 +38,7 @@ import type { ConferenceRoom } from '@shared/domain/types';
 export function ConferencePage() {
     const { t } = useTranslation();
     const { settings } = useSettingsStore();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Get SoluM access token if available
     const solumToken = settings.solumConfig?.tokens?.accessToken;
@@ -74,11 +76,25 @@ export function ConferencePage() {
     });
 
     const handleDelete = async (id: string) => {
-        if (window.confirm(t('conference.confirmDelete'))) {
+        const confirmed = await confirm({
+            title: t('common.dialog.delete'),
+            message: t('conference.confirmDelete'),
+            confirmLabel: t('common.dialog.delete'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'error'
+        });
+
+        if (confirmed) {
             try {
                 await conferenceController.deleteConferenceRoom(id);
             } catch (error) {
-                alert(`Failed to delete conference room: ${error}`);
+                await confirm({
+                    title: t('common.error'),
+                    message: `Failed to delete conference room: ${error}`,
+                    confirmLabel: t('common.close'),
+                    severity: 'error',
+                    showCancel: false
+                });
             }
         }
     };
@@ -254,7 +270,7 @@ export function ConferencePage() {
             ) : (
                 <Grid container spacing={3}>
                     {filteredRooms.map((room) => (
-                        <Grid size={{ xs: 12, sm: 6, lg: 4 }}  key={room.id}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={room.id}>
                             <Card
                                 sx={{
                                     height: '100%',
@@ -274,17 +290,17 @@ export function ConferencePage() {
                                             direction="row"
                                             justifyContent="space-between"
                                             alignItems="start"
-                                            sx={{backgroundColor: room.hasMeeting ? '#EF4444' : '#22C55E', px:1, py:1, mx:0, borderRadius: 1, color: 'white', textShadow: '0px 0px 2px rgba(0, 0, 0, 0.75)'}}
+                                            sx={{ backgroundColor: room.hasMeeting ? '#EF4444' : '#22C55E', px: 1, py: 1, mx: 0, borderRadius: 1, color: 'white', textShadow: '0px 0px 2px rgba(0, 0, 0, 0.75)' }}
                                         >
                                             <Box>
                                                 <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                                   {room.id} - {room.roomName}
+                                                    {room.id} - {room.roomName}
                                                 </Typography>
                                             </Box>
                                             <Chip
                                                 label={room.hasMeeting ? t('conference.occupied') : t('conference.available')}
                                                 color={'primary'}
-                                                variant = {'outlined'}
+                                                variant={'outlined'}
                                                 size="small"
                                             />
                                         </Stack>
@@ -444,6 +460,7 @@ export function ConferencePage() {
                 onSave={handleSave}
                 room={editingRoom}
             />
+            <ConfirmDialog />
         </Box>
     );
 }

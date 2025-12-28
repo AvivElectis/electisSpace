@@ -101,7 +101,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             PaperProps={{
                 sx: {
                     height: '80vh',
-                    maxHeight: '800px'
+                    maxHeight: '800px',
+                    px: 1,
                 }
             }}
         >
@@ -120,10 +121,23 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </IconButton>
             </DialogTitle>
 
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box>
                 <Tabs
                     value={currentTab}
                     onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 0,
+                        '& .MuiTab-root': {
+                            border: '1px solid transparent',
+                            borderRadius: 2,
+                            '&.Mui-selected': {
+                                border: '1px solid',
+                                borderColor: 'primary',
+                                boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
+                            }
+                        }
+                    }}
+                    TabIndicatorProps={{ sx: { display: 'none' } }}
                     variant="scrollable"
                     scrollButtons="auto"
                 >
@@ -142,7 +156,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </Tabs>
             </Box>
 
-            <DialogContent dividers sx={{ p: 0 }}>
+            <DialogContent >
                 <TabPanel value={currentTab} index={0}>
                     <AppSettingsTab
                         settings={settingsController.settings}

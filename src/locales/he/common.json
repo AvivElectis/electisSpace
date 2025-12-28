@@ -35,7 +35,17 @@
         "saving": "שומר...",
         "name": "שם",
         "id": "מזהה",
-        "actions": "פעולות"
+        "actions": "פעולות",
+        "dialog": {
+            "confirm": "אישור",
+            "cancel": "ביטול",
+            "delete": "מחק",
+            "clear": "נקה",
+            "continue": "המשך",
+            "areYouSure": "האם אתה בטוח?",
+            "info": "מידע",
+            "warning": "אזהרה"
+        }
     },
     "dashboard": {
         "title": "לוח בקרה",

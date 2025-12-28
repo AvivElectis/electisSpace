@@ -28,6 +28,7 @@ import { useSettingsController } from '@features/settings/application/useSetting
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SpaceDialog } from './SpaceDialog';
 import type { Space } from '@shared/domain/types';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 /**
  * Spaces Page - Clean and Responsive Design with Dynamic Labels
@@ -35,6 +36,7 @@ import type { Space } from '@shared/domain/types';
 export function SpacesPage() {
     const { t, i18n } = useTranslation();
     const settingsController = useSettingsController();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Get SoluM access token if available (same pattern as ConferencePage)
     const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
@@ -99,11 +101,25 @@ export function SpacesPage() {
     });
 
     const handleDelete = async (id: string) => {
-        if (window.confirm(`Are you sure you want to delete this ${getLabel('singular').toLowerCase()}?`)) {
+        const confirmed = await confirm({
+            title: `${t('common.dialog.delete')} ${getLabel('singular').toLowerCase()}`,
+            message: `${t('common.dialog.areYouSure')} `,
+            confirmLabel: t('common.dialog.delete'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'error'
+        });
+
+        if (confirmed) {
             try {
                 await spaceController.deleteSpace(id);
             } catch (error) {
-                alert(`Failed to delete ${getLabel('singular').toLowerCase()}: ${error}`);
+                await confirm({
+                    title: t('common.error'),
+                    message: `Failed to delete ${getLabel('singular').toLowerCase()}: ${error}`,
+                    confirmLabel: t('common.close'),
+                    severity: 'error',
+                    showCancel: false
+                });
             }
         }
     };
@@ -269,6 +285,7 @@ export function SpacesPage() {
                 csvConfig={settingsController.settings.csvConfig}
                 spaceTypeLabel={getLabel('singular')}
             />
+            <ConfirmDialog />
         </Box>
     );
 }

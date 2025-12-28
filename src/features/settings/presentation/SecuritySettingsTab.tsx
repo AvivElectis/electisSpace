@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SettingsData } from '../domain/types';
 import { ImportExportSection } from '@features/import-export/presentation/ImportExportSection';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 interface SecuritySettingsTabProps {
     isPasswordProtected: boolean;
@@ -42,12 +43,13 @@ export function SecuritySettingsTab({
     onUpdate,
 }: SecuritySettingsTabProps) {
     const { t } = useTranslation();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [unlockPassword, setUnlockPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    const handleSetPassword = () => {
+    const handleSetPassword = async () => {
         setError(null);
 
         if (!newPassword) {
@@ -69,13 +71,19 @@ export function SecuritySettingsTab({
             onSetPassword(newPassword);
             setNewPassword('');
             setConfirmPassword('');
-            alert(t('settings.setPasswordSuccess'));
+            await confirm({
+                title: t('common.success'),
+                message: t('settings.setPasswordSuccess'),
+                confirmLabel: t('common.close'),
+                severity: 'success',
+                showCancel: false
+            });
         } catch (err) {
             setError(`Failed to set password: ${err}`);
         }
     };
 
-    const handleUnlock = () => {
+    const handleUnlock = async () => {
         setError(null);
 
         if (!unlockPassword) {
@@ -86,20 +94,34 @@ export function SecuritySettingsTab({
         const success = onUnlock(unlockPassword);
         if (success) {
             setUnlockPassword('');
-            alert(t('settings.unlockSuccess'));
+            await confirm({
+                title: t('common.success'),
+                message: t('settings.unlockSuccess'),
+                confirmLabel: t('common.close'),
+                severity: 'success',
+                showCancel: false
+            });
         } else {
             setError(t('settings.incorrectPassword'));
             setUnlockPassword('');
         }
     };
 
-    const handleLock = () => {
+    const handleLock = async () => {
         if (!isPasswordProtected) {
             setError(t('settings.setPasswordFirst'));
             return;
         }
 
-        if (window.confirm(t('settings.lockConfirm'))) {
+        const confirmed = await confirm({
+            title: t('common.dialog.confirm'),
+            message: t('settings.lockConfirm'),
+            confirmLabel: t('settings.lock'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'warning'
+        });
+
+        if (confirmed) {
             onLock();
             // Dialog will close automatically via useEffect in SettingsDialog
         }
@@ -265,8 +287,16 @@ export function SecuritySettingsTab({
                     <Button
                         variant="text"
                         color="error"
-                        onClick={() => {
-                            if (window.confirm(t('settings.clearStorageConfirm'))) {
+                        onClick={async () => {
+                            const confirmed = await confirm({
+                                title: t('common.dialog.warning'),
+                                message: t('settings.clearStorageConfirm'),
+                                confirmLabel: t('common.dialog.delete'),
+                                cancelLabel: t('common.dialog.cancel'),
+                                severity: 'error'
+                            });
+
+                            if (confirmed) {
                                 // Clear all localStorage
                                 localStorage.clear();
                                 // Reload the page
@@ -285,6 +315,7 @@ export function SecuritySettingsTab({
 
                 {/* Import/Export Settings */}
                 <ImportExportSection />
+                <ConfirmDialog />
             </Stack>
         </Box>
     );
