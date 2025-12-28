@@ -233,6 +233,7 @@
         "solumApiPassword": "סיסמת SoluM API",
         "synchronization": "סינכרון",
         "syncInterval": "מרווח סינכרון",
+        "syncIntervalHelp": "תדירות הרצת הסינכרון האוטומטי (מינימום 60 שניות)",
         "simpleConferenceMode": "מצב ישיבות פשוט",
         "simpleConferenceModeDesc": "כאשר מופעל, חדרי ישיבות מציגים רק מתג תפוס/פנוי",
         "companyCodeHelper": "מזהה החברה שלך ב-SoluM",

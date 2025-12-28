@@ -130,40 +130,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                     )}
                 </Box>
 
-                <Divider />
 
-                {/* Auto-Sync */}
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.autoSyncSettings')}
-                    </Typography>
-                    <Stack spacing={1.5}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    size="small"
-                                    checked={settings.autoSyncEnabled}
-                                    onChange={(e) => onUpdate({ autoSyncEnabled: e.target.checked })}
-                                />
-                            }
-                            label={<Typography variant="body2">{t('settings.enableAutoSync')}</Typography>}
-                        />
-                        {settings.autoSyncEnabled && (
-                            <TextField
-                                fullWidth
-                                size="small"
-                                type="number"
-                                label={t('settings.autoSyncInterval')}
-                                value={settings.autoSyncInterval}
-                                onChange={(e) => onUpdate({ autoSyncInterval: Number(e.target.value) })}
-                                inputProps={{ min: 30, max: 3600 }}
-                                helperText={t('settings.syncFrequency')}
-                            />
-                        )}
-                    </Stack>
-                </Box>
-
-                <Divider />
 
                 {/* Update Settings */}
                 <Box>
