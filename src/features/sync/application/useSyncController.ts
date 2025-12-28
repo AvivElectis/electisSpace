@@ -5,6 +5,7 @@ import { SolumSyncAdapter } from '../infrastructure/SolumSyncAdapter';
 import type { SyncAdapter } from '../domain/types';
 import type { Space, SFTPCredentials, SolumConfig, CSVConfig } from '@shared/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 
 /**
  * Sync Controller Hook
@@ -18,6 +19,7 @@ interface UseSyncControllerProps {
     csvConfig: CSVConfig;
     autoSyncEnabled: boolean;
     onSpaceUpdate: (spaces: Space[]) => void;
+    solumMappingConfig?: SolumMappingConfig;
 }
 
 export function useSyncController({
@@ -26,6 +28,7 @@ export function useSyncController({
     csvConfig,
     autoSyncEnabled: autoSyncEnabledProp,
     onSpaceUpdate,
+    solumMappingConfig,
 }: UseSyncControllerProps) {
     const {
         workingMode,
@@ -61,12 +64,16 @@ export function useSyncController({
             if (!solumConfig) {
                 throw new Error('SoluM configuration not configured');
             }
-            logger.info('SyncController', 'Creating SoluM adapter');
+            logger.info('SyncController', 'Creating SoluM adapter', {
+                hasConfig: !!solumMappingConfig,
+                fields: solumMappingConfig?.fields ? Object.keys(solumMappingConfig.fields) : []
+            });
             adapterRef.current = new SolumSyncAdapter(
                 solumConfig,
                 csvConfig,
                 (tokens) => setSolumTokens(tokens),
-                solumTokens || undefined
+                solumTokens || undefined,
+                solumMappingConfig
             );
         }
 
@@ -75,7 +82,7 @@ export function useSyncController({
             throw new Error('Adapter initialization failed');
         }
         return adapterRef.current;
-    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, setSolumTokens]);
+    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, setSolumTokens, solumMappingConfig]);
 
     /**
      * Sync tokens from settings to store
@@ -331,7 +338,7 @@ export function useSyncController({
         // We simply clear the ref. The next call to getAdapter() will create a new one.
         // We don't disconnect() here because we want to maintain the session if we're just updating tokens.
         adapterRef.current = null;
-    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens]);
+    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, solumMappingConfig]);
 
     /**
      * Component unmount cleanup

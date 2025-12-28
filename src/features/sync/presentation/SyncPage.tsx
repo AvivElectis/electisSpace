@@ -14,10 +14,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { useTranslation } from 'react-i18next';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
-import { useSyncController } from '@features/sync/application/useSyncController';
-import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
-import { useSyncStore } from '@features/sync/infrastructure/syncStore';
+import { useSyncContext } from '@features/sync/application/SyncContext';
 
 /**
  * Sync Page
@@ -27,19 +24,11 @@ export function SyncPage() {
     const { t } = useTranslation();
     const settingsController = useSettingsController();
 
-    // Connect to stores
-    const settings = useSettingsStore(state => state.settings);
-    const setSpaces = useSpacesStore(state => state.setSpaces);
-    const syncState = useSyncStore(state => state.syncState);
-
-    // Initialize controller for manual actions
-    const { sync } = useSyncController({
-        sftpCredentials: settings.sftpCredentials,
-        solumConfig: settings.solumConfig,
-        csvConfig: settings.sftpCsvConfig as any,
-        autoSyncEnabled: settings.autoSyncEnabled,
-        onSpaceUpdate: setSpaces,
-    });
+    // Use global sync controller from context
+    const {
+        sync,
+        syncState
+    } = useSyncContext();
 
     const handleSync = async () => {
         try {

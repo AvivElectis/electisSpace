@@ -125,6 +125,7 @@ export function ConferencePage() {
 
     const occupiedRooms = conferenceController.conferenceRooms.filter(r => r.hasMeeting).length;
     const availableRooms = conferenceController.conferenceRooms.length - occupiedRooms;
+    const cardsSetting = {boxShadow: 'none', bgcolor:'transparent', border: 'none', '&:hover': {boxShadow: '0px 0px 1px 1px #6666663b'}}
 
     return (
         <Box>
@@ -157,7 +158,7 @@ export function ConferencePage() {
             {/* Stats Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card >
+                    <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
@@ -183,7 +184,7 @@ export function ConferencePage() {
                     </Card>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
+                    <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
@@ -209,12 +210,12 @@ export function ConferencePage() {
                     </Card>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
+                    <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
                                 <Box
                                     sx={{
-                                        bgcolor: 'warning.main',
+                                        bgcolor: 'error.light',
                                         borderRadius: 2,
                                         p: 1.5,
                                         display: 'flex',
@@ -238,7 +239,6 @@ export function ConferencePage() {
 
             {/* Search Bar */}
             <TextField
-                fullWidth
                 placeholder={t('conference.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -249,7 +249,12 @@ export function ConferencePage() {
                         </InputAdornment>
                     ),
                 }}
-                sx={{ mb: 3 }}
+                sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                        borderRadius: 4,
+                    }
+                }}
             />
 
             {/* Conference Rooms Grid */}

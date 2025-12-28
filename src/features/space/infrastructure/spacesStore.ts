@@ -1,12 +1,11 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import type { Space } from '@shared/domain/types';
-import type { SpacesList } from '../domain/types';
 
-interface SpacesStore {
+export interface SpacesStore {
     // State
     spaces: Space[];
-    spacesLists: SpacesList[];
+    activeListName?: string;
 
     // Actions
     setSpaces: (spaces: Space[]) => void;
@@ -14,20 +13,18 @@ interface SpacesStore {
     updateSpace: (id: string, updates: Partial<Space>) => void;
     deleteSpace: (id: string) => void;
 
-    // Spaces lists
-    addSpacesList: (spacesList: SpacesList) => void;
-    updateSpacesList: (id: string, updates: Partial<SpacesList>) => void;
-    deleteSpacesList: (id: string) => void;
-    loadSpacesList: (id: string) => void;
+    // List Management Helpers
+    setActiveListName: (name: string | undefined) => void;
+    mergeSpacesList: (spaces: Space[]) => void;
 }
 
 export const useSpacesStore = create<SpacesStore>()(
     devtools(
         persist(
-            (set, get) => ({
+            (set, _get) => ({
                 // Initial state
                 spaces: [],
-                spacesLists: [],
+                activeListName: undefined,
 
                 // Actions
                 setSpaces: (spaces) => set({ spaces }, false, 'setSpaces'),
@@ -49,36 +46,34 @@ export const useSpacesStore = create<SpacesStore>()(
                         spaces: state.spaces.filter((s) => s.id !== id),
                     }), false, 'deleteSpace'),
 
-                // Spaces lists
-                addSpacesList: (spacesList) =>
-                    set((state) => ({
-                        spacesLists: [...state.spacesLists, spacesList],
-                    }), false, 'addSpacesList'),
+                // List Management Helpers
+                setActiveListName: (name) => set({ activeListName: name }, false, 'setActiveListName'),
 
-                updateSpacesList: (id, updates) =>
-                    set((state) => ({
-                        spacesLists: state.spacesLists.map((list) =>
-                            list.id === id ? { ...list, ...updates, updatedAt: new Date().toISOString() } : list
-                        ),
-                    }), false, 'updateSpacesList'),
+                mergeSpacesList: (newSpaces) =>
+                    set((state) => {
+                        const existingSpacesMap = new Map(state.spaces.map(s => [s.id, s]));
 
-                deleteSpacesList: (id) =>
-                    set((state) => ({
-                        spacesLists: state.spacesLists.filter((list) => list.id !== id),
-                    }), false, 'deleteSpacesList'),
+                        newSpaces.forEach(newSpace => {
+                            if (existingSpacesMap.has(newSpace.id)) {
+                                // Update existing space with list details
+                                const existing = existingSpacesMap.get(newSpace.id)!;
+                                existingSpacesMap.set(newSpace.id, { ...existing, ...newSpace });
+                            } else {
+                                // Add new space
+                                existingSpacesMap.set(newSpace.id, newSpace);
+                            }
+                        });
 
-                loadSpacesList: (id) => {
-                    const spacesList = get().spacesLists.find((list) => list.id === id);
-                    if (spacesList) {
-                        set({ spaces: spacesList.spaces }, false, 'loadSpacesList');
-                    }
-                },
+                        return {
+                            spaces: Array.from(existingSpacesMap.values()),
+                        };
+                    }, false, 'mergeSpacesList'),
             }),
             {
                 name: 'spaces-store',
                 partialize: (state) => ({
                     spaces: state.spaces,
-                    spacesLists: state.spacesLists,
+                    activeListName: state.activeListName,
                 }),
             }
         ),
