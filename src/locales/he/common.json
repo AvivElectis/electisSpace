@@ -27,7 +27,11 @@
         "error": "שגיאה",
         "success": "הצלחה",
         "warning": "אזהרה",
-        "info": "מידע"
+        "info": "מידע",
+        "saving": "שומר...",
+        "name": "שם",
+        "id": "מזהה",
+        "actions": "פעולות"
     },
     "dashboard": {
         "title": "לוח בקרה",
@@ -82,7 +86,10 @@
         "delete": "מחק",
         "totalSpaces": "סה\"כ",
         "noSpacesMatching": "לא נמצאו {{spaces}} התואמים",
-        "noSpacesYet": "עדיין אין {{spaces}}. לחץ על {{button}} כדי להתחיל."
+        "noSpacesYet": "עדיין אין {{spaces}}. לחץ על {{button}} כדי להתחיל.",
+        "idCannotChange": "לא ניתן לשנות את המזהה",
+        "uniqueIdentifier": "מזהה ייחודי",
+        "additionalInfo": "מידע נוסף"
     },
     "conference": {
         "title": "חדרי ישיבות",
@@ -111,7 +118,12 @@
         "noRoomsYet": "עדיין אין חדרי ישיבות",
         "noRoomsMatching": "לא נמצאו חדרי ישיבות התואמים",
         "noRoomsFound": "לא נמצאו חדרים",
-        "clickAddRoom": "לחץ על {{button}} כדי ליצור את חדר הישיבות הראשון שלך",
+        "clickAddRoom": "לחץ על {{button}} כדי להוסיף את החדר הראשון שלך",
+        "idCannotChange": "לא ניתן לשנות את המזהה",
+        "idAutoFormat": "מזהה חדר ישיבות (קידומת C תתווסף אוטומטית במידת הצורך)",
+        "roomNamePlaceholder": "חדר ישיבות א'",
+        "meetingInfo": "פרטי פגישה",
+        "hasActiveMeeting": "יש פגישה פעילה בחדר",
         "editRoomButton": "ערוך חדר",
         "active": "פעיל",
         "inactive": "לא פעיל"
@@ -232,7 +244,7 @@
         "clickFetchSchemaToStart": "לחץ על 'הבא סכמת מוצר' כדי לטעון את התצורה",
         "editorReadOnly": "עורך זה במצב קריאה בלבד",
         "unsavedChanges": "יש לך שינויים שלא נשמרו",
-        "saving":"שומר...",
+        "saving": "שומר...",
         "addColumn": "הוסף עמודה",
         "columnOrder": "סדר",
         "fieldName": "שם שדה",

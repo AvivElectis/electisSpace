@@ -24,9 +24,10 @@ import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConferenceController } from '../application/useConferenceController';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { ConferenceRoomDialog } from './ConferenceRoomDialog';
 import type { ConferenceRoom } from '@shared/domain/types';
 
@@ -35,12 +36,32 @@ import type { ConferenceRoom } from '@shared/domain/types';
  */
 export function ConferencePage() {
     const { t } = useTranslation();
-    const conferenceController = useConferenceController({});
+    const { settings } = useSettingsStore();
+
+    // Get SoluM access token if available
+    const solumToken = settings.solumConfig?.tokens?.accessToken;
+
+    const conferenceController = useConferenceController({
+        solumConfig: settings.solumConfig,
+        solumToken,
+        solumMappingConfig: settings.solumMappingConfig,
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<ConferenceRoom | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingRoom, setEditingRoom] = useState<ConferenceRoom | undefined>(undefined);
+
+    // Fetch conference rooms from AIMS on mount (SoluM mode)
+    useEffect(() => {
+        if (settings.workingMode === 'SOLUM_API' && settings.solumConfig && solumToken && settings.solumMappingConfig) {
+            conferenceController.fetchFromSolum().catch((error: any) => {
+                console.error('Failed to fetch conference rooms from AIMS:', error);
+            });
+        }
+        // Only run once on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Filter rooms based on search query
     const filteredRooms = conferenceController.conferenceRooms.filter((room) => {
@@ -191,32 +212,6 @@ export function ConferencePage() {
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                         {t('conference.occupied')}
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
-                        <CardContent>
-                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
-                                <Box
-                                    sx={{
-                                        bgcolor: 'info.main',
-                                        borderRadius: 2,
-                                        p: 1.5,
-                                        display: 'flex',
-                                    }}
-                                >
-                                    <AccessTimeIcon sx={{ color: 'white' }} />
-                                </Box>
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 500 }}>
-                                        {conferenceController.conferenceRooms.filter(r => r.labelCode).length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('conference.withLabels')}
                                     </Typography>
                                 </Box>
                             </Stack>
@@ -392,14 +387,6 @@ export function ConferencePage() {
                                     </Typography>
                                     <Typography variant="body1">{selectedRoom.id}</Typography>
                                 </Box>
-                                {selectedRoom.labelCode && (
-                                    <Box>
-                                        <Typography variant="caption" color="text.secondary">
-                                            {t('conference.labelCode')}
-                                        </Typography>
-                                        <Typography variant="body1">{selectedRoom.labelCode}</Typography>
-                                    </Box>
-                                )}
                                 {selectedRoom.hasMeeting && (
                                     <>
                                         <Box>

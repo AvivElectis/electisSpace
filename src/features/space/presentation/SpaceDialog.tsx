@@ -8,14 +8,18 @@ import {
     Stack,
     Typography,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
-import type { Space, CSVConfig } from '@shared/domain/types';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { Space, CSVConfig, WorkingMode } from '@shared/domain/types';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 
 interface SpaceDialogProps {
     open: boolean;
     onClose: () => void;
     onSave: (space: Partial<Space>) => Promise<void>;
     space?: Space;
+    workingMode: WorkingMode;
+    solumMappingConfig?: SolumMappingConfig;
     csvConfig: CSVConfig;
     spaceTypeLabel: string;
 }
@@ -28,13 +32,15 @@ export function SpaceDialog({
     onClose,
     onSave,
     space,
+    workingMode,
+    solumMappingConfig,
     csvConfig,
     spaceTypeLabel,
 }: SpaceDialogProps) {
+    const { i18n, t } = useTranslation();
+    const currentLanguage = i18n.language as 'en' | 'he';
     const [id, setId] = useState('');
     const [roomName, setRoomName] = useState('');
-    const [labelCode, setLabelCode] = useState('');
-    const [templateName, setTemplateName] = useState('');
     const [dynamicData, setDynamicData] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
 
@@ -45,15 +51,11 @@ export function SpaceDialog({
                 // Edit mode
                 setId(space.id);
                 setRoomName(space.roomName);
-                setLabelCode(space.labelCode || '');
-                setTemplateName(space.templateName || '');
                 setDynamicData(space.data || {});
             } else {
                 // Add mode - reset
                 setId('');
                 setRoomName('');
-                setLabelCode('');
-                setTemplateName('');
                 setDynamicData({});
             }
         }
@@ -65,8 +67,6 @@ export function SpaceDialog({
             const spaceData: Partial<Space> = {
                 id: space ? space.id : id, // Don't allow ID change in edit mode
                 roomName,
-                labelCode: labelCode || undefined,
-                templateName: templateName || undefined,
                 data: dynamicData,
             };
 
@@ -86,73 +86,60 @@ export function SpaceDialog({
         }));
     };
 
-    // Get dynamic fields from CSV config
-    const dynamicFields = csvConfig.columns
-        .filter(col => col.name !== 'id' && col.name !== 'roomName')
-        .map(col => col.name);
+    // Get dynamic fields based on working mode
+    const dynamicFields = useMemo(() => {
+        if (workingMode === 'SOLUM_API' && solumMappingConfig) {
+            // SoluM mode: Show visible fields with friendly names
+            // Filter out uniqueIdField since it's already shown as ID
+            const uniqueIdField = solumMappingConfig.uniqueIdField;
+            return Object.entries(solumMappingConfig.fields)
+                .filter(([fieldKey, fieldConfig]) => fieldConfig.visible && fieldKey !== uniqueIdField)
+                .map(([fieldKey, fieldConfig]) => ({
+                    key: fieldKey,
+                    label: currentLanguage === 'he' ? fieldConfig.friendlyNameHe : fieldConfig.friendlyNameEn,
+                }));
+        } else {
+            // SFTP mode: Show CSV columns
+            return csvConfig.columns
+                .filter(col => col.name !== 'id' && col.name !== 'roomName')
+                .map(col => ({
+                    key: col.name,
+                    label: col.name,
+                }));
+        }
+    }, [workingMode, solumMappingConfig, csvConfig, currentLanguage]);
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>
-                {space ? `Edit ${spaceTypeLabel}` : `Add ${spaceTypeLabel}`}
+                {space ? `${t('common.edit')} ${spaceTypeLabel}` : `${t('common.add')} ${spaceTypeLabel}`}
             </DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ mt: 1 }}>
                     {/* ID - only editable in add mode */}
                     <TextField
                         fullWidth
-                        label="ID"
+                        label={t('common.id')}
                         value={id}
                         onChange={(e) => setId(e.target.value)}
                         disabled={!!space}
                         required
-                        helperText={space ? 'ID cannot be changed' : 'Unique identifier'}
-                    />
-
-                    {/* Room Name */}
-                    <TextField
-                        fullWidth
-                        label="Name"
-                        value={roomName}
-                        onChange={(e) => setRoomName(e.target.value)}
-                        required
-                    />
-
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ pt: 1 }}>
-                        Label Information (Optional)
-                    </Typography>
-
-                    {/* Label Code */}
-                    <TextField
-                        fullWidth
-                        label="Label Code"
-                        value={labelCode}
-                        onChange={(e) => setLabelCode(e.target.value)}
-                        helperText="ESL label barcode"
-                    />
-
-                    {/* Template Name */}
-                    <TextField
-                        fullWidth
-                        label="Template Name"
-                        value={templateName}
-                        onChange={(e) => setTemplateName(e.target.value)}
-                        helperText="SoluM template name"
+                        helperText={space ? t('spaces.idCannotChange') : t('spaces.uniqueIdentifier')}
                     />
 
                     {/* Dynamic Fields */}
                     {dynamicFields.length > 0 && (
                         <>
                             <Typography variant="subtitle2" color="text.secondary" sx={{ pt: 1 }}>
-                                Additional Information
+                                {t('spaces.additionalInfo')}
                             </Typography>
                             {dynamicFields.map((field) => (
                                 <TextField
-                                    key={field}
+                                    key={field.key}
                                     fullWidth
-                                    label={field}
-                                    value={dynamicData[field] || ''}
-                                    onChange={(e) => handleDynamicDataChange(field, e.target.value)}
+                                    label={field.label}
+                                    value={dynamicData[field.key] || ''}
+                                    onChange={(e) => handleDynamicDataChange(field.key, e.target.value)}
                                 />
                             ))}
                         </>
@@ -161,14 +148,14 @@ export function SpaceDialog({
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} disabled={saving}>
-                    Cancel
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={saving || !roomName || (!space && !id)}
+                    disabled={saving || (!space && !id)}
                 >
-                    {saving ? 'Saving...' : 'Save'}
+                    {saving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
         </Dialog>
