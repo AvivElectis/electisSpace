@@ -33,7 +33,7 @@ export function LanguageSwitcher() {
 
     return (
         <>
-            <Tooltip title="Change Language">
+            <Tooltip title="Change Language" sx={{ mx: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)', scale: 1.2 }}>
                 <IconButton
                     onClick={handleClick}
                     color="inherit"

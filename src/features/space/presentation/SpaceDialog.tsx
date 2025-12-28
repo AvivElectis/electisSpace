@@ -12,6 +12,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Space, CSVConfig, WorkingMode } from '@shared/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 interface SpaceDialogProps {
     open: boolean;
@@ -38,6 +39,7 @@ export function SpaceDialog({
     spaceTypeLabel,
 }: SpaceDialogProps) {
     const { i18n, t } = useTranslation();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const currentLanguage = i18n.language as 'en' | 'he';
     const [id, setId] = useState('');
     const [roomName, setRoomName] = useState('');
@@ -73,7 +75,13 @@ export function SpaceDialog({
             await onSave(spaceData);
             onClose();
         } catch (error) {
-            alert(`Failed to save ${spaceTypeLabel.toLowerCase()}: ${error}`);
+            await confirm({
+                title: t('common.error'),
+                message: `Failed to save ${spaceTypeLabel.toLowerCase()}: ${error}`,
+                confirmLabel: t('common.close'),
+                severity: 'error',
+                showCancel: false
+            });
         } finally {
             setSaving(false);
         }
@@ -158,6 +166,7 @@ export function SpaceDialog({
                     {saving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
+            <ConfirmDialog />
         </Dialog>
     );
 }

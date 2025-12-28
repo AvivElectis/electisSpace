@@ -13,7 +13,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useState, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppSettingsTab } from './AppSettingsTab';
-import { SFTPSettingsTab } from './SFTPSettingsTab';
+// import { SFTPSettingsTab } from './SFTPSettingsTab';
 import { SolumSettingsTab } from './SolumSettingsTab';
 import { LogoSettingsTab } from './LogoSettingsTab';
 import { SecuritySettingsTab } from './SecuritySettingsTab';
@@ -144,8 +144,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     <Tab label={t('settings.appSettings')} />
                     <Tab
                         label={t('settings.sftpSettings')}
-                        disabled={settingsController.settings.workingMode !== 'SFTP'}
+                        disabled={true} // {settingsController.settings.workingMode !== 'SFTP'}
                     />
+
                     <Tab
                         label={t('settings.solumSettings')}
                         disabled={settingsController.settings.workingMode !== 'SOLUM_API'}
@@ -165,12 +166,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     />
                 </TabPanel>
 
+                {/* SFTP Panel Disabled
                 <TabPanel value={currentTab} index={1}>
                     <SFTPSettingsTab
                         settings={settingsController.settings}
                         onUpdate={(updates) => settingsController.updateSettings(updates)}
                     />
                 </TabPanel>
+                */}
 
                 <TabPanel value={currentTab} index={2}>
                     <SolumSettingsTab

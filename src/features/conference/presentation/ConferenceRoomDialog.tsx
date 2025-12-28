@@ -15,6 +15,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConferenceRoom } from '@shared/domain/types';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 interface ConferenceRoomDialogProps {
     open: boolean;
@@ -33,6 +34,7 @@ export function ConferenceRoomDialog({
     room,
 }: ConferenceRoomDialogProps) {
     const { t } = useTranslation();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [id, setId] = useState('');
     const [roomName, setRoomName] = useState('');
     const [hasMeeting, setHasMeeting] = useState(false);
@@ -96,7 +98,13 @@ export function ConferenceRoomDialog({
             await onSave(roomData);
             onClose();
         } catch (error) {
-            alert(`Failed to save conference room: ${error}`);
+            await confirm({
+                title: t('common.error'),
+                message: `Failed to save conference room: ${error}`,
+                confirmLabel: t('common.close'),
+                severity: 'error',
+                showCancel: false
+            });
         } finally {
             setSaving(false);
         }
@@ -230,6 +238,7 @@ export function ConferenceRoomDialog({
                     {saving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
+            <ConfirmDialog />
         </Dialog>
     );
 }
