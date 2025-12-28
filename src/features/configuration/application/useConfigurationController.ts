@@ -42,10 +42,19 @@ export function useConfigurationController() {
         try {
             const schema = await SolumSchemaAdapter.fetchSchema(settings.solumConfig);
 
-            // Persist to settings and clear mappings (new schema, old mappings invalid)
+            console.log('[DEBUG fetchArticleFormat] schema.mappingInfo:', schema.mappingInfo);
+            console.log('[DEBUG fetchArticleFormat] Current solumMappingConfig:', settings.solumMappingConfig);
+
+            // Persist schema and extract mappingInfo to solumMappingConfig
+            const updatedMappingConfig = settings.solumMappingConfig
+                ? { ...settings.solumMappingConfig, mappingInfo: schema.mappingInfo }
+                : { mappingInfo: schema.mappingInfo } as any;
+
+            console.log('[DEBUG fetchArticleFormat] Updated mappingConfig:', updatedMappingConfig);
+
             updateSettings({
                 solumArticleFormat: schema,
-                solumMappingConfig: undefined // Clear field mappings when schema changes
+                solumMappingConfig: updatedMappingConfig
             });
 
             showSuccess('Article format fetched successfully');
@@ -77,10 +86,13 @@ export function useConfigurationController() {
         try {
             await SolumSchemaAdapter.updateSchema(settings.solumConfig, schema);
 
-            // Update local settings and clear mapping config (schema changed, old mappings invalid)
+            // Update local settings with schema and extracted mappingInfo
             updateSettings({
                 solumArticleFormat: schema,
-                solumMappingConfig: undefined // Clear field mappings when schema changes
+                solumMappingConfig: {
+                    ...settings.solumMappingConfig,
+                    mappingInfo: schema.mappingInfo, // Extract mappingInfo from schema
+                } as any // Type assertion needed since we're building config incrementally
             });
 
             showSuccess('Article format saved successfully');
