@@ -72,7 +72,22 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     return (
         <Box sx={{ px: 2, maxWidth: 800, mx: 'auto' }}>
             {/* Nested Tabs for Connection and Field Mapping */}
-            <Tabs value={subTab} onChange={(_, newValue) => setSubTab(newValue)} sx={{ mb: 2 }}>
+            <Tabs 
+                value={subTab} 
+                onChange={(_, newValue) => setSubTab(newValue)} 
+                    sx={{
+                        borderBottom: 0,
+                        '& .MuiTab-root': {
+                            border: '1px solid transparent',
+                            borderRadius: 2,
+                            '&.Mui-selected': {
+                                border: '1px solid',
+                                borderColor: 'primary',
+                                boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
+                            }
+                        }
+                    }}
+                    TabIndicatorProps={{ sx: { display: 'none' } }}>
                 <Tab label={t('settings.connectionTab')} />
                 <Tab label={t('settings.fieldMappingTab')} disabled={!settings.solumConfig?.isConnected} />
             </Tabs>
@@ -129,6 +144,41 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                 placeholder="https://eu.common.solumesl.com"
                                 disabled={isCredentialsLocked}
                             />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        size="small"
+                                        checked={settings.autoSyncEnabled}
+                                        onChange={(e) => onUpdate({ autoSyncEnabled: e.target.checked })}
+                                    />
+                                }
+                                label={<Typography variant="body2">{t('settings.enableAutoSync')}</Typography>}
+                            />
+
+                            {settings.autoSyncEnabled && (
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    type="number"
+                                    label={t('settings.syncInterval')}
+                                    value={settings.solumConfig?.syncInterval || 60}
+                                    onChange={(e) => onUpdate({
+                                        solumConfig: {
+                                            ...settings.solumConfig,
+                                            companyName: settings.solumConfig?.companyName || '',
+                                            username: settings.solumConfig?.username || '',
+                                            password: settings.solumConfig?.password || '',
+                                            storeNumber: settings.solumConfig?.storeNumber || '',
+                                            cluster: settings.solumConfig?.cluster || 'common',
+                                            baseUrl: settings.solumConfig?.baseUrl || '',
+                                            syncInterval: Math.max(60, Number(e.target.value)),
+                                        }
+                                    })}
+                                    InputProps={{ inputProps: { min: 60 } }}
+                                    helperText={t('settings.syncIntervalHelp')}
+                                    disabled={isCredentialsLocked}
+                                />
+                            )}
                         </Stack>
                     </Box>
 
@@ -271,34 +321,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                             {t('settings.synchronization')}
                         </Typography>
                         <Stack spacing={1.5}>
+                            {/* Sync Interval Removed - managed by Sync Store or Server Config directly
                             <FormControl fullWidth size="small">
                                 <InputLabel id="sync-interval-label">{t('settings.syncInterval')}</InputLabel>
-                                <Select
-                                    labelId="sync-interval-label"
-                                    value={settings.solumConfig?.syncInterval || 60}
-                                    label={t('settings.syncInterval')}
-                                    onChange={(e) => onUpdate({
-                                        solumConfig: {
-                                            ...settings.solumConfig,
-                                            companyName: settings.solumConfig?.companyName || '',
-                                            username: settings.solumConfig?.username || '',
-                                            password: settings.solumConfig?.password || '',
-                                            storeNumber: settings.solumConfig?.storeNumber || '',
-                                            cluster: settings.solumConfig?.cluster || 'common',
-                                            baseUrl: settings.solumConfig?.baseUrl || '',
-                                            syncInterval: Number(e.target.value),
-                                        }
-                                    })}
-                                >
-                                    <MenuItem value={30}>30s</MenuItem>
-                                    <MenuItem value={60}>1m</MenuItem>
-                                    <MenuItem value={300}>5m</MenuItem>
-                                    <MenuItem value={600}>10m</MenuItem>
-                                    <MenuItem value={1800}>30m</MenuItem>
-                                    <MenuItem value={3600}>1h</MenuItem>
-                                    <MenuItem value={10800}>3h</MenuItem>
+                                <Select...
                                 </Select>
                             </FormControl>
+                            */}
 
                             <FormControlLabel
                                 control={

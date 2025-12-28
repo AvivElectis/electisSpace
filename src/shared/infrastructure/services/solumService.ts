@@ -359,7 +359,8 @@ export async function getLabels(
         throw new Error(`Fetch labels failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : [];
     logger.info('SolumService', 'Labels fetched', { count: data.length });
     return data;
 }

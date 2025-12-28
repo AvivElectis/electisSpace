@@ -1,5 +1,5 @@
 import { Box, Chip, CircularProgress, Tooltip, IconButton, Popover, Typography, Stack, Divider } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -51,12 +51,34 @@ export function SyncStatusIndicator({
 
     const open = Boolean(anchorEl);
 
+    const buttonStates = {
+        connected: {
+            bgcolor: '#4caf50',
+            color: '#000',
+            fontWeight: 600,
+            border: '1px solid #313131ff',
+        },
+        disconnected: {
+            bgcolor: '#e66e65ff',
+            color: '#FFFFFF',
+            border: '1px solid #313131ff',
+        },
+        syncing: {
+            bgcolor: '#2196F3',
+            color: '#FFFFFF',
+        },
+        error: {
+            bgcolor: '#F44336',
+            color: '#FFFFFF',
+        },
+    };
+
     const getStatusConfig = () => {
         switch (status) {
             case 'connected':
                 return {
                     color: 'success' as const,
-                    icon: <CheckCircleIcon fontSize="small" />,
+                    icon: <CheckCircleOutlineIcon />,
                     label: t('sync.connected'),
                 };
             case 'disconnected':
@@ -88,17 +110,24 @@ export function SyncStatusIndicator({
                 <Chip
                     icon={config.icon}
                     label={config.label}
-                    color={config.color}
                     size="small"
                     onClick={handleClick}
-                    sx={{ cursor: 'pointer', 
-                        fontWeight: 500, 
-                        px: 3, 
-                        paddingInlineEnd: 2, 
-                        borderRadius: 2, 
-                        py:3, 
-                        border: '1px solid #007AFF', 
-                        bgcolor: 'rgba(255, 255, 255, 0.8)',}}
+                    sx={{
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        px: 3,
+                        paddingInlineEnd: 2,
+                        borderRadius: 2,
+                        py: 3,
+                        border: '1px solid #007AFF',
+                        ...buttonStates[status],
+                        '&:hover': {
+                            backgroundColor: '#ffffffff',
+                            color: '#363535ff',
+                            textShadow: 'none',
+                            transform: 'scale(1.05)',
+                        },
+                    }}
                 />
             </Tooltip>
 
@@ -165,7 +194,7 @@ export function SyncStatusIndicator({
                         )}
 
                         {/* Manual Sync Button */}
-                        {onSyncClick && status !== 'syncing' && (
+                        {onSyncClick && status !== 'syncing' && status !== 'disconnected' && (
                             <>
                                 <Divider />
                                 <IconButton

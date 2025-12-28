@@ -222,6 +222,7 @@
         "solumApiPassword": "SoluM API password",
         "synchronization": "Synchronization",
         "syncInterval": "Sync Interval",
+        "syncIntervalHelp": "Frequency of automatic sync execution (min 60 seconds)",
         "simpleConferenceMode": "Simple Conference Mode",
         "simpleConferenceModeDesc": "When enabled, conference rooms show only Occupied/Available toggle",
         "companyCodeHelper": "Your SoluM company identifier",

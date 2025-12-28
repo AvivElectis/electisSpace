@@ -39,6 +39,11 @@ const navTabs: NavTab[] = [
  * - Responsive design (drawer on mobile, tabs on desktop)
  * - Content area
  */
+import { SyncProvider } from '@features/sync/application/SyncContext';
+
+// ... imports remain the same in file content, just adding provider import logic if needed or assuming file has imports. 
+// Wait, I need to add import.
+
 export function MainLayout({ children }: MainLayoutProps) {
     const navigate = useNavigate();
     const location = useLocation();
@@ -52,12 +57,15 @@ export function MainLayout({ children }: MainLayoutProps) {
     const setSpaces = useSpacesStore(state => state.setSpaces);
 
     // Initialize global sync controller
-    useSyncController({
+    const syncController = useSyncController({
         sftpCredentials: settings.sftpCredentials,
         solumConfig: settings.solumConfig,
         csvConfig: settings.sftpCsvConfig as any, // Cast for legacy compatibility
+        autoSyncEnabled: settings.autoSyncEnabled,
         onSpaceUpdate: setSpaces,
     });
+
+    const { sync } = syncController;
 
     // Force migration from SFTP to SoluM since SFTP is disabled
     useEffect(() => {
@@ -82,115 +90,118 @@ export function MainLayout({ children }: MainLayoutProps) {
     };
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            bgcolor: 'background.default',
-            display: 'flex',
-            flexDirection: 'column',
-        }}>
-            {/* Header with mobile menu support */}
-            <AppHeader
-                onMenuClick={isMobile ? handleMenuClick : undefined}
-                onSettingsClick={() => setSettingsOpen(true)}
-                settingsOpen={settingsOpen}
-            />
+        <SyncProvider value={syncController}>
+            <Box sx={{
+                minHeight: '100vh',
+                bgcolor: 'background.default',
+                display: 'flex',
+                flexDirection: 'column',
+            }}>
+                {/* Header with mobile menu support */}
+                <AppHeader
+                    onMenuClick={isMobile ? handleMenuClick : undefined}
+                    onSettingsClick={() => setSettingsOpen(true)}
+                    settingsOpen={settingsOpen}
+                />
 
-            {/* Navigation - Tabs for desktop, Drawer for mobile */}
-            {isMobile ? (
-                <Drawer
-                    anchor="left"
-                    open={mobileMenuOpen}
-                    onClose={() => setMobileMenuOpen(false)}
-                >
-                    <Box sx={{ width: 250 }}>
-                        <List>
-                            {navTabs.map(tab => (
-                                <ListItem key={tab.value} disablePadding>
-                                    <ListItemButton
-                                        selected={currentTab === tab.value}
-                                        onClick={() => handleMobileNavClick(tab.value)}
-                                    >
-                                        <ListItemIcon>
-                                            {tab.icon}
-                                        </ListItemIcon>
-                                        <ListItemText primary={t(tab.labelKey)} />
-                                    </ListItemButton>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Box>
-                </Drawer>
-            ) : (
-                <Box sx={{
-                    bgcolor: 'transparent',
-                    borderColor: 'divider',
-                    px: { xs: 2, sm: 3, md: 4 },
-                    py: 2,
-
-                }}>
-                    <Tabs
-                        value={currentTab}
-                        onChange={handleTabChange}
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        sx={{
-                            borderBottom: 0,
-                            '& .MuiTab-root': {
-                                border: '1px solid transparent',
-                                borderRadius: 2,
-                                '&.Mui-selected': {
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    bgcolor: 'background.paper',
-                                }
-                            }
-                        }}
-                        TabIndicatorProps={{ sx: { display: 'none' } }}
-
+                {/* Navigation - Tabs for desktop, Drawer for mobile */}
+                {isMobile ? (
+                    <Drawer
+                        anchor="left"
+                        open={mobileMenuOpen}
+                        onClose={() => setMobileMenuOpen(false)}
                     >
-                        {navTabs.map(tab => (
-                            <Tab
-                                key={tab.value}
-                                label={t(tab.labelKey)}
-                                value={tab.value}
-                                icon={tab.icon}
-                                iconPosition="start"
-                                sx={{ p: 1, paddingInlineEnd: 2 }}
-                            />
-                        ))}
-                    </Tabs>
+                        <Box sx={{ width: 250 }}>
+                            <List>
+                                {navTabs.map(tab => (
+                                    <ListItem key={tab.value} disablePadding>
+                                        <ListItemButton
+                                            selected={currentTab === tab.value}
+                                            onClick={() => handleMobileNavClick(tab.value)}
+                                        >
+                                            <ListItemIcon>
+                                                {tab.icon}
+                                            </ListItemIcon>
+                                            <ListItemText primary={t(tab.labelKey)} />
+                                        </ListItemButton>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Box>
+                    </Drawer>
+                ) : (
+                    <Box sx={{
+                        bgcolor: 'transparent',
+                        borderColor: 'divider',
+                        px: { xs: 2, sm: 3, md: 4 },
+                        py: 2,
+
+                    }}>
+                        <Tabs
+                            value={currentTab}
+                            onChange={handleTabChange}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            sx={{
+                                borderBottom: 0,
+                                '& .MuiTab-root': {
+                                    border: '1px solid transparent',
+                                    borderRadius: 2,
+                                    '&.Mui-selected': {
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        bgcolor: 'background.paper',
+                                    }
+                                }
+                            }}
+                            TabIndicatorProps={{ sx: { display: 'none' } }}
+
+                        >
+                            {navTabs.map(tab => (
+                                <Tab
+                                    key={tab.value}
+                                    label={t(tab.labelKey)}
+                                    value={tab.value}
+                                    icon={tab.icon}
+                                    iconPosition="start"
+                                    sx={{ p: 1, paddingInlineEnd: 2 }}
+                                />
+                            ))}
+                        </Tabs>
+                    </Box>
+                )}
+
+                {/* Main Content */}
+                <Box
+                    component="main"
+                    sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                >
+                    <Container maxWidth={false} sx={{ flex: 1, py: 3 }}>
+                        {children}
+                    </Container>
                 </Box>
-            )}
 
-            {/* Main Content */}
-            <Box
-                component="main"
-                sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            >
-                <Container maxWidth={false} sx={{ flex: 1, py: 3 }}>
-                    {children}
-                </Container>
-            </Box>
+                {/* Sync Status Indicator - Fixed at bottom left (End in RTL) */}
+                <Box sx={{ position: 'fixed', bottom: 24, left: 24, zIndex: 1200 }}>
+                    <SyncStatusIndicator
+                        status={
+                            syncState.status === 'syncing' ? 'syncing' :
+                                syncState.status === 'error' ? 'error' :
+                                    syncState.isConnected ? 'connected' : 'disconnected'
+                        }
+                        lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
+                        workingMode="SoluM"
+                        errorMessage={syncState.lastError}
+                        onSyncClick={() => sync().catch(console.error)}
+                    />
+                </Box>
 
-            {/* Sync Status Indicator - Fixed at bottom left (End in RTL) */}
-            <Box sx={{ position: 'fixed', bottom: 24, left: 24, zIndex: 1200 }}>
-                <SyncStatusIndicator
-                    status={
-                        syncState.status === 'syncing' ? 'syncing' :
-                            syncState.status === 'error' ? 'error' :
-                                syncState.isConnected ? 'connected' : 'disconnected'
-                    }
-                    lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
-                    workingMode="SoluM"
-                    errorMessage={syncState.lastError}
+                {/* Settings Dialog */}
+                <SettingsDialog
+                    open={settingsOpen}
+                    onClose={() => setSettingsOpen(false)}
                 />
             </Box>
-
-            {/* Settings Dialog */}
-            <SettingsDialog
-                open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-            />
-        </Box>
+        </SyncProvider>
     );
 }

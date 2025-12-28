@@ -12,9 +12,12 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
+import { useSyncController } from '@features/sync/application/useSyncController';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 
 /**
  * Sync Page
@@ -23,40 +26,45 @@ import { useSettingsController } from '@features/settings/application/useSetting
 export function SyncPage() {
     const { t } = useTranslation();
     const settingsController = useSettingsController();
-    const [syncing, setSyncing] = useState(false);
-    const [lastSync, setLastSync] = useState<Date | null>(null);
-    const [syncError, setSyncError] = useState<string | null>(null);
+
+    // Connect to stores
+    const settings = useSettingsStore(state => state.settings);
+    const setSpaces = useSpacesStore(state => state.setSpaces);
+    const syncState = useSyncStore(state => state.syncState);
+
+    // Initialize controller for manual actions
+    const { sync } = useSyncController({
+        sftpCredentials: settings.sftpCredentials,
+        solumConfig: settings.solumConfig,
+        csvConfig: settings.sftpCsvConfig as any,
+        autoSyncEnabled: settings.autoSyncEnabled,
+        onSpaceUpdate: setSpaces,
+    });
 
     const handleSync = async () => {
-        setSyncing(true);
-        setSyncError(null);
-
         try {
-            // TODO: Implement actual sync logic with adapters
-            // await syncController.sync();
-
-            // Simulate sync delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            setLastSync(new Date());
+            await sync();
         } catch (error) {
-            setSyncError(error instanceof Error ? error.message : 'Sync failed');
-        } finally {
-            setSyncing(false);
+            // Error is handled in store/state
         }
     };
 
+    // Use global sync state instead of local state
+    const syncing = syncState.status === 'syncing';
+    const lastSync = syncState.lastSync ? new Date(syncState.lastSync) : null;
+    const syncError = syncState.lastError || null;
+
     const getStatusChip = () => {
         if (syncing) {
-            return <Chip label={t('sync.syncing')} color="info" icon={<SyncIcon />} />;
+            return <Chip sx={{ px: 2, paddingInlineEnd: 1 }} label={t('sync.syncing')} color="info" icon={<SyncIcon />} />;
         }
         if (syncError) {
-            return <Chip label={t('sync.error')} color="error" icon={<ErrorIcon />} />;
+            return <Chip sx={{ px: 2, paddingInlineEnd: 1 }} label={t('sync.error')} color="error" icon={<ErrorIcon />} />;
         }
-        if (lastSync) {
-            return <Chip label={t('sync.connected')} color="success" icon={<CheckCircleIcon />} />;
+        if (syncState.isConnected) {
+            return <Chip sx={{ px: 2, paddingInlineEnd: 1 }} label={t('sync.connected')} color="success" icon={<CheckCircleIcon />} />;
         }
-        return <Chip label={t('sync.idle')} color="default" />;
+        return <Chip sx={{ px: 2, paddingInlineEnd: 1 }} label={t('sync.idle')} color="default" />;
     };
 
     return (
@@ -135,7 +143,7 @@ export function SyncPage() {
                             </Typography>
                             <Typography variant="body1">
                                 {settingsController.settings.autoSyncEnabled
-                                    ? `${t('sync.enabled')} (${t('sync.every')} ${settingsController.settings.autoSyncInterval}s)`
+                                    ? `${t('sync.enabled')} (${t('sync.every')} ${settingsController.settings.solumConfig?.syncInterval || 60}s)`
                                     : t('sync.disabled')
                                 }
                             </Typography>
@@ -150,7 +158,7 @@ export function SyncPage() {
                 size="large"
                 startIcon={<SyncIcon />}
                 onClick={handleSync}
-                disabled={syncing}
+                disabled={syncing || !syncState.isConnected}
                 sx={{ minWidth: 200 }}
             >
                 {syncing ? t('sync.syncing') : t('sync.manualSync')}

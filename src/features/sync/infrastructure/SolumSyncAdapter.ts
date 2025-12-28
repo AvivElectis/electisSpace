@@ -115,7 +115,8 @@ export class SolumSyncAdapter implements SyncAdapter {
 
             // Build dynamic data from article fields based on CSV mapping
             const data: Record<string, string> = {};
-            for (const [fieldName] of Object.entries(this.csvConfig.mapping)) {
+            const mapping = this.csvConfig?.mapping || {};
+            for (const [fieldName] of Object.entries(mapping)) {
                 data[fieldName] = article[fieldName] || article.articleData?.[fieldName] || '';
             }
 
