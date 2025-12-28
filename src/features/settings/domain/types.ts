@@ -74,6 +74,10 @@ export interface SettingsData {
     // Auto-update settings
     autoUpdateEnabled?: boolean;
     updateCheckInterval?: number;  // in hours
+
+    // Auto-lock settings
+    autoLockEnabled?: boolean;
+    lastSettingsAccess?: number;  // Timestamp of last settings dialog close
 }
 
 export interface ExportedSettings {

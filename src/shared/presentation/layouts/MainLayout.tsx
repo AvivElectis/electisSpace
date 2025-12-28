@@ -69,6 +69,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <AppHeader
                 onMenuClick={isMobile ? handleMenuClick : undefined}
                 onSettingsClick={() => setSettingsOpen(true)}
+                settingsOpen={settingsOpen}
             />
 
             {/* Navigation - Tabs for desktop, Drawer for mobile */}
