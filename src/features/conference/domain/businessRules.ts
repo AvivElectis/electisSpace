@@ -42,6 +42,7 @@ export function createEmptyConferenceRoom(id: string, roomName: string): Confere
         startTime: '',
         endTime: '',
         participants: [],
+        data: {},
     };
 }
 
@@ -60,6 +61,7 @@ export function toggleMeetingStatus(room: ConferenceRoom): ConferenceRoom {
             startTime: '',
             endTime: '',
             participants: [],
+            data: room.data || {},
         };
     } else {
         // Just toggle on, user will fill in details

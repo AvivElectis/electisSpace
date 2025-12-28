@@ -1,0 +1,77 @@
+﻿[Incubating] Problems report is available at: file:///F:/React_2026/electisSpace/android/build/reports/problems/problems-report.html
+.\gradlew.bat : 
+At line:1 char:13
++ cd android; 
+.\gradlew.bat 
+assembleDebug 2>&1 | 
+Out-File -FilePath 
+..\ ...
++             ~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (:String) [   
+ ], RemoteExceptio    
+n
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+FAILURE: Build failed 
+with an exception.
+
+* Where:
+Build file 'F:\React_2
+026\electisSpace\andro
+id\app\build.gradle' 
+line: 1
+
+* What went wrong:
+A problem occurred 
+evaluating project 
+':app'.
+> Failed to apply 
+plugin 'com.android.in
+ternal.application'.
+   > Android Gradle 
+plugin requires Java 
+17 to run. You are 
+currently using Java 
+11.
+      Your current 
+JDK is located in C:\U
+sers\Win10\AppData\Loc
+al\jdk-11.0.2
+      You can try 
+some of the following 
+options:
+       - changing the 
+IDE settings.
+       - changing the 
+JAVA_HOME environment 
+variable.
+       - changing `org
+.gradle.java.home` in 
+`gradle.properties`.
+
+* Try:
+> Run with 
+--stacktrace option 
+to get the stack 
+trace.
+> Run with --info or 
+--debug option to get 
+more log output.
+> Run with --scan to 
+get full insights.
+> Get more help at htt
+ps://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2s
