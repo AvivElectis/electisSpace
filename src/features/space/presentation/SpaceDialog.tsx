@@ -23,6 +23,7 @@ interface SpaceDialogProps {
     solumMappingConfig?: SolumMappingConfig;
     csvConfig: CSVConfig;
     spaceTypeLabel: string;
+    existingIds?: string[];
 }
 
 /**
@@ -37,13 +38,13 @@ export function SpaceDialog({
     solumMappingConfig,
     csvConfig,
     spaceTypeLabel,
+    existingIds = []
 }: SpaceDialogProps) {
     const { i18n, t } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const currentLanguage = i18n.language as 'en' | 'he';
-    const [id, setId] = useState('');
-    const [roomName, setRoomName] = useState('');
-    const [dynamicData, setDynamicData] = useState<Record<string, string>>({});
+    const [formData, setFormData] = useState<Partial<Space>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
 
     // Initialize form when dialog opens
@@ -51,28 +52,46 @@ export function SpaceDialog({
         if (open) {
             if (space) {
                 // Edit mode
-                setId(space.id);
-                setRoomName(space.roomName);
-                setDynamicData(space.data || {});
+                setFormData({
+                    id: space.id,
+                    roomName: space.roomName,
+                    data: space.data || {},
+                });
             } else {
                 // Add mode - reset
-                setId('');
-                setRoomName('');
-                setDynamicData({});
+                setFormData({
+                    id: '',
+                    roomName: '',
+                    data: {}
+                });
             }
+            setErrors({});
         }
     }, [open, space]);
 
+    const validate = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.id?.trim()) {
+            newErrors.id = t('errors.required');
+        } else if (existingIds.includes(formData.id.trim()) && (!space || space.id !== formData.id)) {
+            newErrors.id = t('errors.idExists');
+        }
+
+        // Room Name is optional in some contexts, but let's check if it was required before.
+        // It was not strictly required in the previous code's types, but let's keep it safe.
+        // If it was required, add: if (!formData.roomName?.trim()) newErrors.roomName = t('errors.required');
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSave = async () => {
+        if (!validate()) return;
+
         setSaving(true);
         try {
-            const spaceData: Partial<Space> = {
-                id: space ? space.id : id, // Don't allow ID change in edit mode
-                roomName,
-                data: dynamicData,
-            };
-
-            await onSave(spaceData);
+            await onSave(formData);
             onClose();
         } catch (error) {
             await confirm({
@@ -87,10 +106,42 @@ export function SpaceDialog({
         }
     };
 
+    const handleChange = (field: keyof Space, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+
+        // Live Validation
+        if (field === 'id') {
+            const trimmedId = (value as string).trim();
+            if (existingIds.includes(trimmedId) && (!space || space.id !== trimmedId)) {
+                setErrors(prev => ({ ...prev, id: t('errors.idExists') }));
+            } else if (!trimmedId) {
+                setErrors(prev => ({ ...prev, id: t('errors.required') }));
+            } else {
+                setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.id;
+                    return newErrors;
+                });
+            }
+        } else {
+            // Clear error when user types for other fields
+            if (errors[field]) {
+                setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors[field];
+                    return newErrors;
+                });
+            }
+        }
+    };
+
     const handleDynamicDataChange = (field: string, value: string) => {
-        setDynamicData(prev => ({
+        setFormData(prev => ({
             ...prev,
-            [field]: value,
+            data: {
+                ...prev.data,
+                [field]: value
+            }
         }));
     };
 
@@ -127,12 +178,21 @@ export function SpaceDialog({
                     {/* ID - only editable in add mode */}
                     <TextField
                         fullWidth
-                        label={t('common.id')}
-                        value={id}
-                        onChange={(e) => setId(e.target.value)}
+                        label={t('spaces.id')}
+                        value={formData.id || ''}
+                        onChange={(e) => handleChange('id', e.target.value)}
                         disabled={!!space}
                         required
-                        helperText={space ? t('spaces.idCannotChange') : t('spaces.uniqueIdentifier')}
+                        error={!!errors.id}
+                        helperText={errors.id || (space ? t('spaces.idCannotChange') : t('spaces.uniqueIdentifier'))}
+                    />
+
+                    {/* Room Name - Standard Field */}
+                    <TextField
+                        fullWidth
+                        label={t('spaces.name')}
+                        value={formData.roomName || ''}
+                        onChange={(e) => handleChange('roomName', e.target.value)}
                     />
 
                     {/* Dynamic Fields */}
@@ -146,7 +206,7 @@ export function SpaceDialog({
                                     key={field.key}
                                     fullWidth
                                     label={field.label}
-                                    value={dynamicData[field.key] || ''}
+                                    value={formData.data?.[field.key] || ''}
                                     onChange={(e) => handleDynamicDataChange(field.key, e.target.value)}
                                 />
                             ))}
@@ -161,7 +221,7 @@ export function SpaceDialog({
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={saving || (!space && !id)}
+                    disabled={saving}
                 >
                     {saving ? t('common.saving') : t('common.save')}
                 </Button>

@@ -63,7 +63,10 @@
         "autoSync": "Auto-Sync",
         "enabled": "Enabled",
         "disabled": "Disabled",
-        "every": "every"
+        "every": "Every",
+        "toSpaces": "To Spaces",
+        "toRooms": "To Rooms",
+        "toSpaceType": "To {{type}}"
     },
     "spaces": {
         "title": "Spaces",
@@ -345,7 +348,8 @@
         "connectionFailed": "Connection failed",
         "saveFailed": "Failed to save",
         "loadFailed": "Failed to load",
-        "unknownError": "An unknown error occurred"
+        "unknownError": "An unknown error occurred",
+        "idExists": "This ID already exists"
     },
     "messages": {
         "saved": "Saved successfully",
