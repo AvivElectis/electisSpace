@@ -7,6 +7,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 interface AppHeaderProps {
     onSettingsClick?: () => void;
     onMenuClick?: () => void;
+    settingsOpen?: boolean;
 }
 
 /**
@@ -14,13 +15,17 @@ interface AppHeaderProps {
  * Displays logos, app title (centered), language switcher, and settings icon
  * Title and subtitle are configurable through app settings
  */
-export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
+export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHeaderProps) {
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
+    const isLocked = useSettingsStore((state) => state.isLocked);
 
     // Use dynamic logos or fall back to defaults
     const leftLogo = settings.logos.logo1 || '/logos/CI_SOLUMLogo_WithClaim-Blue.png';
     const rightLogo = settings.logos.logo2 || '/logos/logo_fixed_02.png';
+
+    // Icon color: blue only when dialog is open AND unlocked, otherwise default
+    const iconColor = (settingsOpen || !isLocked) ? 'primary' : 'default';
 
 
     return (
@@ -58,8 +63,8 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                     src={leftLogo}
                     alt="Left Logo"
                     sx={{
-                        height: { xs: 140, sm: 120 },
-                        maxWidth: { xs: 180, sm: 200 },
+                        height: { xs: 140, sm: 80 },
+                        maxWidth: { xs: 180, sm: 250 },
                         objectFit: 'contain',
                     }}
                 />
@@ -70,7 +75,7 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                         flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         justifyContent: 'center',
                         textAlign: 'center',
                         px: 2,
@@ -107,14 +112,14 @@ export function AppHeader({ onSettingsClick, onMenuClick }: AppHeaderProps) {
                         src={rightLogo}
                         alt="Right Logo"
                         sx={{
-                            height: { xs: 140, sm: 120 },
-                            maxWidth: { xs: 180, sm: 200 },
+                            height: { xs: 140, sm: 80 },
+                            maxWidth: { xs: 180, sm: 250 },
                             objectFit: 'contain',
                         }}
                     />
                     <LanguageSwitcher />
                     <IconButton
-                        color="primary"
+                        color={iconColor}
                         onClick={onSettingsClick}
                         sx={{ ml: 1 }}
                     >

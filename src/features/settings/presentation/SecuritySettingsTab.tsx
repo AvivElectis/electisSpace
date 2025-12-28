@@ -8,18 +8,23 @@ import {
     Divider,
     FormControlLabel,
     Switch,
+    Tooltip,
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { SettingsData } from '../domain/types';
 
 interface SecuritySettingsTabProps {
     isPasswordProtected: boolean;
     isLocked: boolean;
+    settings: SettingsData;
     onSetPassword: (password: string) => void;
     onLock: () => void;
     onUnlock: (password: string) => boolean;
+    onUpdate: (updates: Partial<SettingsData>) => void;
 }
 
 /**
@@ -29,9 +34,11 @@ interface SecuritySettingsTabProps {
 export function SecuritySettingsTab({
     isPasswordProtected,
     isLocked,
+    settings,
     onSetPassword,
     onLock,
     onUnlock,
+    onUpdate,
 }: SecuritySettingsTabProps) {
     const { t } = useTranslation();
     const [newPassword, setNewPassword] = useState('');
@@ -43,17 +50,17 @@ export function SecuritySettingsTab({
         setError(null);
 
         if (!newPassword) {
-            setError('Password cannot be empty');
+            setError(t('settings.passwordCannotBeEmpty'));
             return;
         }
 
         if (newPassword.length < 4) {
-            setError('Password must be at least 4 characters');
+            setError(t('settings.passwordTooShort'));
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
+            setError(t('settings.passwordsDoNotMatch'));
             return;
         }
 
@@ -61,7 +68,7 @@ export function SecuritySettingsTab({
             onSetPassword(newPassword);
             setNewPassword('');
             setConfirmPassword('');
-            alert('Password set successfully!');
+            alert(t('settings.setPasswordSuccess'));
         } catch (err) {
             setError(`Failed to set password: ${err}`);
         }
@@ -71,28 +78,29 @@ export function SecuritySettingsTab({
         setError(null);
 
         if (!unlockPassword) {
-            setError('Please enter password');
+            setError(t('settings.enterPassword'));
             return;
         }
 
         const success = onUnlock(unlockPassword);
         if (success) {
             setUnlockPassword('');
-            alert('App unlocked successfully!');
+            alert(t('settings.unlockSuccess'));
         } else {
-            setError('Incorrect password');
+            setError(t('settings.incorrectPassword'));
             setUnlockPassword('');
         }
     };
 
     const handleLock = () => {
         if (!isPasswordProtected) {
-            setError('Please set a password first before locking the app');
+            setError(t('settings.setPasswordFirst'));
             return;
         }
 
-        if (window.confirm('Are you sure you want to lock the app? You will need the password to unlock it.')) {
+        if (window.confirm(t('settings.lockConfirm'))) {
             onLock();
+            // Dialog will close automatically via useEffect in SettingsDialog
         }
     };
 
@@ -112,10 +120,10 @@ export function SecuritySettingsTab({
                 {/* Status */}
                 <Alert severity={isLocked ? 'warning' : 'info'} sx={{ py: 0, px: 2, alignItems: 'center' }}>
                     {isLocked
-                        ? '🔒 App is currently locked'
+                        ? `🔒 ${t('settings.lockedMessage')}`
                         : isPasswordProtected
-                            ? '🔓 Password protection is enabled'
-                            : 'No password protection set'
+                            ? `🔓 ${t('settings.unlockedMessage')}`
+                            : t('settings.noPasswordMessage')
                     }
                 </Alert>
 
@@ -153,37 +161,54 @@ export function SecuritySettingsTab({
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                             />
-                            <Button
-                                variant="contained"
-                                onClick={handleSetPassword}
-                                disabled={!newPassword || !confirmPassword}
-                                sx={{ width: 'fit-content' }}
-                            >
-                                {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
-                            </Button>
+                            <Box sx={{ display: 'flex', gap: 0, justifyContent: 'flex-start' }}>
+                                <Button
+                                    variant="contained"
+                                    onClick={handleSetPassword}
+                                    disabled={!newPassword || !confirmPassword}
+                                    sx={{ width: 'fit-content'}}
+                                >
+                                    {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    color="warning"
+                                    startIcon={<LockIcon />}
+                                    onClick={handleLock}
+                                    disabled={!isPasswordProtected}
+                                    sx={{ width: 'fit-content' }}
+                                >
+                                    {t('settings.lockAppSettings')}
+                                </Button>
+                            </Box>
                         </Stack>
                     </Box>
                 )}
 
                 <Divider />
 
-                {/* Lock/Unlock */}
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.unlockSettings')}
-                    </Typography>
+                {/* Unlock Section (only shown when locked) */}
+                {isLocked && (
+                    <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                            {t('settings.unlockSettings')}
+                        </Typography>
 
-                    {isLocked ? (
                         <Stack spacing={1.5}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                type="password"
-                                label={t('settings.enterPasswordToUnlock')}
-                                value={unlockPassword}
-                                onChange={(e) => setUnlockPassword(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
-                            />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    type="password"
+                                    label={t('settings.enterPasswordToUnlock')}
+                                    value={unlockPassword}
+                                    onChange={(e) => setUnlockPassword(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
+                                />
+                                <Tooltip title={t('settings.adminPasswordHint')} arrow>
+                                    <InfoOutlined color="action" sx={{ cursor: 'help' }} />
+                                </Tooltip>
+                            </Box>
                             <Button
                                 variant="contained"
                                 startIcon={<LockOpenIcon />}
@@ -191,45 +216,40 @@ export function SecuritySettingsTab({
                                 disabled={!unlockPassword}
                                 sx={{ width: 'fit-content' }}
                             >
-                                {t('settings.unlock')} App
+                                {t('settings.unlockAppSettings')}
                             </Button>
                         </Stack>
-                    ) : (
-                        <Button
-                            variant="outlined"
-                            color="warning"
-                            startIcon={<LockIcon />}
-                            onClick={handleLock}
-                            disabled={!isPasswordProtected}
-                            sx={{ width: 'fit-content' }}
-                        >
-                            {t('settings.lock')} App
-                        </Button>
-                    )}
 
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        {isLocked
-                            ? 'Enter your password to unlock and access app features'
-                            : 'Locking will require password entry to access the app'
-                        }
-                    </Typography>
-                </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                            {t('settings.unlockToAccess')}
+                        </Typography>
+                    </Box>
+                )}
 
                 <Divider />
 
-                {/* Additional Options */}
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.autoLockSettings')}
-                    </Typography>
-                    <FormControlLabel
-                        control={<Switch size="small" disabled />}
-                        label={<Typography variant="body2">{t('settings.autoLockAfterInactivity')}</Typography>}
-                    />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4 }}>
-                        Coming soon: Automatically lock app after period of inactivity
-                    </Typography>
-                </Box>
+                {/* Auto-Lock Settings */}
+                {!isLocked && isPasswordProtected && (
+                    <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                            {t('settings.autoLockSettings')}
+                        </Typography>
+                        <Stack spacing={1.5}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={settings.autoLockEnabled || false}
+                                        onChange={(e) => onUpdate({ autoLockEnabled: e.target.checked })}
+                                    />
+                                }
+                                label={t('settings.autoLockEnabled')}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                                {t('settings.autoLockDescription')}
+                            </Typography>
+                        </Stack>
+                    </Box>
+                )}
 
                 <Divider />
 

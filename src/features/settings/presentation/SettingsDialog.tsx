@@ -18,7 +18,10 @@ import { SolumSettingsTab } from './SolumSettingsTab';
 import { LogoSettingsTab } from './LogoSettingsTab';
 import { SecuritySettingsTab } from './SecuritySettingsTab';
 import { LogsViewerTab } from './LogsViewerTab';
+import { UnlockDialog } from './UnlockDialog';
 import { useSettingsController } from '../application/useSettingsController';
+import { useAutoLock } from '../application/useAutoLock';
+import { useSettingsStore } from '../infrastructure/settingsStore';
 
 interface SettingsDialogProps {
     open: boolean;
@@ -54,18 +57,45 @@ function TabPanel(props: TabPanelProps) {
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const { t } = useTranslation();
     const settingsController = useSettingsController();
+    const { updateSettings } = useSettingsStore();
     const [currentTab, setCurrentTab] = useState(0);
+
+    // Enable auto-lock functionality
+    useAutoLock();
 
     const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
         setCurrentTab(newValue);
     };
 
+    // Track when dialog closes to update last access time
+    const handleClose = () => {
+        // Update last access timestamp when closing settings
+        updateSettings({ lastSettingsAccess: Date.now() });
+        onClose();
+    };
 
+    // If locked, show unlock dialog instead
+    if (settingsController.isLocked) {
+        return (
+            <UnlockDialog
+                open={open}
+                onClose={handleClose}
+                onUnlock={(password) => {
+                    const success = settingsController.unlock(password);
+                    if (success) {
+                        // Update last access time on successful unlock
+                        updateSettings({ lastSettingsAccess: Date.now() });
+                    }
+                    return success;
+                }}
+            />
+        );
+    }
 
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={handleClose}
             maxWidth="md"
             fullWidth
             PaperProps={{
@@ -79,7 +109,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 {t('settings.title')}
                 <IconButton
                     aria-label="close"
-                    onClick={onClose}
+                    onClick={handleClose}
                     sx={{
                         position: 'absolute',
                         insetInlineEnd: 8,
@@ -146,9 +176,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     <SecuritySettingsTab
                         isPasswordProtected={settingsController.isPasswordProtected}
                         isLocked={settingsController.isLocked}
+                        settings={settingsController.settings}
                         onSetPassword={(password) => settingsController.setPassword(password)}
                         onLock={() => settingsController.lock()}
                         onUnlock={(password) => settingsController.unlock(password)}
+                        onUpdate={(updates) => settingsController.updateSettings(updates)}
                     />
                 </TabPanel>
 
@@ -157,8 +189,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </TabPanel>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>
-                     {t('common.close')}
+                <Button onClick={handleClose}>
+                    {t('common.close')}
                 </Button>
             </DialogActions>
         </Dialog>

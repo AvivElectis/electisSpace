@@ -801,15 +801,227 @@ Refactored Spaces table to display dynamic columns based on visible fields from 
 
 ---
 
-### 8. Security Enhancements - **HIGH PRIORITY** ⚠️ NEW
-**Status:** Partially complete, needs enhancement
-**Estimated Effort:** 8-10 hours
+### 10. Code Cleanup - Unused Components - ✅ **COMPLETE**
+**Status:** ✅ Complete (Dec 28, 2024)
+**Actual Effort:** 1 hour
+
+**Problem Statement:**
+Several unused components exist in the codebase that are no longer referenced, creating confusion and increasing bundle size unnecessarily.
+
+**Identified Unused Components:**
+
+#### Components to Delete
+1. **`src/shared/presentation/components/SimpleAppHeader.tsx`**
+   - Only used by `SimpleLayout.tsx` which is also unused
+   - Duplicate of main `AppHeader` functionality
+   
+2. **`src/shared/presentation/components/SimpleLayout.tsx`**
+   - Not imported or used anywhere in the application
+   - Redundant with `MainLayout.tsx`
+
+3. **`src/shared/presentation/components/NotificationDemo.tsx`**
+   - Demo/test component, not used in production
+   - Only references itself
+
+4. **`src/shared/presentation/components/TableToolbar.tsx`**
+   - Not imported or used anywhere
+   - Tables use inline toolbars instead
+
+**Implementation Steps:**
+
+1. **Verify No Usage** (20 min)
+   - Run grep search for each component across entire codebase
+   - Verify no dynamic imports or string-based references
+   - Check for any commented-out code that might reference them
+
+2. **Delete Files** (10 min)
+   ```bash
+   # Delete unused components
+   rm src/shared/presentation/components/SimpleAppHeader.tsx
+   rm src/shared/presentation/components/SimpleLayout.tsx
+   rm src/shared/presentation/components/NotificationDemo.tsx
+   rm src/shared/presentation/components/TableToolbar.tsx
+   ```
+
+3. **Update Index Files** (10 min)
+   - Remove exports from any index.ts files if they exist
+   - Verify no barrel exports reference deleted components
+
+4. **Test Build** (20 min)
+   ```bash
+   npm run build
+   ```
+   - Verify 0 errors
+   - Check bundle size reduction
+   - Run dev server and test all pages
+
+5. **Update Documentation** (20 min)
+   - Update component inventory if it exists
+   - Add note to CHANGELOG about removed components
+
+**Success Criteria:**
+- [x] All 4 unused components identified
+- [x] Verified no imports/usage across codebase
+- [x] Files deleted
+- [x] Build succeeds with 0 errors
+- [x] Bundle size reduced
+- [x] All pages load correctly in dev mode
+
+**Benefits:**
+- ✅ Reduced bundle size
+- ✅ Cleaner codebase
+- ✅ Less confusion for developers
+- ✅ Easier maintenance
+
+**Completion Date:** December 28, 2024
+
+---
+
+### 10.1. SyncStatusIndicator Integration - **MEDIUM PRIORITY** 🆕
+**Status:** Component exists, needs integration (Dec 28, 2024)
+**Estimated Effort:** 2-3 hours
+
+**Problem Statement:**
+`SyncStatusIndicator.tsx` component exists and is fully implemented but not integrated into the application. This component provides a visual status indicator for sync operations with a detailed popover.
+
+**Component Features:**
+- ✅ Connection status display (connected, disconnected, syncing, error)
+- ✅ Clickable chip with popover for details
+- ✅ Shows working mode (SFTP/SoluM)
+- ✅ Displays last sync time
+- ✅ Error message display
+- ✅ Manual sync button
+- ✅ Fully styled with MUI components
+
+**Integration Plan:**
+
+#### 1. Add to AppHeader (1h)
+**File:** `src/shared/presentation/layouts/AppHeader.tsx`
+
+```tsx
+import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+// ... other imports
+
+export function AppHeader() {
+    const { settings } = useSettingsStore();
+    const [syncStatus, setSyncStatus] = useState<ConnectionStatus>('disconnected');
+    const [lastSync, setLastSync] = useState<string | undefined>();
+
+    // Determine status based on working mode and connection
+    useEffect(() => {
+        if (settings.workingMode === 'SOLUM_API') {
+            setSyncStatus(settings.solumConfig?.isConnected ? 'connected' : 'disconnected');
+        } else {
+            // SFTP mode - check if credentials exist
+            setSyncStatus(settings.sftpCredentials ? 'connected' : 'disconnected');
+        }
+    }, [settings]);
+
+    return (
+        <AppBar>
+            {/* ... existing header content ... */}
+            
+            {/* Add SyncStatusIndicator before language switcher */}
+            <SyncStatusIndicator
+                status={syncStatus}
+                lastSyncTime={lastSync}
+                workingMode={settings.workingMode === 'SOLUM_API' ? 'SoluM' : 'SFTP'}
+                onSyncClick={handleManualSync}
+            />
+            
+            <LanguageSwitcher />
+        </AppBar>
+    );
+}
+```
+
+#### 2. Connect to Sync Controller (1h)
+**File:** Create `src/features/sync/application/useSyncStatus.ts`
+
+```typescript
+export function useSyncStatus() {
+    const { settings } = useSettingsStore();
+    const [status, setStatus] = useState<ConnectionStatus>('disconnected');
+    const [lastSync, setLastSync] = useState<string>();
+    const [error, setError] = useState<string>();
+
+    // Monitor connection status
+    useEffect(() => {
+        // Logic to determine status based on working mode
+        // Update lastSync from localStorage or sync store
+    }, [settings]);
+
+    const handleManualSync = async () => {
+        setStatus('syncing');
+        try {
+            // Trigger sync based on working mode
+            // Update lastSync on success
+            setStatus('connected');
+        } catch (err) {
+            setStatus('error');
+            setError(err.message);
+        }
+    };
+
+    return { status, lastSync, error, handleManualSync };
+}
+```
+
+#### 3. Add Translations (30 min)
+**Files:** `src/locales/en/common.json` and `src/locales/he/common.json`
+
+```json
+{
+  "sync": {
+    "statusConnected": "Connected",
+    "statusDisconnected": "Disconnected",
+    "statusSyncing": "Syncing...",
+    "statusError": "Error",
+    "clickForDetails": "Click for details",
+    "manualSync": "Manual Sync",
+    "lastSync": "Last Sync",
+    "workingMode": "Working Mode",
+    "errorDetails": "Error Details"
+  }
+}
+```
+
+#### 4. Update Component for i18n (30 min)
+Replace hardcoded strings in `SyncStatusIndicator.tsx` with `t()` calls.
+
+**Success Criteria:**
+- [ ] SyncStatusIndicator visible in AppHeader
+- [ ] Status updates based on connection state
+- [ ] Popover shows correct information
+- [ ] Manual sync button triggers sync
+- [ ] All strings translated (EN/HE)
+- [ ] Component responsive on mobile
+
+**Benefits:**
+- ✅ Visual feedback for sync status
+- ✅ Quick access to sync details
+- ✅ Manual sync trigger from header
+- ✅ Better user experience
+
+**Completion Date:** TBD
+
+---
+
+### 11. Security Enhancements - ✅ **COMPLETE**
+**Status:** ✅ Complete (Dec 28, 2024)
+**Actual Effort:** 4 hours
 
 **Current State:**
 - ✅ Settings password protection exists
 - ✅ Lock/unlock functionality working
-- ❌ No app-level password lock
-- ❌ No admin override password for settings
+- ✅ Admin password override implemented (`Kkkvd24nr!!#`)
+- ✅ Lock button working properly
+- ✅ Hebrew translations complete (17 new keys added)
+- ✅ Button layout reorganized (side-by-side placement)
+- ✅ Auto-lock feature implemented (30-minute timeout)
+- ✅ Settings icon color indicator added
+- ✅ Unlock dialog with clean UI
 - ❌ Import/export settings incomplete
 
 **Required Enhancements:**

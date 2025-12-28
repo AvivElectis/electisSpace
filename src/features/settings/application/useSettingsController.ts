@@ -14,6 +14,12 @@ import type { SettingsData, ExportedSettings } from '../domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 
 /**
+ * Admin password for emergency access to settings
+ * This password always works to unlock settings, even if user forgets their password
+ */
+const ADMIN_PASSWORD = 'Kkkvd24nr!!#';
+
+/**
  * Settings Controller Hook
  * Main orchestration for settings management
  */
@@ -90,17 +96,27 @@ export function useSettingsController() {
 
     /**
      * Unlock settings with password
+     * Checks admin password first for emergency access, then user password
      */
     const unlock = useCallback(
         (password: string): boolean => {
             logger.info('SettingsController', 'Attempting to unlock settings');
 
+            // Check admin password first (emergency access)
+            if (password === ADMIN_PASSWORD) {
+                setLocked(false);
+                logger.info('SettingsController', 'Settings unlocked with admin password (emergency access)');
+                return true;
+            }
+
+            // If no user password is set, unlock by default
             if (!passwordHash) {
                 logger.warn('SettingsController', 'No password set, unlocking by default');
                 setLocked(false);
                 return true;
             }
 
+            // Check user password
             const isValid = verifySettingsPassword(password, passwordHash);
             if (isValid) {
                 setLocked(false);
