@@ -99,7 +99,7 @@ export async function refreshToken(
         url,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: { refresh_token: '***' }  // Use underscore to match login response format
+        body: { refreshToken: '***' }  // camelCase as per API spec line 196-200
     });
 
     const response = await fetch(url, {
@@ -108,7 +108,7 @@ export async function refreshToken(
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            refresh_token: refreshToken,  // Changed from refreshToken to refresh_token
+            refreshToken: refreshToken,  // API expects camelCase, not underscore
         }),
     });
 
