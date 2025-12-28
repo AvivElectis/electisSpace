@@ -49,11 +49,26 @@ export function LanguageSwitcher() {
                 onClose={handleClose}
                 anchorOrigin={{
                     vertical: 'bottom',
-                    horizontal: 'right',
+                    horizontal: 'left',
                 }}
                 transformOrigin={{
                     vertical: 'top',
-                    horizontal: 'right',
+                    horizontal: 'left',
+                }}
+                sx={{
+                    '& .MuiMenu-paper': {
+                        boxShadow: '0 0 3px rgba(0, 0, 0, 0.23)',
+                        p: .5,
+                        paddingInlineStart: 1,
+                    },
+                    '& .MuiMenuItem-root': {
+                        width: '95%',
+                        borderRadius: .5,
+                        '&:hover': {
+                            textShadow: 'none',
+                            transform: 'scale(1.05)',
+                        },
+                    },
                 }}
             >
                 <MenuItem onClick={() => handleLanguageChange('en')}>
