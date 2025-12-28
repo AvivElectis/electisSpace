@@ -1,7 +1,8 @@
 # electisSpace - Comprehensive Implementation Plan Q1 2025
-**Last Updated:** December 21, 2024  
+**Last Updated:** December 28, 2024  
 **Status:** Active Development  
 **Version:** v1.0.0-dev
+**Latest:** Phase 9 - Dynamic Table Columns (Dec 28, 2024)
 
 ---
 
@@ -605,7 +606,108 @@ Current Spaces and Conference UI components have hardcoded fields and don't adap
 
 ---
 
-### 8. Testing Infrastructure - **MEDIUM PRIORITY**
+### 9. Dynamic Table Columns for Spaces - ✅ **COMPLETED**
+**Status:** Phase 9 - Fully Completed (Dec 28, 2024)
+**Actual Effort:** ~2 hours
+
+**Problem Statement:**
+Spaces table had hardcoded columns (ID, Name, Info, Actions) which didn't scale well with custom fields. The "Info"column crammed all fields into one cell, making the table hard to read and not leveraging the dynamic field mapping configuration.
+
+**Solution Implemented:**
+Refactored Spaces table to display dynamic columns based on visible fields from `solumMappingConfig`, with each field getting its own column showing friendly names as headers.
+
+#### 9.1 Implementation Details
+
+**Files Modified:**
+- ✅ [`SpacesPage.tsx`](file:///c:/React/electisSpace/src/features/space/presentation/SpacesPage.tsx) - Dynamic table columns implementation
+
+**Key Changes:**
+
+1. **Computed Visible Fields** (Lines 68-86)
+   ```typescript
+   const visibleFields = useMemo(() => {
+       if (!settingsController.settings.solumMappingConfig?.fields) return [];
+       const idFieldKey = settingsController.settings.solumMappingConfig.mappingInfo?.articleId;
+       return Object.entries(settingsController.settings.solumMappingConfig.fields)
+           .filter(([fieldKey, config]) => {
+               if (idFieldKey && fieldKey === idFieldKey) return false; // Exclude ID
+               return config.visible;
+           })
+           .map(([fieldKey, config]) => ({
+               key: fieldKey,
+               labelEn: config.friendlyNameEn,
+               labelHe: config.friendlyNameHe
+           }));
+   }, [settingsController.settings.solumMappingConfig]);
+   ```
+   - Extracts visible fields from mapping configuration
+   - Automatically excludes ARTICLE_ID field to prevent duplication (shown in dedicated ID column)
+   - Prepares bilingual friendly names
+
+2. **Dynamic Table Headers** (Lines 189-197)
+   - Removed hardcoded "Name" and "Info" columns
+   - Added dynamic columns based on `visibleFields`
+   - Shows friendly names in current language (English/Hebrew)
+   - Centered alignment for all columns (including Actions)
+
+3. **Dynamic Table Body** (Lines 217-229)
+   - Each visible field renders in its own column
+   - Displays field values from `space.data`
+   - Shows "-" for empty fields
+   - Centered text alignment for better readability
+
+4. **ID Column Deduplication**
+   - Prevents ARTICLE_ID from appearing twice
+   - Dedicated ID column always shows `space.id`
+   - ARTICLE_ID field filtered out from dynamic columns
+
+#### 9.2 User Experience Improvements
+
+**Before:**
+```
+| ID | Name | Info                              | Actions |
+|----|------|-----------------------------------|---------|
+| 1  | Aviv | ITEM_NAME: Aviv, RANK: Captain... | Edit... |
+```
+
+**After:**
+```
+| ID | Item Name | English Name | Rank    | Title  | Actions |
+|----|-----------|--------------|---------|--------|---------|
+| 1  | אביב      | Aviv         | Captain | יחליי  | Edit... |
+```
+
+**Benefits:**
+- ✅ Each field has its own column for better scannability
+- ✅ Column headers show friendly names (not raw field keys)
+- ✅ Bilingual support - headers adapt to EN/HE
+- ✅ Centered alignment for professional appearance
+- ✅ Automatically adapts when field visibility changes
+- ✅ No duplicate ID columns
+- ✅ Cleaner, more structured UI
+
+#### 9.3 Integration Points
+
+**Works With:**
+- Phase 6 field mapping configuration
+- Phase 7 dynamic field display system
+- Bilingual friendly names from `solumMappingConfig`
+- Field visibility toggles
+
+**Completion Criteria:**
+- [x] Dynamic columns generated from `solumMappingConfig` ✓
+- [x] Friendly names displayed in current language ✓
+- [x] ID column deduplication working ✓
+- [x] Centered text alignment ✓
+- [x] No hardcoded columns (except ID and Actions) ✓
+- [x] Table adapts to field visibility settings ✓
+
+**Build Status:** ✅ TypeScript compiles with 0 errors  
+**Completion Date:** December 28, 2024
+
+---
+
+### 10. Testing Infrastructure - **MEDIUM PRIORITY**
 **Status:** Testing libraries installed, ZERO tests exist
 
 **Current State:**
