@@ -22,6 +22,7 @@ interface ConferenceRoomDialogProps {
     onClose: () => void;
     onSave: (room: Partial<ConferenceRoom>) => Promise<void>;
     room?: ConferenceRoom;
+    existingIds?: string[];
 }
 
 /**
@@ -32,10 +33,12 @@ export function ConferenceRoomDialog({
     onClose,
     onSave,
     room,
+    existingIds = []
 }: ConferenceRoomDialogProps) {
     const { t } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [id, setId] = useState('');
+    const [idError, setIdError] = useState(''); // Local error state for ID
     const [roomName, setRoomName] = useState('');
     const [hasMeeting, setHasMeeting] = useState(false);
     const [meetingName, setMeetingName] = useState('');
@@ -59,6 +62,7 @@ export function ConferenceRoomDialog({
             } else {
                 // Add mode - reset
                 setId('');
+                setIdError('');
                 setRoomName('');
                 setHasMeeting(false);
                 setMeetingName('');
@@ -68,6 +72,33 @@ export function ConferenceRoomDialog({
             }
         }
     }, [open, room]);
+
+    const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.toUpperCase().trim();
+        setId(value);
+
+        // Live Validation
+        let checkId = value;
+        if (checkId && !checkId.startsWith('C')) {
+            checkId = 'C' + checkId;
+        }
+
+        // Check both raw and C-prefixed types just in case, but existingIds likely has full IDs
+        // Actually the user types "101", we might save "C101". 
+        // If existing is "C101".
+        // If user types "101", we should check "C101". 
+        // If user types "C101", we check "C101".
+
+        const possibleId = value.startsWith('C') ? value : 'C' + value;
+
+        if (existingIds.includes(possibleId) && (!room || room.id !== possibleId)) {
+            setIdError(t('errors.idExists'));
+        } else if (existingIds.includes(value) && (!room || room.id !== value)) {
+            setIdError(t('errors.idExists'));
+        } else {
+            setIdError('');
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -122,10 +153,11 @@ export function ConferenceRoomDialog({
                         fullWidth
                         label={t('conference.roomId')}
                         value={id}
-                        onChange={(e) => setId(e.target.value.toUpperCase().trim())}
+                        onChange={handleIdChange}
                         disabled={!!room}
                         required
-                        helperText={room ? t('conference.idCannotChange') : t('conference.idAutoFormat')}
+                        error={!!idError}
+                        helperText={idError || (room ? t('conference.idCannotChange') : t('conference.idAutoFormat'))}
                     />
 
                     {/* Room Name */}
@@ -230,6 +262,7 @@ export function ConferenceRoomDialog({
                     onClick={handleSave}
                     disabled={
                         saving ||
+                        !!idError ||
                         !roomName ||
                         (!room && !id) ||
                         (hasMeeting && (!meetingName || !startTime || !endTime))

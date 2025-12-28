@@ -67,7 +67,10 @@
         "autoSync": "סינכרון אוטומטי",
         "enabled": "פעיל",
         "disabled": "כבוי",
-        "every": "כל"
+        "every": "כל",
+        "toSpaces": "לחללים",
+        "toRooms": "לחדרים",
+        "toSpaceType": "ל{{type}}"
     },
     "spaces": {
         "title": "חללים",
@@ -357,7 +360,8 @@
         "connectionFailed": "החיבור נכשל",
         "saveFailed": "השמירה נכשלה",
         "loadFailed": "הטעינה נכשלה",
-        "unknownError": "אירעה שגיאה לא ידועה"
+        "unknownError": "אירעה שגיאה לא ידועה",
+        "idExists": "מזהה זה כבר קיים"
     },
     "messages": {
         "saved": "נשמר בהצלחה",
