@@ -71,6 +71,60 @@ export function useSpaceController({
             // Merge with defaults
             const space = mergeSpaceDefaults(spaceData, csvConfig);
 
+            // Post to AIMS if using SoluM mode
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    logger.info('SpaceController', 'Pushing article to AIMS', { id: space.id });
+
+                    // Transform space to AIMS article format using mapping config
+                    const articleData: Record<string, any> = {};
+
+                    // Map visible fields from config
+                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
+                        if (fieldConfig.visible) {
+                            let value: any = undefined;
+                            const fieldKeyLower = fieldKey.toLowerCase();
+
+                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
+                                value = space.id;
+                            } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
+                                value = space.roomName;
+                            } else if (space.data && space.data[fieldKey] !== undefined) {
+                                value = space.data[fieldKey];
+                            } else if ((space as any)[fieldKey] !== undefined) {
+                                value = (space as any)[fieldKey];
+                            }
+
+                            if (value !== undefined && value !== null && value !== '') {
+                                articleData[fieldKey] = value;
+                            }
+                        }
+                    });
+
+                    // Apply global field assignments
+                    if (solumMappingConfig.globalFieldAssignments) {
+                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
+                    }
+
+                    const aimsArticle = {
+                        articleId: space.id,
+                        articleName: space.roomName || space.id,
+                        data: articleData
+                    };
+
+                    await solumService.pushArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [aimsArticle]
+                    );
+                    logger.info('SpaceController', 'Article pushed to AIMS successfully', { id: space.id });
+                } catch (error) {
+                    logger.error('SpaceController', 'Failed to push article to AIMS', { error });
+                    throw new Error(`Failed to push to AIMS: ${error}`);
+                }
+            }
+
             // Add to store
             addToStore(space);
 

@@ -82,49 +82,57 @@ export function useConferenceController({
                     // Debug: Log the conference room object and mapping config
                     console.log('[DEBUG] Conference Room Object:', finalRoom);
                     console.log('[DEBUG] Mapping Config Fields:', solumMappingConfig.fields);
+                    console.log('[DEBUG] Conference Mapping:', solumMappingConfig.conferenceMapping);
 
-                    // Map each field according to solumMappingConfig
+                    // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
+                    const { conferenceMapping } = solumMappingConfig;
+
+                    // Map meeting name
+                    if (conferenceMapping.meetingName && finalRoom.meetingName) {
+                        articleData[conferenceMapping.meetingName] = finalRoom.meetingName;
+                        console.log(`[DEBUG] Mapped meetingName -> ${conferenceMapping.meetingName}:`, finalRoom.meetingName);
+                    }
+
+                    // Map meeting time (combine start and end)
+                    if (conferenceMapping.meetingTime) {
+                        if (finalRoom.startTime && finalRoom.endTime) {
+                            articleData[conferenceMapping.meetingTime] = `${finalRoom.startTime} - ${finalRoom.endTime}`;
+                            console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
+                        } else if (finalRoom.startTime) {
+                            articleData[conferenceMapping.meetingTime] = finalRoom.startTime;
+                            console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, finalRoom.startTime);
+                        }
+                    }
+
+                    // Map participants
+                    if (conferenceMapping.participants && finalRoom.participants?.length > 0) {
+                        articleData[conferenceMapping.participants] = finalRoom.participants.join(', ');
+                        console.log(`[DEBUG] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
+                    }
+
+                    // Second: Map other visible fields from config
                     Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
                         if (fieldConfig.visible) {
-                            // Try to get value from conference room object
-                            let value: any = undefined;
+                            // Skip if already mapped by conferenceMapping
+                            if (articleData[fieldKey] !== undefined) {
+                                return;
+                            }
 
-                            // Create a case-insensitive property mapper
+                            let value: any = undefined;
                             const fieldKeyLower = fieldKey.toLowerCase();
 
-                            // Map based on lowercase field key to conference room properties
                             if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
                                 value = finalRoom.id;
                             } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
                                 value = finalRoom.roomName;
-                            } else if (fieldKeyLower.includes('meeting') && fieldKeyLower.includes('name')) {
-                                value = finalRoom.meetingName;
-                            } else if (fieldKeyLower.includes('meeting') && fieldKeyLower.includes('time')) {
-                                // Combine start and end time for MEETING_TIME field
-                                if (finalRoom.startTime && finalRoom.endTime) {
-                                    value = `${finalRoom.startTime} - ${finalRoom.endTime}`;
-                                } else if (finalRoom.startTime) {
-                                    value = finalRoom.startTime;
-                                }
-                            } else if (fieldKeyLower.includes('start') && fieldKeyLower.includes('time')) {
-                                value = finalRoom.startTime;
-                            } else if (fieldKeyLower.includes('end') && fieldKeyLower.includes('time')) {
-                                value = finalRoom.endTime;
-                            } else if (fieldKeyLower.includes('participant')) {
-                                value = finalRoom.participants?.join(', ');
-                            } else if (fieldKeyLower.includes('hasmeeting') || fieldKeyLower.includes('has_meeting')) {
-                                value = finalRoom.hasMeeting ? 'true' : 'false';
                             } else if (finalRoom.data && finalRoom.data[fieldKey] !== undefined) {
-                                // Use value from data object
                                 value = finalRoom.data[fieldKey];
                             } else if ((finalRoom as any)[fieldKey] !== undefined) {
-                                // Fallback: try exact property name match
                                 value = (finalRoom as any)[fieldKey];
                             }
 
                             console.log(`[DEBUG] Field '${fieldKey}' -> value:`, value);
 
-                            // Only add if value exists
                             if (value !== undefined && value !== null && value !== '') {
                                 articleData[fieldKey] = value;
                             }
@@ -231,43 +239,52 @@ export function useConferenceController({
                     // Debug: Log the conference room object and mapping config
                     console.log('[DEBUG UPDATE] Conference Room Object:', room);
                     console.log('[DEBUG UPDATE] Mapping Config Fields:', solumMappingConfig.fields);
+                    console.log('[DEBUG UPDATE] Conference Mapping:', solumMappingConfig.conferenceMapping);
 
-                    // Map each field according to solumMappingConfig
+                    // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
+                    const { conferenceMapping } = solumMappingConfig;
+
+                    // Map meeting name
+                    if (conferenceMapping.meetingName && room.meetingName) {
+                        articleData[conferenceMapping.meetingName] = room.meetingName;
+                        console.log(`[DEBUG UPDATE] Mapped meetingName -> ${conferenceMapping.meetingName}:`, room.meetingName);
+                    }
+
+                    // Map meeting time (combine start and end)
+                    if (conferenceMapping.meetingTime) {
+                        if (room.startTime && room.endTime) {
+                            articleData[conferenceMapping.meetingTime] = `${room.startTime} - ${room.endTime}`;
+                            console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
+                        } else if (room.startTime) {
+                            articleData[conferenceMapping.meetingTime] = room.startTime;
+                            console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, room.startTime);
+                        }
+                    }
+
+                    // Map participants
+                    if (conferenceMapping.participants && room.participants?.length > 0) {
+                        articleData[conferenceMapping.participants] = room.participants.join(', ');
+                        console.log(`[DEBUG UPDATE] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
+                    }
+
+                    // Second: Map other visible fields from config
                     Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
                         if (fieldConfig.visible) {
-                            // Try to get value from conference room object
-                            let value: any = undefined;
+                            // Skip if already mapped by conferenceMapping
+                            if (articleData[fieldKey] !== undefined) {
+                                return;
+                            }
 
-                            // Create a case-insensitive property mapper
+                            let value: any = undefined;
                             const fieldKeyLower = fieldKey.toLowerCase();
 
-                            // Map based on lowercase field key to conference room properties
                             if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
                                 value = room.id;
                             } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
                                 value = room.roomName;
-                            } else if (fieldKeyLower.includes('meeting') && fieldKeyLower.includes('name')) {
-                                value = room.meetingName;
-                            } else if (fieldKeyLower.includes('meeting') && fieldKeyLower.includes('time')) {
-                                // Combine start and end time for MEETING_TIME field
-                                if (room.startTime && room.endTime) {
-                                    value = `${room.startTime} - ${room.endTime}`;
-                                } else if (room.startTime) {
-                                    value = room.startTime;
-                                }
-                            } else if (fieldKeyLower.includes('start') && fieldKeyLower.includes('time')) {
-                                value = room.startTime;
-                            } else if (fieldKeyLower.includes('end') && fieldKeyLower.includes('time')) {
-                                value = room.endTime;
-                            } else if (fieldKeyLower.includes('participant')) {
-                                value = room.participants?.join(', ');
-                            } else if (fieldKeyLower.includes('hasmeeting') || fieldKeyLower.includes('has_meeting')) {
-                                value = room.hasMeeting ? 'true' : 'false';
                             } else if (room.data && room.data[fieldKey] !== undefined) {
-                                // Use value from data object
                                 value = room.data[fieldKey];
                             } else if ((room as any)[fieldKey] !== undefined) {
-                                // Fallback: try exact property name match
                                 value = (room as any)[fieldKey];
                             }
 
@@ -531,21 +548,37 @@ export function useConferenceController({
                         ...(globalFieldAssignments || {}),
                     };
 
-                    // Parse meeting time (expected format: "START-END", e.g., "09:00-10:30")
-                    const meetingTimeRaw = mergedArticle[conferenceMapping.meetingTime] || '';
+                    // Parse meeting fields from conferenceMapping
+                    // Note: The detailed API returns fields inside article.data object
+                    const articleData = mergedArticle.data || {};
+                    const meetingNameField = conferenceMapping.meetingName;
+                    const meetingTimeField = conferenceMapping.meetingTime;
+                    const participantsField = conferenceMapping.participants;
+
+                    // Get meeting name from data object
+                    const meetingName = articleData[meetingNameField] || '';
+
+                    // Parse meeting time (expected format: "START - END", e.g., "09:00 - 15:00")
+                    const meetingTimeRaw = articleData[meetingTimeField] || '';
                     const [startTime, endTime] = String(meetingTimeRaw)
                         .split('-')
                         .map(t => t.trim());
 
-                    // Parse participants (expected format: comma-separated, e.g., "John,Jane,Bob")
-                    const participantsRaw = mergedArticle[conferenceMapping.participants] || '';
+                    // Parse participants (expected format: comma-separated, e.g., "John, Jane, Bob")
+                    const participantsRaw = articleData[participantsField] || '';
                     const participants = String(participantsRaw)
                         .split(',')
                         .map(p => p.trim())
                         .filter(p => p.length > 0);
 
-                    // Meeting name
-                    const meetingName = mergedArticle[conferenceMapping.meetingName] || '';
+                    console.log('[DEBUG FETCH] Parsed meeting data:', {
+                        meetingName,
+                        startTime,
+                        endTime,
+                        participants,
+                        rawMeetingTime: meetingTimeRaw,
+                        rawParticipants: participantsRaw
+                    });
 
                     // Build dynamic data object from visible fields with actual article values
                     const data: Record<string, string> = {};

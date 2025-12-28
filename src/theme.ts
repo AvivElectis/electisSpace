@@ -351,7 +351,17 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                 styleOverrides: {
                     root: {
                         borderRadius: '8px',
-                        fontWeight: 500,
+                        fontWeight: 600,
+                        fontSize: '1rem',
+                        letterSpacing: '0.02em',
+                    },
+                    colorPrimary: {
+                        color: '#FFFFFF',
+                        backgroundColor: 'transparent',
+                        border: '1px solid #ffffffff',
+                        '&:hover': {
+                            backgroundColor: '#007bffff',
+                        },
                     },
                 },
             },
