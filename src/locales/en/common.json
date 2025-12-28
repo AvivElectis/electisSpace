@@ -31,7 +31,17 @@
         "error": "Error",
         "success": "Success",
         "warning": "Warning",
-        "info": "Information"
+        "info": "Information",
+        "dialog": {
+            "confirm": "Confirm",
+            "cancel": "Cancel",
+            "delete": "Delete",
+            "clear": "Clear",
+            "continue": "Continue",
+            "areYouSure": "Are you sure?",
+            "info": "Information",
+            "warning": "Warning"
+        }
     },
     "dashboard": {
         "title": "Dashboard",

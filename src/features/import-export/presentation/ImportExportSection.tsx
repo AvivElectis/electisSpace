@@ -16,10 +16,12 @@ import { useTranslation } from 'react-i18next';
 import { useImportExportController } from '../application/useImportExportController';
 import { ExportDialog } from './ExportDialog';
 import { ImportDialog } from './ImportDialog';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 export function ImportExportSection() {
     const { t } = useTranslation();
     const { exportToFile } = useImportExportController();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -83,10 +85,18 @@ export function ImportExportSection() {
             setExportedFileData(null); // Clear file data
             setImportDialogOpen(false);
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 setSuccess(null);
                 // Suggest restart
-                if (window.confirm(t('importExport.restartRecommended'))) {
+                const confirmed = await confirm({
+                    title: t('common.dialog.info'),
+                    message: t('importExport.restartRecommended'),
+                    confirmLabel: t('common.yes'),
+                    cancelLabel: t('common.no'),
+                    severity: 'info'
+                });
+
+                if (confirmed) {
                     window.location.reload();
                 }
             }, 2000);
@@ -154,6 +164,7 @@ export function ImportExportSection() {
                 preview={null}
                 isEncrypted={exportedFileData?.encrypted || false}
             />
+            <ConfirmDialog />
         </Box>
     );
 }

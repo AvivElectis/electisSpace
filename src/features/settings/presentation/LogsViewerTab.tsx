@@ -18,6 +18,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger, type LogLevel } from '@shared/infrastructure/services/logger';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 /**
  * Logs Viewer Tab
@@ -25,6 +26,7 @@ import { logger, type LogLevel } from '@shared/infrastructure/services/logger';
  */
 export function LogsViewerTab() {
     const { t } = useTranslation();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [levelFilter, setLevelFilter] = useState<LogLevel | 'all'>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [logs, setLogs] = useState(logger.getLogs());
@@ -33,8 +35,16 @@ export function LogsViewerTab() {
         setLogs(logger.getLogs());
     };
 
-    const handleClear = () => {
-        if (window.confirm('Are you sure you want to clear all logs?')) {
+    const handleClear = async () => {
+        const confirmed = await confirm({
+            title: t('common.dialog.clear'),
+            message: t('common.dialog.areYouSure'),
+            confirmLabel: t('common.dialog.clear'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'error'
+        });
+
+        if (confirmed) {
             logger.clearLogs();
             setLogs([]);
         }
@@ -140,7 +150,7 @@ export function LogsViewerTab() {
                                                     size="small"
                                                     sx={{ minWidth: 60 }}
                                                 />
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, px:1, }}>
                                                     {new Date(log.timestamp).toLocaleString()}
                                                 </Typography>
                                                 <Chip
@@ -180,6 +190,7 @@ export function LogsViewerTab() {
                 <Typography variant="caption" color="text.secondary">
                     Showing {filteredLogs.length} of {logs.length} log entries
                 </Typography>
+                <ConfirmDialog />
             </Stack>
         </Box>
     );

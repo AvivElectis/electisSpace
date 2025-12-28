@@ -99,16 +99,31 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Drawer>
             ) : (
                 <Box sx={{
-                    bgcolor: 'background.paper',
-                    borderBottom: 1,
+                    bgcolor: 'transparent',
                     borderColor: 'divider',
                     px: { xs: 2, sm: 3, md: 4 },
+                    py: 2,
+                    
                 }}>
                     <Tabs
                         value={currentTab}
                         onChange={handleTabChange}
                         variant="scrollable"
                         scrollButtons="auto"
+                        sx={{ 
+                            borderBottom: 0,
+                            '& .MuiTab-root': {
+                                border: '1px solid transparent',
+                                borderRadius: 2,
+                                '&.Mui-selected': {
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    bgcolor: 'background.paper',
+                                }
+                            }
+                        }}
+                        TabIndicatorProps={{ sx: { display: 'none' } }}
+
                     >
                         {navTabs.map(tab => (
                             <Tab

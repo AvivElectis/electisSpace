@@ -19,6 +19,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ImportPreview } from '../domain/types';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 interface ImportDialogProps {
     open: boolean;
@@ -30,6 +31,7 @@ interface ImportDialogProps {
 
 export function ImportDialog({ open, onClose, onImport, preview, isEncrypted }: ImportDialogProps) {
     const { t } = useTranslation();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -42,7 +44,15 @@ export function ImportDialog({ open, onClose, onImport, preview, isEncrypted }: 
             return;
         }
 
-        if (!window.confirm(t('importExport.importWarning'))) {
+        const confirmed = await confirm({
+            title: t('common.dialog.warning'),
+            message: t('importExport.importWarning'),
+            confirmLabel: t('common.dialog.continue'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'warning'
+        });
+
+        if (!confirmed) {
             return;
         }
 
@@ -158,6 +168,7 @@ export function ImportDialog({ open, onClose, onImport, preview, isEncrypted }: 
                     {loading ? t('common.importing') : t('importExport.import')}
                 </Button>
             </DialogActions>
+            <ConfirmDialog />
         </Dialog>
     );
 }
