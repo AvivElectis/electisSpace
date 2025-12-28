@@ -254,7 +254,7 @@ export function ConferencePage() {
             ) : (
                 <Grid container spacing={3}>
                     {filteredRooms.map((room) => (
-                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={room.id}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }}  key={room.id}>
                             <Card
                                 sx={{
                                     height: '100%',
@@ -268,24 +268,23 @@ export function ConferencePage() {
                                 onClick={() => handleViewDetails(room)}
                             >
                                 <CardContent>
-                                    <Stack spacing={2}>
+                                    <Stack spacing={2} >
                                         {/* Room Header */}
                                         <Stack
                                             direction="row"
                                             justifyContent="space-between"
                                             alignItems="start"
+                                            sx={{backgroundColor: room.hasMeeting ? '#EF4444' : '#22C55E', px:1, py:1, mx:0, borderRadius: 1, color: 'white', textShadow: '0px 0px 2px rgba(0, 0, 0, 0.75)'}}
                                         >
                                             <Box>
                                                 <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                                    {room.roomName}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    ID: {room.id}
+                                                   {room.id} - {room.roomName}
                                                 </Typography>
                                             </Box>
                                             <Chip
                                                 label={room.hasMeeting ? t('conference.occupied') : t('conference.available')}
-                                                color={room.hasMeeting ? 'warning' : 'success'}
+                                                color={'primary'}
+                                                variant = {'outlined'}
                                                 size="small"
                                             />
                                         </Stack>

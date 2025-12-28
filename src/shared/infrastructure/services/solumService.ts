@@ -221,9 +221,10 @@ export async function fetchArticles(
     storeId: string,
     token: string
 ): Promise<any[]> {
-    logger.info('SolumService', 'Fetching articles', { storeId });
+    logger.info('SolumService', 'Fetching articles with details', { storeId });
 
-    const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
+    // Use the detailed articles endpoint to get full article data
+    const url = buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${storeId}`);
 
     const response = await fetch(url, {
         method: 'GET',
