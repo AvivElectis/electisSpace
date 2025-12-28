@@ -117,6 +117,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 value={tab.value}
                                 icon={tab.icon}
                                 iconPosition="start"
+                                sx={{p: 1, paddingInlineEnd: 2}}
                             />
                         ))}
                     </Tabs>
