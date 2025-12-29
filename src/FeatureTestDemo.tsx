@@ -35,8 +35,8 @@ export function FeatureTestDemo() {
 
             // Add a test space
             await spaceController.addSpace({
-                roomName: 'Test Chair 1',
-                data: { doctor: 'Dr. Test' },
+                id: 'TEST001',
+                data: { name: 'Test Chair 1', doctor: 'Dr. Test' },
             });
 
             addResult(`✅ Space added. Total spaces: ${spaceController.spaces.length}`);
@@ -51,7 +51,13 @@ export function FeatureTestDemo() {
 
             // Add a test conference room
             await conferenceController.addConferenceRoom({
-                roomName: 'Conference Room A',
+                id: 'C01',
+                hasMeeting: false,
+                meetingName: '',
+                startTime: '',
+                endTime: '',
+                participants: [],
+                data: { name: 'Conference Room A' },
             });
 
             addResult(`✅ Conference room added. Total rooms: ${conferenceController.conferenceRooms.length}`);
