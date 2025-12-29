@@ -300,15 +300,15 @@ export async function pushArticles(
         body: requestBody
     });
     
-    console.log('=== SOLUM POST REQUEST ===');
-    console.log('URL:', url);
-    console.log('Method: POST');
-    console.log('Headers:', {
-        'Authorization': `Bearer ${token.substring(0, 20)}...`,
-        'Content-Type': 'application/json',
-    });
-    console.log('Body:', requestBody);
-    console.log('========================');
+    // console.log('=== SOLUM POST REQUEST ===');
+    // console.log('URL:', url);
+    // console.log('Method: POST');
+    // console.log('Headers:', {
+    //     'Authorization': `Bearer ${token.substring(0, 20)}...`,
+    //     'Content-Type': 'application/json',
+    // });
+    // console.log('Body:', requestBody);
+    // console.log('========================');
 
     const response = await fetch(url, {
         method: 'POST',
@@ -321,11 +321,11 @@ export async function pushArticles(
 
     const responseText = await response.text();
     
-    console.log('=== SOLUM POST RESPONSE ===');
-    console.log('Status:', response.status, response.statusText);
-    console.log('Headers:', Object.fromEntries(response.headers.entries()));
-    console.log('Body:', responseText);
-    console.log('===========================');
+    // console.log('=== SOLUM POST RESPONSE ===');
+    // console.log('Status:', response.status, response.statusText);
+    // console.log('Headers:', Object.fromEntries(response.headers.entries()));
+    // console.log('Body:', responseText);
+    // console.log('===========================');
     
     logger.info('SolumService', 'Push articles - FULL RESPONSE', { 
         status: response.status,
@@ -468,8 +468,8 @@ export async function getLabels(
     const labels = Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
 
     logger.info('SolumService', 'Labels fetched', { count: labels.length });
-    console.log('[DEBUG getLabels] Response type:', typeof data, ', IsArray:', Array.isArray(data), ', Keys:', data ? Object.keys(data).join(',') : 'none');
-    console.log('[DEBUG getLabels] Labels IsArray:', Array.isArray(labels), ', Count:', Array.isArray(labels) ? labels.length : 'NOT ARRAY');
+    // console.log('[DEBUG getLabels] Response type:', typeof data, ', IsArray:', Array.isArray(data), ', Keys:', data ? Object.keys(data).join(',') : 'none');
+    // console.log('[DEBUG getLabels] Labels IsArray:', Array.isArray(labels), ', Count:', Array.isArray(labels) ? labels.length : 'NOT ARRAY');
     return labels;
 }
 
@@ -631,9 +631,9 @@ export async function getStoreSummary(
 
     const data = await response.json();
     logger.info('SolumService', 'Store summary fetched', {
-        totalLabelCount: data.totalLabelCount,
-        totalProductCount: data.totalProductCount,
-        onlineGwCount: data.onlineGwCount
+        labelCount: data.labelCount,
+        articleCount: data.articleCount,
+        gatewayCount: data.gatewayCount
     });
     return data;
 }

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useListsStore } from '../infrastructure/listsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useSyncContext } from '@features/sync/application/SyncContext';
+import { logger } from '@shared/infrastructure/services/logger';
 
 
 export function useListsController() {
@@ -68,8 +69,8 @@ export function useListsController() {
             // We trust our local state (which we just pushed).
             // Background auto-sync will handle updates later.
             // await syncController.sync();
-        } catch (error) {
-            console.error('Auto-sync after list load failed:', error);
+        } catch (error: any) {
+            logger.error('ListsController', 'Auto-sync after list load failed', { error: error?.message || error });
             // We don't block the UI for this, but we log the error
         }
 

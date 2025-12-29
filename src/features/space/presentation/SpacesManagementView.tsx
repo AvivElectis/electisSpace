@@ -1,3 +1,4 @@
+import { logger } from '@shared/infrastructure/services/logger';
 import {
     Box,
     Typography,
@@ -55,7 +56,7 @@ export function SpacesManagementView() {
         if (activeListName && !activeListId) {
             const list = lists.find(l => l.name === activeListName);
             if (list) {
-                console.log('SpacesManagementView: Recovered missing activeListId', list.id);
+                logger.info('SpacesManagementView', 'Recovered missing activeListId', { listId: list.id });
                 useSpacesStore.getState().setActiveListId(list.id);
             }
         }

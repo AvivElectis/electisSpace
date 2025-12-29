@@ -6,6 +6,7 @@
 
 import type { UpdateInfo } from '../../domain/types';
 import { isNewerVersion } from '../../domain/versionComparison';
+import { logger } from '@shared/infrastructure/services/logger';
 
 export interface GitHubRelease {
     tag_name: string;
@@ -34,13 +35,13 @@ export class GitHubUpdateAdapter {
     async getLatestRelease(): Promise<GitHubRelease | null> {
         try {
             const url = `https://api.github.com/repos/${this.owner}/${this.repo}/releases/latest`;
-            console.log('[GitHub Update] Fetching latest release from:', url);
+            logger.debug('GitHubUpdateAdapter', 'Fetching latest release', { url });
 
             const response = await fetch(url);
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.warn('[GitHub Update] 404 - No releases found or repo not accessible. Check:', {
+                    logger.warn('GitHubUpdateAdapter', '404 - No releases found or repo not accessible', {
                         url,
                         owner: this.owner,
                         repo: this.repo,
@@ -48,15 +49,15 @@ export class GitHubUpdateAdapter {
                     });
                     return null;
                 }
-                console.error('[GitHub Update] API error:', response.status, response.statusText);
+                logger.error('GitHubUpdateAdapter', 'API error', { status: response.status, statusText: response.statusText });
                 throw new Error(`GitHub API error: ${response.status}`);
             }
 
             const release: GitHubRelease = await response.json();
-            console.log('[GitHub Update] Latest release found:', release.tag_name);
+            logger.info('GitHubUpdateAdapter', 'Latest release found', { tagName: release.tag_name });
             return release;
-        } catch (error) {
-            console.error('[GitHub Update] Error fetching latest release:', error);
+        } catch (error: any) {
+            logger.error('GitHubUpdateAdapter', 'Error fetching latest release', { error: error?.message || error });
             return null;
         }
     }

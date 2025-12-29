@@ -15,6 +15,9 @@ const ConferencePage = lazy(() =>
 const SyncPage = lazy(() =>
     import('@features/sync/presentation/SyncPage').then(m => ({ default: m.SyncPage }))
 );
+const PeopleManagerView = lazy(() =>
+    import('@features/people/presentation/PeopleManagerView').then(m => ({ default: m.PeopleManagerView }))
+);
 const NotFoundPage = lazy(() =>
     import('@shared/presentation/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
 );
@@ -31,6 +34,7 @@ export function AppRoutes() {
                 <Route path="/spaces" element={<SpacesPage />} />
                 <Route path="/conference" element={<ConferencePage />} />
                 <Route path="/sync" element={<SyncPage />} />
+                <Route path="/people" element={<PeopleManagerView />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Suspense>

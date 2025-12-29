@@ -1,3 +1,4 @@
+import { logger } from '@shared/infrastructure/services/logger';
 import {
     Box,
     Typography,
@@ -236,7 +237,7 @@ export function PeopleManagerView() {
             try {
                 await peopleController.unassignSpace(person.id);
             } catch (error: any) {
-                console.error('Failed to unassign space:', error);
+                logger.error('PeopleManagerView', 'Failed to unassign space', { error: error?.message || error });
             }
         }
     }, [confirm, t, peopleController]);

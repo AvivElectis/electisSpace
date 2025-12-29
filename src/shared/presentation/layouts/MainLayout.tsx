@@ -60,19 +60,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
         { 
             labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces', 
-            value: '/spaces', 
+            value: isPeopleManagerMode ? '/people' : '/spaces', 
             icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
             dynamicLabel: true
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
         { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
     ];
-
-    // console.log('[DEBUG MainLayout] settings:', {
-    //     hasSolumConfig: !!settings.solumConfig,
-    //     hasMappingConfig: !!settings.solumMappingConfig,
-    //     mappingFields: settings.solumMappingConfig?.fields ? Object.keys(settings.solumMappingConfig.fields).length : 0
-    // });
 
     // Initialize global sync controller
     const syncController = useSyncController({
