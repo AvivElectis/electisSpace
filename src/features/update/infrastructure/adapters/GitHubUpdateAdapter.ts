@@ -38,7 +38,7 @@ export class GitHubUpdateAdapter {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.log('No releases found');
+                    // console.log('No releases found');
                     return null;
                 }
                 throw new Error(`GitHub API error: ${response.status}`);
@@ -47,7 +47,7 @@ export class GitHubUpdateAdapter {
             const release: GitHubRelease = await response.json();
             return release;
         } catch (error) {
-            console.error('Error fetching latest release:', error);
+            // console.error('Error fetching latest release:', error);
             return null;
         }
     }

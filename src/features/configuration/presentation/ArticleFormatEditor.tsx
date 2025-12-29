@@ -55,7 +55,7 @@ export function ArticleFormatEditor({
 
         // Create editor if it doesn't exist and panel is open
         if (editorRef.current && !jsonEditorRef.current && schema) {
-            console.log('[ArticleFormatEditor] Creating new editor');
+            // console.log('[ArticleFormatEditor] Creating new editor');
             const content: Content = { json: schema };
             jsonEditorRef.current = createJSONEditor({
                 target: editorRef.current,
@@ -63,10 +63,10 @@ export function ArticleFormatEditor({
                     content,
                     readOnly,
                     mode: Mode.tree,
-                    onChange: (updatedContent: Content) => {
-                        console.log('[ArticleFormatEditor] onChange fired', { readOnly, updatedContent });
+                    onChange: () => {
+                        // console.log('[ArticleFormatEditor] onChange fired', { readOnly, updatedContent });
                         if (!readOnly) {
-                            console.log('[ArticleFormatEditor] Setting hasChanges to true');
+                            // console.log('[ArticleFormatEditor] Setting hasChanges to true');
                             setHasChanges(true);
                         }
                     },
@@ -76,7 +76,7 @@ export function ArticleFormatEditor({
         }
         // Update content when schema changes (if editor exists)
         else if (jsonEditorRef.current && schema) {
-            console.log('[ArticleFormatEditor] Updating existing editor content');
+            // console.log('[ArticleFormatEditor] Updating existing editor content');
             const content: Content = { json: schema };
             jsonEditorRef.current.update(content);
         }
@@ -91,19 +91,19 @@ export function ArticleFormatEditor({
     }, [schema, readOnly, isOpen]);
 
     const handleSave = async () => {
-        console.log('[ArticleFormatEditor] handleSave called', {
-            hasEditor: !!jsonEditorRef.current,
-            hasOnSave: !!onSave,
-            hasChanges,
-            isSaving
-        });
+        // console.log('[ArticleFormatEditor] handleSave called', {
+        //     hasEditor: !!jsonEditorRef.current,
+        //     hasOnSave: !!onSave,
+        //     hasChanges,
+        //     isSaving
+        // });
 
         if (jsonEditorRef.current && onSave) {
             try {
                 setIsSaving(true);
-                console.log('[ArticleFormatEditor] Getting content from editor');
+                // console.log('[ArticleFormatEditor] Getting content from editor');
                 const content = jsonEditorRef.current.get();
-                console.log('[ArticleFormatEditor] Content retrieved', { content });
+                // console.log('[ArticleFormatEditor] Content retrieved', { content });
 
                 let jsonData: ArticleFormat;
 
@@ -112,27 +112,27 @@ export function ArticleFormatEditor({
                     jsonData = content.json as ArticleFormat;
                 } else if ('text' in content) {
                     // Parse text to JSON
-                    console.log('[ArticleFormatEditor] Parsing text content to JSON');
+                    // console.log('[ArticleFormatEditor] Parsing text content to JSON');
                     jsonData = JSON.parse(content.text) as ArticleFormat;
                 } else {
-                    console.warn('[ArticleFormatEditor] Content has neither json nor text property', content);
+                    // console.warn('[ArticleFormatEditor] Content has neither json nor text property', content);
                     return;
                 }
 
-                console.log('[ArticleFormatEditor] Calling onSave with JSON');
+                // console.log('[ArticleFormatEditor] Calling onSave with JSON');
                 const success = await onSave(jsonData);
-                console.log('[ArticleFormatEditor] onSave returned', { success });
+                // console.log('[ArticleFormatEditor] onSave returned', { success });
                 if (success) {
                     setHasChanges(false);
                 }
             } catch (error) {
-                console.error('[ArticleFormatEditor] Save error', error);
+                // console.error('[ArticleFormatEditor] Save error', error);
                 throw error; // Re-throw so the error notification shows
             } finally {
                 setIsSaving(false);
             }
         } else {
-            console.warn('[ArticleFormatEditor] Cannot save - missing editor or onSave callback');
+            // console.warn('[ArticleFormatEditor] Cannot save - missing editor or onSave callback');
         }
     };
 

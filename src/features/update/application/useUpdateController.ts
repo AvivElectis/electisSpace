@@ -43,7 +43,7 @@ export function useUpdateController() {
      */
     const checkForUpdates = useCallback(async (): Promise<boolean> => {
         if (!settings.enabled) {
-            console.log('Auto-update is disabled');
+            // console.log('Auto-update is disabled');
             return false;
         }
 
@@ -126,7 +126,7 @@ export function useUpdateController() {
             setInstalling(true);
             electronUpdateAdapter.quitAndInstall();
         } else {
-            console.warn('Install update is only available on Electron');
+            // console.warn('Install update is only available on Electron');
         }
     }, [setInstalling]);
 

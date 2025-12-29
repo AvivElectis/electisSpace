@@ -57,11 +57,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
 
-    console.log('[DEBUG MainLayout] settings:', {
-        hasSolumConfig: !!settings.solumConfig,
-        hasMappingConfig: !!settings.solumMappingConfig,
-        mappingFields: settings.solumMappingConfig?.fields ? Object.keys(settings.solumMappingConfig.fields).length : 0
-    });
+    // console.log('[DEBUG MainLayout] settings:', {
+    //     hasSolumConfig: !!settings.solumConfig,
+    //     hasMappingConfig: !!settings.solumMappingConfig,
+    //     mappingFields: settings.solumMappingConfig?.fields ? Object.keys(settings.solumMappingConfig.fields).length : 0
+    // });
 
     // Initialize global sync controller
     const syncController = useSyncController({
@@ -214,7 +214,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
                         workingMode="SoluM"
                         errorMessage={syncState.lastError}
-                        onSyncClick={() => sync().catch(console.error)}
+                        onSyncClick={() => sync().catch(() => {/* console.error */ })}
                     />
                 </Box>
 

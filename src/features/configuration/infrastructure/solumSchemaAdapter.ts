@@ -106,17 +106,17 @@ export class SolumSchemaAdapter {
             `/common/api/v2/common/articles/upload/format?company=${config.companyName}`
         );
 
-        console.log('='.repeat(80));
-        console.log('[SolumSchemaAdapter] UPDATE ARTICLE FORMAT REQUEST');
-        console.log('='.repeat(80));
-        console.log('URL:', url);
-        console.log('Method: POST');
-        console.log('Headers:', {
-            'Authorization': `Bearer ${token.substring(0, 20)}...`,
-            'Content-Type': 'application/json'
-        });
-        console.log('Payload:', JSON.stringify(schema, null, 2));
-        console.log('='.repeat(80));
+        // console.log('='.repeat(80));
+        // console.log('[SolumSchemaAdapter] UPDATE ARTICLE FORMAT REQUEST');
+        // console.log('='.repeat(80));
+        // console.log('URL:', url);
+        // console.log('Method: POST');
+        // console.log('Headers:', {
+        //     'Authorization': `Bearer ${token.substring(0, 20)}...`,
+        //     'Content-Type': 'application/json'
+        // });
+        // console.log('Payload:', JSON.stringify(schema, null, 2));
+        // console.log('='.repeat(80));
 
         logger.debug('SolumSchemaAdapter', 'Schema update request', {
             url,

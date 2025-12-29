@@ -54,10 +54,16 @@ export function SpacesPage() {
     });
     const { getLabel } = useSpaceTypeLabels();
 
-    console.log('[DEBUG SpacesPage] settings:', {
-        hasMappingConfig: !!settingsController.settings.solumMappingConfig,
-        mappingFields: settingsController.settings.solumMappingConfig?.fields ? Object.keys(settingsController.settings.solumMappingConfig.fields).length : 0
-    });
+    // console.log('[DEBUG SpacesPage] settings:', {
+    //     workingMode: settingsController.settings.workingMode,
+    //     hasSolumConfig: !!settingsController.settings.solumMappingConfig,
+    //     hasFields: !!settingsController.settings.solumMappingConfig?.fields
+    // });
+    // The original line was:
+    // console.log('[DEBUG SpacesPage] settings:', {
+    //     hasMappingConfig: !!settingsController.settings.solumMappingConfig,
+    //     mappingFields: settingsController.settings.solumMappingConfig?.fields ? Object.keys(settingsController.settings.solumMappingConfig.fields).length : 0
+    // });
 
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
@@ -75,8 +81,8 @@ export function SpacesPage() {
             solumToken &&
             settingsController.settings.solumMappingConfig
         ) {
-            spaceController.fetchFromSolum().catch((error) => {
-                console.error('Failed to fetch spaces from AIMS:', error);
+            spaceController.fetchFromSolum().catch(() => {
+                // console.error('Failed to fetch spaces from AIMS:', error);
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
