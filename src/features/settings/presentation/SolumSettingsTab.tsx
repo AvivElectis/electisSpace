@@ -72,22 +72,22 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     return (
         <Box sx={{ px: 2, maxWidth: 800, mx: 'auto' }}>
             {/* Nested Tabs for Connection and Field Mapping */}
-            <Tabs 
-                value={subTab} 
-                onChange={(_, newValue) => setSubTab(newValue)} 
-                    sx={{
-                        borderBottom: 0,
-                        '& .MuiTab-root': {
-                            border: '1px solid transparent',
-                            borderRadius: 2,
-                            '&.Mui-selected': {
-                                border: '1px solid',
-                                borderColor: 'primary',
-                                boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
-                            }
+            <Tabs
+                value={subTab}
+                onChange={(_, newValue) => setSubTab(newValue)}
+                sx={{
+                    borderBottom: 0,
+                    '& .MuiTab-root': {
+                        border: '1px solid transparent',
+                        borderRadius: 2,
+                        '&.Mui-selected': {
+                            border: '1px solid',
+                            borderColor: 'primary',
+                            boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
                         }
-                    }}
-                    TabIndicatorProps={{ sx: { display: 'none' } }}>
+                    }
+                }}
+                TabIndicatorProps={{ sx: { display: 'none' } }}>
                 <Tab label={t('settings.connectionTab')} />
                 <Tab label={t('settings.fieldMappingTab')} disabled={!settings.solumConfig?.isConnected} />
             </Tabs>
@@ -429,6 +429,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                             conferenceMapping: mapping,
                                         }
                                     })}
+                                    mappingInfo={settings.solumMappingConfig?.mappingInfo}
                                     disabled={isMappingLocked}
                                 />
 

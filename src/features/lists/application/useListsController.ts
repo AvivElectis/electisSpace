@@ -108,6 +108,7 @@ export function useListsController() {
 
     return {
         lists: listsStore.lists,
+        activeListId: spacesStore.activeListId,
         saveCurrentSpacesAsList,
         loadList,
         deleteList,

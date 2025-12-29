@@ -92,7 +92,7 @@ export function validateCSVStructure(columns: CSVColumn[]): ValidationResult {
     }
 
     // Check mandatory SFTP fields are present
-    const mandatoryFields = ['store', 'id', 'roomName'];
+    const mandatoryFields = ['store', 'id'];
     const configuredFields = columns.map(c => c.aimsValue);
 
     for (const field of mandatoryFields) {

@@ -53,7 +53,12 @@ export function useSpaceController({
             // Generate ID if not provided
             if (!spaceData.id) {
                 const existingIds = spaces.map(s => s.id);
-                spaceData.id = generateSpaceId(spaceData.roomName || '', existingIds);
+                // Try to get name for ID generation from data mapping or standard field
+                const mappingInfo = solumMappingConfig?.mappingInfo;
+                const nameKey = mappingInfo?.articleName || 'roomName';
+                const nameForId = (spaceData.data?.[nameKey]) || '';
+
+                spaceData.id = generateSpaceId(nameForId, existingIds);
             }
 
             // Validate
@@ -90,8 +95,6 @@ export function useSpaceController({
                             // Resolve value from space
                             if (mappingInfo?.articleId === fieldKey) {
                                 value = space.id;
-                            } else if (mappingInfo?.articleName === fieldKey) {
-                                value = space.roomName;
                             } else if (space.data && space.data[fieldKey] !== undefined) {
                                 value = space.data[fieldKey];
                             } else if ((space as any)[fieldKey] !== undefined) {
@@ -124,7 +127,7 @@ export function useSpaceController({
                     if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
                         aimsArticle.articleName = String(data[mappingInfo.articleName]);
                     } else {
-                        aimsArticle.articleName = space.roomName || space.id;
+                        aimsArticle.articleName = space.id;
                     }
 
                     if (mappingInfo?.store && data[mappingInfo.store]) {
@@ -227,8 +230,6 @@ export function useSpaceController({
                             // Resolve value from space
                             if (mappingInfo?.articleId === fieldKey) {
                                 value = space.id;
-                            } else if (mappingInfo?.articleName === fieldKey) {
-                                value = space.roomName;
                             } else if (space.data && space.data[fieldKey] !== undefined) {
                                 value = space.data[fieldKey];
                             } else if ((space as any)[fieldKey] !== undefined) {
@@ -260,7 +261,7 @@ export function useSpaceController({
                     if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
                         aimsArticle.articleName = String(data[mappingInfo.articleName]);
                     } else {
-                        aimsArticle.articleName = space.roomName || space.id;
+                        aimsArticle.articleName = space.id;
                     }
 
                     if (mappingInfo?.store && data[mappingInfo.store]) {

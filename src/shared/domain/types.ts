@@ -26,7 +26,6 @@ export interface AppData {
  */
 export interface Space {
     id: string;
-    roomName: string;
     data: Record<string, string>;  // Dynamic fields from CSV or SoluM
     labelCode?: string;  // Optional - for display only, assigned separately
     templateName?: string;  // Optional - for display only
@@ -37,7 +36,6 @@ export interface Space {
  */
 export interface ConferenceRoom {
     id: string;              // Format: C01, C02, etc.
-    roomName: string;
     hasMeeting: boolean;
     meetingName: string;
     startTime: string;       // HH:mm format

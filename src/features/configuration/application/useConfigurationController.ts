@@ -52,15 +52,16 @@ export function useConfigurationController() {
 
 
             // Persist schema and extract mappingInfo to solumMappingConfig
-            const updatedMappingConfig = settings.solumMappingConfig
-                ? { ...settings.solumMappingConfig, mappingInfo: schema.mappingInfo }
-                : { mappingInfo: schema.mappingInfo } as any;
-
-            // console.log('[DEBUG fetchArticleFormat] Updated mappingConfig:', updatedMappingConfig);
+            const updatedMappingConfig = {
+                ...(settings.solumMappingConfig || {}),
+                mappingInfo: schema.mappingInfo,
+                // Automatically sync uniqueIdField with articleId from mappingInfo if it exists
+                uniqueIdField: schema.mappingInfo?.articleId || settings.solumMappingConfig?.uniqueIdField || schema.articleData?.[0] || 'articleId'
+            };
 
             updateSettings({
                 solumArticleFormat: schema,
-                solumMappingConfig: updatedMappingConfig
+                solumMappingConfig: updatedMappingConfig as any
             });
 
             showSuccess('Article format fetched successfully');
@@ -98,7 +99,9 @@ export function useConfigurationController() {
                 solumMappingConfig: {
                     ...settings.solumMappingConfig,
                     mappingInfo: schema.mappingInfo, // Extract mappingInfo from schema
-                } as any // Type assertion needed since we're building config incrementally
+                    // Keep uniqueIdField in sync if it was mapped
+                    uniqueIdField: schema.mappingInfo?.articleId || settings.solumMappingConfig?.uniqueIdField || 'articleId'
+                } as any
             });
 
             showSuccess('Article format saved successfully');

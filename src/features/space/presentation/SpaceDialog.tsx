@@ -54,14 +54,12 @@ export function SpaceDialog({
                 // Edit mode
                 setFormData({
                     id: space.id,
-                    roomName: space.roomName,
                     data: space.data || {},
                 });
             } else {
                 // Add mode - reset
                 setFormData({
                     id: '',
-                    roomName: '',
                     data: {}
                 });
             }
@@ -106,7 +104,7 @@ export function SpaceDialog({
         }
     };
 
-    const handleChange = (field: keyof Space, value: any) => {
+    const handleChange = (field: 'id', value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
 
         // Live Validation
@@ -123,15 +121,6 @@ export function SpaceDialog({
                     return newErrors;
                 });
             }
-        } else {
-            // Clear error when user types for other fields
-            if (errors[field]) {
-                setErrors(prev => {
-                    const newErrors = { ...prev };
-                    delete newErrors[field];
-                    return newErrors;
-                });
-            }
         }
     };
 
@@ -145,15 +134,20 @@ export function SpaceDialog({
         }));
     };
 
+    // Identify the field key used for the "Name"
+    const nameFieldKey = useMemo(() => {
+        if (workingMode === 'SOLUM_API' && solumMappingConfig) {
+            return solumMappingConfig.mappingInfo?.articleName || 'roomName';
+        }
+        return 'roomName';
+    }, [workingMode, solumMappingConfig]);
+
     // Get dynamic fields based on working mode
     const dynamicFields = useMemo(() => {
         if (workingMode === 'SOLUM_API' && solumMappingConfig) {
             // SoluM mode: Show visible fields with friendly names
-            // Filter out uniqueIdField (shown as ID) and any field mapped to roomName
+            // Filter out uniqueIdField (shown as ID) and any field mapped to Name
             const uniqueIdField = solumMappingConfig.uniqueIdField;
-
-            // Find which field is mapped to roomName (if any)
-            const roomNameField = solumMappingConfig.mappingInfo?.articleName;
 
             return Object.entries(solumMappingConfig.fields)
                 .filter(([fieldKey, fieldConfig]) => {
@@ -161,8 +155,8 @@ export function SpaceDialog({
                     if (!fieldConfig.visible) return false;
                     // Exclude uniqueIdField (already shown as ID)
                     if (fieldKey === uniqueIdField) return false;
-                    // Exclude field mapped to roomName (already shown as Name)
-                    if (roomNameField && fieldKey === roomNameField) return false;
+                    // Exclude field used as Name (already shown as Name)
+                    if (fieldKey === nameFieldKey) return false;
                     return true;
                 })
                 .map(([fieldKey, fieldConfig]) => ({
@@ -172,13 +166,13 @@ export function SpaceDialog({
         } else {
             // SFTP mode: Show CSV columns
             return csvConfig.columns
-                .filter(col => col.name !== 'id' && col.name !== 'roomName')
+                .filter(col => col.name !== 'id' && col.name !== nameFieldKey)
                 .map(col => ({
                     key: col.name,
                     label: col.name,
                 }));
         }
-    }, [workingMode, solumMappingConfig, csvConfig, currentLanguage]);
+    }, [workingMode, solumMappingConfig, csvConfig, currentLanguage, nameFieldKey]);
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -199,12 +193,12 @@ export function SpaceDialog({
                         helperText={errors.id || (space ? t('spaces.idCannotChange') : t('spaces.uniqueIdentifier'))}
                     />
 
-                    {/* Room Name - Standard Field */}
+                    {/* Name - Dynamically Resolved Field */}
                     <TextField
                         fullWidth
                         label={t('spaces.name')}
-                        value={formData.roomName || ''}
-                        onChange={(e) => handleChange('roomName', e.target.value)}
+                        value={formData.data?.[nameFieldKey] || ''}
+                        onChange={(e) => handleDynamicDataChange(nameFieldKey, e.target.value)}
                     />
 
                     {/* Dynamic Fields */}

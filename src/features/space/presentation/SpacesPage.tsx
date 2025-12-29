@@ -148,7 +148,6 @@ export function SpacesPage() {
             result = result.filter((space) => {
                 return (
                     space.id.toLowerCase().includes(query) ||
-                    space.roomName.toLowerCase().includes(query) ||
                     Object.values(space.data).some((value) =>
                         value.toLowerCase().includes(query)
                     )

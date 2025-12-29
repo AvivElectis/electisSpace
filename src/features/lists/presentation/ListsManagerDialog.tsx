@@ -26,10 +26,14 @@ interface ListsManagerDialogProps {
 
 export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
     const { t } = useTranslation();
-    const { lists, loadList, deleteList } = useListsController();
+    const { lists, activeListId, loadList, deleteList } = useListsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const handleLoad = async (id: string) => {
+        if (id === activeListId) {
+            onClose();
+            return;
+        }
         try {
             await loadList(id);
             onClose();
@@ -71,55 +75,70 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
                     </Box>
                 ) : (
                     <List>
-                        {lists.map((list) => (
-                            <ListItem
-                                key={list.id}
-                                component="div"
-                                disablePadding
-                                secondaryAction={
-                                    <IconButton
-                                        edge="end"
-                                        aria-label="delete"
-                                        onClick={(e) => handleDelete(list.id, e)}
-                                        color="error"
-                                    >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                }
-                                sx={{
-                                    boxShadow: '0 0 3px 1px rgba(0, 0, 0, 0.16)',
-                                    borderRadius: 1,
-                                    mb: 0,
-                                }}
-                            >
-                                <ListItemButton onClick={() => handleLoad(list.id)}>
-                                    <ListItemText
-                                        primary={
-                                            <Box display="flex" alignItems="center" justifyContent="flex-start" gap={2}>
-                                                <Typography variant="h5" component="span" fontWeight="medium">
-                                                    {list.name}
-                                                </Typography>
-                                                <Chip
-                                                    label={`${list.spaces.length} ${t('lists.spacesCount')}`}
-                                                    size="medium"
-                                                    color="primary"
-                                                    variant="outlined"
-                                                    sx={{
-                                                        borderRadius: 1,
-                                                        border: '1px solid',
-                                                        borderColor: 'divider',
-                                                        bgcolor: 'primary.light',
-                                                    }}
-                                                />
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {new Date(list.updatedAt).toLocaleString()}
-                                                </Typography>
-                                            </Box>
-                                        }
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        ))}
+                        {lists.map((list) => {
+                            const isActive = list.id === activeListId;
+                            return (
+                                <ListItem
+                                    key={list.id}
+                                    component="div"
+                                    disablePadding
+                                    secondaryAction={
+                                        <IconButton
+                                            edge="end"
+                                            aria-label="delete"
+                                            onClick={(e) => handleDelete(list.id, e)}
+                                            color="error"
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    }
+                                    sx={{
+                                        boxShadow: isActive ? '0 0 5px 2px rgba(25, 118, 210, 0.3)' : '0 0 3px 1px rgba(0, 0, 0, 0.16)',
+                                        borderRadius: 1,
+                                        mb: 1,
+                                        bgcolor: isActive ? 'action.hover' : 'inherit',
+                                        border: isActive ? '1px solid' : '1px solid transparent',
+                                        borderColor: isActive ? 'primary.main' : 'transparent',
+                                    }}
+                                >
+                                    <ListItemButton onClick={() => handleLoad(list.id)}>
+                                        <ListItemText
+                                            primary={
+                                                <Box display="flex" alignItems="center" justifyContent="flex-start" gap={2}>
+                                                    <Typography variant="h5" component="span" fontWeight={isActive ? "bold" : "medium"} color={isActive ? "primary.main" : "text.primary"}>
+                                                        {list.name}
+                                                    </Typography>
+                                                    {isActive && (
+                                                        <Chip
+                                                            label={t('lists.loaded')}
+                                                            size="small"
+                                                            color="success"
+                                                            variant="filled"
+                                                            sx={{ borderRadius: 1, fontWeight: 'bold' }}
+                                                        />
+                                                    )}
+                                                    <Chip
+                                                        label={`${list.spaces.length} ${t('lists.spacesCount')}`}
+                                                        size="medium"
+                                                        color={isActive ? "primary" : "default"}
+                                                        variant="outlined"
+                                                        sx={{
+                                                            borderRadius: 1,
+                                                            border: '1px solid',
+                                                            borderColor: 'divider',
+                                                            bgcolor: isActive ? 'primary.light' : 'transparent',
+                                                        }}
+                                                    />
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {new Date(list.updatedAt).toLocaleString()}
+                                                    </Typography>
+                                                </Box>
+                                            }
+                                        />
+                                    </ListItemButton>
+                                </ListItem>
+                            );
+                        })}
                     </List>
                 )}
             </DialogContent>

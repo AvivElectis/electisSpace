@@ -4,7 +4,6 @@ import type { SettingsData } from '../../features/settings/domain/types';
 // Mock Spaces
 export const mockSpace: Space = {
     id: '101',
-    roomName: 'Test Room',
     data: {
         ITEM_NAME: 'Test Room',
         ENGLISH_NAME: 'Test Room',
@@ -16,7 +15,6 @@ export const mockSpace: Space = {
 export const mockSpaces: Space[] = [
     {
         id: '101',
-        roomName: 'Room 101',
         data: {
             ITEM_NAME: 'Room 101',
             ENGLISH_NAME: 'Room 101',
@@ -26,7 +24,6 @@ export const mockSpaces: Space[] = [
     },
     {
         id: '102',
-        roomName: 'Room 102',
         data: {
             ITEM_NAME: 'Room 102',
             ENGLISH_NAME: 'Room 102',
@@ -36,7 +33,6 @@ export const mockSpaces: Space[] = [
     },
     {
         id: '103',
-        roomName: 'Room 103',
         data: {
             ITEM_NAME: 'Room 103',
             ENGLISH_NAME: 'Room 103',
@@ -49,13 +45,13 @@ export const mockSpaces: Space[] = [
 // Mock Conference Rooms
 export const mockConferenceRoom: ConferenceRoom = {
     id: 'C001',
-    roomName: 'Conference Room 001',
     hasMeeting: true,
     meetingName: 'Team Meeting',
     startTime: '09:00',
     endTime: '10:00',
     participants: ['John', 'Jane', 'Bob'],
     data: {
+        roomName: 'Conference Room 001',
         MEETING_NAME: 'Team Meeting',
         MEETING_TIME: '09:00-10:00',
         PARTICIPANTS: 'John, Jane, Bob',
@@ -65,13 +61,13 @@ export const mockConferenceRoom: ConferenceRoom = {
 export const mockConferenceRooms: ConferenceRoom[] = [
     {
         id: 'C001',
-        roomName: 'Conference Room 001',
         hasMeeting: true,
         meetingName: 'Team Meeting',
         startTime: '09:00',
         endTime: '10:00',
         participants: ['John', 'Jane', 'Bob'],
         data: {
+            roomName: 'Conference Room 001',
             MEETING_NAME: 'Team Meeting',
             MEETING_TIME: '09:00-10:00',
             PARTICIPANTS: 'John, Jane, Bob',
@@ -79,13 +75,13 @@ export const mockConferenceRooms: ConferenceRoom[] = [
     },
     {
         id: 'C002',
-        roomName: 'Conference Room 002',
         hasMeeting: true,
         meetingName: 'Board Meeting',
         startTime: '14:00',
         endTime: '16:00',
         participants: ['Alice', 'Charlie'],
         data: {
+            roomName: 'Conference Room 002',
             MEETING_NAME: 'Board Meeting',
             MEETING_TIME: '14:00-16:00',
             PARTICIPANTS: 'Alice, Charlie',

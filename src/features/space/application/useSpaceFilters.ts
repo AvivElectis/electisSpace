@@ -23,8 +23,14 @@ export function useSpaceFilters({
      * Get available filter options
      */
     const filterOptions = useMemo((): FilterOptions => {
+        // Find which field is used for "Room" or "Location" grouping
+        // In SoluM mode, it might be ARTICLE_NAME or a custom field.
+        // For now, we continue to look for 'roomName' or 'location' in data as a heuristic
+        // but we prioritize whatever fields are provided as filterable.
         const options: FilterOptions = {
-            rooms: getUniqueFieldValues(spaces, 'roomName'),
+            rooms: getUniqueFieldValues(spaces, 'roomName').length > 0
+                ? getUniqueFieldValues(spaces, 'roomName')
+                : getUniqueFieldValues(spaces, 'location'),
         };
 
         // Add dynamic field options

@@ -1,4 +1,5 @@
 import {
+    Box,
     FormControl,
     InputLabel,
     Select,
@@ -23,6 +24,7 @@ interface SolumMappingSelectorsProps {
         meetingTime: string;
         participants: string;
     }) => void;
+    mappingInfo?: import('@features/configuration/domain/types').MappingInfo;
     disabled?: boolean;
 }
 
@@ -36,6 +38,7 @@ export function SolumMappingSelectors({
     conferenceMapping,
     onUniqueIdChange,
     onConferenceMappingChange,
+    mappingInfo,
     disabled = false,
 }: SolumMappingSelectorsProps) {
     const { t } = useTranslation();
@@ -52,16 +55,32 @@ export function SolumMappingSelectors({
         <Stack spacing={3}>
             {/* Unique ID Field Selector */}
             <FormControl fullWidth size="small">
-                <InputLabel>{t('settings.uniqueIdField')}</InputLabel>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+                    <InputLabel id="unique-id-selector-label" shrink sx={{ position: 'static', transform: 'none', color: 'text.secondary', fontWeight: 600 }}>
+                        {t('settings.uniqueIdField')}
+                    </InputLabel>
+                    {mappingInfo?.articleId === uniqueIdField && (
+                        <Typography variant="caption" sx={{ color: 'black', fontWeight: 700, px: 1, bgcolor: 'success.light', borderRadius: 1, opacity: 0.8 }}>
+                            {t('settings.autoMapped')}
+                        </Typography>
+                    )}
+                </Box>
                 <Select
+                    labelId="unique-id-selector-label"
                     value={uniqueIdField}
-                    label={t('settings.uniqueIdField')}
                     onChange={(e) => onUniqueIdChange(e.target.value)}
                     disabled={disabled}
                 >
                     {articleFormatFields.map((field) => (
                         <MenuItem key={field} value={field}>
-                            {field}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                {field}
+                                {mappingInfo?.articleId === field && (
+                                    <Typography variant="caption" color="success.main" sx={{ ml: 1, fontWeight: 600 }}>
+                                        (SoluM Article ID)
+                                    </Typography>
+                                )}
+                            </Box>
                         </MenuItem>
                     ))}
                 </Select>
