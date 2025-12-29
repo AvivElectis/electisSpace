@@ -22,6 +22,16 @@ export class ElectronUpdateAdapter {
     }
 
     /**
+     * Get current app version from Electron
+     */
+    async getAppVersion(): Promise<string> {
+        if (!this.isAvailable()) {
+            return '0.0.0';
+        }
+        return await this.api.getAppVersion();
+    }
+
+    /**
      * Check for updates
      */
     async checkForUpdates(): Promise<UpdateInfo | null> {

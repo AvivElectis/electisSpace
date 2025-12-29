@@ -18,10 +18,9 @@ log.transports.console.level = 'debug';
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
-// TODO: Replace with your actual GitHub username and repo
 autoUpdater.setFeedURL({
     provider: 'github',
-    owner: 'YOUR_GITHUB_USERNAME',
+    owner: 'AvivElectis',
     repo: 'electisSpace'
 });
 

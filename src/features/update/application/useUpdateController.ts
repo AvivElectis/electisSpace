@@ -13,7 +13,8 @@ import { detectPlatform } from '@shared/infrastructure/platform/platformDetector
 import { shouldSkipVersion } from '../domain/versionComparison';
 
 // Get current version from package.json (you may need to configure Vite to expose this)
-const CURRENT_VERSION = '0.1.0'; // This should be dynamically imported
+// Get current version from package.json (you may need to configure Vite to expose this)
+// const CURRENT_VERSION = '0.1.0'; // Replaced by dynamic versioning
 
 export function useUpdateController() {
     const {
@@ -26,6 +27,7 @@ export function useUpdateController() {
         updateInfo,
         skippedVersion,
         settings,
+        currentVersion,
         setChecking,
         setUpdateAvailable,
         setDownloading,
@@ -36,7 +38,30 @@ export function useUpdateController() {
         clearUpdate,
         updateSettings,
         markCheckTime,
+        setCurrentVersion,
     } = useUpdateStore();
+
+    /**
+     * Determine app version on mount
+     */
+    useEffect(() => {
+        const determineVersion = async () => {
+            if (currentVersion) return; // Already set
+
+            const platform = detectPlatform();
+            let version = '0.1.0'; // Fallback
+
+            if (platform === 'electron' && electronUpdateAdapter.isAvailable()) {
+                version = await electronUpdateAdapter.getAppVersion();
+            } else if (typeof __APP_VERSION__ !== 'undefined') {
+                version = __APP_VERSION__;
+            }
+
+            setCurrentVersion(version);
+        };
+
+        determineVersion();
+    }, [currentVersion, setCurrentVersion]);
 
     /**
      * Check for updates based on current platform
@@ -53,15 +78,28 @@ export function useUpdateController() {
             const platform = detectPlatform();
             let updateInfo = null;
 
+            // Allow checking even if version is not set in store yet
+            let checkVersion = currentVersion;
+            if (!checkVersion) {
+                if (platform === 'electron' && electronUpdateAdapter.isAvailable()) {
+                    checkVersion = await electronUpdateAdapter.getAppVersion();
+                } else if (typeof __APP_VERSION__ !== 'undefined') {
+                    checkVersion = __APP_VERSION__;
+                } else {
+                    checkVersion = '0.1.0';
+                }
+                setCurrentVersion(checkVersion);
+            }
+
             if (platform === 'electron' && electronUpdateAdapter.isAvailable()) {
                 // Use Electron's built-in updater
                 updateInfo = await electronUpdateAdapter.checkForUpdates();
             } else if (platform === 'android' && androidUpdateAdapter.isAvailable()) {
                 // Use GitHub API for Android
-                updateInfo = await androidUpdateAdapter.checkForUpdates(CURRENT_VERSION);
+                updateInfo = await androidUpdateAdapter.checkForUpdates(checkVersion);
             } else if (platform === 'web') {
                 // Use GitHub API for web (can show update notification)
-                updateInfo = await githubUpdateAdapter.checkForUpdate(CURRENT_VERSION, 'windows');
+                updateInfo = await githubUpdateAdapter.checkForUpdate(checkVersion, 'windows');
             }
 
             markCheckTime();
@@ -78,7 +116,7 @@ export function useUpdateController() {
             setError(errorMessage);
             return false;
         }
-    }, [settings.enabled, skippedVersion, setChecking, setUpdateAvailable, setError, markCheckTime]);
+    }, [settings.enabled, skippedVersion, currentVersion, setChecking, setUpdateAvailable, setError, markCheckTime, setCurrentVersion]);
 
     /**
      * Download the update

@@ -46,9 +46,13 @@ export function useListsController() {
         }
 
         // 1. Merge spaces
+        // console.log('[DEBUG loadList] Merging spaces for list:', list.name);
         const result = spacesStore.mergeSpacesList(list.spaces);
+
+        // console.log('[DEBUG loadList] Setting active list:', list.name, list.id);
         spacesStore.setActiveListName(list.name);
         spacesStore.setActiveListId(list.id);
+        // console.log('[DEBUG loadList] Active list set complete');
 
         // 2. Safe Upload (Fetch -> Merge -> Push) if in SoluM mode
         // This ensures mapped fields from the list are merged into existing server data
@@ -85,10 +89,28 @@ export function useListsController() {
         }
     };
 
+    const saveListChanges = (id: string) => {
+        const list = listsStore.lists.find(l => l.id === id);
+        if (!list) {
+            throw new Error('List not found');
+        }
+
+        const currentSpaces = spacesStore.spaces;
+        listsStore.updateList(id, {
+            spaces: currentSpaces,
+            updatedAt: new Date().toISOString()
+        });
+
+        // Update active list name/id just in case name changed (though name change not handled here yet)
+        spacesStore.setActiveListName(list.name);
+        spacesStore.setActiveListId(list.id);
+    };
+
     return {
         lists: listsStore.lists,
         saveCurrentSpacesAsList,
         loadList,
         deleteList,
+        saveListChanges,
     };
 }

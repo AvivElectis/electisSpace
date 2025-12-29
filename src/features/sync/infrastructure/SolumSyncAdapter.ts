@@ -134,7 +134,7 @@ export class SolumSyncAdapter implements SyncAdapter {
                 ...globalFieldAssignments,
             };
 
-            const articleData = article.data || {};
+            const articleData = article.data || article.articleData || {};
             const data: Record<string, string> = {};
             // Default roomName to articleName or ID
             let roomName = article.articleName || article.articleId || '';
@@ -424,7 +424,7 @@ export class SolumSyncAdapter implements SyncAdapter {
                         ...remote,
                         ...partial,
                         articleData: {
-                            ...(remote.articleData || {}),
+                            ...(remote.articleData || remote.data || {}),
                             ...(partial.articleData || {})
                         }
                     };

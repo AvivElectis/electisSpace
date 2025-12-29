@@ -242,7 +242,20 @@ export async function fetchArticles(
         throw new Error(`Fetch articles failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    // Handle empty response (e.g. 204 No Content or just empty body)
+    if (!text || text.trim().length === 0) {
+        logger.info('SolumService', 'Articles fetched (empty response)', { count: 0 });
+        return [];
+    }
+
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        logger.error('SolumService', 'Failed to parse SoluM response', { text });
+        throw new Error('Invalid JSON response from SoluM API');
+    }
 
     // Debug: Log the raw response to see structure
     // console.log('[DEBUG] AIMS API Raw Response:', JSON.stringify(data, null, 2));
