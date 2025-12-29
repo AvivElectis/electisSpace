@@ -3,7 +3,7 @@ import type { Person } from '../domain/types';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import type { SolumConfig } from '@shared/domain/types';
-import { pushArticles } from '@shared/infrastructure/services/solumService';
+import { pushArticles, fetchArticles } from '@shared/infrastructure/services/solumService';
 import { logger } from '@shared/infrastructure/services/logger';
 
 /**
@@ -103,6 +103,71 @@ export function parsePeopleCSV(
 
     logger.info('PeopleService', 'CSV parsed successfully', { peopleCount: people.length });
     return people;
+}
+
+/**
+ * Convert AIMS articles (or Spaces from sync) to People format
+ * This enables syncing data FROM AIMS back to the People Manager
+ * 
+ * @param spaces - Spaces downloaded from AIMS via sync adapter
+ * @param mappingConfig - SoluM mapping configuration
+ * @returns People array with data from AIMS
+ */
+export function convertSpacesToPeople(
+    spaces: Array<{ id: string; data: Record<string, string>; labelCode?: string }>,
+    mappingConfig?: SolumMappingConfig
+): Person[] {
+    logger.info('PeopleService', 'Converting spaces to people', { count: spaces.length });
+
+    const mappingInfo = mappingConfig?.mappingInfo;
+    const articleIdField = mappingInfo?.articleId || 'ARTICLE_ID';
+
+    const people: Person[] = spaces.map((space, index) => {
+        // The space.id is the articleId (which is the space number in People Manager)
+        const assignedSpaceId = space.id;
+
+        // Copy the data from the space
+        const data: Record<string, string> = { ...space.data };
+
+        // Ensure the articleId field has the space number
+        if (articleIdField && !data[articleIdField]) {
+            data[articleIdField] = space.id;
+        }
+
+        // Check if this space has meaningful data (not just empty/ID-only)
+        const hasData = Object.entries(data).some(([key, value]) => {
+            // Skip ID fields and check if there's actual content
+            if (key === articleIdField) return false;
+            return value && value.trim().length > 0;
+        });
+
+        const person: Person = {
+            id: `aims-${space.id}-${index}`, // Generate unique ID
+            data,
+            assignedSpaceId: hasData ? assignedSpaceId : undefined, // Only assign if has data
+            aimsSyncStatus: 'synced', // Data came from AIMS, so it's synced
+            lastSyncedAt: new Date().toISOString(),
+        };
+
+        return person;
+    });
+
+    // Filter out people with no meaningful data (empty articles)
+    const filteredPeople = people.filter(person => {
+        const hasData = Object.entries(person.data).some(([key, value]) => {
+            const articleIdField = mappingConfig?.mappingInfo?.articleId || 'ARTICLE_ID';
+            if (key === articleIdField) return false;
+            return value && value.trim().length > 0;
+        });
+        return hasData;
+    });
+
+    logger.info('PeopleService', 'Converted spaces to people', { 
+        total: spaces.length, 
+        withData: filteredPeople.length 
+    });
+
+    return filteredPeople;
 }
 
 /**

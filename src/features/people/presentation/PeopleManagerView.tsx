@@ -100,6 +100,7 @@ export function PeopleManagerView() {
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
     const [spaceSelectDialogOpen, setSpaceSelectDialogOpen] = useState(false);
     const [spaceSelectPerson, setSpaceSelectPerson] = useState<Person | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
@@ -355,6 +356,28 @@ export function PeopleManagerView() {
         }
     }, [people, confirm, t, peopleController]);
 
+    // Sync from AIMS handler
+    const handleSyncFromAims = useCallback(async () => {
+        const confirmed = await confirm({
+            title: t('people.syncFromAims'),
+            message: t('people.syncFromAimsConfirm'),
+            confirmLabel: t('common.confirm'),
+            cancelLabel: t('common.cancel'),
+            severity: 'warning'
+        });
+
+        if (confirmed) {
+            try {
+                setIsSyncing(true);
+                await peopleController.syncFromAims();
+            } catch (error: any) {
+                logger.error('PeopleManagerView', 'Sync from AIMS failed', { error: error?.message || error });
+            } finally {
+                setIsSyncing(false);
+            }
+        }
+    }, [confirm, t, peopleController]);
+
     // Space allocation progress
     const allocationProgress = totalSpaces > 0
         ? (assignedSpaces / totalSpaces) * 100
@@ -490,6 +513,15 @@ export function PeopleManagerView() {
 
                         {/* Left: AIMS Actions */}
             <Stack direction="row" gap={1} flexWrap="wrap" mb={2}>
+                <Button
+                    variant="text"
+                    color="primary"
+                    startIcon={isSyncing ? <SyncIcon sx={{ animation: 'spin 1s linear infinite', '@keyframes spin': { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } } }} /> : <SyncIcon />}
+                    onClick={handleSyncFromAims}
+                    disabled={isSyncing || !settings.solumConfig?.tokens}
+                >
+                    {isSyncing ? t('common.syncing') : t('people.syncFromAims')}
+                </Button>
                 <Button
                     variant="text"
                     color="success"

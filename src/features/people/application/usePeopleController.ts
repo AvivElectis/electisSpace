@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { usePeopleStore } from '../infrastructure/peopleStore';
-import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments, clearSpaceInAims, clearSpaceIdsInAims } from '../infrastructure/peopleService';
+import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments, clearSpaceInAims, clearSpaceIdsInAims, convertSpacesToPeople } from '../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSyncContext } from '@features/sync/application/SyncContext';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { Person, PeopleList } from '../domain/types';
 
@@ -518,6 +519,78 @@ export function usePeopleController() {
         }
     }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
 
+    /**
+     * Sync people data FROM AIMS
+     * Downloads current articles from AIMS and converts them to People format
+     * This allows the People table to reflect the current state in AIMS
+     */
+    const syncFromAims = useCallback(async (): Promise<void> => {
+        try {
+            logger.info('PeopleController', 'Starting sync from AIMS');
+
+            // Get the sync context - note: this requires being inside SyncProvider
+            // We'll use a different approach - directly use the sync adapter
+            if (!settings.solumConfig || !settings.solumConfig.tokens) {
+                throw new Error('SoluM API not connected. Please connect in Settings first.');
+            }
+
+            // Import and use fetchArticles directly
+            const { fetchArticles } = await import('@shared/infrastructure/services/solumService');
+            
+            const token = settings.solumConfig.tokens.accessToken;
+            const storeNumber = settings.solumConfig.storeNumber;
+
+            // Fetch all articles with pagination
+            let allArticles: any[] = [];
+            let page = 0;
+            const pageSize = 100;
+            let hasMore = true;
+
+            logger.info('PeopleController', 'Fetching articles from AIMS', { storeNumber });
+
+            while (hasMore) {
+                const articlesChunk = await fetchArticles(
+                    settings.solumConfig,
+                    storeNumber,
+                    token,
+                    page,
+                    pageSize
+                );
+
+                if (articlesChunk.length > 0) {
+                    allArticles = [...allArticles, ...articlesChunk];
+                    if (articlesChunk.length < pageSize) {
+                        hasMore = false;
+                    } else {
+                        page++;
+                    }
+                } else {
+                    hasMore = false;
+                }
+            }
+
+            logger.info('PeopleController', 'Articles fetched from AIMS', { count: allArticles.length });
+
+            // Convert articles to Space-like format for the converter
+            const spaces = allArticles.map(article => ({
+                id: article.articleId || article.id,
+                data: article.data || article.articleData || {},
+                labelCode: article.labelCode,
+            }));
+
+            // Convert spaces to people
+            const people = convertSpacesToPeople(spaces, settings.solumMappingConfig);
+
+            // Update the store with synced people
+            peopleStore.setPeople(people);
+
+            logger.info('PeopleController', 'Sync from AIMS complete', { peopleCount: people.length });
+        } catch (error: any) {
+            logger.error('PeopleController', 'Failed to sync from AIMS', { error: error.message });
+            throw error;
+        }
+    }, [settings.solumConfig, settings.solumMappingConfig, peopleStore]);
+
     return {
         // State
         people: peopleStore.people,
@@ -546,5 +619,8 @@ export function usePeopleController() {
         deletePerson: peopleStore.deletePerson,
         unassignSpace: unassignSpaceWithAims,
         updateSyncStatus: peopleStore.updateSyncStatus,
+
+        // Sync actions
+        syncFromAims,
     };
 }

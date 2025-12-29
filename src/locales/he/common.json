@@ -616,6 +616,8 @@
         "syncPending": "סינכרון בתהליך...",
         "syncError": "הסינכרון נכשל - לחץ לניסיון חוזר",
         "notSynced": "לא סונכרן ל-AIMS",
+        "syncFromAims": "סנכרן מ-AIMS",
+        "syncFromAimsConfirm": "להוריד את הנתונים הנוכחיים מ-AIMS? פעולה זו תחליף את כל האנשים ברשימה הנוכחית בנתונים מ-AIMS.",
         "sendAllToAims": "שלח הכל ל-AIMS",
         "sendAllToAimsConfirm": "לשלוח את כל {{count}} ההקצאות ל-AIMS?",
         "cancelAllAssignments": "בטל את כל ההקצאות",
