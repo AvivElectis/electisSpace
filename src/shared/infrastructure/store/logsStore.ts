@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist, devtools } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
+import { get as idbGet, update as idbUpdate, del as idbDel, keys as idbKeys } from 'idb-keyval';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -12,36 +13,29 @@ export interface LogEntry {
     data?: any;
 }
 
-export interface DayLogs {
-    date: string; // YYYY-MM-DD format
-    logs: LogEntry[];
-}
-
 export interface LogsStore {
-    logsByDay: Record<string, LogEntry[]>; // date -> logs mapping
-    maxLogsPerDay: number;
+    availableDays: string[]; // List of dates YYYY-MM-DD that have logs
+    loadedLogs: Record<string, LogEntry[]>; // In-memory cache of loaded days
+    isLoading: boolean;
     maxDays: number;
 
-    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void;
-    clearLogs: (date?: string) => void; // Clear specific day or all
-    clearOldLogs: () => void; // Remove logs older than maxDays
-    getLogsByDay: (date: string) => LogEntry[];
-    getAllDays: () => string[]; // Get all dates with logs
+    init: () => Promise<void>;
+    addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => Promise<void>;
+    loadDayLogs: (date: string) => Promise<void>;
+    clearLogs: (date?: string) => Promise<void>;
+    clearOldLogs: () => Promise<void>;
     getFilteredLogs: (date: string, level?: LogLevel, search?: string) => LogEntry[];
-    exportDay: (date: string, format: 'json' | 'log') => string;
-    exportMultipleDays: (dates: string[]) => Promise<Blob>; // ZIP export
+    exportMultipleDays: (dates: string[]) => Promise<Blob>;
 }
 
-const MAX_LOGS_PER_DAY = 1000;
-const MAX_DAYS = 30; // Keep logs for 30 days
+const MAX_DAYS = 10;
+const LOG_KEY_PREFIX = 'logs_';
 
-// Helper to get date string in YYYY-MM-DD format
+// Helper: Get date string YYYY-MM-DD
 const getDateString = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    return date.toISOString().split('T')[0];
+    return new Date(timestamp).toISOString().split('T')[0];
 };
 
-// Helper to format log entry as text
 const formatLogAsText = (log: LogEntry): string => {
     const timestamp = new Date(log.timestamp).toISOString();
     const level = log.level.toUpperCase().padEnd(5);
@@ -52,134 +46,172 @@ const formatLogAsText = (log: LogEntry): string => {
 
 export const useLogsStore = create<LogsStore>()(
     devtools(
-        persist(
-            (set, get) => ({
-                logsByDay: {},
-                maxLogsPerDay: MAX_LOGS_PER_DAY,
-                maxDays: MAX_DAYS,
+        (set, get) => ({
+            availableDays: [],
+            loadedLogs: {},
+            isLoading: false,
+            maxDays: MAX_DAYS,
 
-                addLog: (entry) => {
-                    const newLog: LogEntry = {
-                        ...entry,
-                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        timestamp: Date.now(),
-                    };
+            init: async () => {
+                try {
+                    set({ isLoading: true });
+                    const allKeys = await idbKeys();
+                    const logKeys = allKeys.filter((k: IDBValidKey) => String(k).startsWith(LOG_KEY_PREFIX));
+                    const days = logKeys
+                        .map((k: IDBValidKey) => String(k).replace(LOG_KEY_PREFIX, ''))
+                        .sort()
+                        .reverse();
 
-                    const dateKey = getDateString(newLog.timestamp);
+                    set({ availableDays: days, isLoading: false });
 
-                    set((state) => {
-                        const dayLogs = state.logsByDay[dateKey] || [];
-                        const updatedDayLogs = [...dayLogs, newLog];
-
-                        // Keep only last MAX_LOGS_PER_DAY entries for this day
-                        const trimmedLogs = updatedDayLogs.length > state.maxLogsPerDay
-                            ? updatedDayLogs.slice(-state.maxLogsPerDay)
-                            : updatedDayLogs;
-
-                        return {
-                            logsByDay: {
-                                ...state.logsByDay,
-                                [dateKey]: trimmedLogs,
-                            },
-                        };
-                    }, false, 'addLog');
-
-                    // Clean up old logs
+                    // Trigger cleanup on init
                     get().clearOldLogs();
-                },
+                } catch (error) {
+                    console.error('Failed to init logs store:', error);
+                    set({ isLoading: false });
+                }
+            },
 
-                clearLogs: (date?) => {
+            addLog: async (entry) => {
+                const timestamp = Date.now();
+                const newLog: LogEntry = {
+                    ...entry,
+                    id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+                    timestamp,
+                };
+
+                const dateKey = getDateString(timestamp);
+                const storageKey = `${LOG_KEY_PREFIX}${dateKey}`;
+
+                try {
+                    // Update IDB
+                    await idbUpdate(storageKey, (oldLogs: LogEntry[] | undefined) => {
+                        const logs = oldLogs || [];
+                        return [...logs, newLog];
+                    });
+
+                    // Update state if this day is currently loaded
+                    set(state => {
+                        const updates: Partial<LogsStore> = {};
+
+                        // If we have this day loaded, append to it
+                        if (state.loadedLogs[dateKey]) {
+                            updates.loadedLogs = {
+                                ...state.loadedLogs,
+                                [dateKey]: [...state.loadedLogs[dateKey], newLog]
+                            };
+                        }
+
+                        // If new day, add to availableDays
+                        if (!state.availableDays.includes(dateKey)) {
+                            updates.availableDays = [dateKey, ...state.availableDays].sort().reverse();
+                        }
+
+                        return updates;
+                    });
+                } catch (error) {
+                    console.error('Failed to persist log:', error);
+                }
+            },
+
+            loadDayLogs: async (date) => {
+                // If already loaded, skip
+                if (get().loadedLogs[date]) return;
+
+                const storageKey = `${LOG_KEY_PREFIX}${date}`;
+                try {
+                    set({ isLoading: true });
+                    const logs = (await idbGet(storageKey)) as LogEntry[];
+                    set(state => ({
+                        isLoading: false,
+                        loadedLogs: {
+                            ...state.loadedLogs,
+                            [date]: logs || []
+                        }
+                    }));
+                } catch (error) {
+                    console.error(`Failed to load logs for ${date}:`, error);
+                    set({ isLoading: false });
+                }
+            },
+
+            clearLogs: async (date?) => {
+                try {
                     if (date) {
                         // Clear specific day
-                        set((state) => {
-                            const { [date]: _, ...rest } = state.logsByDay;
-                            return { logsByDay: rest };
-                        }, false, 'clearLogs');
+                        const storageKey = `${LOG_KEY_PREFIX}${date}`;
+                        await idbDel(storageKey);
+                        set(state => {
+                            const { [date]: _, ...restLoaded } = state.loadedLogs;
+                            return {
+                                availableDays: state.availableDays.filter(d => d !== date),
+                                loadedLogs: restLoaded
+                            };
+                        });
                     } else {
                         // Clear all
-                        set({ logsByDay: {} }, false, 'clearAllLogs');
+                        const allKeys = await idbKeys();
+                        const logKeys = allKeys.filter((k: IDBValidKey) => String(k).startsWith(LOG_KEY_PREFIX));
+                        await Promise.all(logKeys.map((k: IDBValidKey) => idbDel(k)));
+                        set({ availableDays: [], loadedLogs: {} });
                     }
-                },
+                } catch (error) {
+                    console.error('Failed to clear logs:', error);
+                }
+            },
 
-                clearOldLogs: () => {
-                    const now = Date.now();
-                    const maxAge = get().maxDays * 24 * 60 * 60 * 1000; // days to ms
+            clearOldLogs: async () => {
+                const maxDays = get().maxDays;
+                const availableDays = get().availableDays;
 
-                    set((state) => {
-                        const filtered: Record<string, LogEntry[]> = {};
+                if (availableDays.length <= maxDays) return;
 
-                        Object.entries(state.logsByDay).forEach(([date, logs]) => {
-                            const dateTimestamp = new Date(date).getTime();
-                            if (now - dateTimestamp <= maxAge) {
-                                filtered[date] = logs;
-                            }
-                        });
+                // availableDays is sorted desc (newest first).
+                // Keep the first maxDays, delete the rest.
+                const daysToDelete = availableDays.slice(maxDays);
 
-                        return { logsByDay: filtered };
-                    }, false, 'clearOldLogs');
-                },
+                for (const date of daysToDelete) {
+                    await get().clearLogs(date);
+                }
+            },
 
-                getLogsByDay: (date) => {
-                    return get().logsByDay[date] || [];
-                },
+            getFilteredLogs: (date, level?, search?) => {
+                const logs = get().loadedLogs[date] || [];
 
-                getAllDays: () => {
-                    return Object.keys(get().logsByDay).sort().reverse(); // Newest first
-                },
-
-                getFilteredLogs: (date, level?, search?) => {
-                    let logs = get().getLogsByDay(date);
-
-                    // Filter by level
-                    if (level) {
-                        logs = logs.filter(log => log.level === level);
-                    }
-
-                    // Filter by search term
+                return logs.filter(log => {
+                    if (level && log.level !== level) return false;
                     if (search && search.trim()) {
                         const searchLower = search.toLowerCase();
-                        logs = logs.filter(log =>
+                        return (
                             log.component.toLowerCase().includes(searchLower) ||
                             log.message.toLowerCase().includes(searchLower) ||
                             (log.data && JSON.stringify(log.data).toLowerCase().includes(searchLower))
                         );
                     }
+                    return true;
+                });
+            },
 
-                    return logs;
-                },
+            exportMultipleDays: async (dates) => {
+                const JSZip = (await import('jszip')).default;
+                const zip = new JSZip();
 
-                exportDay: (date, format) => {
-                    const logs = get().getLogsByDay(date);
-
-                    if (format === 'json') {
-                        return JSON.stringify(logs, null, 2);
+                for (const date of dates) {
+                    // Start with loaded logs, fall back to fetching if not loaded
+                    let logs = get().loadedLogs[date];
+                    if (!logs) {
+                        const storageKey = `${LOG_KEY_PREFIX}${date}`;
+                        logs = (await idbGet(storageKey)) as LogEntry[] || [];
                     }
 
-                    // Log format
-                    return logs.map(formatLogAsText).join('\n\n');
-                },
+                    const content = logs.map(formatLogAsText).join('\n\n');
+                    zip.file(`${date}.log`, content);
+                }
 
-                exportMultipleDays: async (dates) => {
-                    // Dynamic import of JSZip
-                    const JSZip = (await import('jszip')).default;
-                    const zip = new JSZip();
-
-                    dates.forEach(date => {
-                        const logs = get().getLogsByDay(date);
-                        const content = logs.map(formatLogAsText).join('\n\n');
-                        zip.file(`${date}.log`, content);
-                    });
-
-                    return await zip.generateAsync({ type: 'blob' });
-                },
-            }),
-            {
-                name: 'logs-store-by-day', // Changed name to avoid conflicts with old array-based store
-                partialize: (state) => ({
-                    logsByDay: state.logsByDay,
-                }),
+                return await zip.generateAsync({ type: 'blob' });
             }
-        ),
+        }),
         { name: 'LogsStore' }
     )
 );
+
