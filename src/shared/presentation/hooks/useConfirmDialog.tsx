@@ -36,6 +36,7 @@ export function useConfirmDialog() {
             options={options}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
+            sx={{textWrap: 'pretty'}}
         />
     );
 

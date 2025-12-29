@@ -5,7 +5,9 @@ import {
     DialogContentText,
     DialogActions,
     Button,
-    IconButton
+    IconButton,
+    type SxProps,
+    type Theme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useTranslation } from 'react-i18next';
@@ -24,9 +26,10 @@ interface ConfirmDialogProps {
     options: ConfirmDialogOptions;
     onConfirm: () => void;
     onCancel: () => void;
+    sx?: SxProps<Theme>;
 }
 
-export function ConfirmDialog({ open, options, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, options, onConfirm, onCancel, sx }: ConfirmDialogProps) {
     const { t } = useTranslation();
 
     const {
@@ -50,6 +53,7 @@ export function ConfirmDialog({ open, options, onConfirm, onCancel }: ConfirmDia
 
     return (
         <Dialog
+            sx={sx}
             open={open}
             onClose={onCancel}
             maxWidth="xs"

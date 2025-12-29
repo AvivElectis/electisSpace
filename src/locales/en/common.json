@@ -465,6 +465,32 @@
             "list": "Person Tag List"
         }
     },
+    "appLogs": {
+        "timestamp": "Timestamp",
+        "time": "Time",
+        "level": "Level",
+        "component": "Component",
+        "message": "Message",
+        "details": "Details",
+        "expand": "Expand details",
+        "collapse": "Collapse details",
+        "searchPlaceholder": "Search logs...",
+        "levelFilter": "Filter by Level",
+        "allLevels": "All Levels",
+        "exportZip": "Export ZIP",
+        "exportSelectedZip": "Export selected days as ZIP file with .log files",
+        "clearLogs": "Clear Logs",
+        "clearAll": "Clear All",
+        "clearSelected": "Clear Selected",
+        "clear": "Clear",
+        "noLogs": "No logs available",
+        "totalLogs": "Showing {{count}} log entries",
+        "totalDays": "{{count}} days with logs",
+        "entries": "entries",
+        "selectAll": "Select All",
+        "confirmClear": "Are you sure you want to clear all logs? This action cannot be undone.",
+        "confirmClearSelected": "Are you sure you want to clear {{count}} selected days? This action cannot be undone."
+    },
     "lists": {
         "manage": "Manage Lists",
         "save": "Save List",
