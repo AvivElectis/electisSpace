@@ -6,9 +6,11 @@ import { AppRoutes } from './AppRoutes';
 import { MainLayout } from './shared/presentation/layouts/MainLayout';
 import { NotificationContainer } from './shared/presentation/components/NotificationContainer';
 import { UpdateNotification } from './features/update/presentation/UpdateNotification';
+import { CustomTitleBar } from './shared/presentation/components/CustomTitleBar';
 import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useEffect } from 'react';
+
 
 /**
  * Main App Component with Theme, Layout, and Global Notifications
@@ -35,6 +37,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <CustomTitleBar />
       <BrowserRouter>
         <MainLayout>
           <AppRoutes />

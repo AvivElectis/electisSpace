@@ -12,9 +12,13 @@ import {
     Divider,
     Button,
     Alert,
+    CircularProgress,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
+import { useUpdateController } from '@features/update/application/useUpdateController';
 import type { SettingsData } from '../domain/types';
 
 interface AppSettingsTabProps {
@@ -29,6 +33,17 @@ interface AppSettingsTabProps {
  */
 export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSettingsTabProps) {
     const { t } = useTranslation();
+    const {
+        currentVersion,
+        checking,
+        checkForUpdates,
+        updateInfo,
+    } = useUpdateController();
+
+    const handleCheckForUpdates = async () => {
+        await checkForUpdates();
+    };
+
     return (
         <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
             <Stack spacing={2}>
@@ -140,13 +155,14 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                     <Stack spacing={1.5}>
                         {/* Current Version */}
                         <TextField
-                            fullWidth
                             size="small"
                             label={t('update.currentVersion')}
-                            value="v0.1.0"
+                            value={`v${currentVersion}`}
                             InputProps={{
                                 readOnly: true,
+                               
                             }}
+                            sx={{ width: 'fit-content'}}
                             variant="filled"
                         />
 
@@ -162,22 +178,42 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             label={<Typography variant="body2">{t('update.autoUpdate')}</Typography>}
                         />
 
-                        {/* Check Interval - Removed as we only check on load */}
-
-
                         {/* Manual Check Button */}
                         <Button
                             variant="outlined"
                             color="primary"
-                            onClick={() => {
-                                // Manual check will be triggered via useUpdateController
-                                // For now, just show a notification
-                                // console.log('Manual update check triggered');
-                            }}
+                            startIcon={
+                                checking ? (
+                                    <CircularProgress size={20} color="inherit" />
+                                ) : (
+                                    <CloudDownloadIcon />
+                                )
+                            }
+                            onClick={handleCheckForUpdates}
+                            disabled={checking}
                             sx={{ alignSelf: 'flex-start' }}
                         >
-                            {t('update.checkForUpdates')}
+                            {checking
+                                ? t('update.checking')
+                                : t('update.checkForUpdates')}
                         </Button>
+
+                        {/* Update Status */}
+                        {updateInfo && (
+                            <Alert severity="info" icon={<CheckCircleIcon />} sx={{ py: 0.5 }}>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                    {t('update.newVersion', { version: updateInfo.version })}
+                                </Typography>
+                            </Alert>
+                        )}
+
+                        {!checking && !updateInfo && currentVersion && (
+                            <Alert severity="success" icon={<CheckCircleIcon />} sx={{ py: 0.5 }}>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                    {t('update.upToDate')}
+                                </Typography>
+                            </Alert>
+                        )}
                     </Stack>
                 </Box>
             </Stack>

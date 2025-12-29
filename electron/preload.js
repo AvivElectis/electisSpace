@@ -71,6 +71,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     isElectron: () => true,
 
     platform: process.platform,
+
+    /**
+     * Window Controls (for frameless window)
+     */
+    windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+
+    windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+
+    windowClose: () => ipcRenderer.invoke('window-close'),
+
+    windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 });
 
 /**
