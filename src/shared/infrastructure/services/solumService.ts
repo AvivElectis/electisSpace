@@ -410,9 +410,28 @@ export async function getLabels(
     }
 
     const text = await response.text();
-    const data = text ? JSON.parse(text) : [];
-    logger.info('SolumService', 'Labels fetched', { count: data.length });
-    return data;
+    // Handle empty response
+    if (!text || text.trim().length === 0) {
+        logger.info('SolumService', 'Labels fetched (empty response)', { count: 0 });
+        return [];
+    }
+
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        logger.error('SolumService', 'Failed to parse labels response', { text });
+        throw new Error('Invalid JSON response from SoluM API');
+    }
+
+    // The API might return an object with nested labels array or direct array
+    // Handle both cases like fetchArticles does
+    const labels = Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
+
+    logger.info('SolumService', 'Labels fetched', { count: labels.length });
+    console.log('[DEBUG getLabels] Response type:', typeof data, ', IsArray:', Array.isArray(data), ', Keys:', data ? Object.keys(data).join(',') : 'none');
+    console.log('[DEBUG getLabels] Labels IsArray:', Array.isArray(labels), ', Count:', Array.isArray(labels) ? labels.length : 'NOT ARRAY');
+    return labels;
 }
 
 /**

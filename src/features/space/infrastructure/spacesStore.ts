@@ -105,21 +105,8 @@ export const useSpacesStore = create<SpacesStore>()(
                         const existingSpacesMap = new Map(state.spaces.map(s => [s.id, s]));
 
                         newSpaces.forEach(newSpace => {
-                            if (existingSpacesMap.has(newSpace.id)) {
-                                // Update existing space with list details - DEEP MERGE DATA
-                                const existing = existingSpacesMap.get(newSpace.id)!;
-                                existingSpacesMap.set(newSpace.id, {
-                                    ...existing,
-                                    ...newSpace,
-                                    data: {
-                                        ...existing.data,
-                                        ...(newSpace.data || {})
-                                    }
-                                });
-                            } else {
-                                // Add new space
-                                existingSpacesMap.set(newSpace.id, newSpace);
-                            }
+                            // Always set (replace or add) - no merge
+                            existingSpacesMap.set(newSpace.id, newSpace);
                         });
 
                         return {

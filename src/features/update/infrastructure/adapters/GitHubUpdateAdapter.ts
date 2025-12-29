@@ -34,20 +34,29 @@ export class GitHubUpdateAdapter {
     async getLatestRelease(): Promise<GitHubRelease | null> {
         try {
             const url = `https://api.github.com/repos/${this.owner}/${this.repo}/releases/latest`;
+            console.log('[GitHub Update] Fetching latest release from:', url);
+
             const response = await fetch(url);
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    // console.log('No releases found');
+                    console.warn('[GitHub Update] 404 - No releases found or repo not accessible. Check:', {
+                        url,
+                        owner: this.owner,
+                        repo: this.repo,
+                        note: 'Verify repository is public and has a published (non-draft, non-prerelease) release'
+                    });
                     return null;
                 }
+                console.error('[GitHub Update] API error:', response.status, response.statusText);
                 throw new Error(`GitHub API error: ${response.status}`);
             }
 
             const release: GitHubRelease = await response.json();
+            console.log('[GitHub Update] Latest release found:', release.tag_name);
             return release;
         } catch (error) {
-            // console.error('Error fetching latest release:', error);
+            console.error('[GitHub Update] Error fetching latest release:', error);
             return null;
         }
     }

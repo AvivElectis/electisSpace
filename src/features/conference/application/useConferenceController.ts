@@ -377,7 +377,7 @@ export function useConferenceController({
                         solumConfig,
                         solumConfig.storeNumber,
                         solumToken,
-                        [id]  // Delete this conference room article
+                        [`C${id}`]  // Prepend 'C' to match AIMS article ID format
                     );
                     logger.info('ConferenceController', 'Article deleted from AIMS successfully', { id });
                 } catch (error) {
