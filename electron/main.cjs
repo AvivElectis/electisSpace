@@ -79,9 +79,22 @@ function createWindow() {
         mainWindow.webContents.openDevTools();
     } else {
         // Production mode - load from built files
+        // In production, __dirname points to resources/app.asar or resources/app
+        // The dist folder is in the same directory as electron folder
         const indexPath = path.join(__dirname, '../dist/index.html');
         log.info(`Loading production file: ${indexPath}`);
-        mainWindow.loadFile(indexPath);
+        log.info(`__dirname: ${__dirname}`);
+        log.info(`app.isPackaged: ${app.isPackaged}`);
+
+        mainWindow.loadFile(indexPath).catch(err => {
+            log.error('Failed to load index.html:', err);
+            // Try alternative path
+            const altPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
+            log.info(`Trying alternative path: ${altPath}`);
+            mainWindow.loadFile(altPath).catch(err2 => {
+                log.error('Alternative path also failed:', err2);
+            });
+        });
     }
 
     // Handle window closed
