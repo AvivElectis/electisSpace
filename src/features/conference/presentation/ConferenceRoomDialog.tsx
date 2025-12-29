@@ -54,7 +54,7 @@ export function ConferenceRoomDialog({
             if (room) {
                 // Edit mode
                 setId(room.id);
-                setRoomName(room.roomName);
+                setRoomName(room.data?.roomName || '');
                 setHasMeeting(room.hasMeeting);
                 setMeetingName(room.meetingName);
                 setStartTime(room.startTime);
@@ -118,13 +118,15 @@ export function ConferenceRoomDialog({
 
             const roomData: Partial<ConferenceRoom> = {
                 id: finalId,
-                roomName,
                 hasMeeting,
                 meetingName: hasMeeting ? meetingName : '',
                 startTime: hasMeeting ? startTime : '',
                 endTime: hasMeeting ? endTime : '',
                 participants: hasMeeting ? participants : [],
-                data: room?.data || {},  // Preserve existing dynamic data
+                data: {
+                    ...(room?.data || {}),
+                    roomName: roomName
+                },
             };
 
             await onSave(roomData);

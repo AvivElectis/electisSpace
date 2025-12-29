@@ -49,7 +49,7 @@ export function useConferenceController({
             // Create with defaults
             const room = createEmptyConferenceRoom(
                 roomData.id,
-                roomData.roomName || ''
+                roomData.data?.roomName || ''
             );
 
             // Merge with provided data
@@ -123,8 +123,6 @@ export function useConferenceController({
 
                             if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
                                 value = finalRoom.id;
-                            } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
-                                value = finalRoom.roomName;
                             } else if (finalRoom.data && finalRoom.data[fieldKey] !== undefined) {
                                 value = finalRoom.data[fieldKey];
                             } else if ((finalRoom as any)[fieldKey] !== undefined) {
@@ -144,11 +142,10 @@ export function useConferenceController({
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    // AIMS API structure: root-level articleId/articleName always use these names
                     // Mapped field names only apply to the data object
                     const aimsArticle = {
                         articleId: finalRoom.id,
-                        articleName: finalRoom.roomName || finalRoom.id,
+                        articleName: finalRoom.data?.roomName || finalRoom.id,
                         data: articleData
                     };
 
@@ -282,8 +279,6 @@ export function useConferenceController({
 
                             if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
                                 value = room.id;
-                            } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
-                                value = room.roomName;
                             } else if (room.data && room.data[fieldKey] !== undefined) {
                                 value = room.data[fieldKey];
                             } else if ((room as any)[fieldKey] !== undefined) {
@@ -304,11 +299,10 @@ export function useConferenceController({
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    // AIMS API structure: root-level articleId/articleName always use these names
                     // Mapped field names only apply to the data object
                     const aimsArticle = {
                         articleId: room.id,
-                        articleName: room.roomName || room.id,
+                        articleName: room.data?.roomName || room.id,
                         data: articleData
                     };
 
@@ -586,24 +580,22 @@ export function useConferenceController({
 
                     // Build dynamic data object from visible fields with actual article values
                     const data: Record<string, string> = {};
-                    let roomName = article.articleName || id; // Use articleName from AIMS
 
                     Object.keys(fields).forEach(fieldKey => {
                         const mapping = fields[fieldKey];
                         if (mapping.visible && mergedArticle[fieldKey] !== undefined) {
                             const fieldValue = String(mergedArticle[fieldKey]);
                             data[fieldKey] = fieldValue;
-
-                            // Extract room name from configured field
-                            if (fieldKey.toLowerCase().includes('name') || fieldKey.toLowerCase().includes('roomname')) {
-                                roomName = fieldValue || roomName;
-                            }
                         }
                     });
 
+                    // Set roomName in data if not already present from fields
+                    if (!data.roomName) {
+                        data.roomName = article.articleName || id;
+                    }
+
                     return {
                         id,
-                        roomName,
                         hasMeeting: !!meetingName,
                         meetingName,
                         startTime: startTime || '',

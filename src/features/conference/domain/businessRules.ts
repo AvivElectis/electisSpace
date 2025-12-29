@@ -36,13 +36,14 @@ export function generateConferenceRoomId(existingIds: string[]): string {
 export function createEmptyConferenceRoom(id: string, roomName: string): ConferenceRoom {
     return {
         id,
-        roomName,
         hasMeeting: false,
         meetingName: '',
         startTime: '',
         endTime: '',
         participants: [],
-        data: {},
+        data: {
+            roomName: roomName
+        },
     };
 }
 
@@ -90,8 +91,9 @@ export function filterConferenceRooms(
     if (searchQuery && searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(room => {
+            const name = room.data?.roomName || '';
             if (room.id.toLowerCase().includes(query)) return true;
-            if (room.roomName.toLowerCase().includes(query)) return true;
+            if (name.toLowerCase().includes(query)) return true;
             if (room.meetingName.toLowerCase().includes(query)) return true;
             if (room.participants.some(p => p.toLowerCase().includes(query))) return true;
             return false;

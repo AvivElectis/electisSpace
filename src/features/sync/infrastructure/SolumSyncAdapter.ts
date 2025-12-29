@@ -136,8 +136,6 @@ export class SolumSyncAdapter implements SyncAdapter {
 
             const articleData = article.data || article.articleData || {};
             const data: Record<string, string> = {};
-            // Default roomName to articleName or ID
-            let roomName = article.articleName || article.articleId || '';
 
             // Map fields based on configuration
             if (this.mappingConfig) {
@@ -172,12 +170,6 @@ export class SolumSyncAdapter implements SyncAdapter {
                         if (fieldValue !== undefined) {
                             const valueStr = String(fieldValue);
                             data[fieldKey] = valueStr;
-
-                            // Use first visible field as roomName if it looks like a name
-                            // REMOVED heuristic roomName guessing
-                            // if (fieldKey.toLowerCase().includes('name') && valueStr) {
-                            //     roomName = valueStr;
-                            // }
                         }
                     }
                 });
@@ -188,7 +180,6 @@ export class SolumSyncAdapter implements SyncAdapter {
                 for (const [fieldName] of Object.entries(mapping)) {
                     data[fieldName] = article[fieldName] || article.articleData?.[fieldName] || '';
                 }
-                roomName = article.articleName || data['roomName'] || '';
             }
 
             // --- DEBUG LOGGING START ---
@@ -209,7 +200,6 @@ export class SolumSyncAdapter implements SyncAdapter {
 
             const space: Space = {
                 id: article.articleId,
-                roomName,
                 data,
                 labelCode: label?.labelCode,
                 templateName: article.templateName,
@@ -225,12 +215,25 @@ export class SolumSyncAdapter implements SyncAdapter {
      * Map Space entities to SoluM articles
      */
     private mapSpacesToArticles(spaces: Space[]): any[] {
-        return spaces.map(space => ({
-            articleId: space.id,
-            articleName: space.roomName,
-            templateName: space.templateName,
-            articleData: space.data,
-        }));
+        const mappingInfo = this.mappingConfig?.mappingInfo;
+
+        return spaces.map(space => {
+            // Resolve articleName from data based on mapping
+            let articleName = space.id; // Default fallback
+
+            if (mappingInfo?.articleName && space.data[mappingInfo.articleName]) {
+                articleName = space.data[mappingInfo.articleName];
+            } else if (space.data['roomName']) {
+                articleName = space.data['roomName'];
+            }
+
+            return {
+                ...space.data, // Flatten ALL fields to root for maximum compatibility
+                articleId: space.id,
+                articleName,
+                data: space.data,
+            };
+        });
     }
 
     async download(): Promise<Space[]> {
@@ -326,7 +329,7 @@ export class SolumSyncAdapter implements SyncAdapter {
             this.state.progress = 40;
 
             // Push articles
-            await solumService.pushArticles(
+            await solumService.putArticles(
                 this.config,
                 this.config.storeNumber,
                 token,
@@ -419,25 +422,34 @@ export class SolumSyncAdapter implements SyncAdapter {
 
                 if (remote) {
                     // Update: Merge partial update ON TOP OF remote existing data
-                    // We must be careful to merge nested objects like 'articleData' if they exist in both
+                    // We must be careful to merge nested objects like 'articleData' if they exist in both.
+                    // Also, we update any root fields that exist in space.data for safety.
+                    const remoteData = remote.articleData || remote.data || {};
+                    const updatedData = {
+                        ...remoteData,
+                        ...(partial.articleData || {})
+                    };
+
                     return {
-                        ...remote,
-                        ...partial,
-                        articleData: {
-                            ...(remote.articleData || remote.data || {}),
-                            ...(partial.articleData || {})
-                        }
+                        ...remote,        // Start with existing remote fields
+                        ...updatedData,   // Set all merged data at root level
+                        ...partial,       // Ensure local system fields (articleId, name) override
+                        data: updatedData,        // Send as 'data' (AIMS SaaS spec)
+                        articleData: updatedData  // Send as 'articleData' (Common SoluM spec)
                     };
                 } else {
-                    // Create: No remote exists, use partial (which is effectively full for new item)
-                    return partial;
+                    // Create: No remote exists, use partial (already flattened by mapSpacesToArticles)
+                    return {
+                        ...partial,
+                        data: partial.articleData,      // Ensure 'data' exists
+                    };
                 }
             });
 
             this.state.progress = 50;
 
             // 4. Push Updated Articles
-            await solumService.pushArticles(
+            await solumService.putArticles(
                 this.config,
                 this.config.storeNumber,
                 token,

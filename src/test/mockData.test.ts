@@ -6,7 +6,7 @@ describe('Mock Data', () => {
         it('should have valid mock space structure', () => {
             expect(mockSpace).toBeDefined();
             expect(mockSpace.id).toBe('101');
-            expect(mockSpace.roomName).toBe('Test Room');
+            expect(mockSpace.data.ITEM_NAME).toBe('Test Room');
             expect(mockSpace.data).toBeDefined();
             expect(mockSpace.data.ITEM_NAME).toBe('Test Room');
         });
@@ -21,7 +21,6 @@ describe('Mock Data', () => {
         it('should have consistent data structure across all spaces', () => {
             mockSpaces.forEach(space => {
                 expect(space).toHaveProperty('id');
-                expect(space).toHaveProperty('roomName');
                 expect(space).toHaveProperty('data');
                 expect(space.data).toHaveProperty('ITEM_NAME');
                 expect(space.data).toHaveProperty('ENGLISH_NAME');
@@ -33,7 +32,7 @@ describe('Mock Data', () => {
         it('should have valid mock conference room structure', () => {
             expect(mockConferenceRoom).toBeDefined();
             expect(mockConferenceRoom.id).toBe('C001');
-            expect(mockConferenceRoom.roomName).toBe('Conference Room 001');
+            expect(mockConferenceRoom.data.roomName).toBe('Conference Room 001');
             expect(mockConferenceRoom.hasMeeting).toBe(true);
             expect(mockConferenceRoom.meetingName).toBe('Team Meeting');
             expect(mockConferenceRoom.startTime).toBe('09:00');

@@ -73,9 +73,10 @@ export function ConferencePage() {
         if (!query) return conferenceController.conferenceRooms;
 
         return conferenceController.conferenceRooms.filter((room) => {
+            const name = room.data?.roomName || '';
             return (
                 room.id.toLowerCase().includes(query) ||
-                room.roomName.toLowerCase().includes(query) ||
+                name.toLowerCase().includes(query) ||
                 room.meetingName.toLowerCase().includes(query)
             );
         });
@@ -317,7 +318,7 @@ export function ConferencePage() {
                                             >
                                                 <Box>
                                                     <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                                        {room.id} - {room.roomName}
+                                                        {room.id} - {room.data?.roomName || room.id}
                                                     </Typography>
                                                 </Box>
                                                 <Chip
@@ -410,7 +411,7 @@ export function ConferencePage() {
                                 justifyContent="space-between"
                                 alignItems="center"
                             >
-                                <Typography variant="h6">{selectedRoom.roomName}</Typography>
+                                <Typography variant="h6">{selectedRoom.data?.roomName || selectedRoom.id}</Typography>
                                 <Chip
                                     label={selectedRoom.hasMeeting ? t('conference.occupied') : t('conference.available')}
                                     color={selectedRoom.hasMeeting ? 'warning' : 'success'}

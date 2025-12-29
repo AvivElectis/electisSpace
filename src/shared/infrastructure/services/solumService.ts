@@ -308,6 +308,41 @@ export async function pushArticles(
 }
 
 /**
+ * Update articles using PUT method (Partial update/Append)
+ * @param config - SoluM configuration
+ * @param storeId - Store number
+ * @param token - Access token
+ * @param articles - Articles to update
+ */
+export async function putArticles(
+    config: SolumConfig,
+    storeId: string,
+    token: string,
+    articles: any[]
+): Promise<void> {
+    logger.info('SolumService', 'Updating articles (PUT)', { storeId, count: articles.length });
+
+    const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
+
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(articles),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        logger.error('SolumService', 'Update articles failed', { status: response.status, error });
+        throw new Error(`Update articles failed: ${response.status}`);
+    }
+
+    logger.info('SolumService', 'Articles updated successfully');
+}
+
+/**
  * Delete articles from SoluM API
  * @param config - SoluM configuration
  * @param storeId - Store number
