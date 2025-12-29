@@ -2,7 +2,7 @@
 **Last Updated:** December 29, 2024  
 **Status:** Active Development  
 **Version:** v1.0.0-dev
-**Latest:** Phase 11 - Performance Optimization & Enhanced UX Complete (Dec 29, 2024)
+**Latest:** Phase 12 & 14 Added - Logging Infrastructure & Production Preparation (Dec 29, 2024)
 
 ---
 
@@ -1664,7 +1664,263 @@ Final touches for production.
 - Better error messages
 
 ### Recommended Next Action
-**Start with Performance Optimization (Section 6)** - This will provide immediate user experience improvements and is independent of platform testing.
+**Start with Logging Improvements (Phase 12)** - Clean up console logs and implement proper logging infrastructure before production deployment.
+
+---
+
+### 12. Logging Infrastructure Enhancement - **HIGH PRIORITY** 🔥
+**Status:** Phase 12 - Not Started
+**Estimated Effort:** ~8-10 hours
+**Priority:** HIGH - Required before production deployment
+
+**Problem Statement:**
+The application currently has numerous `console.log()` and `console.error()` statements scattered throughout the codebase. For production deployment, we need to:
+1. Comment out or remove all console logs
+2. Replace critical console statements with proper logger calls
+3. Implement persistent log storage with rotation
+4. Provide users with log download capability
+
+**Solution Plan:**
+
+#### 12.1 Console Log Audit & Cleanup (2-3h)
+**Files to Audit:**
+- Search entire codebase for `console.log`, `console.error`, `console.warn`, `console.info`
+- Categorize by importance:
+  - **Debug logs** → Comment out or remove
+  - **Important events** → Replace with `logger.info()`
+  - **Errors** → Replace with `logger.error()`
+  - **Warnings** → Replace with `logger.warn()`
+
+**Implementation Steps:**
+1. Run global search: `grep -r "console\." src/`
+2. Create audit spreadsheet with file, line, type, action
+3. Systematically replace or comment out each instance
+4. Add logger calls for critical events:
+   - Authentication events (login, token refresh)
+   - Sync operations (start, success, failure)
+   - Settings changes
+   - Data imports/exports
+   - API errors
+   - File system operations
+
+#### 12.2 Logger Service Enhancement (2-3h)
+**Files to Modify:**
+- ✅ `src/shared/infrastructure/services/logger.ts` - Already exists, needs enhancement
+
+**New Features:**
+1. **Log Levels Configuration**
+   ```typescript
+   type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+   interface LoggerConfig {
+     minLevel: LogLevel;
+     enableConsole: boolean; // false in production
+     enablePersistence: boolean;
+     maxLogFiles: number; // 10 days
+     maxFileSizeKB: number; // 5MB per file
+   }
+   ```
+
+2. **Log Entry Structure**
+   ```typescript
+   interface LogEntry {
+     timestamp: string;
+     level: LogLevel;
+     category: string; // 'auth', 'sync', 'settings', 'api', etc.
+     message: string;
+     data?: any;
+     error?: Error;
+   }
+   ```
+
+3. **Persistent Storage**
+   - Store logs in localStorage/IndexedDB
+   - File naming: `logs_YYYY-MM-DD.json`
+   - Automatic rotation (keep last 10 days)
+   - Size safety mechanism (max 5MB per file)
+   - Automatic cleanup of old logs
+
+#### 12.3 Log Viewer Enhancement (2-3h)
+**Files to Modify:**
+- ✅ `src/features/settings/presentation/LogViewer.tsx` - Already exists
+
+**New Features:**
+1. **Date Range Selector**
+   - Dropdown to select log file by date
+   - Show available dates (last 10 days)
+   - Display file size for each date
+
+2. **Download Functionality**
+   - "Download Logs" button
+   - Downloads selected date range as ZIP
+   - Includes all log files in date range
+   - Filename: `electisSpace_logs_YYYY-MM-DD_to_YYYY-MM-DD.zip`
+
+3. **Enhanced Filtering**
+   - Filter by log level (debug/info/warn/error)
+   - Filter by category (auth/sync/settings/api)
+   - Search by keyword
+   - Date/time range filter
+
+4. **UI Improvements**
+   - Color-coded log levels (error=red, warn=orange, info=blue)
+   - Expandable log entries for detailed data
+   - Auto-scroll to bottom option
+   - Clear logs button (with confirmation)
+
+#### 12.4 Settings Integration (1h)
+**Files to Modify:**
+- `src/features/settings/presentation/AppSettingsTab.tsx`
+
+**New Settings:**
+- **Enable Logging** - Toggle to enable/disable logging
+- **Log Level** - Dropdown (Debug/Info/Warn/Error)
+- **Enable Console Output** - Toggle for development mode
+- **Log Retention Days** - Number input (1-30 days, default 10)
+- **Max Log File Size** - Number input (1-10 MB, default 5)
+
+#### 12.5 Translations (30min)
+**Files to Modify:**
+- `src/locales/en/common.json`
+- `src/locales/he/common.json`
+
+**New Translation Keys:**
+```json
+{
+  "settings.logging": "Logging",
+  "settings.enableLogging": "Enable Logging",
+  "settings.logLevel": "Log Level",
+  "settings.enableConsole": "Enable Console Output",
+  "settings.logRetentionDays": "Log Retention (Days)",
+  "settings.maxLogFileSize": "Max Log File Size (MB)",
+  "logs.downloadLogs": "Download Logs",
+  "logs.selectDateRange": "Select Date Range",
+  "logs.clearLogs": "Clear Logs",
+  "logs.confirmClear": "Are you sure you want to clear all logs?",
+  "logs.noLogsAvailable": "No logs available for selected date",
+  "logs.filterByLevel": "Filter by Level",
+  "logs.filterByCategory": "Filter by Category",
+  "logs.searchLogs": "Search Logs"
+}
+```
+
+**Completion Criteria:**
+- [ ] All console.log statements audited and handled
+- [ ] Logger service enhanced with persistence
+- [ ] Log rotation implemented (10 days)
+- [ ] Size safety mechanism working (5MB limit)
+- [ ] Log viewer enhanced with date selector
+- [ ] Download logs functionality working
+- [ ] Settings integration complete
+- [ ] Translations added (EN/HE)
+- [ ] TypeScript compilation successful
+- [ ] All features tested
+
+**Estimated Effort:** 8-10 hours
+
+---
+
+### 14. Production Preparation - Auto-Update Finalization - **HIGH PRIORITY** 🚀
+**Status:** Phase 14 - Not Started
+**Estimated Effort:** ~4-6 hours
+**Priority:** HIGH - Required for production deployment
+
+**Problem Statement:**
+The auto-update feature infrastructure is complete (Phase 3), but needs final testing and production configuration before deployment.
+
+**Solution Plan:**
+
+#### 14.1 Auto-Update Testing (2-3h)
+**Testing Checklist:**
+
+1. **GitHub Release Workflow**
+   - [ ] Test release workflow with version tag (e.g., `v1.0.0-beta.1`)
+   - [ ] Verify Windows installer builds correctly
+   - [ ] Verify Android APK builds correctly
+   - [ ] Verify `latest.yml` is generated for auto-updater
+   - [ ] Test GitHub Release creation with artifacts
+
+2. **Electron Auto-Update**
+   - [ ] Test update check on app startup
+   - [ ] Test manual "Check for Updates" button
+   - [ ] Test update notification display
+   - [ ] Test update download progress
+   - [ ] Test "Install and Restart" functionality
+   - [ ] Verify update skipping works
+   - [ ] Test update interval settings (24h default)
+
+3. **Android Update Flow**
+   - [ ] Test update detection
+   - [ ] Test APK download link
+   - [ ] Verify manual installation instructions
+   - [ ] Test "Skip This Version" functionality
+
+#### 14.2 Production Configuration (1-2h)
+**Files to Modify:**
+- `package.json` - Set production version
+- `electron/main.js` - Verify auto-updater configuration
+- `.github/workflows/release.yml` - Verify build configuration
+
+**Configuration Checklist:**
+1. **Version Management**
+   - Set initial production version (e.g., `1.0.0`)
+   - Document version bumping process
+   - Create version release checklist
+
+2. **Auto-Updater Settings**
+   - Verify GitHub repository URL in `package.json`
+   - Verify `electron-builder` publish configuration
+   - Test auto-update feed URL
+
+3. **Build Configuration**
+   - Verify Windows code signing (if available)
+   - Verify app icons are correct
+   - Verify app metadata (name, description, author)
+
+#### 14.3 Documentation Updates (1h)
+**Files to Update:**
+- `docs/AUTO_UPDATE_GUIDE.md` - Add production deployment steps
+- `README.md` - Add installation and update instructions
+
+**Documentation Sections:**
+1. **For End Users**
+   - How to install the application
+   - How updates work
+   - How to manually check for updates
+   - Troubleshooting update issues
+
+2. **For Developers**
+   - How to create a new release
+   - Version bumping process
+   - Testing updates before release
+   - Rollback procedures
+
+#### 14.4 Release Checklist Creation (30min)
+**Create:** `docs/RELEASE_CHECKLIST.md`
+
+**Checklist Items:**
+- [ ] Update version in `package.json`
+- [ ] Update CHANGELOG.md
+- [ ] Run all tests (`npm test`)
+- [ ] Build production bundle (`npm run build`)
+- [ ] Test Electron build locally (`npm run electron:build`)
+- [ ] Commit version bump
+- [ ] Create and push version tag (`git tag v1.0.0 && git push --tags`)
+- [ ] Monitor GitHub Actions workflow
+- [ ] Verify release artifacts uploaded
+- [ ] Test auto-update from previous version
+- [ ] Announce release to users
+
+**Completion Criteria:**
+- [ ] Auto-update workflow tested end-to-end
+- [ ] Windows installer tested
+- [ ] Android APK tested
+- [ ] Production configuration verified
+- [ ] Documentation updated
+- [ ] Release checklist created
+- [ ] First production release successful
+
+**Estimated Effort:** 4-6 hours
+
 ---
 
 ## 📊 Effort Summary
@@ -1673,15 +1929,22 @@ Final touches for production.
 |-------|-------|----------------|
 | **Phase 1** | Critical Updates (SoluM + Notifications) | 6-9h ⚠️ |
 | **Phase 2** | Platform Support | 14-16h |
-| **Phase 3** | Auto-Update | 13-15h |
+| **Phase 3** | Auto-Update | 13-15h ✅ COMPLETE |
 | **Phase 4** | Quality & Testing | 14-18h |
 | **Phase 5** | Polish & Optimization | 11-13h |
-| **TOTAL** | Remaining Features | **58-71 hours** |
+| **Phase 12** | Logging Infrastructure Enhancement | 8-10h 🔥 HIGH PRIORITY |
+| **Phase 14** | Production Preparation - Auto-Update | 4-6h 🚀 HIGH PRIORITY |
+| **TOTAL** | Remaining Features | **70-87 hours** |
 
 **Completed So Far:** ~90% of core features
-**Remaining Work:** ~10% of core features + platform deployment + testing
+**Remaining Work:** ~10% of core features + logging + production prep + platform deployment + testing
 
-**Timeline:** Approximately 1.5-2 months at 10-15 hours/week
+**High Priority Next Steps:**
+1. **Phase 12 - Logging Infrastructure** (8-10h) - Clean up console logs, implement persistent logging
+2. **Phase 14 - Production Preparation** (4-6h) - Finalize auto-update feature for production
+3. **Platform Testing** (8-10h) - Test Electron and Android builds
+
+**Timeline:** Approximately 2-2.5 months at 10-15 hours/week
 
 ---
 
@@ -1734,8 +1997,10 @@ Final touches for production.
 - ✅ Phase 10 completed - Testing Infrastructure (Dec 29, 2024)
 - ✅ Phase 11 completed - Performance Optimization & Enhanced UX (Dec 29, 2024)
 - ✅ Phase 13 completed - UI Refinements (Dec 29, 2024)
+- 🔥 **Phase 12 added - Logging Infrastructure Enhancement (Dec 29, 2024)**
+- 🚀 **Phase 14 added - Production Preparation - Auto-Update Finalization (Dec 29, 2024)**
 
-**Next Review:** After Platform Testing completion
+**Next Review:** After Logging Infrastructure completion
 
 
 ---
