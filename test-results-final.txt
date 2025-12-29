@@ -1,0 +1,92 @@
+﻿
+> electis_space@0.1.0 test
+> vitest --run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.15 [39m[90mF:/React_2026/electisSpace[39m
+
+ [32mΓ£ף[39m src/shared/domain/validation.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/infrastructure/services/csvService.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mΓ£ף[39m src/test/mockData.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/infrastructure/services/encryptionService.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/infrastructure/monitoring/performanceMonitor.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [31mΓ¥»[39m src/shared/presentation/components/LoadingSpinner.test.tsx [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 107[2mms[22m[39m
+     [32mΓ£ף[39m should render without crashing[32m 87[2mms[22m[39m
+     [32mΓ£ף[39m should display custom message when provided[32m 6[2mms[22m[39m
+[31m     [31m├ק[31m should have proper accessibility attributes[39m[32m 14[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/presentation/components/ErrorDisplay.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 167[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/presentation/components/ConfirmDialog.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 324[2mms[22m[39m
+node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Users
+\Win10\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo          : N 
+   otSpecified: (:String) [],   
+  RemoteException
+    + FullyQualifiedErrorId : N 
+   ativeCommandError
+ 
+[31mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»[39m
+[1m[41m Failed Tests 1 [49m[2
+2m[31mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»[39
+m
+
+[41m[1m FAIL [22m[49m src/sh
+ared/presentation/components/Loa
+dingSpinner.test.tsx[2m > 
+[22mLoadingSpinner 
+Component[2m > [22mshould 
+have proper accessibility 
+attributes
+[31m[1mError[22m: [2mexpect(
+[22m[31melement[31m[2m).toHa
+veAttribute([22m[32m[32m"aria
+-busy"[32m[31m[2m, [22m[32m
+[32m"true"[32m[31m[2m) // el
+ement.getAttribute("aria-busy") 
+=== "true"[22m
+
+Expected the element to have 
+attribute:
+[32m  aria-busy="true"[31m
+Received:
+[31m  null[31m[39m
+[36m [2mΓ¥»[22m src/shared/pr
+esentation/components/LoadingSpi
+nner.test.tsx:[2m20:25[22m[39
+m
+    [90m 18| [39m        [34m
+render[39m([33m<[39m[33mLoad
+ingSpinner[39m [33m/[39m[33m
+>[39m)[33m;[39m
+    [90m 19| [39m        
+[35mconst[39m spinner 
+[33m=[39m screen[33m.[39m[3
+4mgetByRole[39m([32m'progressb
+ar'[39m)[33m;[39m
+    [90m 20| [39m        [34m
+expect[39m(spinner)[33m.[39m
+[34mtoHaveAttribute[39m([32m'a
+ria-busy'[39m[33m,[39m 
+[32m'true'[39m)[33m;[39m
+    [90m   | [39m             
+           [31m^[39m
+    [90m 21| [39m    
+})[33m;[39m
+    [90m 22| [39m})[33m;[39m
+
+[31m[2mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ
+»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γ
+מ»Γמ»Γמ»Γמ»Γמ»Γמ»[1/1]Γמ»[22m[
+39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m57 passed[39m[22m[90m (58)[39m
+[2m   Start at [22m 02:24:26
+[2m   Duration [22m 2.38s[2m (transform 344ms, setup 933ms, import 3.16s, tests 642ms, environment 6.20s)[22m
+
