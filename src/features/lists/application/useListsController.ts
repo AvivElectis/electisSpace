@@ -36,6 +36,7 @@ export function useListsController() {
 
         listsStore.saveList(newList);
         spacesStore.setActiveListName(name);
+        spacesStore.setActiveListId(newList.id);
     };
 
     const loadList = async (id: string) => {
@@ -47,6 +48,7 @@ export function useListsController() {
         // 1. Merge spaces
         const result = spacesStore.mergeSpacesList(list.spaces);
         spacesStore.setActiveListName(list.name);
+        spacesStore.setActiveListId(list.id);
 
         // 2. Safe Upload (Fetch -> Merge -> Push) if in SoluM mode
         // This ensures mapped fields from the list are merged into existing server data
@@ -79,6 +81,7 @@ export function useListsController() {
         const list = listsStore.lists.find(l => l.id === id);
         if (list && spacesStore.activeListName === list.name) {
             spacesStore.setActiveListName(undefined);
+            spacesStore.setActiveListId(undefined);
         }
     };
 

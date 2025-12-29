@@ -8,6 +8,7 @@ import type { SpacesList } from '../domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import * as solumService from '@shared/infrastructure/services/solumService';
+import { SolumSyncAdapter } from '../../sync/infrastructure/SolumSyncAdapter';
 
 /**
  * Space Controller Hook
@@ -418,97 +419,35 @@ export function useSpaceController({
                 throw new Error('SoluM configuration, token, or mapping config not available');
             }
 
-            logger.info('SpaceController', 'Fetching spaces from SoluM');
+            logger.info('SpaceController', 'Fetching spaces from SoluM using Adapter');
 
             try {
-                // Fetch all articles from SoluM
-                const articles = await solumService.fetchArticles(
+                // Instantiate adapter solely for the purpose of downloading
+                // We provide a no-op for token updates as this hook doesn't manage token persistence
+                // (Token persistence is handled by the main SyncController or Settings)
+                const adapter = new SolumSyncAdapter(
                     solumConfig,
-                    solumConfig.storeNumber,
-                    solumToken
+                    csvConfig,
+                    (newTokens) => logger.debug('SpaceController', 'Token refreshed during fetch (not persisted)', { newTokens }),
+                    { ...solumConfig.tokens!, accessToken: solumToken } as any, // Construct tokens object if needed
+                    solumMappingConfig
                 );
 
-                // Filter OUT articles where articleId starts with 'C' (those are conference rooms)
-                // IMPORTANT: Check article.articleId (root level from AIMS), not article[uniqueIdField]
-                const { fields, globalFieldAssignments } = solumMappingConfig;
-                const spaceArticles = articles.filter((article: any) => {
-                    const articleId = article.articleId; // Use root-level articleId from AIMS
-                    return articleId && !String(articleId).toUpperCase().startsWith('C');
-                });
-
-                // Map articles to Space entities
-                const mappedSpaces: Space[] = spaceArticles.map((article: any) => {
-                    const id = String(article.articleId || ''); // Use articleId from AIMS
-
-                    // Apply global field assignments
-                    const mergedArticle = {
-                        ...article,
-                        ...(globalFieldAssignments || {}),
-                    };
-
-                    // Build dynamic data object from visible fields
-                    // Check both root level and article.data for field values
-                    const articleData = article.data || {};
-                    const data: Record<string, string> = {};
-                    let roomName = article.articleName || id; // Use articleName from AIMS
-
-                    Object.keys(fields).forEach(fieldKey => {
-                        const mapping = fields[fieldKey];
-                        if (mapping.visible) {
-                            // Check article.data first, then root level
-                            let fieldValue = articleData[fieldKey] !== undefined
-                                ? articleData[fieldKey]
-                                : mergedArticle[fieldKey];
-
-                            // Fallback: Check standard mappings via mappingInfo
-                            // This ensures keys like ITEM_NAME get their value from articleName
-                            const mappingInfo = solumMappingConfig.mappingInfo;
-                            if (fieldValue === undefined && mappingInfo) {
-                                if (fieldKey === mappingInfo.articleName) {
-                                    fieldValue = article.articleName;
-                                } else if (fieldKey === mappingInfo.articleId) {
-                                    fieldValue = article.articleId;
-                                } else if (fieldKey === mappingInfo.store) {
-                                    fieldValue = solumConfig.storeNumber;
-                                }
-                            }
-
-                            if (fieldValue !== undefined) {
-                                const valueStr = String(fieldValue);
-                                data[fieldKey] = valueStr;
-
-                                // Use first visible field as roomName if it looks like a name
-                                // REMOVED heuristic logic to match SolumSyncAdapter fix
-                                // if (fieldKey.toLowerCase().includes('name') && valueStr) {
-                                //     roomName = valueStr;
-                                // }
-                            }
-                        }
-                    });
-
-                    return {
-                        id,
-                        roomName,
-                        data,
-                        labelCode: article.labelCode,
-                        templateName: article.templateName,
-                    };
-                });
+                // Use the adapter's download logic which handles pagination properly
+                const spaces = await adapter.download();
 
                 // Import mapped spaces
-                importFromSync(mappedSpaces);
+                importFromSync(spaces);
 
                 logger.info('SpaceController', 'Spaces fetched from SoluM', {
-                    total: articles.length,
-                    spaces: mappedSpaces.length,
-                    conferenceRooms: articles.length - mappedSpaces.length
+                    count: spaces.length
                 });
             } catch (error) {
                 logger.error('SpaceController', 'Failed to fetch from SoluM', { error });
                 throw error;
             }
         },
-        [solumConfig, solumToken, solumMappingConfig, importFromSync]
+        [solumConfig, solumToken, solumMappingConfig, csvConfig, importFromSync]
     );
 
 

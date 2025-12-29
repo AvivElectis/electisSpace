@@ -219,12 +219,14 @@ export async function withTokenRefresh<T>(
 export async function fetchArticles(
     config: SolumConfig,
     storeId: string,
-    token: string
+    token: string,
+    page: number = 0,
+    size: number = 100
 ): Promise<any[]> {
-    logger.info('SolumService', 'Fetching articles with details', { storeId });
+    logger.info('SolumService', 'Fetching articles with details', { storeId, page, size });
 
-    // Use the detailed articles endpoint to get full article data
-    const url = buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${storeId}`);
+    // Use the detailed articles endpoint to get full article data with pagination
+    const url = buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${storeId}&page=${page}&size=${size}`);
 
     const response = await fetch(url, {
         method: 'GET',

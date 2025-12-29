@@ -42,9 +42,12 @@ export function SpacesPage() {
     const settingsController = useSettingsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const activeListName = useSpacesStore((state) => state.activeListName);
+    const activeListId = useSpacesStore((state) => state.activeListId);
 
     // Get SoluM access token if available (same pattern as ConferencePage)
     const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
+
+    console.log('SpacesPage: Active List State', { activeListName, activeListId });
 
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
@@ -258,8 +261,8 @@ export function SpacesPage() {
             />
 
             {/* Spaces Table */}
-            <TableContainer component={Paper}>
-                <Table>
+            <TableContainer component={Paper} sx={{ maxHeight: '70vh' }}>
+                <Table stickyHeader>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'background.default' }}>
                             <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.id')}</TableCell>
@@ -337,15 +340,31 @@ export function SpacesPage() {
                     variant="outlined"
                     startIcon={<FolderIcon />}
                     onClick={() => setListsManagerOpen(true)}
+                    sx={{ mr: 2 }}
                 >
                     {t('lists.manage')}
                 </Button>
+                {activeListId && (
+                    <Button
+                        variant="outlined"
+                        startIcon={<SaveIcon />}
+                        onClick={() => {
+                            if (activeListName && activeListId) {
+                                spaceController.saveSpacesList(activeListName, activeListId);
+                                // Optional: Add toast success here
+                            }
+                        }}
+                        sx={{ mr: 2 }}
+                    >
+                        {t('lists.saveChanges')}
+                    </Button>
+                )}
                 <Button
                     variant="outlined"
                     startIcon={<SaveIcon />}
                     onClick={() => setSaveListOpen(true)}
                 >
-                    {t('lists.save')}
+                    {t('lists.saveAsNew')}
                 </Button>
             </Box>
 
