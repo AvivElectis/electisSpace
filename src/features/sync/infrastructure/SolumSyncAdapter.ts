@@ -119,6 +119,16 @@ export class SolumSyncAdapter implements SyncAdapter {
         const fields = this.mappingConfig?.fields || {};
         const globalFieldAssignments = this.mappingConfig?.globalFieldAssignments || {};
 
+        // Defensive check: ensure labels is an array
+        const labelsArray = Array.isArray(labels) ? labels : [];
+
+        if (!Array.isArray(labels)) {
+            logger.warn('SolumSyncAdapter', 'Labels is not an array, using empty array', {
+                labelsType: typeof labels,
+                labelsValue: labels
+            });
+        }
+
         for (const article of articles) {
             // Skip conference rooms (articles with ID starting with 'C')
             if (article.articleId?.startsWith('C')) {
@@ -126,7 +136,7 @@ export class SolumSyncAdapter implements SyncAdapter {
             }
 
             // Find assigned label
-            const label = labels.find(l => l.articleId === article.articleId);
+            const label = labelsArray.find(l => l.articleId === article.articleId);
 
             // Apply global field assignments
             const mergedArticle = {
