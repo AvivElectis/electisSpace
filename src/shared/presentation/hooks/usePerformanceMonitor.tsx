@@ -61,14 +61,14 @@ export function usePerformanceMonitor(
         // Log performance metrics
         if (duration > 16) {
             // Warn if render takes longer than one frame (16ms)
-            console.warn(
-                `[Performance] ${componentName} render #${renderCount.current} took ${duration.toFixed(2)}ms (avg: ${averageDuration.toFixed(2)}ms)`
-            );
+            // console.warn(
+            //     `[Performance] ${componentName} render #${renderCount.current} took ${duration.toFixed(2)}ms (avg: ${averageDuration.toFixed(2)}ms)`
+            // );
         } else if (renderCount.current % 10 === 0) {
             // Log every 10th render
-            console.log(
-                `[Performance] ${componentName} render #${renderCount.current} - avg: ${averageDuration.toFixed(2)}ms`
-            );
+            // console.log(
+            //     `[Performance] ${componentName} render #${renderCount.current} - avg: ${averageDuration.toFixed(2)}ms`
+            // );
         }
 
         // Store metrics globally for debugging

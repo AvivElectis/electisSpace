@@ -149,10 +149,22 @@ export function SpaceDialog({
     const dynamicFields = useMemo(() => {
         if (workingMode === 'SOLUM_API' && solumMappingConfig) {
             // SoluM mode: Show visible fields with friendly names
-            // Filter out uniqueIdField since it's already shown as ID
+            // Filter out uniqueIdField (shown as ID) and any field mapped to roomName
             const uniqueIdField = solumMappingConfig.uniqueIdField;
+
+            // Find which field is mapped to roomName (if any)
+            const roomNameField = solumMappingConfig.mappingInfo?.articleName;
+
             return Object.entries(solumMappingConfig.fields)
-                .filter(([fieldKey, fieldConfig]) => fieldConfig.visible && fieldKey !== uniqueIdField)
+                .filter(([fieldKey, fieldConfig]) => {
+                    // Exclude if not visible
+                    if (!fieldConfig.visible) return false;
+                    // Exclude uniqueIdField (already shown as ID)
+                    if (fieldKey === uniqueIdField) return false;
+                    // Exclude field mapped to roomName (already shown as Name)
+                    if (roomNameField && fieldKey === roomNameField) return false;
+                    return true;
+                })
                 .map(([fieldKey, fieldConfig]) => ({
                     key: fieldKey,
                     label: currentLanguage === 'he' ? fieldConfig.friendlyNameHe : fieldConfig.friendlyNameEn,

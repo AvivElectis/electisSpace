@@ -33,7 +33,7 @@ export class ElectronUpdateAdapter {
             const result = await this.api.checkForUpdates();
             return result?.updateInfo || null;
         } catch (error) {
-            console.error('Error checking for updates:', error);
+            // console.error('Error checking for updates:', error);
             throw error;
         }
     }
@@ -49,7 +49,7 @@ export class ElectronUpdateAdapter {
         try {
             await this.api.downloadUpdate();
         } catch (error) {
-            console.error('Error downloading update:', error);
+            // console.error('Error downloading update:', error);
             throw error;
         }
     }

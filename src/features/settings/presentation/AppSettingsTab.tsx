@@ -172,7 +172,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             onClick={() => {
                                 // Manual check will be triggered via useUpdateController
                                 // For now, just show a notification
-                                console.log('Manual update check triggered');
+                                // console.log('Manual update check triggered');
                             }}
                             sx={{ alignSelf: 'flex-start' }}
                         >

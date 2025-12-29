@@ -130,7 +130,7 @@ export function useSyncController({
             }
 
             if (adapterRef.current) {
-                adapterRef.current.disconnect().catch(console.error);
+                adapterRef.current.disconnect().catch(() => {/* console.error */ });
                 adapterRef.current = null;
             }
 
@@ -347,7 +347,7 @@ export function useSyncController({
         return () => {
             // Only disconnect on unmount, not on dep change
             if (adapterRef.current) {
-                adapterRef.current.disconnect().catch(console.error);
+                adapterRef.current.disconnect().catch(() => {/* console.error */ });
                 adapterRef.current = null;
             }
         };

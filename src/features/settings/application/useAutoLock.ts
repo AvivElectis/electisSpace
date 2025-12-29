@@ -32,7 +32,7 @@ export function useAutoLock() {
             if (timeSinceLastAccess >= AUTO_LOCK_TIMEOUT) {
                 // Auto-lock triggered
                 setLocked(true);
-                console.log('[AutoLock] Settings locked after 30 minutes of inactivity');
+                // console.log('[AutoLock] Settings locked after 30 minutes of inactivity');
             }
         };
 

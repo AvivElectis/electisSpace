@@ -80,9 +80,9 @@ export function useConferenceController({
                     const articleData: Record<string, any> = {};
 
                     // Debug: Log the conference room object and mapping config
-                    console.log('[DEBUG] Conference Room Object:', finalRoom);
-                    console.log('[DEBUG] Mapping Config Fields:', solumMappingConfig.fields);
-                    console.log('[DEBUG] Conference Mapping:', solumMappingConfig.conferenceMapping);
+                    // console.log('[DEBUG] Conference Room Object:', finalRoom);
+                    // console.log('[DEBUG] Mapping Config Fields:', solumMappingConfig.fields);
+                    // console.log('[DEBUG] Conference Mapping:', solumMappingConfig.conferenceMapping);
 
                     // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
                     const { conferenceMapping } = solumMappingConfig;
@@ -90,24 +90,24 @@ export function useConferenceController({
                     // Map meeting name
                     if (conferenceMapping.meetingName && finalRoom.meetingName) {
                         articleData[conferenceMapping.meetingName] = finalRoom.meetingName;
-                        console.log(`[DEBUG] Mapped meetingName -> ${conferenceMapping.meetingName}:`, finalRoom.meetingName);
+                        // console.log(`[DEBUG] Mapped meetingName -> ${conferenceMapping.meetingName}:`, finalRoom.meetingName);
                     }
 
                     // Map meeting time (combine start and end)
                     if (conferenceMapping.meetingTime) {
                         if (finalRoom.startTime && finalRoom.endTime) {
                             articleData[conferenceMapping.meetingTime] = `${finalRoom.startTime} - ${finalRoom.endTime}`;
-                            console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
+                            // console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
                         } else if (finalRoom.startTime) {
                             articleData[conferenceMapping.meetingTime] = finalRoom.startTime;
-                            console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, finalRoom.startTime);
+                            // console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, finalRoom.startTime);
                         }
                     }
 
                     // Map participants
                     if (conferenceMapping.participants && finalRoom.participants?.length > 0) {
                         articleData[conferenceMapping.participants] = finalRoom.participants.join(', ');
-                        console.log(`[DEBUG] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
+                        // console.log(`[DEBUG] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
                     }
 
                     // Second: Map other visible fields from config
@@ -131,7 +131,7 @@ export function useConferenceController({
                                 value = (finalRoom as any)[fieldKey];
                             }
 
-                            console.log(`[DEBUG] Field '${fieldKey}' -> value:`, value);
+                            // console.log(`[DEBUG] Field '${fieldKey}' -> value:`, value);
 
                             if (value !== undefined && value !== null && value !== '') {
                                 articleData[fieldKey] = value;
@@ -153,15 +153,15 @@ export function useConferenceController({
                     };
 
                     // Log the complete AIMS POST request
-                    console.log('[AIMS POST REQUEST]', {
-                        url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: [aimsArticle]
-                    });
+                    // console.log('[AIMS POST REQUEST]', {
+                    //     url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
+                    //     method: 'POST',
+                    //     headers: {
+                    //         'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
+                    //         'Content-Type': 'application/json'
+                    //     },
+                    //     body: [aimsArticle]
+                    // });
 
                     await solumService.pushArticles(
                         solumConfig,
@@ -239,9 +239,9 @@ export function useConferenceController({
                     const room = updatedRoom as ConferenceRoom;
 
                     // Debug: Log the conference room object and mapping config
-                    console.log('[DEBUG UPDATE] Conference Room Object:', room);
-                    console.log('[DEBUG UPDATE] Mapping Config Fields:', solumMappingConfig.fields);
-                    console.log('[DEBUG UPDATE] Conference Mapping:', solumMappingConfig.conferenceMapping);
+                    // console.log('[DEBUG UPDATE] Conference Room Object:', room);
+                    // console.log('[DEBUG UPDATE] Mapping Config Fields:', solumMappingConfig.fields);
+                    // console.log('[DEBUG UPDATE] Conference Mapping:', solumMappingConfig.conferenceMapping);
 
                     // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
                     const { conferenceMapping } = solumMappingConfig;
@@ -249,24 +249,24 @@ export function useConferenceController({
                     // Map meeting name
                     if (conferenceMapping.meetingName && room.meetingName) {
                         articleData[conferenceMapping.meetingName] = room.meetingName;
-                        console.log(`[DEBUG UPDATE] Mapped meetingName -> ${conferenceMapping.meetingName}:`, room.meetingName);
+                        // console.log(`[DEBUG UPDATE] Mapped meetingName -> ${conferenceMapping.meetingName}:`, room.meetingName);
                     }
 
                     // Map meeting time (combine start and end)
                     if (conferenceMapping.meetingTime) {
                         if (room.startTime && room.endTime) {
                             articleData[conferenceMapping.meetingTime] = `${room.startTime} - ${room.endTime}`;
-                            console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
+                            // console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
                         } else if (room.startTime) {
                             articleData[conferenceMapping.meetingTime] = room.startTime;
-                            console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, room.startTime);
+                            // console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, room.startTime);
                         }
                     }
 
                     // Map participants
                     if (conferenceMapping.participants && room.participants?.length > 0) {
                         articleData[conferenceMapping.participants] = room.participants.join(', ');
-                        console.log(`[DEBUG UPDATE] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
+                        // console.log(`[DEBUG UPDATE] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
                     }
 
                     // Second: Map other visible fields from config
@@ -290,7 +290,7 @@ export function useConferenceController({
                                 value = (room as any)[fieldKey];
                             }
 
-                            console.log(`[DEBUG UPDATE] Field '${fieldKey}' -> value:`, value);
+                            // console.log(`[DEBUG UPDATE] Field '${fieldKey}' -> value:`, value);
 
                             // Only add if value exists
                             if (value !== undefined && value !== null && value !== '') {
@@ -313,15 +313,15 @@ export function useConferenceController({
                     };
 
                     // Log the complete AIMS POST request
-                    console.log('[AIMS POST REQUEST - UPDATE]', {
-                        url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: [aimsArticle]
-                    });
+                    // console.log('[AIMS POST REQUEST - UPDATE]', {
+                    //     url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
+                    //     method: 'POST',
+                    //     headers: {
+                    //         'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
+                    //         'Content-Type': 'application/json'
+                    //     },
+                    //     body: [aimsArticle]
+                    // });
 
                     await solumService.pushArticles(
                         solumConfig,
@@ -360,7 +360,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room updated', { id });
         },
-        [conferenceRooms, updateInStore, onSync]
+        [conferenceRooms, updateInStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -416,7 +416,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room deleted', { id });
         },
-        [conferenceRooms, deleteFromStore, onSync]
+        [conferenceRooms, deleteFromStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -529,7 +529,7 @@ export function useConferenceController({
                     // Check both the configured uniqueIdField and the standard articleId property
                     const uniqueId = article.articleId || article[uniqueIdField];
                     const idStr = String(uniqueId || '').toUpperCase();
-                    console.log('[DEBUG] Checking article:', article.articleId, 'starts with C?', idStr.startsWith('C'));
+                    // console.log('[DEBUG] Checking article:', article.articleId, 'starts with C?', idStr.startsWith('C'));
                     return uniqueId && idStr.startsWith('C');
                 });
 
@@ -539,12 +539,12 @@ export function useConferenceController({
                     const rawId = String(article.articleId || article[uniqueIdField] || '');
                     const id = rawId.toUpperCase().startsWith('C') ? rawId.substring(1) : rawId;
 
-                    console.log('[DEBUG] Mapping article to conference room:', {
-                        rawId,
-                        mappedId: id,
-                        articleName: article.articleName,
-                        article
-                    });
+                    // console.log('[DEBUG] Mapping article to conference room:', {
+                    //     rawId,
+                    //     mappedId: id,
+                    //     articleName: article.articleName,
+                    //     article
+                    // });
 
                     // Apply global field assignments
                     const mergedArticle = {
@@ -575,14 +575,14 @@ export function useConferenceController({
                         .map(p => p.trim())
                         .filter(p => p.length > 0);
 
-                    console.log('[DEBUG FETCH] Parsed meeting data:', {
-                        meetingName,
-                        startTime,
-                        endTime,
-                        participants,
-                        rawMeetingTime: meetingTimeRaw,
-                        rawParticipants: participantsRaw
-                    });
+                    // console.log('[DEBUG FETCH] Parsed meeting data:', {
+                    //     meetingName,
+                    //     startTime,
+                    //     endTime,
+                    //     participants,
+                    //     rawMeetingTime: meetingTimeRaw,
+                    //     rawParticipants: participantsRaw
+                    // });
 
                     // Build dynamic data object from visible fields with actual article values
                     const data: Record<string, string> = {};

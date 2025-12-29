@@ -33,10 +33,10 @@ class PerformanceMonitor {
                 this.recordMetric('dom_content_loaded', domContentLoaded);
                 this.recordMetric('time_to_interactive', timeToInteractive);
 
-                console.log(`📊 Performance Metrics:
-  - Page Load Time: ${pageLoadTime}ms
-  - DOM Content Loaded: ${domContentLoaded}ms
-  - Time to Interactive: ${timeToInteractive}ms`);
+                // console.log(`📊 Performance Metrics:
+                //   - Page Load Time: ${pageLoadTime}ms
+                //   - DOM Content Loaded: ${domContentLoaded}ms
+                //   - Time to Interactive: ${timeToInteractive}ms`);
             }, 0);
         });
     }
@@ -50,7 +50,7 @@ class PerformanceMonitor {
         this.recordMetric(`component_render_${componentName}`, renderTime);
 
         if (renderTime > 100) {
-            console.warn(`⚠️ Slow render detected: ${componentName} took ${renderTime}ms`);
+            // console.warn(`⚠️ Slow render detected: ${componentName} took ${renderTime}ms`);
         }
     }
 
@@ -63,7 +63,7 @@ class PerformanceMonitor {
         this.recordMetric(`api_call_${endpoint}`, duration);
 
         if (duration > 1000) {
-            console.warn(`⚠️ Slow API call: ${endpoint} took ${duration}ms`);
+            // console.warn(`⚠️ Slow API call: ${endpoint} took ${duration}ms`);
         }
     }
 

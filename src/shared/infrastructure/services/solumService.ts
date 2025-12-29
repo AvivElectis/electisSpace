@@ -41,12 +41,12 @@ export async function login(config: SolumConfig): Promise<SolumTokens> {
     // Login endpoint only requires username and password
     const url = buildUrl(config, '/common/api/v2/token');
 
-    console.log('[SoluM Request] Login:', {
-        url,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { username: config.username, password: '***' }
-    });
+    // console.log('[SoluM Request] Login:', {
+    //     url,
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: { username: config.username, password: '***' }
+    // });
 
     logger.debug('SolumService', 'Login request', {
         url,
@@ -60,8 +60,8 @@ export async function login(config: SolumConfig): Promise<SolumTokens> {
             password: config.password,
         });
 
-        console.log('[SoluM Response] Login:', response.status, response.statusText);
-        console.log('[SoluM Response] Login Data:', response.data);
+        // console.log('[SoluM Response] Login:', response.status, response.statusText);
+        // console.log('[SoluM Response] Login Data:', response.data);
 
         const tokenData = response.data.responseMessage;
         const tokens: SolumTokens = {
@@ -75,7 +75,7 @@ export async function login(config: SolumConfig): Promise<SolumTokens> {
     } catch (error: any) {
         const status = error.response?.status || 'unknown';
         const errorData = error.response?.data || error.message;
-        console.error('[SoluM Error] Login failed:', { status, error: errorData });
+        // console.error('[SoluM Error] Login failed:', { status, error: errorData });
         logger.error('SolumService', 'Login failed', { status, error: errorData });
         throw new Error(`SoluM login failed: ${status} - ${JSON.stringify(errorData)}`);
     }
@@ -95,12 +95,12 @@ export async function refreshToken(
 
     const url = buildUrl(config, '/common/api/v2/token/refresh');
 
-    console.log('[SoluM Request] Refresh Token:', {
-        url,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { refreshToken: '***' }  // camelCase as per API spec line 196-200
-    });
+    // console.log('[SoluM Request] Refresh Token:', {
+    //     url,
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: { refreshToken: '***' }  // camelCase as per API spec line 196-200
+    // });
 
     const response = await fetch(url, {
         method: 'POST',
@@ -243,15 +243,15 @@ export async function fetchArticles(
     const data = await response.json();
 
     // Debug: Log the raw response to see structure
-    console.log('[DEBUG] AIMS API Raw Response:', JSON.stringify(data, null, 2));
-    console.log('[DEBUG] Response is array?', Array.isArray(data));
-    console.log('[DEBUG] Response.articleList exists?', !!data.articleList);
+    // console.log('[DEBUG] AIMS API Raw Response:', JSON.stringify(data, null, 2));
+    // console.log('[DEBUG] Response is array?', Array.isArray(data));
+    // console.log('[DEBUG] Response.articleList exists?', !!data.articleList);
 
     // The API returns an object with articleList array
     // Example: { totalArticleCnt: 1, articleList: [...], responseCode: "200" }
     const articles = Array.isArray(data) ? data : (data.articleList || data.content || data.data || []);
 
-    console.log('[DEBUG] Extracted articles:', articles);
+    // console.log('[DEBUG] Extracted articles:', articles);
 
     logger.info('SolumService', 'Articles fetched', { count: articles.length });
     return articles;
@@ -497,15 +497,15 @@ export async function getStoreSummary(
 
     const url = buildUrl(config, `/common/api/v2/common/store/summary?company=${config.companyName}&store=${storeId}`);
 
-    console.log('[SoluM Request] Get Store Summary:', {
-        url,
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token.substring(0, 20)}...`,
-            'Content-Type': 'application/json'
-        },
-        queryParams: { company: config.companyName, store: storeId }
-    });
+    // console.log('[SoluM Request] Get Store Summary:', {
+    //     url,
+    //     method: 'GET',
+    //     headers: {
+    //         'Authorization': `Bearer ${token.substring(0, 20)}...`,
+    //         'Content-Type': 'application/json'
+    //     },
+    //     queryParams: { company: config.companyName, store: storeId }
+    // });
 
     const response = await fetch(url, {
         method: 'GET',

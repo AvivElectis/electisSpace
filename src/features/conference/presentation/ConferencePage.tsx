@@ -59,8 +59,8 @@ export function ConferencePage() {
     // Fetch conference rooms from AIMS on mount (SoluM mode)
     useEffect(() => {
         if (settings.workingMode === 'SOLUM_API' && settings.solumConfig && solumToken && settings.solumMappingConfig) {
-            conferenceController.fetchFromSolum().catch((error: any) => {
-                console.error('Failed to fetch conference rooms from AIMS:', error);
+            conferenceController.fetchFromSolum().catch(() => {
+                // console.error('Failed to fetch conference rooms from AIMS:', error);
             });
         }
         // Only run once on mount

@@ -84,7 +84,7 @@ export function useDynamicImport<T extends object>(
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to load module');
             setState({ module: null, loading: false, error });
-            console.error('[useDynamicImport] Import failed:', error);
+            // console.error('[useDynamicImport] Import failed:', error);
         }
     }, [importFn]);
 

@@ -34,7 +34,7 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
             await loadList(id);
             onClose();
         } catch (error) {
-            console.error('Failed to load list', error);
+            // console.error('Failed to load list', error);
             // Show error notification
         }
     };

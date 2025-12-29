@@ -171,13 +171,13 @@ class AndroidFileSystemAdapter implements FileSystemAdapter {
     async selectFile(_options?: FileSelectOptions): Promise<string | null> {
         // Android file picker implementation would go here
         // For now, return null (would need additional Capacitor plugin)
-        console.warn('File selection not yet implemented for Android');
-        return null;
+        // console.warn('File selection not yet implemented for Android');
+        throw new Error('File selection not yet implemented for Android');
     }
 
-    async selectDirectory(_options?: DirectorySelectOptions): Promise<string | null> {
-        console.warn('Directory selection not yet implemented for Android');
-        return null;
+    async selectDirectory(): Promise<string> {
+        // console.warn('Directory selection not yet implemented for Android');
+        throw new Error('Directory selection not yet implemented for Android');
     }
 
     async saveFile(options: FileSaveOptions): Promise<string | null> {

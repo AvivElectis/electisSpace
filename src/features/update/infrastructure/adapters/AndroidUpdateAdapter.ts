@@ -22,7 +22,7 @@ export class AndroidUpdateAdapter {
         try {
             return await githubUpdateAdapter.checkForUpdate(currentVersion, 'android');
         } catch (error) {
-            console.error('Error checking for Android updates:', error);
+            // console.error('Error checking for Android updates:', error);
             return null;
         }
     }
@@ -48,7 +48,7 @@ export class AndroidUpdateAdapter {
                 window.open(downloadUrl, '_blank');
             }
         } catch (error) {
-            console.error('Error opening browser for APK download:', error);
+            // console.error('Error opening browser for APK download:', error);
             throw error;
         }
     }

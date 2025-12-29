@@ -42,15 +42,21 @@ export function useConfigurationController() {
         try {
             const schema = await SolumSchemaAdapter.fetchSchema(settings.solumConfig);
 
-            console.log('[DEBUG fetchArticleFormat] schema.mappingInfo:', schema.mappingInfo);
-            console.log('[DEBUG fetchArticleFormat] Current solumMappingConfig:', settings.solumMappingConfig);
+            // console.log('[DEBUG fetchArticleFormat] schema.mappingInfo:', schema.mappingInfo);
+            // console.log('[DEBUG fetchArticleFormat] Current solumMappingConfig:', settings.solumMappingConfig);
+
+            // Clear existing mapping config when fetching new schema
+            // This ensures users reconfigure field mappings after schema changes
+            // settingsController.updateSettings({ solumMappingConfig: undefined }); // This line refers to settingsController which is not defined in this scope. Assuming it should be `updateSettings`
+            updateSettings({ solumMappingConfig: undefined });
+
 
             // Persist schema and extract mappingInfo to solumMappingConfig
             const updatedMappingConfig = settings.solumMappingConfig
                 ? { ...settings.solumMappingConfig, mappingInfo: schema.mappingInfo }
                 : { mappingInfo: schema.mappingInfo } as any;
 
-            console.log('[DEBUG fetchArticleFormat] Updated mappingConfig:', updatedMappingConfig);
+            // console.log('[DEBUG fetchArticleFormat] Updated mappingConfig:', updatedMappingConfig);
 
             updateSettings({
                 solumArticleFormat: schema,

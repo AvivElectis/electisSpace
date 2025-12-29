@@ -111,9 +111,9 @@ export function useSpaceController({
                     const mappingInfo = solumMappingConfig.mappingInfo;
 
                     // DEBUG: Log what we have
-                    console.log('[DEBUG addSpace] mappingInfo:', mappingInfo);
-                    console.log('[DEBUG addSpace] articleData:', articleData);
-                    console.log('[DEBUG addSpace] space.roomName:', space.roomName);
+                    // console.log('[DEBUG addSpace] mappingInfo:', mappingInfo);
+                    // console.log('[DEBUG addSpace] articleData:', articleData);
+                    // console.log('[DEBUG addSpace] space.roomName:', space.roomName);
 
                     const aimsArticle: any = {
                         data: articleData
@@ -122,18 +122,18 @@ export function useSpaceController({
                     // Populate root-level fields using mappingInfo
                     if (mappingInfo?.articleId && articleData[mappingInfo.articleId]) {
                         aimsArticle.articleId = String(articleData[mappingInfo.articleId]);
-                        console.log('[DEBUG addSpace] Using mapped articleId:', aimsArticle.articleId);
+                        // console.log('[DEBUG addSpace] Using mapped articleId:', aimsArticle.articleId);
                     } else {
                         aimsArticle.articleId = space.id;
-                        console.log('[DEBUG addSpace] Using fallback articleId:', aimsArticle.articleId);
+                        // console.log('[DEBUG addSpace] Using fallback articleId:', aimsArticle.articleId);
                     }
 
                     if (mappingInfo?.articleName && articleData[mappingInfo.articleName]) {
                         aimsArticle.articleName = String(articleData[mappingInfo.articleName]);
-                        console.log('[DEBUG addSpace] Using mapped articleName:', aimsArticle.articleName);
+                        // console.log('[DEBUG addSpace] Using mapped articleName:', aimsArticle.articleName);
                     } else {
                         aimsArticle.articleName = space.roomName || space.id;
-                        console.log('[DEBUG addSpace] Using fallback articleName:', aimsArticle.articleName);
+                        // console.log('[DEBUG addSpace] Using fallback articleName:', aimsArticle.articleName);
                     }
 
                     if (mappingInfo?.store && articleData[mappingInfo.store]) {
@@ -144,7 +144,7 @@ export function useSpaceController({
                         aimsArticle.nfcUrl = String(articleData[mappingInfo.nfcUrl]);
                     }
 
-                    console.log('[DEBUG addSpace] Final aimsArticle:', aimsArticle);
+                    // console.log('[DEBUG addSpace] Final aimsArticle:', aimsArticle);
 
 
                     await solumService.pushArticles(

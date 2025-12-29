@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import type { Space } from '@shared/domain/types';
+import type { SpacesList } from '../domain/types';
 
 export interface SpacesStore {
     // State
     spaces: Space[];
+    spacesLists: SpacesList[];
     activeListName?: string;
 
     // Actions
@@ -12,6 +14,12 @@ export interface SpacesStore {
     addSpace: (space: Space) => void;
     updateSpace: (id: string, updates: Partial<Space>) => void;
     deleteSpace: (id: string) => void;
+
+    // Spaces List Management
+    addSpacesList: (list: SpacesList) => void;
+    updateSpacesList: (id: string, list: SpacesList) => void;
+    deleteSpacesList: (id: string) => void;
+    loadSpacesList: (id: string) => void;
 
     // List Management Helpers
     setActiveListName: (name: string | undefined) => void;
@@ -21,9 +29,10 @@ export interface SpacesStore {
 export const useSpacesStore = create<SpacesStore>()(
     devtools(
         persist(
-            (set, _get) => ({
+            (set, get) => ({
                 // Initial state
                 spaces: [],
+                spacesLists: [],
                 activeListName: undefined,
 
                 // Actions
@@ -45,6 +54,38 @@ export const useSpacesStore = create<SpacesStore>()(
                     set((state) => ({
                         spaces: state.spaces.filter((s) => s.id !== id),
                     }), false, 'deleteSpace'),
+
+                // Spaces List Management
+                addSpacesList: (list) =>
+                    set((state) => ({
+                        spacesLists: [...state.spacesLists, list],
+                    }), false, 'addSpacesList'),
+
+                updateSpacesList: (id, list) =>
+                    set((state) => ({
+                        spacesLists: state.spacesLists.map((l) =>
+                            l.id === id ? list : l
+                        ),
+                    }), false, 'updateSpacesList'),
+
+                deleteSpacesList: (id) =>
+                    set((state) => ({
+                        spacesLists: state.spacesLists.filter((l) => l.id !== id),
+                        activeListName: state.activeListName === state.spacesLists.find(l => l.id === id)?.name
+                            ? undefined
+                            : state.activeListName,
+                    }), false, 'deleteSpacesList'),
+
+                loadSpacesList: (id) => {
+                    const state = get();
+                    const list = state.spacesLists.find((l) => l.id === id);
+                    if (list) {
+                        set({
+                            spaces: list.spaces,
+                            activeListName: list.name
+                        }, false, 'loadSpacesList');
+                    }
+                },
 
                 // List Management Helpers
                 setActiveListName: (name) => set({ activeListName: name }, false, 'setActiveListName'),
@@ -73,6 +114,7 @@ export const useSpacesStore = create<SpacesStore>()(
                 name: 'spaces-store',
                 partialize: (state) => ({
                     spaces: state.spaces,
+                    spacesLists: state.spacesLists,
                     activeListName: state.activeListName,
                 }),
             }

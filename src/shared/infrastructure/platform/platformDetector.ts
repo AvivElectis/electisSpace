@@ -65,7 +65,7 @@ export async function getPlatformInfo(): Promise<{
             info.version = version;
             info.details = details;
         } catch (error) {
-            console.error('Error getting Electron platform info:', error);
+            // console.error('Error getting Electron platform info:', error);
         }
     } else if (isAndroid()) {
         try {
@@ -75,7 +75,7 @@ export async function getPlatformInfo(): Promise<{
                 isNative: Capacitor.isNativePlatform(),
             };
         } catch (error) {
-            console.error('Error getting Capacitor platform info:', error);
+            // console.error('Error getting Capacitor platform info:', error);
         }
     }
 
