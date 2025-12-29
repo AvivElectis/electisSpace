@@ -3,7 +3,7 @@ import type { Person } from '../domain/types';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import type { SolumConfig } from '@shared/domain/types';
-import { pushArticles, fetchArticles } from '@shared/infrastructure/services/solumService';
+import { pushArticles } from '@shared/infrastructure/services/solumService';
 import { logger } from '@shared/infrastructure/services/logger';
 
 /**
