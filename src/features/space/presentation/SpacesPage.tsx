@@ -82,11 +82,15 @@ export function SpacesPage() {
             settingsController.settings.solumMappingConfig
         ) {
             spaceController.fetchFromSolum().catch(() => {
-                // console.error('Failed to fetch spaces from AIMS:', error);
+                //logger.error('Failed to fetch spaces from AIMS:', error);
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [
+        settingsController.settings.workingMode,
+        solumToken,
+        settingsController.settings.solumMappingConfig,
+        // spaceController.fetchFromSolum // specific method is safe to include if useCallback'd
+    ]);
 
     // Get visible fields from mapping config for dynamic table columns
     // Exclude ID fields since we have a dedicated ID column
@@ -112,6 +116,15 @@ export function SpacesPage() {
     // Filter spaces based on debounced search query (memoized for performance)
     const filteredSpaces = useMemo(() => {
         const query = debouncedSearchQuery.toLowerCase();
+
+        // --- DEBUG LOGGING START ---
+        // console.log('SpacesPage: filteredSpaces check', {
+        //     totalSpaces: spaceController.spaces.length,
+        //     query,
+        //     firstSpace: spaceController.spaces[0]
+        // });
+        // --- DEBUG LOGGING END ---
+
         if (!query) return spaceController.spaces;
 
         return spaceController.spaces.filter((space) => {
@@ -124,6 +137,18 @@ export function SpacesPage() {
             );
         });
     }, [spaceController.spaces, debouncedSearchQuery]);
+
+    // --- DEBUG LOGGING START ---
+    // useEffect(() => {
+    //     if (filteredSpaces.length > 0) {
+    //         console.log('SpacesPage: Rendering Table', {
+    //             count: filteredSpaces.length,
+    //             visibleFields: visibleFields,
+    //             sampleRow: filteredSpaces[0]
+    //         });
+    //     }
+    // }, [filteredSpaces, visibleFields]);
+    // --- DEBUG LOGGING END ---
 
     // Memoized event handlers for better performance
     const handleDelete = useCallback(async (id: string) => {

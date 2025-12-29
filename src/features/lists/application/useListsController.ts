@@ -48,14 +48,23 @@ export function useListsController() {
         const result = spacesStore.mergeSpacesList(list.spaces);
         spacesStore.setActiveListName(list.name);
 
-        // 2. Trigger Sync if there are spaces (especially new ones)
-        // The requirement says: "if the spaces in the list are missing, then they will be posted to aims."
-        // Merging handles the state. Now we sync.
+        // 2. Safe Upload (Fetch -> Merge -> Push) if in SoluM mode
+        // This ensures mapped fields from the list are merged into existing server data
+        // without erasing unmapped fields.
         try {
-            await syncController.sync();
+            if (syncController.workingMode === 'SOLUM_API') {
+                await syncController.safeUpload(list.spaces);
+            }
+            // For SFTP, safeUpload is an alias to upload (full replace)
+
+            // 3. DO NOT trigger full sync immediately.
+            // SoluM API might have eventual consistency lag.
+            // We trust our local state (which we just pushed).
+            // Background auto-sync will handle updates later.
+            // await syncController.sync();
         } catch (error) {
             console.error('Auto-sync after list load failed:', error);
-            // We don't block the UI for this, just log
+            // We don't block the UI for this, but we log the error
         }
 
         return result;

@@ -35,7 +35,8 @@ export function ConferenceRoomDialog({
     room,
     existingIds = []
 }: ConferenceRoomDialogProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.dir() === 'rtl';
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [id, setId] = useState('');
     const [idError, setIdError] = useState(''); // Local error state for ID
@@ -189,18 +190,18 @@ export function ConferenceRoomDialog({
                         <>
                             <TextField
                                 fullWidth
-                                label="Meeting Name"
+                                label={t('conference.meetingName')}
                                 value={meetingName}
                                 onChange={(e) => setMeetingName(e.target.value)}
                                 required={hasMeeting}
-                                placeholder="Weekly Team Meeting"
+                                dir={isRtl ? 'rtl' : 'ltr'}
                             />
 
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
                                 <TextField
                                     fullWidth
                                     type="time"
-                                    label="Start Time"
+                                    label={t('conference.startTime')}
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
                                     required={hasMeeting}
@@ -209,7 +210,7 @@ export function ConferenceRoomDialog({
                                 <TextField
                                     fullWidth
                                     type="time"
-                                    label="End Time"
+                                    label={t('conference.endTime')}
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
                                     required={hasMeeting}
@@ -221,17 +222,17 @@ export function ConferenceRoomDialog({
                                 fullWidth
                                 multiline
                                 rows={2}
-                                label="Participants"
+                                label={t('conference.participants')}
                                 value={participantsText}
                                 onChange={(e) => setParticipantsText(e.target.value)}
-                                helperText="Comma-separated list of participants"
-                                placeholder="John Doe, Jane Smith, Bob Johnson"
+                                helperText={t('conference.participantsHelper')}
+                                dir={isRtl ? 'rtl' : 'ltr'}
                             />
 
                             {participantsText && (
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
-                                        Preview:
+                                        {t('conference.preview')}
                                     </Typography>
                                     <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
                                         {participantsText

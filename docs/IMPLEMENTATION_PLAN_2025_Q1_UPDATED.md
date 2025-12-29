@@ -10,6 +10,13 @@
 
 ### ✅ Completed Features (Estimated 90% Core Features Done!)
 
+#### Recent Completion (Week 13, 2025)
+- [x] **Locales & RTL Support**: Added Hebrew translations for "Current Meeting", list descriptions, and ensured RTL support for form inputs.
+- [x] **Conference Room Validation**: Implemented ID duplication checks in the Add/Edit dialog.
+- [x] **List Loading Logic**: Updated list loading to upload spaces to SoluM API immediately to prevent data loss during sync.
+- [x] **Native Alerts Replacement**: Replaced all `window.confirm/alert` with custom `ConfirmDialog`.
+- [x] **Testing Infrastructure**: Added Vitest setup, unit tests, and E2E tests skeleton.
+
 #### Infrastructure & Architecture
 - ✅ Build system (Vite + TypeScript) - 0 errors
 - ✅ Clean Architecture structure (Domain → Application → Infrastructure → Presentation)

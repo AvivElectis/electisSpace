@@ -481,6 +481,7 @@ export function ConferencePage() {
                 onClose={() => setDialogOpen(false)}
                 onSave={handleSave}
                 room={editingRoom}
+                existingIds={conferenceController.conferenceRooms.map(r => r.id)}
             />
             <ConfirmDialog />
         </Box>

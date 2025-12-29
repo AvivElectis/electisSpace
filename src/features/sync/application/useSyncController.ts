@@ -275,6 +275,39 @@ export function useSyncController({
     }, [syncState.isConnected, getAdapter, setSyncState]);
 
     /**
+     * Safe upload space data (Fetch -> Merge -> Push)
+     */
+    const safeUpload = useCallback(async (spaces: Space[]): Promise<void> => {
+        logger.info('SyncController', 'Safe Uploading spaces', { count: spaces.length });
+
+        try {
+            setSyncState({ status: 'syncing', progress: 0 });
+
+            const adapter = getAdapter();
+
+            // Ensure connected
+            if (!syncState.isConnected) {
+                await adapter.connect();
+            }
+
+            await adapter.safeUpload(spaces);
+
+            const status = adapter.getStatus();
+            setSyncState(status);
+
+            logger.info('SyncController', 'Safe Upload complete');
+        } catch (error) {
+            logger.error('SyncController', 'Safe Upload failed', { error });
+            setSyncState({
+                status: 'error',
+                lastError: error instanceof Error ? error.message : 'Safe Upload failed',
+                progress: 0,
+            });
+            throw error;
+        }
+    }, [syncState.isConnected, getAdapter, setSyncState]);
+
+    /**
      * Setup auto-sync interval
      */
     // Keep a ref to the sync function to avoid resetting the timer when sync dependencies change
@@ -358,6 +391,7 @@ export function useSyncController({
         disconnect,
         sync,
         upload,
+        safeUpload,
         syncState,
         workingMode,
         autoSyncEnabled,
