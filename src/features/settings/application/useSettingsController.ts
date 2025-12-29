@@ -303,13 +303,15 @@ export function useSettingsController() {
             });
             return true;
         } catch (error: any) {
-            console.error('[Connection Error]', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            });
+            // console.error('[Connection Error]', {
+            //     message: error.message,
+            //     response: error.response?.data,
+            //     status: error.response?.status
+            // });
             logger.error('SettingsController', 'Failed to connect to SoluM API', {
                 message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
                 stack: error.stack
             });
             throw error;

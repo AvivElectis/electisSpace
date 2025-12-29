@@ -481,6 +481,32 @@
             "list": "רשימת תגים אישיים"
         }
     },
+    "appLogs": {
+        "timestamp": "חותמת זמן",
+        "time": "שעה",
+        "level": "רמה",
+        "component": "רכיב",
+        "message": "הודעה",
+        "details": "פרטים",
+        "expand": "הרחב פרטים",
+        "collapse": "כווץ פרטים",
+        "searchPlaceholder": "חיפוש בלוגים...",
+        "levelFilter": "סינון לפי רמה",
+        "allLevels": "כל הרמות",
+        "exportZip": "ייצא ZIP",
+        "exportSelectedZip": "ייצא ימים נבחרים כקובץ ZIP עם קבצי .log",
+        "clearLogs": "נקה לוגים",
+        "clearAll": "נקה הכל",
+        "clearSelected": "נקה נבחרים",
+        "clear": "נקה",
+        "noLogs": "אין לוגים זמינים",
+        "totalLogs": "מציג {{count}} רשומות לוג",
+        "totalDays": "{{count}} ימים עם לוגים",
+        "entries": "רשומות",
+        "selectAll": "בחר הכל",
+        "confirmClear": "האם אתה בטוח שברצונך לנקות את כל הלוגים? לא ניתן לבטל פעולה זו.",
+        "confirmClearSelected": "האם אתה בטוח שברצונך לנקות {{count}} ימים נבחרים? לא ניתן לבטל פעולה זו."
+    },
     "lists": {
         "manage": "ניהול רשימות",
         "save": "שמור רשימה",
