@@ -19,6 +19,8 @@ import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SyncIcon from '@mui/icons-material/Sync';
+import PeopleIcon from '@mui/icons-material/People';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 
 import ErrorIcon from '@mui/icons-material/Error';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -34,6 +36,8 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 import { SpaceDialog } from '@features/space/presentation/SpaceDialog';
 import { ConferenceRoomDialog } from '@features/conference/presentation/ConferenceRoomDialog';
 import { useSyncContext } from '@features/sync/application/SyncContext';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import type { Space, ConferenceRoom } from '@shared/domain/types';
 
 /**
@@ -72,6 +76,16 @@ export function DashboardPage() {
     const roomsWithoutLabels = totalRooms - roomsWithLabels;
     // const occupiedRooms = conferenceController.conferenceRooms.filter(r => r.hasMeeting).length; // Kept for future reference if layout changes
     // const availableRooms = totalRooms - occupiedRooms;
+
+    // Stats - People Manager
+    const peopleStore = usePeopleStore();
+    const settings = useSettingsStore(state => state.settings);
+    const isPeopleManagerMode = settings.peopleManagerEnabled === true;
+    const totalPeople = peopleStore.people.length;
+    const assignedPeople = peopleStore.people.filter(p => p.assignedSpaceId).length;
+    const unassignedPeople = totalPeople - assignedPeople;
+    const totalPeopleSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
+    const savedLists = peopleStore.peopleLists.length;
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
@@ -121,7 +135,8 @@ export function DashboardPage() {
             </Box>
 
             <Grid container spacing={3}>
-                {/* Spaces Area */}
+                {/* Spaces Area - Only show when People Manager mode is OFF */}
+                {!isPeopleManagerMode && (
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
                         <CardContent>
@@ -189,6 +204,109 @@ export function DashboardPage() {
                         </CardContent>
                     </Card>
                 </Grid>
+                )}
+
+                {/* People Manager Area - Only show when People Manager mode is ON */}
+                {isPeopleManagerMode && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
+                        <CardContent>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                                <Stack direction="row" gap={1} alignItems="center">
+                                    <PeopleIcon color="primary" sx={{ fontSize: 28 }} />
+                                    <Typography variant="h6" fontWeight={600} sx={{ px: 1 }}>
+                                        {t('people.title')}
+                                    </Typography>
+                                    {peopleStore.activeListName && (
+                                        <Chip
+                                            label={peopleStore.activeListName}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                </Stack>
+                                <Button
+                                    variant="text"
+                                    size="small"
+                                    endIcon={<ArrowForwardIcon />}
+                                    onClick={() => navigate('/people')}
+                                >
+                                    {t('dashboard.toPeople')}
+                                </Button>
+                            </Stack>
+
+                            <Stack gap={3}>
+                                <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                        {t('people.total')}
+                                    </Typography>
+                                    <Typography variant="h3" fontWeight={600} color="primary.main">
+                                        {totalPeople}
+                                    </Typography>
+                                </Box>
+
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {t('dashboard.totalLabels')}
+                                            </Typography>
+                                            <Typography variant="h5" fontWeight={500}>
+                                                {totalPeopleSpaces}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Box>
+                                            <Stack direction="row" alignItems="center" gap={0.5}>
+                                                <AssignmentIndIcon color="success" fontSize="small" />
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {t('people.assigned')}
+                                                </Typography>
+                                            </Stack>
+                                            <Typography variant="h5" fontWeight={500} color="success.main">
+                                                {assignedPeople}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {t('people.unassigned')}
+                                            </Typography>
+                                            <Typography variant="h5" fontWeight={500} color="warning.main">
+                                                {unassignedPeople}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                    {savedLists > 0 && (
+                                    <Grid size={{ xs: 6 }}>
+                                        <Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {t('lists.save')}
+                                            </Typography>
+                                            <Typography variant="h5" fontWeight={500}>
+                                                {savedLists}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                    )}
+                                </Grid>
+
+                                <Button
+                                    variant="contained"
+                                    startIcon={<PeopleIcon />}
+                                    onClick={() => navigate('/people')}
+                                    sx={{ mt: 2, width: 'fit-content' }}
+                                >
+                                    {t('dashboard.managePeople')}
+                                </Button>
+                            </Stack>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                )}
 
                 {/* Conference Area */}
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -276,6 +394,101 @@ export function DashboardPage() {
                                 >
                                     {t('conference.addRoom')}
                                 </Button>
+                            </Stack>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* People Manager Area */}
+                <Grid size={{ xs: 12 }}>
+                    <Card sx={{ position: 'relative', overflow: 'visible' }}>
+                        <CardContent>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                                <Stack direction="row" gap={1} alignItems="center">
+                                    <PeopleIcon color="primary" sx={{ fontSize: 28 }} />
+                                    <Typography variant="h6" fontWeight={600} sx={{ px: 1 }}>
+                                        {t('people.title')}
+                                    </Typography>
+                                    {peopleStore.activeListName && (
+                                        <Chip
+                                            label={peopleStore.activeListName}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                </Stack>
+                                <Button
+                                    variant="text"
+                                    size="small"
+                                    endIcon={<ArrowForwardIcon />}
+                                    onClick={() => navigate('/people')}
+                                >
+                                    {t('dashboard.toPeople')}
+                                </Button>
+                            </Stack>
+
+                            <Grid container spacing={3}>
+                                <Grid size={{ xs: 6, sm: 3 }}>
+                                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            {t('people.total')}
+                                        </Typography>
+                                        <Typography variant="h3" fontWeight={600} color="primary.main">
+                                            {totalPeople}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6, sm: 3 }}>
+                                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            {t('dashboard.totalLabels')}
+                                        </Typography>
+                                        <Typography variant="h3" fontWeight={600} color="info.main">
+                                            {totalPeopleSpaces}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6, sm: 3 }}>
+                                    <Box>
+                                        <Stack direction="row" alignItems="center" gap={0.5}>
+                                            <AssignmentIndIcon color="success" fontSize="small" />
+                                            <Typography variant="body2" color="text.secondary">
+                                                {t('people.assigned')}
+                                            </Typography>
+                                        </Stack>
+                                        <Typography variant="h5" fontWeight={500} color="success.main">
+                                            {assignedPeople}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6, sm: 3 }}>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {t('people.unassigned')}
+                                        </Typography>
+                                        <Typography variant="h5" fontWeight={500} color="warning.main">
+                                            {unassignedPeople}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+
+                            <Stack direction="row" gap={2} sx={{ mt: 3 }}>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<PeopleIcon />}
+                                    onClick={() => navigate('/people')}
+                                >
+                                    {t('dashboard.managePeople')}
+                                </Button>
+                                {savedLists > 0 && (
+                                    <Chip
+                                        label={t('dashboard.savedLists', { count: savedLists })}
+                                        color="default"
+                                        variant="outlined"
+                                    />
+                                )}
                             </Stack>
                         </CardContent>
                     </Card>

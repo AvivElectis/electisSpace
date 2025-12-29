@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { usePeopleStore } from '../infrastructure/peopleStore';
-import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments, clearSpaceInAims } from '../infrastructure/peopleService';
+import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments, clearSpaceInAims, clearSpaceIdsInAims } from '../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { Person, PeopleList } from '../domain/types';
@@ -149,11 +149,11 @@ export function usePeopleController() {
                     const assignedPeople = assignments.map(({ personId, spaceId }) => {
                         const person = peopleStore.people.find(p => p.id === personId);
                         return person ? { ...person, assignedSpaceId: spaceId } : null;
-                    }).filter((p): p is Person => p !== null);
+                    }).filter((p): p is Person & { assignedSpaceId: string } => p !== null && !!p.assignedSpaceId);
 
                     if (assignedPeople.length > 0) {
                         await postBulkAssignments(
-                            assignedPeople,
+                            assignedPeople as Person[],
                             settings.solumConfig,
                             settings.solumConfig.tokens.accessToken,
                             settings.solumMappingConfig
@@ -225,17 +225,90 @@ export function usePeopleController() {
     }, [peopleStore]);
 
     /**
-     * Load a saved list
+     * Load a saved list with AIMS synchronization
+     * Clears old assigned spaces in AIMS and posts new assignments
      */
-    const loadList = useCallback((listId: string): void => {
+    const loadList = useCallback(async (listId: string): Promise<void> => {
         try {
+            // Get current assigned space IDs before loading new list
+            const currentAssignedSpaceIds = new Set(
+                peopleStore.people
+                    .filter(p => p.assignedSpaceId)
+                    .map(p => p.assignedSpaceId!)
+            );
+
+            // Get the list to load
+            const listToLoad = peopleStore.peopleLists.find(l => l.id === listId);
+            if (!listToLoad) {
+                throw new Error('List not found');
+            }
+
+            // Get new list's assigned space IDs
+            const newAssignedSpaceIds = new Set(
+                listToLoad.people
+                    .filter(p => p.assignedSpaceId)
+                    .map(p => p.assignedSpaceId!)
+            );
+
+            // Find spaces that need to be cleared (in current but not in new)
+            const spacesToClear = [...currentAssignedSpaceIds].filter(
+                spaceId => !newAssignedSpaceIds.has(spaceId)
+            );
+
+            logger.info('PeopleController', 'Loading list with AIMS sync', {
+                listId,
+                currentSpaces: currentAssignedSpaceIds.size,
+                newSpaces: newAssignedSpaceIds.size,
+                spacesToClear: spacesToClear.length
+            });
+
+            // Clear old spaces in AIMS that are no longer assigned
+            if (spacesToClear.length > 0 && settings.solumConfig && settings.solumConfig.tokens) {
+                try {
+                    await clearSpaceIdsInAims(
+                        spacesToClear,
+                        settings.solumConfig,
+                        settings.solumConfig.tokens.accessToken,
+                        settings.solumMappingConfig
+                    );
+                    logger.info('PeopleController', 'Old spaces cleared in AIMS', { count: spacesToClear.length });
+                } catch (clearError: any) {
+                    logger.error('PeopleController', 'Failed to clear old spaces in AIMS', { error: clearError.message });
+                    // Continue with loading even if clearing fails
+                }
+            }
+
+            // Load the new list locally
             peopleStore.loadPeopleList(listId);
-            logger.info('PeopleController', 'People list loaded', { listId });
+
+            // Post new assignments to AIMS
+            const newAssignedPeople = listToLoad.people.filter(p => p.assignedSpaceId);
+            if (newAssignedPeople.length > 0 && settings.solumConfig && settings.solumConfig.tokens) {
+                try {
+                    const personIds = newAssignedPeople.map(p => p.id);
+                    peopleStore.updateSyncStatus(personIds, 'pending');
+
+                    await postBulkAssignments(
+                        newAssignedPeople,
+                        settings.solumConfig,
+                        settings.solumConfig.tokens.accessToken,
+                        settings.solumMappingConfig
+                    );
+
+                    peopleStore.updateSyncStatus(personIds, 'synced');
+                    logger.info('PeopleController', 'New list assignments posted to AIMS', { count: newAssignedPeople.length });
+                } catch (postError: any) {
+                    logger.error('PeopleController', 'Failed to post new assignments to AIMS', { error: postError.message });
+                    // Local state is already updated, just log the error
+                }
+            }
+
+            logger.info('PeopleController', 'People list loaded with AIMS sync', { listId });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to load people list', { error: error.message });
             throw error;
         }
-    }, [peopleStore]);
+    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Delete a list

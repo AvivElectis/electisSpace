@@ -383,3 +383,76 @@ export async function postEmptyAssignments(
 
     logger.info('PeopleService', 'Empty assignments posted successfully', { count: people.length });
 }
+
+/**
+ * Clear specific space IDs in AIMS by posting empty articles
+ * Used when switching lists to clear spaces that are no longer assigned
+ * @param spaceIds - Array of space IDs to clear
+ * @param config - SoluM configuration
+ * @param token - Access token
+ * @param mappingConfig - SoluM mapping configuration
+ */
+export async function clearSpaceIdsInAims(
+    spaceIds: string[],
+    config: SolumConfig,
+    token: string,
+    mappingConfig?: SolumMappingConfig
+): Promise<void> {
+    if (spaceIds.length === 0) {
+        logger.info('PeopleService', 'No space IDs to clear');
+        return;
+    }
+
+    logger.info('PeopleService', 'Clearing space IDs in AIMS', { count: spaceIds.length, spaceIds });
+
+    const mappingInfo = mappingConfig?.mappingInfo;
+    const fields = mappingConfig?.fields || {};
+    const globalFields = mappingConfig?.globalFieldAssignments || {};
+
+    // Build empty articles for each space ID
+    const articles = spaceIds.map(spaceId => {
+        const emptyData: Record<string, string> = {};
+
+        // Set all fields to empty strings
+        Object.keys(fields).forEach(key => {
+            emptyData[key] = '';
+        });
+
+        // Also clear any global field assignments
+        Object.keys(globalFields).forEach(key => {
+            emptyData[key] = '';
+        });
+
+        // The articleId field should have the space number
+        const articleIdField = mappingInfo?.articleId;
+        if (articleIdField) {
+            emptyData[articleIdField] = spaceId;
+        }
+
+        // Preserve global fields that should always have values
+        Object.entries(globalFields).forEach(([fieldKey, value]) => {
+            if (value) {
+                emptyData[fieldKey] = value;
+            }
+        });
+
+        // Also keep ID field with the space ID
+        if (articleIdField) {
+            emptyData[articleIdField] = spaceId;
+        }
+
+        // Construct the article in the correct AIMS format
+        const aimsArticle: Record<string, any> = {
+            articleId: spaceId,
+            articleName: '',
+            data: emptyData
+        };
+
+        return aimsArticle;
+    });
+
+    // Push all empty articles to AIMS
+    await pushArticles(config, config.storeNumber, token, articles);
+
+    logger.info('PeopleService', 'Space IDs cleared in AIMS successfully', { count: spaceIds.length });
+}
