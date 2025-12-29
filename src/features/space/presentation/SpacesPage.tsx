@@ -14,6 +14,7 @@ import {
     TextField,
     InputAdornment,
     Tooltip,
+    TableSortLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -23,6 +24,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useSpaceController } from '../application/useSpaceController';
+import { useListsController } from '@features/lists/application/useListsController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SpaceDialog } from './SpaceDialog';
@@ -44,10 +46,22 @@ export function SpacesPage() {
     const activeListName = useSpacesStore((state) => state.activeListName);
     const activeListId = useSpacesStore((state) => state.activeListId);
 
+    // Use Lists Controller for saving changes and recovering ID
+    const { lists, saveListChanges } = useListsController();
+
+    // Auto-recover activeListId if name exists but ID is missing (fix for persistence mismatch)
+    useEffect(() => {
+        if (activeListName && !activeListId) {
+            const list = lists.find(l => l.name === activeListName);
+            if (list) {
+                console.log('SpacesPage: Recovered missing activeListId', list.id);
+                useSpacesStore.getState().setActiveListId(list.id);
+            }
+        }
+    }, [activeListName, activeListId, lists]);
+
     // Get SoluM access token if available (same pattern as ConferencePage)
     const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
-
-    console.log('SpacesPage: Active List State', { activeListName, activeListId });
 
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
@@ -55,23 +69,24 @@ export function SpacesPage() {
         solumToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
-    const { getLabel } = useSpaceTypeLabels();
 
-    // console.log('[DEBUG SpacesPage] settings:', {
-    //     workingMode: settingsController.settings.workingMode,
-    //     hasSolumConfig: !!settingsController.settings.solumMappingConfig,
-    //     hasFields: !!settingsController.settings.solumMappingConfig?.fields
-    // });
-    // The original line was:
-    // console.log('[DEBUG SpacesPage] settings:', {
-    //     hasMappingConfig: !!settingsController.settings.solumMappingConfig,
-    //     mappingFields: settingsController.settings.solumMappingConfig?.fields ? Object.keys(settingsController.settings.solumMappingConfig.fields).length : 0
-    // });
+    // DEBUG: Trace active list state
+    /*
+    console.log('SpacesPage: Render State', {
+        activeListName,
+        activeListId,
+        spacesCount: spaceController.spaces.length
+    });
+    */
+    const { getLabel } = useSpaceTypeLabels();
 
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
+
+    // Sort Config State
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
     // Lists Dialogs State
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
@@ -92,11 +107,9 @@ export function SpacesPage() {
         settingsController.settings.workingMode,
         solumToken,
         settingsController.settings.solumMappingConfig,
-        // spaceController.fetchFromSolum // specific method is safe to include if useCallback'd
     ]);
 
     // Get visible fields from mapping config for dynamic table columns
-    // Exclude ID fields since we have a dedicated ID column
     const visibleFields = useMemo(() => {
         if (!settingsController.settings.solumMappingConfig?.fields) return [];
 
@@ -116,30 +129,73 @@ export function SpacesPage() {
             }));
     }, [settingsController.settings.solumMappingConfig]);
 
-    // Filter spaces based on debounced search query (memoized for performance)
-    const filteredSpaces = useMemo(() => {
+    // Handle sort request
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    // Filter AND Sort spaces based on debounced search query and sort config
+    const filteredAndSortedSpaces = useMemo(() => {
         const query = debouncedSearchQuery.toLowerCase();
+        let result = spaceController.spaces;
 
-        // --- DEBUG LOGGING START ---
-        // console.log('SpacesPage: filteredSpaces check', {
-        //     totalSpaces: spaceController.spaces.length,
-        //     query,
-        //     firstSpace: spaceController.spaces[0]
-        // });
-        // --- DEBUG LOGGING END ---
+        // 1. Filter
+        if (query) {
+            result = result.filter((space) => {
+                return (
+                    space.id.toLowerCase().includes(query) ||
+                    space.roomName.toLowerCase().includes(query) ||
+                    Object.values(space.data).some((value) =>
+                        value.toLowerCase().includes(query)
+                    )
+                );
+            });
+        }
 
-        if (!query) return spaceController.spaces;
+        // 2. Sort
+        if (sortConfig) {
+            result = [...result].sort((a, b) => {
+                let aValue: any = '';
+                let bValue: any = '';
 
-        return spaceController.spaces.filter((space) => {
-            return (
-                space.id.toLowerCase().includes(query) ||
-                space.roomName.toLowerCase().includes(query) ||
-                Object.values(space.data).some((value) =>
-                    value.toLowerCase().includes(query)
-                )
-            );
-        });
-    }, [spaceController.spaces, debouncedSearchQuery]);
+                if (sortConfig.key === 'id') {
+                    aValue = a.id;
+                    bValue = b.id;
+                } else {
+                    aValue = a.data[sortConfig.key] || '';
+                    bValue = b.data[sortConfig.key] || '';
+                }
+
+                // Handle numeric strings
+                // Check if both values look like numbers
+                const isNumeric = !isNaN(Number(aValue)) && !isNaN(Number(bValue)) && aValue !== '' && bValue !== '';
+
+                if (isNumeric) {
+                    return sortConfig.direction === 'asc'
+                        ? Number(aValue) - Number(bValue)
+                        : Number(bValue) - Number(aValue);
+                }
+
+                // String comparison
+                const aString = String(aValue).toLowerCase();
+                const bString = String(bValue).toLowerCase();
+
+                if (aString < bString) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aString > bString) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
+        return result;
+    }, [spaceController.spaces, debouncedSearchQuery, sortConfig]);
 
     // --- DEBUG LOGGING START ---
     // useEffect(() => {
@@ -265,17 +321,31 @@ export function SpacesPage() {
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'background.default' }}>
-                            <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.id')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }} align="center">
+                                <TableSortLabel
+                                    active={sortConfig?.key === 'id'}
+                                    direction={sortConfig?.key === 'id' ? sortConfig.direction : 'asc'}
+                                    onClick={() => handleSort('id')}
+                                >
+                                    {t('spaces.id')}
+                                </TableSortLabel>
+                            </TableCell>
                             {visibleFields.map(field => (
                                 <TableCell key={field.key} sx={{ fontWeight: 600 }} align="center">
-                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                    <TableSortLabel
+                                        active={sortConfig?.key === field.key}
+                                        direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'}
+                                        onClick={() => handleSort(field.key)}
+                                    >
+                                        {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                    </TableSortLabel>
                                 </TableCell>
                             ))}
                             <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.actions')}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredSpaces.length === 0 ? (
+                        {filteredAndSortedSpaces.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={visibleFields.length + 2} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
@@ -286,7 +356,7 @@ export function SpacesPage() {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            filteredSpaces.map((space) => (
+                            filteredAndSortedSpaces.map((space) => (
                                 <TableRow
                                     key={space.id}
                                     sx={{
@@ -335,37 +405,39 @@ export function SpacesPage() {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <Box sx={{ mt: 2 }}>
-                <Button
-                    variant="outlined"
-                    startIcon={<FolderIcon />}
-                    onClick={() => setListsManagerOpen(true)}
-                    sx={{ mr: 2 }}
-                >
-                    {t('lists.manage')}
-                </Button>
-                {activeListId && (
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper', p: 2, borderRadius: 1, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                <Box>
+                    <Button
+                        variant="outlined"
+                        startIcon={<FolderIcon />}
+                        onClick={() => setListsManagerOpen(true)}
+                        sx={{ mr: 2 }}
+                    >
+                        {t('lists.manage')}
+                    </Button>
                     <Button
                         variant="outlined"
                         startIcon={<SaveIcon />}
+                        onClick={() => setSaveListOpen(true)}
+                    >
+                        {t('lists.saveAsNew')}
+                    </Button>
+                </Box>
+
+                {activeListId && (
+                    <Button
+                        variant="outlined"
+                        color="success"
+                        startIcon={<SaveIcon />}
                         onClick={() => {
-                            if (activeListName && activeListId) {
-                                spaceController.saveSpacesList(activeListName, activeListId);
-                                // Optional: Add toast success here
+                            if (activeListId) {
+                                saveListChanges(activeListId);
                             }
                         }}
-                        sx={{ mr: 2 }}
                     >
                         {t('lists.saveChanges')}
                     </Button>
                 )}
-                <Button
-                    variant="outlined"
-                    startIcon={<SaveIcon />}
-                    onClick={() => setSaveListOpen(true)}
-                >
-                    {t('lists.saveAsNew')}
-                </Button>
             </Box>
 
             {/* Add/Edit Dialog */}

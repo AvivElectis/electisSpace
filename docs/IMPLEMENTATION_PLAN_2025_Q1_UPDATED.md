@@ -10,7 +10,9 @@
 
 ### ✅ Completed Features (Estimated 90% Core Features Done!)
 
-#### Recent Completion (Week 13, 2025)
+#### Recent Completion (Week 1, 2026)
+- [x] **SoluM Pagination & Unification**: Implemented 100-item page fetching loop in `SolumSyncAdapter` and unified `useSpaceController` to use it.
+- [x] **Scrollable Layouts**: Added specific max-heights (70vh) to Spaces table and Conference grid for better UX on smaller screens.
 - [x] **Locales & RTL Support**: Added Hebrew translations for "Current Meeting", list descriptions, and ensured RTL support for form inputs.
 - [x] **Conference Room Validation**: Implemented ID duplication checks in the Add/Edit dialog.
 - [x] **List Loading Logic**: Updated list loading to upload spaces to SoluM API immediately to prevent data loss during sync.
@@ -320,59 +322,23 @@ features/sync/adapters/
 - Open Android Studio with `npm run cap:open:android` to test Android build
 
 **Completion Date:** December 22, 2024
-### 3. Auto-Update Feature - ✅ **COMPLETED** 🎉
-**Status:** Phase 3C Complete (Dec 23, 2024) - Fully Functional!
+### 3. Auto-Update Feature - ⚠️ **FINALIZING CONFIGURATION**
+**Status:** Phase 3D - Final Polish & Configuration
+**Target Date:** Week 1, 2026
 
-**Current State:**
-- ✅ `electron-updater` in dependencies
-- ✅ Update domain/infrastructure implemented
-- ✅ Electron integration complete
-- ✅ **Update UI components created** (Dec 23, 2024)
-- ✅ **GitHub workflow configured** (Dec 23, 2024)
-- ✅ **Complete documentation created** (Dec 23, 2024)
+**Problem Statement:**
+The update infrastructure is in place, but lacks final project-specific configuration (GitHub repo details) and dynamic versioning in the frontend.
 
-**Completed (Phase 3A - Infrastructure):**
+**Action Items:**
+1. [x] **Fix Electron Configuration**: Update `electron/main.js` with real GitHub repo (`AvivElectis/electisSpace`) instead of placeholders.
+2. [x] **Dynamic Versioning**: Update `ElectronUpdateAdapter` to expose `getAppVersion` from preload script.
+3. [x] **Frontend Integration**: Update `useUpdateController` to use dynamic version from adapter instead of hardcoded string.
+4. [ ] **Verify Update Flow**: Ensure manual "Check for Updates" triggers the correct IPC events.
 
-#### 1. ✅ **Domain Layer**
-   - Created [`types.ts`](file:///c:/React/electisSpace/src/features/update/domain/types.ts) - UpdateInfo, UpdateState, UpdateSettings
-   - Created [`versionComparison.ts`](file:///c:/React/electisSpace/src/features/update/domain/versionComparison.ts) - Semantic version comparison
-
-#### 2. ✅ **Infrastructure Layer**
-   - Created [`updateStore.ts`](file:///c:/React/electisSpace/src/features/update/infrastructure/updateStore.ts) - Zustand store with persistence
-   - Created [`GitHubUpdateAdapter.ts`](file:///c:/React/electisSpace/src/features/update/infrastructure/adapters/GitHubUpdateAdapter.ts) - GitHub Releases API
-   - Created [`ElectronUpdateAdapter.ts`](file:///c:/React/electisSpace/src/features/update/infrastructure/adapters/ElectronUpdateAdapter.ts) - electron-updater wrapper
-   - Created [`AndroidUpdateAdapter.ts`](file:///c:/React/electisSpace/src/features/update/infrastructure/adapters/AndroidUpdateAdapter.ts) - Browser-based APK download
-
-#### 3. ✅ **Application Layer**
-   - Created [`useUpdateController.ts`](file:///c:/React/electisSpace/src/features/update/application/useUpdateController.ts) - Update controller hook
-   - Auto-check on startup implemented
-   - Periodic checks (24h default)
-   - Platform-specific logic
-
-#### 4. ✅ **Electron Integration**
-   - Updated [`electron/main.js`](file:///c:/React/electisSpace/electron/main.js) - auto-updater configuration, IPC handlers, event forwarding
-   - Updated [`electron/preload.js`](file:///c:/React/electisSpace/electron/preload.js) - Update APIs exposed to renderer
-   - GitHub feed configured
-
-**Completed (Phase 3B - UI Components):**
-
-#### 5. ✅ **Update UI Components**
-   - Created [`UpdateNotification.tsx`](file:///c:/React/electisSpace/src/features/update/presentation/UpdateNotification.tsx) - Toast notification with Update Now/Later/Skip actions
-   - Created [`UpdateDialog.tsx`](file:///c:/React/electisSpace/src/features/update/presentation/UpdateDialog.tsx) - Modal with release notes and platform instructions
-   - Created [`UpdateProgress.tsx`](file:///c:/React/electisSpace/src/features/update/presentation/UpdateProgress.tsx) - Download progress bar with install button
-   - Updated [`AppSettingsTab.tsx`](file:///c:/React/electisSpace/src/features/settings/presentation/AppSettingsTab.tsx) - Auto-update settings section
-   - Integrated [`UpdateNotification`](file:///c:/React/electisSpace/src/App.tsx) into App.tsx
-
-#### 6. ✅ **Translations**
-   - Added 32 update-related strings to [`en/common.json`](file:///c:/React/electisSpace/src/locales/en/common.json)
-   - Added 32 update-related strings to [`he/common.json`](file:///c:/React/electisSpace/src/locales/he/common.json)
-   - Full bilingual support (EN/HE) for all update UI
-
-#### 7. ✅ **Settings Integration**
-   - Added `autoUpdateEnabled` field to SettingsData
-   - Added `updateCheckInterval` field to SettingsData
-   - Current version display
-   - Manual "Check for Updates" button
+**Completed (Phase 3D - Configuration):**
+- Configured `electron-updater` with `AvivElectis/electisSpace`.
+- Implemented dynamic version detection via `vite.config.ts` define and Electron IPC.
+- Updated `useUpdateController` to auto-detect version on mount.
 
 **Completed (Phase 3C - GitHub Workflow):** ⭐ NEW
 

@@ -10,6 +10,7 @@ import type { UpdateState, UpdateSettings, UpdateInfo, DownloadProgress } from '
 
 interface UpdateStore extends UpdateState {
     settings: UpdateSettings;
+    currentVersion?: string;
 
     // Actions
     setChecking: (checking: boolean) => void;
@@ -22,6 +23,7 @@ interface UpdateStore extends UpdateState {
     clearUpdate: () => void;
     updateSettings: (settings: Partial<UpdateSettings>) => void;
     markCheckTime: () => void;
+    setCurrentVersion: (version: string) => void;
 }
 
 const initialState: UpdateState = {
@@ -95,6 +97,8 @@ export const useUpdateStore = create<UpdateStore>()(
                     lastCheckTime: Date.now(),
                 },
             })),
+
+            setCurrentVersion: (version) => set({ currentVersion: version }),
         }),
         {
             name: 'update-store',

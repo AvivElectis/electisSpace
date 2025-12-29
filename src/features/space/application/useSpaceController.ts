@@ -77,18 +77,20 @@ export function useSpaceController({
                 try {
                     logger.info('SpaceController', 'Pushing article to AIMS', { id: space.id });
 
-                    // Transform space to AIMS article format using mapping config
-                    const articleData: Record<string, any> = {};
 
-                    // Map visible fields from config
+                    // Transform space to AIMS article format using mapping config
+                    const data: Record<string, any> = {};
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+
+                    // Map visible fields from config to data object
                     Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
                         if (fieldConfig.visible) {
                             let value: any = undefined;
-                            const fieldKeyLower = fieldKey.toLowerCase();
 
-                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
+                            // Resolve value from space
+                            if (mappingInfo?.articleId === fieldKey) {
                                 value = space.id;
-                            } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
+                            } else if (mappingInfo?.articleName === fieldKey) {
                                 value = space.roomName;
                             } else if (space.data && space.data[fieldKey] !== undefined) {
                                 value = space.data[fieldKey];
@@ -97,55 +99,41 @@ export function useSpaceController({
                             }
 
                             if (value !== undefined && value !== null && value !== '') {
-                                articleData[fieldKey] = value;
+                                data[fieldKey] = value;
                             }
                         }
                     });
 
-
-
                     if (solumMappingConfig.globalFieldAssignments) {
-                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
+                        Object.assign(data, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    // Use mappingInfo to populate root-level fields from articleData
-                    const mappingInfo = solumMappingConfig.mappingInfo;
-
-                    // DEBUG: Log what we have
-                    // console.log('[DEBUG addSpace] mappingInfo:', mappingInfo);
-                    // console.log('[DEBUG addSpace] articleData:', articleData);
-                    // console.log('[DEBUG addSpace] space.roomName:', space.roomName);
-
+                    // Construct Root Object matching articleImportByJSON schema
+                    // Root must contain articleId, articleName, data, etc.
                     const aimsArticle: any = {
-                        data: articleData
+                        data: data
                     };
 
-                    // Populate root-level fields using mappingInfo
-                    if (mappingInfo?.articleId && articleData[mappingInfo.articleId]) {
-                        aimsArticle.articleId = String(articleData[mappingInfo.articleId]);
-                        // console.log('[DEBUG addSpace] Using mapped articleId:', aimsArticle.articleId);
+                    // explicit root mapping
+                    if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
+                        aimsArticle.articleId = String(data[mappingInfo.articleId]);
                     } else {
                         aimsArticle.articleId = space.id;
-                        // console.log('[DEBUG addSpace] Using fallback articleId:', aimsArticle.articleId);
                     }
 
-                    if (mappingInfo?.articleName && articleData[mappingInfo.articleName]) {
-                        aimsArticle.articleName = String(articleData[mappingInfo.articleName]);
-                        // console.log('[DEBUG addSpace] Using mapped articleName:', aimsArticle.articleName);
+                    if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
+                        aimsArticle.articleName = String(data[mappingInfo.articleName]);
                     } else {
                         aimsArticle.articleName = space.roomName || space.id;
-                        // console.log('[DEBUG addSpace] Using fallback articleName:', aimsArticle.articleName);
                     }
 
-                    if (mappingInfo?.store && articleData[mappingInfo.store]) {
-                        aimsArticle.store = String(articleData[mappingInfo.store]);
+                    if (mappingInfo?.store && data[mappingInfo.store]) {
+                        aimsArticle.store = String(data[mappingInfo.store]);
                     }
 
-                    if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
-                        aimsArticle.nfcUrl = String(articleData[mappingInfo.nfcUrl]);
+                    if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
+                        aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
                     }
-
-                    // console.log('[DEBUG addSpace] Final aimsArticle:', aimsArticle);
 
 
                     await solumService.pushArticles(
@@ -227,17 +215,19 @@ export function useSpaceController({
                 try {
                     logger.info('SpaceController', 'Pushing updated article to AIMS', { id });
 
+
                     const space = updatedSpace as Space;
-                    const articleData: Record<string, any> = {};
+                    const data: Record<string, any> = {};
+                    const mappingInfo = solumMappingConfig.mappingInfo;
 
                     Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
                         if (fieldConfig.visible) {
                             let value: any = undefined;
-                            const fieldKeyLower = fieldKey.toLowerCase();
 
-                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
+                            // Resolve value from space
+                            if (mappingInfo?.articleId === fieldKey) {
                                 value = space.id;
-                            } else if (fieldKeyLower.includes('roomname') || fieldKeyLower === 'name') {
+                            } else if (mappingInfo?.articleName === fieldKey) {
                                 value = space.roomName;
                             } else if (space.data && space.data[fieldKey] !== undefined) {
                                 value = space.data[fieldKey];
@@ -246,40 +236,39 @@ export function useSpaceController({
                             }
 
                             if (value !== undefined && value !== null && value !== '') {
-                                articleData[fieldKey] = value;
+                                data[fieldKey] = value;
                             }
                         }
                     });
 
                     if (solumMappingConfig.globalFieldAssignments) {
-                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
+                        Object.assign(data, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    // Use mappingInfo to populate root-level fields from articleData
-                    const mappingInfo = solumMappingConfig.mappingInfo;
+                    // Construct Root Object
                     const aimsArticle: any = {
-                        data: articleData
+                        data: data
                     };
 
-                    // Populate root-level fields using mappingInfo
-                    if (mappingInfo?.articleId && articleData[mappingInfo.articleId]) {
-                        aimsArticle.articleId = String(articleData[mappingInfo.articleId]);
+                    // explicit root mapping
+                    if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
+                        aimsArticle.articleId = String(data[mappingInfo.articleId]);
                     } else {
                         aimsArticle.articleId = space.id;
                     }
 
-                    if (mappingInfo?.articleName && articleData[mappingInfo.articleName]) {
-                        aimsArticle.articleName = String(articleData[mappingInfo.articleName]);
+                    if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
+                        aimsArticle.articleName = String(data[mappingInfo.articleName]);
                     } else {
                         aimsArticle.articleName = space.roomName || space.id;
                     }
 
-                    if (mappingInfo?.store && articleData[mappingInfo.store]) {
-                        aimsArticle.store = String(articleData[mappingInfo.store]);
+                    if (mappingInfo?.store && data[mappingInfo.store]) {
+                        aimsArticle.store = String(data[mappingInfo.store]);
                     }
 
-                    if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
-                        aimsArticle.nfcUrl = String(articleData[mappingInfo.nfcUrl]);
+                    if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
+                        aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
                     }
 
                     await solumService.pushArticles(
