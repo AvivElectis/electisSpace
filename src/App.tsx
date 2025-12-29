@@ -1,6 +1,6 @@
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { createAppTheme } from './theme';
 import { AppRoutes } from './AppRoutes';
 import { MainLayout } from './shared/presentation/layouts/MainLayout';
@@ -38,13 +38,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <CustomTitleBar />
-      <BrowserRouter>
+      <HashRouter>
         <MainLayout>
           <AppRoutes />
         </MainLayout>
         <NotificationContainer />
         <UpdateNotification />
-      </BrowserRouter>
+      </HashRouter>
     </ThemeProvider>
   );
 }

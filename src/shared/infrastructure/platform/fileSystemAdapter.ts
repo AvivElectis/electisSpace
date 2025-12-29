@@ -118,7 +118,15 @@ class ElectronFileSystemAdapter implements FileSystemAdapter {
         if (!result.success) {
             throw new Error(result.error || 'Failed to select file');
         }
-        return result.filePath;
+
+        // Read the file content after selection
+        const filePath = result.filePath;
+        const readResult = await this.api.readFile(filePath);
+        if (!readResult.success) {
+            throw new Error(readResult.error || 'Failed to read selected file');
+        }
+
+        return readResult.data;
     }
 
     async selectDirectory(options?: DirectorySelectOptions): Promise<string | null> {
