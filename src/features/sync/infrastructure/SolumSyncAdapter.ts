@@ -182,27 +182,10 @@ export class SolumSyncAdapter implements SyncAdapter {
                 }
             }
 
-            // --- DEBUG LOGGING START ---
-            // if (spaces.length < 5) { // Log first 5 items only to avoid spam
-            //     console.log('SolumSyncAdapter: Processed Article', {
-            //         articleId: article.articleId,
-            //         rawArticleName: article.articleName,
-            //         resolvedRoomName: roomName,
-            //         mappingFields: fields ? Object.keys(fields) : 'No Config',
-            //         data: data,
-            //         decisionLog: {
-            //             isPrimaryNameFieldMatch: false, // We can't easily capture the inner loop state here without refactoring, but the result is clean.
-            //             usedHeuristic: !this.mappingConfig?.mappingInfo, // Just a guess for the log
-            //         }
-            //     });
-            // }
-            // --- DEBUG LOGGING END ---
-
             const space: Space = {
                 id: article.articleId,
                 data,
                 labelCode: label?.labelCode,
-                templateName: article.templateName,
             };
 
             spaces.push(space);
@@ -215,24 +198,34 @@ export class SolumSyncAdapter implements SyncAdapter {
      * Map Space entities to SoluM articles
      */
     private mapSpacesToArticles(spaces: Space[]): any[] {
-        const mappingInfo = this.mappingConfig?.mappingInfo;
+        const mappingInfo = this.mappingConfig?.mappingInfo || {};
 
         return spaces.map(space => {
-            // Resolve articleName from data based on mapping
-            let articleName = space.id; // Default fallback
-
-            if (mappingInfo?.articleName && space.data[mappingInfo.articleName]) {
-                articleName = space.data[mappingInfo.articleName];
-            } else if (space.data['roomName']) {
-                articleName = space.data['roomName'];
-            }
-
-            return {
+            // 1. Start with system fields and flattened data
+            const article: any = {
                 ...space.data, // Flatten ALL fields to root for maximum compatibility
                 articleId: space.id,
-                articleName,
                 data: space.data,
             };
+
+            // 2. Apply dynamic mapping from mappingInfo
+            // This maps server-side keys (like 'store', 'nfcUrl', 'articleName') 
+            // to values from local data keys (like 'STORE_ID', 'NFC_URL', 'ITEM_NAME')
+            Object.entries(mappingInfo).forEach(([serverKey, localKey]) => {
+                if (localKey && space.data[localKey as string] !== undefined) {
+                    article[serverKey] = space.data[localKey as string];
+                }
+            });
+
+            // 3. Ensure articleId is set (either from space.id or mapping)
+            if (!article.articleId) {
+                article.articleId = space.id;
+            }
+
+            // 4. Set articleData for backward compatibility with common spec
+            article.articleData = space.data;
+
+            return article;
         });
     }
 
@@ -425,9 +418,11 @@ export class SolumSyncAdapter implements SyncAdapter {
                     // We must be careful to merge nested objects like 'articleData' if they exist in both.
                     // Also, we update any root fields that exist in space.data for safety.
                     const remoteData = remote.articleData || remote.data || {};
+                    const localData = partial.data || partial.articleData || {};
+
                     const updatedData = {
                         ...remoteData,
-                        ...(partial.articleData || {})
+                        ...localData
                     };
 
                     return {
@@ -439,9 +434,11 @@ export class SolumSyncAdapter implements SyncAdapter {
                     };
                 } else {
                     // Create: No remote exists, use partial (already flattened by mapSpacesToArticles)
+                    const localData = partial.data || partial.articleData || {};
                     return {
                         ...partial,
-                        data: partial.articleData,      // Ensure 'data' exists
+                        data: localData,
+                        articleData: localData
                     };
                 }
             });
