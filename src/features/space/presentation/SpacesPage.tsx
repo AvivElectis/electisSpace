@@ -19,8 +19,9 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -59,6 +60,7 @@ export function SpacesPage() {
     });
 
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
 
@@ -101,19 +103,24 @@ export function SpacesPage() {
             }));
     }, [settingsController.settings.solumMappingConfig]);
 
-    // Filter spaces based on search query
-    const filteredSpaces = spaceController.spaces.filter((space) => {
-        const query = searchQuery.toLowerCase();
-        return (
-            space.id.toLowerCase().includes(query) ||
-            space.roomName.toLowerCase().includes(query) ||
-            Object.values(space.data).some((value) =>
-                value.toLowerCase().includes(query)
-            )
-        );
-    });
+    // Filter spaces based on debounced search query (memoized for performance)
+    const filteredSpaces = useMemo(() => {
+        const query = debouncedSearchQuery.toLowerCase();
+        if (!query) return spaceController.spaces;
 
-    const handleDelete = async (id: string) => {
+        return spaceController.spaces.filter((space) => {
+            return (
+                space.id.toLowerCase().includes(query) ||
+                space.roomName.toLowerCase().includes(query) ||
+                Object.values(space.data).some((value) =>
+                    value.toLowerCase().includes(query)
+                )
+            );
+        });
+    }, [spaceController.spaces, debouncedSearchQuery]);
+
+    // Memoized event handlers for better performance
+    const handleDelete = useCallback(async (id: string) => {
         const confirmed = await confirm({
             title: `${t('common.dialog.delete')} ${getLabel('singular').toLowerCase()}`,
             message: `${t('common.dialog.areYouSure')} `,
@@ -135,25 +142,25 @@ export function SpacesPage() {
                 });
             }
         }
-    };
+    }, [confirm, t, getLabel, spaceController]);
 
-    const handleAdd = () => {
+    const handleAdd = useCallback(() => {
         setEditingSpace(undefined);
         setDialogOpen(true);
-    };
+    }, []);
 
-    const handleEdit = (space: Space) => {
+    const handleEdit = useCallback((space: Space) => {
         setEditingSpace(space);
         setDialogOpen(true);
-    };
+    }, []);
 
-    const handleSave = async (spaceData: Partial<Space>) => {
+    const handleSave = useCallback(async (spaceData: Partial<Space>) => {
         if (editingSpace) {
             await spaceController.updateSpace(editingSpace.id, spaceData);
         } else {
             await spaceController.addSpace(spaceData);
         }
-    };
+    }, [editingSpace, spaceController]);
 
     return (
         <Box>
@@ -172,16 +179,16 @@ export function SpacesPage() {
                         </Typography>
                         {activeListName && (
                             <Typography variant="h6" sx={{
-                                    fontWeight: 600,
-                                    bgcolor: 'primary.main',
-                                    color: 'primary.contrastText',
-                                    borderRadius: .5,
-                                    px: 1,
-                                    py: 0,
-                                    mx: 2,
-                                }}>
+                                fontWeight: 600,
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                borderRadius: .5,
+                                px: 1,
+                                py: 0,
+                                mx: 2,
+                            }}>
                                 {activeListName}
-                            </Typography>   
+                            </Typography>
                         )}
                     </Stack>
                     <Typography variant="body2" color="text.secondary">

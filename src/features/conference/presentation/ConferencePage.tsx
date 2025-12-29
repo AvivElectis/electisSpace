@@ -24,8 +24,9 @@ import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { ConferenceRoomDialog } from './ConferenceRoomDialog';
@@ -49,6 +50,7 @@ export function ConferencePage() {
         solumMappingConfig: settings.solumMappingConfig,
     });
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<ConferenceRoom | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -65,17 +67,29 @@ export function ConferencePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Filter rooms based on search query
-    const filteredRooms = conferenceController.conferenceRooms.filter((room) => {
-        const query = searchQuery.toLowerCase();
-        return (
-            room.id.toLowerCase().includes(query) ||
-            room.roomName.toLowerCase().includes(query) ||
-            room.meetingName.toLowerCase().includes(query)
-        );
-    });
+    // Filter rooms based on debounced search query (memoized for performance)
+    const filteredRooms = useMemo(() => {
+        const query = debouncedSearchQuery.toLowerCase();
+        if (!query) return conferenceController.conferenceRooms;
 
-    const handleDelete = async (id: string) => {
+        return conferenceController.conferenceRooms.filter((room) => {
+            return (
+                room.id.toLowerCase().includes(query) ||
+                room.roomName.toLowerCase().includes(query) ||
+                room.meetingName.toLowerCase().includes(query)
+            );
+        });
+    }, [conferenceController.conferenceRooms, debouncedSearchQuery]);
+
+    // Memoized stats calculations
+    const { occupiedRooms, availableRooms } = useMemo(() => {
+        const occupied = conferenceController.conferenceRooms.filter(r => r.hasMeeting).length;
+        const available = conferenceController.conferenceRooms.length - occupied;
+        return { occupiedRooms: occupied, availableRooms: available };
+    }, [conferenceController.conferenceRooms]);
+
+    // Memoized event handlers for better performance
+    const handleDelete = useCallback(async (id: string) => {
         const confirmed = await confirm({
             title: t('common.dialog.delete'),
             message: t('conference.confirmDelete'),
@@ -97,35 +111,38 @@ export function ConferencePage() {
                 });
             }
         }
-    };
+    }, [confirm, t, conferenceController]);
 
-    const handleViewDetails = (room: ConferenceRoom) => {
+    const handleViewDetails = useCallback((room: ConferenceRoom) => {
         setSelectedRoom(room);
         setDetailsOpen(true);
-    };
+    }, []);
 
-    const handleAdd = () => {
+    const handleAdd = useCallback(() => {
         setEditingRoom(undefined);
         setDialogOpen(true);
-    };
+    }, []);
 
-    const handleEdit = (room: ConferenceRoom) => {
+    const handleEdit = useCallback((room: ConferenceRoom) => {
         setEditingRoom(room);
         setDialogOpen(true);
         setDetailsOpen(false); // Close details if open
-    };
+    }, []);
 
-    const handleSave = async (roomData: Partial<ConferenceRoom>) => {
+    const handleSave = useCallback(async (roomData: Partial<ConferenceRoom>) => {
         if (editingRoom) {
             await conferenceController.updateConferenceRoom(editingRoom.id, roomData);
         } else {
             await conferenceController.addConferenceRoom(roomData);
         }
-    };
+    }, [editingRoom, conferenceController]);
 
-    const occupiedRooms = conferenceController.conferenceRooms.filter(r => r.hasMeeting).length;
-    const availableRooms = conferenceController.conferenceRooms.length - occupiedRooms;
-    const cardsSetting = {boxShadow: 'none', bgcolor:'transparent', border: 'none', '&:hover': {boxShadow: '0px 0px 1px 1px #6666663b'}}
+    const cardsSetting = useMemo(() => ({
+        boxShadow: 'none',
+        bgcolor: 'transparent',
+        border: 'none',
+        '&:hover': { boxShadow: '0px 0px 1px 1px #6666663b' }
+    }), []);
 
     return (
         <Box>

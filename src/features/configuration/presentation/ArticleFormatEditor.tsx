@@ -3,11 +3,14 @@
  * 
  * Uses vanilla-jsoneditor to display and edit SoluM article format schemas
  * Supports both read-only and editable modes
+ * Editor is collapsible to improve performance and UX
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { createJSONEditor, Mode, type Content } from 'vanilla-jsoneditor';
-import { Box, Typography, Button, Stack, Alert } from '@mui/material';
+import { Box, Typography, Button, Stack, Alert, Collapse } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useTranslation } from 'react-i18next';
 import type { ArticleFormat } from '../domain/types';
 
@@ -25,6 +28,7 @@ interface ArticleFormatEditorProps {
  * 
  * Displays schema in tree/text view with syntax highlighting
  * Validates schema on save
+ * Collapsible to reduce initial render cost
  */
 export function ArticleFormatEditor({
     schema,
@@ -36,10 +40,20 @@ export function ArticleFormatEditor({
     const jsonEditorRef = useRef<ReturnType<typeof createJSONEditor> | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isOpen, setIsOpen] = useState(false); // Collapsible state
 
-    // Initialize and manage editor
+    // Initialize and manage editor only when open
     useEffect(() => {
-        // Create editor if it doesn't exist
+        if (!isOpen) {
+            // Destroy editor when collapsed to save resources
+            if (jsonEditorRef.current) {
+                jsonEditorRef.current.destroy();
+                jsonEditorRef.current = null;
+            }
+            return;
+        }
+
+        // Create editor if it doesn't exist and panel is open
         if (editorRef.current && !jsonEditorRef.current && schema) {
             console.log('[ArticleFormatEditor] Creating new editor');
             const content: Content = { json: schema };
@@ -65,18 +79,16 @@ export function ArticleFormatEditor({
             console.log('[ArticleFormatEditor] Updating existing editor content');
             const content: Content = { json: schema };
             jsonEditorRef.current.update(content);
-            // Don't set hasChanges to false here - let the onChange handler manage it
-            // setHasChanges(false); // Removed - this was preventing saves
         }
 
-        // Cleanup on unmount
+        // Cleanup on unmount or when closing
         return () => {
             if (jsonEditorRef.current) {
                 jsonEditorRef.current.destroy();
                 jsonEditorRef.current = null;
             }
         };
-    }, [schema, readOnly]);
+    }, [schema, readOnly, isOpen]);
 
     const handleSave = async () => {
         console.log('[ArticleFormatEditor] handleSave called', {
@@ -124,6 +136,10 @@ export function ArticleFormatEditor({
         }
     };
 
+    const handleToggle = () => {
+        setIsOpen(prev => !prev);
+    };
+
     if (!schema) {
         return (
             <Alert severity="info">
@@ -134,47 +150,63 @@ export function ArticleFormatEditor({
 
     return (
         <Stack spacing={2}>
-            <Typography variant="subtitle2">
-                {t('settings.articleFormatSchema')}
-            </Typography>
+            {/* Collapsible header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="subtitle2">
+                    {t('settings.articleFormatSchema')}
+                </Typography>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleToggle}
+                    endIcon={isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                    {isOpen ? t('common.close') : t('common.open')} {t('common.editor')}
+                </Button>
+            </Box>
 
-            <Box
-                ref={editorRef}
-                sx={{
-                    height: 500,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    direction: 'ltr', // Force LTR for code/json
-                    textAlign: 'left',
-                    '& .jse-main': {
-                        borderRadius: 1,
-                    }
-                }}
-            />
+            {/* Collapsible editor */}
+            <Collapse in={isOpen}>
+                <Stack spacing={2}>
+                    <Box
+                        ref={editorRef}
+                        sx={{
+                            height: 500,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            direction: 'ltr', // Force LTR for code/json
+                            textAlign: 'left',
+                            '& .jse-main': {
+                                borderRadius: 1,
+                            }
+                        }}
+                    />
 
-            {!readOnly && onSave && (
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                        variant="contained"
-                        onClick={handleSave}
-                        disabled={!hasChanges || isSaving}
-                    >
-                        {isSaving ? t('common.saving') : t('common.save')}
-                    </Button>
-                    {hasChanges && (
-                        <Typography variant="caption" color="warning.main" sx={{ alignSelf: 'center' }}>
-                            {t('settings.unsavedChanges')}
+                    {!readOnly && onSave && (
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                variant="contained"
+                                onClick={handleSave}
+                                disabled={!hasChanges || isSaving}
+                            >
+                                {isSaving ? t('common.saving') : t('common.save')}
+                            </Button>
+                            {hasChanges && (
+                                <Typography variant="caption" color="warning.main" sx={{ alignSelf: 'center' }}>
+                                    {t('settings.unsavedChanges')}
+                                </Typography>
+                            )}
+                        </Box>
+                    )}
+
+                    {readOnly && (
+                        <Typography variant="caption" color="text.secondary">
+                            {t('settings.editorReadOnly')}
                         </Typography>
                     )}
-                </Box>
-            )}
-
-            {readOnly && (
-                <Typography variant="caption" color="text.secondary">
-                    {t('settings.editorReadOnly')}
-                </Typography>
-            )}
+                </Stack>
+            </Collapse>
         </Stack>
     );
 }

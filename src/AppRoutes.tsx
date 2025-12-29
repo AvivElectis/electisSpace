@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { LoadingFallback } from '@shared/presentation/components/LoadingFallback';
+import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
 
 // Lazy load all page components for code splitting
 const DashboardPage = lazy(() =>
@@ -25,7 +25,7 @@ const NotFoundPage = lazy(() =>
  */
 export function AppRoutes() {
     return (
-        <Suspense fallback={<LoadingFallback />}>
+        <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/spaces" element={<SpacesPage />} />
