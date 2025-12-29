@@ -15,7 +15,7 @@ interface DynamicImportState<T> {
 /**
  * Return type for useDynamicImport hook
  */
-interface UseDynamicImportResult<T> extends DynamicImportState<T> {
+export interface UseDynamicImportResult<T> extends DynamicImportState<T> {
     /** Function to trigger the import */
     load: () => Promise<void>;
     /** Function to retry after an error */
@@ -51,7 +51,7 @@ interface UseDynamicImportResult<T> extends DynamicImportState<T> {
  *   true
  * );
  */
-export function useDynamicImport<T>(
+export function useDynamicImport<T extends object>(
     importFn: () => Promise<{ default: T } | T>,
     autoLoad: boolean = false
 ): UseDynamicImportResult<T> {
@@ -62,10 +62,19 @@ export function useDynamicImport<T>(
     });
 
     const load = useCallback(async () => {
-        // Don't reload if already loaded or loading
-        if (state.module || state.loading) return;
+        // Check if we should skip loading
+        let shouldLoad = false;
+        setState(prev => {
+            // Don't reload if already loaded or loading
+            if (prev.module || prev.loading) {
+                return prev;
+            }
+            shouldLoad = true;
+            return { ...prev, loading: true, error: null };
+        });
 
-        setState(prev => ({ ...prev, loading: true, error: null }));
+        // Exit early if we shouldn't load
+        if (!shouldLoad) return;
 
         try {
             const imported = await importFn();
@@ -77,7 +86,7 @@ export function useDynamicImport<T>(
             setState({ module: null, loading: false, error });
             console.error('[useDynamicImport] Import failed:', error);
         }
-    }, [importFn, state.module, state.loading]);
+    }, [importFn]);
 
     const retry = useCallback(async () => {
         setState({ module: null, loading: false, error: null });
