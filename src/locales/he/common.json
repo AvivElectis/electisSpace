@@ -52,7 +52,8 @@
         "previous": "הקודם",
         "page": "עמוד",
         "showing": "מציג",
-        "selected": "נבחר"
+        "selected": "נבחר",
+        "syncing": "מסנכרן..."
     },
     "dashboard": {
         "title": "לוח בקרה",
@@ -77,7 +78,11 @@
         "every": "כל",
         "toSpaces": "לחללים",
         "toRooms": "לחדרים",
-        "toSpaceType": "ל{{type}}"
+        "toSpaceType": "ל-{{type}}",
+        "toPeople": "לאנשים",
+        "managePeople": "ניהול אנשים",
+        "totalLabels": "סה״כ תגיות",
+        "savedLists": "{{count}} רשימות שמורות"
     },
     "spaces": {
         "title": "חללים",
@@ -101,7 +106,7 @@
         "withoutLabels": "ללא תגיות",
         "id": "מזהה",
         "name": "שם",
-        "labelCode": "קוד תווית",
+        "labelCode": "קוד תגית",
         "template": "תבנית",
         "actions": "פעולות",
         "noResults": "לא נמצאו חללים התואמים",
@@ -133,7 +138,7 @@
         "withLabels": "עם תגיות",
         "noScheduledMeetings": "אין פגישות מתוכננות",
         "roomId": "מזהה חדר",
-        "labelCode": "קוד תווית",
+        "labelCode": "קוד תגית",
         "meetingName": "שם פגישה",
         "time": "זמן",
         "participants": "משתתפים",
@@ -547,7 +552,9 @@
         "loadSuccess": "הרשימה נטענה וסונכרנה בהצלחה!",
         "deleteSuccess": "הרשימה נמחקה בהצלחה",
         "confirmDelete": "האם אתה בטוח שברצונך למחוק רשימה זו?",
-        "loaded": "טעון"
+        "loaded": "טעון",
+        "loadList": "טען רשימה",
+        "loadListConfirm": "טעינת רשימה זו תסנכרן שינויים ל-AIMS. חללים ישנים ינוקו והקצאות חדשות יישלחו. להמשיך?"
     },
     "people": {
         "title": "מנהל אנשים",

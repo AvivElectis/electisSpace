@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -11,7 +12,8 @@ import {
     IconButton,
     Typography,
     Box,
-    Chip
+    Chip,
+    CircularProgress
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -35,17 +37,34 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
     const activeListId = usePeopleStore((state) => state.activeListId);
     const peopleController = usePeopleController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
             onClose();
             return;
         }
+        
+        // Confirm before loading (will sync with AIMS)
+        const isConfirmed = await confirm({
+            title: t('lists.loadList'),
+            message: t('lists.loadListConfirm'),
+            confirmLabel: t('common.confirm'),
+            cancelLabel: t('common.cancel'),
+        });
+
+        if (!isConfirmed) {
+            return;
+        }
+
         try {
-            peopleController.loadList(id);
+            setIsLoading(true);
+            await peopleController.loadList(id);
             onClose();
         } catch (error) {
-            // Error handling
+            console.error('Failed to load list:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -107,7 +126,10 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                                         borderColor: isActive ? 'primary.main' : 'transparent',
                                     }}
                                 >
-                                    <ListItemButton onClick={() => handleLoad(list.id)}>
+                                    <ListItemButton 
+                                        onClick={() => handleLoad(list.id)}
+                                        disabled={isLoading}
+                                    >
                                         <ListItemText
                                             primary={
                                                 <Box display="flex" alignItems="center" justifyContent="flex-start" gap={2}>
@@ -146,6 +168,12 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                             );
                         })}
                     </List>
+                )}
+                {isLoading && (
+                    <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+                        <CircularProgress size={24} sx={{ mr: 1 }} />
+                        <Typography color="text.secondary">{t('common.syncing')}</Typography>
+                    </Box>
                 )}
             </DialogContent>
             <DialogActions>
