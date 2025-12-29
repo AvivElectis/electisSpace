@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { usePeopleStore } from '../infrastructure/peopleStore';
-import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments } from '../infrastructure/peopleService';
+import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments, clearSpaceInAims } from '../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { Person, PeopleList } from '../domain/types';
@@ -59,6 +59,7 @@ export function usePeopleController() {
 
     /**
      * Assign space to person (auto-posts to AIMS)
+     * If person already has a space, clears the old space first
      */
     const assignSpaceToPerson = useCallback(async (
         personId: string,
@@ -66,7 +67,31 @@ export function usePeopleController() {
         postToAims: boolean = true  // Default to true for auto-post
     ): Promise<boolean> => {
         try {
-            logger.info('PeopleController', 'Assigning space to person', { personId, spaceId, postToAims });
+            const person = peopleStore.people.find(p => p.id === personId);
+            if (!person) {
+                throw new Error('Person not found');
+            }
+
+            const oldSpaceId = person.assignedSpaceId;
+            logger.info('PeopleController', 'Assigning space to person', { personId, spaceId, oldSpaceId, postToAims });
+
+            // If person already has a different space, clear the old space in AIMS first
+            if (postToAims && oldSpaceId && oldSpaceId !== spaceId && settings.solumConfig && settings.solumConfig.tokens) {
+                try {
+                    logger.info('PeopleController', 'Clearing old space before reassignment', { oldSpaceId, newSpaceId: spaceId });
+                    await clearSpaceInAims(
+                        oldSpaceId,
+                        person,
+                        settings.solumConfig,
+                        settings.solumConfig.tokens.accessToken,
+                        settings.solumMappingConfig
+                    );
+                    logger.info('PeopleController', 'Old space cleared in AIMS', { oldSpaceId });
+                } catch (clearError: any) {
+                    logger.error('PeopleController', 'Failed to clear old space in AIMS', { error: clearError.message });
+                    // Continue with assignment even if clearing old space fails
+                }
+            }
 
             // Update local state
             peopleStore.assignSpace(personId, spaceId);
@@ -76,18 +101,15 @@ export function usePeopleController() {
                 peopleStore.updateSyncStatus([personId], 'pending');
                 
                 try {
-                    const person = peopleStore.people.find(p => p.id === personId);
-                    if (person) {
-                        await postPersonAssignment(
-                            { ...person, assignedSpaceId: spaceId },
-                            settings.solumConfig,
-                            settings.solumConfig.tokens.accessToken,
-                            settings.solumMappingConfig
-                        );
-                        peopleStore.updateSyncStatus([personId], 'synced');
-                        logger.info('PeopleController', 'Assignment posted to AIMS', { personId });
-                        return true;
-                    }
+                    await postPersonAssignment(
+                        { ...person, assignedSpaceId: spaceId },
+                        settings.solumConfig,
+                        settings.solumConfig.tokens.accessToken,
+                        settings.solumMappingConfig
+                    );
+                    peopleStore.updateSyncStatus([personId], 'synced');
+                    logger.info('PeopleController', 'Assignment posted to AIMS', { personId });
+                    return true;
                 } catch (aimsError: any) {
                     peopleStore.updateSyncStatus([personId], 'error');
                     logger.error('PeopleController', 'Failed to post to AIMS', { error: aimsError.message });
@@ -376,6 +398,53 @@ export function usePeopleController() {
         }
     }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
 
+    /**
+     * Unassign space from person with AIMS clearing
+     * Posts empty data to AIMS (except ID and global fields), then clears local state
+     */
+    const unassignSpaceWithAims = useCallback(async (personId: string): Promise<boolean> => {
+        try {
+            const person = peopleStore.people.find(p => p.id === personId);
+            if (!person) {
+                throw new Error('Person not found');
+            }
+
+            const spaceId = person.assignedSpaceId;
+            if (!spaceId) {
+                logger.warn('PeopleController', 'Person has no space assigned', { personId });
+                return true; // Nothing to unassign
+            }
+
+            logger.info('PeopleController', 'Unassigning space from person with AIMS clearing', { personId, spaceId });
+
+            // Clear the space in AIMS first (if configured)
+            if (settings.solumConfig && settings.solumConfig.tokens) {
+                try {
+                    await clearSpaceInAims(
+                        spaceId,
+                        person,
+                        settings.solumConfig,
+                        settings.solumConfig.tokens.accessToken,
+                        settings.solumMappingConfig
+                    );
+                    logger.info('PeopleController', 'Space cleared in AIMS', { spaceId });
+                } catch (aimsError: any) {
+                    logger.error('PeopleController', 'Failed to clear space in AIMS', { error: aimsError.message });
+                    // Continue with local clearing even if AIMS fails
+                }
+            }
+
+            // Clear local assignment
+            peopleStore.unassignSpace(personId);
+            logger.info('PeopleController', 'Space unassigned locally', { personId });
+
+            return true;
+        } catch (error: any) {
+            logger.error('PeopleController', 'Failed to unassign space', { error: error.message });
+            throw error;
+        }
+    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
+
     return {
         // State
         people: peopleStore.people,
@@ -402,7 +471,7 @@ export function usePeopleController() {
         addPerson: peopleStore.addPerson,
         updatePerson: peopleStore.updatePerson,
         deletePerson: peopleStore.deletePerson,
-        unassignSpace: peopleStore.unassignSpace,
+        unassignSpace: unassignSpaceWithAims,
         updateSyncStatus: peopleStore.updateSyncStatus,
     };
 }

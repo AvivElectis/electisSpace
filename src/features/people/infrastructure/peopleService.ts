@@ -106,27 +106,140 @@ export function parsePeopleCSV(
 }
 
 /**
- * Build complete article data for AIMS
- * Merges person data with global field assignments
+ * Build complete article data for AIMS in the correct format
+ * The article format is driven by mappingInfo configuration:
+ * - Root level: articleId, articleName, store, nfcUrl (values pulled from data)
+ * - data object: all articleData fields with their values
+ * 
+ * For People Manager, the assigned space number is set as the articleId field value
+ * 
  * @param person - Person to build article for
- * @param mappingConfig - SoluM mapping configuration for global field assignments
- * @returns Complete article data
+ * @param mappingConfig - SoluM mapping configuration
+ * @returns Complete article in AIMS format
  */
-export function buildArticleData(person: Person, mappingConfig?: SolumMappingConfig): Record<string, string> {
+export function buildArticleData(person: Person, mappingConfig?: SolumMappingConfig): Record<string, any> {
     const globalFields = mappingConfig?.globalFieldAssignments || {};
+    const mappingInfo = mappingConfig?.mappingInfo;
 
-    // Merge person data with global fields
-    const articleData = {
-        ...globalFields,  // Global fields first
-        ...person.data,   // Person data overrides if there's overlap
-    };
+    // Build the data object with all fields
+    const data: Record<string, any> = {};
 
-    logger.debug('PeopleService', 'Built article data', {
-        personId: person.id,
-        hasGlobalFields: Object.keys(globalFields).length > 0
+    // First, copy all person data fields
+    Object.entries(person.data).forEach(([key, value]) => {
+        data[key] = value;
     });
 
-    return articleData;
+    // Apply global field assignments
+    Object.assign(data, globalFields);
+
+    // The assigned space number becomes the articleId field value
+    // Find the articleId field from mapping (e.g., "ARTICLE_ID")
+    const articleIdField = mappingInfo?.articleId;
+    if (articleIdField && person.assignedSpaceId) {
+        data[articleIdField] = person.assignedSpaceId;
+    }
+
+    // Construct the root article object
+    const aimsArticle: Record<string, any> = {
+        data: data
+    };
+
+    // Map root-level fields from mappingInfo
+    // articleId: use the value from data[mappingInfo.articleId]
+    if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
+        aimsArticle.articleId = String(data[mappingInfo.articleId]);
+    } else {
+        // Fallback to space number or person id
+        aimsArticle.articleId = person.assignedSpaceId || person.id;
+    }
+
+    // articleName: use the value from data[mappingInfo.articleName]
+    if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
+        aimsArticle.articleName = String(data[mappingInfo.articleName]);
+    } else {
+        aimsArticle.articleName = aimsArticle.articleId;
+    }
+
+    // store: use the value from data[mappingInfo.store]
+    if (mappingInfo?.store && data[mappingInfo.store]) {
+        aimsArticle.store = String(data[mappingInfo.store]);
+    }
+
+    // nfcUrl: use the value from data[mappingInfo.nfcUrl]
+    if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
+        aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
+    }
+
+    logger.debug('PeopleService', 'Built AIMS article', {
+        personId: person.id,
+        assignedSpaceId: person.assignedSpaceId,
+        articleId: aimsArticle.articleId,
+        articleName: aimsArticle.articleName,
+        dataFields: Object.keys(data).length
+    });
+
+    return aimsArticle;
+}
+
+/**
+ * Build empty article data for AIMS (for unassigning/clearing a space)
+ * Keeps ID and global fields, but empties all other fields
+ * @param spaceId - The space ID to clear
+ * @param person - Person data (used for reference)
+ * @param mappingConfig - SoluM mapping configuration
+ * @returns Empty article in AIMS format
+ */
+export function buildEmptyArticleData(
+    spaceId: string,
+    person: Person,
+    mappingConfig?: SolumMappingConfig
+): Record<string, any> {
+    const globalFields = mappingConfig?.globalFieldAssignments || {};
+    const mappingInfo = mappingConfig?.mappingInfo;
+
+    // Build the data object with empty values for non-ID, non-global fields
+    const data: Record<string, any> = {};
+
+    // Set all person data fields to empty strings
+    Object.keys(person.data).forEach(key => {
+        // Keep global fields with their values
+        if (globalFields[key] !== undefined) {
+            data[key] = globalFields[key];
+        } else {
+            data[key] = '';
+        }
+    });
+
+    // The articleId field should still have the space number (to identify which article to update)
+    const articleIdField = mappingInfo?.articleId;
+    if (articleIdField) {
+        data[articleIdField] = spaceId;
+    }
+
+    // Construct the root article object
+    const aimsArticle: Record<string, any> = {
+        data: data
+    };
+
+    // Set root-level articleId (the space number)
+    aimsArticle.articleId = spaceId;
+    
+    // Set root-level articleName to empty
+    aimsArticle.articleName = '';
+
+    // Set store if configured in global fields
+    if (mappingInfo?.store && globalFields[mappingInfo.store]) {
+        aimsArticle.store = String(globalFields[mappingInfo.store]);
+    }
+
+    logger.debug('PeopleService', 'Built empty AIMS article', {
+        spaceId,
+        personId: person.id,
+        articleId: aimsArticle.articleId,
+        dataFields: Object.keys(data).length
+    });
+
+    return aimsArticle;
 }
 
 /**
@@ -150,6 +263,32 @@ export async function postPersonAssignment(
     await pushArticles(config, config.storeNumber, token, [articleData]);
 
     logger.info('PeopleService', 'Person assignment posted successfully', { personId: person.id });
+}
+
+/**
+ * Clear a space in AIMS by posting empty data
+ * Used when unassigning a person or when changing their space
+ * @param spaceId - The space ID to clear
+ * @param person - Person data (for reference fields)
+ * @param config - SoluM configuration
+ * @param token - Access token
+ * @param mappingConfig - SoluM mapping configuration
+ */
+export async function clearSpaceInAims(
+    spaceId: string,
+    person: Person,
+    config: SolumConfig,
+    token: string,
+    mappingConfig?: SolumMappingConfig
+): Promise<void> {
+    logger.info('PeopleService', 'Clearing space in AIMS', { spaceId, personId: person.id });
+
+    const emptyArticleData = buildEmptyArticleData(spaceId, person, mappingConfig);
+
+    // Push empty article to AIMS using POST
+    await pushArticles(config, config.storeNumber, token, [emptyArticleData]);
+
+    logger.info('PeopleService', 'Space cleared in AIMS successfully', { spaceId });
 }
 
 /**
@@ -192,19 +331,15 @@ export async function postEmptyAssignments(
 ): Promise<void> {
     logger.info('PeopleService', 'Posting empty assignments to AIMS', { count: people.length });
 
-    // Build empty article data for all people
+    const mappingInfo = mappingConfig?.mappingInfo;
+
+    // Build empty article data for all people in proper AIMS format
     const articles = people.map(person => {
         const emptyData: Record<string, string> = {};
         
-        // Copy the article ID from person data
-        const articleIdField = mappingConfig?.mappingInfo?.articleId || 'ARTICLE_ID';
-        emptyData[articleIdField] = person.data[articleIdField] || person.id;
-        
-        // Set all other fields to empty strings
+        // Set all person data fields to empty strings
         Object.keys(person.data).forEach(key => {
-            if (key !== articleIdField) {
-                emptyData[key] = '';
-            }
+            emptyData[key] = '';
         });
         
         // Also clear any global field assignments (set to empty)
@@ -212,8 +347,35 @@ export async function postEmptyAssignments(
         Object.keys(globalFields).forEach(key => {
             emptyData[key] = '';
         });
+
+        // The articleId field should still have the space number
+        const articleIdField = mappingInfo?.articleId;
+        const articleIdValue = person.assignedSpaceId || person.id;
+        if (articleIdField) {
+            emptyData[articleIdField] = articleIdValue;
+        }
         
-        return emptyData;
+        // Construct the article in the correct AIMS format
+        const aimsArticle: Record<string, any> = {
+            data: emptyData
+        };
+
+        // Set root-level articleId
+        aimsArticle.articleId = articleIdValue;
+        
+        // Set root-level articleName (empty or use articleId)
+        if (mappingInfo?.articleName) {
+            aimsArticle.articleName = '';
+        } else {
+            aimsArticle.articleName = articleIdValue;
+        }
+
+        // Set store if configured (keep it for identification)
+        if (mappingInfo?.store && emptyData[mappingInfo.store]) {
+            aimsArticle.store = String(emptyData[mappingInfo.store]);
+        }
+        
+        return aimsArticle;
     });
 
     // Push all empty articles to AIMS using POST

@@ -285,9 +285,30 @@ export async function pushArticles(
     token: string,
     articles: any[]
 ): Promise<void> {
-    logger.info('SolumService', 'Pushing articles', { storeId, count: articles.length });
-
     const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
+    const requestBody = JSON.stringify(articles);
+    
+    logger.info('SolumService', 'Pushing articles - FULL REQUEST', { 
+        url,
+        method: 'POST',
+        storeId, 
+        count: articles.length,
+        headers: {
+            'Authorization': `Bearer ${token.substring(0, 20)}...`,
+            'Content-Type': 'application/json',
+        },
+        body: requestBody
+    });
+    
+    console.log('=== SOLUM POST REQUEST ===');
+    console.log('URL:', url);
+    console.log('Method: POST');
+    console.log('Headers:', {
+        'Authorization': `Bearer ${token.substring(0, 20)}...`,
+        'Content-Type': 'application/json',
+    });
+    console.log('Body:', requestBody);
+    console.log('========================');
 
     const response = await fetch(url, {
         method: 'POST',
@@ -295,13 +316,31 @@ export async function pushArticles(
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(articles),
+        body: requestBody,
+    });
+
+    const responseText = await response.text();
+    
+    console.log('=== SOLUM POST RESPONSE ===');
+    console.log('Status:', response.status, response.statusText);
+    console.log('Headers:', Object.fromEntries(response.headers.entries()));
+    console.log('Body:', responseText);
+    console.log('===========================');
+    
+    logger.info('SolumService', 'Push articles - FULL RESPONSE', { 
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: responseText
     });
 
     if (!response.ok) {
-        const error = await response.text();
-        logger.error('SolumService', 'Push articles failed', { status: response.status, error });
-        throw new Error(`Push articles failed: ${response.status}`);
+        logger.error('SolumService', 'Push articles failed', { 
+            status: response.status, 
+            statusText: response.statusText,
+            error: responseText 
+        });
+        throw new Error(`Push articles failed: ${response.status} - ${responseText}`);
     }
 
     logger.info('SolumService', 'Articles pushed successfully');

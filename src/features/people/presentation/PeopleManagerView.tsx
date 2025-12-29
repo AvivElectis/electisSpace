@@ -223,6 +223,24 @@ export function PeopleManagerView() {
         setSpaceSelectPerson(null);
     }, [spaceSelectPerson, peopleController]);
 
+    const handleUnassignSpace = useCallback(async (person: Person) => {
+        const confirmed = await confirm({
+            title: t('people.unassignSpace'),
+            message: t('people.unassignSpaceConfirm'),
+            confirmLabel: t('common.confirm'),
+            cancelLabel: t('common.cancel'),
+            severity: 'warning'
+        });
+
+        if (confirmed) {
+            try {
+                await peopleController.unassignSpace(person.id);
+            } catch (error: any) {
+                console.error('Failed to unassign space:', error);
+            }
+        }
+    }, [confirm, t, peopleController]);
+
     const handleBulkAssign = useCallback(async () => {
         const selectedPeople = sortedPeople.filter(p => selectedIds.has(p.id) && !p.assignedSpaceId);
         if (selectedPeople.length === 0) return;
@@ -644,7 +662,7 @@ export function PeopleManagerView() {
                                                     <IconButton
                                                         size="small"
                                                         color="warning"
-                                                        onClick={() => peopleController.unassignSpace(person.id)}
+                                                        onClick={() => handleUnassignSpace(person)}
                                                     >
                                                         <PersonRemoveIcon fontSize="small" />
                                                     </IconButton>
