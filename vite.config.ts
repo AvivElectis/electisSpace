@@ -7,6 +7,7 @@ import pkg from './package.json';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './', // Important for Electron - use relative paths for file:// protocol
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },

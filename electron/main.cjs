@@ -79,22 +79,29 @@ function createWindow() {
         mainWindow.webContents.openDevTools();
     } else {
         // Production mode - load from built files
-        // In production, __dirname points to resources/app.asar or resources/app
-        // The dist folder is in the same directory as electron folder
-        const indexPath = path.join(__dirname, '../dist/index.html');
+        // When packaged, use process.resourcesPath to find the app resources
+        // Structure: resources/app.asar/dist/index.html
+        let indexPath;
+
+        if (app.isPackaged) {
+            // Packaged app: resources/app.asar (or app)/dist/index.html
+            indexPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
+            // Check if using app.asar or unpacked app folder
+            const fs = require('fs');
+            if (!fs.existsSync(indexPath)) {
+                indexPath = path.join(process.resourcesPath, 'app', 'dist', 'index.html');
+            }
+        } else {
+            // Unpackaged but production build
+            indexPath = path.join(__dirname, '../dist/index.html');
+        }
+
         log.info(`Loading production file: ${indexPath}`);
         log.info(`__dirname: ${__dirname}`);
+        log.info(`process.resourcesPath: ${process.resourcesPath}`);
         log.info(`app.isPackaged: ${app.isPackaged}`);
 
-        mainWindow.loadFile(indexPath).catch(err => {
-            log.error('Failed to load index.html:', err);
-            // Try alternative path
-            const altPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
-            log.info(`Trying alternative path: ${altPath}`);
-            mainWindow.loadFile(altPath).catch(err2 => {
-                log.error('Alternative path also failed:', err2);
-            });
-        });
+        mainWindow.loadFile(indexPath);
     }
 
     // Handle window closed
