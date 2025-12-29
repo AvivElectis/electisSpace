@@ -16,6 +16,8 @@
         "edit": "Edit",
         "add": "Add",
         "close": "Close",
+        "open": "Open",
+        "editor": "Editor",
         "search": "Search",
         "filter": "Filter",
         "reset": "Reset",
