@@ -47,7 +47,7 @@ function createWindow() {
         frame: false, // Frameless window - no default title bar
         titleBarStyle: 'hiddenInset', // For macOS compatibility
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, 'preload.cjs'),
             nodeIntegration: false,
             contextIsolation: true,
             sandbox: true,

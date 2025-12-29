@@ -84,9 +84,8 @@ export class GitHubUpdateAdapter {
 
 /**
  * Default GitHub adapter instance
- * You'll need to replace these with your actual GitHub username and repo name
  */
 export const githubUpdateAdapter = new GitHubUpdateAdapter(
-    'YOUR_GITHUB_USERNAME', // Replace with your GitHub username
+    'AvivElectis',
     'electisSpace'
 );
