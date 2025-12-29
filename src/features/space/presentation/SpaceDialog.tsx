@@ -180,7 +180,7 @@ export function SpaceDialog({
                 {space ? `${t('common.edit')} ${spaceTypeLabel}` : `${t('common.add')} ${spaceTypeLabel}`}
             </DialogTitle>
             <DialogContent>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+                <Stack gap={2} sx={{ mt: 1 }}>
                     {/* ID - only editable in add mode */}
                     <TextField
                         fullWidth

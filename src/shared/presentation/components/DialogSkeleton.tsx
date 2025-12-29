@@ -14,7 +14,7 @@ import { Box, Skeleton, Stack } from '@mui/material';
  */
 export function DialogSkeleton() {
     return (
-        <Stack spacing={3} sx={{ py: 2 }}>
+        <Stack gap={3} sx={{ py: 2 }}>
             {/* Form field 1 */}
             <Box>
                 <Skeleton variant="text" width="30%" height={20} sx={{ mb: 1 }} />

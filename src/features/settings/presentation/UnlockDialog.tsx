@@ -84,7 +84,7 @@ export function UnlockDialog({ open, onClose, onUnlock }: UnlockDialogProps) {
             </DialogTitle>
 
             <DialogContent sx={{ pt: 2, pb: 3 }}>
-                <Stack spacing={2.5}>
+                <Stack gap={2.5}>
                     {/* Status */}
                     <Alert severity="warning" sx={{ py: 0.5, px: 2 }}>
                         🔒 {t('settings.lockedMessage')}

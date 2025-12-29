@@ -149,7 +149,7 @@ export function ArticleFormatEditor({
     }
 
     return (
-        <Stack spacing={2}>
+        <Stack gap={2}>
             {/* Collapsible header */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="subtitle2">
@@ -167,7 +167,7 @@ export function ArticleFormatEditor({
 
             {/* Collapsible editor */}
             <Collapse in={isOpen}>
-                <Stack spacing={2}>
+                <Stack gap={2}>
                     <Box
                         ref={editorRef}
                         sx={{

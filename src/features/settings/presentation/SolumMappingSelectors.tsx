@@ -52,7 +52,7 @@ export function SolumMappingSelectors({
     }
 
     return (
-        <Stack spacing={3}>
+        <Stack gap={3}>
             {/* Unique ID Field Selector */}
             <FormControl fullWidth size="small">
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
@@ -87,7 +87,7 @@ export function SolumMappingSelectors({
             </FormControl>
 
             {/* Conference Field Mapping */}
-            <Stack spacing={2}>
+            <Stack gap={2}>
                 <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                     {t('settings.conferenceFieldMapping')}
                 </Typography>

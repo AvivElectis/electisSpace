@@ -84,7 +84,7 @@ export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>{t('importExport.exportDialog')}</DialogTitle>
             <DialogContent>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+                <Stack gap={2} sx={{ mt: 1 }}>
                     <Alert severity="info" sx={{ py: 0, px: 2 }}>
                         {t('importExport.exportDescription')}
                     </Alert>

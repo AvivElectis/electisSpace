@@ -136,7 +136,7 @@ export function CSVStructureEditor({ columns, onColumnsChange }: CSVStructureEdi
     };
 
     return (
-        <Stack spacing={2}>
+        <Stack gap={2}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Button
                     variant="outlined"

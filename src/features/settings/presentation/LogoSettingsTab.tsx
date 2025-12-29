@@ -146,7 +146,7 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
 
     return (
         <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
-            <Stack spacing={2}>
+            <Stack gap={2}>
                 {/* Info */}
                 <Alert severity="info" sx={{ py: 0, px: 2 }}>
                     <Typography variant="body2">{t('settings.recommendedFormat')}</Typography>
