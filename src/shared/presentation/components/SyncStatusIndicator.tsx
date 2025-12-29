@@ -53,22 +53,22 @@ export function SyncStatusIndicator({
 
     const buttonStates = {
         connected: {
-            bgcolor: '#4caf50',
+            bgcolor: '#4caf4f8f',
             color: '#000',
             fontWeight: 600,
-            border: '1px solid #313131ff',
+            //border: '1px solid #313131ff',
         },
         disconnected: {
-            bgcolor: '#e66e65ff',
+            bgcolor: '#e66e6587',
             color: '#FFFFFF',
-            border: '1px solid #313131ff',
+            //border: '1px solid #313131ff',
         },
         syncing: {
-            bgcolor: '#2196F3',
+            bgcolor: '#2195f38a',
             color: '#FFFFFF',
         },
         error: {
-            bgcolor: '#F44336',
+            bgcolor: '#f4433681',
             color: '#FFFFFF',
         },
     };
@@ -119,7 +119,7 @@ export function SyncStatusIndicator({
                         paddingInlineEnd: 2,
                         borderRadius: 2,
                         py: 3,
-                        border: '1px solid #007AFF',
+                        boxShadow: '0px 0px 2px 1px rgba(0, 0, 0, 0.61)',
                         ...buttonStates[status],
                         '&:hover': {
                             backgroundColor: '#ffffffff',

@@ -51,7 +51,8 @@
         },
         "previous": "הקודם",
         "page": "עמוד",
-        "showing": "מציג"
+        "showing": "מציג",
+        "selected": "נבחר"
     },
     "dashboard": {
         "title": "לוח בקרה",
@@ -568,11 +569,13 @@
         "assignSpaces": "הקצה חללים",
         "postToAims": "שלח ל-AIMS",
         "assignSpace": "הקצה חלל",
+        "unassignSpace": "בטל הקצאת חלל",
         "totalSpaces": "סה\"כ חללים",
         "spacesAssigned": "{{assigned}} מתוך {{total}} חללים מוקצים",
         "available": "זמין",
         "bulkAssign": "הקצאה מרובה",
         "bulkAssignConfirm": "להקצות חללים ל-{{count}} אנשים נבחרים?",
+        "bulkAssignConfirmAuto": "להקצות חללים אוטומטית ל-{{count}} אנשים נבחרים לפי סדר מספרי? פעולה זו גם תשלח ל-AIMS.",
         "postToAimsConfirm": "לשלוח {{count}} הקצאות ל-AIMS?",
         "spaceAssignment": "הקצאת חלל",
         "spaceIdHelper": "הזן מספר חלל (1 עד {{max}})",
@@ -595,6 +598,27 @@
         "selectDifferent": "בחר קובץ אחר",
         "preview": "תצוגה מקדימה",
         "rows": "שורות",
-        "import": "ייבוא"
+        "import": "ייבוא",
+        "space": "חלל",
+        "availableSpaces": "{{count}} חללים זמינים",
+        "noSpacesConfigured": "סה\"כ חללים לא הוגדר בהגדרות",
+        "aimsStatus": "סטטוס AIMS",
+        "syncedToAims": "סונכרן ל-AIMS",
+        "syncPending": "סינכרון בתהליך...",
+        "syncError": "הסינכרון נכשל - לחץ לניסיון חוזר",
+        "notSynced": "לא סונכרן ל-AIMS",
+        "sendAllToAims": "שלח הכל ל-AIMS",
+        "sendAllToAimsConfirm": "לשלוח את כל {{count}} ההקצאות ל-AIMS?",
+        "cancelAllAssignments": "בטל את כל ההקצאות",
+        "cancelAllAssignmentsConfirm": "לבטל את כל {{count}} ההקצאות? פעולה זו תנקה את כל ההקצאות מקומית ותשלח נתונים ריקים ל-AIMS.",
+        "noAssignments": "אין הקצאות",
+        "noAssignmentsToSend": "אין הקצאות לשליחה ל-AIMS.",
+        "noAssignmentsToCancel": "אין הקצאות לביטול.",
+        "noAvailableSpaces": "אין חללים זמינים",
+        "noAvailableSpacesMessage": "כל החללים הוקצו. הגדל את סה\"כ החללים או בטל חלק מההקצאות.",
+        "exceedsAvailableSpaces": "חורג מהחללים הזמינים",
+        "exceedsAvailableSpacesMessage": "בחרת {{selected}} אנשים אבל רק {{available}} חללים זמינים. בחר פחות אנשים או הגדל את סה\"כ החללים.",
+        "selectSpace": "בחר חלל",
+        "assigningSpaceTo": "מקצה חלל ל: {{name}}"
     }
 }

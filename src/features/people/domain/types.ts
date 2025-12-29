@@ -6,6 +6,8 @@ export interface Person {
     id: string;  // Unique person identifier (from ARTICLE_ID)
     data: Record<string, string>;  // Dynamic fields from CSV (name, department, etc.)
     assignedSpaceId?: string;  // Optional space assignment
+    aimsSyncStatus?: 'pending' | 'synced' | 'error';  // AIMS sync status
+    lastSyncedAt?: string;  // ISO timestamp of last successful sync
 }
 
 export interface PeopleList {

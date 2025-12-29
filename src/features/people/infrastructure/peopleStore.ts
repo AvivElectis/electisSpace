@@ -17,6 +17,8 @@ export interface PeopleStore {
     deletePerson: (id: string) => void;
     assignSpace: (personId: string, spaceId: string) => void;
     unassignSpace: (personId: string) => void;
+    unassignAllSpaces: () => void;  // Clear all assignments
+    updateSyncStatus: (personIds: string[], status: 'pending' | 'synced' | 'error') => void;
 
     // People List Management
     addPeopleList: (list: PeopleList) => void;
@@ -90,10 +92,33 @@ export const usePeopleStore = create<PeopleStore>()(
                 unassignSpace: (personId) => {
                     set((state) => ({
                         people: state.people.map((p) =>
-                            p.id === personId ? { ...p, assignedSpaceId: undefined } : p
+                            p.id === personId ? { ...p, assignedSpaceId: undefined, aimsSyncStatus: undefined } : p
                         ),
                     }), false, 'unassignSpace');
                     get().updateSpaceAllocation();
+                },
+
+                unassignAllSpaces: () => {
+                    set((state) => ({
+                        people: state.people.map((p) => ({
+                            ...p,
+                            assignedSpaceId: undefined,
+                            aimsSyncStatus: undefined,
+                            lastSyncedAt: undefined,
+                        })),
+                    }), false, 'unassignAllSpaces');
+                    get().updateSpaceAllocation();
+                },
+
+                updateSyncStatus: (personIds, status) => {
+                    const now = status === 'synced' ? new Date().toISOString() : undefined;
+                    set((state) => ({
+                        people: state.people.map((p) =>
+                            personIds.includes(p.id)
+                                ? { ...p, aimsSyncStatus: status, lastSyncedAt: now || p.lastSyncedAt }
+                                : p
+                        ),
+                    }), false, 'updateSyncStatus');
                 },
 
                 // People List Management
