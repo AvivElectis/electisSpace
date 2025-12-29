@@ -125,8 +125,15 @@ const DaySection: React.FC<{
     searchTerm: string;
 }> = ({ date, isSelected, onToggleSelect, levelFilter, searchTerm }) => {
     const { t } = useTranslation();
-    const { getFilteredLogs } = useLogsStore();
+    const { getFilteredLogs, loadDayLogs } = useLogsStore();
     const [expanded, setExpanded] = useState(false);
+
+    // Lazy load logs when expanded
+    React.useEffect(() => {
+        if (expanded) {
+            loadDayLogs(date);
+        }
+    }, [expanded, date, loadDayLogs]);
 
     const filteredLogs = useMemo(() => {
         return getFilteredLogs(date, levelFilter || undefined, searchTerm || undefined).reverse();
@@ -201,14 +208,19 @@ const DaySection: React.FC<{
 
 export const LogsViewer: React.FC = () => {
     const { t } = useTranslation();
-    const { getAllDays, clearLogs, exportMultipleDays } = useLogsStore();
+    const { availableDays, clearLogs, exportMultipleDays, init } = useLogsStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const [levelFilter, setLevelFilter] = useState<LogLevel | ''>('');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
 
-    const allDays = getAllDays();
+    // Init store on mount
+    React.useEffect(() => {
+        init();
+    }, [init]);
+
+    const allDays = availableDays;
 
     const handleToggleDay = (date: string) => {
         setSelectedDays(prev => {
