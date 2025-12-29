@@ -24,6 +24,7 @@ export interface SpacesStore {
 
     // List Management Helpers
     setActiveListName: (name: string | undefined) => void;
+    setActiveListId: (id: string | undefined) => void;
     mergeSpacesList: (spaces: Space[]) => void;
 }
 
@@ -93,6 +94,7 @@ export const useSpacesStore = create<SpacesStore>()(
 
                 // List Management Helpers
                 setActiveListName: (name) => set({ activeListName: name }, false, 'setActiveListName'),
+                setActiveListId: (id) => set({ activeListId: id }, false, 'setActiveListId'),
 
                 mergeSpacesList: (newSpaces) =>
                     set((state) => {

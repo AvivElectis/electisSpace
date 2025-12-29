@@ -290,107 +290,109 @@ export function ConferencePage() {
                     </CardContent>
                 </Card>
             ) : (
-                <Grid container spacing={3}>
-                    {filteredRooms.map((room) => (
-                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={room.id}>
-                            <Card
-                                sx={{
-                                    height: '100%',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
-                                    '&:hover': {
-                                        transform: 'translateY(-4px)',
-                                        boxShadow: 3,
-                                    },
-                                    cursor: 'pointer',
-                                }}
-                                onClick={() => handleViewDetails(room)}
-                            >
-                                <CardContent>
-                                    <Stack spacing={2} >
-                                        {/* Room Header */}
-                                        <Stack
-                                            direction="row"
-                                            justifyContent="space-between"
-                                            alignItems="start"
-                                            sx={{ backgroundColor: room.hasMeeting ? '#EF4444' : '#22C55E', px: 1, py: 1, mx: 0, borderRadius: 1, color: 'white', textShadow: '0px 0px 2px rgba(0, 0, 0, 0.75)' }}
-                                        >
-                                            <Box>
-                                                <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                                    {room.id} - {room.roomName}
-                                                </Typography>
-                                            </Box>
-                                            <Chip
-                                                label={room.hasMeeting ? t('conference.occupied') : t('conference.available')}
-                                                color={'primary'}
-                                                variant={'outlined'}
-                                                size="small"
-                                            />
-                                        </Stack>
-
-                                        {/* Meeting Info */}
-                                        {room.hasMeeting ? (
-                                            <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
-                                                <Typography
-                                                    variant="subtitle2"
-                                                    sx={{ fontWeight: 500, mb: 1 }}
-                                                >
-                                                    {room.meetingName}
-                                                </Typography>
-                                                <Stack direction="row" spacing={1} alignItems="center">
-                                                    <AccessTimeIcon fontSize="small" color="action" />
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {room.startTime} - {room.endTime}
+                <Box sx={{ maxHeight: '70vh', overflowY: 'auto', p: 1 }}>
+                    <Grid container spacing={3}>
+                        {filteredRooms.map((room) => (
+                            <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={room.id}>
+                                <Card
+                                    sx={{
+                                        height: '100%',
+                                        transition: 'transform 0.2s, box-shadow 0.2s',
+                                        '&:hover': {
+                                            transform: 'translateY(-4px)',
+                                            boxShadow: 3,
+                                        },
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => handleViewDetails(room)}
+                                >
+                                    <CardContent>
+                                        <Stack spacing={2} >
+                                            {/* Room Header */}
+                                            <Stack
+                                                direction="row"
+                                                justifyContent="space-between"
+                                                alignItems="start"
+                                                sx={{ backgroundColor: room.hasMeeting ? '#EF4444' : '#22C55E', px: 1, py: 1, mx: 0, borderRadius: 1, color: 'white', textShadow: '0px 0px 2px rgba(0, 0, 0, 0.75)' }}
+                                            >
+                                                <Box>
+                                                    <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                                                        {room.id} - {room.roomName}
                                                     </Typography>
-                                                </Stack>
-                                                {room.participants.length > 0 && (
-                                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                                                        <PeopleIcon fontSize="small" color="action" />
+                                                </Box>
+                                                <Chip
+                                                    label={room.hasMeeting ? t('conference.occupied') : t('conference.available')}
+                                                    color={'primary'}
+                                                    variant={'outlined'}
+                                                    size="small"
+                                                />
+                                            </Stack>
+
+                                            {/* Meeting Info */}
+                                            {room.hasMeeting ? (
+                                                <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
+                                                    <Typography
+                                                        variant="subtitle2"
+                                                        sx={{ fontWeight: 500, mb: 1 }}
+                                                    >
+                                                        {room.meetingName}
+                                                    </Typography>
+                                                    <Stack direction="row" spacing={1} alignItems="center">
+                                                        <AccessTimeIcon fontSize="small" color="action" />
                                                         <Typography variant="body2" color="text.secondary">
-                                                            {room.participants.length} participant{room.participants.length === 1 ? '' : 's'}
+                                                            {room.startTime} - {room.endTime}
                                                         </Typography>
                                                     </Stack>
-                                                )}
-                                            </Box>
-                                        ) : (
-                                            <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {t('conference.noScheduledMeetings')}
-                                                </Typography>
-                                            </Box>
-                                        )}
+                                                    {room.participants.length > 0 && (
+                                                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                                                            <PeopleIcon fontSize="small" color="action" />
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                {room.participants.length} participant{room.participants.length === 1 ? '' : 's'}
+                                                            </Typography>
+                                                        </Stack>
+                                                    )}
+                                                </Box>
+                                            ) : (
+                                                <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {t('conference.noScheduledMeetings')}
+                                                    </Typography>
+                                                </Box>
+                                            )}
 
-                                        {/* Actions */}
-                                        <Stack
-                                            direction="row"
-                                            spacing={1}
-                                            justifyContent="flex-end"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <Tooltip title={t('common.edit')}>
-                                                <IconButton
-                                                    size="small"
-                                                    color="primary"
-                                                    onClick={() => handleEdit(room)}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title={t('common.delete')}>
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleDelete(room.id)}
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
+                                            {/* Actions */}
+                                            <Stack
+                                                direction="row"
+                                                spacing={1}
+                                                justifyContent="flex-end"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Tooltip title={t('common.edit')}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => handleEdit(room)}
+                                                    >
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title={t('common.delete')}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleDelete(room.id)}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Stack>
                                         </Stack>
-                                    </Stack>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
             )}
 
             {/* Details Dialog */}

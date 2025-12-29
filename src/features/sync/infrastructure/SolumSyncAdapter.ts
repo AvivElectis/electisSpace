@@ -243,11 +243,38 @@ export class SolumSyncAdapter implements SyncAdapter {
             this.state.progress = 20;
 
             // Fetch articles
-            const articles = await solumService.fetchArticles(
-                this.config,
-                this.config.storeNumber,
-                token
-            );
+            // Fetch articles with pagination
+            let allArticles: any[] = [];
+            let page = 0;
+            const pageSize = 100;
+            let hasMore = true;
+
+            logger.info('SolumSyncAdapter', 'Starting pagination fetch', { pageSize });
+
+            while (hasMore) {
+                const articlesChunk = await solumService.fetchArticles(
+                    this.config,
+                    this.config.storeNumber,
+                    token,
+                    page,
+                    pageSize
+                );
+
+                if (articlesChunk.length > 0) {
+                    allArticles = [...allArticles, ...articlesChunk];
+
+                    // If we got fewer items than page size, we've reached the end
+                    if (articlesChunk.length < pageSize) {
+                        hasMore = false;
+                    } else {
+                        page++;
+                    }
+                } else {
+                    hasMore = false;
+                }
+            }
+
+            const articles = allArticles;
 
             // --- DEBUG LOGGING START ---
             // console.log('SolumSyncAdapter: Raw Articles Fetched', {
@@ -351,11 +378,36 @@ export class SolumSyncAdapter implements SyncAdapter {
 
             // 1. Fetch ALL current articles (SoluM doesn't support batch fetch by ID)
             // This is heavy but necessary for safety.
-            const remoteArticles = await solumService.fetchArticles(
-                this.config,
-                this.config.storeNumber,
-                token
-            );
+            // 1. Fetch ALL current articles (SoluM doesn't support batch fetch by ID)
+            // This is heavy but necessary for safety.
+            let remoteArticles: any[] = [];
+            let page = 0;
+            const pageSize = 100;
+            let hasMore = true;
+
+            logger.info('SolumSyncAdapter', 'Starting pagination fetch for safe upload', { pageSize });
+
+            while (hasMore) {
+                const articlesChunk = await solumService.fetchArticles(
+                    this.config,
+                    this.config.storeNumber,
+                    token,
+                    page,
+                    pageSize
+                );
+
+                if (articlesChunk.length > 0) {
+                    remoteArticles = [...remoteArticles, ...articlesChunk];
+
+                    if (articlesChunk.length < pageSize) {
+                        hasMore = false;
+                    } else {
+                        page++;
+                    }
+                } else {
+                    hasMore = false;
+                }
+            }
             this.state.progress = 40;
 
             // 2. Map local spaces to partial articles (contains only mapped fields)
