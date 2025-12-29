@@ -121,6 +121,11 @@ export class SFTPSyncAdapter implements SyncAdapter {
         }
     }
 
+    async safeUpload(spaces: Space[]): Promise<void> {
+        // For CSV/SFTP, "Safe Upload" is effectively the same as upload (overwrite)
+        return this.upload(spaces);
+    }
+
     async sync(): Promise<void> {
         logger.info('SFTPSyncAdapter', 'Starting sync');
 

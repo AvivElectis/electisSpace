@@ -8,6 +8,7 @@ export interface SpacesStore {
     spaces: Space[];
     spacesLists: SpacesList[];
     activeListName?: string;
+    activeListId?: string; // Track ID of active list for updates
 
     // Actions
     setSpaces: (spaces: Space[]) => void;
@@ -34,6 +35,7 @@ export const useSpacesStore = create<SpacesStore>()(
                 spaces: [],
                 spacesLists: [],
                 activeListName: undefined,
+                activeListId: undefined,
 
                 // Actions
                 setSpaces: (spaces) => set({ spaces }, false, 'setSpaces'),
@@ -74,6 +76,7 @@ export const useSpacesStore = create<SpacesStore>()(
                         activeListName: state.activeListName === state.spacesLists.find(l => l.id === id)?.name
                             ? undefined
                             : state.activeListName,
+                        activeListId: state.activeListId === id ? undefined : state.activeListId,
                     }), false, 'deleteSpacesList'),
 
                 loadSpacesList: (id) => {
@@ -82,7 +85,8 @@ export const useSpacesStore = create<SpacesStore>()(
                     if (list) {
                         set({
                             spaces: list.spaces,
-                            activeListName: list.name
+                            activeListName: list.name,
+                            activeListId: list.id
                         }, false, 'loadSpacesList');
                     }
                 },
@@ -116,6 +120,7 @@ export const useSpacesStore = create<SpacesStore>()(
                     spaces: state.spaces,
                     spacesLists: state.spacesLists,
                     activeListName: state.activeListName,
+                    activeListId: state.activeListId, // Persist activeListId
                 }),
             }
         ),

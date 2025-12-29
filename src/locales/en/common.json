@@ -133,7 +133,11 @@
         "clickAddRoom": "Click {{button}} to create your first conference room",
         "editRoomButton": "Edit Room",
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "participantsHelper": "Comma-separated list of participants",
+        "preview": "Preview:"
     },
     "sync": {
         "title": "Synchronization",
@@ -496,6 +500,7 @@
         "save": "Save List",
         "manageLists": "Manage Lists",
         "saveList": "Save Current Spaces as List",
+        "saveListDescription": "Save the current state of spaces as a reusable list",
         "spacesCount": "spaces",
         "noListsFound": "No saved lists found.",
         "listName": "List Name",

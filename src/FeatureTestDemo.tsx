@@ -19,6 +19,7 @@ export function FeatureTestDemo() {
     const conferenceController = useConferenceController({});
     const syncController = useSyncController({
         csvConfig: settingsController.settings.csvConfig,
+        autoSyncEnabled: settingsController.settings.autoSyncEnabled,
         onSpaceUpdate: (spaces) => {
             spaceController.importFromSync(spaces);
         },

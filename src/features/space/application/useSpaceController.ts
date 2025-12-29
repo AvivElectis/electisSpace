@@ -456,18 +456,32 @@ export function useSpaceController({
                         const mapping = fields[fieldKey];
                         if (mapping.visible) {
                             // Check article.data first, then root level
-                            const fieldValue = articleData[fieldKey] !== undefined
+                            let fieldValue = articleData[fieldKey] !== undefined
                                 ? articleData[fieldKey]
                                 : mergedArticle[fieldKey];
+
+                            // Fallback: Check standard mappings via mappingInfo
+                            // This ensures keys like ITEM_NAME get their value from articleName
+                            const mappingInfo = solumMappingConfig.mappingInfo;
+                            if (fieldValue === undefined && mappingInfo) {
+                                if (fieldKey === mappingInfo.articleName) {
+                                    fieldValue = article.articleName;
+                                } else if (fieldKey === mappingInfo.articleId) {
+                                    fieldValue = article.articleId;
+                                } else if (fieldKey === mappingInfo.store) {
+                                    fieldValue = solumConfig.storeNumber;
+                                }
+                            }
 
                             if (fieldValue !== undefined) {
                                 const valueStr = String(fieldValue);
                                 data[fieldKey] = valueStr;
 
                                 // Use first visible field as roomName if it looks like a name
-                                if (fieldKey.toLowerCase().includes('name') && valueStr) {
-                                    roomName = valueStr;
-                                }
+                                // REMOVED heuristic logic to match SolumSyncAdapter fix
+                                // if (fieldKey.toLowerCase().includes('name') && valueStr) {
+                                //     roomName = valueStr;
+                                // }
                             }
                         }
                     });

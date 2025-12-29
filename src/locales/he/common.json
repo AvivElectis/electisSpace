@@ -145,7 +145,11 @@
         "hasActiveMeeting": "יש פגישה פעילה בחדר",
         "editRoomButton": "ערוך חדר",
         "active": "פעיל",
-        "inactive": "לא פעיל"
+        "inactive": "לא פעיל",
+        "startTime": "זמן התחלה",
+        "endTime": "זמן סיום",
+        "participantsHelper": "רשימת משתתפים מופרדת בפסיקים",
+        "preview": "תצוגה מקדימה:"
     },
     "sync": {
         "title": "סינכרון",
@@ -512,6 +516,7 @@
         "save": "שמור רשימה",
         "manageLists": "ניהול רשימות",
         "saveList": "שמור חללים נוכחיים כרשימה",
+        "saveListDescription": "שמור את מצב החללים הנוכחי כרשימה לשימוש חוזר",
         "spacesCount": "חללים",
         "noListsFound": "לא נמצאו רשימות שמורות.",
         "listName": "שם הרשימה",

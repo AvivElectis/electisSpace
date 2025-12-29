@@ -1,8 +1,8 @@
 import type { SyncAdapter, SyncState } from '../domain/types';
-import type { Space, SolumConfig, SolumTokens, CSVConfig } from '@shared/domain/types';
-import type { SolumMappingConfig } from '@features/settings/domain/types';
-import { logger } from '@shared/infrastructure/services/logger';
-import * as solumService from '@shared/infrastructure/services/solumService';
+import type { Space, SolumConfig, SolumTokens, CSVConfig } from '../../../shared/domain/types';
+import type { SolumMappingConfig } from '../../settings/domain/types';
+import { logger } from '../../../shared/infrastructure/services/logger';
+import * as solumService from '../../../shared/infrastructure/services/solumService';
 
 /**
  * SoluM API Sync Adapter
@@ -145,18 +145,39 @@ export class SolumSyncAdapter implements SyncAdapter {
                     const mapping = fields[fieldKey];
                     if (mapping.visible) {
                         // Check article.data first, then root level/merged
-                        const fieldValue = articleData[fieldKey] !== undefined
+                        let fieldValue = articleData[fieldKey] !== undefined
                             ? articleData[fieldKey]
                             : mergedArticle[fieldKey];
+
+                        // Fallback: Check standard mappings if value is still undefined
+                        // This handles cases where the config key (e.g. 'N_ARTICLE_NAME') 
+                        // maps to a root API property (e.g. 'articleName')
+                        const mappingInfo = this.mappingConfig!.mappingInfo;
+
+                        // 1. Precise check via mappingInfo
+                        if (fieldValue === undefined && mappingInfo) {
+                            if (fieldKey === mappingInfo.articleName) {
+                                fieldValue = article.articleName;
+                            } else if (fieldKey === mappingInfo.articleId) {
+                                fieldValue = article.articleId;
+                            } else if (fieldKey === mappingInfo.store) {
+                                fieldValue = this.config.storeNumber;
+                            }
+                        }
+
+                        // 2. Heuristic check REMOVED as per user request
+                        // We strictly rely on explicit mapping or defaults.
+                        // if (fieldValue === undefined) { ... }
 
                         if (fieldValue !== undefined) {
                             const valueStr = String(fieldValue);
                             data[fieldKey] = valueStr;
 
                             // Use first visible field as roomName if it looks like a name
-                            if (fieldKey.toLowerCase().includes('name') && valueStr) {
-                                roomName = valueStr;
-                            }
+                            // REMOVED heuristic roomName guessing
+                            // if (fieldKey.toLowerCase().includes('name') && valueStr) {
+                            //     roomName = valueStr;
+                            // }
                         }
                     }
                 });
@@ -169,6 +190,22 @@ export class SolumSyncAdapter implements SyncAdapter {
                 }
                 roomName = article.articleName || data['roomName'] || '';
             }
+
+            // --- DEBUG LOGGING START ---
+            // if (spaces.length < 5) { // Log first 5 items only to avoid spam
+            //     console.log('SolumSyncAdapter: Processed Article', {
+            //         articleId: article.articleId,
+            //         rawArticleName: article.articleName,
+            //         resolvedRoomName: roomName,
+            //         mappingFields: fields ? Object.keys(fields) : 'No Config',
+            //         data: data,
+            //         decisionLog: {
+            //             isPrimaryNameFieldMatch: false, // We can't easily capture the inner loop state here without refactoring, but the result is clean.
+            //             usedHeuristic: !this.mappingConfig?.mappingInfo, // Just a guess for the log
+            //         }
+            //     });
+            // }
+            // --- DEBUG LOGGING END ---
 
             const space: Space = {
                 id: article.articleId,
@@ -211,6 +248,13 @@ export class SolumSyncAdapter implements SyncAdapter {
                 this.config.storeNumber,
                 token
             );
+
+            // --- DEBUG LOGGING START ---
+            // console.log('SolumSyncAdapter: Raw Articles Fetched', {
+            //     count: articles.length,
+            //     sample: articles.length > 0 ? articles[0] : 'No Articles'
+            // });
+            // --- DEBUG LOGGING END ---
             this.state.progress = 50;
 
             // Fetch labels
@@ -288,6 +332,92 @@ export class SolumSyncAdapter implements SyncAdapter {
             this.state.lastError = error instanceof Error ? error.message : 'Upload failed';
             this.state.progress = 0;
             logger.error('SolumSyncAdapter', 'Upload failed', { error });
+            throw error;
+        }
+    }
+
+    /**
+     * Safe Upload implementation: Fetch -> Merge -> Push
+     * Prevents data corruption by fetching current state, merging updates, and pushing full object.
+     */
+    async safeUpload(spaces: Space[]): Promise<void> {
+        logger.info('SolumSyncAdapter', 'Safe Uploading to SoluM API', { count: spaces.length });
+        this.state.status = 'syncing';
+        this.state.progress = 10;
+
+        try {
+            const token = await this.getValidToken();
+            this.state.progress = 15;
+
+            // 1. Fetch ALL current articles (SoluM doesn't support batch fetch by ID)
+            // This is heavy but necessary for safety.
+            const remoteArticles = await solumService.fetchArticles(
+                this.config,
+                this.config.storeNumber,
+                token
+            );
+            this.state.progress = 40;
+
+            // 2. Map local spaces to partial articles (contains only mapped fields)
+            const partialArticles = this.mapSpacesToArticles(spaces);
+
+            // 3. Merge Strategy
+            const mergedArticles = partialArticles.map(partial => {
+                const remote = remoteArticles.find((a: any) => a.articleId === partial.articleId);
+
+                if (remote) {
+                    // Update: Merge partial update ON TOP OF remote existing data
+                    // We must be careful to merge nested objects like 'articleData' if they exist in both
+                    return {
+                        ...remote,
+                        ...partial,
+                        articleData: {
+                            ...(remote.articleData || {}),
+                            ...(partial.articleData || {})
+                        }
+                    };
+                } else {
+                    // Create: No remote exists, use partial (which is effectively full for new item)
+                    return partial;
+                }
+            });
+
+            this.state.progress = 50;
+
+            // 4. Push Updated Articles
+            await solumService.pushArticles(
+                this.config,
+                this.config.storeNumber,
+                token,
+                mergedArticles
+            );
+            this.state.progress = 80;
+
+            // 5. Update label assignments
+            for (const space of spaces) {
+                if (space.labelCode) {
+                    await solumService.assignLabel(
+                        this.config,
+                        this.config.storeNumber,
+                        token,
+                        space.labelCode,
+                        space.id,
+                        space.templateName
+                    );
+                }
+            }
+
+            logger.info('SolumSyncAdapter', 'Safe Upload complete', { mergedCount: mergedArticles.length });
+
+            this.state.status = 'success';
+            this.state.lastSync = new Date();
+            this.state.progress = 100;
+
+        } catch (error) {
+            this.state.status = 'error';
+            this.state.lastError = error instanceof Error ? error.message : 'Safe Upload failed';
+            this.state.progress = 0;
+            logger.error('SolumSyncAdapter', 'Safe Upload failed', { error });
             throw error;
         }
     }
