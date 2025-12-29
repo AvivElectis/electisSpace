@@ -32,6 +32,11 @@ import SaveIcon from '@mui/icons-material/Save';
 import FolderIcon from '@mui/icons-material/Folder';
 import SendIcon from '@mui/icons-material/Send';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import SyncIcon from '@mui/icons-material/Sync';
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
@@ -44,6 +49,7 @@ import { PersonDialog } from './PersonDialog';
 import { CSVUploadDialog } from './CSVUploadDialog.tsx';
 import { PeopleSaveListDialog } from './PeopleSaveListDialog';
 import { PeopleListsManagerDialog } from './PeopleListsManagerDialog.tsx';
+import { SpaceSelectionDialog } from './SpaceSelectionDialog';
 import type { Person, PeopleFilters } from '../domain/types';
 
 /**
@@ -91,6 +97,8 @@ export function PeopleManagerView() {
     const [csvUploadOpen, setCSVUploadOpen] = useState(false);
     const [saveListOpen, setSaveListOpen] = useState(false);
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
+    const [spaceSelectDialogOpen, setSpaceSelectDialogOpen] = useState(false);
+    const [spaceSelectPerson, setSpaceSelectPerson] = useState<Person | null>(null);
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
@@ -189,33 +197,76 @@ export function PeopleManagerView() {
         setPersonDialogOpen(true);
     }, []);
 
-    const handleAssignSpace = useCallback(async (personId: string) => {
-        // Find next available space ID
-        const nextSpaceId = String(assignedCount + 1);
-        await peopleController.assignSpaceToPerson(personId, nextSpaceId, false);
-    }, [assignedCount, peopleController]);
+    const handleAssignSpace = useCallback(async (person: Person) => {
+        // Check if there are available spaces
+        if (availableSpaces <= 0) {
+            await confirm({
+                title: t('people.noAvailableSpaces'),
+                message: t('people.noAvailableSpacesMessage'),
+                confirmLabel: t('common.close'),
+                severity: 'warning',
+                showCancel: false
+            });
+            return;
+        }
+        
+        // Open space selection dialog
+        setSpaceSelectPerson(person);
+        setSpaceSelectDialogOpen(true);
+    }, [availableSpaces, confirm, t]);
+
+    const handleSpaceSelected = useCallback(async (spaceId: string) => {
+        if (!spaceSelectPerson) return;
+        
+        await peopleController.assignSpaceToPerson(spaceSelectPerson.id, spaceId, true);
+        setSpaceSelectDialogOpen(false);
+        setSpaceSelectPerson(null);
+    }, [spaceSelectPerson, peopleController]);
 
     const handleBulkAssign = useCallback(async () => {
         const selectedPeople = sortedPeople.filter(p => selectedIds.has(p.id) && !p.assignedSpaceId);
         if (selectedPeople.length === 0) return;
 
+        // Validation: Check if selected count exceeds available spaces
+        if (selectedPeople.length > availableSpaces) {
+            await confirm({
+                title: t('people.exceedsAvailableSpaces'),
+                message: t('people.exceedsAvailableSpacesMessage', { 
+                    selected: selectedPeople.length, 
+                    available: availableSpaces 
+                }),
+                confirmLabel: t('common.close'),
+                severity: 'warning',
+                showCancel: false
+            });
+            return;
+        }
+
         const confirmed = await confirm({
             title: t('people.bulkAssign'),
-            message: t('people.bulkAssignConfirm', { count: selectedPeople.length }),
+            message: t('people.bulkAssignConfirmAuto', { count: selectedPeople.length }),
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
         });
 
         if (confirmed) {
-            let nextId = assignedCount + 1;
-            const assignments = selectedPeople.map(p => ({
+            // Find available space IDs in numerical order
+            const usedSpaceIds = new Set(people.filter(p => p.assignedSpaceId).map(p => parseInt(p.assignedSpaceId!, 10)));
+            const availableIds: number[] = [];
+            for (let i = 1; i <= totalSpaces && availableIds.length < selectedPeople.length; i++) {
+                if (!usedSpaceIds.has(i)) {
+                    availableIds.push(i);
+                }
+            }
+            
+            const assignments = selectedPeople.map((p, index) => ({
                 personId: p.id,
-                spaceId: String(nextId++)
+                spaceId: String(availableIds[index])
             }));
-            await peopleController.bulkAssignSpaces(assignments, false);
+            await peopleController.bulkAssignSpaces(assignments, true);
             setSelectedIds(new Set());
         }
-    }, [sortedPeople, selectedIds, assignedCount, confirm, t, peopleController]);
+    }, [sortedPeople, selectedIds, availableSpaces, people, totalSpaces, confirm, t, peopleController]);
 
     const handleBulkPostToAims = useCallback(async () => {
         const selectedPeople = sortedPeople.filter(p => selectedIds.has(p.id) && p.assignedSpaceId);
@@ -233,6 +284,57 @@ export function PeopleManagerView() {
             setSelectedIds(new Set());
         }
     }, [sortedPeople, selectedIds, confirm, t, peopleController]);
+
+    const handleSendAllToAims = useCallback(async () => {
+        const assignedPeople = people.filter(p => p.assignedSpaceId);
+        if (assignedPeople.length === 0) {
+            await confirm({
+                title: t('people.noAssignments'),
+                message: t('people.noAssignmentsToSend'),
+                confirmLabel: t('common.close'),
+                severity: 'info',
+                showCancel: false
+            });
+            return;
+        }
+
+        const confirmed = await confirm({
+            title: t('people.sendAllToAims'),
+            message: t('people.sendAllToAimsConfirm', { count: assignedPeople.length }),
+            confirmLabel: t('common.confirm'),
+            cancelLabel: t('common.cancel'),
+        });
+
+        if (confirmed) {
+            await peopleController.postAllAssignmentsToAims();
+        }
+    }, [people, confirm, t, peopleController]);
+
+    const handleCancelAllAssignments = useCallback(async () => {
+        const assignedPeople = people.filter(p => p.assignedSpaceId);
+        if (assignedPeople.length === 0) {
+            await confirm({
+                title: t('people.noAssignments'),
+                message: t('people.noAssignmentsToCancel'),
+                confirmLabel: t('common.close'),
+                severity: 'info',
+                showCancel: false
+            });
+            return;
+        }
+
+        const confirmed = await confirm({
+            title: t('people.cancelAllAssignments'),
+            message: t('people.cancelAllAssignmentsConfirm', { count: assignedPeople.length }),
+            confirmLabel: t('common.dialog.delete'),
+            cancelLabel: t('common.cancel'),
+            severity: 'error'
+        });
+
+        if (confirmed) {
+            await peopleController.cancelAllAssignments();
+        }
+    }, [people, confirm, t, peopleController]);
 
     // Space allocation progress
     const allocationProgress = totalSpaces > 0
@@ -367,6 +469,28 @@ export function PeopleManagerView() {
                 </FormControl>
             </Stack>
 
+                        {/* Left: AIMS Actions */}
+            <Stack direction="row" gap={1} flexWrap="wrap" mb={2}>
+                <Button
+                    variant="text"
+                    color="success"
+                    startIcon={<SendIcon />}
+                    onClick={handleSendAllToAims}
+                    disabled={assignedCount === 0}
+                >
+                    {t('people.sendAllToAims')}
+                </Button>
+                <Button
+                    variant="text"
+                    color="error"
+                    startIcon={<CancelIcon />}
+                    onClick={handleCancelAllAssignments}
+                    disabled={assignedCount === 0}
+                >
+                    {t('people.cancelAllAssignments')}
+                </Button>
+            </Stack>
+
             {/* Bulk Actions */}
             {selectedIds.size > 0 && (
                 <Paper sx={{ p: 1.5, mb: 2, bgcolor: 'action.selected' }}>
@@ -395,7 +519,7 @@ export function PeopleManagerView() {
 
             {/* People Table */}
             <TableContainer component={Paper} sx={{ maxHeight: '60vh' }}>
-                <Table stickyHeader size="small">
+                <Table stickyHeader size="small" aria-label="people table">
                     <TableHead>
                         <TableRow>
                             <TableCell padding="checkbox">
@@ -405,17 +529,8 @@ export function PeopleManagerView() {
                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                 />
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>
-                                <TableSortLabel
-                                    active={sortConfig?.key === 'id'}
-                                    direction={sortConfig?.key === 'id' ? sortConfig.direction : 'asc'}
-                                    onClick={() => handleSort('id')}
-                                >
-                                    {t('people.id')}
-                                </TableSortLabel>
-                            </TableCell>
                             {visibleFields.map(field => (
-                                <TableCell key={field.key} sx={{ fontWeight: 600 }}>
+                                <TableCell key={field.key} sx={{ fontWeight: 600, textAlign: 'start' }}>
                                     <TableSortLabel
                                         active={sortConfig?.key === field.key}
                                         direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'}
@@ -425,7 +540,7 @@ export function PeopleManagerView() {
                                     </TableSortLabel>
                                 </TableCell>
                             ))}
-                            <TableCell sx={{ fontWeight: 600 }}>
+                            <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
                                 <TableSortLabel
                                     active={sortConfig?.key === 'assignedSpaceId'}
                                     direction={sortConfig?.key === 'assignedSpaceId' ? sortConfig.direction : 'asc'}
@@ -434,7 +549,10 @@ export function PeopleManagerView() {
                                     {t('people.assignedSpace')}
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600 }} align="center">
+                            <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
+                                {t('people.aimsStatus')}
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
                                 {t('common.actions')}
                             </TableCell>
                         </TableRow>
@@ -463,19 +581,14 @@ export function PeopleManagerView() {
                                             onChange={(e) => handleSelectOne(person.id, e.target.checked)}
                                         />
                                     </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                            {person.id}
-                                        </Typography>
-                                    </TableCell>
                                     {visibleFields.map(field => (
-                                        <TableCell key={field.key}>
+                                        <TableCell key={field.key} sx={{ textAlign: 'start' }}>
                                             <Typography variant="body2">
                                                 {person.data[field.key] || '-'}
                                             </Typography>
                                         </TableCell>
                                     ))}
-                                    <TableCell>
+                                    <TableCell sx={{ textAlign: 'start' }}>
                                         {person.assignedSpaceId ? (
                                             <Chip
                                                 label={person.assignedSpaceId}
@@ -490,16 +603,50 @@ export function PeopleManagerView() {
                                             />
                                         )}
                                     </TableCell>
-                                    <TableCell align="center">
-                                        <Stack direction="row" gap={0.5} justifyContent="center">
+                                    <TableCell sx={{ textAlign: 'start' }}>
+                                        {person.assignedSpaceId ? (
+                                            person.aimsSyncStatus === 'synced' ? (
+                                                <Tooltip title={t('people.syncedToAims')}>
+                                                    <CheckCircleIcon color="success" fontSize="small" />
+                                                </Tooltip>
+                                            ) : person.aimsSyncStatus === 'pending' ? (
+                                                <Tooltip title={t('people.syncPending')}>
+                                                    <SyncIcon color="info" fontSize="small" sx={{ animation: 'spin 1s linear infinite', '@keyframes spin': { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } } }} />
+                                                </Tooltip>
+                                            ) : person.aimsSyncStatus === 'error' ? (
+                                                <Tooltip title={t('people.syncError')}>
+                                                    <ErrorIcon color="error" fontSize="small" />
+                                                </Tooltip>
+                                            ) : (
+                                                <Tooltip title={t('people.notSynced')}>
+                                                    <SyncIcon color="disabled" fontSize="small" />
+                                                </Tooltip>
+                                            )
+                                        ) : (
+                                            <Typography variant="body2" color="text.disabled">-</Typography>
+                                        )}
+                                    </TableCell>
+                                    <TableCell sx={{ textAlign: 'start' }}>
+                                        <Stack direction="row" gap={0.5} justifyContent="flex-start">
                                             {!person.assignedSpaceId && (
                                                 <Tooltip title={t('people.assignSpace')}>
                                                     <IconButton
                                                         size="small"
                                                         color="success"
-                                                        onClick={() => handleAssignSpace(person.id)}
+                                                        onClick={() => handleAssignSpace(person)}
                                                     >
                                                         <AssignmentIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            {person.assignedSpaceId && (
+                                                <Tooltip title={t('people.unassignSpace')}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="warning"
+                                                        onClick={() => peopleController.unassignSpace(person.id)}
+                                                    >
+                                                        <PersonRemoveIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
                                             )}
@@ -531,45 +678,38 @@ export function PeopleManagerView() {
             </TableContainer>
 
             {/* Bottom Actions Bar */}
-            <Box sx={{
-                mt: 2,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                bgcolor: 'background.paper',
-                p: 2,
-                borderRadius: 1,
-                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
-            }}>
-                <Box>
-                    <Button
-                        variant="outlined"
-                        startIcon={<FolderIcon />}
-                        onClick={() => setListsManagerOpen(true)}
-                        sx={{ mr: 2 }}
-                    >
-                        {t('lists.manage')}
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SaveIcon />}
-                        onClick={() => setSaveListOpen(true)}
-                    >
-                        {t('lists.saveAsNew')}
-                    </Button>
-                </Box>
+            <Paper sx={{ mt: 2, p: 2 }}>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={2}>
 
-                {activeListId && (
-                    <Button
-                        variant="outlined"
-                        color="success"
-                        startIcon={<SaveIcon />}
-                        onClick={() => peopleController.updateCurrentList()}
-                    >
-                        {t('lists.saveChanges')}
-                    </Button>
-                )}
-            </Box>
+                    {/* Center: List Management */}
+                    <Stack direction="row" gap={1}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<FolderIcon />}
+                            onClick={() => setListsManagerOpen(true)}
+                        >
+                            {t('lists.manage')}
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            startIcon={<SaveIcon />}
+                            onClick={() => setSaveListOpen(true)}
+                        >
+                            {t('lists.saveAsNew')}
+                        </Button>
+                        {activeListId && (
+                            <Button
+                                variant="outlined"
+                                color="success"
+                                startIcon={<SaveIcon />}
+                                onClick={() => peopleController.updateCurrentList()}
+                            >
+                                {t('lists.saveChanges')}
+                            </Button>
+                        )}
+                    </Stack>
+                </Stack>
+            </Paper>
 
             {/* Dialogs */}
             <PersonDialog
@@ -591,6 +731,17 @@ export function PeopleManagerView() {
             <PeopleListsManagerDialog
                 open={listsManagerOpen}
                 onClose={() => setListsManagerOpen(false)}
+            />
+
+            <SpaceSelectionDialog
+                open={spaceSelectDialogOpen}
+                onClose={() => {
+                    setSpaceSelectDialogOpen(false);
+                    setSpaceSelectPerson(null);
+                }}
+                onSelect={handleSpaceSelected}
+                personId={spaceSelectPerson?.id || ''}
+                personName={spaceSelectPerson ? Object.values(spaceSelectPerson.data)[0] : undefined}
             />
 
             <ConfirmDialog />

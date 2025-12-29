@@ -38,22 +38,25 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
     const peopleController = usePeopleController();
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [fileContent, setFileContent] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<Array<Record<string, string>>>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
 
-    // Get expected columns from article format
+    // Get expected columns from article format (excluding ID field - auto-generated)
     const getExpectedColumns = useCallback(() => {
         if (!settings.solumArticleFormat) return [];
 
         const globalFields = settings.solumMappingConfig?.globalFieldAssignments || {};
         const globalFieldKeys = Object.keys(globalFields);
+        const articleIdField = settings.solumArticleFormat.mappingInfo?.articleId || 'ARTICLE_ID';
 
+        // Exclude global fields AND the ID field (auto-generated)
         return settings.solumArticleFormat.articleData.filter(
-            fieldKey => !globalFieldKeys.includes(fieldKey)
+            fieldKey => !globalFieldKeys.includes(fieldKey) && fieldKey !== articleIdField
         );
-    }, [settings.solumArticleFormat]);
+    }, [settings.solumArticleFormat, settings.solumMappingConfig]);
 
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -89,8 +92,9 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
         setLoading(true);
 
         try {
-            // Read and parse for preview
+            // Read and parse for preview - store content for later import
             const content = await file.text();
+            setFileContent(content);
             const lines = content.split('\n').filter(line => line.trim());
 
             if (lines.length < 2) {
@@ -122,13 +126,14 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
     };
 
     const handleImport = async () => {
-        if (!selectedFile) return;
+        if (!selectedFile || !fileContent) return;
 
         setLoading(true);
         setError(null);
 
         try {
-            await peopleController.loadPeopleFromCSV(selectedFile);
+            // Use stored content instead of re-reading file
+            await peopleController.loadPeopleFromContent(fileContent);
             onClose();
             handleReset();
         } catch (err: any) {
@@ -140,6 +145,7 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
 
     const handleReset = () => {
         setSelectedFile(null);
+        setFileContent(null);
         setPreviewData([]);
         setError(null);
     };

@@ -15,9 +15,9 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeopleController } from '../application/usePeopleController';
-import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { SpaceSelector } from './SpaceSelector';
 import type { Person } from '../domain/types';
 
 interface PersonDialogProps {
@@ -35,7 +35,6 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const settings = useSettingsStore((state) => state.settings);
     const peopleController = usePeopleController();
-    const people = usePeopleStore((state) => state.people);
 
     // Single source of truth: totalSpaces from settings
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
@@ -84,13 +83,13 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                     assignedSpaceId: person.assignedSpaceId,
                 });
             } else {
-                // Add mode - reset
+                // Add mode - reset (ID will be auto-generated)
                 const emptyData: Record<string, string> = {};
                 editableFields.forEach(field => {
                     emptyData[field.key] = '';
                 });
                 setFormData({
-                    id: '',
+                    id: '', // Will be auto-generated on save
                     data: emptyData,
                     assignedSpaceId: undefined,
                 });
@@ -103,11 +102,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
-        if (!formData.id?.trim()) {
-            newErrors.id = t('validation.required');
-        } else if (!isEditMode && people.some(p => p.id === formData.id.trim())) {
-            newErrors.id = t('errors.idExists');
-        }
+        // No need to validate ID for add mode - it will be auto-generated
 
         // Check if assigned space ID is within range
         if (formData.assignedSpaceId) {
@@ -140,9 +135,10 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                     await peopleController.postSelectedToAims([person!.id]);
                 }
             } else {
-                // Add new person
+                // Add new person - auto-generate ID
+                const autoId = `person-${Date.now()}`;
                 const newPerson: Person = {
-                    id: formData.id.trim(),
+                    id: autoId,
                     data: formData.data,
                     assignedSpaceId: formData.assignedSpaceId,
                 };
@@ -175,26 +171,23 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         }));
     };
 
+    // Determine text direction based on language
+    const isRtl = i18n.language === 'he';
+
     return (
         <>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-                <DialogTitle>
+            <Dialog 
+                open={open} 
+                onClose={onClose} 
+                maxWidth="sm" 
+                fullWidth
+                dir={isRtl ? 'rtl' : 'ltr'}
+            >
+                <DialogTitle sx={{ textAlign: isRtl ? 'right' : 'left' }}>
                     {isEditMode ? t('people.editPerson') : t('people.addPerson')}
                 </DialogTitle>
                 <DialogContent>
                     <Stack gap={2} sx={{ mt: 1 }}>
-                        {/* ID Field */}
-                        <TextField
-                            label={t('people.id')}
-                            value={formData.id}
-                            onChange={(e) => setFormData(prev => ({ ...prev, id: e.target.value }))}
-                            error={!!errors.id}
-                            helperText={errors.id || (isEditMode ? t('spaces.idCannotChange') : '')}
-                            disabled={isEditMode}
-                            required
-                            fullWidth
-                        />
-
                         {/* Dynamic Fields */}
                         {editableFields.map(field => (
                             <TextField
@@ -203,28 +196,28 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                                 value={formData.data[field.key] || ''}
                                 onChange={(e) => handleFieldChange(field.key, e.target.value)}
                                 fullWidth
+                                InputProps={{
+                                    sx: { textAlign: isRtl ? 'right' : 'left' }
+                                }}
                             />
                         ))}
 
                         <Divider sx={{ my: 1 }} />
 
                         {/* Space Assignment */}
-                        <Typography variant="subtitle2" color="text.secondary">
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ textAlign: isRtl ? 'right' : 'left' }}>
                             {t('people.spaceAssignment')}
                         </Typography>
 
-                        <TextField
-                            label={t('people.assignedSpace')}
-                            type="number"
-                            value={formData.assignedSpaceId || ''}
-                            onChange={(e) => setFormData(prev => ({
+                        <SpaceSelector
+                            value={formData.assignedSpaceId}
+                            onChange={(spaceId) => setFormData(prev => ({
                                 ...prev,
-                                assignedSpaceId: e.target.value || undefined
+                                assignedSpaceId: spaceId
                             }))}
                             error={!!errors.assignedSpaceId}
-                            helperText={errors.assignedSpaceId || t('people.spaceIdHelper', { max: totalSpaces })}
-                            inputProps={{ min: 1, max: totalSpaces }}
-                            fullWidth
+                            helperText={errors.assignedSpaceId}
+                            excludePersonId={person?.id}
                         />
 
                         {/* Post to AIMS option */}
@@ -239,14 +232,14 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                                     }
                                     label={t('people.postToAimsOnSave')}
                                 />
-                                <Typography variant="caption" color="text.secondary" display="block">
+                                <Typography variant="caption" color="text.secondary" display="block" sx={{ textAlign: isRtl ? 'right' : 'left' }}>
                                     {t('people.postToAimsDescription')}
                                 </Typography>
                             </Box>
                         )}
                     </Stack>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ flexDirection: isRtl ? 'row-reverse' : 'row' }}>
                     <Button onClick={onClose} disabled={saving}>
                         {t('common.cancel')}
                     </Button>
