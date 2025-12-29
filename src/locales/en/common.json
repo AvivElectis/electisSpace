@@ -79,6 +79,7 @@
         "toPeople": "To People",
         "managePeople": "Manage People",
         "totalLabels": "Total Labels",
+        "assignedLabels": "Assigned Labels",
         "savedLists": "{{count}} Saved Lists"
     },
     "spaces": {

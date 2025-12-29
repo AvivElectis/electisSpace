@@ -298,8 +298,8 @@ export function useSettingsController() {
 
             logger.info('SettingsController', 'Connected to SoluM API successfully', {
                 store: settings.solumConfig.storeNumber,
-                totalLabels: storeSummary.totalLabelCount,
-                totalProducts: storeSummary.totalProductCount
+                labelCount: storeSummary.labelCount,
+                articleCount: storeSummary.articleCount
             });
             return true;
         } catch (error: any) {

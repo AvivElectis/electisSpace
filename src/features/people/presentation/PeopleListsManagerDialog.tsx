@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logger } from '@shared/infrastructure/services/logger';
 import {
     Dialog,
     DialogTitle,
@@ -61,8 +62,8 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             setIsLoading(true);
             await peopleController.loadList(id);
             onClose();
-        } catch (error) {
-            console.error('Failed to load list:', error);
+        } catch (error: any) {
+            logger.error('PeopleListsManagerDialog', 'Failed to load list', { error: error?.message || error });
         } finally {
             setIsLoading(false);
         }

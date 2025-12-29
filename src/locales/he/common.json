@@ -82,6 +82,7 @@
         "toPeople": "לאנשים",
         "managePeople": "ניהול אנשים",
         "totalLabels": "סה״כ תגיות",
+        "assignedLabels": "תגיות משויכות",
         "savedLists": "{{count}} רשימות שמורות"
     },
     "spaces": {
