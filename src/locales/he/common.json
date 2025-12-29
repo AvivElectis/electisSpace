@@ -47,7 +47,10 @@
             "areYouSure": "האם אתה בטוח?",
             "info": "מידע",
             "warning": "אזהרה"
-        }
+        },
+        "previous": "הקודם",
+        "page": "עמוד",
+        "showing": "מציג"
     },
     "dashboard": {
         "title": "לוח בקרה",
@@ -509,8 +512,10 @@
         "totalDays": "{{count}} ימים עם לוגים",
         "entries": "רשומות",
         "selectAll": "בחר הכל",
+        "totalEntries": "סה\"כ: {{count}} רשומות",
         "confirmClear": "האם אתה בטוח שברצונך לנקות את כל הלוגים? לא ניתן לבטל פעולה זו.",
-        "confirmClearSelected": "האם אתה בטוח שברצונך לנקות {{count}} ימים נבחרים? לא ניתן לבטל פעולה זו."
+        "confirmClearSelected": "האם אתה בטוח שברצונך לנקות {{count}} ימים נבחרים? לא ניתן לבטל פעולה זו.",
+        "data": "נתונים"
     },
     "lists": {
         "manage": "ניהול רשימות",

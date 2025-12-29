@@ -43,7 +43,10 @@
             "areYouSure": "Are you sure?",
             "info": "Information",
             "warning": "Warning"
-        }
+        },
+        "previous": "Previous",
+        "page": "Page",
+        "showing": "Showing"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -493,8 +496,10 @@
         "totalDays": "{{count}} days with logs",
         "entries": "entries",
         "selectAll": "Select All",
+        "totalEntries": "Total: {{count}} entries",
         "confirmClear": "Are you sure you want to clear all logs? This action cannot be undone.",
-        "confirmClearSelected": "Are you sure you want to clear {{count}} selected days? This action cannot be undone."
+        "confirmClearSelected": "Are you sure you want to clear {{count}} selected days? This action cannot be undone.",
+        "data": "Data"
     },
     "lists": {
         "manage": "Manage Lists",

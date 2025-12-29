@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { get as idbGet, update as idbUpdate, del as idbDel, keys as idbKeys } from 'idb-keyval';
+import { get as idbGet, set as idbSet, del as idbDel, keys as idbKeys } from 'idb-keyval';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -30,6 +30,12 @@ export interface LogsStore {
 
 const MAX_DAYS = 10;
 const LOG_KEY_PREFIX = 'logs_';
+const FLUSH_INTERVAL = 5000; // 5 seconds
+const MAX_QUEUE_SIZE = 100;
+
+// Global queue for persistence
+const logQueue: LogEntry[] = [];
+let flushTimeout: any = null;
 
 // Helper: Get date string YYYY-MM-DD
 const getDateString = (timestamp: number): string => {
@@ -43,6 +49,57 @@ const formatLogAsText = (log: LogEntry): string => {
     const dataStr = log.data ? `\n    Data: ${JSON.stringify(log.data, null, 2).replace(/\n/g, '\n    ')}` : '';
     return `[${timestamp}] [${level}] [${component}] ${log.message}${dataStr}`;
 };
+
+/**
+ * Persists all logs in the queue to IndexedDB
+ */
+const flushQueue = async () => {
+    if (logQueue.length === 0) return;
+
+    // Take current batch
+    const batch = [...logQueue];
+    logQueue.length = 0;
+
+    // Group by date
+    const groups: Record<string, LogEntry[]> = {};
+    for (const log of batch) {
+        const date = getDateString(log.timestamp);
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(log);
+    }
+
+    try {
+        // Persist each group
+        for (const [date, logs] of Object.entries(groups)) {
+            const storageKey = `${LOG_KEY_PREFIX}${date}`;
+            const existingLogs = (await idbGet(storageKey)) as LogEntry[] || [];
+            await idbSet(storageKey, [...existingLogs, ...logs]);
+        }
+    } catch (error) {
+        console.error('Failed to flush logs to storage:', error);
+        // Put back in queue if it failed? No, might cause infinite loop. 
+        // Just log to console as last resort.
+    }
+};
+
+const triggerFlush = () => {
+    if (flushTimeout) return;
+    if (logQueue.length >= MAX_QUEUE_SIZE) {
+        flushQueue();
+        return;
+    }
+    flushTimeout = setTimeout(async () => {
+        flushTimeout = null;
+        await flushQueue();
+    }, FLUSH_INTERVAL);
+};
+
+// Ensure logs are flushed on exit
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+        flushQueue();
+    });
+}
 
 export const useLogsStore = create<LogsStore>()(
     devtools(
@@ -76,42 +133,33 @@ export const useLogsStore = create<LogsStore>()(
                 const timestamp = Date.now();
                 const newLog: LogEntry = {
                     ...entry,
-                    id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+                    id: `${timestamp}-${Math.random().toString(36).substring(2, 11)}`,
                     timestamp,
                 };
 
                 const dateKey = getDateString(timestamp);
-                const storageKey = `${LOG_KEY_PREFIX}${dateKey}`;
 
-                try {
-                    // Update IDB
-                    await idbUpdate(storageKey, (oldLogs: LogEntry[] | undefined) => {
-                        const logs = oldLogs || [];
-                        return [...logs, newLog];
-                    });
+                // Add to internal queue
+                logQueue.push(newLog);
 
-                    // Update state if this day is currently loaded
-                    set(state => {
-                        const updates: Partial<LogsStore> = {};
+                // Update state immediately if day is loaded (optimistic update)
+                // We debounce the state update if it's too frequent
+                set(state => {
+                    const updates: Partial<LogsStore> = {};
+                    if (state.loadedLogs[dateKey]) {
+                        updates.loadedLogs = {
+                            ...state.loadedLogs,
+                            [dateKey]: [...state.loadedLogs[dateKey], newLog]
+                        };
+                    }
+                    if (!state.availableDays.includes(dateKey)) {
+                        updates.availableDays = [dateKey, ...state.availableDays].sort().reverse();
+                    }
+                    return updates;
+                });
 
-                        // If we have this day loaded, append to it
-                        if (state.loadedLogs[dateKey]) {
-                            updates.loadedLogs = {
-                                ...state.loadedLogs,
-                                [dateKey]: [...state.loadedLogs[dateKey], newLog]
-                            };
-                        }
-
-                        // If new day, add to availableDays
-                        if (!state.availableDays.includes(dateKey)) {
-                            updates.availableDays = [dateKey, ...state.availableDays].sort().reverse();
-                        }
-
-                        return updates;
-                    });
-                } catch (error) {
-                    console.error('Failed to persist log:', error);
-                }
+                // Trigger debounced flush
+                triggerFlush();
             },
 
             loadDayLogs: async (date) => {
