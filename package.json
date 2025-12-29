@@ -1,7 +1,7 @@
 {
   "name": "electis_space",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "ESL Management System - electis Space",
   "author": "Aviv Electis",
   "type": "module",

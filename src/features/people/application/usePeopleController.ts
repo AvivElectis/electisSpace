@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { parsePeopleCSV, postPersonAssignment, postBulkAssignments, postEmptyAssignments, clearSpaceInAims, clearSpaceIdsInAims, convertSpacesToPeople } from '../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { useSyncContext } from '@features/sync/application/SyncContext';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { Person, PeopleList } from '../domain/types';
 
