@@ -37,13 +37,15 @@ let mainWindow = null;
 function createWindow() {
     log.info('Creating main window...');
 
-    mainWindow = new BrowserWindow({
+    const windowConfig = {
         width: 1400,
         height: 900,
         minWidth: 1024,
         minHeight: 768,
         backgroundColor: '#F5F5F7',
         icon: path.join(__dirname, '../public/icon.ico'),
+        frame: false, // Frameless window - no default title bar
+        titleBarStyle: 'hiddenInset', // For macOS compatibility
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -51,7 +53,14 @@ function createWindow() {
             sandbox: true,
         },
         show: false, // Don't show until ready
-    });
+    };
+
+    // On Windows, remove titleBarStyle (it's macOS-specific)
+    if (process.platform === 'win32') {
+        delete windowConfig.titleBarStyle;
+    }
+
+    mainWindow = new BrowserWindow(windowConfig);
 
     // Show window when ready to prevent visual flash
     mainWindow.once('ready-to-show', () => {
@@ -225,6 +234,40 @@ ipcMain.handle('get-platform-info', () => {
         electron: process.versions.electron,
         chrome: process.versions.chrome,
     };
+});
+
+/**
+ * Window Control Handlers (for frameless window)
+ */
+
+// Minimize window
+ipcMain.handle('window-minimize', () => {
+    if (mainWindow) {
+        mainWindow.minimize();
+    }
+});
+
+// Maximize/Unmaximize window
+ipcMain.handle('window-maximize', () => {
+    if (mainWindow) {
+        if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize();
+        } else {
+            mainWindow.maximize();
+        }
+    }
+});
+
+// Close window
+ipcMain.handle('window-close', () => {
+    if (mainWindow) {
+        mainWindow.close();
+    }
+});
+
+// Check if window is maximized
+ipcMain.handle('window-is-maximized', () => {
+    return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 /**
