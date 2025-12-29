@@ -601,6 +601,8 @@
         "syncPending": "Sync in progress...",
         "syncError": "Sync failed - click to retry",
         "notSynced": "Not synced to AIMS",
+        "syncFromAims": "Sync from AIMS",
+        "syncFromAimsConfirm": "Download current data from AIMS? This will replace all people in the current list with data from AIMS.",
         "sendAllToAims": "Send All to AIMS",
         "sendAllToAimsConfirm": "Send all {{count}} assignments to AIMS?",
         "cancelAllAssignments": "Cancel All Assignments",
