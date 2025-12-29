@@ -21,7 +21,7 @@ export function LoadingSpinner({ message = 'Loading...', size = 40 }: LoadingSpi
                 gap: 2,
             }}
         >
-            <CircularProgress size={size} />
+            <CircularProgress size={size} aria-busy="true" />
             {message && (
                 <Typography variant="body2" color="text.secondary">
                     {message}

@@ -1,9 +1,10 @@
-import { Alert, AlertTitle, Box } from '@mui/material';
+import { Alert, AlertTitle, Box, Button } from '@mui/material';
 
 interface ErrorDisplayProps {
     title?: string;
     message: string;
     severity?: 'error' | 'warning' | 'info';
+    onRetry?: () => void;
 }
 
 /**
@@ -13,11 +14,21 @@ interface ErrorDisplayProps {
 export function ErrorDisplay({
     title = 'Error',
     message,
-    severity = 'error'
+    severity = 'error',
+    onRetry
 }: ErrorDisplayProps) {
     return (
         <Box sx={{ my: 2 }}>
-            <Alert severity={severity}>
+            <Alert
+                severity={severity}
+                action={
+                    onRetry ? (
+                        <Button color="inherit" size="small" onClick={onRetry}>
+                            Retry
+                        </Button>
+                    ) : undefined
+                }
+            >
                 <AlertTitle>{title}</AlertTitle>
                 {message}
             </Alert>
