@@ -151,12 +151,12 @@ export function ArticleFormatEditor({
     return (
         <Stack gap={2}>
             {/* Collapsible header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'start' }}>
                 <Typography variant="subtitle2">
                     {t('settings.articleFormatSchema')}
                 </Typography>
                 <Button
-                    variant="outlined"
+                    variant="text"
                     size="small"
                     onClick={handleToggle}
                     endIcon={isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}

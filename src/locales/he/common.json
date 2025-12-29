@@ -570,6 +570,7 @@
         "postToAims": "שלח ל-AIMS",
         "assignSpace": "הקצה חלל",
         "unassignSpace": "בטל הקצאת חלל",
+        "unassignSpaceConfirm": "האם אתה בטוח שברצונך לבטל את הקצאת החלל? פעולה זו גם תנקה את החלל ב-AIMS.",
         "totalSpaces": "סה\"כ חללים",
         "spacesAssigned": "{{assigned}} מתוך {{total}} חללים מוקצים",
         "available": "זמין",

@@ -556,6 +556,7 @@
         "postToAims": "Post to AIMS",
         "assignSpace": "Assign Space",
         "unassignSpace": "Unassign Space",
+        "unassignSpaceConfirm": "Are you sure you want to unassign this space? This will also clear the space in AIMS.",
         "totalSpaces": "Total Spaces",
         "spacesAssigned": "{{assigned}} of {{total}} spaces assigned",
         "available": "available",
