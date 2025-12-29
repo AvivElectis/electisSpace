@@ -6,6 +6,7 @@
     "navigation": {
         "dashboard": "Dashboard",
         "spaces": "Spaces",
+        "people": "People",
         "conference": "Conference Rooms",
         "sync": "Synchronization"
     },
@@ -350,7 +351,14 @@
         "clearAllStorage": "Clear All Storage",
         "clearStorageHelper": "Use this to reset the app to factory defaults. Useful for troubleshooting or starting fresh.",
         "clearStorageConfirm": "Are you sure you want to clear all app data?\n\nThis will delete:\n• All settings and configurations\n• Saved credentials (SFTP & SoluM)\n• Custom logos\n• Password protection\n\nThe app will reload with default settings.",
-        "autoMapped": "Auto-mapped by SoluM"
+        "autoMapped": "Auto-mapped by SoluM",
+        "peopleManager": {
+            "title": "People Manager",
+            "enable": "Enable People Manager Mode",
+            "description": "Transform space management into a people allocation system. When enabled, the Spaces section becomes a People allocation system for uploading CSV lists and assigning spaces.",
+            "totalSpaces": "Total Available Spaces",
+            "totalSpacesHelp": "The total number of spaces available for allocation"
+        }
     },
     "errors": {
         "required": "This field is required",
@@ -523,5 +531,54 @@
         "deleteSuccess": "List deleted successfully",
         "confirmDelete": "Are you sure you want to delete this list?",
         "loaded": "Loaded"
+    },
+    "people": {
+        "title": "People Manager",
+        "total": "Total People",
+        "uploadCSV": "Upload CSV",
+        "addPerson": "Add Person",
+        "editPerson": "Edit Person",
+        "deletePerson": "Delete Person",
+        "id": "ID",
+        "assignedSpace": "Assigned Space",
+        "filterStatus": "Filter Status",
+        "all": "All",
+        "assigned": "Assigned",
+        "unassigned": "Unassigned",
+        "searchPlaceholder": "Search people...",
+        "noResults": "No people found matching your criteria",
+        "noPeopleYet": "No people yet. Upload a CSV or add people manually.",
+        "selectedCount": "{{count}} selected",
+        "assignSpaces": "Assign Spaces",
+        "postToAims": "Post to AIMS",
+        "assignSpace": "Assign Space",
+        "totalSpaces": "Total Spaces",
+        "spacesAssigned": "{{assigned}} of {{total}} spaces assigned",
+        "available": "available",
+        "bulkAssign": "Bulk Assign Spaces",
+        "bulkAssignConfirm": "Assign spaces to {{count}} selected people?",
+        "postToAimsConfirm": "Post {{count}} assignments to AIMS?",
+        "spaceAssignment": "Space Assignment",
+        "spaceIdHelper": "Enter a space number (1 to {{max}})",
+        "spaceExceedsTotal": "Space ID exceeds total spaces",
+        "postToAimsOnSave": "Post to AIMS on save",
+        "postToAimsDescription": "Send this assignment to the AIMS system after saving",
+        "saveFailed": "Failed to save person",
+        "saveListDescription": "Save current people list with a name",
+        "peopleCount": "people",
+        "csvOnly": "Only CSV files are allowed",
+        "csvEmpty": "CSV file is empty or has no data rows",
+        "csvParseError": "Failed to parse CSV file",
+        "importFailed": "Failed to import CSV",
+        "expectedFormat": "Expected Format",
+        "csvFormatDescription": "CSV file with '{{delimiter}}' as delimiter",
+        "columns": "Columns",
+        "dragDropCSV": "Drag & drop a CSV file here",
+        "orClickToSelect": "or click to select a file",
+        "selectedFile": "Selected file",
+        "selectDifferent": "Select different file",
+        "preview": "Preview",
+        "rows": "rows",
+        "import": "Import"
     }
 }

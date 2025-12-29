@@ -6,6 +6,7 @@
     "navigation": {
         "dashboard": "לוח בקרה",
         "spaces": "חללים",
+        "people": "אנשים",
         "conference": "חדרי ישיבות",
         "sync": "סינכרון"
     },
@@ -362,7 +363,14 @@
         "clearAllStorage": "מחק את כל האחסון",
         "clearStorageHelper": "השתמש בזה כדי לאפס את האפליקציה להגדרות ברירת המחדל. שימושי לפתרון בעיות או התחלה חדשה.",
         "clearStorageConfirm": "האם אתה בטוח שברצונך למחוק את כל נתוני האפליקציה?\n\nפעולה זו תמחק:\n• כל ההגדרות והקונפיגורציות\n• אישורים שמורים (SFTP ו-SoluM)\n• לוגואים מותאמים אישית\n• הגנת סיסמה\n\nהאפליקציה תיטען מחדש עם הגדרות ברירת מחדל.",
-        "autoMapped": "מופה אוטומטית על ידי SoluM"
+        "autoMapped": "מופה אוטומטית על ידי SoluM",
+        "peopleManager": {
+            "title": "מנהל אנשים",
+            "enable": "הפעל מצב מנהל אנשים",
+            "description": "הפוך ניהול חללים למערכת הקצאת אנשים. כאשר מופעל, מקטע החללים הופך למערכת הקצאת אנשים להעלאת רשימות CSV והקצאת חללים.",
+            "totalSpaces": "סה\"כ חללים זמינים",
+            "totalSpacesHelp": "מספר החללים הכולל הזמין להקצאה"
+        }
     },
     "errors": {
         "required": "שדה זה הוא חובה",
@@ -539,5 +547,54 @@
         "deleteSuccess": "הרשימה נמחקה בהצלחה",
         "confirmDelete": "האם אתה בטוח שברצונך למחוק רשימה זו?",
         "loaded": "טעון"
+    },
+    "people": {
+        "title": "מנהל אנשים",
+        "total": "סה\"כ אנשים",
+        "uploadCSV": "העלה CSV",
+        "addPerson": "הוסף אדם",
+        "editPerson": "ערוך אדם",
+        "deletePerson": "מחק אדם",
+        "id": "מזהה",
+        "assignedSpace": "חלל מוקצה",
+        "filterStatus": "סנן לפי סטטוס",
+        "all": "הכל",
+        "assigned": "מוקצה",
+        "unassigned": "לא מוקצה",
+        "searchPlaceholder": "חיפוש אנשים...",
+        "noResults": "לא נמצאו אנשים התואמים את הקריטריון",
+        "noPeopleYet": "עדיין אין אנשים. העלה CSV או הוסף אנשים ידנית.",
+        "selectedCount": "{{count}} נבחרו",
+        "assignSpaces": "הקצה חללים",
+        "postToAims": "שלח ל-AIMS",
+        "assignSpace": "הקצה חלל",
+        "totalSpaces": "סה\"כ חללים",
+        "spacesAssigned": "{{assigned}} מתוך {{total}} חללים מוקצים",
+        "available": "זמין",
+        "bulkAssign": "הקצאה מרובה",
+        "bulkAssignConfirm": "להקצות חללים ל-{{count}} אנשים נבחרים?",
+        "postToAimsConfirm": "לשלוח {{count}} הקצאות ל-AIMS?",
+        "spaceAssignment": "הקצאת חלל",
+        "spaceIdHelper": "הזן מספר חלל (1 עד {{max}})",
+        "spaceExceedsTotal": "מספר החלל חורג מסה\"כ החללים",
+        "postToAimsOnSave": "שלח ל-AIMS בשמירה",
+        "postToAimsDescription": "שלח הקצאה זו למערכת AIMS לאחר השמירה",
+        "saveFailed": "שמירת האדם נכשלה",
+        "saveListDescription": "שמור רשימת אנשים נוכחית עם שם",
+        "peopleCount": "אנשים",
+        "csvOnly": "רק קבצי CSV מותרים",
+        "csvEmpty": "קובץ ה-CSV ריק או ללא שורות נתונים",
+        "csvParseError": "ניתוח קובץ ה-CSV נכשל",
+        "importFailed": "ייבוא ה-CSV נכשל",
+        "expectedFormat": "פורמט צפוי",
+        "csvFormatDescription": "קובץ CSV עם '{{delimiter}}' כמפריד",
+        "columns": "עמודות",
+        "dragDropCSV": "גרור ושחרר קובץ CSV כאן",
+        "orClickToSelect": "או לחץ לבחירת קובץ",
+        "selectedFile": "קובץ נבחר",
+        "selectDifferent": "בחר קובץ אחר",
+        "preview": "תצוגה מקדימה",
+        "rows": "שורות",
+        "import": "ייבוא"
     }
 }

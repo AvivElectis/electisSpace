@@ -94,13 +94,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
             {/* Connection Tab */}
             {subTab === 0 && (
-                <Stack spacing={2}>
+                <Stack gap={2}>
                     {/* API Configuration */}
                     <Box>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                             {t('settings.solumApiConfig')}
                         </Typography>
-                        <Stack spacing={1.5}>
+                        <Stack gap={1.5}>
                             <FormControl fullWidth size="small" disabled={isCredentialsLocked}>
                                 <InputLabel>{t('settings.apiCluster')}</InputLabel>
                                 <Select
@@ -189,7 +189,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                             {t('settings.authentication')}
                         </Typography>
-                        <Stack spacing={1.5}>
+                        <Stack gap={1.5}>
                             <TextField
                                 fullWidth
                                 size="small"
@@ -320,7 +320,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                             {t('settings.synchronization')}
                         </Typography>
-                        <Stack spacing={1.5}>
+                        <Stack gap={1.5}>
                             {/* Sync Interval Removed - managed by Sync Store or Server Config directly
                             <FormControl fullWidth size="small">
                                 <InputLabel id="sync-interval-label">{t('settings.syncInterval')}</InputLabel>
@@ -353,12 +353,57 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                             </Typography>
                         </Stack>
                     </Box>
+
+                    <Divider />
+
+                    {/* People Manager Mode */}
+                    <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                            {t('settings.peopleManager.title')}
+                        </Typography>
+                        <Stack gap={1.5}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        size="small"
+                                        checked={settings.peopleManagerEnabled || false}
+                                        onChange={(e) => onUpdate({
+                                            peopleManagerEnabled: e.target.checked,
+                                        })}
+                                    />
+                                }
+                                label={<Typography variant="body2">{t('settings.peopleManager.enable')}</Typography>}
+                            />
+
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: '-8px !important', ml: '38px !important' }}>
+                                {t('settings.peopleManager.description')}
+                            </Typography>
+
+                            {settings.peopleManagerEnabled && (
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    type="number"
+                                    label={t('settings.peopleManager.totalSpaces')}
+                                    value={settings.peopleManagerConfig?.totalSpaces || 0}
+                                    onChange={(e) => onUpdate({
+                                        peopleManagerConfig: {
+                                            ...settings.peopleManagerConfig,
+                                            totalSpaces: parseInt(e.target.value, 10) || 0,
+                                        }
+                                    })}
+                                    helperText={t('settings.peopleManager.totalSpacesHelp')}
+                                    inputProps={{ min: 0 }}
+                                />
+                            )}
+                        </Stack>
+                    </Box>
                 </Stack>
             )}
 
             {/* Field Mapping Tab */}
             {subTab === 1 && (
-                <Stack spacing={2}>
+                <Stack gap={2}>
                     {/* Schema */}
                     <Box>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>

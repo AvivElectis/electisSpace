@@ -71,7 +71,7 @@ export function SyncPage() {
             {/* Sync Status Card */}
             <Card sx={{ mb: 3 }}>
                 <CardContent>
-                    <Stack spacing={3}>
+                    <Stack gap={3}>
                         <Box>
                             <Typography variant="h6" sx={{ mb: 2 }}>
                                 {t('sync.syncStatus')}
@@ -114,7 +114,7 @@ export function SyncPage() {
                     <Typography variant="h6" sx={{ mb: 2 }}>
                         {t('sync.currentConfig')}
                     </Typography>
-                    <Stack spacing={2}>
+                    <Stack gap={2}>
                         <Box>
                             <Typography variant="subtitle2" color="text.secondary">
                                 {t('sync.workingMode')}

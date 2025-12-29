@@ -7,7 +7,7 @@ import { Box, CircularProgress, Skeleton, Stack } from '@mui/material';
 export function RouteLoadingFallback() {
     return (
         <Box sx={{ p: 3 }}>
-            <Stack spacing={3}>
+            <Stack gap={3}>
                 {/* Page header */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Skeleton variant="text" width={200} height={40} />

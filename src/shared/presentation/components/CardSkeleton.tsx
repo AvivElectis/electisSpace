@@ -34,7 +34,7 @@ export function CardSkeleton({ count = 6, height = 200 }: CardSkeletonProps) {
             {Array.from({ length: count }).map((_, index) => (
                 <Card key={`skeleton-${index}`} sx={{ height }}>
                     <CardContent>
-                        <Stack spacing={2}>
+                        <Stack gap={2}>
                             {/* Title */}
                             <Skeleton variant="text" width="70%" height={32} />
 

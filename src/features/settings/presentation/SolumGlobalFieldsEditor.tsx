@@ -69,10 +69,10 @@ export function SolumGlobalFieldsEditor({
             </Typography>
 
             {/* Existing Assignments */}
-            <Stack spacing={1} sx={{ mb: 2 }}>
+            <Stack gap={1} sx={{ mb: 2 }}>
                 {Object.entries(globalAssignments).map(([fieldKey, value]) => (
                     <Paper key={fieldKey} variant="outlined" sx={{ p: 1.5 }}>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" gap={1} alignItems="center">
                             <Typography variant="body2" sx={{ minWidth: 150, fontWeight: 500 }}>
                                 {fieldKey}
                             </Typography>
@@ -100,7 +100,7 @@ export function SolumGlobalFieldsEditor({
             {/* Add New Assignment */}
             {availableFields.length > 0 && (
                 <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" gap={1} alignItems="center">
                         <TextField
                             select
                             size="small"

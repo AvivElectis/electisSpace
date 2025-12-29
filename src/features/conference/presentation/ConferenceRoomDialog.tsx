@@ -150,7 +150,7 @@ export function ConferenceRoomDialog({
                 {room ? t('conference.editRoom') : t('conference.addRoom')}
             </DialogTitle>
             <DialogContent>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+                <Stack gap={2} sx={{ mt: 1 }}>
                     {/* ID - only editable in add mode */}
                     <TextField
                         fullWidth
@@ -236,7 +236,7 @@ export function ConferenceRoomDialog({
                                     <Typography variant="caption" color="text.secondary">
                                         {t('conference.preview')}
                                     </Typography>
-                                    <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+                                    <Stack direction="row" gap={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
                                         {participantsText
                                             .split(',')
                                             .map(p => p.trim())

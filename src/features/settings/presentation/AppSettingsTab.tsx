@@ -46,13 +46,13 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
 
     return (
         <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
-            <Stack spacing={2}>
+            <Stack gap={2}>
                 {/* Application Info */}
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.applicationInfo')}
                     </Typography>
-                    <Stack spacing={1.5}>
+                    <Stack gap={1.5}>
                         <TextField
                             fullWidth
                             size="small"
@@ -152,7 +152,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('update.updateSettings')}
                     </Typography>
-                    <Stack spacing={1.5}>
+                    <Stack gap={1.5}>
                         {/* Current Version */}
                         <TextField
                             size="small"

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
+import PeopleIcon from '@mui/icons-material/People';
 import SyncIcon from '@mui/icons-material/Sync';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
@@ -23,14 +24,8 @@ interface NavTab {
     labelKey: string;
     value: string;
     icon: React.ReactElement;
+    dynamicLabel?: boolean;  // Whether to use dynamic label (for spaces/people toggle)
 }
-
-const navTabs: NavTab[] = [
-    { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
-    { labelKey: 'navigation.spaces', value: '/spaces', icon: <BusinessIcon fontSize="small" /> },
-    { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
-    { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
-];
 
 /**
  * Main Layout Component
@@ -56,6 +51,22 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { syncState, workingMode, setWorkingMode } = useSyncStore();
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
+
+    // Determine if People Manager mode is enabled
+    const isPeopleManagerMode = settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API';
+
+    // Build navigation tabs dynamically
+    const navTabs: NavTab[] = [
+        { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
+        { 
+            labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces', 
+            value: '/spaces', 
+            icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
+            dynamicLabel: true
+        },
+        { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
+        { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
+    ];
 
     // console.log('[DEBUG MainLayout] settings:', {
     //     hasSolumConfig: !!settings.solumConfig,
@@ -136,7 +147,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                             </ListItemIcon>
                                             <ListItemText
                                                 primary={
-                                                    tab.value === '/spaces'
+                                                    tab.dynamicLabel && !isPeopleManagerMode
                                                         ? getLabel('plural')
                                                         : t(tab.labelKey)
                                                 }
@@ -179,7 +190,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 <Tab
                                     key={tab.value}
                                     label={
-                                        tab.value === '/spaces'
+                                        tab.dynamicLabel && !isPeopleManagerMode
                                             ? getLabel('plural')
                                             : t(tab.labelKey)
                                     }

@@ -5,25 +5,48 @@ Transform space management into a people manager system that allows uploading pe
 ## User Review Required
 
 > [!IMPORTANT]
-> **Major Architecture Change**: This feature transforms the space management concept from managing spaces to managing people and their space assignments. The existing `/spaces` route and navigation will be repurposed for people management.
+> **Settings-Based Activation**: This feature will be activated via a toggle in the SoluM API mode settings. When enabled, it completely replaces the existing Spaces feature, transforming the `/spaces` route into a People Manager.
 
 > [!WARNING]
-> **Breaking Change**: The current "Spaces" page will be replaced with "People Manager". If you need to preserve existing space management functionality, please specify before proceeding.
+> **Feature Replacement**: When the "People Manager Mode" is enabled in SoluM settings:
+> - The `/spaces` route will display the People Manager instead of space management
+> - All SoluM API implementations will be preserved and reused
+> - Navigation will show "People" instead of "Spaces" when toggled on
+> - The feature can be toggled off to restore normal space management
 
-**Design Questions for User Review:**
+**Confirmed Design Decisions:**
 
-1. **Route & Navigation**: Should the people manager replace the existing `/spaces` route, or should it be a new route (e.g., `/people`)?
-2. **Data Separation**: Should people data be stored separately from spaces data, or should we repurpose the existing spaces store?
-3. **CSV Format**: Should the CSV format match the existing SoluM article format exactly, or do we need custom field mapping?
-4. **Space Count**: Should the space count be a global setting (in settings store) or per-list configuration?
-5. **Assignment Behavior**: When assigning a space to a person, should it:
-   - Create a new AIMS article for that person?
-   - Update an existing article with space assignment?
-   - Both (configurable)?
+1. **Activation**: Toggle switch in SoluM API configuration settings
+2. **Route**: Reuses existing `/spaces` route - shows different content based on toggle
+3. **CSV Format**: Uses existing SoluM article format via `solumMappingConfig`
+4. **Space Count**: Global setting stored in settings store
+5. **Assignment Behavior**: Assigns space ID to person and posts as AIMS article
+6. **API Preservation**: All existing SoluM service methods (`pushArticles`, `putArticles`, etc.) will be reused
+
 
 ## Proposed Changes
 
-### 1. Domain Layer
+### 1. Settings Configuration
+
+#### [MODIFY] [types.ts](file:///c:/React/electisSpace/src/features/settings/domain/types.ts)
+
+Add people manager toggle to `SettingsData` interface:
+
+```typescript
+export interface SettingsData {
+    // ... existing fields ...
+    
+    // People Manager Mode (SoluM API only)
+    peopleManagerEnabled?: boolean;  // Toggle to switch to people management mode
+    peopleManagerConfig?: {
+        totalSpaces: number;  // Total available spaces for assignment
+    };
+}
+```
+
+---
+
+### 2. Domain Layer
 
 #### [NEW] [types.ts](file:///c:/React/electisSpace/src/features/people/domain/types.ts)
 
@@ -78,9 +101,62 @@ Zustand store for people management (similar to `spacesStore.ts`):
 
 Service for CSV parsing and AIMS integration:
 
-- `parsePeopleCSV(csvContent: string, config: SolumMappingConfig): Person[]` - Parse CSV using SoluM article format
-- `postPersonAssignment(person: Person, config: SolumConfig, token: string): Promise<void>` - Post single person assignment to AIMS
-- `postBulkAssignments(people: Person[], config: SolumConfig, token: string): Promise<void>` - Post multiple assignments as articles
+**CSV Format Specification:**
+
+1. **Delimiter**: Always `;` (semicolon) - matches `solumArticleFormat.delimiter`
+2. **Column Order**: Follows `solumArticleFormat.articleData` array exactly
+3. **Global Field Exclusion**: Fields defined in `globalFieldAssignments` are excluded from CSV and auto-added when posting to AIMS
+
+**Example**: Given article format:
+```json
+{
+  "delimiter": ";",
+  "mappingInfo": {
+    "store": "STORE_ID",
+    "articleId": "ARTICLE_ID",
+    "articleName": "ITEM_NAME"
+  },
+  "articleData": ["STORE_ID", "ARTICLE_ID", "ITEM_NAME", "ENGLISH_NAME", "RANK"],
+  "globalFieldAssignments": { "STORE_ID": "001" }
+}
+```
+
+**CSV Structure** (STORE_ID excluded because it's global):
+```csv
+ARTICLE_ID;ITEM_NAME;ENGLISH_NAME;RANK
+EMP001;John Doe;John;Senior
+EMP002;Jane Smith;Jane;Manager
+```
+
+**When posting to AIMS**, STORE_ID is automatically added:
+```json
+{
+  "STORE_ID": "001",  // From global
+  "ARTICLE_ID": "EMP001",
+  "ITEM_NAME": "John Doe",
+  "ENGLISH_NAME": "John",
+  "RANK": "Senior"
+}
+```
+
+**Functions:**
+
+- `parsePeopleCSV(csvContent: string, articleFormat: ArticleFormat): Person[]`
+  - Parse CSV using `;` delimiter
+  - Extract columns in `articleData` order, excluding global fields
+  - Build Person objects with data from non-global fields
+  
+- `buildArticleData(person: Person, articleFormat: ArticleFormat): Record<string, string>`
+  - Merge person data with global field assignments
+  - Return complete article data ready for AIMS
+  
+- `postPersonAssignment(person: Person, config: SolumConfig, token: string, articleFormat: ArticleFormat): Promise<void>`
+  - Build article data with global fields
+  - Post single person assignment to AIMS using `pushArticles`
+  
+- `postBulkAssignments(people: Person[], config: SolumConfig, token: string, articleFormat: ArticleFormat): Promise<void>`
+  - Build article data for all people with global fields
+  - Post multiple assignments as articles using `pushArticles`
 
 ---
 
@@ -111,9 +187,27 @@ Filter and search logic for people list:
 
 ### 4. Presentation Layer
 
-#### [NEW] [PeoplePage.tsx](file:///c:/React/electisSpace/src/features/people/presentation/PeoplePage.tsx)
+#### [MODIFY] [SpacesPage.tsx](file:///c:/React/electisSpace/src/features/space/presentation/SpacesPage.tsx)
 
-Main people manager page with:
+**Strategy**: Modify `SpacesPage` to conditionally render People Manager UI when `peopleManagerEnabled` is true.
+
+```typescript
+export function SpacesPage() {
+    const settings = useSettingsStore((state) => state.settings);
+    
+    // Conditional rendering based on settings toggle
+    if (settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API') {
+        return <PeopleManagerView />;
+    }
+    
+    // Default: render normal spaces management
+    return <SpacesManagementView />;
+}
+```
+
+#### [NEW] [PeopleManagerView.tsx](file:///c:/React/electisSpace/src/features/people/presentation/PeopleManagerView.tsx)
+
+People manager UI component (extracted from SpacesPage) with:
 
 1. **CSV Upload Section**:
    - File upload button
@@ -142,6 +236,10 @@ Main people manager page with:
    - Bulk assign spaces (auto-increment IDs)
    - Bulk post to AIMS
 
+#### [NEW] [SpacesManagementView.tsx](file:///c:/React/electisSpace/src/features/space/presentation/SpacesManagementView.tsx)
+
+**Preserve existing functionality** by extracting current SpacesPage logic into this component.
+
 #### [NEW] [PersonDialog.tsx](file:///c:/React/electisSpace/src/features/people/presentation/PersonDialog.tsx)
 
 Dialog for editing person details and space assignment:
@@ -162,28 +260,57 @@ CSV upload dialog:
 
 ---
 
-### 5. Routing & Navigation
+### 5. Settings UI
 
-#### [MODIFY] [AppRoutes.tsx](file:///c:/React/electisSpace/src/AppRoutes.tsx)
+#### [MODIFY] SoluM Settings Component
 
-Add new people manager route:
+Add toggle to SoluM API configuration settings:
 
 ```typescript
-const PeoplePage = lazy(() =>
-    import('@features/people/presentation/PeoplePage').then(m => ({ default: m.PeoplePage }))
-);
+<FormControlLabel
+    control={
+        <Switch
+            checked={settings.peopleManagerEnabled || false}
+            onChange={(e) => updateSettings({ peopleManagerEnabled: e.target.checked })}
+        />
+    }
+    label={t('settings.peopleManager.enable')}
+/>
 
-// In Routes:
-<Route path="/people" element={<PeoplePage />} />
+{settings.peopleManagerEnabled && (
+    <TextField
+        label={t('settings.peopleManager.totalSpaces')}
+        type="number"
+        value={settings.peopleManagerConfig?.totalSpaces || 0}
+        onChange={(e) => updateSettings({
+            peopleManagerConfig: {
+                totalSpaces: parseInt(e.target.value, 10)
+            }
+        })}
+    />
+)}
 ```
-
-#### [MODIFY] Navigation/Menu Components
-
-Update navigation to include "People Manager" link (exact component TBD based on current nav implementation).
 
 ---
 
-### 6. Localization
+### 6. Navigation Updates
+
+#### [MODIFY] Navigation Component (Dynamic Label)
+
+Update navigation label based on people manager toggle:
+
+```typescript
+// In navigation component:
+const navigationLabel = settings.peopleManagerEnabled 
+    ? t('navigation.people') 
+    : t('navigation.spaces');
+```
+
+**Note**: The `/spaces` route remains unchanged - only the displayed content and navigation label change based on the toggle.
+
+---
+
+### 7. Localization
 
 #### [MODIFY] [en.json](file:///c:/React/electisSpace/src/locales/en/en.json)
 #### [MODIFY] [he.json](file:///c:/React/electisSpace/src/locales/he/he.json)
@@ -198,7 +325,7 @@ Add translations for:
 
 ---
 
-### 7. Integration with Existing Features
+### 8. Integration with Existing Features
 
 #### Settings Integration
 

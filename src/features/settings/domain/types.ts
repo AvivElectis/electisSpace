@@ -78,6 +78,12 @@ export interface SettingsData {
     // Auto-lock settings
     autoLockEnabled?: boolean;
     lastSettingsAccess?: number;  // Timestamp of last settings dialog close
+
+    // People Manager Mode (SoluM API only)
+    peopleManagerEnabled?: boolean;  // Toggle to switch to people management mode
+    peopleManagerConfig?: {
+        totalSpaces: number;  // Total available spaces for assignment
+    };
 }
 
 export interface ExportedSettings {

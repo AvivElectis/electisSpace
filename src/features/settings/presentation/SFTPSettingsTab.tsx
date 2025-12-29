@@ -53,12 +53,12 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
             {/* Connection Tab */}
             {subtab === 0 && (
-                <Stack spacing={2}>
+                <Stack gap={2}>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                         SFTP Server Configuration
                     </Typography>
 
-                    <Stack spacing={1.5}>
+                    <Stack gap={1.5}>
                         <TextField
                             fullWidth
                             size="small"
@@ -143,7 +143,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
             {/* CSV Structure Tab */}
             {subtab === 1 && (
-                <Stack spacing={2}>
+                <Stack gap={2}>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                         CSV File Structure
                     </Typography>

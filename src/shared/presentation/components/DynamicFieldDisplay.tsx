@@ -91,7 +91,7 @@ export function DynamicFieldDisplay({
 
     // Default: form variant (stacked layout)
     return (
-        <Stack spacing={1.5}>
+        <Stack gap={1.5}>
             {fields.map(field => (
                 <Box key={field.key}>
                     <Typography variant="caption" color="text.secondary">

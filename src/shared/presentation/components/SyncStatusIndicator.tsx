@@ -145,7 +145,7 @@ export function SyncStatusIndicator({
                 }}
             >
                 <Box sx={{ p: 2.5, minWidth: 280 }}>
-                    <Stack spacing={2}>
+                    <Stack gap={2}>
                         {/* Status */}
                         <Box>
                             <Typography variant="caption" color="text.secondary" display="block">

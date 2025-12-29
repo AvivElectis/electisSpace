@@ -80,7 +80,7 @@ export function ImportDialog({ open, onClose, onImport, preview, isEncrypted }: 
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>{t('importExport.importDialog')}</DialogTitle>
             <DialogContent>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+                <Stack gap={2} sx={{ mt: 1 }}>
                     {error && (
                         <Alert severity="error" sx={{ py: 0, px: 2 }}>
                             {error}
@@ -96,7 +96,7 @@ export function ImportDialog({ open, onClose, onImport, preview, isEncrypted }: 
                             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                                 {t('importExport.importPreview')}
                             </Typography>
-                            <Stack spacing={0.5} sx={{
+                            <Stack gap={0.5} sx={{
                                 bgcolor: 'action.hover',
                                 p: 1.5,
                                 borderRadius: 1,

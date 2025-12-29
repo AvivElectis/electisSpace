@@ -126,7 +126,7 @@ export function DashboardPage() {
                     <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
                         <CardContent>
                             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                                <Stack direction="row" spacing={1} alignItems="center">
+                                <Stack direction="row" gap={1} alignItems="center">
                                     <Box sx={{ color: 'primary.main', display: 'flex', '& svg': { fontSize: 28 } }}>
                                         {getSpaceIcon(settingsController.settings.spaceType.split('.').pop()?.toLowerCase() || 'chair')}
                                     </Box>
@@ -144,7 +144,7 @@ export function DashboardPage() {
                                 </Button>
                             </Stack>
 
-                            <Stack spacing={3}>
+                            <Stack gap={3}>
                                 <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
                                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                         {t('dashboard.totalSpaces', 'Total Spaces')}
@@ -195,7 +195,7 @@ export function DashboardPage() {
                     <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
                         <CardContent>
                             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                                <Stack direction="row" spacing={1} alignItems="center">
+                                <Stack direction="row" gap={1} alignItems="center">
                                     <GroupsIcon color="primary" sx={{ fontSize: 28 }} />
                                     <Typography variant="h6" fontWeight={600} sx={{ px: 1 }}>
                                         {t('conference.title')}
@@ -211,7 +211,7 @@ export function DashboardPage() {
                                 </Button>
                             </Stack>
 
-                            <Stack spacing={3}>
+                            <Stack gap={3}>
                                 <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
                                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                         {t('dashboard.totalRooms', 'Total Rooms')}
@@ -285,7 +285,7 @@ export function DashboardPage() {
                 <Grid size={{ xs: 12 }}>
                     <Card>
                         <CardContent>
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
+                            <Stack direction="row" gap={1} alignItems="center" sx={{ mb: 3 }}>
                                 <SettingsIcon color="action" />
                                 <Typography variant="h6" fontWeight={600}>
                                     {t('dashboard.applicationInfo')}
@@ -294,7 +294,7 @@ export function DashboardPage() {
 
                             <Grid container spacing={4}>
                                 <Grid size={{ xs: 12, sm: 4 }}>
-                                    <Stack spacing={1}>
+                                    <Stack gap={1}>
                                         <Typography variant="subtitle2" color="text.secondary">
                                             {t('sync.workingMode')}
                                         </Typography>
@@ -308,7 +308,7 @@ export function DashboardPage() {
                                     </Stack>
                                 </Grid>
                                 <Grid size={{ xs: 12, sm: 4 }}>
-                                    <Stack spacing={1}>
+                                    <Stack gap={1}>
                                         <Typography variant="subtitle2" color="text.secondary">
                                             {t('dashboard.spaceType')}
                                         </Typography>
@@ -323,7 +323,7 @@ export function DashboardPage() {
                                     </Stack>
                                 </Grid>
                                 <Grid size={{ xs: 12, sm: 4 }}>
-                                    <Stack spacing={1}>
+                                    <Stack gap={1}>
                                         <Typography variant="subtitle2" color="text.secondary">
                                             {t('dashboard.autoSync')}
                                         </Typography>

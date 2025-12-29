@@ -188,7 +188,7 @@ const DaySection: React.FC<{
     return (
         <Accordion expanded={expanded} onChange={() => setExpanded(!expanded)} TransitionProps={{ unmountOnExit: true }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Stack direction="row" spacing={2} alignItems="center" sx={{ width: '100%' }}>
+                <Stack direction="row" gap={2} alignItems="center" sx={{ width: '100%' }}>
                     <Checkbox
                         checked={isSelected}
                         onChange={(e) => {
@@ -374,7 +374,7 @@ export const LogsViewer: React.FC = () => {
             {/* Toolbar */}
             <Stack
                 direction="row"
-                spacing={2}
+                gap={2}
                 sx={{ mb: 2, flexWrap: 'wrap', gap: 2 }}
                 alignItems="center"
             >
@@ -506,7 +506,7 @@ export const LogsViewer: React.FC = () => {
                             </IconButton>
                         </Box>
                         <Box sx={{ p: 3, flexGrow: 1, overflow: 'auto' }}>
-                            <Stack spacing={2}>
+                            <Stack gap={2}>
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">{t('appLogs.time')}</Typography>
                                     <Typography variant="body1">{new Date(selectedLog.timestamp).toLocaleString()}</Typography>

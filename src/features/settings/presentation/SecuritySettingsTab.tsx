@@ -139,7 +139,7 @@ export function SecuritySettingsTab({
 
     return (
         <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
-            <Stack spacing={2}>
+            <Stack gap={2}>
                 {/* Status */}
                 <Alert severity={isLocked ? 'warning' : 'info'} sx={{ py: 0, px: 2, alignItems: 'center' }}>
                     {isLocked
@@ -163,7 +163,7 @@ export function SecuritySettingsTab({
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                             {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
                         </Typography>
-                        <Stack spacing={1.5}>
+                        <Stack gap={1.5}>
                             <TextField
                                 fullWidth
                                 size="small"
@@ -217,7 +217,7 @@ export function SecuritySettingsTab({
                             {t('settings.unlockSettings')}
                         </Typography>
 
-                        <Stack spacing={1.5}>
+                        <Stack gap={1.5}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <TextField
                                     fullWidth
@@ -257,7 +257,7 @@ export function SecuritySettingsTab({
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                             {t('settings.autoLockSettings')}
                         </Typography>
-                        <Stack spacing={1.5}>
+                        <Stack gap={1.5}>
                             <FormControlLabel
                                 control={
                                     <Switch

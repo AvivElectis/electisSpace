@@ -53,7 +53,7 @@ export function EmptyState({
                 px: 3,
             }}
         >
-            <Stack spacing={3} alignItems="center" maxWidth={500}>
+            <Stack gap={3} alignItems="center" maxWidth={500}>
                 {icon && (
                     <Box sx={{ color: 'text.secondary', opacity: 0.5 }}>
                         {icon}
@@ -71,7 +71,7 @@ export function EmptyState({
                 )}
 
                 {(actionLabel || secondaryActionLabel) && (
-                    <Stack direction="row" spacing={2}>
+                    <Stack direction="row" gap={2}>
                         {actionLabel && onAction && (
                             <Button
                                 variant="contained"

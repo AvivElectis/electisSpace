@@ -152,7 +152,7 @@ export function ConferencePage() {
                 direction={{ xs: 'column', sm: 'row' }}
                 justifyContent="space-between"
                 alignItems={{ xs: 'stretch', sm: 'center' }}
-                spacing={2}
+                gap={2}
                 sx={{ mb: 3 }}
             >
                 <Box>
@@ -308,7 +308,7 @@ export function ConferencePage() {
                                     onClick={() => handleViewDetails(room)}
                                 >
                                     <CardContent>
-                                        <Stack spacing={2} >
+                                        <Stack gap={2} >
                                             {/* Room Header */}
                                             <Stack
                                                 direction="row"
@@ -338,14 +338,14 @@ export function ConferencePage() {
                                                     >
                                                         {room.meetingName}
                                                     </Typography>
-                                                    <Stack direction="row" spacing={1} alignItems="center">
+                                                    <Stack direction="row" gap={1} alignItems="center">
                                                         <AccessTimeIcon fontSize="small" color="action" />
                                                         <Typography variant="body2" color="text.secondary">
                                                             {room.startTime} - {room.endTime}
                                                         </Typography>
                                                     </Stack>
                                                     {room.participants.length > 0 && (
-                                                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                                                        <Stack direction="row" gap={1} alignItems="center" sx={{ mt: 1 }}>
                                                             <PeopleIcon fontSize="small" color="action" />
                                                             <Typography variant="body2" color="text.secondary">
                                                                 {room.participants.length} participant{room.participants.length === 1 ? '' : 's'}
@@ -364,7 +364,7 @@ export function ConferencePage() {
                                             {/* Actions */}
                                             <Stack
                                                 direction="row"
-                                                spacing={1}
+                                                gap={1}
                                                 justifyContent="flex-end"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
@@ -420,7 +420,7 @@ export function ConferencePage() {
                             </Stack>
                         </DialogTitle>
                         <DialogContent dividers>
-                            <Stack spacing={2}>
+                            <Stack gap={2}>
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
                                         {t('conference.roomId')}
@@ -448,7 +448,7 @@ export function ConferencePage() {
                                                 <Typography variant="caption" color="text.secondary">
                                                     {t('conference.participants')}
                                                 </Typography>
-                                                <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                                <Stack gap={0.5} sx={{ mt: 0.5 }}>
                                                     {selectedRoom.participants.map((participant, index) => (
                                                         <Chip
                                                             key={index}
