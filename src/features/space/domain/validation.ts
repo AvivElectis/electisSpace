@@ -21,14 +21,6 @@ export function validateSpace(space: Partial<Space>, csvConfig: CSVConfig): Vali
         });
     }
 
-    // Validate room name
-    if (!space.roomName || space.roomName.trim() === '') {
-        errors.push({
-            field: 'roomName',
-            message: 'Room name is required',
-        });
-    }
-
     // Validate required CSV fields
     if (space.data) {
         for (const column of csvConfig.columns) {

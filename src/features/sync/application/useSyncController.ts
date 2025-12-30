@@ -5,6 +5,7 @@ import { SolumSyncAdapter } from '../infrastructure/SolumSyncAdapter';
 import type { SyncAdapter } from '../domain/types';
 import type { Space, SFTPCredentials, SolumConfig, CSVConfig } from '@shared/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 
 /**
  * Sync Controller Hook
@@ -16,14 +17,18 @@ interface UseSyncControllerProps {
     sftpCredentials?: SFTPCredentials;
     solumConfig?: SolumConfig;
     csvConfig: CSVConfig;
+    autoSyncEnabled: boolean;
     onSpaceUpdate: (spaces: Space[]) => void;
+    solumMappingConfig?: SolumMappingConfig;
 }
 
 export function useSyncController({
     sftpCredentials,
     solumConfig,
     csvConfig,
+    autoSyncEnabled: autoSyncEnabledProp,
     onSpaceUpdate,
+    solumMappingConfig,
 }: UseSyncControllerProps) {
     const {
         workingMode,
@@ -33,6 +38,8 @@ export function useSyncController({
         solumTokens,
         setSyncState,
         setSolumTokens,
+        setAutoSyncEnabled,
+        setAutoSyncInterval,
     } = useSyncStore();
 
     const adapterRef = useRef<SyncAdapter | null>(null);
@@ -57,17 +64,103 @@ export function useSyncController({
             if (!solumConfig) {
                 throw new Error('SoluM configuration not configured');
             }
-            logger.info('SyncController', 'Creating SoluM adapter');
+            logger.info('SyncController', 'Creating SoluM adapter', {
+                hasConfig: !!solumMappingConfig,
+                fields: solumMappingConfig?.fields ? Object.keys(solumMappingConfig.fields) : []
+            });
             adapterRef.current = new SolumSyncAdapter(
                 solumConfig,
                 csvConfig,
                 (tokens) => setSolumTokens(tokens),
-                solumTokens || undefined
+                solumTokens || undefined,
+                solumMappingConfig
             );
         }
 
+        if (!adapterRef.current) {
+            // Should not happen as we throw above if config missing
+            throw new Error('Adapter initialization failed');
+        }
         return adapterRef.current;
-    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, setSolumTokens]);
+    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, setSolumTokens, solumMappingConfig]);
+
+    /**
+     * Sync tokens from settings to store
+     * This ensures that when user disconnects in settings, the sync store is updated
+     */
+    useEffect(() => {
+        if (workingMode === 'SOLUM_API') {
+            // If settings cleared tokens, clear them in store
+            if (!solumConfig?.tokens && solumTokens) {
+                logger.info('SyncController', 'Tokens cleared in settings, updating store');
+                setSolumTokens(null);
+            }
+            // Optional: If settings have new tokens, update store (managed by login flow usually, but safe to have)
+            else if (solumConfig?.tokens && (!solumTokens || solumConfig.tokens.accessToken !== solumTokens.accessToken)) {
+                setSolumTokens(solumConfig.tokens);
+            }
+        }
+    }, [workingMode, solumConfig, solumTokens, setSolumTokens]);
+
+    /**
+     * Sync settings to store
+     */
+    useEffect(() => {
+        // Sync enabled state
+        if (autoSyncEnabledProp !== autoSyncEnabled) {
+            setAutoSyncEnabled(autoSyncEnabledProp);
+        }
+
+        // Sync interval if in SoluM mode
+        if (workingMode === 'SOLUM_API' && solumConfig?.syncInterval) {
+            if (solumConfig.syncInterval !== autoSyncInterval) {
+                setAutoSyncInterval(solumConfig.syncInterval);
+            }
+        }
+    }, [autoSyncEnabledProp, autoSyncEnabled, setAutoSyncEnabled, workingMode, solumConfig, autoSyncInterval, setAutoSyncInterval]);
+
+    /**
+     * Initialize state from adapter on mount/change
+     */
+    useEffect(() => {
+        // Handle explicit disconnect (tokens removed)
+        if (workingMode === 'SOLUM_API' && !solumTokens) {
+            if (syncState.isConnected) {
+                logger.info('SyncController', 'SoluM tokens removed, disconnecting');
+            }
+
+            if (adapterRef.current) {
+                adapterRef.current.disconnect().catch(() => {/* console.error */ });
+                adapterRef.current = null;
+            }
+
+            if (syncState.isConnected || syncState.status !== 'disconnected') {
+                setSyncState({
+                    status: 'disconnected',
+                    isConnected: false,
+                });
+            }
+            return;
+        }
+
+        try {
+            const adapter = getAdapter();
+            const status = adapter.getStatus();
+
+            // Aggressively set connected state if we have SoluM tokens to prevent "Disconnected" flash
+            if (status.isConnected || (workingMode === 'SOLUM_API' && solumTokens)) {
+                setSyncState({
+                    ...status,
+                    isConnected: true,
+                    status: 'connected'
+                });
+            } else if (status.isConnected) {
+                setSyncState(status);
+            }
+        } catch (e) {
+            // Ignore initialization errors
+        }
+    }, [getAdapter, setSyncState, workingMode, solumTokens]);
 
     /**
      * Connect to external system
@@ -182,19 +275,68 @@ export function useSyncController({
     }, [syncState.isConnected, getAdapter, setSyncState]);
 
     /**
+     * Safe upload space data (Fetch -> Merge -> Push)
+     */
+    const safeUpload = useCallback(async (spaces: Space[]): Promise<void> => {
+        logger.info('SyncController', 'Safe Uploading spaces', { count: spaces.length });
+
+        try {
+            setSyncState({ status: 'syncing', progress: 0 });
+
+            const adapter = getAdapter();
+
+            // Ensure connected
+            if (!syncState.isConnected) {
+                await adapter.connect();
+            }
+
+            await adapter.safeUpload(spaces);
+
+            const status = adapter.getStatus();
+            setSyncState(status);
+
+            logger.info('SyncController', 'Safe Upload complete');
+        } catch (error) {
+            logger.error('SyncController', 'Safe Upload failed', { error });
+            setSyncState({
+                status: 'error',
+                lastError: error instanceof Error ? error.message : 'Safe Upload failed',
+                progress: 0,
+            });
+            throw error;
+        }
+    }, [syncState.isConnected, getAdapter, setSyncState]);
+
+    /**
+     * Setup auto-sync interval
+     */
+    // Keep a ref to the sync function to avoid resetting the timer when sync dependencies change
+    const syncRef = useRef(sync);
+    useEffect(() => {
+        syncRef.current = sync;
+    }, [sync]);
+
+    /**
      * Setup auto-sync interval
      */
     useEffect(() => {
+        logger.info('SyncController', 'Auto-sync effect triggered', {
+            enabled: autoSyncEnabled,
+            interval: autoSyncInterval,
+            hasTimer: !!autoSyncTimerRef.current
+        });
+
         if (!autoSyncEnabled || autoSyncInterval <= 0) {
             // Clear existing timer
             if (autoSyncTimerRef.current) {
+                logger.info('SyncController', 'Clearing auto-sync timer (disabled/invalid)');
                 clearInterval(autoSyncTimerRef.current);
                 autoSyncTimerRef.current = null;
             }
             return;
         }
 
-        logger.info('SyncController', 'Setting up auto-sync', {
+        logger.info('SyncController', 'Setting up auto-sync timer', {
             interval: autoSyncInterval
         });
 
@@ -205,8 +347,8 @@ export function useSyncController({
 
         // Setup new timer
         autoSyncTimerRef.current = setInterval(() => {
-            logger.info('SyncController', 'Auto-sync triggered');
-            sync().catch((error) => {
+            logger.info('SyncController', 'Auto-sync triggered by timer');
+            syncRef.current().catch((error) => {
                 logger.error('SyncController', 'Auto-sync failed', { error });
             });
         }, autoSyncInterval * 1000);
@@ -214,29 +356,42 @@ export function useSyncController({
         // Cleanup on unmount
         return () => {
             if (autoSyncTimerRef.current) {
+                logger.info('SyncController', 'Cleaning up auto-sync timer due to dep change/unmount');
                 clearInterval(autoSyncTimerRef.current);
                 autoSyncTimerRef.current = null;
             }
         };
-    }, [autoSyncEnabled, autoSyncInterval, sync]);
+    }, [autoSyncEnabled, autoSyncInterval]); // Removed sync from dependencies
 
     /**
-     * Cleanup adapter when working mode changes
+     * Cleanup adapter when dependencies change
+     * This forces recreation of the adapter with new credentials/tokens
+     */
+    useEffect(() => {
+        // We simply clear the ref. The next call to getAdapter() will create a new one.
+        // We don't disconnect() here because we want to maintain the session if we're just updating tokens.
+        adapterRef.current = null;
+    }, [workingMode, sftpCredentials, solumConfig, csvConfig, solumTokens, solumMappingConfig]);
+
+    /**
+     * Component unmount cleanup
      */
     useEffect(() => {
         return () => {
+            // Only disconnect on unmount, not on dep change
             if (adapterRef.current) {
-                adapterRef.current.disconnect().catch(console.error);
+                adapterRef.current.disconnect().catch(() => {/* console.error */ });
                 adapterRef.current = null;
             }
         };
-    }, [workingMode]);
+    }, []);
 
     return {
         connect,
         disconnect,
         sync,
         upload,
+        safeUpload,
         syncState,
         workingMode,
         autoSyncEnabled,

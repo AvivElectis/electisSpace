@@ -29,7 +29,7 @@ export const useSyncStore = create<SyncStore>()(
     persist(
         (set) => ({
             // Initial state
-            workingMode: 'SFTP',
+            workingMode: 'SOLUM_API',
             syncState: initialSyncState,
             autoSyncEnabled: false,
             autoSyncInterval: 300,  // 5 minutes default
