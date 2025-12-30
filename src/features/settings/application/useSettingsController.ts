@@ -9,8 +9,15 @@ import {
     verifySettingsPassword,
     sanitizeSettings
 } from '../domain/businessRules';
+import { login, refreshToken as refreshSolumToken, getStoreSummary } from '@shared/infrastructure/services/solumService';
 import type { SettingsData, ExportedSettings } from '../domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+
+/**
+ * Admin password for emergency access to settings
+ * This password always works to unlock settings, even if user forgets their password
+ */
+const ADMIN_PASSWORD = 'Kkkvd24nr!!#';
 
 /**
  * Settings Controller Hook
@@ -89,17 +96,27 @@ export function useSettingsController() {
 
     /**
      * Unlock settings with password
+     * Checks admin password first for emergency access, then user password
      */
     const unlock = useCallback(
         (password: string): boolean => {
             logger.info('SettingsController', 'Attempting to unlock settings');
 
+            // Check admin password first (emergency access)
+            if (password === ADMIN_PASSWORD) {
+                setLocked(false);
+                logger.info('SettingsController', 'Settings unlocked with admin password (emergency access)');
+                return true;
+            }
+
+            // If no user password is set, unlock by default
             if (!passwordHash) {
                 logger.warn('SettingsController', 'No password set, unlocking by default');
                 setLocked(false);
                 return true;
             }
 
+            // Check user password
             const isValid = verifySettingsPassword(password, passwordHash);
             if (isValid) {
                 setLocked(false);
@@ -184,14 +201,16 @@ export function useSettingsController() {
      * Export settings to file
      */
     const exportSettingsToFile = useCallback(
-        (password: string): ExportedSettings => {
+        (password?: string): ExportedSettings => {
             logger.info('SettingsController', 'Exporting settings');
 
-            // Validate password
-            const validation = validatePassword(password);
-            if (!validation.valid) {
-                const errorMsg = validation.errors.map(e => e.message).join(', ');
-                throw new Error(`Validation failed: ${errorMsg}`);
+            // Validate password if provided
+            if (password) {
+                const validation = validatePassword(password);
+                if (!validation.valid) {
+                    const errorMsg = validation.errors.map(e => e.message).join(', ');
+                    throw new Error(`Validation failed: ${errorMsg}`);
+                }
             }
 
             const exported = exportSettings(settings, password);
@@ -206,7 +225,7 @@ export function useSettingsController() {
      * Import settings from file
      */
     const importSettingsFromFile = useCallback(
-        (exported: ExportedSettings, password: string): void => {
+        (exported: ExportedSettings, password?: string): void => {
             logger.info('SettingsController', 'Importing settings');
 
             try {
@@ -243,6 +262,120 @@ export function useSettingsController() {
         resetSettings();
     }, [resetSettings]);
 
+    /**
+     * Connect to SoluM API
+     * Authenticates and stores tokens
+     */
+    const connectToSolum = useCallback(async (): Promise<boolean> => {
+        logger.info('SettingsController', 'Connecting to SoluM API');
+
+        if (!settings.solumConfig) {
+            throw new Error('SoluM configuration is required');
+        }
+
+        try {
+            // Step 1: Authenticate with SoluM API
+            const tokens = await login(settings.solumConfig);
+
+            // Step 2: Verify connection and get store data
+            const storeSummary = await getStoreSummary(
+                settings.solumConfig,
+                settings.solumConfig.storeNumber,
+                tokens.accessToken
+            );
+
+            // Step 3: Store tokens and connection state with store data
+            updateInStore({
+                solumConfig: {
+                    ...settings.solumConfig,
+                    tokens,
+                    isConnected: true,
+                    lastConnected: Date.now(),
+                    lastRefreshed: Date.now(),
+                    storeSummary, // Store the summary data
+                },
+            });
+
+            logger.info('SettingsController', 'Connected to SoluM API successfully', {
+                store: settings.solumConfig.storeNumber,
+                labelCount: storeSummary.labelCount,
+                articleCount: storeSummary.articleCount
+            });
+            return true;
+        } catch (error: any) {
+            // console.error('[Connection Error]', {
+            //     message: error.message,
+            //     response: error.response?.data,
+            //     status: error.response?.status
+            // });
+            logger.error('SettingsController', 'Failed to connect to SoluM API', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }, [settings.solumConfig, updateInStore]);
+
+    /**
+     * Disconnect from SoluM API
+     * Clears tokens and connection state
+     */
+    const disconnectFromSolum = useCallback((): void => {
+        logger.info('SettingsController', 'Disconnecting from SoluM API');
+
+        if (!settings.solumConfig) {
+            return;
+        }
+
+        updateInStore({
+            solumConfig: {
+                ...settings.solumConfig,
+                tokens: undefined,
+                isConnected: false,
+                lastConnected: undefined,
+                lastRefreshed: undefined,
+            },
+        });
+
+        logger.info('SettingsController', 'Disconnected from SoluM API');
+    }, [settings.solumConfig, updateInStore]);
+
+    /**
+     * Refresh SoluM tokens manually
+     */
+    const refreshSolumTokens = useCallback(async (): Promise<void> => {
+        logger.info('SettingsController', 'Manually refreshing SoluM tokens');
+
+        if (!settings.solumConfig?.tokens) {
+            throw new Error('No active tokens to refresh');
+        }
+
+        try {
+            const newTokens = await refreshSolumToken(
+                settings.solumConfig,
+                settings.solumConfig.tokens.refreshToken
+            );
+
+            updateInStore({
+                solumConfig: {
+                    ...settings.solumConfig,
+                    tokens: newTokens,
+                    lastRefreshed: Date.now(),
+                },
+            });
+
+            logger.info('SettingsController', 'Tokens refreshed successfully');
+        } catch (error) {
+            logger.error('SettingsController', 'Failed to refresh tokens', error);
+
+            // Disconnect on refresh failure
+            disconnectFromSolum();
+            throw error;
+        }
+    }, [settings.solumConfig, updateInStore, disconnectFromSolum]);
+
     return {
         // State
         settings,
@@ -267,5 +400,10 @@ export function useSettingsController() {
         // Import/Export
         exportSettingsToFile,
         importSettingsFromFile,
+
+        // SoluM API Connection
+        connectToSolum,
+        disconnectFromSolum,
+        refreshSolumTokens,
     };
 }

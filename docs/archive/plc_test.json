@@ -1,0 +1,28 @@
+{
+  "fileExtension": "csv",
+  "delimeter": ";",
+  "mappingInfo": {
+    "store": "STORE_ID",
+    "articleId": "ARTICLE_ID",
+    "articleName": "ITEM_NAME",
+    "nfcUrl": "NFC_URL"
+  },
+  "articleBasicInfo": [
+    "store",
+    "articleId",
+    "articleName",
+    "nfcUrl"
+  ],
+  "articleData": [
+    "STORE_ID",
+    "ARTICLE_ID",
+    "ITEM_NAME",
+    "NFC_URL",
+    "ENGLISH_NAME",
+    "RANK",
+    "TITLE",
+    "MEETING_NAME",
+    "MEETING_TIME",
+    "PARTICIPANTS"
+  ]
+}

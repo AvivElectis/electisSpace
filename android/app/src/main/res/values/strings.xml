@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">electisSpace</string>
+    <string name="title_activity_main">electisSpace</string>
+    <string name="package_name">com.electisspace.app</string>
+    <string name="custom_url_scheme">com.electisspace.app</string>
+</resources>

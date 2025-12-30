@@ -1,7 +1,11 @@
 /**
  * Logger Service
  * Provides structured logging with different levels and in-memory storage
+ * Now also sends logs to the persistent logsStore for the logs viewer
  */
+
+import type { LogLevel as StoreLogLevel } from '../store/logsStore';
+import { useLogsStore } from '../store/logsStore';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -12,6 +16,7 @@ export interface LogEntry {
     message: string;
     data?: any;
 }
+
 
 class Logger {
     private logs: LogEntry[] = [];
@@ -34,22 +39,35 @@ class Logger {
             this.logs.shift();
         }
 
-        // Console output with formatting
-        const prefix = `[${level.toUpperCase()}] [${category}]`;
-        const logData = data ? ` ${JSON.stringify(data)}` : '';
+        // Send to persistent logs store
+        try {
+            useLogsStore.getState().addLog({
+                level: level as StoreLogLevel,
+                component: category,
+                message,
+                data,
+            });
+        } catch (error) {
+            // Silently fail if store is not available or throws
+            // console.error('Failed to log to store:', error);
+        }
+
+        // Console output with formatting (commented out - logs now go to logsStore)
+        // const prefix = `[${level.toUpperCase()}] [${category}]`;
+        // const logData = data ? ` ${JSON.stringify(data)}` : '';
 
         switch (level) {
             case 'debug':
-                console.debug(`${prefix} ${message}${logData}`);
+                // console.debug(`${prefix} ${message}${logData}`);
                 break;
             case 'info':
-                console.info(`${prefix} ${message}${logData}`);
+                // console.info(`${prefix} ${message}${logData}`);
                 break;
             case 'warn':
-                console.warn(`${prefix} ${message}${logData}`);
+                // console.warn(`${prefix} ${message}${logData}`);
                 break;
             case 'error':
-                console.error(`${prefix} ${message}${logData}`);
+                // console.error(`${prefix} ${message}${logData}`);
                 break;
         }
     }

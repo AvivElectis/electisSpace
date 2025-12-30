@@ -23,35 +23,49 @@ export function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Export settings to encrypted JSON
+ * Export settings to JSON (optionally encrypted)
  * @param settings - Settings to export
- * @param password - Encryption password
+ * @param password - Optional encryption password
  * @returns Exported settings object
  */
-export function exportSettings(settings: SettingsData, password: string): ExportedSettings {
+export function exportSettings(settings: SettingsData, password?: string): ExportedSettings {
     const settingsJson = JSON.stringify(settings);
-    const encryptedData = encrypt(settingsJson, password);
+    const data = password ? encrypt(settingsJson, password) : settingsJson;
 
     return {
         version: '1.0',
         timestamp: new Date().toISOString(),
-        data: encryptedData,
+        data,
+        encrypted: !!password,
     };
 }
 
 /**
- * Import settings from encrypted JSON
+ * Import settings from JSON (optionally encrypted)
  * @param exported - Exported settings object
- * @param password - Decryption password
+ * @param password - Optional decryption password
  * @returns Decrypted settings data
  */
-export function importSettings(exported: ExportedSettings, password: string): SettingsData {
+export function importSettings(exported: ExportedSettings, password?: string): SettingsData {
     try {
-        const decryptedJson = decrypt(exported.data, password);
-        const settings = JSON.parse(decryptedJson) as SettingsData;
+        let settingsJson: string;
+
+        if (exported.encrypted) {
+            if (!password) {
+                throw new Error('Password is required to import encrypted settings.');
+            }
+            settingsJson = decrypt(exported.data, password);
+        } else {
+            settingsJson = exported.data;
+        }
+
+        const settings = JSON.parse(settingsJson) as SettingsData;
         return settings;
     } catch (error) {
-        throw new Error('Failed to decrypt settings. Invalid password or corrupted data.');
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error('Failed to import settings. Invalid password or corrupted data.');
     }
 }
 
@@ -62,8 +76,8 @@ export function importSettings(exported: ExportedSettings, password: string): Se
 export function createDefaultSettings(): SettingsData {
     return {
         appName: 'electis Space',
-        appSubtitle: '',
-        spaceType: 'chair',
+        appSubtitle: 'ESL Management System',
+        spaceType: 'office',
         workingMode: 'SFTP',
         csvConfig: {
             delimiter: ',',
@@ -71,11 +85,21 @@ export function createDefaultSettings(): SettingsData {
             mapping: {},
             conferenceEnabled: false,
         },
+        solumConfig: {
+            companyName: '',
+            username: '',
+            password: '',
+            storeNumber: '',
+            cluster: 'common',
+            baseUrl: 'https://eu.common.solumesl.com',
+            syncInterval: 60,
+        },
         logos: {},
         autoSyncEnabled: false,
         autoSyncInterval: 300,  // 5 minutes
     };
 }
+
 
 /**
  * Hash settings password for storage

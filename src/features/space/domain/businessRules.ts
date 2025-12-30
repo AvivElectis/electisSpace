@@ -6,13 +6,13 @@ import type { Space, CSVConfig } from '@shared/domain/types';
 
 /**
  * Generate unique space ID
- * @param roomName - Room name
+ * @param name - Descriptive name to derive ID from
  * @param existingIds - List of existing IDs
  * @returns Unique ID
  */
-export function generateSpaceId(roomName: string, existingIds: string[]): string {
+export function generateSpaceId(name: string, existingIds: string[]): string {
     // Extract room number from name if possible
-    const match = roomName.match(/\d+/);
+    const match = name.match(/\d+/);
     const roomNumber = match ? match[0] : '1';
 
     // Generate base ID
@@ -50,7 +50,6 @@ export function mergeSpaceDefaults(
     // Build complete space
     const completeSpace: Space = {
         id: space.id || '',
-        roomName: space.roomName || '',
         data,
         labelCode: space.labelCode,
         templateName: space.templateName,
@@ -77,9 +76,8 @@ export function filterSpaces(
     if (searchQuery && searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(space => {
-            // Search in ID and room name
+            // Search in ID
             if (space.id.toLowerCase().includes(query)) return true;
-            if (space.roomName.toLowerCase().includes(query)) return true;
 
             // Search in data fields
             for (const value of Object.values(space.data)) {
@@ -95,9 +93,6 @@ export function filterSpaces(
         for (const [field, value] of Object.entries(filters)) {
             if (value && value !== '') {
                 filtered = filtered.filter(space => {
-                    if (field === 'roomName') {
-                        return space.roomName === value;
-                    }
                     return space.data[field] === value;
                 });
             }
@@ -117,9 +112,7 @@ export function getUniqueFieldValues(spaces: Space[], fieldName: string): string
     const values = new Set<string>();
 
     for (const space of spaces) {
-        if (fieldName === 'roomName') {
-            if (space.roomName) values.add(space.roomName);
-        } else if (space.data[fieldName]) {
+        if (space.data[fieldName]) {
             values.add(space.data[fieldName]);
         }
     }

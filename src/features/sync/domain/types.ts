@@ -51,7 +51,15 @@ export interface SyncAdapter {
     upload(spaces: Space[]): Promise<void>;
 
     /**
+     * Upload space data to external system using a safe merge strategy (Fetch-Merge-Push)
+     * Recommended for loading lists or partial updates to prevent data corruption
+     * @param spaces - Spaces to upload
+     */
+    safeUpload(spaces: Space[]): Promise<void>;
+
+    /**
      * Perform full synchronization (download + process + upload)
+     * @returns Promise
      */
     sync(): Promise<void>;
 

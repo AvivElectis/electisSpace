@@ -1,0 +1,55 @@
+
+{
+  "fileExtension": "csv",
+  "delimeter": ";",
+  "mappingInfo": {
+    "store": "STORE_ID",
+    "articleId": "ARTICLE_ID",
+    "articleName": "ITEM_NAME",
+    "nfcUrl": "NFC_URL"
+  },
+  "articleBasicInfo": [
+    "store",
+    "articleId",
+    "articleName",
+    "nfcUrl"
+  ],
+  "articleData": [
+    "STORE_ID",
+    "ARTICLE_ID",
+    "BARCODE",
+    "ITEM_NAME",
+    "ALIAS",
+    "SALE_PRICE",
+    "LIST_PRICE",
+    "UNIT_PRICE",
+    "ORIGIN",
+    "MANUFACTURER",
+    "TYPE",
+    "WEIGHT",
+    "WEIGHT_UNIT",
+    "UNIT_PRICE_UNIT",
+    "UNIT_DIMENSION",
+    "A_MARKER",
+    "R_MARKER",
+    "CATEGORY1",
+    "CATEGORY2",
+    "CATEGORY3",
+    "CATEGORY4",
+    "CATEGORY5",
+    "DISPLAY_TYPE",
+    "DISPLAY_TYPE2",
+    "DISPLAY_TYPE3",
+    "NFC_URL",
+    "ETC_0",
+    "ETC_1",
+    "ETC_2",
+    "ETC_3",
+    "ETC_4",
+    "ETC_5",
+    "ETC_6",
+    "ETC_7",
+    "ETC_8",
+    "ETC_9"
+  ]
+}

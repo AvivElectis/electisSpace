@@ -55,7 +55,6 @@ export function parseCSV(csvContent: string, config: CSVConfig): AppData {
             data[fieldName] = row[columnIndex] || '';
         }
 
-        const roomName = data['roomName'] || '';
         const id = data['id'] || '';
 
         // Extract store number from first row
@@ -72,7 +71,6 @@ export function parseCSV(csvContent: string, config: CSVConfig): AppData {
             // Parse conference room
             const room: ConferenceRoom = {
                 id,
-                roomName,
                 hasMeeting: data['hasMeeting'] === 'true' || data['hasMeeting'] === '1',
                 meetingName: data['meetingName'] || '',
                 startTime: data['startTime'] || '',
@@ -86,7 +84,6 @@ export function parseCSV(csvContent: string, config: CSVConfig): AppData {
             // Parse space
             const space: Space = {
                 id,
-                roomName,
                 data,
                 labelCode: data['labelCode'],
                 templateName: data['templateName'],
@@ -139,7 +136,7 @@ export function generateCSV(data: AppData, config: CSVConfig, globalNfcUrl?: str
             if (fieldName === 'id') {
                 row[columnIndex] = space.id;
             } else if (fieldName === 'roomName') {
-                row[columnIndex] = space.roomName;
+                row[columnIndex] = space.data?.[fieldName] || '';
             } else if (fieldName === 'labelCode') {
                 row[columnIndex] = space.labelCode || '';
             } else if (fieldName === 'templateName') {
@@ -165,7 +162,7 @@ export function generateCSV(data: AppData, config: CSVConfig, globalNfcUrl?: str
                 if (fieldName === 'id') {
                     row[columnIndex] = room.id;
                 } else if (fieldName === 'roomName') {
-                    row[columnIndex] = room.roomName;
+                    row[columnIndex] = room.data?.[fieldName] || '';
                 } else if (fieldName === 'hasMeeting') {
                     row[columnIndex] = room.hasMeeting ? 'true' : 'false';
                 } else if (fieldName === 'meetingName') {
@@ -205,7 +202,7 @@ export function generateCSV(data: AppData, config: CSVConfig, globalNfcUrl?: str
  */
 export function validateCSV(config: CSVConfig): boolean {
     // Check required fields exist in mapping
-    const requiredFields = ['id', 'roomName'];
+    const requiredFields = ['id']; // roomName is now dynamic in data
 
     for (const field of requiredFields) {
         if (!(field in config.mapping)) {

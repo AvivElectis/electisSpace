@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 import type { SettingsData, LogoConfig } from '../domain/types';
 import { createDefaultSettings } from '../domain/businessRules';
 
@@ -21,67 +21,70 @@ interface SettingsStore {
 }
 
 export const useSettingsStore = create<SettingsStore>()(
-    persist(
-        (set) => ({
-            // Initial state
-            settings: createDefaultSettings(),
-            passwordHash: null,
-            isLocked: false,
+    devtools(
+        persist(
+            (set) => ({
+                // Initial state
+                settings: createDefaultSettings(),
+                passwordHash: null,
+                isLocked: false,
 
-            // Actions
-            setSettings: (settings) => set({ settings }),
+                // Actions
+                setSettings: (settings) => set({ settings }, false, 'setSettings'),
 
-            updateSettings: (updates) =>
-                set((state) => ({
-                    settings: { ...state.settings, ...updates },
-                })),
+                updateSettings: (updates) =>
+                    set((state) => ({
+                        settings: { ...state.settings, ...updates },
+                    }), false, 'updateSettings'),
 
-            setPasswordHash: (hash) => set({ passwordHash: hash }),
+                setPasswordHash: (hash) => set({ passwordHash: hash }, false, 'setPasswordHash'),
 
-            setLocked: (locked) => set({ isLocked: locked }),
+                setLocked: (locked) => set({ isLocked: locked }, false, 'setLocked'),
 
-            setLogos: (logos) =>
-                set((state) => ({
-                    settings: { ...state.settings, logos },
-                })),
+                setLogos: (logos) =>
+                    set((state) => ({
+                        settings: { ...state.settings, logos },
+                    }), false, 'setLogos'),
 
-            updateLogo: (logoIndex, base64) =>
-                set((state) => ({
-                    settings: {
-                        ...state.settings,
-                        logos: {
-                            ...state.settings.logos,
-                            [`logo${logoIndex}`]: base64,
-                        },
-                    },
-                })),
-
-            deleteLogo: (logoIndex) =>
-                set((state) => {
-                    const newLogos = { ...state.settings.logos };
-                    delete newLogos[`logo${logoIndex}` as keyof LogoConfig];
-                    return {
+                updateLogo: (logoIndex, base64) =>
+                    set((state) => ({
                         settings: {
                             ...state.settings,
-                            logos: newLogos,
+                            logos: {
+                                ...state.settings.logos,
+                                [`logo${logoIndex}`]: base64,
+                            },
                         },
-                    };
-                }),
+                    }), false, 'updateLogo'),
 
-            resetSettings: () =>
-                set({
-                    settings: createDefaultSettings(),
-                    passwordHash: null,
-                    isLocked: false,
-                }),
-        }),
-        {
-            name: 'settings-store',
-            partialize: (state) => ({
-                settings: state.settings,
-                passwordHash: state.passwordHash,
-                // Don't persist isLocked - always start unlocked
+                deleteLogo: (logoIndex) =>
+                    set((state) => {
+                        const newLogos = { ...state.settings.logos };
+                        delete newLogos[`logo${logoIndex}` as keyof LogoConfig];
+                        return {
+                            settings: {
+                                ...state.settings,
+                                logos: newLogos,
+                            },
+                        };
+                    }, false, 'deleteLogo'),
+
+                resetSettings: () =>
+                    set({
+                        settings: createDefaultSettings(),
+                        passwordHash: null,
+                        isLocked: false,
+                    }, false, 'resetSettings'),
             }),
-        }
+            {
+                name: 'settings-store',
+                partialize: (state) => ({
+                    settings: state.settings,
+                    passwordHash: state.passwordHash,
+                    // Don't persist isLocked - always start unlocked
+                }),
+            }
+        ),
+        { name: 'SettingsStore' }
     )
 );

@@ -1,0 +1,178 @@
+﻿
+> electis_space@0.1.0 test
+> vitest --run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.15 [39m[90mF:/React_2026/electisSpace[39m
+
+ [31mΓ¥»[39m src/shared/domain/validation.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 6[2mms[22m[39m
+       [32mΓ£ף[39m should accept valid numeric IDs[32m 1[2mms[22m[39m
+       [32mΓ£ף[39m should reject empty IDs[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should reject IDs with special characters[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should validate required fields[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should allow optional fields[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should accept IDs starting with C[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should reject IDs not starting with C[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should validate HH:mm format[32m 0[2mms[22m[39m
+[31m       [31m├ק[31m should reject invalid time formats[39m[32m 3[2mms[22m[39m
+       [32mΓ£ף[39m should accept array of participants[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should handle empty participants[32m 0[2mms[22m[39m
+ [31mΓ¥»[39m src/shared/infrastructure/services/encryptionService.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 10[2mms[22m[39m
+       [32mΓ£ף[39m should encrypt data with password[32m 3[2mms[22m[39m
+       [32mΓ£ף[39m should produce different encrypted strings for same data[32m 1[2mms[22m[39m
+       [32mΓ£ף[39m should decrypt data with correct password[32m 1[2mms[22m[39m
+       [32mΓ£ף[39m should fail to decrypt with wrong password[32m 0[2mms[22m[39m
+       [32mΓ£ף[39m should encrypt and decrypt successfully[32m 1[2mms[22m[39m
+       [32mΓ£ף[39m should handle special characters[32m 1[2mms[22m[39m
+       [32mΓ£ף[39m should validate strong passwords[32m 1[2mms[22m[39m
+[31m       [31m├ק[31m should reject weak passwords[39m[32m 3[2mms[22m[39m
+ [32mΓ£ף[39m src/test/mockData.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/infrastructure/services/csvService.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mΓ£ף[39m src/shared/infrastructure/monitoring/performanceMonitor.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Users
+\Win10\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo          : N 
+   otSpecified: (:String) [],   
+  RemoteException
+    + FullyQualifiedErrorId : N 
+   ativeCommandError
+ 
+[31mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»[39m[1m
+[41m Failed Suites 3 [49m[22m
+[31mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»[39m
+
+[41m[1m FAIL [22m[49m src/sh
+ared/presentation/components/Con
+firmDialog.test.tsx[2m [ src/sh
+ared/presentation/components/Con
+firmDialog.test.tsx ][22m
+[41m[1m FAIL [22m[49m src/sh
+ared/presentation/components/Err
+orDisplay.test.tsx[2m [ src/sha
+red/presentation/components/Erro
+rDisplay.test.tsx ][22m
+[41m[1m FAIL [22m[49m src/sh
+ared/presentation/components/Loa
+dingSpinner.test.tsx[2m [ src/s
+hared/presentation/components/Lo
+adingSpinner.test.tsx ][22m
+[31m[1mError[22m: Cannot 
+find module 
+'@testing-library/dom'
+Require stack:
+- F:\React_2026\electisSpace\nod
+e_modules\@testing-library\react
+\dist\pure.js[39m
+[90m [2mΓ¥»[22m 
+Object.<anonymous> node_modules/
+@testing-library/react/dist/pure
+.js:[2m46:12[22m[39m
+
+[31m[2mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ
+»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γ
+מ»Γמ»Γמ»Γמ»Γמ»Γמ»[1/5]Γמ»[22m[
+39m
+
+
+[31mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»[39m
+[1m[41m Failed Tests 2 [49m[2
+2m[31mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»[39
+m
+
+[41m[1m FAIL [22m[49m src/sh
+ared/domain/validation.test.ts[
+2m > [22mConference Room 
+Domain Validation[2m > 
+[22mMeeting Time 
+Validation[2m > [22mshould 
+reject invalid time formats
+[31m[1mAssertionError[22m: 
+expected '9:00' not to match /^(
+[0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+[39m
+
+[32m- Expected:[39m 
+/^([0-1]?[0-9]|2[0-3]):[0-5][0-9
+]$/
+
+[31m+ Received:[39m 
+"9:00"
+
+[36m [2mΓ¥»[22m src/shared/do
+main/validation.test.ts:[2m88:3
+4[22m[39m
+    [90m 86| [39m
+    [90m 87| [39m            i
+nvalidTimes[33m.[39m[34mforEa
+ch[39m(time [33m=>[39m {
+    [90m 88| [39m             
+   [34mexpect[39m(time)[33m.
+[39mnot[33m.[39m[34mtoMatch[
+39m(timeRegex)[33m;[39m
+    [90m   | [39m             
+                    [31m^[39m
+    [90m 89| [39m            
+})[33m;[39m
+    [90m 90| [39m        
+})[33m;[39m
+[90m [2mΓ¥»[22m src/shared/do
+main/validation.test.ts:[2m87:2
+6[22m[39m
+
+[31m[2mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ
+»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γ
+מ»Γמ»Γמ»Γמ»Γמ»Γמ»[2/5]Γמ»[22m[
+39m
+
+[41m[1m FAIL [22m[49m src/sh
+ared/infrastructure/services/enc
+ryptionService.test.ts[2m > 
+[22mEncryption Service[2m > 
+[22mPassword Validation[2m > 
+[22mshould reject weak 
+passwords
+[31m[1mAssertionError[22m: 
+expected 8 to be less than 
+8[39m
+[36m [2mΓ¥»[22m src/shared/in
+frastructure/services/encryption
+Service.test.ts:[2m119:36[22m
+[39m
+    [90m117| [39m
+    [90m118| [39m            w
+eakPasswords[33m.[39m[34mforE
+ach[39m(pwd [33m=>[39m {
+    [90m119| [39m             
+   [34mexpect[39m(pwd[33m.[3
+9mlength)[33m.[39m[34mtoBeLes
+sThan[39m([34m8[39m)[33m;[3
+9m
+    [90m   | [39m             
+                      
+[31m^[39m
+    [90m120| [39m            
+})[33m;[39m
+    [90m121| [39m        
+})[33m;[39m
+[90m [2mΓ¥»[22m src/shared/in
+frastructure/services/encryption
+Service.test.ts:[2m118:27[22m
+[39m
+
+[31m[2mΓמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ
+»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γמ»Γ
+מ»Γמ»Γמ»Γמ»Γמ»Γמ»[3/5]Γמ»[22m[
+39m
+
+
+[2m Test Files [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m42 passed[39m[22m[90m (44)[39m
+[2m   Start at [22m 02:22:51
+[2m   Duration [22m 1.20s[2m (transform 185ms, setup 961ms, import 141ms, tests 50ms, environment 6.66s)[22m
+
