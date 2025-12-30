@@ -11,14 +11,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// AIMS Configuration
+// AIMS Configuration - uses environment variables
 const AIMS_CONFIG = {
-    companyName: 'TST',
-    username: 'aviv@electis.co.il',
-    password: 'REDACTED_PASSWORD',
-    storeNumber: '01',
+    companyName: process.env.VITE_AIMS_COMPANY_NAME || 'TST',
+    username: process.env.VITE_AIMS_USERNAME || '',
+    password: process.env.VITE_AIMS_PASSWORD || '',
+    storeNumber: process.env.VITE_AIMS_STORE_NUMBER || '01',
     cluster: 'common' as const,
-    baseUrl: 'https://eu.common.solumesl.com',
+    baseUrl: process.env.VITE_AIMS_BASE_URL || 'https://eu.common.solumesl.com',
     syncInterval: 300,
     tokens: undefined as any,
 };
