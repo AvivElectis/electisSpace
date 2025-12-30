@@ -1,9 +1,9 @@
 {
   "name": "electis_space",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "ESL Management System - electis Space",
-  "author": "Aviv Electis",
+  "author": "Aviv Ben Waiss",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {

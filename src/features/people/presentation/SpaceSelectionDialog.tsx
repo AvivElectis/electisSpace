@@ -11,10 +11,11 @@ import {
     Box,
     Chip,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 
 interface SpaceSelectionDialogProps {
     open: boolean;
@@ -45,6 +46,16 @@ export function SpaceSelectionDialog({
     const { t, i18n } = useTranslation();
     const settings = useSettingsStore((state) => state.settings);
     const people = usePeopleStore((state) => state.people);
+    const { getLabel } = useSpaceTypeLabels();
+
+    // Helper for translations with space type
+    const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
+        return t(key, {
+            ...options,
+            spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypePlural: getLabel('plural').toLowerCase(),
+        });
+    }, [t, getLabel]);
 
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
     const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
@@ -106,7 +117,7 @@ export function SpaceSelectionDialog({
             dir={isRtl ? 'rtl' : 'ltr'}
         >
             <DialogTitle sx={{ textAlign: isRtl ? 'right' : 'left' }}>
-                {t('people.selectSpace')}
+                {tWithSpaceType('people.selectSpace')}
             </DialogTitle>
             <DialogContent>
                 {personName && (
@@ -118,7 +129,7 @@ export function SpaceSelectionDialog({
                             textAlign: isRtl ? 'right' : 'left'
                         }}
                     >
-                        {t('people.assigningSpaceTo', { name: personName })}
+                        {tWithSpaceType('people.assigningSpaceTo', { name: personName })}
                     </Typography>
                 )}
 
@@ -129,12 +140,12 @@ export function SpaceSelectionDialog({
                         textAlign: isRtl ? 'right' : 'left'
                     }}
                 >
-                    {t('people.availableSpaces', { count: availableCount })}
+                    {tWithSpaceType('people.availableSpaces', { count: availableCount })}
                 </Typography>
 
                 {totalSpaces === 0 ? (
                     <Typography color="error" sx={{ textAlign: isRtl ? 'right' : 'left' }}>
-                        {t('people.noSpacesConfigured')}
+                        {tWithSpaceType('people.noSpacesConfigured')}
                     </Typography>
                 ) : (
                     <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
@@ -153,7 +164,7 @@ export function SpaceSelectionDialog({
                                     }}
                                 >
                                     <ListItemText
-                                        primary={`${t('people.space')} ${option.id}`}
+                                        primary={`${tWithSpaceType('people.space')} ${option.id}`}
                                         sx={{
                                             textDecoration: option.taken ? 'line-through' : 'none',
                                             textAlign: isRtl ? 'right' : 'left',
@@ -196,7 +207,7 @@ export function SpaceSelectionDialog({
                     variant="contained"
                     disabled={!selectedSpaceId}
                 >
-                    {t('people.assignSpace')}
+                    {tWithSpaceType('people.assignSpace')}
                 </Button>
             </DialogActions>
         </Dialog>

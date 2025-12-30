@@ -1,5 +1,5 @@
 import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import { type ReactNode, useState, useEffect } from 'react';
+import { type ReactNode, useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -12,9 +12,12 @@ import { SettingsDialog } from '../../../features/settings/presentation/Settings
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { convertSpacesToPeopleWithVirtualPool } from '@features/people/infrastructure/peopleService';
 import { useSyncController } from '@features/sync/application/useSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { logger } from '@shared/infrastructure/services/logger';
 
 interface MainLayoutProps {
     children: ReactNode;
@@ -51,9 +54,34 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { syncState, workingMode, setWorkingMode } = useSyncStore();
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
+    const setPeople = usePeopleStore(state => state.setPeople);
 
     // Determine if People Manager mode is enabled
     const isPeopleManagerMode = settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API';
+
+    /**
+     * Combined space update handler
+     * When People Manager mode is enabled, also updates the people store
+     * This enables cross-device sync via AIMS metadata
+     */
+    const handleSpaceUpdate = useCallback((spaces: any[]) => {
+        // Always update spaces store
+        setSpaces(spaces);
+        
+        // If People Manager mode is enabled, also update people store
+        if (settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API') {
+            try {
+                const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
+                setPeople(people);
+                logger.info('MainLayout', 'Synced spaces to people store', { 
+                    spacesCount: spaces.length, 
+                    peopleCount: people.length 
+                });
+            } catch (error: any) {
+                logger.error('MainLayout', 'Failed to convert spaces to people', { error: error.message });
+            }
+        }
+    }, [setSpaces, setPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
 
     // Build navigation tabs dynamically
     const navTabs: NavTab[] = [
@@ -74,7 +102,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         solumConfig: settings.solumConfig,
         csvConfig: settings.sftpCsvConfig as any, // Cast for legacy compatibility
         autoSyncEnabled: settings.autoSyncEnabled,
-        onSpaceUpdate: setSpaces,
+        onSpaceUpdate: handleSpaceUpdate,  // Use combined handler for People Mode support
         solumMappingConfig: settings.solumMappingConfig,
     });
 

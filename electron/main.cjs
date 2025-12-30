@@ -321,7 +321,15 @@ ipcMain.handle('download-update', async () => {
 // Quit and install
 ipcMain.handle('quit-and-install', () => {
     log.info('Quitting and installing update...');
-    autoUpdater.quitAndInstall(false, true);
+    // Force quit all windows and install
+    // isSilent: false (show installer), forceRunAfter: true (restart app after install)
+    setImmediate(() => {
+        app.removeAllListeners('window-all-closed');
+        if (mainWindow) {
+            mainWindow.close();
+        }
+        autoUpdater.quitAndInstall(false, true);
+    });
 });
 
 /**
@@ -367,10 +375,32 @@ autoUpdater.on('download-progress', (progressObj) => {
     }
 });
 
-autoUpdater.on('update-downloaded', (info) => {
+autoUpdater.on('update-downloaded', async (info) => {
     log.info('Update downloaded:', info);
     if (mainWindow) {
         mainWindow.webContents.send('update-downloaded');
+        
+        // Show native dialog to prompt user to install
+        const result = await dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Update Ready',
+            message: `Version ${info.version} has been downloaded.`,
+            detail: 'The update will be installed when you restart the application. Would you like to restart now?',
+            buttons: ['Restart Now', 'Later'],
+            defaultId: 0,
+            cancelId: 1,
+        });
+
+        if (result.response === 0) {
+            // User chose to restart now
+            log.info('User chose to restart and install update');
+            setImmediate(() => {
+                app.removeAllListeners('window-all-closed');
+                autoUpdater.quitAndInstall(false, true);
+            });
+        } else {
+            log.info('User chose to install update later');
+        }
     }
 });
 

@@ -100,20 +100,27 @@ export function UpdateDialog({
                                 borderRadius: 1,
                                 maxHeight: '200px',
                                 overflow: 'auto',
+                                '& h1, & h2, & h3': {
+                                    fontSize: '1rem',
+                                    fontWeight: 600,
+                                    margin: '0.5em 0',
+                                },
+                                '& p': {
+                                    margin: '0.5em 0',
+                                },
+                                '& ul, & ol': {
+                                    paddingLeft: '1.5em',
+                                    margin: '0.5em 0',
+                                },
+                                '& hr': {
+                                    margin: '1em 0',
+                                    border: 'none',
+                                    borderTop: '1px solid',
+                                    borderColor: 'divider',
+                                },
                             }}
-                        >
-                            <Typography
-                                variant="body2"
-                                component="pre"
-                                sx={{
-                                    whiteSpace: 'pre-wrap',
-                                    fontFamily: 'inherit',
-                                    margin: 0,
-                                }}
-                            >
-                                {updateInfo.releaseNotes}
-                            </Typography>
-                        </Box>
+                            dangerouslySetInnerHTML={{ __html: updateInfo.releaseNotes }}
+                        />
                     ) : (
                         <Typography variant="body2" color="text.secondary">
                             {t('update.noReleaseNotes', {
