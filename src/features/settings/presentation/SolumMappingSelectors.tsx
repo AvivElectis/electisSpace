@@ -25,6 +25,7 @@ interface SolumMappingSelectorsProps {
         participants: string;
     }) => void;
     mappingInfo?: import('@features/configuration/domain/types').MappingInfo;
+    onMappingInfoChange?: (mappingInfo: import('@features/configuration/domain/types').MappingInfo) => void;
     disabled?: boolean;
 }
 
@@ -39,6 +40,7 @@ export function SolumMappingSelectors({
     onUniqueIdChange,
     onConferenceMappingChange,
     mappingInfo,
+    onMappingInfoChange,
     disabled = false,
 }: SolumMappingSelectorsProps) {
     const { t } = useTranslation();
@@ -78,6 +80,92 @@ export function SolumMappingSelectors({
                                 {mappingInfo?.articleId === field && (
                                     <Typography variant="caption" color="success.main" sx={{ ml: 1, fontWeight: 600 }}>
                                         (SoluM Article ID)
+                                    </Typography>
+                                )}
+                            </Box>
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+
+            {/* Article Name Field Selector */}
+            <FormControl fullWidth size="small">
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+                    <InputLabel id="article-name-selector-label" shrink sx={{ position: 'static', transform: 'none', color: 'text.secondary', fontWeight: 600 }}>
+                        {t('settings.articleNameField')}
+                    </InputLabel>
+                    {mappingInfo?.articleName && (
+                        <Typography variant="caption" sx={{ color: 'black', fontWeight: 700, px: 1, bgcolor: 'success.light', borderRadius: 1, opacity: 0.8 }}>
+                            {t('settings.autoMapped')}
+                        </Typography>
+                    )}
+                </Box>
+                <Select
+                    labelId="article-name-selector-label"
+                    value={mappingInfo?.articleName || ''}
+                    onChange={(e) => {
+                        if (onMappingInfoChange && mappingInfo) {
+                            onMappingInfoChange({
+                                ...mappingInfo,
+                                articleName: e.target.value,
+                            });
+                        }
+                    }}
+                    disabled={disabled || !onMappingInfoChange}
+                >
+                    <MenuItem value="">
+                        <em>{t('settings.notSelected')}</em>
+                    </MenuItem>
+                    {articleFormatFields.map((field) => (
+                        <MenuItem key={field} value={field}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                {field}
+                                {mappingInfo?.articleName === field && (
+                                    <Typography variant="caption" color="success.main" sx={{ ml: 1, fontWeight: 600 }}>
+                                        (Room Name)
+                                    </Typography>
+                                )}
+                            </Box>
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+
+            {/* NFC URL Field Selector */}
+            <FormControl fullWidth size="small">
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+                    <InputLabel id="nfc-url-selector-label" shrink sx={{ position: 'static', transform: 'none', color: 'text.secondary', fontWeight: 600 }}>
+                        {t('settings.nfcUrlField')}
+                    </InputLabel>
+                    {mappingInfo?.nfcUrl && (
+                        <Typography variant="caption" sx={{ color: 'black', fontWeight: 700, px: 1, bgcolor: 'info.light', borderRadius: 1, opacity: 0.8 }}>
+                            {t('settings.optional')}
+                        </Typography>
+                    )}
+                </Box>
+                <Select
+                    labelId="nfc-url-selector-label"
+                    value={mappingInfo?.nfcUrl || ''}
+                    onChange={(e) => {
+                        if (onMappingInfoChange && mappingInfo) {
+                            onMappingInfoChange({
+                                ...mappingInfo,
+                                nfcUrl: e.target.value || undefined,
+                            });
+                        }
+                    }}
+                    disabled={disabled || !onMappingInfoChange}
+                >
+                    <MenuItem value="">
+                        <em>{t('settings.notSelected')}</em>
+                    </MenuItem>
+                    {articleFormatFields.map((field) => (
+                        <MenuItem key={field} value={field}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                {field}
+                                {mappingInfo?.nfcUrl === field && (
+                                    <Typography variant="caption" color="info.main" sx={{ ml: 1, fontWeight: 600 }}>
+                                        (NFC URL)
                                     </Typography>
                                 )}
                             </Box>

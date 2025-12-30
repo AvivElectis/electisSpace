@@ -185,8 +185,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         bgcolor: 'transparent',
                         borderColor: 'divider',
                         px: { xs: 2, sm: 3, md: 4 },
-                        py: 2,
-
+                        py: 0,
                     }}>
                         <Tabs
                             value={currentTab}
@@ -198,8 +197,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 '& .MuiTab-root': {
                                     border: '1px solid transparent',
                                     borderRadius: 2,
+                                    my: 2,
                                     '&.Mui-selected': {
-                                        border: '1px solid',
+                                        boxShadow: 2,
                                         borderColor: 'divider',
                                         bgcolor: 'background.paper',
                                     }

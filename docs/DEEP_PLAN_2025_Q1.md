@@ -1,0 +1,1064 @@
+# electisSpace Deep Implementation Plan - Q1 2025
+
+> Generated: December 30, 2025
+> Last Updated: January 1, 2026
+
+## Implementation Status
+
+| # | Feature | Status | Started | Completed |
+|---|---------|--------|---------|-----------|
+| 1 | Conference Room NFC URL Fix | ✅ Completed | Dec 30 | Dec 30 |
+| 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 30 |
+| 3 | File Optimization | 🔄 In Progress | Dec 30 | - |
+| 4 | People-List Feature | ⬜ Not Started | - | - |
+| 5 | Logger Enhancement | ⬜ Not Started | - | - |
+| 6 | App Manual Feature | ⬜ Not Started | - | - |
+
+**Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
+
+### File Optimization Progress (Feature 3)
+
+| Sub-Task | Status | Details |
+|----------|--------|---------|
+| 3.1 usePeopleController.ts splitting | ✅ Completed | Split into 4 focused hooks |
+| 3.2 PeopleManagerView.tsx extraction | ⬜ Not Started | - |
+| 3.3 SolumSettingsTab.tsx extraction | ⬜ Not Started | - |
+| 3.4 DashboardPage.tsx extraction | ⬜ Not Started | - |
+| 3.5 useConferenceController.ts extraction | ⬜ Not Started | - |
+| 3.6 solumService.ts grouping | ⬜ Not Started | - |
+
+**Files Created (3.1):**
+- `src/features/people/application/hooks/usePeopleCSV.ts` - CSV loading operations
+- `src/features/people/application/hooks/usePeopleAssignment.ts` - Space assignment logic  
+- `src/features/people/application/hooks/usePeopleAIMS.ts` - AIMS sync operations
+- `src/features/people/application/hooks/usePeopleLists.ts` - List management
+- `src/features/people/application/hooks/index.ts` - Barrel exports
+
+### Conference Controller Enhancements (Additional)
+
+| Sub-Task | Status | Details |
+|----------|--------|---------|
+| Dynamic mappingInfo article building | ✅ Completed | Builds aimsArticle dynamically from all mappingInfo entries |
+| Add articleName/nfcUrl selectors to Settings UI | ✅ Completed | SolumMappingSelectors updated |
+| articleName populates data object | ✅ Completed | articleId and articleName added to articleData |
+| Test file updated | ✅ Completed | useConferenceController.test.ts fixed and aligned |
+
+**Key Changes Made:**
+- `useConferenceController.ts`: Dynamic article building from mappingInfo (no hardcoded fields)
+- `SolumMappingSelectors.tsx`: Added Article Name and NFC URL field selectors
+- `SolumSettingsTab.tsx`: Added onMappingInfoChange handler
+- Locales updated with new translations (en/he)
+
+---
+
+## Overview
+
+This document provides a comprehensive implementation plan for the following features and improvements:
+
+1. **Conference Room NFC URL Fix** - Missing nfcUrl in mapped info field
+2. **Dashboard Assigned Labels Display** - Labels from SoluM sync not showing
+3. **File Optimization** - Splitting large files into smaller functional modules
+4. **People-List Feature** - Advanced list management with AIMS integration
+5. **Logger Enhancement** - App-wide structured logging enhancement
+6. **App Manual Feature** - In-app bilingual manual with tab-based navigation *(Built Last)*
+
+---
+
+## 1. Conference Room NFC URL Fix
+
+### Problem Statement
+The conference room feature does not save the NFC URL in the mapped info field when posting to AIMS. This should work similarly to the space posting functionality.
+
+### Current Behavior Analysis
+- **useSpaceController.ts** (lines 137-138): Correctly maps nfcUrl from mappingInfo
+  ```typescript
+  if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
+      aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
+  }
+  ```
+- **useConferenceController.ts**: Missing nfcUrl mapping in aimsArticle construction
+
+### Root Cause
+The conference controller builds the AIMS article without checking for nfcUrl mapping from the globalFieldAssignments or mappingInfo configuration.
+
+### Implementation Plan
+
+#### Phase 1.1: Add NFC URL Mapping to Conference Room Add (2h)
+**File:** `src/features/conference/application/useConferenceController.ts`
+
+**Changes Required:**
+
+1. After applying globalFieldAssignments, add nfcUrl to root aimsArticle object:
+```typescript
+// Location: Around line 150 (after articleData construction, before aimsArticle creation)
+
+// Get mappingInfo for root field mapping
+const mappingInfo = solumMappingConfig.mappingInfo;
+
+const aimsArticle: any = {
+    articleId: finalRoom.id,
+    articleName: finalRoom.data?.roomName || finalRoom.id,
+    data: articleData
+};
+
+// Map nfcUrl to root level (same as useSpaceController)
+if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
+    aimsArticle.nfcUrl = String(articleData[mappingInfo.nfcUrl]);
+} else if (solumMappingConfig.globalFieldAssignments) {
+    // Check if nfcUrl is in global assignments
+    const globalNfcField = mappingInfo?.nfcUrl;
+    if (globalNfcField && solumMappingConfig.globalFieldAssignments[globalNfcField]) {
+        aimsArticle.nfcUrl = String(solumMappingConfig.globalFieldAssignments[globalNfcField]);
+    }
+}
+```
+
+#### Phase 1.2: Add NFC URL Mapping to Conference Room Update (2h)
+**File:** `src/features/conference/application/useConferenceController.ts`
+
+**Changes Required:**
+
+1. Apply same nfcUrl mapping logic in the `updateConferenceRoom` function (around line 300)
+
+#### Phase 1.3: Testing (1h)
+- Create conference room with NFC URL in global fields
+- Verify AIMS receives nfcUrl at root level
+- Test update flow preserves nfcUrl
+
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/features/conference/application/useConferenceController.ts` | Add nfcUrl mapping in addConferenceRoom and updateConferenceRoom |
+
+---
+
+## 2. Dashboard Assigned Labels Display Fix
+
+### Problem Statement
+Assigned labels from SoluM sync are received but the dashboard is not showing them correctly.
+
+### Current Behavior Analysis
+- **DashboardPage.tsx** (line 90): Uses `settings.solumConfig?.storeSummary?.labelCount || 0`
+- **useSettingsController.ts** (line 281-302): Fetches storeSummary on connect only
+- **Problem**: The labelCount is fetched only on initial connection, not updated during sync
+
+### Root Cause
+The `storeSummary.labelCount` is only populated when initially connecting to SoluM. During regular sync operations, this value is not refreshed.
+
+### Implementation Plan
+
+#### Phase 2.1: Update Label Count on Sync (3h)
+**Option A: Fetch labels count during sync**
+
+**File:** `src/features/sync/infrastructure/SolumSyncAdapter.ts`
+
+Add label count tracking in the download function:
+```typescript
+// After fetching labels (around line 90)
+const labels = await solumService.getLabels(this.config, this.config.storeNumber, token);
+const assignedLabels = labels.filter(l => l.articleId); // Labels with assignments
+this.labelCount = assignedLabels.length;
+```
+
+**Option B: Calculate from spaces data**
+
+**File:** `src/features/dashboard/DashboardPage.tsx`
+
+Instead of relying on storeSummary, calculate from current spaces:
+```typescript
+// Replace line 90 with:
+const assignedLabelsCount = useMemo(() => {
+    const spaceLabels = spaceController.spaces.filter(s => s.labelCode).length;
+    const conferenceLabels = conferenceController.conferenceRooms.filter(r => r.labelCode).length;
+    return spaceLabels + conferenceLabels;
+}, [spaceController.spaces, conferenceController.conferenceRooms]);
+```
+
+**Recommended: Option B** (simpler, real-time accurate)
+
+#### Phase 2.2: Add People Labels Count in People Mode (1h)
+```typescript
+// Add to Dashboard:
+const peopleLabelsCount = isPeopleManagerMode 
+    ? peopleStore.people.filter(p => p.assignedSpaceId).length 
+    : 0;
+```
+
+#### Phase 2.3: Update Dashboard Display Logic (1h)
+Show different label sources based on mode:
+- Normal mode: spaces + conference rooms with labels
+- People Manager mode: assigned people count
+
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/features/dashboard/DashboardPage.tsx` | Update assignedLabelsCount calculation |
+
+---
+
+## 3. App Manual Feature
+
+### Requirements
+- In-app manual accessible via icon button next to settings
+- Available in both languages (English and Hebrew)
+- Tab-based navigation for each mode
+- Consistent design with app theme
+
+### Architecture Design
+
+```
+src/features/manual/
+├── domain/
+│   └── types.ts                    # Manual section types
+├── presentation/
+│   ├── ManualDialog.tsx            # Main dialog with tabs
+│   ├── ManualSection.tsx           # Reusable section component
+│   ├── sections/
+│   │   ├── GettingStartedSection.tsx
+│   │   ├── DashboardSection.tsx
+│   │   ├── SpacesSection.tsx
+│   │   ├── PeopleSection.tsx
+│   │   ├── ConferenceSection.tsx
+│   │   ├── SyncSection.tsx
+│   │   └── SettingsSection.tsx
+│   └── ManualIcon.tsx              # Icon component
+└── index.ts
+```
+
+### Implementation Plan
+
+#### Phase 3.1: Create Manual Feature Structure (2h)
+
+**File:** `src/features/manual/domain/types.ts`
+```typescript
+export interface ManualSection {
+    id: string;
+    titleKey: string;  // i18n key
+    content: string;   // i18n key for content
+    icon?: React.ReactNode;
+}
+
+export interface ManualTab {
+    id: string;
+    titleKey: string;
+    sections: ManualSection[];
+}
+```
+
+#### Phase 3.2: Create Manual Dialog Component (4h)
+
+**File:** `src/features/manual/presentation/ManualDialog.tsx`
+
+Features:
+- Fullscreen or large dialog (like SettingsDialog)
+- Tabs: Getting Started, Spaces Mode, People Mode, Conference, Sync, Settings
+- RTL support for Hebrew
+- Markdown-like formatting for content
+- Screenshots/illustrations (optional future enhancement)
+
+```typescript
+import { Dialog, DialogTitle, DialogContent, Tabs, Tab, Box } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+
+export function ManualDialog({ open, onClose }: ManualDialogProps) {
+    const { t, i18n } = useTranslation();
+    const [activeTab, setActiveTab] = useState(0);
+    const isRTL = i18n.dir() === 'rtl';
+    
+    // Tab configuration based on mode
+    const tabs = [
+        { label: t('manual.gettingStarted'), content: <GettingStartedSection /> },
+        { label: t('manual.dashboard'), content: <DashboardSection /> },
+        // ... more tabs
+    ];
+    
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            // ... implementation
+        </Dialog>
+    );
+}
+```
+
+#### Phase 3.3: Add Translations (3h)
+
+**Files:** 
+- `src/locales/en/translation.json`
+- `src/locales/he/translation.json`
+
+Add comprehensive manual content in both languages:
+```json
+{
+  "manual": {
+    "title": "User Manual",
+    "gettingStarted": "Getting Started",
+    "dashboard": "Dashboard",
+    "spacesMode": "Spaces Mode",
+    "peopleMode": "People Mode",
+    "conference": "Conference Rooms",
+    "sync": "Sync & Integration",
+    "settings": "Settings",
+    "sections": {
+      "overview": "Overview",
+      "quickStart": "Quick Start Guide",
+      // ... detailed content
+    }
+  }
+}
+```
+
+#### Phase 3.4: Add Manual Button to Header (1h)
+
+**File:** `src/shared/presentation/layouts/AppHeader.tsx`
+
+Add HelpIcon button between LanguageSwitcher and Settings:
+```typescript
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+
+// In render, before settings icon:
+<IconButton color="default" onClick={onManualClick}>
+    <HelpOutlineIcon />
+</IconButton>
+```
+
+#### Phase 3.5: Integration in MainLayout (1h)
+
+**File:** `src/shared/presentation/layouts/MainLayout.tsx`
+
+Add state and handler for manual dialog:
+```typescript
+const [manualOpen, setManualOpen] = useState(false);
+
+// Pass to AppHeader
+<AppHeader onManualClick={() => setManualOpen(true)} />
+
+// Add dialog
+<ManualDialog open={manualOpen} onClose={() => setManualOpen(false)} />
+```
+
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `src/features/manual/domain/types.ts` | Type definitions |
+| `src/features/manual/presentation/ManualDialog.tsx` | Main dialog |
+| `src/features/manual/presentation/sections/*.tsx` | Section components |
+| `src/features/manual/index.ts` | Exports |
+
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/shared/presentation/layouts/AppHeader.tsx` | Add manual button |
+| `src/shared/presentation/layouts/MainLayout.tsx` | Add dialog state |
+| `src/locales/en/translation.json` | Add manual translations |
+| `src/locales/he/translation.json` | Add manual translations |
+
+---
+
+## 4. File Optimization - Splitting Large Files
+
+### Analysis of Large Files
+
+| File | Size (bytes) | Lines | Recommendation |
+|------|--------------|-------|----------------|
+| `peopleFeatures.test.ts` | 68,039 | ~1500 | Split by feature area |
+| `usePeopleController.ts` | 50,666 | ~1200 | Split into multiple hooks |
+| `PeopleManagerView.tsx` | 38,176 | ~850 | Extract sub-components |
+| `SolumSettingsTab.tsx` | 30,522 | ~550 | Extract field components |
+| `useConferenceController.ts` | 29,238 | ~640 | Extract AIMS logic |
+| `DashboardPage.tsx` | 27,784 | ~500 | Extract card components |
+| `ConferencePage.tsx` | 24,951 | ~550 | Extract sub-components |
+| `peopleService.ts` | 23,384 | ~500 | Split by responsibility |
+| `LogsViewer.tsx` | 22,203 | ~450 | Extract filter/table components |
+| `solumService.ts` | 22,039 | ~650 | Group by API endpoint |
+
+### Detailed Splitting Plan
+
+#### 4.1: usePeopleController.ts → Split into Focused Hooks (6h)
+
+**New Structure:**
+```
+src/features/people/application/
+├── usePeopleController.ts         # Main orchestrator (reduced)
+├── hooks/
+│   ├── usePeopleCSV.ts           # CSV parsing & upload
+│   ├── usePeopleAssignment.ts    # Space assignment logic
+│   ├── usePeopleBulkActions.ts   # Bulk operations
+│   ├── usePeopleAIMS.ts          # AIMS sync operations
+│   └── usePeopleLists.ts         # List management
+└── utils/
+    └── peopleTransformers.ts      # Data transformation utilities
+```
+
+**Splitting Strategy:**
+1. Extract CSV upload logic → `usePeopleCSV.ts` (~200 lines)
+2. Extract single/bulk assignment → `usePeopleAssignment.ts` (~300 lines)
+3. Extract AIMS operations → `usePeopleAIMS.ts` (~250 lines)
+4. Extract list management → `usePeopleLists.ts` (~200 lines)
+5. Keep main hook as orchestrator (~250 lines)
+
+#### 4.2: PeopleManagerView.tsx → Extract Components (4h)
+
+**New Structure:**
+```
+src/features/people/presentation/
+├── PeopleManagerView.tsx          # Main view (reduced)
+├── components/
+│   ├── PeopleToolbar.tsx         # Filters & actions toolbar
+│   ├── PeopleTable.tsx           # Table with columns
+│   ├── PeopleTableRow.tsx        # Single row component
+│   ├── PeopleBulkActions.tsx     # Bulk action bar
+│   └── PeopleStatsBar.tsx        # Statistics display
+└── dialogs/
+    └── (existing dialogs)
+```
+
+#### 4.3: SolumSettingsTab.tsx → Extract Field Components (3h)
+
+**New Structure:**
+```
+src/features/settings/presentation/
+├── SolumSettingsTab.tsx           # Main tab (reduced)
+├── solum/
+│   ├── SolumConnectionForm.tsx   # Connection config
+│   ├── SolumSyncSettings.tsx     # Sync interval settings
+│   ├── SolumModeSelector.tsx     # Working mode selector
+│   └── SolumFieldMappingSection.tsx # Field mapping area
+```
+
+#### 4.4: DashboardPage.tsx → Extract Card Components (3h)
+
+**New Structure:**
+```
+src/features/dashboard/
+├── DashboardPage.tsx              # Main page (reduced)
+├── components/
+│   ├── SpacesCard.tsx            # Spaces overview card
+│   ├── ConferenceCard.tsx        # Conference overview card
+│   ├── PeopleCard.tsx            # People manager card
+│   ├── ConnectionCard.tsx        # SoluM connection card
+│   └── DashboardStatusChip.tsx   # Reusable status chip
+```
+
+#### 4.5: useConferenceController.ts → Extract AIMS Logic (4h)
+
+**New Structure:**
+```
+src/features/conference/application/
+├── useConferenceController.ts     # Main controller (reduced)
+├── hooks/
+│   ├── useConferenceAIMS.ts      # AIMS push/fetch operations
+│   └── useConferenceCRUD.ts      # CRUD operations
+└── utils/
+    └── conferenceTransformers.ts  # Article transformation
+```
+
+#### 4.6: solumService.ts → Group by Endpoint (3h)
+
+**New Structure:**
+```
+src/shared/infrastructure/services/
+├── solumService.ts                # Re-export & types
+├── solum/
+│   ├── authService.ts            # login, refreshToken
+│   ├── articlesService.ts        # fetchArticles, pushArticles, putArticles
+│   ├── labelsService.ts          # getLabels, assignLabel, getLabelDetail
+│   └── storeService.ts           # getStoreSummary
+```
+
+### Implementation Priority
+
+| Priority | Files | Estimated Time |
+|----------|-------|----------------|
+| High | usePeopleController.ts | 6h |
+| High | PeopleManagerView.tsx | 4h |
+| Medium | DashboardPage.tsx | 3h |
+| Medium | SolumSettingsTab.tsx | 3h |
+| Medium | useConferenceController.ts | 4h |
+| Low | solumService.ts | 3h |
+| Low | Tests splitting | 4h |
+
+**Total Estimated Time: 27h**
+
+---
+
+## 5. People-List Feature (Major Feature)
+
+### Requirements Summary
+
+1. **Article Format Integration**: When enabling People mode, update article format with 2 hidden fields (`list` and `space`)
+2. **List Persistence**: Lists stored in AIMS via hidden fields, synced cross-platform
+3. **Assignment Behavior**: 
+   - Loading a list does NOT auto-assign spaces
+   - Separate "Apply Assignments" button required
+   - Building and saving a list preserves space assignments
+4. **List Naming**: 
+   - Letters, numbers, spaces only
+   - Max 20 characters
+   - Spaces saved as underscores in AIMS
+
+### Architecture Design
+
+#### 5.1: Domain Types
+
+**File:** `src/features/people/domain/types.ts` (Extended)
+
+```typescript
+export interface Person {
+    id: string;
+    virtualSpaceId?: string;
+    data: Record<string, string>;
+    assignedSpaceId?: string;
+    aimsSyncStatus?: 'pending' | 'synced' | 'error';
+    lastSyncedAt?: string;
+    
+    // NEW: List-related fields (hidden in AIMS)
+    listName?: string;      // Current list assignment (with underscores)
+    listSpaceId?: string;   // Space ID from list (not active assignment)
+}
+
+export interface PeopleList {
+    id: string;
+    name: string;           // Display name (with spaces)
+    storageName: string;    // AIMS storage name (with underscores)
+    createdAt: string;
+    updatedAt?: string;
+    people: Person[];
+    isFromAIMS?: boolean;   // True if fetched from AIMS
+}
+
+// Validation constants
+export const LIST_NAME_MAX_LENGTH = 20;
+export const LIST_NAME_PATTERN = /^[a-zA-Z0-9\s]+$/;
+
+// Helpers
+export function toStorageName(name: string): string {
+    return name.replace(/\s+/g, '_');
+}
+
+export function toDisplayName(storageName: string): string {
+    return storageName.replace(/_/g, ' ');
+}
+
+export function validateListName(name: string): { valid: boolean; error?: string } {
+    if (!name.trim()) return { valid: false, error: 'List name is required' };
+    if (name.length > LIST_NAME_MAX_LENGTH) {
+        return { valid: false, error: `Max ${LIST_NAME_MAX_LENGTH} characters` };
+    }
+    if (!LIST_NAME_PATTERN.test(name)) {
+        return { valid: false, error: 'Only letters, numbers, and spaces allowed' };
+    }
+    return { valid: true };
+}
+```
+
+#### 5.2: Article Format Modification
+
+**File:** `src/features/settings/application/useSettingsController.ts`
+
+When enabling People Manager mode, auto-add hidden fields:
+
+```typescript
+const enablePeopleManagerMode = useCallback(async () => {
+    // Add hidden fields to article format if not present
+    const currentFormat = settings.solumMappingConfig?.fields || {};
+    
+    const updatedFields = {
+        ...currentFormat,
+        _list_name: { visible: false, friendlyName: 'List Name' },
+        _list_space: { visible: false, friendlyName: 'List Space' },
+    };
+    
+    updateSettings({
+        peopleManagerEnabled: true,
+        solumMappingConfig: {
+            ...settings.solumMappingConfig,
+            fields: updatedFields,
+        }
+    });
+}, [settings, updateSettings]);
+```
+
+#### 5.3: Store Updates
+
+**File:** `src/features/people/infrastructure/peopleStore.ts`
+
+Add list-related state:
+
+```typescript
+interface PeopleStore {
+    // Existing state...
+    
+    // List feature state
+    pendingChanges: boolean;        // True when local changes not saved
+    isListLoaded: boolean;          // True when a list is actively loaded
+    loadedListMetadata?: {
+        name: string;
+        storageName: string;
+        loadedAt: string;
+    };
+    
+    // Actions
+    markPendingChanges: () => void;
+    clearPendingChanges: () => void;
+    applyListAssignments: () => void;  // Apply listSpaceId to assignedSpaceId
+}
+```
+
+#### 5.4: Controller Logic
+
+**New File:** `src/features/people/application/hooks/usePeopleListManager.ts`
+
+```typescript
+export function usePeopleListManager() {
+    const peopleStore = usePeopleStore();
+    const { settings } = useSettingsStore();
+    
+    /**
+     * Save current state as a new list
+     * - Validates name (letters, numbers, spaces, max 20 chars)
+     * - Converts spaces to underscores for storage
+     * - Posts to AIMS with hidden fields
+     */
+    const saveNewList = useCallback(async (name: string): Promise<boolean> => {
+        const validation = validateListName(name);
+        if (!validation.valid) {
+            throw new Error(validation.error);
+        }
+        
+        const storageName = toStorageName(name);
+        
+        // Update all people with list metadata
+        const peopleWithList = peopleStore.people.map(p => ({
+            ...p,
+            data: {
+                ...p.data,
+                _list_name: storageName,
+                _list_space: p.assignedSpaceId || '',
+            }
+        }));
+        
+        // Push to AIMS
+        await postPeopleToAIMS(peopleWithList, settings.solumConfig);
+        
+        // Save locally
+        peopleStore.addPeopleList({
+            id: uuidv4(),
+            name,
+            storageName,
+            createdAt: new Date().toISOString(),
+            people: peopleWithList,
+        });
+        
+        return true;
+    }, [peopleStore, settings]);
+    
+    /**
+     * Load list from AIMS
+     * - Fetches articles with matching _list_name
+     * - Sets listSpaceId but NOT assignedSpaceId
+     * - User must press "Apply Assignments" to activate
+     */
+    const loadList = useCallback(async (storageName: string): Promise<void> => {
+        // Fetch from AIMS
+        const articles = await fetchArticlesWithList(storageName, settings.solumConfig);
+        
+        // Map to people with listSpaceId (not assigned)
+        const people = articles.map(a => ({
+            id: a.articleId,
+            data: a.data,
+            listSpaceId: a.data._list_space || undefined,
+            assignedSpaceId: undefined,  // NOT auto-assigned
+        }));
+        
+        peopleStore.setPeople(people);
+        peopleStore.setLoadedListMetadata({
+            name: toDisplayName(storageName),
+            storageName,
+            loadedAt: new Date().toISOString(),
+        });
+    }, [peopleStore, settings]);
+    
+    /**
+     * Apply list assignments
+     * - Copies listSpaceId to assignedSpaceId for all people
+     * - Posts assignments to AIMS
+     */
+    const applyListAssignments = useCallback(async (): Promise<void> => {
+        const assignments = peopleStore.people
+            .filter(p => p.listSpaceId)
+            .map(p => ({ personId: p.id, spaceId: p.listSpaceId! }));
+        
+        await bulkAssignSpaces(assignments, true);
+    }, [peopleStore]);
+    
+    /**
+     * Update existing list (save changes)
+     */
+    const updateCurrentList = useCallback(async (): Promise<boolean> => {
+        if (!peopleStore.loadedListMetadata) {
+            throw new Error('No list loaded');
+        }
+        
+        // Same as saveNewList but updates existing
+        // ... implementation
+        
+        peopleStore.clearPendingChanges();
+        return true;
+    }, [peopleStore]);
+    
+    return {
+        saveNewList,
+        loadList,
+        applyListAssignments,
+        updateCurrentList,
+        pendingChanges: peopleStore.pendingChanges,
+        loadedListMetadata: peopleStore.loadedListMetadata,
+    };
+}
+```
+
+#### 5.5: UI Components
+
+**New File:** `src/features/people/presentation/PeopleListPanel.tsx`
+
+```typescript
+export function PeopleListPanel() {
+    const { t } = useTranslation();
+    const {
+        saveNewList,
+        loadList,
+        applyListAssignments,
+        updateCurrentList,
+        pendingChanges,
+        loadedListMetadata,
+    } = usePeopleListManager();
+    
+    // Character counter for list name
+    const [listName, setListName] = useState('');
+    const charCount = listName.length;
+    const isValidName = validateListName(listName).valid;
+    
+    return (
+        <Paper sx={{ p: 2, mb: 2 }}>
+            <Stack gap={2}>
+                <Typography variant="subtitle2">
+                    {t('people.listManagement')}
+                </Typography>
+                
+                {/* Current List Status */}
+                {loadedListMetadata && (
+                    <Alert severity="info">
+                        {t('people.loadedList', { name: loadedListMetadata.name })}
+                        {pendingChanges && (
+                            <Chip label={t('people.unsavedChanges')} color="warning" />
+                        )}
+                    </Alert>
+                )}
+                
+                {/* List Name Input */}
+                <TextField
+                    label={t('people.listName')}
+                    value={listName}
+                    onChange={(e) => setListName(e.target.value)}
+                    inputProps={{ maxLength: LIST_NAME_MAX_LENGTH }}
+                    helperText={`${charCount}/${LIST_NAME_MAX_LENGTH} ${t('people.charsRemaining')}`}
+                    error={listName.length > 0 && !isValidName}
+                />
+                
+                {/* Actions */}
+                <Stack direction="row" gap={1}>
+                    <Button
+                        onClick={() => saveNewList(listName)}
+                        disabled={!isValidName}
+                    >
+                        {t('people.saveNewList')}
+                    </Button>
+                    
+                    <Button onClick={loadList}>
+                        {t('people.loadList')}
+                    </Button>
+                    
+                    {loadedListMetadata && (
+                        <>
+                            <Button
+                                onClick={applyListAssignments}
+                                color="success"
+                            >
+                                {t('people.applyAssignments')}
+                            </Button>
+                            
+                            <Button
+                                onClick={updateCurrentList}
+                                disabled={!pendingChanges}
+                            >
+                                {t('people.saveChanges')}
+                            </Button>
+                        </>
+                    )}
+                </Stack>
+            </Stack>
+        </Paper>
+    );
+}
+```
+
+### Implementation Phases
+
+| Phase | Description | Time |
+|-------|-------------|------|
+| 5.1 | Domain types & validation | 2h |
+| 5.2 | Article format auto-update | 2h |
+| 5.3 | Store updates | 3h |
+| 5.4 | List manager hook | 6h |
+| 5.5 | AIMS integration for lists | 4h |
+| 5.6 | UI components | 4h |
+| 5.7 | Translations | 2h |
+| 5.8 | Testing | 4h |
+
+**Total: 27h**
+
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `src/features/people/application/hooks/usePeopleListManager.ts` | List management logic |
+| `src/features/people/presentation/PeopleListPanel.tsx` | List UI panel |
+| `src/features/people/presentation/ListSelectionDialog.tsx` | List selection dialog |
+
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/features/people/domain/types.ts` | Add list-related types |
+| `src/features/people/infrastructure/peopleStore.ts` | Add list state |
+| `src/features/people/infrastructure/peopleService.ts` | Add AIMS list operations |
+| `src/features/people/presentation/PeopleManagerView.tsx` | Integrate list panel |
+| `src/features/settings/application/useSettingsController.ts` | Auto-add hidden fields |
+
+---
+
+## 6. Logger Implementation - App-Wide Enhancement
+
+### Current State
+The logger already exists at `src/shared/infrastructure/services/logger.ts` with:
+- In-memory storage (max 1000 logs)
+- Log levels: debug, info, warn, error
+- Integration with logsStore for persistence
+- LogsViewer UI component
+
+### Enhancement Plan
+
+#### 6.1: Add Log Categories (2h)
+
+**File:** `src/shared/infrastructure/services/logger.ts`
+
+```typescript
+export type LogCategory = 
+    | 'App'           // General app lifecycle
+    | 'Auth'          // Authentication
+    | 'Sync'          // Sync operations
+    | 'AIMS'          // AIMS API calls
+    | 'People'        // People management
+    | 'Conference'    // Conference rooms
+    | 'Settings'      // Settings changes
+    | 'Navigation'    // Route changes
+    | 'Performance'   // Performance metrics
+    | 'Error';        // Error tracking
+
+// Add category filtering
+getLogsByCategory(category: LogCategory): LogEntry[]
+```
+
+#### 6.2: Add Performance Logging (2h)
+
+```typescript
+class Logger {
+    // Performance tracking
+    private timers: Map<string, number> = new Map();
+    
+    startTimer(operationId: string): void {
+        this.timers.set(operationId, performance.now());
+    }
+    
+    endTimer(operationId: string, category: string, message: string): void {
+        const start = this.timers.get(operationId);
+        if (start) {
+            const duration = performance.now() - start;
+            this.info(category, message, { duration: `${duration.toFixed(2)}ms` });
+            this.timers.delete(operationId);
+        }
+    }
+}
+```
+
+#### 6.3: Add Log Export (2h)
+
+```typescript
+exportLogs(format: 'json' | 'csv'): string {
+    if (format === 'json') {
+        return JSON.stringify(this.logs, null, 2);
+    }
+    // CSV format
+    return this.logs.map(l => 
+        `${l.timestamp.toISOString()},${l.level},${l.category},"${l.message}"`
+    ).join('\n');
+}
+```
+
+#### 6.4: Add Strategic Logging Points (4h)
+
+Add logging to key operations:
+
+| Area | Operations to Log |
+|------|-------------------|
+| Authentication | Login, logout, token refresh |
+| Sync | Start, complete, errors, article counts |
+| AIMS | All API calls with timing |
+| People | CSV upload, assignment changes, list operations |
+| Conference | Room CRUD, meeting toggles |
+| Settings | Changes to critical settings |
+
+Example additions:
+```typescript
+// In useSettingsController.ts
+logger.info('Settings', 'Settings updated', { 
+    changedFields: Object.keys(updates),
+    timestamp: new Date().toISOString()
+});
+
+// In SolumSyncAdapter.ts
+logger.startTimer('sync-download');
+// ... sync operation
+logger.endTimer('sync-download', 'Sync', 'Download completed', { 
+    articles: articles.length 
+});
+```
+
+#### 6.5: Error Boundary Integration (2h)
+
+**File:** `src/shared/presentation/components/ErrorBoundary.tsx`
+
+```typescript
+componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    logger.error('App', 'React Error Boundary caught error', {
+        error: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+    });
+}
+```
+
+### Implementation Timeline
+
+| Phase | Description | Time |
+|-------|-------------|------|
+| 6.1 | Log categories | 2h |
+| 6.2 | Performance logging | 2h |
+| 6.3 | Log export | 2h |
+| 6.4 | Strategic logging points | 4h |
+| 6.5 | Error boundary integration | 2h |
+
+**Total: 12h**
+
+---
+
+## Implementation Schedule
+
+### Week 1: Critical Fixes
+| Day | Task | Hours |
+|-----|------|-------|
+| 1 | Conference NFC URL fix | 5h |
+| 2 | Dashboard labels fix | 5h |
+
+### Week 2: Manual Feature
+| Day | Task | Hours |
+|-----|------|-------|
+| 1-2 | Manual structure & components | 6h |
+| 3 | Translations (EN) | 3h |
+| 4 | Translations (HE) | 3h |
+| 5 | Integration & testing | 3h |
+
+### Week 3-4: File Optimization
+| Days | Task | Hours |
+|------|------|-------|
+| 1-2 | usePeopleController splitting | 6h |
+| 3 | PeopleManagerView splitting | 4h |
+| 4 | DashboardPage splitting | 3h |
+| 5 | SolumSettingsTab splitting | 3h |
+| 6 | useConferenceController splitting | 4h |
+| 7 | solumService splitting | 3h |
+| 8 | Testing all changes | 4h |
+
+### Week 5-6: People-List Feature
+| Days | Task | Hours |
+|------|------|-------|
+| 1 | Domain types & validation | 2h |
+| 2 | Article format integration | 2h |
+| 3 | Store updates | 3h |
+| 4-5 | List manager hook | 6h |
+| 6-7 | AIMS integration | 4h |
+| 8 | UI components | 4h |
+| 9 | Translations | 2h |
+| 10 | Testing | 4h |
+
+### Week 7: Logger Enhancement
+| Day | Task | Hours |
+|-----|------|-------|
+| 1 | Categories & performance logging | 4h |
+| 2 | Export & strategic logging | 6h |
+| 3 | Error boundary & testing | 2h |
+
+---
+
+## Total Estimated Time
+
+| Feature | Hours |
+|---------|-------|
+| Conference NFC URL | 5h |
+| Dashboard Labels | 5h |
+| App Manual | 15h |
+| File Optimization | 27h |
+| People-List Feature | 27h |
+| Logger Enhancement | 12h |
+| **Total** | **91h** |
+
+---
+
+## Risk Assessment
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| File splitting breaks imports | High | Incremental approach, run tests after each split |
+| People-List feature complexity | High | Thorough testing, phased rollout |
+| Translation coverage | Medium | Review with native speakers |
+| AIMS API changes | Medium | Version check, error handling |
+
+---
+
+## Success Criteria
+
+1. ✅ Conference rooms post nfcUrl to AIMS correctly
+2. ✅ Dashboard shows accurate label counts from current data
+3. ✅ Manual accessible in both languages with complete content
+4. ✅ No file exceeds 500 lines (except tests)
+5. ✅ People lists sync cross-platform via AIMS
+6. ✅ Comprehensive logging with export capability
+
+---
+
+## Appendix: File Dependency Map
+
+```
+App.tsx
+└── MainLayout.tsx
+    ├── AppHeader.tsx
+    │   └── ManualDialog.tsx (NEW)
+    └── Routes
+        ├── DashboardPage.tsx
+        │   ├── SpacesCard.tsx (NEW)
+        │   ├── ConferenceCard.tsx (NEW)
+        │   └── PeopleCard.tsx (NEW)
+        ├── PeopleManagerView.tsx
+        │   ├── PeopleToolbar.tsx (NEW)
+        │   ├── PeopleTable.tsx (NEW)
+        │   └── PeopleListPanel.tsx (NEW)
+        └── ...
+```

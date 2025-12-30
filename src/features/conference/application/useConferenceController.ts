@@ -142,23 +142,58 @@ export function useConferenceController({
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    // Mapped field names only apply to the data object
-                    const aimsArticle = {
-                        articleId: finalRoom.id,
-                        articleName: finalRoom.data?.roomName || finalRoom.id,
+                    // Add articleId and articleName to articleData using their mapped field keys
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+                    if (mappingInfo) {
+                        // Add articleId to data
+                        if (mappingInfo.articleId && !articleData[mappingInfo.articleId]) {
+                            articleData[mappingInfo.articleId] = finalRoom.id;
+                        }
+                        // Add articleName to data
+                        if (mappingInfo.articleName) {
+                            const roomName = finalRoom.data?.roomName || finalRoom.id;
+                            if (!articleData[mappingInfo.articleName]) {
+                                articleData[mappingInfo.articleName] = roomName;
+                            }
+                        }
+                    }
+
+                    // Build AIMS article dynamically from mappingInfo
+                    const aimsArticle: any = {
                         data: articleData
                     };
 
-                    // Log the complete AIMS POST request
-                    // console.log('[AIMS POST REQUEST]', {
-                    //     url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
-                    //     method: 'POST',
-                    //     headers: {
-                    //         'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
-                    //         'Content-Type': 'application/json'
-                    //     },
-                    //     body: [aimsArticle]
-                    // });
+                    // Dynamically map all root-level fields from mappingInfo (articleId, articleName, nfcUrl, etc.)
+                    if (mappingInfo) {
+                        Object.entries(mappingInfo).forEach(([rootField, dataField]) => {
+                            if (!dataField) return;
+                            
+                            // Check articleData first
+                            if (articleData[dataField]) {
+                                aimsArticle[rootField] = String(articleData[dataField]);
+                            } 
+                            // Then check globalFieldAssignments
+                            else if (solumMappingConfig.globalFieldAssignments?.[dataField]) {
+                                aimsArticle[rootField] = String(solumMappingConfig.globalFieldAssignments[dataField]);
+                            }
+                            // Check room.data
+                            else if (finalRoom.data?.[dataField]) {
+                                aimsArticle[rootField] = String(finalRoom.data[dataField]);
+                            }
+                            // Check room properties directly
+                            else if ((finalRoom as any)[dataField] !== undefined) {
+                                aimsArticle[rootField] = String((finalRoom as any)[dataField]);
+                            }
+                        });
+                    }
+
+                    // Ensure required fields have defaults
+                    if (!aimsArticle.articleId) {
+                        aimsArticle.articleId = finalRoom.id;
+                    }
+                    if (!aimsArticle.articleName) {
+                        aimsArticle.articleName = finalRoom.data?.roomName || finalRoom.id;
+                    }
 
                     await solumService.pushArticles(
                         solumConfig,
@@ -299,23 +334,58 @@ export function useConferenceController({
                         Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
                     }
 
-                    // Mapped field names only apply to the data object
-                    const aimsArticle = {
-                        articleId: room.id,
-                        articleName: room.data?.roomName || room.id,
+                    // Add articleId and articleName to articleData using their mapped field keys
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+                    if (mappingInfo) {
+                        // Add articleId to data
+                        if (mappingInfo.articleId && !articleData[mappingInfo.articleId]) {
+                            articleData[mappingInfo.articleId] = room.id;
+                        }
+                        // Add articleName to data
+                        if (mappingInfo.articleName) {
+                            const roomName = room.data?.roomName || room.id;
+                            if (!articleData[mappingInfo.articleName]) {
+                                articleData[mappingInfo.articleName] = roomName;
+                            }
+                        }
+                    }
+
+                    // Build AIMS article dynamically from mappingInfo
+                    const aimsArticle: any = {
                         data: articleData
                     };
 
-                    // Log the complete AIMS POST request
-                    // console.log('[AIMS POST REQUEST - UPDATE]', {
-                    //     url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
-                    //     method: 'POST',
-                    //     headers: {
-                    //         'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
-                    //         'Content-Type': 'application/json'
-                    //     },
-                    //     body: [aimsArticle]
-                    // });
+                    // Dynamically map all root-level fields from mappingInfo (articleId, articleName, nfcUrl, etc.)
+                    if (mappingInfo) {
+                        Object.entries(mappingInfo).forEach(([rootField, dataField]) => {
+                            if (!dataField) return;
+                            
+                            // Check articleData first
+                            if (articleData[dataField]) {
+                                aimsArticle[rootField] = String(articleData[dataField]);
+                            } 
+                            // Then check globalFieldAssignments
+                            else if (solumMappingConfig.globalFieldAssignments?.[dataField]) {
+                                aimsArticle[rootField] = String(solumMappingConfig.globalFieldAssignments[dataField]);
+                            }
+                            // Check room.data
+                            else if (room.data?.[dataField]) {
+                                aimsArticle[rootField] = String(room.data[dataField]);
+                            }
+                            // Check room properties directly
+                            else if ((room as any)[dataField] !== undefined) {
+                                aimsArticle[rootField] = String((room as any)[dataField]);
+                            }
+                        });
+                    }
+
+                    // Ensure required fields have defaults
+                    if (!aimsArticle.articleId) {
+                        aimsArticle.articleId = room.id;
+                    }
+                    if (!aimsArticle.articleName) {
+                        aimsArticle.articleName = room.data?.roomName || room.id;
+                    }
 
                     await solumService.pushArticles(
                         solumConfig,

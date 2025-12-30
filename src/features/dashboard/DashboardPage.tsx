@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 // Icons
 import AddIcon from '@mui/icons-material/Add';
@@ -86,8 +86,20 @@ export function DashboardPage() {
     const unassignedPeople = totalPeople - assignedPeople;
     //const totalPeopleSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
     const savedLists = peopleStore.peopleLists.length;
-    // Assigned labels from SoluM API store summary
-    const assignedLabelsCount = settings.solumConfig?.storeSummary?.labelCount || 0;
+    
+    // Calculate assigned labels dynamically from actual data
+    // This ensures the count is always accurate, not just from initial connection
+    const assignedLabelsCount = useMemo(() => {
+        if (isPeopleManagerMode) {
+            // In People mode, count people with assigned spaces
+            return peopleStore.people.filter(p => p.assignedSpaceId).length;
+        } else {
+            // In normal mode, count spaces and conference rooms with labels
+            const spaceLabels = spaceController.spaces.filter(s => s.labelCode).length;
+            const conferenceLabels = conferenceController.conferenceRooms.filter(r => r.labelCode).length;
+            return spaceLabels + conferenceLabels;
+        }
+    }, [isPeopleManagerMode, peopleStore.people, spaceController.spaces, conferenceController.conferenceRooms]);
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
