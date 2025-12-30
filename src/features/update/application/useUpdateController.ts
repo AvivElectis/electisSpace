@@ -221,10 +221,16 @@ export function useUpdateController() {
     /**
      * Check on mount
      * Requirement: Check only when app loads, ignoring intervals
+     * Added delay to prevent stale cache showing false "update available" after fresh install
      */
     useEffect(() => {
         if (settings.enabled) {
-            checkForUpdates();
+            // Delay initial check to allow app to fully initialize and clear any stale update cache
+            const timer = setTimeout(() => {
+                checkForUpdates();
+            }, 3000); // 3 second delay
+            
+            return () => clearTimeout(timer);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount

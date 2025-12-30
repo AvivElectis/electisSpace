@@ -306,14 +306,14 @@ describe('Person Type Helpers', () => {
 // =============================================================================
 
 describe('AIMS Integration Tests', () => {
-    // Test credentials - using SolumConfig interface
+    // Test credentials - uses environment variables or mock values
     const AIMS_CONFIG = {
-        companyName: 'TST',
-        username: 'aviv@electis.co.il',
-        password: 'REDACTED_PASSWORD',
-        storeNumber: '01',
+        companyName: import.meta.env.VITE_AIMS_COMPANY_NAME || 'TEST_COMPANY',
+        username: import.meta.env.VITE_AIMS_USERNAME || 'test@example.com',
+        password: import.meta.env.VITE_AIMS_PASSWORD || 'TestPassword123!',
+        storeNumber: import.meta.env.VITE_AIMS_STORE_NUMBER || '01',
         cluster: 'common' as const,
-        baseUrl: 'https://eu.common.solumesl.com',
+        baseUrl: import.meta.env.VITE_AIMS_BASE_URL || 'https://eu.common.solumesl.com',
         syncInterval: 300,
         tokens: undefined as any,
     };
@@ -991,14 +991,14 @@ describe('Article Data Building', () => {
 // =============================================================================
 
 describe('AIMS Comprehensive Workflow Tests', () => {
-    // Test credentials - using SolumConfig interface
+    // Test credentials - uses environment variables or mock values
     const AIMS_CONFIG = {
-        companyName: 'TST',
-        username: 'aviv@electis.co.il',
-        password: 'REDACTED_PASSWORD',
-        storeNumber: '01',
+        companyName: import.meta.env.VITE_AIMS_COMPANY_NAME || 'TEST_COMPANY',
+        username: import.meta.env.VITE_AIMS_USERNAME || 'test@example.com',
+        password: import.meta.env.VITE_AIMS_PASSWORD || 'TestPassword123!',
+        storeNumber: import.meta.env.VITE_AIMS_STORE_NUMBER || '01',
         cluster: 'common' as const,
-        baseUrl: 'https://eu.common.solumesl.com',
+        baseUrl: import.meta.env.VITE_AIMS_BASE_URL || 'https://eu.common.solumesl.com',
         syncInterval: 300,
         tokens: undefined as any,
     };
@@ -1344,14 +1344,14 @@ describe('Full CSV Upload Integration Test', () => {
     // Enable integration tests (set to true to run real AIMS tests)
     const runIntegrationTests = true;
 
-    // Real AIMS config (same format as main test block)
+    // AIMS config - uses environment variables or mock values
     const AIMS_CONFIG = {
-        companyName: 'TST',
-        username: 'aviv@electis.co.il',
-        password: 'REDACTED_PASSWORD',
-        storeNumber: '01',
+        companyName: import.meta.env.VITE_AIMS_COMPANY_NAME || 'TEST_COMPANY',
+        username: import.meta.env.VITE_AIMS_USERNAME || 'test@example.com',
+        password: import.meta.env.VITE_AIMS_PASSWORD || 'TestPassword123!',
+        storeNumber: import.meta.env.VITE_AIMS_STORE_NUMBER || '01',
         cluster: 'common' as const,
-        baseUrl: 'https://eu.common.solumesl.com',
+        baseUrl: import.meta.env.VITE_AIMS_BASE_URL || 'https://eu.common.solumesl.com',
         syncInterval: 300,
         tokens: undefined as any,
     };
