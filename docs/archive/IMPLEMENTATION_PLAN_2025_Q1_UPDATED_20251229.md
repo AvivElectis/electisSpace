@@ -1363,7 +1363,7 @@ Application needed performance optimizations for large datasets (1000+ spaces/ro
 
 **Features Needed:**
 - Settings-specific password (current implementation)
-- **Safety admin password:** `REDACTED_PASSWORD` (hardcoded, never changes)
+- **Safety admin password:** (stored in environment variable `VITE_ADMIN_PASSWORD`)
   - Always works even if user forgets their password
   - Allows access to settings for troubleshooting
   - Should be documented but hidden from UI
@@ -1374,7 +1374,7 @@ Application needed performance optimizations for large datasets (1000+ spaces/ro
 - Update `SecuritySettingsTab` to add admin password check
 - Modify `useSettingsController.unlock()`:
   ```typescript
-  const ADMIN_PASSWORD = 'REDACTED_PASSWORD';
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
   if (password === ADMIN_PASSWORD) {
     setLocked(false);
     return true;
