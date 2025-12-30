@@ -475,6 +475,19 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         }
                                     })}
                                     mappingInfo={settings.solumMappingConfig?.mappingInfo}
+                                    onMappingInfoChange={(newMappingInfo) => onUpdate({
+                                        solumMappingConfig: {
+                                            ...settings.solumMappingConfig,
+                                            uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                            fields: settings.solumMappingConfig?.fields || {},
+                                            conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                meetingName: '',
+                                                meetingTime: '',
+                                                participants: '',
+                                            },
+                                            mappingInfo: newMappingInfo,
+                                        }
+                                    })}
                                     disabled={isMappingLocked}
                                 />
 
