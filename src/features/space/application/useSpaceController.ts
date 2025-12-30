@@ -1,11 +1,14 @@
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useSpaceStore } from '../infrastructure/spaceStore';
+import { useSpacesStore } from '../infrastructure/spacesStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
-import type { Space, CSVConfig } from '@shared/domain/types';
-import type { SpaceList } from '../domain/types';
+import type { Space, CSVConfig, SolumConfig } from '@shared/domain/types';
+import type { SpacesList } from '../domain/types';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+import * as solumService from '@shared/infrastructure/services/solumService';
+import { SolumSyncAdapter } from '../../sync/infrastructure/SolumSyncAdapter';
 
 /**
  * Space Controller Hook
@@ -15,24 +18,30 @@ import { logger } from '@shared/infrastructure/services/logger';
 interface UseSpaceControllerProps {
     csvConfig: CSVConfig;
     onSync?: () => Promise<void>;  // Callback to trigger sync after changes
+    solumConfig?: SolumConfig;
+    solumToken?: string;
+    solumMappingConfig?: SolumMappingConfig;
 }
 
 export function useSpaceController({
     csvConfig,
     onSync,
+    solumConfig,
+    solumToken,
+    solumMappingConfig,
 }: UseSpaceControllerProps) {
     const {
         spaces,
-        spaceLists,
+        spacesLists,
         setSpaces,
         addSpace: addToStore,
         updateSpace: updateInStore,
         deleteSpace: deleteFromStore,
-        addSpaceList,
-        updateSpaceList,
-        deleteSpaceList,
-        loadSpaceList,
-    } = useSpaceStore();
+        addSpacesList,
+        updateSpacesList,
+        deleteSpacesList,
+        loadSpacesList,
+    } = useSpacesStore();
 
     /**
      * Add new space
@@ -44,7 +53,12 @@ export function useSpaceController({
             // Generate ID if not provided
             if (!spaceData.id) {
                 const existingIds = spaces.map(s => s.id);
-                spaceData.id = generateSpaceId(spaceData.roomName || '', existingIds);
+                // Try to get name for ID generation from data mapping or standard field
+                const mappingInfo = solumMappingConfig?.mappingInfo;
+                const nameKey = mappingInfo?.articleName || 'roomName';
+                const nameForId = (spaceData.data?.[nameKey]) || '';
+
+                spaceData.id = generateSpaceId(nameForId, existingIds);
             }
 
             // Validate
@@ -63,8 +77,93 @@ export function useSpaceController({
             // Merge with defaults
             const space = mergeSpaceDefaults(spaceData, csvConfig);
 
-            // Add to store
-            addToStore(space);
+            // Post to AIMS if using SoluM mode
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    logger.info('SpaceController', 'Pushing article to AIMS', { id: space.id });
+
+
+                    // Transform space to AIMS article format using mapping config
+                    const data: Record<string, any> = {};
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+
+                    // Map visible fields from config to data object
+                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
+                        if (fieldConfig.visible) {
+                            let value: any = undefined;
+
+                            // Resolve value from space
+                            if (mappingInfo?.articleId === fieldKey) {
+                                value = space.id;
+                            } else if (space.data && space.data[fieldKey] !== undefined) {
+                                value = space.data[fieldKey];
+                            } else if ((space as any)[fieldKey] !== undefined) {
+                                value = (space as any)[fieldKey];
+                            }
+
+                            if (value !== undefined && value !== null && value !== '') {
+                                data[fieldKey] = value;
+                            }
+                        }
+                    });
+
+                    if (solumMappingConfig.globalFieldAssignments) {
+                        Object.assign(data, solumMappingConfig.globalFieldAssignments);
+                    }
+
+                    // Construct Root Object matching articleImportByJSON schema
+                    // Root must contain articleId, articleName, data, etc.
+                    const aimsArticle: any = {
+                        data: data
+                    };
+
+                    // explicit root mapping
+                    if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
+                        aimsArticle.articleId = String(data[mappingInfo.articleId]);
+                    } else {
+                        aimsArticle.articleId = space.id;
+                    }
+
+                    if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
+                        aimsArticle.articleName = String(data[mappingInfo.articleName]);
+                    } else {
+                        aimsArticle.articleName = space.id;
+                    }
+
+                    if (mappingInfo?.store && data[mappingInfo.store]) {
+                        aimsArticle.store = String(data[mappingInfo.store]);
+                    }
+
+                    if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
+                        aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
+                    }
+
+
+                    await solumService.pushArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [aimsArticle]
+                    );
+                    logger.info('SpaceController', 'Article pushed to AIMS successfully', { id: space.id });
+                } catch (error) {
+                    logger.error('SpaceController', 'Failed to push article to AIMS', { error });
+                    throw new Error(`Failed to push to AIMS: ${error}`);
+                }
+            }
+
+            // Refresh from AIMS to get the latest state
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    await fetchFromSolum();
+                    logger.info('SpaceController', 'Refreshed from AIMS after add');
+                } catch (error) {
+                    logger.warn('SpaceController', 'Failed to refresh from AIMS after add', { error });
+                }
+            } else {
+                // For non-SoluM modes, add to store directly
+                addToStore(space);
+            }
 
             // Trigger sync if configured
             if (onSync) {
@@ -77,7 +176,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space added successfully', { id: space.id });
         },
-        [spaces, csvConfig, addToStore, onSync]
+        [spaces, csvConfig, addToStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -114,8 +213,90 @@ export function useSpaceController({
                 }
             }
 
-            // Update in store
-            updateInStore(id, updatedSpace);
+            // Push to AIMS if using SoluM mode
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    logger.info('SpaceController', 'Pushing updated article to AIMS', { id });
+
+
+                    const space = updatedSpace as Space;
+                    const data: Record<string, any> = {};
+                    const mappingInfo = solumMappingConfig.mappingInfo;
+
+                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
+                        if (fieldConfig.visible) {
+                            let value: any = undefined;
+
+                            // Resolve value from space
+                            if (mappingInfo?.articleId === fieldKey) {
+                                value = space.id;
+                            } else if (space.data && space.data[fieldKey] !== undefined) {
+                                value = space.data[fieldKey];
+                            } else if ((space as any)[fieldKey] !== undefined) {
+                                value = (space as any)[fieldKey];
+                            }
+
+                            if (value !== undefined && value !== null && value !== '') {
+                                data[fieldKey] = value;
+                            }
+                        }
+                    });
+
+                    if (solumMappingConfig.globalFieldAssignments) {
+                        Object.assign(data, solumMappingConfig.globalFieldAssignments);
+                    }
+
+                    // Construct Root Object
+                    const aimsArticle: any = {
+                        data: data
+                    };
+
+                    // explicit root mapping
+                    if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
+                        aimsArticle.articleId = String(data[mappingInfo.articleId]);
+                    } else {
+                        aimsArticle.articleId = space.id;
+                    }
+
+                    if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
+                        aimsArticle.articleName = String(data[mappingInfo.articleName]);
+                    } else {
+                        aimsArticle.articleName = space.id;
+                    }
+
+                    if (mappingInfo?.store && data[mappingInfo.store]) {
+                        aimsArticle.store = String(data[mappingInfo.store]);
+                    }
+
+                    if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
+                        aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
+                    }
+
+                    await solumService.pushArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [aimsArticle]
+                    );
+                    logger.info('SpaceController', 'Article updated in AIMS successfully', { id });
+                } catch (error) {
+                    logger.error('SpaceController', 'Failed to update article in AIMS', { error });
+                    throw new Error(`Failed to update in AIMS: ${error}`);
+                }
+            }
+
+            // Refresh from AIMS to get the latest state
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    await fetchFromSolum();
+                    logger.info('SpaceController', 'Refreshed from AIMS after update');
+                } catch (error) {
+                    logger.warn('SpaceController', 'Failed to refresh from AIMS after update', { error });
+                }
+            } else {
+                // For non-SoluM modes, update store directly
+                updateInStore(id, updatedSpace);
+            }
 
             // Trigger sync
             if (onSync) {
@@ -128,7 +309,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space updated successfully', { id });
         },
-        [spaces, csvConfig, updateInStore, onSync]
+        [spaces, csvConfig, updateInStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -143,8 +324,35 @@ export function useSpaceController({
                 throw new Error('Space not found');
             }
 
-            // Delete from store
-            deleteFromStore(id);
+            // Delete from AIMS if using SoluM mode  
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    logger.info('SpaceController', 'Deleting article from AIMS', { id });
+                    await solumService.deleteArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [id]  // Delete this space article
+                    );
+                    logger.info('SpaceController', 'Article deleted from AIMS successfully', { id });
+                } catch (error) {
+                    logger.error('SpaceController', 'Failed to delete article from AIMS', { error });
+                    throw new Error(`Failed to delete from AIMS: ${error}`);
+                }
+            }
+
+            // Refresh from AIMS to get the latest state
+            if (solumConfig && solumMappingConfig && solumToken) {
+                try {
+                    await fetchFromSolum();
+                    logger.info('SpaceController', 'Refreshed from AIMS after delete');
+                } catch (error) {
+                    logger.warn('SpaceController', 'Failed to refresh from AIMS after delete', { error });
+                }
+            } else {
+                // For non-SoluM modes, delete from store directly
+                deleteFromStore(id);
+            }
 
             // Trigger sync
             if (onSync) {
@@ -157,7 +365,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space deleted successfully', { id });
         },
-        [spaces, deleteFromStore, onSync]
+        [spaces, deleteFromStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -191,13 +399,56 @@ export function useSpaceController({
     }, [spaces]);
 
     /**
-     * Save current spaces as space list
+     * Fetch spaces from SoluM API
+     * Fetches all articles, filters OUT those with 'C' prefix (conference rooms),
+     * and maps them to Space entities using solumMappingConfig
      */
-    const saveSpaceList = useCallback(
-        (name: string, id?: string): void => {
-            logger.info('SpaceController', 'Saving space list', { name, id });
+    const fetchFromSolum = useCallback(
+        async (): Promise<void> => {
+            if (!solumConfig || !solumToken || !solumMappingConfig) {
+                throw new Error('SoluM configuration, token, or mapping config not available');
+            }
 
-            const spaceList: SpaceList = {
+            logger.info('SpaceController', 'Fetching spaces from SoluM using Adapter');
+
+            try {
+                // Instantiate adapter solely for the purpose of downloading
+                // We provide a no-op for token updates as this hook doesn't manage token persistence
+                // (Token persistence is handled by the main SyncController or Settings)
+                const adapter = new SolumSyncAdapter(
+                    solumConfig,
+                    csvConfig,
+                    (newTokens) => logger.debug('SpaceController', 'Token refreshed during fetch (not persisted)', { newTokens }),
+                    { ...solumConfig.tokens!, accessToken: solumToken } as any, // Construct tokens object if needed
+                    solumMappingConfig
+                );
+
+                // Use the adapter's download logic which handles pagination properly
+                const spaces = await adapter.download();
+
+                // Import mapped spaces
+                importFromSync(spaces);
+
+                logger.info('SpaceController', 'Spaces fetched from SoluM', {
+                    count: spaces.length
+                });
+            } catch (error) {
+                logger.error('SpaceController', 'Failed to fetch from SoluM', { error });
+                throw error;
+            }
+        },
+        [solumConfig, solumToken, solumMappingConfig, csvConfig, importFromSync]
+    );
+
+
+    /**
+     * Save current spaces as spaces list
+     */
+    const saveSpacesList = useCallback(
+        (name: string, id?: string): void => {
+            logger.info('SpaceController', 'Saving spaces list', { name, id });
+
+            const spacesList: SpacesList = {
                 id: id || uuidv4(),
                 name,
                 createdAt: new Date().toISOString(),
@@ -206,37 +457,37 @@ export function useSpaceController({
 
             if (id) {
                 // Update existing
-                updateSpaceList(id, spaceList);
+                updateSpacesList(id, spacesList);
             } else {
                 // Create new
-                addSpaceList(spaceList);
+                addSpacesList(spacesList);
             }
 
-            logger.info('SpaceController', 'Space list saved', { id: spaceList.id });
+            logger.info('SpaceController', 'Spaces list saved', { id: spacesList.id });
         },
-        [spaces, addSpaceList, updateSpaceList]
+        [spaces, addSpacesList, updateSpacesList]
     );
 
     /**
      * Load space list (replaces current spaces)
      */
-    const loadSavedSpaceList = useCallback(
+    const loadSavedSpacesList = useCallback(
         (id: string): void => {
             logger.info('SpaceController', 'Loading space list', { id });
-            loadSpaceList(id);
+            loadSpacesList(id);
         },
-        [loadSpaceList]
+        [loadSpacesList]
     );
 
     /**
      * Delete space list
      */
-    const deleteSavedSpaceList = useCallback(
+    const deleteSavedSpacesList = useCallback(
         (id: string): void => {
             logger.info('SpaceController', 'Deleting space list', { id });
-            deleteSpaceList(id);
+            deleteSpacesList(id);
         },
-        [deleteSpaceList]
+        [deleteSpacesList]
     );
 
     return {
@@ -246,13 +497,14 @@ export function useSpaceController({
         deleteSpace,
         findSpaceById,
         importFromSync,
+        fetchFromSolum,
         getAllSpaces,
         spaces,
 
         // Space list operations
-        saveSpaceList,
-        loadSpaceList: loadSavedSpaceList,
-        deleteSpaceList: deleteSavedSpaceList,
-        spaceLists,
+        saveSpacesList,
+        loadSpacesList: loadSavedSpacesList,
+        deleteSpacesList: deleteSavedSpacesList,
+        spacesLists,
     };
 }

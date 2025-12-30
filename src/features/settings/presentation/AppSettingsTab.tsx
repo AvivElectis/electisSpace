@@ -1,0 +1,222 @@
+import {
+    Box,
+    TextField,
+    Stack,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormControlLabel,
+    Switch,
+    Typography,
+    Divider,
+    Button,
+    Alert,
+    CircularProgress,
+} from '@mui/material';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { useTranslation } from 'react-i18next';
+import { useUpdateController } from '@features/update/application/useUpdateController';
+import type { SettingsData } from '../domain/types';
+
+interface AppSettingsTabProps {
+    settings: SettingsData;
+    onUpdate: (updates: Partial<SettingsData>) => void;
+    onNavigateToTab?: (tabIndex: number) => void;
+}
+
+/**
+ * App Settings Tab
+ * General application configuration with mode navigation
+ */
+export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSettingsTabProps) {
+    const { t } = useTranslation();
+    const {
+        currentVersion,
+        checking,
+        checkForUpdates,
+        updateInfo,
+    } = useUpdateController();
+
+    const handleCheckForUpdates = async () => {
+        await checkForUpdates();
+    };
+
+    return (
+        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
+            <Stack gap={2}>
+                {/* Application Info */}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('settings.applicationInfo')}
+                    </Typography>
+                    <Stack gap={1.5}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={t('settings.applicationName')}
+                            value={settings.appName}
+                            onChange={(e) => onUpdate({ appName: e.target.value })}
+                            helperText={t('settings.displayedInHeader')}
+                        />
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={t('settings.applicationSubtitle')}
+                            value={settings.appSubtitle}
+                            onChange={(e) => onUpdate({ appSubtitle: e.target.value })}
+                            helperText={t('settings.displayedBelowAppName')}
+                        />
+                    </Stack>
+                </Box>
+
+                <Divider />
+
+                {/* Space Type */}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('settings.spaceTypeConfig')}
+                    </Typography>
+                    <FormControl fullWidth size="small">
+                        <InputLabel>{t('settings.spaceType')}</InputLabel>
+                        <Select
+                            value={settings.spaceType}
+                            label={t('settings.spaceType')}
+                            onChange={(e) => onUpdate({ spaceType: e.target.value as any })}
+                        >
+                            <MenuItem value="office">{t('settings.offices')}</MenuItem>
+                            <MenuItem value="room">{t('settings.rooms')}</MenuItem>
+                            <MenuItem value="chair">{t('settings.chairs')}</MenuItem>
+                            <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        {t('settings.affectsLabels')}
+                    </Typography>
+                </Box>
+
+                <Divider />
+
+                {/* Working Mode */}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('settings.syncMode')}
+                    </Typography>
+
+                    <FormControl fullWidth size="small">
+                        <InputLabel>{t('settings.workingMode')}</InputLabel>
+                        <Select
+                            value={settings.workingMode}
+                            label={t('settings.workingMode')}
+                            onChange={(e) => onUpdate({ workingMode: e.target.value as any })}
+                        >
+                            {/* <MenuItem value="SFTP">{t('sync.sftpMode')}</MenuItem> */}
+                            <MenuItem value="SOLUM_API">{t('sync.solumMode')}</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    {/* Mode Info Alert */}
+                    <Alert severity="info" sx={{ mt: 1.5, py: 0, px: 2 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                            <strong>
+                                {settings.workingMode === 'SFTP' ? t('settings.sftpModeActive') : t('settings.solumModeActive')}
+                            </strong>
+                            {' - '}
+                            {settings.workingMode === 'SFTP'
+                                ? t('settings.usingCsvSync')
+                                : t('settings.usingSolumApi')
+                            }
+                        </Typography>
+                    </Alert>
+
+                    {/* Navigate to Mode Settings */}
+                    {onNavigateToTab && (
+                        <Button
+                            variant="text"
+                            color="primary"
+                            endIcon={<ArrowForwardIcon />}
+                            onClick={() => onNavigateToTab(settings.workingMode === 'SFTP' ? 1 : 2)}
+                            sx={{ mt: 1, width: 'fit-content' }}
+                        >
+                            {t('settings.goToSettings').replace('{mode}', settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM')}
+                        </Button>
+                    )}
+                </Box>
+
+
+
+                {/* Update Settings */}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('update.updateSettings')}
+                    </Typography>
+                    <Stack gap={1.5}>
+                        {/* Current Version */}
+                        <TextField
+                            size="small"
+                            label={t('update.currentVersion')}
+                            value={`v${currentVersion}`}
+                            InputProps={{
+                                readOnly: true,
+                               
+                            }}
+                            sx={{ width: 'fit-content'}}
+                            variant="filled"
+                        />
+
+                        {/* Auto-Update Toggle */}
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    size="small"
+                                    checked={settings.autoUpdateEnabled ?? true}
+                                    onChange={(e) => onUpdate({ autoUpdateEnabled: e.target.checked })}
+                                />
+                            }
+                            label={<Typography variant="body2">{t('update.autoUpdate')}</Typography>}
+                        />
+
+                        {/* Manual Check Button */}
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={
+                                checking ? (
+                                    <CircularProgress size={20} color="inherit" />
+                                ) : (
+                                    <CloudDownloadIcon />
+                                )
+                            }
+                            onClick={handleCheckForUpdates}
+                            disabled={checking}
+                            sx={{ alignSelf: 'flex-start' }}
+                        >
+                            {checking
+                                ? t('update.checking')
+                                : t('update.checkForUpdates')}
+                        </Button>
+
+                        {/* Update Status */}
+                        {updateInfo && (
+                            <Alert severity="info" icon={<CheckCircleIcon />} sx={{ py: 0.5 }}>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                    {t('update.newVersion', { version: updateInfo.version })}
+                                </Typography>
+                            </Alert>
+                        )}
+
+                        {!checking && !updateInfo && currentVersion && (
+                            <Alert severity="success" icon={<CheckCircleIcon />} sx={{ py: 0.5 }}>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                    {t('update.upToDate')}
+                                </Typography>
+                            </Alert>
+                        )}
+                    </Stack>
+                </Box>
+            </Stack>
+        </Box>
+    );
+}

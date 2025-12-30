@@ -1,5 +1,6 @@
 import type { SolumConfig, SolumTokens } from '@shared/domain/types';
 import { logger } from './logger';
+import axios from 'axios';
 
 /**
  * SoluM ESL API Service
@@ -7,43 +8,77 @@ import { logger } from './logger';
  */
 
 /**
+ * Build cluster-aware URL
+ * Inserts '/c1' prefix when cluster is 'c1'
+ * @param config - SoluM configuration
+ * @param path - API path starting with '/common/api/v2/...'
+ * @returns Full URL with cluster prefix if applicable
+ * @example
+ * // Common cluster: https://eu.common.solumesl.com/common/api/v2/token
+ * // C1 cluster: https://eu.common.solumesl.com/c1/common/api/v2/token
+ */
+export function buildUrl(config: SolumConfig, path: string): string {
+    const { baseUrl, cluster } = config;
+
+    // Insert '/c1' before the path for c1 cluster
+    const clusterPrefix = cluster === 'c1' ? '/c1' : '';
+
+    return `${baseUrl}${clusterPrefix}${path}`;
+}
+
+/**
  * Login to SoluM API
  * @param config - SoluM configuration
  * @returns Access and refresh tokens
  */
 export async function login(config: SolumConfig): Promise<SolumTokens> {
-    logger.info('SolumService', 'Logging in to SoluM API', { company: config.companyName });
-
-    const url = `${config.baseUrl}/api/v2/auth/login`;
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            company: config.companyName,
-            username: config.username,
-            password: config.password,
-        }),
+    logger.info('SolumService', 'Logging in to SoluM API', {
+        company: config.companyName,
+        cluster: config.cluster,
+        baseUrl: config.baseUrl
     });
 
-    if (!response.ok) {
-        const error = await response.text();
-        logger.error('SolumService', 'Login failed', { status: response.status, error });
-        throw new Error(`SoluM login failed: ${response.status} - ${error}`);
+    // Login endpoint only requires username and password
+    const url = buildUrl(config, '/common/api/v2/token');
+
+    // console.log('[SoluM Request] Login:', {
+    //     url,
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: { username: config.username, password: '***' }
+    // });
+
+    logger.debug('SolumService', 'Login request', {
+        url,
+        method: 'POST',
+        bodyKeys: ['username', 'password']
+    });
+
+    try {
+        const response = await axios.post(url, {
+            username: config.username,
+            password: config.password,
+        });
+
+        // console.log('[SoluM Response] Login:', response.status, response.statusText);
+        // console.log('[SoluM Response] Login Data:', response.data);
+
+        const tokenData = response.data.responseMessage;
+        const tokens: SolumTokens = {
+            accessToken: tokenData.access_token,
+            refreshToken: tokenData.refresh_token,
+            expiresAt: Date.now() + (tokenData.expires_in * 1000),
+        };
+
+        logger.info('SolumService', 'Login successful');
+        return tokens;
+    } catch (error: any) {
+        const status = error.response?.status || 'unknown';
+        const errorData = error.response?.data || error.message;
+        // console.error('[SoluM Error] Login failed:', { status, error: errorData });
+        logger.error('SolumService', 'Login failed', { status, error: errorData });
+        throw new Error(`SoluM login failed: ${status} - ${JSON.stringify(errorData)}`);
     }
-
-    const data = await response.json();
-
-    const tokens: SolumTokens = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresAt: Date.now() + (data.expiresIn * 1000), // Convert seconds to milliseconds
-    };
-
-    logger.info('SolumService', 'Login successful');
-    return tokens;
 }
 
 /**
@@ -58,7 +93,14 @@ export async function refreshToken(
 ): Promise<SolumTokens> {
     logger.info('SolumService', 'Refreshing token');
 
-    const url = `${config.baseUrl}/api/v2/auth/refresh`;
+    const url = buildUrl(config, '/common/api/v2/token/refresh');
+
+    // console.log('[SoluM Request] Refresh Token:', {
+    //     url,
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: { refreshToken: '***' }  // camelCase as per API spec line 196-200
+    // });
 
     const response = await fetch(url, {
         method: 'POST',
@@ -66,7 +108,7 @@ export async function refreshToken(
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            refreshToken,
+            refreshToken: refreshToken,  // API expects camelCase, not underscore
         }),
     });
 
@@ -77,15 +119,94 @@ export async function refreshToken(
     }
 
     const data = await response.json();
+    const tokenData = data.responseMessage;  // Match login response structure
 
     const tokens: SolumTokens = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresAt: Date.now() + (data.expiresIn * 1000),
+        accessToken: tokenData.access_token,  // Use underscore field names
+        refreshToken: tokenData.refresh_token,
+        expiresAt: Date.now() + (tokenData.expires_in * 1000),
     };
 
     logger.info('SolumService', 'Token refreshed successfully');
     return tokens;
+}
+
+/**
+ * Check if token is expired or near expiry
+ * @param tokens - SoluM tokens
+ * @param bufferMinutes - Minutes before expiry to consider expired (default 5)
+ */
+export function isTokenExpired(tokens: SolumTokens | undefined, bufferMinutes: number = 5): boolean {
+    if (!tokens) return true;
+    const now = Date.now();
+    const buffer = bufferMinutes * 60 * 1000;
+    return tokens.expiresAt - now < buffer;
+}
+
+/**
+ * Check if token should be refreshed (every 3 hours or near expiry)
+ * @param config - SoluM configuration with tokens
+ */
+export function shouldRefreshToken(config: SolumConfig): boolean {
+    if (!config.tokens || !config.isConnected) return false;
+
+    const now = Date.now();
+    const threeHours = 3 * 60 * 60 * 1000; // 3 hours in ms
+
+    // Refresh if token expires soon (< 5 minutes)
+    if (isTokenExpired(config.tokens, 5)) return true;
+
+    // Refresh if it's been more than 3 hours since last refresh
+    if (config.lastRefreshed && (now - config.lastRefreshed > threeHours)) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Wrapper function for API calls with automatic token refresh on 403 errors
+ * @param config - SoluM configuration
+ * @param onTokenRefresh - Callback to update tokens in settings
+ * @param apiCall - Function that makes the API call with a token
+ */
+export async function withTokenRefresh<T>(
+    config: SolumConfig,
+    onTokenRefresh: (tokens: SolumTokens) => void,
+    apiCall: (token: string) => Promise<T>
+): Promise<T> {
+    // Check if we have a valid token
+    if (!config.tokens?.accessToken) {
+        throw new Error('No active token. Please connect to SoluM API first.');
+    }
+
+    try {
+        // Try the API call with current token
+        return await apiCall(config.tokens.accessToken);
+    } catch (error: any) {
+        // If 403 error, refresh token and retry
+        if (error.status === 403 || error.message?.includes('403')) {
+            logger.info('SolumService', '403 error detected, refreshing token and retrying');
+
+            try {
+                // Refresh the token
+                const newTokens = await refreshToken(config, config.tokens.refreshToken);
+
+                // Update tokens via callback
+                onTokenRefresh(newTokens);
+
+                // Retry the API call with new token
+                logger.info('SolumService', 'Retrying API call with refreshed token');
+                return await apiCall(newTokens.accessToken);
+            } catch (refreshError) {
+                logger.error('SolumService', 'Token refresh failed during retry', refreshError);
+                throw new Error('Failed to refresh token. Please reconnect to SoluM API.');
+            }
+        }
+
+        // Re-throw if not a 403 error
+        throw error;
+    }
 }
 
 /**
@@ -98,11 +219,14 @@ export async function refreshToken(
 export async function fetchArticles(
     config: SolumConfig,
     storeId: string,
-    token: string
+    token: string,
+    page: number = 0,
+    size: number = 100
 ): Promise<any[]> {
-    logger.info('SolumService', 'Fetching articles', { storeId });
+    logger.info('SolumService', 'Fetching articles with details', { storeId, page, size });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/articles`;
+    // Use the detailed articles endpoint to get full article data with pagination
+    const url = buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${storeId}&page=${page}&size=${size}`);
 
     const response = await fetch(url, {
         method: 'GET',
@@ -118,9 +242,34 @@ export async function fetchArticles(
         throw new Error(`Fetch articles failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    logger.info('SolumService', 'Articles fetched', { count: data.length });
-    return data;
+    const text = await response.text();
+    // Handle empty response (e.g. 204 No Content or just empty body)
+    if (!text || text.trim().length === 0) {
+        logger.info('SolumService', 'Articles fetched (empty response)', { count: 0 });
+        return [];
+    }
+
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        logger.error('SolumService', 'Failed to parse SoluM response', { text });
+        throw new Error('Invalid JSON response from SoluM API');
+    }
+
+    // Debug: Log the raw response to see structure
+    // console.log('[DEBUG] AIMS API Raw Response:', JSON.stringify(data, null, 2));
+    // console.log('[DEBUG] Response is array?', Array.isArray(data));
+    // console.log('[DEBUG] Response.articleList exists?', !!data.articleList);
+
+    // The API returns an object with articleList array
+    // Example: { totalArticleCnt: 1, articleList: [...], responseCode: "200" }
+    const articles = Array.isArray(data) ? data : (data.articleList || data.content || data.data || []);
+
+    // console.log('[DEBUG] Extracted articles:', articles);
+
+    logger.info('SolumService', 'Articles fetched', { count: articles.length });
+    return articles;
 }
 
 /**
@@ -136,9 +285,83 @@ export async function pushArticles(
     token: string,
     articles: any[]
 ): Promise<void> {
-    logger.info('SolumService', 'Pushing articles', { storeId, count: articles.length });
+    const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
+    const requestBody = JSON.stringify(articles);
+    
+    logger.info('SolumService', 'Pushing articles - FULL REQUEST', { 
+        url,
+        method: 'POST',
+        storeId, 
+        count: articles.length,
+        headers: {
+            'Authorization': `Bearer ${token.substring(0, 20)}...`,
+            'Content-Type': 'application/json',
+        },
+        body: requestBody
+    });
+    
+    // console.log('=== SOLUM POST REQUEST ===');
+    // console.log('URL:', url);
+    // console.log('Method: POST');
+    // console.log('Headers:', {
+    //     'Authorization': `Bearer ${token.substring(0, 20)}...`,
+    //     'Content-Type': 'application/json',
+    // });
+    // console.log('Body:', requestBody);
+    // console.log('========================');
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/articles`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: requestBody,
+    });
+
+    const responseText = await response.text();
+    
+    // console.log('=== SOLUM POST RESPONSE ===');
+    // console.log('Status:', response.status, response.statusText);
+    // console.log('Headers:', Object.fromEntries(response.headers.entries()));
+    // console.log('Body:', responseText);
+    // console.log('===========================');
+    
+    logger.info('SolumService', 'Push articles - FULL RESPONSE', { 
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: responseText
+    });
+
+    if (!response.ok) {
+        logger.error('SolumService', 'Push articles failed', { 
+            status: response.status, 
+            statusText: response.statusText,
+            error: responseText 
+        });
+        throw new Error(`Push articles failed: ${response.status} - ${responseText}`);
+    }
+
+    logger.info('SolumService', 'Articles pushed successfully');
+}
+
+/**
+ * Update articles using PUT method (Partial update/Append)
+ * @param config - SoluM configuration
+ * @param storeId - Store number
+ * @param token - Access token
+ * @param articles - Articles to update
+ */
+export async function putArticles(
+    config: SolumConfig,
+    storeId: string,
+    token: string,
+    articles: any[]
+): Promise<void> {
+    logger.info('SolumService', 'Updating articles (PUT)', { storeId, count: articles.length });
+
+    const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
 
     const response = await fetch(url, {
         method: 'PUT',
@@ -151,11 +374,48 @@ export async function pushArticles(
 
     if (!response.ok) {
         const error = await response.text();
-        logger.error('SolumService', 'Push articles failed', { status: response.status, error });
-        throw new Error(`Push articles failed: ${response.status}`);
+        logger.error('SolumService', 'Update articles failed', { status: response.status, error });
+        throw new Error(`Update articles failed: ${response.status}`);
     }
 
-    logger.info('SolumService', 'Articles pushed successfully');
+    logger.info('SolumService', 'Articles updated successfully');
+}
+
+/**
+ * Delete articles from SoluM API
+ * @param config - SoluM configuration
+ * @param storeId - Store number
+ * @param token - Access token
+ * @param articleIds - Array of article IDs to delete
+ */
+export async function deleteArticles(
+    config: SolumConfig,
+    storeId: string,
+    token: string,
+    articleIds: string[]
+): Promise<void> {
+    logger.info('SolumService', 'Deleting articles', { storeId, count: articleIds.length, ids: articleIds });
+
+    const url = buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${storeId}`);
+
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            articleDeleteList: articleIds
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        logger.error('SolumService', 'Delete articles failed', { status: response.status, error });
+        throw new Error(`Delete articles failed: ${response.status}`);
+    }
+
+    logger.info('SolumService', 'Articles deleted successfully');
 }
 
 /**
@@ -172,7 +432,7 @@ export async function getLabels(
 ): Promise<any[]> {
     logger.info('SolumService', 'Fetching labels', { storeId });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/labels`;
+    const url = buildUrl(config, `/common/api/v2/common/labels?company=${config.companyName}&store=${storeId}`);
 
     const response = await fetch(url, {
         method: 'GET',
@@ -188,9 +448,29 @@ export async function getLabels(
         throw new Error(`Fetch labels failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    logger.info('SolumService', 'Labels fetched', { count: data.length });
-    return data;
+    const text = await response.text();
+    // Handle empty response
+    if (!text || text.trim().length === 0) {
+        logger.info('SolumService', 'Labels fetched (empty response)', { count: 0 });
+        return [];
+    }
+
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        logger.error('SolumService', 'Failed to parse labels response', { text });
+        throw new Error('Invalid JSON response from SoluM API');
+    }
+
+    // The API might return an object with nested labels array or direct array
+    // Handle both cases like fetchArticles does
+    const labels = Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
+
+    logger.info('SolumService', 'Labels fetched', { count: labels.length });
+    // console.log('[DEBUG getLabels] Response type:', typeof data, ', IsArray:', Array.isArray(data), ', Keys:', data ? Object.keys(data).join(',') : 'none');
+    // console.log('[DEBUG getLabels] Labels IsArray:', Array.isArray(labels), ', Count:', Array.isArray(labels) ? labels.length : 'NOT ARRAY');
+    return labels;
 }
 
 /**
@@ -212,7 +492,7 @@ export async function assignLabel(
 ): Promise<void> {
     logger.info('SolumService', 'Assigning label', { labelCode, articleId, templateName });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/labels/${labelCode}/assign`;
+    const url = buildUrl(config, `/common/api/v2/common/labels/assign?company=${config.companyName}&store=${storeId}`);
 
     const response = await fetch(url, {
         method: 'POST',
@@ -252,7 +532,7 @@ export async function updateLabelPage(
 ): Promise<void> {
     logger.info('SolumService', 'Updating label page', { labelCode, page });
 
-    const url = `${config.baseUrl}/api/v2/stores/${storeId}/labels/${labelCode}/page`;
+    const url = buildUrl(config, `/common/api/v2/common/labels/changePage?company=${config.companyName}&store=${storeId}`);
 
     const response = await fetch(url, {
         method: 'PUT',
@@ -288,7 +568,7 @@ export async function getLabelDetail(
 ): Promise<any> {
     logger.info('SolumService', 'Fetching label detail', { labelCode });
 
-    const url = `${config.baseUrl}/api/v2/common/labels/unassigned/detail?labelCode=${labelCode}&storeCode=${storeId}`;
+    const url = buildUrl(config, `/common/api/v2/common/labels/unassigned/detail?company=${config.companyName}&labelCode=${labelCode}&storeCode=${storeId}`);
 
     const response = await fetch(url, {
         method: 'GET',
@@ -306,5 +586,54 @@ export async function getLabelDetail(
 
     const data = await response.json();
     logger.info('SolumService', 'Label detail fetched');
+    return data;
+}
+
+/**
+ * Get store summary (for connection verification)
+ * @param config - SoluM configuration
+ * @param storeId - Store number
+ * @param token - Access token
+ * @returns Store summary with configuration and statistics
+ */
+export async function getStoreSummary(
+    config: SolumConfig,
+    storeId: string,
+    token: string
+): Promise<any> {
+    logger.info('SolumService', 'Fetching store summary', { storeId });
+
+    const url = buildUrl(config, `/common/api/v2/common/store/summary?company=${config.companyName}&store=${storeId}`);
+
+    // console.log('[SoluM Request] Get Store Summary:', {
+    //     url,
+    //     method: 'GET',
+    //     headers: {
+    //         'Authorization': `Bearer ${token.substring(0, 20)}...`,
+    //         'Content-Type': 'application/json'
+    //     },
+    //     queryParams: { company: config.companyName, store: storeId }
+    // });
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        logger.error('SolumService', 'Fetch store summary failed', { status: response.status, error });
+        throw new Error(`Fetch store summary failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    logger.info('SolumService', 'Store summary fetched', {
+        labelCount: data.labelCount,
+        articleCount: data.articleCount,
+        gatewayCount: data.gatewayCount
+    });
     return data;
 }

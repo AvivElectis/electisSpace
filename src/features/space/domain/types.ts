@@ -2,7 +2,7 @@
  * Space Feature Domain Types
  */
 
-export interface SpaceList {
+export interface SpacesList {
     id: string;
     name: string;
     createdAt: string;

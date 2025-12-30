@@ -22,14 +22,13 @@ export interface AppData {
 }
 
 /**
- * Space entity (chairs/rooms in dental/medical centers)
+ * Space entity (chairs/rooms)
  */
 export interface Space {
     id: string;
-    roomName: string;
-    data: Record<string, string>;  // Dynamic fields from CSV config
-    labelCode?: string;            // SoluM ESL label code
-    templateName?: string;         // SoluM template name
+    data: Record<string, string>;  // Dynamic fields from CSV or SoluM
+    labelCode?: string;  // Optional - for display only, assigned separately
+    templateName?: string;  // Optional - for display only
 }
 
 /**
@@ -37,14 +36,13 @@ export interface Space {
  */
 export interface ConferenceRoom {
     id: string;              // Format: C01, C02, etc.
-    roomName: string;
     hasMeeting: boolean;
     meetingName: string;
     startTime: string;       // HH:mm format
     endTime: string;         // HH:mm format
     participants: string[];
     labelCode?: string;
-    data?: Record<string, string>;
+    data: Record<string, string>;  // Additional dynamic fields
 }
 
 /**
@@ -88,8 +86,17 @@ export interface SolumConfig {
     username: string;
     password: string;
     storeNumber: string;
+    cluster: 'common' | 'c1';  // API cluster selection
     baseUrl: string;
+    customBaseUrl?: string;  // Custom URL when baseUrl is 'custom'
     syncInterval: number;  // in seconds
+
+    // Token management
+    tokens?: SolumTokens;      // Active access and refresh tokens
+    isConnected?: boolean;      // Connection state
+    lastConnected?: number;     // Timestamp of last successful connection
+    lastRefreshed?: number;     // Timestamp of last token refresh
+    storeSummary?: any;         // Store configuration and statistics from API
 }
 
 export interface SolumTokens {
@@ -114,5 +121,5 @@ export interface SFTPCredentials {
 export interface AppSettings {
     name: string;
     subtitle: string;
-    spaceType: 'chair' | 'room';
+    spaceType: 'office' | 'room' | 'chair' | 'person-tag';
 }

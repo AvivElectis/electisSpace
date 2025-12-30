@@ -29,7 +29,7 @@ export function validateConferenceRoom(room: Partial<ConferenceRoom>): Validatio
     }
 
     // Validate room name
-    if (!room.roomName || room.roomName.trim() === '') {
+    if (!room.data?.roomName || room.data.roomName.trim() === '') {
         errors.push({
             field: 'roomName',
             message: 'Room name is required',
