@@ -3,11 +3,20 @@
  */
 
 export interface Person {
-    id: string;  // Unique person identifier (from ARTICLE_ID)
+    id: string;  // UUID - stable across devices
+    virtualSpaceId?: string;  // POOL-XXXX or physical space ID (for AIMS sync)
     data: Record<string, string>;  // Dynamic fields from CSV (name, department, etc.)
-    assignedSpaceId?: string;  // Optional space assignment
+    assignedSpaceId?: string;  // Physical space assignment (undefined if in pool)
     aimsSyncStatus?: 'pending' | 'synced' | 'error';  // AIMS sync status
     lastSyncedAt?: string;  // ISO timestamp of last successful sync
+}
+
+/**
+ * Helper to get the effective virtual space ID for a person
+ * Falls back to assignedSpaceId or person id if virtualSpaceId not set
+ */
+export function getVirtualSpaceId(person: Person): string {
+    return person.virtualSpaceId || person.assignedSpaceId || person.id;
 }
 
 export interface PeopleList {

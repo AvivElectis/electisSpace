@@ -109,8 +109,9 @@ export function UpdateNotification() {
                                 whiteSpace: 'nowrap',
                             }}
                         >
-                            {updateInfo.releaseNotes.substring(0, 60)}
-                            {updateInfo.releaseNotes.length > 60 ? '...' : ''}
+                            {/* Strip HTML tags for preview */}
+                            {updateInfo.releaseNotes.replace(/<[^>]*>/g, '').substring(0, 60)}
+                            {updateInfo.releaseNotes.replace(/<[^>]*>/g, '').length > 60 ? '...' : ''}
                         </Typography>
                     )}
 

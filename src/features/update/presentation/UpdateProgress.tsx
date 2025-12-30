@@ -27,8 +27,9 @@ export function UpdateProgress() {
         installUpdate,
     } = useUpdateController();
 
-    const isOpen = downloading || installing;
     const downloadComplete = !downloading && progress === 100;
+    // Keep dialog open during download, when download completes, or during install
+    const isOpen = downloading || installing || downloadComplete;
 
     const getStatusMessage = () => {
         if (installing) {
@@ -66,13 +67,13 @@ export function UpdateProgress() {
                             {getStatusMessage()}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            {progress}%
+                            {Math.round(progress)}%
                         </Typography>
                     </Box>
 
                     <LinearProgress
                         variant={installing ? 'indeterminate' : 'determinate'}
-                        value={progress}
+                        value={Math.round(progress)}
                         sx={{
                             height: 8,
                             borderRadius: 4,

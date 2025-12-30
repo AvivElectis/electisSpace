@@ -12,11 +12,12 @@ import {
     Divider,
     Box,
 } from '@mui/material';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeopleController } from '../application/usePeopleController';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SpaceSelector } from './SpaceSelector';
 import type { Person } from '../domain/types';
 
@@ -35,6 +36,16 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const settings = useSettingsStore((state) => state.settings);
     const peopleController = usePeopleController();
+    const { getLabel } = useSpaceTypeLabels();
+
+    // Helper for translations with space type
+    const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
+        return t(key, {
+            ...options,
+            spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypePlural: getLabel('plural').toLowerCase(),
+        });
+    }, [t, getLabel]);
 
     // Single source of truth: totalSpaces from settings
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
@@ -110,7 +121,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
             if (isNaN(spaceNum) || spaceNum < 1) {
                 newErrors.assignedSpaceId = t('validation.invalidSpaceId');
             } else if (spaceNum > totalSpaces) {
-                newErrors.assignedSpaceId = t('people.spaceExceedsTotal');
+                newErrors.assignedSpaceId = tWithSpaceType('people.spaceExceedsTotal');
             }
         }
 
@@ -124,30 +135,20 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         setSaving(true);
         try {
             if (isEditMode) {
-                // Update existing person
-                peopleController.updatePerson(person!.id, {
+                // Update existing person (now async with auto-sync)
+                await peopleController.updatePerson(person!.id, {
                     data: formData.data,
                     assignedSpaceId: formData.assignedSpaceId,
                 });
-
-                // Post to AIMS if requested
-                if (postToAims && formData.assignedSpaceId) {
-                    await peopleController.postSelectedToAims([person!.id]);
-                }
             } else {
-                // Add new person - auto-generate ID
-                const autoId = `person-${Date.now()}`;
+                // Add new person with auto-sync
+                // The controller will generate UUID and virtual pool ID
                 const newPerson: Person = {
-                    id: autoId,
+                    id: '', // Will be replaced by controller with UUID
                     data: formData.data,
                     assignedSpaceId: formData.assignedSpaceId,
                 };
-                peopleController.addPerson(newPerson);
-
-                // Post to AIMS if requested
-                if (postToAims && formData.assignedSpaceId) {
-                    await peopleController.postSelectedToAims([newPerson.id]);
-                }
+                await peopleController.addPerson(newPerson);
             }
 
             onClose();
@@ -206,7 +207,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
 
                         {/* Space Assignment */}
                         <Typography variant="subtitle2" color="text.secondary" sx={{ textAlign: isRtl ? 'right' : 'left' }}>
-                            {t('people.spaceAssignment')}
+                            {tWithSpaceType('people.spaceAssignment')}
                         </Typography>
 
                         <SpaceSelector

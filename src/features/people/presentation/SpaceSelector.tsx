@@ -5,10 +5,11 @@ import {
     Box,
     Typography,
 } from '@mui/material';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 
 interface SpaceSelectorProps {
     value: string | undefined;
@@ -46,6 +47,16 @@ export function SpaceSelector({
     const { t, i18n } = useTranslation();
     const settings = useSettingsStore((state) => state.settings);
     const people = usePeopleStore((state) => state.people);
+    const { getLabel } = useSpaceTypeLabels();
+
+    // Helper for translations with space type
+    const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
+        return t(key, {
+            ...options,
+            spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypePlural: getLabel('plural').toLowerCase(),
+        });
+    }, [t, getLabel]);
 
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
 
@@ -72,7 +83,7 @@ export function SpaceSelector({
             const assignedTo = assignedSpaces.get(spaceId);
             options.push({
                 id: spaceId,
-                label: `${t('people.space')} ${spaceId}`,
+                label: `${tWithSpaceType('people.space')} ${spaceId}`,
                 taken: !!assignedTo,
                 assignedTo,
             });
@@ -95,10 +106,10 @@ export function SpaceSelector({
     if (totalSpaces === 0) {
         return (
             <TextField
-                label={t('people.assignedSpace')}
+                label={tWithSpaceType('people.assignedSpace')}
                 value=""
                 disabled
-                helperText={t('people.noSpacesConfigured')}
+                helperText={tWithSpaceType('people.noSpacesConfigured')}
                 error
                 fullWidth={fullWidth}
                 size={size}
@@ -122,9 +133,9 @@ export function SpaceSelector({
             renderInput={(params) => (
                 <TextField
                     {...params}
-                    label={t('people.assignedSpace')}
+                    label={tWithSpaceType('people.assignedSpace')}
                     error={error}
-                    helperText={helperText || t('people.availableSpaces', { count: availableCount })}
+                    helperText={helperText || tWithSpaceType('people.availableSpaces', { count: availableCount })}
                 />
             )}
             renderOption={(props, option) => {

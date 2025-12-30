@@ -1,73 +1,143 @@
-# React + TypeScript + Vite
+# electisSpace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**ESL Management System** - A comprehensive Electronic Shelf Label management application with SoluM AIMS integration.
 
-Currently, two official plugins are available:
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web%20%7C%20Android-green.svg)
+![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Overview
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+electisSpace is a multi-platform application for managing Electronic Shelf Labels (ESL) integrated with SoluM AIMS API. It supports multiple working modes including office spaces, conference rooms, chair assignments, and personnel management.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Multi-Mode Support**: Office, Room, Chair, and People management modes
+- **SoluM AIMS Integration**: Full API integration for ESL synchronization
+- **People Manager with Virtual Pool IDs**: Cross-device personnel sync (v1.1.0)
+- **CSV Import/Export**: Bulk data management with Hebrew support
+- **Auto-Sync**: Automatic 5-minute sync cycles
+- **Multi-Platform**: Windows (Electron), Web, and Android (Capacitor)
+- **i18n Support**: English and Hebrew localization
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Quick Start
+
+### Prerequisites
+- Node.js v18+ LTS
+- npm v9+
+
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/AvivElectis/electisSpace.git
+cd electisSpace
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Or run with Electron
+npm run electron:dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Available Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Script | Description |
+|--------|-------------|
+| npm run dev | Start Vite development server |
+| npm run build | Build for production |
+| npm run electron:dev | Run in Electron development mode |
+| npm run electron:build | Build Electron installer |
+| npm run test | Run unit tests |
+| npm run test:e2e | Run E2E tests with Playwright |
+| npm run test:coverage | Run tests with coverage report |
+
+---
+
+## Tech Stack
+
+- **Frontend**: React 19, TypeScript, Zustand
+- **Build**: Vite (Rolldown), Vitest
+- **Desktop**: Electron
+- **Mobile**: Capacitor (Android)
+- **UI**: Material-UI v7
+- **Testing**: Vitest, Playwright
+
+---
+
+## Documentation
+
+- [README](docs/1_1_0/README.md) - v1.1.0 Overview
+- [CHANGELOG](docs/1_1_0/CHANGELOG.md) - Version history
+- [RELEASE_NOTES](docs/1_1_0/RELEASE_NOTES.md) - Release details
+- [BUILD_INSTRUCTIONS](docs/1_1_0/BUILD_INSTRUCTIONS.md) - Build guide
+- [People Mode Guide](docs/PEOPLE_MODE_AUTO_SYNC_GUIDE.md) - Auto-sync implementation
+
+---
+
+## Testing
+
+```bash
+# Run all unit tests
+npm run test
+
+# Run E2E tests
+npm run test:e2e
+
+# Coverage report
+npm run test:coverage
 ```
+
+**Test Status**: 65 tests (53 unit, 12 integration)
+
+---
+
+## Platforms
+
+### Windows (Electron)
+```bash
+npm run electron:build
+# Output: dist-electron/electisSpace.Setup.1.1.0.exe
+```
+
+### Web
+```bash
+npm run build
+# Output: dist/
+```
+
+### Android (Capacitor)
+```bash
+npm run android:build
+npm run cap:open:android
+```
+
+---
+
+## License
+
+Proprietary - 2025 Electis. All rights reserved.
+
+---
+
+## Author
+
+**Aviv Electis**
+Email: aviv@electis.co.il
+
+---
+
+## Links
+
+- **Repository**: https://github.com/AvivElectis/electisSpace
+- **SoluM AIMS**: https://common.aims-kr.com

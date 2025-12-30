@@ -46,6 +46,7 @@ import { usePeopleFilters } from '../application/usePeopleFilters';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { PersonDialog } from './PersonDialog';
 import { CSVUploadDialog } from './CSVUploadDialog.tsx';
 import { PeopleSaveListDialog } from './PeopleSaveListDialog';
@@ -60,6 +61,16 @@ export function PeopleManagerView() {
     const { t, i18n } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const settings = useSettingsStore((state) => state.settings);
+    const { getLabel } = useSpaceTypeLabels();
+
+    // Helper for translations with space type
+    const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
+        return t(key, {
+            ...options,
+            spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypePlural: getLabel('plural').toLowerCase(),
+        });
+    }, [t, getLabel]);
 
     // Store state
     const people = usePeopleStore((state) => state.people);
@@ -203,8 +214,8 @@ export function PeopleManagerView() {
         // Check if there are available spaces
         if (availableSpaces <= 0) {
             await confirm({
-                title: t('people.noAvailableSpaces'),
-                message: t('people.noAvailableSpacesMessage'),
+                title: tWithSpaceType('people.noAvailableSpaces'),
+                message: tWithSpaceType('people.noAvailableSpacesMessage'),
                 confirmLabel: t('common.close'),
                 severity: 'warning',
                 showCancel: false
@@ -250,8 +261,8 @@ export function PeopleManagerView() {
         // Validation: Check if selected count exceeds available spaces
         if (selectedPeople.length > availableSpaces) {
             await confirm({
-                title: t('people.exceedsAvailableSpaces'),
-                message: t('people.exceedsAvailableSpacesMessage', { 
+                title: tWithSpaceType('people.exceedsAvailableSpaces'),
+                message: tWithSpaceType('people.exceedsAvailableSpacesMessage', { 
                     selected: selectedPeople.length, 
                     available: availableSpaces 
                 }),
@@ -263,8 +274,8 @@ export function PeopleManagerView() {
         }
 
         const confirmed = await confirm({
-            title: t('people.bulkAssign'),
-            message: t('people.bulkAssignConfirmAuto', { count: selectedPeople.length }),
+            title: tWithSpaceType('people.bulkAssign'),
+            message: tWithSpaceType('people.bulkAssignConfirmAuto', { count: selectedPeople.length }),
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
         });
@@ -438,7 +449,7 @@ export function PeopleManagerView() {
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} gap={3} alignItems="center">
                     <TextField
-                        label={t('people.totalSpaces')}
+                        label={tWithSpaceType('people.totalSpaces')}
                         type="number"
                         size="small"
                         value={totalSpaces}
@@ -449,7 +460,7 @@ export function PeopleManagerView() {
                     <Box sx={{ flex: 1, minWidth: 200 }}>
                         <Stack direction="row" justifyContent="space-between" gap={1} mb={0.5}>
                             <Typography variant="body2">
-                                {t('people.spacesAssigned', { assigned: assignedCount, total: totalSpaces })}
+                                {tWithSpaceType('people.spacesAssigned', { assigned: assignedCount, total: totalSpaces })}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 {availableSpaces} {t('people.available')}
@@ -554,7 +565,7 @@ export function PeopleManagerView() {
                             startIcon={<AssignmentIcon />}
                             onClick={handleBulkAssign}
                         >
-                            {t('people.assignSpaces')}
+                            {tWithSpaceType('people.assignSpaces')}
                         </Button>
                         <Button
                             size="small"
@@ -597,7 +608,7 @@ export function PeopleManagerView() {
                                     direction={sortConfig?.key === 'assignedSpaceId' ? sortConfig.direction : 'asc'}
                                     onClick={() => handleSort('assignedSpaceId')}
                                 >
-                                    {t('people.assignedSpace')}
+                                    {tWithSpaceType('people.assignedSpace')}
                                 </TableSortLabel>
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
@@ -646,15 +657,26 @@ export function PeopleManagerView() {
                                                 size="small"
                                                 color="success"
                                             />
+                                        ) : person.virtualSpaceId?.startsWith('POOL-') ? (
+                                            <Tooltip title={`Virtual: ${person.virtualSpaceId}`}>
+                                                <Chip
+                                                    label={t('people.unassigned')}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{px: 1}}
+                                                    icon={<SyncIcon fontSize="small" />}
+                                                />
+                                            </Tooltip>
                                         ) : (
                                             <Chip
                                                 label={t('people.unassigned')}
                                                 size="small"
                                                 variant="outlined"
+                                                sx={{px: 1}}
                                             />
                                         )}
                                     </TableCell>
-                                    <TableCell sx={{ textAlign: 'start' }}>
+                                    <TableCell sx={{ textAlign: 'start' }}>  
                                         {person.assignedSpaceId ? (
                                             person.aimsSyncStatus === 'synced' ? (
                                                 <Tooltip title={t('people.syncedToAims')}>
@@ -669,8 +691,8 @@ export function PeopleManagerView() {
                                                     <ErrorIcon color="error" fontSize="small" />
                                                 </Tooltip>
                                             ) : (
-                                                <Tooltip title={t('people.notSynced')}>
-                                                    <SyncIcon color="disabled" fontSize="small" />
+                                                <Tooltip title={t('people.notSynced')} >
+                                                    <SyncIcon color="disabled" fontSize="small"/>
                                                 </Tooltip>
                                             )
                                         ) : (
@@ -680,7 +702,7 @@ export function PeopleManagerView() {
                                     <TableCell sx={{ textAlign: 'start' }}>
                                         <Stack direction="row" gap={0.5} justifyContent="flex-start">
                                             {!person.assignedSpaceId && (
-                                                <Tooltip title={t('people.assignSpace')}>
+                                                <Tooltip title={tWithSpaceType('people.assignSpace')}>
                                                     <IconButton
                                                         size="small"
                                                         color="success"
@@ -691,7 +713,7 @@ export function PeopleManagerView() {
                                                 </Tooltip>
                                             )}
                                             {person.assignedSpaceId && (
-                                                <Tooltip title={t('people.unassignSpace')}>
+                                                <Tooltip title={tWithSpaceType('people.unassignSpace')}>
                                                     <IconButton
                                                         size="small"
                                                         color="warning"
