@@ -239,14 +239,17 @@ describe('PeopleService', () => {
             expect(people[0].assignedSpaceId).toBeUndefined();
         });
 
-        it('should extract _LIST_NAME_ and _LIST_SPACE_ as person properties', () => {
+        it('should parse _LIST_MEMBERSHIPS_ JSON for list support', () => {
+            const memberships = JSON.stringify([
+                { listName: 'List_A', spaceId: '10' },
+                { listName: 'List_B', spaceId: undefined }
+            ]);
             const spaces = [
                 { 
                     id: 'POOL-0001', 
                     data: { 
-                        name: 'Person With List', 
-                        _LIST_NAME_: 'My_Test_List',
-                        _LIST_SPACE_: '42'
+                        name: 'Person In Multiple Lists', 
+                        _LIST_MEMBERSHIPS_: memberships
                     } 
                 },
             ];
@@ -254,11 +257,13 @@ describe('PeopleService', () => {
             const people = convertSpacesToPeopleWithVirtualPool(spaces, mockMappingConfig);
             
             expect(people).toHaveLength(1);
-            expect(people[0].listName).toBe('My_Test_List');
-            expect(people[0].listSpaceId).toBe('42');
-            // Verify list fields are removed from data
-            expect(people[0].data).not.toHaveProperty('_LIST_NAME_');
-            expect(people[0].data).not.toHaveProperty('_LIST_SPACE_');
+            expect(people[0].listMemberships).toHaveLength(2);
+            expect(people[0].listMemberships![0].listName).toBe('List_A');
+            expect(people[0].listMemberships![0].spaceId).toBe('10');
+            expect(people[0].listMemberships![1].listName).toBe('List_B');
+            expect(people[0].listMemberships![1].spaceId).toBeUndefined();
+            // Verify JSON field is removed from data
+            expect(people[0].data).not.toHaveProperty('_LIST_MEMBERSHIPS_');
         });
 
         it('should handle people without list metadata', () => {
@@ -269,8 +274,7 @@ describe('PeopleService', () => {
             const people = convertSpacesToPeopleWithVirtualPool(spaces, mockMappingConfig);
             
             expect(people).toHaveLength(1);
-            expect(people[0].listName).toBeUndefined();
-            expect(people[0].listSpaceId).toBeUndefined();
+            expect(people[0].listMemberships).toBeUndefined();
         });
     });
 

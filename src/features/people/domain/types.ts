@@ -2,6 +2,14 @@
  * People Management Feature Domain Types
  */
 
+/**
+ * List membership entry - allows a person to be in multiple lists with different assignments per list
+ */
+export interface ListMembership {
+    listName: string;           // List storage name (underscores)
+    spaceId?: string;           // Space assignment for this list (null/undefined = unassigned in this list)
+}
+
 export interface Person {
     id: string;  // UUID - stable across devices
     virtualSpaceId?: string;  // POOL-XXXX or physical space ID (for AIMS sync)
@@ -11,9 +19,91 @@ export interface Person {
     lastSyncedAt?: string;  // ISO timestamp of last successful sync
     assignedLabels?: string[];  // Array of label IDs assigned to this person's article from AIMS
     
-    // List-related fields (stored in AIMS hidden fields)
-    listName?: string;      // Current list assignment (stored with underscores in AIMS)
-    listSpaceId?: string;   // Space ID from loaded list (not active assignment until applied)
+    // Multi-list support (stored in AIMS as _LIST_MEMBERSHIPS_ JSON)
+    listMemberships?: ListMembership[];  // Array of lists this person belongs to, each with its own assignment
+    
+    // Legacy fields (deprecated - kept for backward compatibility during migration)
+    /** @deprecated Use listMemberships instead */
+    listName?: string;
+    /** @deprecated Use listMemberships instead */
+    listSpaceId?: string;
+}
+
+/**
+ * Helper to get all list names a person belongs to
+ */
+export function getPersonListNames(person: Person): string[] {
+    if (person.listMemberships && person.listMemberships.length > 0) {
+        return person.listMemberships.map(m => m.listName);
+    }
+    // Backward compatibility
+    if (person.listName) {
+        return [person.listName];
+    }
+    return [];
+}
+
+/**
+ * Helper to get a person's space assignment for a specific list
+ */
+export function getPersonListSpaceId(person: Person, listName: string): string | undefined {
+    const membership = person.listMemberships?.find(m => m.listName === listName);
+    if (membership) {
+        return membership.spaceId;
+    }
+    // Backward compatibility
+    if (person.listName === listName) {
+        return person.listSpaceId;
+    }
+    return undefined;
+}
+
+/**
+ * Helper to check if person is in a specific list
+ */
+export function isPersonInList(person: Person, listName: string): boolean {
+    if (person.listMemberships?.some(m => m.listName === listName)) {
+        return true;
+    }
+    // Backward compatibility
+    return person.listName === listName;
+}
+
+/**
+ * Helper to add or update a person's membership in a list
+ */
+export function setPersonListMembership(person: Person, listName: string, spaceId?: string): Person {
+    const memberships = [...(person.listMemberships || [])];
+    const existingIndex = memberships.findIndex(m => m.listName === listName);
+    
+    if (existingIndex >= 0) {
+        memberships[existingIndex] = { listName, spaceId };
+    } else {
+        memberships.push({ listName, spaceId });
+    }
+    
+    return {
+        ...person,
+        listMemberships: memberships,
+        // Clear legacy fields
+        listName: undefined,
+        listSpaceId: undefined,
+    };
+}
+
+/**
+ * Helper to remove a person from a specific list
+ */
+export function removePersonFromList(person: Person, listName: string): Person {
+    const memberships = (person.listMemberships || []).filter(m => m.listName !== listName);
+    
+    return {
+        ...person,
+        listMemberships: memberships.length > 0 ? memberships : undefined,
+        // Clear legacy fields if they match
+        listName: person.listName === listName ? undefined : person.listName,
+        listSpaceId: person.listName === listName ? undefined : person.listSpaceId,
+    };
 }
 
 /**

@@ -8,7 +8,8 @@ import {
     TextField,
     Box,
     Alert,
-    Typography
+    Typography,
+    CircularProgress
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useTranslation } from 'react-i18next';
@@ -24,14 +25,16 @@ interface PeopleSaveListDialogProps {
  * Save People List Dialog
  * Allows saving current people as a named list
  * Validates: max 20 chars, letters/numbers/spaces only
+ * Auto-syncs to AIMS after saving for cross-device persistence
  */
 export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProps) {
     const { t } = useTranslation();
-    const { savePeopleList, validateListName } = usePeopleLists();
+    const { savePeopleList, validateListName, saveListToAims } = usePeopleLists();
     const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validate the name
         const validation = validateListName(name);
         if (!validation.valid) {
@@ -39,16 +42,39 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
             return;
         }
 
+        setIsSaving(true);
         try {
+            // Step 1: Save list locally (updates _LIST_MEMBERSHIPS_ on all people)
+            console.log('[SaveListDialog] Step 1: Saving list locally with name:', name.trim());
             const result = savePeopleList(name.trim());
+            console.log('[SaveListDialog] Local save result:', result);
             if (!result.success) {
                 setError(result.error || t('common.unknownError'));
+                setIsSaving(false);
                 return;
             }
+
+            // Step 2: Sync to AIMS for cross-device persistence
+            // Pass the updated people directly to avoid stale closure issue
+            console.log('[SaveListDialog] Step 2: Syncing to AIMS with', result.updatedPeople?.length, 'people...');
+            const aimsResult = await saveListToAims(result.updatedPeople);
+            console.log('[SaveListDialog] AIMS sync result:', aimsResult);
+            if (!aimsResult.success) {
+                // List saved locally but AIMS sync failed - show warning
+                setError(t('lists.savedLocallyAimsFailed', { error: aimsResult.error }) || 
+                    `List saved locally but AIMS sync failed: ${aimsResult.error}`);
+                setIsSaving(false);
+                return;
+            }
+
+            console.log('[SaveListDialog] Success! List saved and synced.');
             setName('');
             setError(null);
+            setIsSaving(false);
             onClose();
         } catch (err) {
+            console.error('[SaveListDialog] Error:', err);
+            setIsSaving(false);
             if (err instanceof Error) {
                 setError(err.message);
             } else {
@@ -66,6 +92,7 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
     };
 
     const handleClose = () => {
+        if (isSaving) return; // Prevent closing while saving
         setName('');
         setError(null);
         onClose();
@@ -91,15 +118,21 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
                         value={name}
                         onChange={(e) => handleNameChange(e.target.value)}
                         error={!!error}
+                        disabled={isSaving}
                         inputProps={{ maxLength: LIST_NAME_MAX_LENGTH }}
                         helperText={t('lists.nameRules', { max: LIST_NAME_MAX_LENGTH })}
                     />
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={handleClose}>{t('common.cancel')}</Button>
-                <Button onClick={handleSave} variant="contained" startIcon={<SaveIcon />}>
-                    {t('common.save')}
+                <Button onClick={handleClose} disabled={isSaving}>{t('common.cancel')}</Button>
+                <Button 
+                    onClick={handleSave} 
+                    variant="contained" 
+                    disabled={isSaving || !name.trim()}
+                    startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                >
+                    {isSaving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
         </Dialog>

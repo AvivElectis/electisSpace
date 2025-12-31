@@ -20,7 +20,7 @@ import {
     Tooltip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import FolderIcon from '@mui/icons-material/Folder';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
@@ -98,7 +98,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
                 <Box display="flex" alignItems="center" gap={1}>
-                    <FolderIcon />
+                    <ListAltIcon />
                     {t('lists.manageLists')}
                 </Box>
             </DialogTitle>

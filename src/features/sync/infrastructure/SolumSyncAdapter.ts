@@ -192,6 +192,15 @@ export class SolumSyncAdapter implements SyncAdapter {
                 }
             }
 
+            // Preserve People Mode metadata fields (these are hidden but necessary for cross-device sync)
+            const metadataFields = ['_LIST_MEMBERSHIPS_', '__PERSON_UUID__', '__VIRTUAL_SPACE__', '__LAST_MODIFIED__'];
+            for (const field of metadataFields) {
+                const value = articleData[field];
+                if (value !== undefined && value !== null && value !== '') {
+                    data[field] = String(value);
+                }
+            }
+
             const space: Space = {
                 id: article.articleId,
                 data,

@@ -44,7 +44,9 @@ export function PeopleManagerView() {
         return t(key, {
             ...options,
             spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypeSingularDef: getLabel('singularDef').toLowerCase(),
             spaceTypePlural: getLabel('plural').toLowerCase(),
+            spaceTypePluralDef: getLabel('pluralDef').toLowerCase(),
         });
     }, [t, getLabel]);
 
@@ -211,8 +213,8 @@ export function PeopleManagerView() {
 
     const handleUnassignSpace = useCallback(async (person: Person) => {
         const confirmed = await confirm({
-            title: t('people.unassignSpace'),
-            message: t('people.unassignSpaceConfirm'),
+            title: tWithSpaceType('people.unassignSpace'),
+            message: tWithSpaceType('people.unassignSpaceConfirm'),
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
             severity: 'warning'
@@ -225,7 +227,7 @@ export function PeopleManagerView() {
                 logger.error('PeopleManagerView', 'Failed to unassign space', { error: error?.message || error });
             }
         }
-    }, [confirm, t, peopleController]);
+    }, [confirm, t, tWithSpaceType, peopleController]);
 
     const handleBulkAssign = useCallback(async () => {
         const selectedPeople = sortedPeople.filter(p => selectedIds.has(p.id) && !p.assignedSpaceId);

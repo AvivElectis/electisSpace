@@ -53,7 +53,9 @@ export function SpaceSelectionDialog({
         return t(key, {
             ...options,
             spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypeSingularDef: getLabel('singularDef').toLowerCase(),
             spaceTypePlural: getLabel('plural').toLowerCase(),
+            spaceTypePluralDef: getLabel('pluralDef').toLowerCase(),
         });
     }, [t, getLabel]);
 

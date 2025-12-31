@@ -11,7 +11,7 @@ import {
     IconButton,
     CircularProgress,
 } from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -79,7 +79,7 @@ export function PeopleListPanel({
                 onClick={() => setExpanded(!expanded)}
             >
                 <Stack direction="row" alignItems="center" gap={1}>
-                    <FolderIcon fontSize="small" color="action" />
+                    <ListAltIcon fontSize="small" color="action" />
                     <Typography variant="subtitle2">
                         {t('people.listManagement')}
                     </Typography>
@@ -137,7 +137,7 @@ export function PeopleListPanel({
                         {/* Manage Lists */}
                         <Button
                             variant="outlined"
-                            startIcon={<FolderIcon />}
+                            startIcon={<ListAltIcon />}
                             onClick={onManageLists}
                         >
                             {t('lists.manage')}

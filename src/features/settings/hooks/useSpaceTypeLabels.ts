@@ -1,7 +1,7 @@
 import { useSettingsController } from '../application/useSettingsController';
 import { useTranslation } from 'react-i18next';
 
-type LabelKey = 'singular' | 'plural' | 'add' | 'edit' | 'delete' | 'list';
+type LabelKey = 'singular' | 'singularDef' | 'plural' | 'pluralDef' | 'add' | 'edit' | 'delete' | 'list';
 
 /**
  * Hook to get dynamic space type labels based on current settings
@@ -27,7 +27,9 @@ export function useSpaceTypeLabels() {
         // Map label keys to translation suffixes
         const labelKeyMap: Record<LabelKey, string> = {
             singular: 'singular',
+            singularDef: 'singularDef',
             plural: 'plural',
+            pluralDef: 'pluralDef',
             add: 'add',
             edit: 'edit',
             delete: 'delete',

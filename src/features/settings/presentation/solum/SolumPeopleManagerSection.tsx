@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 
-/** Hidden fields for list persistence in AIMS */
-export const LIST_HIDDEN_FIELDS = ['_LIST_NAME_', '_LIST_SPACE_'] as const;
+/** Hidden field for list persistence in AIMS (JSON array of memberships) */
+export const LIST_HIDDEN_FIELDS = ['_LIST_MEMBERSHIPS_'] as const;
 
 interface PeopleManagerConfig {
     totalSpaces: number;
@@ -53,8 +53,8 @@ function removeListFields(articleFormat: ArticleFormat): ArticleFormat {
 /**
  * SolumPeopleManagerSection - People Manager mode toggle and configuration
  * 
- * When enabled, automatically adds _LIST_NAME_ and _LIST_SPACE_ fields to article format.
- * When disabled, removes those fields.
+ * When enabled, automatically adds _LIST_MEMBERSHIPS_ field to article format.
+ * When disabled, removes that field.
  */
 export function SolumPeopleManagerSection({
     enabled,
