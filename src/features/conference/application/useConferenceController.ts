@@ -5,7 +5,7 @@ import { generateConferenceRoomId, createEmptyConferenceRoom, toggleMeetingStatu
 import type { ConferenceRoom, SolumConfig } from '@shared/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
-import * as solumService from '@shared/infrastructure/services/solumService';
+import { useConferenceAIMS } from './hooks/useConferenceAIMS';
 
 /**
  * Conference Controller Hook
@@ -32,6 +32,19 @@ export function useConferenceController({
         updateConferenceRoom: updateInStore,
         deleteConferenceRoom: deleteFromStore,
     } = useConferenceStore();
+
+    // Use the extracted AIMS hook for all AIMS operations
+    const { 
+        pushToAIMS, 
+        deleteFromAIMS, 
+        fetchFromAIMS, 
+        flipLabelPage: flipLabelPageInternal,
+        isAIMSConfigured 
+    } = useConferenceAIMS({
+        solumConfig,
+        solumToken,
+        solumMappingConfig,
+    });
 
     /**
      * Add new conference room
@@ -72,136 +85,9 @@ export function useConferenceController({
             }
 
             // Post to AIMS if using SoluM mode
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (isAIMSConfigured) {
                 try {
-                    logger.info('ConferenceController', 'Pushing article to AIMS', { id: finalRoom.id });
-
-                    // Transform conference room to AIMS article format using mapping config
-                    const articleData: Record<string, any> = {};
-
-                    // Debug: Log the conference room object and mapping config
-                    // console.log('[DEBUG] Conference Room Object:', finalRoom);
-                    // console.log('[DEBUG] Mapping Config Fields:', solumMappingConfig.fields);
-                    // console.log('[DEBUG] Conference Mapping:', solumMappingConfig.conferenceMapping);
-
-                    // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
-                    const { conferenceMapping } = solumMappingConfig;
-
-                    // Map meeting name
-                    if (conferenceMapping.meetingName && finalRoom.meetingName) {
-                        articleData[conferenceMapping.meetingName] = finalRoom.meetingName;
-                        // console.log(`[DEBUG] Mapped meetingName -> ${conferenceMapping.meetingName}:`, finalRoom.meetingName);
-                    }
-
-                    // Map meeting time (combine start and end)
-                    if (conferenceMapping.meetingTime) {
-                        if (finalRoom.startTime && finalRoom.endTime) {
-                            articleData[conferenceMapping.meetingTime] = `${finalRoom.startTime} - ${finalRoom.endTime}`;
-                            // console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
-                        } else if (finalRoom.startTime) {
-                            articleData[conferenceMapping.meetingTime] = finalRoom.startTime;
-                            // console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, finalRoom.startTime);
-                        }
-                    }
-
-                    // Map participants
-                    if (conferenceMapping.participants && finalRoom.participants?.length > 0) {
-                        articleData[conferenceMapping.participants] = finalRoom.participants.join(', ');
-                        // console.log(`[DEBUG] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
-                    }
-
-                    // Second: Map other visible fields from config
-                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                        if (fieldConfig.visible) {
-                            // Skip if already mapped by conferenceMapping
-                            if (articleData[fieldKey] !== undefined) {
-                                return;
-                            }
-
-                            let value: any = undefined;
-                            const fieldKeyLower = fieldKey.toLowerCase();
-
-                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
-                                value = finalRoom.id;
-                            } else if (finalRoom.data && finalRoom.data[fieldKey] !== undefined) {
-                                value = finalRoom.data[fieldKey];
-                            } else if ((finalRoom as any)[fieldKey] !== undefined) {
-                                value = (finalRoom as any)[fieldKey];
-                            }
-
-                            // console.log(`[DEBUG] Field '${fieldKey}' -> value:`, value);
-
-                            if (value !== undefined && value !== null && value !== '') {
-                                articleData[fieldKey] = value;
-                            }
-                        }
-                    });
-
-                    // Apply global field assignments from mapping config
-                    if (solumMappingConfig.globalFieldAssignments) {
-                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
-                    }
-
-                    // Add articleId and articleName to articleData using their mapped field keys
-                    const mappingInfo = solumMappingConfig.mappingInfo;
-                    if (mappingInfo) {
-                        // Add articleId to data
-                        if (mappingInfo.articleId && !articleData[mappingInfo.articleId]) {
-                            articleData[mappingInfo.articleId] = finalRoom.id;
-                        }
-                        // Add articleName to data
-                        if (mappingInfo.articleName) {
-                            const roomName = finalRoom.data?.roomName || finalRoom.id;
-                            if (!articleData[mappingInfo.articleName]) {
-                                articleData[mappingInfo.articleName] = roomName;
-                            }
-                        }
-                    }
-
-                    // Build AIMS article dynamically from mappingInfo
-                    const aimsArticle: any = {
-                        data: articleData
-                    };
-
-                    // Dynamically map all root-level fields from mappingInfo (articleId, articleName, nfcUrl, etc.)
-                    if (mappingInfo) {
-                        Object.entries(mappingInfo).forEach(([rootField, dataField]) => {
-                            if (!dataField) return;
-                            
-                            // Check articleData first
-                            if (articleData[dataField]) {
-                                aimsArticle[rootField] = String(articleData[dataField]);
-                            } 
-                            // Then check globalFieldAssignments
-                            else if (solumMappingConfig.globalFieldAssignments?.[dataField]) {
-                                aimsArticle[rootField] = String(solumMappingConfig.globalFieldAssignments[dataField]);
-                            }
-                            // Check room.data
-                            else if (finalRoom.data?.[dataField]) {
-                                aimsArticle[rootField] = String(finalRoom.data[dataField]);
-                            }
-                            // Check room properties directly
-                            else if ((finalRoom as any)[dataField] !== undefined) {
-                                aimsArticle[rootField] = String((finalRoom as any)[dataField]);
-                            }
-                        });
-                    }
-
-                    // Ensure required fields have defaults
-                    if (!aimsArticle.articleId) {
-                        aimsArticle.articleId = finalRoom.id;
-                    }
-                    if (!aimsArticle.articleName) {
-                        aimsArticle.articleName = finalRoom.data?.roomName || finalRoom.id;
-                    }
-
-                    await solumService.pushArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [aimsArticle]
-                    );
-                    logger.info('ConferenceController', 'Article pushed to AIMS successfully', { id: finalRoom.id });
+                    await pushToAIMS(finalRoom);
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to push article to AIMS', { error });
                     throw new Error(`Failed to push to AIMS: ${error}`);
@@ -212,7 +98,7 @@ export function useConferenceController({
             addToStore(finalRoom);
 
             // Refresh from AIMS to get the latest state
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (isAIMSConfigured) {
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after add');
@@ -232,7 +118,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room added', { id: finalRoom.id });
         },
-        [conferenceRooms, addToStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [conferenceRooms, addToStore, onSync, isAIMSConfigured, pushToAIMS]
     );
 
     /**
@@ -262,137 +148,9 @@ export function useConferenceController({
             }
 
             // Push to AIMS if using SoluM mode
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (isAIMSConfigured) {
                 try {
-                    logger.info('ConferenceController', 'Pushing updated article to AIMS', { id });
-
-                    // Transform conference room to AIMS article format using mapping config
-                    const articleData: Record<string, any> = {};
-                    const room = updatedRoom as ConferenceRoom;
-
-                    // Debug: Log the conference room object and mapping config
-                    // console.log('[DEBUG UPDATE] Conference Room Object:', room);
-                    // console.log('[DEBUG UPDATE] Mapping Config Fields:', solumMappingConfig.fields);
-                    // console.log('[DEBUG UPDATE] Conference Mapping:', solumMappingConfig.conferenceMapping);
-
-                    // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
-                    const { conferenceMapping } = solumMappingConfig;
-
-                    // Map meeting name
-                    if (conferenceMapping.meetingName && room.meetingName) {
-                        articleData[conferenceMapping.meetingName] = room.meetingName;
-                        // console.log(`[DEBUG UPDATE] Mapped meetingName -> ${conferenceMapping.meetingName}:`, room.meetingName);
-                    }
-
-                    // Map meeting time (combine start and end)
-                    if (conferenceMapping.meetingTime) {
-                        if (room.startTime && room.endTime) {
-                            articleData[conferenceMapping.meetingTime] = `${room.startTime} - ${room.endTime}`;
-                            // console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
-                        } else if (room.startTime) {
-                            articleData[conferenceMapping.meetingTime] = room.startTime;
-                            // console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, room.startTime);
-                        }
-                    }
-
-                    // Map participants
-                    if (conferenceMapping.participants && room.participants?.length > 0) {
-                        articleData[conferenceMapping.participants] = room.participants.join(', ');
-                        // console.log(`[DEBUG UPDATE] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
-                    }
-
-                    // Second: Map other visible fields from config
-                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                        if (fieldConfig.visible) {
-                            // Skip if already mapped by conferenceMapping
-                            if (articleData[fieldKey] !== undefined) {
-                                return;
-                            }
-
-                            let value: any = undefined;
-                            const fieldKeyLower = fieldKey.toLowerCase();
-
-                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
-                                value = room.id;
-                            } else if (room.data && room.data[fieldKey] !== undefined) {
-                                value = room.data[fieldKey];
-                            } else if ((room as any)[fieldKey] !== undefined) {
-                                value = (room as any)[fieldKey];
-                            }
-
-                            // console.log(`[DEBUG UPDATE] Field '${fieldKey}' -> value:`, value);
-
-                            // Only add if value exists
-                            if (value !== undefined && value !== null && value !== '') {
-                                articleData[fieldKey] = value;
-                            }
-                        }
-                    });
-
-                    // Apply global field assignments
-                    if (solumMappingConfig.globalFieldAssignments) {
-                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
-                    }
-
-                    // Add articleId and articleName to articleData using their mapped field keys
-                    const mappingInfo = solumMappingConfig.mappingInfo;
-                    if (mappingInfo) {
-                        // Add articleId to data
-                        if (mappingInfo.articleId && !articleData[mappingInfo.articleId]) {
-                            articleData[mappingInfo.articleId] = room.id;
-                        }
-                        // Add articleName to data
-                        if (mappingInfo.articleName) {
-                            const roomName = room.data?.roomName || room.id;
-                            if (!articleData[mappingInfo.articleName]) {
-                                articleData[mappingInfo.articleName] = roomName;
-                            }
-                        }
-                    }
-
-                    // Build AIMS article dynamically from mappingInfo
-                    const aimsArticle: any = {
-                        data: articleData
-                    };
-
-                    // Dynamically map all root-level fields from mappingInfo (articleId, articleName, nfcUrl, etc.)
-                    if (mappingInfo) {
-                        Object.entries(mappingInfo).forEach(([rootField, dataField]) => {
-                            if (!dataField) return;
-                            
-                            // Check articleData first
-                            if (articleData[dataField]) {
-                                aimsArticle[rootField] = String(articleData[dataField]);
-                            } 
-                            // Then check globalFieldAssignments
-                            else if (solumMappingConfig.globalFieldAssignments?.[dataField]) {
-                                aimsArticle[rootField] = String(solumMappingConfig.globalFieldAssignments[dataField]);
-                            }
-                            // Check room.data
-                            else if (room.data?.[dataField]) {
-                                aimsArticle[rootField] = String(room.data[dataField]);
-                            }
-                            // Check room properties directly
-                            else if ((room as any)[dataField] !== undefined) {
-                                aimsArticle[rootField] = String((room as any)[dataField]);
-                            }
-                        });
-                    }
-
-                    // Ensure required fields have defaults
-                    if (!aimsArticle.articleId) {
-                        aimsArticle.articleId = room.id;
-                    }
-                    if (!aimsArticle.articleName) {
-                        aimsArticle.articleName = room.data?.roomName || room.id;
-                    }
-
-                    await solumService.pushArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [aimsArticle]
-                    );
+                    await pushToAIMS(updatedRoom);
                     logger.info('ConferenceController', 'Article updated in AIMS successfully', { id });
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to update article in AIMS', { error });
@@ -404,7 +162,7 @@ export function useConferenceController({
             updateInStore(id, updatedRoom);
 
             // Refresh from AIMS to get the latest state
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (isAIMSConfigured) {
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after update');
@@ -424,7 +182,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room updated', { id });
         },
-        [conferenceRooms, updateInStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [conferenceRooms, updateInStore, onSync, isAIMSConfigured, pushToAIMS]
     );
 
     /**
@@ -440,16 +198,9 @@ export function useConferenceController({
             }
 
             // Delete from AIMS if using SoluM mode
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (isAIMSConfigured) {
                 try {
-                    logger.info('ConferenceController', 'Deleting article from AIMS', { id });
-                    await solumService.deleteArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [`C${id}`]  // Prepend 'C' to match AIMS article ID format
-                    );
-                    logger.info('ConferenceController', 'Article deleted from AIMS successfully', { id });
+                    await deleteFromAIMS(id);
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to delete article from AIMS', { error });
                     throw new Error(`Failed to delete from AIMS: ${error}`);
@@ -460,7 +211,7 @@ export function useConferenceController({
             deleteFromStore(id);
 
             // Refresh from AIMS to get the latest state
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (isAIMSConfigured) {
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after delete');
@@ -480,7 +231,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room deleted', { id });
         },
-        [conferenceRooms, deleteFromStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [conferenceRooms, deleteFromStore, onSync, isAIMSConfigured, deleteFromAIMS]
     );
 
     /**
@@ -519,30 +270,9 @@ export function useConferenceController({
      */
     const flipLabelPage = useCallback(
         async (labelCode: string, currentPage: number): Promise<void> => {
-            if (!solumConfig || !solumToken) {
-                throw new Error('SoluM configuration or token not available');
-            }
-
-            logger.info('ConferenceController', 'Flipping label page', { labelCode, currentPage });
-
-            const newPage = currentPage === 0 ? 1 : 0;
-
-            try {
-                await solumService.updateLabelPage(
-                    solumConfig,
-                    solumConfig.storeNumber,
-                    solumToken,
-                    labelCode,
-                    newPage
-                );
-
-                logger.info('ConferenceController', 'Label page flipped', { labelCode, newPage });
-            } catch (error) {
-                logger.error('ConferenceController', 'Flip page failed', { error });
-                throw error;
-            }
+            await flipLabelPageInternal(labelCode, currentPage);
         },
-        [solumConfig, solumToken]
+        [flipLabelPageInternal]
     );
 
     /**
@@ -572,125 +302,17 @@ export function useConferenceController({
      */
     const fetchFromSolum = useCallback(
         async (): Promise<void> => {
-            if (!solumConfig || !solumToken || !solumMappingConfig) {
-                throw new Error('SoluM configuration, token, or mapping config not available');
-            }
-
             logger.info('ConferenceController', 'Fetching conference rooms from SoluM');
 
             try {
-                // Fetch all articles from SoluM
-                const articles = await solumService.fetchArticles(
-                    solumConfig,
-                    solumConfig.storeNumber,
-                    solumToken
-                );
-
-                // Filter IN articles where articleId starts with 'C' (conference rooms)
-                // AIMS returns articleId in camelCase, not the configured field name
-                const { uniqueIdField, fields, conferenceMapping, globalFieldAssignments } = solumMappingConfig;
-                const conferenceArticles = articles.filter((article: any) => {
-                    // Check both the configured uniqueIdField and the standard articleId property
-                    const uniqueId = article.articleId || article[uniqueIdField];
-                    const idStr = String(uniqueId || '').toUpperCase();
-                    // console.log('[DEBUG] Checking article:', article.articleId, 'starts with C?', idStr.startsWith('C'));
-                    return uniqueId && idStr.startsWith('C');
-                });
-
-                // Map articles to ConferenceRoom entities
-                const mappedRooms: ConferenceRoom[] = conferenceArticles.map((article: any) => {
-                    // AIMS returns articleId and articleName in camelCase
-                    const rawId = String(article.articleId || article[uniqueIdField] || '');
-                    const id = rawId.toUpperCase().startsWith('C') ? rawId.substring(1) : rawId;
-
-                    // console.log('[DEBUG] Mapping article to conference room:', {
-                    //     rawId,
-                    //     mappedId: id,
-                    //     articleName: article.articleName,
-                    //     article
-                    // });
-
-                    // Apply global field assignments
-                    const mergedArticle = {
-                        ...article,
-                        ...(globalFieldAssignments || {}),
-                    };
-
-                    // Parse meeting fields from conferenceMapping
-                    // Note: The detailed API returns fields inside article.data object
-                    const articleData = mergedArticle.data || {};
-                    const meetingNameField = conferenceMapping.meetingName;
-                    const meetingTimeField = conferenceMapping.meetingTime;
-                    const participantsField = conferenceMapping.participants;
-
-                    // Get meeting name from data object
-                    const meetingName = articleData[meetingNameField] || '';
-
-                    // Parse meeting time (expected format: "START - END", e.g., "09:00 - 15:00")
-                    const meetingTimeRaw = articleData[meetingTimeField] || '';
-                    const [startTime, endTime] = String(meetingTimeRaw)
-                        .split('-')
-                        .map(t => t.trim());
-
-                    // Parse participants (expected format: comma-separated, e.g., "John, Jane, Bob")
-                    const participantsRaw = articleData[participantsField] || '';
-                    const participants = String(participantsRaw)
-                        .split(',')
-                        .map(p => p.trim())
-                        .filter(p => p.length > 0);
-
-                    // console.log('[DEBUG FETCH] Parsed meeting data:', {
-                    //     meetingName,
-                    //     startTime,
-                    //     endTime,
-                    //     participants,
-                    //     rawMeetingTime: meetingTimeRaw,
-                    //     rawParticipants: participantsRaw
-                    // });
-
-                    // Build dynamic data object from visible fields with actual article values
-                    const data: Record<string, string> = {};
-
-                    Object.keys(fields).forEach(fieldKey => {
-                        const mapping = fields[fieldKey];
-                        if (mapping.visible && mergedArticle[fieldKey] !== undefined) {
-                            const fieldValue = String(mergedArticle[fieldKey]);
-                            data[fieldKey] = fieldValue;
-                        }
-                    });
-
-                    // Set roomName in data if not already present from fields
-                    if (!data.roomName) {
-                        data.roomName = article.articleName || id;
-                    }
-
-                    return {
-                        id,
-                        hasMeeting: !!meetingName,
-                        meetingName,
-                        startTime: startTime || '',
-                        endTime: endTime || '',
-                        participants,
-                        labelCode: article.labelCode,
-                        data,
-                        assignedLabels: Array.isArray(article.assignedLabel) ? article.assignedLabel : undefined,
-                    };
-                });
-
-                // Import mapped conference rooms
+                const mappedRooms = await fetchFromAIMS();
                 importFromSync(mappedRooms);
-
-                logger.info('ConferenceController', 'Conference rooms fetched from SoluM', {
-                    total: articles.length,
-                    conferenceRooms: mappedRooms.length,
-                    spaces: articles.length - mappedRooms.length
-                });
             } catch (error) {
                 logger.error('ConferenceController', 'Failed to fetch from SoluM', { error });
                 throw error;
             }
         },
-        [solumConfig, solumToken, solumMappingConfig, importFromSync]
+        [fetchFromAIMS, importFromSync]
     );
 
 

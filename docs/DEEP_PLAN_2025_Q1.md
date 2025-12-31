@@ -9,14 +9,18 @@
 |---|---------|--------|---------|-----------|
 | 1 | Conference Room NFC URL Fix | ✅ Completed | Dec 30 | Dec 30 |
 | 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 31 |
-| 3 | File Optimization | 🔄 In Progress | Dec 30 | - |
+| 3 | File Optimization | ✅ Completed | Dec 30 | Dec 31 |
 | 4 | People-List Feature | ⬜ Not Started | - | - |
-| 5 | Logger Enhancement | ⬜ Not Started | - | - |
-| 6 | App Manual Feature | ⬜ Not Started | - | - |
+| 5 | Section Loading Indicators | ⬜ Not Started | - | - |
+| 6 | Logger Enhancement | ⬜ Not Started | - | - |
+| 7 | App Manual Feature | ⬜ Not Started | - | - |
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
 ### Recent Updates (Dec 31, 2025)
+- **Feature 3 Completed**: All file optimization sub-tasks finished
+- Extracted `useConferenceAIMS` hook from `useConferenceController.ts`
+- Split `solumService.ts` into 4 focused service modules (auth, articles, labels, store)
 - **Feature 2 Enhanced**: Now captures `assignedLabels` array from AIMS article fetch response
 - Added `assignedLabels?: string[]` to Space, ConferenceRoom, and Person types
 - Dashboard counts actual assigned labels from AIMS data (supports multiple labels per article)
@@ -29,8 +33,8 @@
 | 3.2 PeopleManagerView.tsx extraction | ✅ Completed | Split into 8 focused components |
 | 3.3 SolumSettingsTab.tsx extraction | ✅ Completed | Split into 5 focused components |
 | 3.4 DashboardPage.tsx extraction | ✅ Completed | Split into 5 focused components |
-| 3.5 useConferenceController.ts extraction | ⬜ Not Started | - |
-| 3.6 solumService.ts grouping | ⬜ Not Started | - |
+| 3.5 useConferenceController.ts extraction | ✅ Completed | Extracted AIMS logic to hooks |
+| 3.6 solumService.ts grouping | ✅ Completed | Split into 4 focused service modules |
 
 **Files Created (3.1):**
 - `src/features/people/application/hooks/usePeopleCSV.ts` - CSV loading operations
@@ -66,6 +70,18 @@
 - `src/features/dashboard/components/DashboardAppInfoCard.tsx` - Application info card
 - `src/features/dashboard/components/index.ts` - Barrel exports
 
+**Files Created (3.5):**
+- `src/features/conference/application/hooks/useConferenceAIMS.ts` - AIMS push/fetch/delete operations
+- `src/features/conference/application/hooks/index.ts` - Barrel exports
+- `src/features/conference/application/utils/conferenceTransformers.ts` - Article transformation utilities
+
+**Files Created (3.6):**
+- `src/shared/infrastructure/services/solum/authService.ts` - Login, token refresh, URL building
+- `src/shared/infrastructure/services/solum/articlesService.ts` - Article CRUD operations
+- `src/shared/infrastructure/services/solum/labelsService.ts` - Label operations
+- `src/shared/infrastructure/services/solum/storeService.ts` - Store summary operations
+- `src/shared/infrastructure/services/solum/index.ts` - Barrel exports
+
 ### Conference Controller Enhancements (Additional)
 
 | Sub-Task | Status | Details |
@@ -91,8 +107,9 @@ This document provides a comprehensive implementation plan for the following fea
 2. **Dashboard Assigned Labels Display** - Labels from SoluM sync not showing
 3. **File Optimization** - Splitting large files into smaller functional modules
 4. **People-List Feature** - Advanced list management with AIMS integration
-5. **Logger Enhancement** - App-wide structured logging enhancement
-6. **App Manual Feature** - In-app bilingual manual with tab-based navigation *(Built Last)*
+5. **Section Loading Indicators** - Visual feedback during slow-loading sections
+6. **Logger Enhancement** - App-wide structured logging enhancement
+7. **App Manual Feature** - In-app bilingual manual with tab-based navigation *(Built Last)*
 
 ---
 
@@ -872,7 +889,178 @@ export function PeopleListPanel() {
 
 ---
 
-## 6. Logger Implementation - App-Wide Enhancement
+## 6. Section Loading Indicators
+
+### Problem Statement
+Sections like People Manager can take significant time to load (fetching from AIMS, parsing CSV, etc.). Users may think the app is stuck when no visual feedback is provided during these loading operations.
+
+### Requirements
+- Display loading spinner/skeleton when sections are loading data
+- Provide feedback during AIMS sync operations
+- Show progress for bulk operations where applicable
+- Consistent loading UI across all sections
+
+### Implementation Plan
+
+#### 6.1: Create Loading Component Library (2h)
+
+**Files to Create:**
+```
+src/shared/presentation/components/
+├── LoadingSpinner.tsx        # Centered spinning indicator
+├── LoadingOverlay.tsx        # Full-section overlay with spinner
+├── LoadingSkeleton.tsx       # Skeleton placeholder for tables/cards
+└── index.ts                  # Barrel exports
+```
+
+**LoadingSpinner.tsx:**
+```typescript
+import { CircularProgress, Box } from '@mui/material';
+
+interface LoadingSpinnerProps {
+    size?: number;
+    message?: string;
+}
+
+export function LoadingSpinner({ size = 40, message }: LoadingSpinnerProps) {
+    return (
+        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={4}>
+            <CircularProgress size={size} />
+            {message && <Box mt={2} color="text.secondary">{message}</Box>}
+        </Box>
+    );
+}
+```
+
+**LoadingOverlay.tsx:**
+```typescript
+import { Box, CircularProgress, Typography, Fade } from '@mui/material';
+
+interface LoadingOverlayProps {
+    loading: boolean;
+    message?: string;
+    children: React.ReactNode;
+}
+
+export function LoadingOverlay({ loading, message, children }: LoadingOverlayProps) {
+    return (
+        <Box position="relative">
+            {children}
+            <Fade in={loading}>
+                <Box
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    bgcolor="rgba(255,255,255,0.8)"
+                    zIndex={10}
+                >
+                    <CircularProgress />
+                    {message && <Typography mt={2} color="text.secondary">{message}</Typography>}
+                </Box>
+            </Fade>
+        </Box>
+    );
+}
+```
+
+#### 6.2: Add Loading States to Controllers (3h)
+
+**Files to Modify:**
+- `src/features/people/application/usePeopleController.ts` - Add `isLoading` state
+- `src/features/conference/application/useConferenceController.ts` - Add `isLoading` state
+- `src/features/sync/application/useSyncController.ts` - Add `isSyncing` state
+- `src/features/settings/application/useSettingsController.ts` - Add `isConnecting` state
+
+**Example (usePeopleController.ts):**
+```typescript
+const [isLoading, setIsLoading] = useState(false);
+const [loadingMessage, setLoadingMessage] = useState<string | undefined>();
+
+const loadPeopleFromCSV = async (file: File) => {
+    setIsLoading(true);
+    setLoadingMessage(t('people.loadingCSV'));
+    try {
+        // ... existing logic
+    } finally {
+        setIsLoading(false);
+        setLoadingMessage(undefined);
+    }
+};
+
+return {
+    // ... existing returns
+    isLoading,
+    loadingMessage,
+};
+```
+
+#### 6.3: Integrate Loading UI in Views (3h)
+
+**Files to Modify:**
+- `src/features/people/presentation/PeopleManagerView.tsx`
+- `src/features/conference/presentation/ConferencePage.tsx`
+- `src/features/spaces/presentation/SpacesPage.tsx`
+- `src/features/dashboard/DashboardPage.tsx`
+
+**Example (PeopleManagerView.tsx):**
+```typescript
+import { LoadingOverlay } from '@shared/presentation/components';
+
+export function PeopleManagerView() {
+    const { isLoading, loadingMessage, ... } = usePeopleController();
+    
+    return (
+        <LoadingOverlay loading={isLoading} message={loadingMessage}>
+            {/* Existing content */}
+        </LoadingOverlay>
+    );
+}
+```
+
+#### 6.4: Add Translations (1h)
+
+**Files to Modify:**
+- `src/locales/en/translation.json`
+- `src/locales/he/translation.json`
+
+```json
+{
+  "loading": {
+    "default": "Loading...",
+    "syncing": "Syncing with AIMS...",
+    "loadingCSV": "Loading CSV file...",
+    "fetchingPeople": "Fetching people data...",
+    "savingChanges": "Saving changes...",
+    "connecting": "Connecting to SoluM..."
+  }
+}
+```
+
+### Files Summary
+
+| Action | File | Purpose |
+|--------|------|--------|
+| Create | `src/shared/presentation/components/LoadingSpinner.tsx` | Centered spinner |
+| Create | `src/shared/presentation/components/LoadingOverlay.tsx` | Overlay with spinner |
+| Create | `src/shared/presentation/components/LoadingSkeleton.tsx` | Table/card skeletons |
+| Modify | `src/features/people/application/usePeopleController.ts` | Add loading state |
+| Modify | `src/features/people/presentation/PeopleManagerView.tsx` | Integrate overlay |
+| Modify | `src/features/conference/application/useConferenceController.ts` | Add loading state |
+| Modify | `src/features/conference/presentation/ConferencePage.tsx` | Integrate overlay |
+| Modify | `src/locales/en/translation.json` | Loading messages |
+| Modify | `src/locales/he/translation.json` | Loading messages (Hebrew) |
+
+### Estimated Time: 9h
+
+---
+
+## 7. Logger Implementation - App-Wide Enhancement
 
 ### Current State
 The logger already exists at `src/shared/infrastructure/services/logger.ts` with:
@@ -883,7 +1071,7 @@ The logger already exists at `src/shared/infrastructure/services/logger.ts` with
 
 ### Enhancement Plan
 
-#### 6.1: Add Log Categories (2h)
+#### 7.1: Add Log Categories (2h)
 
 **File:** `src/shared/infrastructure/services/logger.ts`
 
@@ -904,7 +1092,7 @@ export type LogCategory =
 getLogsByCategory(category: LogCategory): LogEntry[]
 ```
 
-#### 6.2: Add Performance Logging (2h)
+#### 7.2: Add Performance Logging (2h)
 
 ```typescript
 class Logger {
@@ -926,7 +1114,7 @@ class Logger {
 }
 ```
 
-#### 6.3: Add Log Export (2h)
+#### 7.3: Add Log Export (2h)
 
 ```typescript
 exportLogs(format: 'json' | 'csv'): string {
@@ -940,7 +1128,7 @@ exportLogs(format: 'json' | 'csv'): string {
 }
 ```
 
-#### 6.4: Add Strategic Logging Points (4h)
+#### 7.4: Add Strategic Logging Points (4h)
 
 Add logging to key operations:
 
@@ -969,7 +1157,7 @@ logger.endTimer('sync-download', 'Sync', 'Download completed', {
 });
 ```
 
-#### 6.5: Error Boundary Integration (2h)
+#### 7.5: Error Boundary Integration (2h)
 
 **File:** `src/shared/presentation/components/ErrorBoundary.tsx`
 
@@ -987,11 +1175,11 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 
 | Phase | Description | Time |
 |-------|-------------|------|
-| 6.1 | Log categories | 2h |
-| 6.2 | Performance logging | 2h |
-| 6.3 | Log export | 2h |
-| 6.4 | Strategic logging points | 4h |
-| 6.5 | Error boundary integration | 2h |
+| 7.1 | Log categories | 2h |
+| 7.2 | Performance logging | 2h |
+| 7.3 | Log export | 2h |
+| 7.4 | Strategic logging points | 4h |
+| 7.5 | Error boundary integration | 2h |
 
 **Total: 12h**
 
