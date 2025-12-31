@@ -157,6 +157,50 @@ export async function putArticles(
 }
 
 /**
+ * Fetch detailed article by article ID
+ * Uses /common/api/v2/common/config/articleField which returns full data object
+ * @param config - SoluM configuration  
+ * @param storeId - Store number
+ * @param token - Access token
+ * @param articleId - Article ID to fetch
+ * @returns Article with full data object
+ */
+export async function fetchArticleDetails(
+    config: SolumConfig,
+    storeId: string,
+    token: string,
+    articleId: string
+): Promise<any> {
+    logger.info('SolumArticlesService', 'Fetching article details', { storeId, articleId });
+
+    const url = buildUrl(config, `/common/api/v2/common/config/articleField?company=${config.companyName}&store=${storeId}&article=${articleId}`);
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        logger.error('SolumArticlesService', 'Fetch article details failed', { status: response.status, error, articleId });
+        throw new Error(`Fetch article details failed: ${response.status}`);
+    }
+
+    const text = await response.text();
+    if (!text || text.trim().length === 0) {
+        logger.warn('SolumArticlesService', 'Article not found', { articleId });
+        return null;
+    }
+
+    const data = JSON.parse(text);
+    logger.info('SolumArticlesService', 'Article details fetched', { articleId, hasData: !!data });
+    return data;
+}
+
+/**
  * Delete articles from SoluM API
  * @param config - SoluM configuration
  * @param storeId - Store number

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
 import { postBulkAssignments, postBulkAssignmentsWithMetadata } from '../../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
@@ -25,8 +25,15 @@ export function usePeopleLists() {
     const peopleStore = usePeopleStore();
     const settings = useSettingsStore(state => state.settings);
     
-    // Track pending changes (unsaved modifications to loaded list)
-    const [pendingChanges, setPendingChanges] = useState(false);
+    // Use store's pendingChanges (shared with assignSpace/unassignSpace actions)
+    const pendingChanges = peopleStore.pendingChanges;
+    const setPendingChanges = (value: boolean) => {
+        if (value) {
+            peopleStore.markPendingChanges();
+        } else {
+            peopleStore.clearPendingChanges();
+        }
+    };
 
     // Clear legacy localStorage lists on mount (migration to AIMS-derived lists)
     useEffect(() => {
@@ -145,9 +152,32 @@ export function usePeopleLists() {
 
             // Set active list (derived list ID format)
             const listId = `aims-list-${storageName}`;
+            
+            // Check if list already exists in peopleLists, if not add it
+            const existingList = peopleStore.peopleLists.find(l => l.storageName === storageName);
+            if (!existingList) {
+                const newList: PeopleList = {
+                    id: listId,
+                    name: displayName,
+                    storageName: storageName,
+                    createdAt: new Date().toISOString(),
+                    people: peopleWithListMembership,
+                };
+                peopleStore.addPeopleList(newList);
+                logger.info('PeopleLists', 'Added list to peopleLists', { listId, name: displayName });
+            } else {
+                // Update existing list
+                peopleStore.updatePeopleList(existingList.id, {
+                    ...existingList,
+                    updatedAt: new Date().toISOString(),
+                    people: peopleWithListMembership,
+                });
+                logger.info('PeopleLists', 'Updated existing list in peopleLists', { listId: existingList.id, name: displayName });
+            }
+            
             peopleStore.setActiveListId(listId);
             peopleStore.setActiveListName(displayName);
-            setPendingChanges(false);
+            peopleStore.clearPendingChanges();
 
             logger.info('PeopleLists', 'People list created/updated', { 
                 listId,
@@ -524,12 +554,11 @@ export function usePeopleLists() {
 
     /**
      * Mark that there are pending (unsaved) changes
+     * Now delegates to the store for shared state with assignSpace/unassignSpace
      */
     const markPendingChanges = useCallback(() => {
-        if (peopleStore.activeListId) {
-            setPendingChanges(true);
-        }
-    }, [peopleStore.activeListId]);
+        peopleStore.markPendingChanges();
+    }, [peopleStore]);
 
     /**
      * Delete a list

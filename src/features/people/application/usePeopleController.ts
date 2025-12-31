@@ -1095,6 +1095,9 @@ export function usePeopleController() {
 
             // Update the store with synced people
             peopleStore.setPeople(people);
+            
+            // Extract unique list names from people's listMemberships and populate peopleLists
+            peopleStore.extractListsFromPeople();
 
             logger.info('PeopleController', 'Sync from AIMS with virtual pool complete', { peopleCount: people.length });
         } catch (error: any) {

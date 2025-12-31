@@ -82,6 +82,15 @@ export function usePeopleAssignment() {
             if (postToAims && settings.solumConfig && settings.solumConfig.tokens) {
                 peopleStore.updateSyncStatus([personId], 'pending');
                 
+                // DEBUG: Log person's listMemberships before posting
+                console.log('[DEBUG usePeopleAssignment] Posting to AIMS:', {
+                    personId: person.id,
+                    personName: person.data?.ITEM_NAME,
+                    hasListMemberships: !!person.listMemberships,
+                    listMemberships: person.listMemberships,
+                    assignedSpaceId: spaceId,
+                });
+                
                 try {
                     await postPersonAssignment(
                         { ...person, assignedSpaceId: spaceId, virtualSpaceId: spaceId },

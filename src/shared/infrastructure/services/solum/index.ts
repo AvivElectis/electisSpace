@@ -16,6 +16,7 @@ export {
 // Article services
 export { 
     fetchArticles,
+    fetchArticleDetails,
     pushArticles,
     putArticles,
     deleteArticles 

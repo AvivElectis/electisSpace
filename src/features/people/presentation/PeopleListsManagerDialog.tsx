@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { logger } from '@shared/infrastructure/services/logger';
 import {
     Dialog,
@@ -41,10 +41,29 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
     const { t } = useTranslation();
     const peopleLists = usePeopleStore((state) => state.peopleLists);
     const activeListId = usePeopleStore((state) => state.activeListId);
+    const activeListName = usePeopleStore((state) => state.activeListName);
+    const extractListsFromPeople = usePeopleStore((state) => state.extractListsFromPeople);
     const peopleController = usePeopleController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [isLoading, setIsLoading] = useState(false);
     const [autoApply, setAutoApply] = useState(false);
+
+    // Extract lists from people's listMemberships when dialog opens (handles legacy data)
+    useEffect(() => {
+        if (open && peopleLists.length === 0) {
+            console.log('[DEBUG PeopleListsManagerDialog] peopleLists is empty, extracting from people...');
+            extractListsFromPeople();
+        }
+    }, [open, peopleLists.length, extractListsFromPeople]);
+
+    // DEBUG: Log lists state when dialog opens
+    console.log('[DEBUG PeopleListsManagerDialog]', {
+        open,
+        peopleListsCount: peopleLists.length,
+        peopleLists: peopleLists.map(l => ({ id: l.id, name: l.name, storageName: l.storageName })),
+        activeListId,
+        activeListName,
+    });
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
