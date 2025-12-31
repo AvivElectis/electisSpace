@@ -238,6 +238,40 @@ describe('PeopleService', () => {
             expect(people[0].virtualSpaceId).toBe('POOL-0005');
             expect(people[0].assignedSpaceId).toBeUndefined();
         });
+
+        it('should extract _LIST_NAME_ and _LIST_SPACE_ as person properties', () => {
+            const spaces = [
+                { 
+                    id: 'POOL-0001', 
+                    data: { 
+                        name: 'Person With List', 
+                        _LIST_NAME_: 'My_Test_List',
+                        _LIST_SPACE_: '42'
+                    } 
+                },
+            ];
+            
+            const people = convertSpacesToPeopleWithVirtualPool(spaces, mockMappingConfig);
+            
+            expect(people).toHaveLength(1);
+            expect(people[0].listName).toBe('My_Test_List');
+            expect(people[0].listSpaceId).toBe('42');
+            // Verify list fields are removed from data
+            expect(people[0].data).not.toHaveProperty('_LIST_NAME_');
+            expect(people[0].data).not.toHaveProperty('_LIST_SPACE_');
+        });
+
+        it('should handle people without list metadata', () => {
+            const spaces = [
+                { id: 'POOL-0002', data: { name: 'Person Without List' } },
+            ];
+            
+            const people = convertSpacesToPeopleWithVirtualPool(spaces, mockMappingConfig);
+            
+            expect(people).toHaveLength(1);
+            expect(people[0].listName).toBeUndefined();
+            expect(people[0].listSpaceId).toBeUndefined();
+        });
     });
 
     describe('buildArticleDataWithMetadata', () => {

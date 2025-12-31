@@ -332,9 +332,11 @@ export function usePeopleController() {
      */
     const savePeopleList = useCallback((name: string): void => {
         try {
+            const storageName = name.trim().replace(/\s+/g, '_');
             const list: PeopleList = {
                 id: `list-${Date.now()}`,
                 name,
+                storageName,
                 createdAt: new Date().toISOString(),
                 people: [...peopleStore.people],
             };
@@ -359,10 +361,12 @@ export function usePeopleController() {
                 throw new Error('No active list to update');
             }
 
+            const existingList = peopleStore.peopleLists.find(l => l.id === peopleStore.activeListId);
             const updatedList: PeopleList = {
                 id: peopleStore.activeListId,
                 name: peopleStore.activeListName || 'Unnamed List',
-                createdAt: peopleStore.peopleLists.find(l => l.id === peopleStore.activeListId)?.createdAt || new Date().toISOString(),
+                storageName: existingList?.storageName || (peopleStore.activeListName || 'Unnamed_List').replace(/\s+/g, '_'),
+                createdAt: existingList?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 people: [...peopleStore.people],
             };
@@ -379,8 +383,10 @@ export function usePeopleController() {
     /**
      * Load a saved list with AIMS synchronization
      * Clears old assigned spaces in AIMS and posts new assignments
+     * @param listId - ID of list to load
+     * @param _autoApply - Ignored (kept for API compatibility, always applies assignments)
      */
-    const loadList = useCallback(async (listId: string): Promise<void> => {
+    const loadList = useCallback(async (listId: string, _autoApply?: boolean): Promise<void> => {
         try {
             // Get current assigned space IDs before loading new list
             const currentAssignedSpaceIds = new Set(

@@ -1,6 +1,6 @@
-import { Paper, Stack, Typography, Button } from '@mui/material';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import SendIcon from '@mui/icons-material/Send';
+import { Paper, Stack, Typography, Button, Box } from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -8,16 +8,18 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 interface PeopleBulkActionsBarProps {
     selectedCount: number;
     onBulkAssign: () => void;
-    onBulkPostToAims: () => void;
+    onCancelAllAssignments: () => void;
+    assignedCount: number;
 }
 
 /**
- * PeopleBulkActionsBar - Actions bar shown when people are selected
+ * PeopleBulkActionsBar - Actions bar for bulk operations and cancel all assignments
  */
 export function PeopleBulkActionsBar({
     selectedCount,
     onBulkAssign,
-    onBulkPostToAims,
+    onCancelAllAssignments,
+    assignedCount,
 }: PeopleBulkActionsBarProps) {
     const { t } = useTranslation();
     const { getLabel } = useSpaceTypeLabels();
@@ -34,23 +36,34 @@ export function PeopleBulkActionsBar({
         [t, getLabel]
     );
 
-    if (selectedCount === 0) {
-        return null;
-    }
-
     return (
-        <Paper sx={{ p: 1.5, mb: 2, bgcolor: 'action.selected' }}>
-            <Stack direction="row" gap={2} alignItems="center">
-                <Typography variant="body2">
-                    {t('people.selectedCount', { count: selectedCount })}
-                </Typography>
-                <Button size="small" startIcon={<AssignmentIcon />} onClick={onBulkAssign}>
-                    {tWithSpaceType('people.assignSpaces')}
-                </Button>
-                <Button size="small" startIcon={<SendIcon />} onClick={onBulkPostToAims} color="success">
-                    {t('people.postToAims')}
-                </Button>
-            </Stack>
-        </Paper>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            {/* Bulk Selection Actions */}
+            {selectedCount > 0 ? (
+                <Paper sx={{ p: 1.5, bgcolor: 'action.selected' }}>
+                    <Stack direction="row" gap={2} alignItems="center">
+                        <Typography variant="body2">
+                            {t('people.selectedCount', { count: selectedCount })}
+                        </Typography>
+                        <Button size="small" startIcon={<AutoAwesomeIcon />} onClick={onBulkAssign}>
+                            {tWithSpaceType('people.autoAssignSpaces')}
+                        </Button>
+                    </Stack>
+                </Paper>
+            ) : (
+                <Box />
+            )}
+
+            {/* Cancel All Assignments - Always visible on right */}
+            <Button
+                variant="text"
+                color="error"
+                startIcon={<CancelIcon />}
+                onClick={onCancelAllAssignments}
+                disabled={assignedCount === 0}
+            >
+                {t('people.cancelAllAssignments')}
+            </Button>
+        </Stack>
     );
 }

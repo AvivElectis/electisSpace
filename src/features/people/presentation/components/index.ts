@@ -5,5 +5,4 @@ export { PeopleFiltersBar } from './PeopleFiltersBar';
 export { PeopleBulkActionsBar } from './PeopleBulkActionsBar';
 export { PeopleTable } from './PeopleTable';
 export { PeopleTableRow } from './PeopleTableRow';
-export { PeopleAimsActionsBar } from './PeopleAimsActionsBar';
-export { PeopleListActionsBar } from './PeopleListActionsBar';
+export { PeopleListPanel } from './PeopleListPanel';

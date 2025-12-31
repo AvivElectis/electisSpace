@@ -378,7 +378,7 @@
         "peopleManager": {
             "title": "מנהל אנשים",
             "enable": "הפעל מצב מנהל אנשים",
-            "description": "הפוך ניהול חללים למערכת הקצאת אנשים. כאשר מופעל, מקטע החללים הופך למערכת הקצאת אנשים להעלאת רשימות CSV והקצאת חללים.",
+            "description": "הפוך ניהול חללים למערכת הקצאת אנשים. כאשר מופעל, מקטע החללים הופך למערכת הקצאת אנשים להעלאת רשימות CSV והקצאת חללים. מוסיף אוטומטית שדות רשימה (_LIST_NAME_, _LIST_SPACE_) לפורמט המוצר.",
             "totalSpaces": "סה\"כ חללים זמינים",
             "totalSpacesHelp": "מספר החללים הכולל הזמין להקצאה"
         }
@@ -547,6 +547,7 @@
         "spacesCount": "חללים",
         "noListsFound": "לא נמצאו רשימות שמורות.",
         "listName": "שם הרשימה",
+        "nameRules": "עד {{max}} תווים. אותיות בעברית/אנגלית, מספרים ורווחים בלבד.",
         "enterListName": "הזן שם רשימה",
         "namePlaceholder": "לדוגמה: סידור קיץ",
         "load": "טען",
@@ -559,7 +560,11 @@
         "confirmDelete": "האם אתה בטוח שברצונך למחוק רשימה זו?",
         "loaded": "טעון",
         "loadList": "טען רשימה",
-        "loadListConfirm": "טעינת רשימה זו תסנכרן שינויים ל-AIMS. חללים ישנים ינוקו והקצאות חדשות יישלחו. להמשיך?"
+        "loadListConfirm": "טעינת רשימה זו תסנכרן שינויים ל-AIMS. חללים ישנים ינוקו והקצאות חדשות יישלחו. להמשיך?",
+        "loadListConfirmAutoApply": "טעינת רשימה זו תחיל את כל ההקצאות אוטומטית ותסנכרן ל-AIMS. חללים ישנים ינוקו. להמשיך?",
+        "loadListConfirmNoApply": "לטעון רשימה זו? הקצאות לא יוחלו עד שתלחץ על 'החל הקצאות'.",
+        "autoApplyAssignments": "החל הקצאות אוטומטית",
+        "autoApplyTooltip": "כאשר מופעל, הקצאות מהרשימה יוחלו מיד בעת הטעינה. כאשר מושבת, תוכל לבדוק לפני ההחלה."
     },
     "people": {
         "title": "מנהל אנשים",
@@ -579,6 +584,7 @@
         "noPeopleYet": "עדיין אין אנשים. העלה CSV או הוסף אנשים ידנית.",
         "selectedCount": "{{count}} נבחרו",
         "assignSpaces": "הקצה {{spaceTypePlural}}",
+        "autoAssignSpaces": "הקצה אוטומטית {{spaceTypePlural}}",
         "postToAims": "שלח ל-AIMS",
         "assignSpace": "הקצה {{spaceTypeSingular}}",
         "unassignSpace": "בטל הקצאת {{spaceTypeSingular}}",
@@ -589,6 +595,9 @@
         "bulkAssign": "הקצאה מרובה של {{spaceTypePlural}}",
         "bulkAssignConfirm": "להקצות {{spaceTypePlural}} ל-{{count}} אנשים נבחרים?",
         "bulkAssignConfirmAuto": "להקצות {{spaceTypePlural}} אוטומטית ל-{{count}} אנשים נבחרים לפי סדר מספרי? פעולה זו גם תשלח ל-AIMS.",
+        "bulkAssignPartial": "בחרת {{selected}} אנשים אבל רק {{available}} {{spaceTypePlural}} זמינים. {{available}} האנשים הראשונים ברשימה יקבלו הקצאה. להמשיך?",
+        "noAvailableSpaces": "אין {{spaceTypePlural}} זמינים",
+        "noAvailableSpacesMessage": "כל ה{{spaceTypePlural}} כבר מוקצים. יש לבטל הקצאה קודם כדי להקצות אנשים חדשים.",
         "postToAimsConfirm": "לשלוח {{count}} הקצאות ל-AIMS?",
         "spaceAssignment": "הקצאת {{spaceTypeSingular}}",
         "spaceIdHelper": "הזן מספר {{spaceTypeSingular}} (1 עד {{max}})",
@@ -634,6 +643,24 @@
         "exceedsAvailableSpaces": "חורג מה{{spaceTypePlural}} הזמינים",
         "exceedsAvailableSpacesMessage": "בחרת {{selected}} אנשים אבל רק {{available}} {{spaceTypePlural}} זמינים. בחר פחות אנשים או הגדל את סה\"כ ה{{spaceTypePlural}}.",
         "selectSpace": "בחר {{spaceTypeSingular}}",
-        "assigningSpaceTo": "מקצה {{spaceTypeSingular}} ל: {{name}}"
+        "assigningSpaceTo": "מקצה {{spaceTypeSingular}} ל: {{name}}",
+        "listManagement": "ניהול רשימות",
+        "listsFromAims": "הרשימות נגזרות מנתוני AIMS שסונכרנו. סנכרן מ-AIMS לטעינת רשימות, או שמור רשימה חדשה ושלח ל-AIMS.",
+        "unsavedChanges": "שינויים לא שמורים",
+        "pendingAssignments": "{{count}} ממתינים",
+        "assignmentsApplied": "{{count}} הקצאות הוחלו בהצלחה",
+        "applyAssignmentsFailed": "נכשל להחיל הקצאות",
+        "listSaved": "הרשימה נשמרה בהצלחה",
+        "saveListFailed": "נכשל לשמור רשימה",
+        "loadedList": "טעון: {{name}}",
+        "listsStoredLocally": "רשימות נשמרות מקומית בדפדפן. השתמש ב-'שלח הכל ל-AIMS' לסנכרון לשרת.",
+        "fromAIMS": "מ-AIMS",
+        "applyAssignments": "החל הקצאות",
+        "applyAssignmentsTooltip": "החל {{count}} הקצאות ממתינות מהרשימה להקצאות פעילות וסנכרן ל-AIMS",
+        "listAssignmentHint": "הקצאות הרשימה נטענו אך אינן פעילות. לחץ על 'החל הקצאות' להפעלתן.",
+        "syncListToAims": "סנכרן ל-AIMS",
+        "syncListToAimsTooltip": "סנכרן נתוני רשימה ל-AIMS לשימוש במכשירים אחרים. דורש שדות _LIST_NAME_ ו-_LIST_SPACE_.",
+        "listSyncedToAims": "{{count}} אנשים סונכרנו ל-AIMS עם נתוני רשימה",
+        "syncToAimsFailed": "נכשל לסנכרן רשימה ל-AIMS"
     }
 }

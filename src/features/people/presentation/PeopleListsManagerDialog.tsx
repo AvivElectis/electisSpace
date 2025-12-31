@@ -14,10 +14,14 @@ import {
     Typography,
     Box,
     Chip,
-    CircularProgress
+    CircularProgress,
+    FormControlLabel,
+    Checkbox,
+    Tooltip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FolderIcon from '@mui/icons-material/Folder';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { usePeopleController } from '../application/usePeopleController';
@@ -31,6 +35,7 @@ interface PeopleListsManagerDialogProps {
 /**
  * People Lists Manager Dialog
  * Displays saved people lists and allows loading/deleting them
+ * Enhanced with option to load without auto-applying assignments
  */
 export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDialogProps) {
     const { t } = useTranslation();
@@ -39,6 +44,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
     const peopleController = usePeopleController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [isLoading, setIsLoading] = useState(false);
+    const [autoApply, setAutoApply] = useState(false);
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
@@ -46,10 +52,14 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             return;
         }
         
-        // Confirm before loading (will sync with AIMS)
+        // Show different confirmation based on autoApply setting
+        const confirmMessage = autoApply 
+            ? t('lists.loadListConfirmAutoApply')
+            : t('lists.loadListConfirmNoApply');
+        
         const isConfirmed = await confirm({
             title: t('lists.loadList'),
-            message: t('lists.loadListConfirm'),
+            message: confirmMessage,
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
         });
@@ -60,7 +70,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
 
         try {
             setIsLoading(true);
-            await peopleController.loadList(id);
+            await peopleController.loadList(id, autoApply);
             onClose();
         } catch (error: any) {
             logger.error('PeopleListsManagerDialog', 'Failed to load list', { error: error?.message || error });
@@ -178,6 +188,27 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                 )}
             </DialogContent>
             <DialogActions>
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, pl: 1 }}>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={autoApply}
+                                onChange={(e) => setAutoApply(e.target.checked)}
+                                size="small"
+                            />
+                        }
+                        label={
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                                <Typography variant="body2">
+                                    {t('lists.autoApplyAssignments')}
+                                </Typography>
+                                <Tooltip title={t('lists.autoApplyTooltip')}>
+                                    <InfoOutlinedIcon fontSize="small" color="action" />
+                                </Tooltip>
+                            </Box>
+                        }
+                    />
+                </Box>
                 <Button onClick={onClose}>{t('common.close')}</Button>
             </DialogActions>
             <ConfirmDialog />

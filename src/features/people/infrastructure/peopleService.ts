@@ -213,11 +213,15 @@ export function convertSpacesToPeopleWithVirtualPool(
         // Extract cross-device metadata (if present)
         const personId = space.data['__PERSON_UUID__'] || uuidv4();
         const virtualSpaceId = space.data['__VIRTUAL_SPACE__'] || space.id;
+        
+        // Extract list metadata from AIMS hidden fields
+        const listName = space.data['_LIST_NAME_'] || undefined;
+        const listSpaceId = space.data['_LIST_SPACE_'] || undefined;
 
-        // Clean data - remove metadata fields (those starting with __)
+        // Clean data - remove metadata fields (those starting with __ or _LIST_)
         const cleanData: Record<string, string> = {};
         Object.entries(space.data).forEach(([key, value]) => {
-            if (!key.startsWith('__')) {
+            if (!key.startsWith('__') && key !== '_LIST_NAME_' && key !== '_LIST_SPACE_') {
                 cleanData[key] = value;
             }
         });
@@ -245,6 +249,9 @@ export function convertSpacesToPeopleWithVirtualPool(
             data: cleanData,
             aimsSyncStatus: 'synced',
             lastSyncedAt: space.data['__LAST_MODIFIED__'] || new Date().toISOString(),
+            // List metadata from AIMS
+            listName,
+            listSpaceId,
         };
 
         people.push(person);
@@ -337,6 +344,7 @@ export function buildArticleData(person: Person, mappingConfig?: SolumMappingCon
 /**
  * Build article data with cross-device sync metadata
  * Adds __PERSON_UUID__, __VIRTUAL_SPACE__, __LAST_MODIFIED__ to article data
+ * Also includes list fields (_LIST_NAME_, _LIST_SPACE_) if present on person
  * @param person - Person to convert
  * @param mappingConfig - SoluM mapping configuration
  * @returns Article in AIMS format with metadata fields
@@ -354,6 +362,14 @@ export function buildArticleDataWithMetadata(
         '__VIRTUAL_SPACE__': getVirtualSpaceId(person),
         '__LAST_MODIFIED__': new Date().toISOString(),
     };
+
+    // Add list fields if present (for AIMS-based list persistence)
+    if (person.listName) {
+        article.data['_LIST_NAME_'] = person.listName;
+    }
+    if (person.listSpaceId) {
+        article.data['_LIST_SPACE_'] = person.listSpaceId;
+    }
     
     return article;
 }
@@ -490,6 +506,34 @@ export async function postBulkAssignments(
     await pushArticles(config, config.storeNumber, token, articles);
 
     logger.info('PeopleService', 'Bulk assignments posted successfully', { count: people.length });
+}
+
+/**
+ * Post bulk assignments to AIMS with full metadata (including list info)
+ * Use this when you need to persist list data (_LIST_NAME_, _LIST_SPACE_) to AIMS
+ * @param people - People to post (should have listName and listSpaceId set)
+ * @param config - SoluM configuration
+ * @param token - Access token
+ * @param mappingConfig - SoluM mapping configuration
+ */
+export async function postBulkAssignmentsWithMetadata(
+    people: Person[],
+    config: SolumConfig,
+    token: string,
+    mappingConfig?: SolumMappingConfig
+): Promise<void> {
+    logger.info('PeopleService', 'Posting bulk assignments with metadata to AIMS', { 
+        count: people.length,
+        withListData: people.filter(p => p.listName).length 
+    });
+
+    // Build article data with metadata (includes __PERSON_UUID__, __VIRTUAL_SPACE__, _LIST_NAME_, _LIST_SPACE_)
+    const articles = people.map(person => buildArticleDataWithMetadata(person, mappingConfig));
+
+    // Push all articles to AIMS in one batch using POST
+    await pushArticles(config, config.storeNumber, token, articles);
+
+    logger.info('PeopleService', 'Bulk assignments with metadata posted successfully', { count: people.length });
 }
 
 /**
