@@ -29,6 +29,7 @@ export interface Space {
     data: Record<string, string>;  // Dynamic fields from CSV or SoluM
     labelCode?: string;  // Optional - for display only, assigned separately
     templateName?: string;  // Optional - for display only
+    assignedLabels?: string[];  // Array of label IDs assigned to this article from AIMS
 }
 
 /**
@@ -43,6 +44,7 @@ export interface ConferenceRoom {
     participants: string[];
     labelCode?: string;
     data: Record<string, string>;  // Additional dynamic fields
+    assignedLabels?: string[];  // Array of label IDs assigned to this article from AIMS
 }
 
 /**

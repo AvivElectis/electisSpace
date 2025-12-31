@@ -9,6 +9,7 @@ export interface Person {
     assignedSpaceId?: string;  // Physical space assignment (undefined if in pool)
     aimsSyncStatus?: 'pending' | 'synced' | 'error';  // AIMS sync status
     lastSyncedAt?: string;  // ISO timestamp of last successful sync
+    assignedLabels?: string[];  // Array of label IDs assigned to this person's article from AIMS
 }
 
 /**

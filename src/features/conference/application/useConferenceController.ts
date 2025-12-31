@@ -673,6 +673,7 @@ export function useConferenceController({
                         participants,
                         labelCode: article.labelCode,
                         data,
+                        assignedLabels: Array.isArray(article.assignedLabel) ? article.assignedLabel : undefined,
                     };
                 });
 
