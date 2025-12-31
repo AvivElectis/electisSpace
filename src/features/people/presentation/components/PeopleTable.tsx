@@ -70,7 +70,9 @@ export function PeopleTable({
             return t(key, {
                 ...options,
                 spaceTypeSingular: getLabel('singular').toLowerCase(),
+                spaceTypeSingularDef: getLabel('singularDef').toLowerCase(),
                 spaceTypePlural: getLabel('plural').toLowerCase(),
+                spaceTypePluralDef: getLabel('pluralDef').toLowerCase(),
             });
         },
         [t, getLabel]
@@ -111,6 +113,7 @@ export function PeopleTable({
                                 {tWithSpaceType('people.assignedSpace')}
                             </TableSortLabel>
                         </TableCell>
+                        <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>{t('people.lists')}</TableCell>
                         <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>{t('people.aimsStatus')}</TableCell>
                         <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>{t('common.actions')}</TableCell>
                     </TableRow>
@@ -118,7 +121,7 @@ export function PeopleTable({
                 <TableBody>
                     {people.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={visibleFields.length + 4} align="center" sx={{ py: 4 }}>
+                            <TableCell colSpan={visibleFields.length + 5} align="center" sx={{ py: 4 }}>
                                 <Typography variant="body2" color="text.secondary">
                                     {searchQuery || assignmentFilter !== 'all'
                                         ? t('people.noResults')

@@ -378,7 +378,7 @@
         "peopleManager": {
             "title": "מנהל אנשים",
             "enable": "הפעל מצב מנהל אנשים",
-            "description": "הפוך ניהול חללים למערכת הקצאת אנשים. כאשר מופעל, מקטע החללים הופך למערכת הקצאת אנשים להעלאת רשימות CSV והקצאת חללים. מוסיף אוטומטית שדות רשימה (_LIST_NAME_, _LIST_SPACE_) לפורמט המוצר.",
+            "description": "הפוך ניהול חללים למערכת הקצאת אנשים. כאשר מופעל, מקטע החללים הופך למערכת הקצאת אנשים להעלאת רשימות CSV והקצאת חללים. מוסיף אוטומטית שדה _LIST_MEMBERSHIPS_ לפורמט המוצר.",
             "totalSpaces": "סה\"כ חללים זמינים",
             "totalSpacesHelp": "מספר החללים הכולל הזמין להקצאה"
         }
@@ -477,7 +477,9 @@
     "spaceTypes": {
         "office": {
             "singular": "משרד",
+            "singularDef": "המשרד",
             "plural": "משרדים",
+            "pluralDef": "המשרדים",
             "add": "הוסף משרד",
             "edit": "ערוך משרד",
             "delete": "מחק משרד",
@@ -485,7 +487,9 @@
         },
         "room": {
             "singular": "חדר",
+            "singularDef": "החדר",
             "plural": "חדרים",
+            "pluralDef": "החדרים",
             "add": "הוסף חדר",
             "edit": "ערוך חדר",
             "delete": "מחק חדר",
@@ -493,7 +497,9 @@
         },
         "chair": {
             "singular": "כיסא",
+            "singularDef": "הכיסא",
             "plural": "כיסאות",
+            "pluralDef": "הכיסאות",
             "add": "הוסף כיסא",
             "edit": "ערוך כיסא",
             "delete": "מחק כיסא",
@@ -501,7 +507,9 @@
         },
         "personTag": {
             "singular": "תג אישי",
+            "singularDef": "התג האישי",
             "plural": "תגים אישיים",
+            "pluralDef": "התגים האישיים",
             "add": "הוסף תג אישי",
             "edit": "ערוך תג אישי",
             "delete": "מחק תג אישי",
@@ -564,7 +572,8 @@
         "loadListConfirmAutoApply": "טעינת רשימה זו תחיל את כל ההקצאות אוטומטית ותסנכרן ל-AIMS. חללים ישנים ינוקו. להמשיך?",
         "loadListConfirmNoApply": "לטעון רשימה זו? הקצאות לא יוחלו עד שתלחץ על 'החל הקצאות'.",
         "autoApplyAssignments": "החל הקצאות אוטומטית",
-        "autoApplyTooltip": "כאשר מופעל, הקצאות מהרשימה יוחלו מיד בעת הטעינה. כאשר מושבת, תוכל לבדוק לפני ההחלה."
+        "autoApplyTooltip": "כאשר מופעל, הקצאות מהרשימה יוחלו מיד בעת הטעינה. כאשר מושבת, תוכל לבדוק לפני ההחלה.",
+        "savedLocallyAimsFailed": "הרשימה נשמרה מקומית אך הסנכרון ל-AIMS נכשל: {{error}}. נסה 'שלח הכל ל-AIMS' מאוחר יותר."
     },
     "people": {
         "title": "מנהל אנשים",
@@ -588,7 +597,7 @@
         "postToAims": "שלח ל-AIMS",
         "assignSpace": "הקצה {{spaceTypeSingular}}",
         "unassignSpace": "בטל הקצאת {{spaceTypeSingular}}",
-        "unassignSpaceConfirm": "האם אתה בטוח שברצונך לבטל את הקצאת ה{{spaceTypeSingular}}? פעולה זו גם תנקה את ה{{spaceTypeSingular}} ב-AIMS.",
+        "unassignSpaceConfirm": "האם אתה בטוח שברצונך לבטל את הקצאת {{spaceTypeSingularDef}}? פעולה זו גם תנקה את {{spaceTypeSingularDef}} ב-AIMS.",
         "totalSpaces": "סה\"כ {{spaceTypePlural}}",
         "spacesAssigned": "{{assigned}} מתוך {{total}} {{spaceTypePlural}} מוקצים",
         "available": "זמין",
@@ -597,7 +606,7 @@
         "bulkAssignConfirmAuto": "להקצות {{spaceTypePlural}} אוטומטית ל-{{count}} אנשים נבחרים לפי סדר מספרי? פעולה זו גם תשלח ל-AIMS.",
         "bulkAssignPartial": "בחרת {{selected}} אנשים אבל רק {{available}} {{spaceTypePlural}} זמינים. {{available}} האנשים הראשונים ברשימה יקבלו הקצאה. להמשיך?",
         "noAvailableSpaces": "אין {{spaceTypePlural}} זמינים",
-        "noAvailableSpacesMessage": "כל ה{{spaceTypePlural}} כבר מוקצים. יש לבטל הקצאה קודם כדי להקצות אנשים חדשים.",
+        "noAvailableSpacesMessage": "כל {{spaceTypePluralDef}} כבר מוקצים. יש לבטל הקצאה קודם כדי להקצות אנשים חדשים.",
         "postToAimsConfirm": "לשלוח {{count}} הקצאות ל-AIMS?",
         "spaceAssignment": "הקצאת {{spaceTypeSingular}}",
         "spaceIdHelper": "הזן מספר {{spaceTypeSingular}} (1 עד {{max}})",
@@ -625,6 +634,10 @@
         "availableSpaces": "{{count}} {{spaceTypePlural}} זמינים",
         "noSpacesConfigured": "סה\"כ {{spaceTypePlural}} לא הוגדר בהגדרות",
         "aimsStatus": "סטטוס AIMS",
+        "lists": "רשימות",
+        "inLists": "ב-{{count}} רשימות",
+        "addToList": "הוסף לרשימה",
+        "removeFromList": "הסר מרשימה",
         "syncedToAims": "סונכרן ל-AIMS",
         "syncPending": "סינכרון בתהליך...",
         "syncError": "הסינכרון נכשל - לחץ לניסיון חוזר",
@@ -659,7 +672,7 @@
         "applyAssignmentsTooltip": "החל {{count}} הקצאות ממתינות מהרשימה להקצאות פעילות וסנכרן ל-AIMS",
         "listAssignmentHint": "הקצאות הרשימה נטענו אך אינן פעילות. לחץ על 'החל הקצאות' להפעלתן.",
         "syncListToAims": "סנכרן ל-AIMS",
-        "syncListToAimsTooltip": "סנכרן נתוני רשימה ל-AIMS לשימוש במכשירים אחרים. דורש שדות _LIST_NAME_ ו-_LIST_SPACE_.",
+        "syncListToAimsTooltip": "סנכרן נתוני רשימה ל-AIMS לשימוש במכשירים אחרים. דורש שדה _LIST_MEMBERSHIPS_.",
         "listSyncedToAims": "{{count}} אנשים סונכרנו ל-AIMS עם נתוני רשימה",
         "syncToAimsFailed": "נכשל לסנכרן רשימה ל-AIMS"
     }

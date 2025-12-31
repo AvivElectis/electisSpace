@@ -15,10 +15,12 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import type { Person } from '../../domain/types';
+import { getPersonListNames, toDisplayName } from '../../domain/types';
 
 interface VisibleField {
     key: string;
@@ -59,7 +61,9 @@ export function PeopleTableRow({
             return t(key, {
                 ...options,
                 spaceTypeSingular: getLabel('singular').toLowerCase(),
+                spaceTypeSingularDef: getLabel('singularDef').toLowerCase(),
                 spaceTypePlural: getLabel('plural').toLowerCase(),
+                spaceTypePluralDef: getLabel('pluralDef').toLowerCase(),
             });
         },
         [t, getLabel]
@@ -136,6 +140,45 @@ export function PeopleTableRow({
         return <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ px: 1 }} />;
     };
 
+    // Render lists chip (shows which lists this person belongs to)
+    const renderListsChip = () => {
+        const listNames = getPersonListNames(person);
+        
+        if (listNames.length === 0) {
+            return (
+                <Typography variant="body2" color="text.disabled">
+                    -
+                </Typography>
+            );
+        }
+
+        const displayNames = listNames.map(toDisplayName);
+        
+        if (listNames.length === 1) {
+            return (
+                <Chip 
+                    label={displayNames[0]} 
+                    size="small" 
+                    variant="outlined"
+                    icon={<ListAltIcon fontSize="small" />}
+                />
+            );
+        }
+
+        // Multiple lists - show count with tooltip listing all
+        return (
+            <Tooltip title={displayNames.join(', ')}>
+                <Chip 
+                    label={t('people.inLists', { count: listNames.length })} 
+                    size="small" 
+                    variant="outlined"
+                    color="info"
+                    icon={<ListAltIcon fontSize="small" />}
+                />
+            </Tooltip>
+        );
+    };
+
     return (
         <TableRow hover selected={isSelected}>
             <TableCell padding="checkbox">
@@ -147,6 +190,7 @@ export function PeopleTableRow({
                 </TableCell>
             ))}
             <TableCell sx={{ textAlign: 'start' }}>{renderSpaceChip()}</TableCell>
+            <TableCell sx={{ textAlign: 'start' }}>{renderListsChip()}</TableCell>
             <TableCell sx={{ textAlign: 'start' }}>{renderAimsStatus()}</TableCell>
             <TableCell sx={{ textAlign: 'start' }}>
                 <Stack direction="row" gap={0.5} justifyContent="flex-start">

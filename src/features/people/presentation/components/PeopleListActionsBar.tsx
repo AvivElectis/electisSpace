@@ -1,5 +1,5 @@
 import { Paper, Stack, Button } from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import SaveIcon from '@mui/icons-material/Save';
 import { useTranslation } from 'react-i18next';
 
@@ -31,7 +31,7 @@ export function PeopleListActionsBar({
             >
                 {/* List Management */}
                 <Stack direction="row" gap={1}>
-                    <Button variant="outlined" startIcon={<FolderIcon />} onClick={onManageLists}>
+                    <Button variant="outlined" startIcon={<ListAltIcon />} onClick={onManageLists}>
                         {t('lists.manage')}
                     </Button>
                     <Button variant="outlined" startIcon={<SaveIcon />} onClick={onSaveAsNew}>

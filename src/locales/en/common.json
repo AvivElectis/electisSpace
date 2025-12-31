@@ -367,7 +367,7 @@
         "peopleManager": {
             "title": "People Manager",
             "enable": "Enable People Manager Mode",
-            "description": "Transform space management into a people allocation system. When enabled, the Spaces section becomes a People allocation system for uploading CSV lists and assigning spaces. Automatically adds list fields (_LIST_NAME_, _LIST_SPACE_) to article format.",
+            "description": "Transform space management into a people allocation system. When enabled, the Spaces section becomes a People allocation system for uploading CSV lists and assigning spaces. Automatically adds the _LIST_MEMBERSHIPS_ field to article format.",
             "totalSpaces": "Total Available Spaces",
             "totalSpacesHelp": "The total number of spaces available for allocation"
         }
@@ -462,7 +462,9 @@
     "spaceTypes": {
         "office": {
             "singular": "Office",
+            "singularDef": "the Office",
             "plural": "Offices",
+            "pluralDef": "the Offices",
             "add": "Add Office",
             "edit": "Edit Office",
             "delete": "Delete Office",
@@ -470,7 +472,9 @@
         },
         "room": {
             "singular": "Room",
+            "singularDef": "the Room",
             "plural": "Rooms",
+            "pluralDef": "the Rooms",
             "add": "Add Room",
             "edit": "Edit Room",
             "delete": "Delete Room",
@@ -478,7 +482,9 @@
         },
         "chair": {
             "singular": "Chair",
+            "singularDef": "the Chair",
             "plural": "Chairs",
+            "pluralDef": "the Chairs",
             "add": "Add Chair",
             "edit": "Edit Chair",
             "delete": "Delete Chair",
@@ -486,7 +492,9 @@
         },
         "personTag": {
             "singular": "Person Tag",
+            "singularDef": "the Person Tag",
             "plural": "Person Tags",
+            "pluralDef": "the Person Tags",
             "add": "Add Person Tag",
             "edit": "Edit Person Tag",
             "delete": "Delete Person Tag",
@@ -549,7 +557,8 @@
         "loadListConfirmAutoApply": "Loading this list will automatically apply all assignments and sync to AIMS. Old spaces will be cleared. Continue?",
         "loadListConfirmNoApply": "Load this list? Assignments will NOT be applied until you press 'Apply Assignments'.",
         "autoApplyAssignments": "Auto-apply assignments",
-        "autoApplyTooltip": "When enabled, assignments from the list will be applied immediately upon loading. When disabled, you can review before applying."
+        "autoApplyTooltip": "When enabled, assignments from the list will be applied immediately upon loading. When disabled, you can review before applying.",
+        "savedLocallyAimsFailed": "List saved locally but failed to sync to AIMS: {{error}}. Please try 'Send All to AIMS' later."
     },
     "people": {
         "title": "People Manager",
@@ -573,7 +582,7 @@
         "postToAims": "Post to AIMS",
         "assignSpace": "Assign {{spaceTypeSingular}}",
         "unassignSpace": "Unassign {{spaceTypeSingular}}",
-        "unassignSpaceConfirm": "Are you sure you want to unassign this {{spaceTypeSingular}}? This will also clear the {{spaceTypeSingular}} in AIMS.",
+        "unassignSpaceConfirm": "Are you sure you want to unassign this {{spaceTypeSingular}}? This will also clear {{spaceTypeSingularDef}} in AIMS.",
         "totalSpaces": "Total {{spaceTypePlural}}",
         "spacesAssigned": "{{assigned}} of {{total}} {{spaceTypePlural}} assigned",
         "available": "available",
@@ -610,6 +619,10 @@
         "availableSpaces": "{{count}} {{spaceTypePlural}} available",
         "noSpacesConfigured": "Total {{spaceTypePlural}} not configured in settings",
         "aimsStatus": "AIMS Status",
+        "lists": "Lists",
+        "inLists": "In {{count}} lists",
+        "addToList": "Add to List",
+        "removeFromList": "Remove from List",
         "syncedToAims": "Synced to AIMS",
         "syncPending": "Sync in progress...",
         "syncError": "Sync failed - click to retry",
@@ -644,7 +657,7 @@
         "applyAssignmentsTooltip": "Apply {{count}} pending list assignments to active assignments and sync to AIMS",
         "listAssignmentHint": "List assignments are loaded but not active. Press 'Apply Assignments' to activate them.",
         "syncListToAims": "Sync to AIMS",
-        "syncListToAimsTooltip": "Sync list data to AIMS for cross-device persistence. Requires _LIST_NAME_ and _LIST_SPACE_ fields.",
+        "syncListToAimsTooltip": "Sync list data to AIMS for cross-device persistence. Requires _LIST_MEMBERSHIPS_ field.",
         "listSyncedToAims": "{{count}} people synced to AIMS with list data",
         "syncToAimsFailed": "Failed to sync list to AIMS"
     }
