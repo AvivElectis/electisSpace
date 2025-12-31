@@ -5,7 +5,7 @@ import type { Person, PeopleList, SpaceAllocation } from '../domain/types';
 export interface PeopleStore {
     // State
     people: Person[];
-    peopleLists: PeopleList[];
+    peopleLists: PeopleList[];  // Legacy - now derived from people's listName
     activeListName?: string;
     activeListId?: string;
     spaceAllocation: SpaceAllocation;
@@ -20,11 +20,12 @@ export interface PeopleStore {
     unassignAllSpaces: () => void;  // Clear all assignments
     updateSyncStatus: (personIds: string[], status: 'pending' | 'synced' | 'error') => void;
 
-    // People List Management
+    // People List Management (legacy - now lists are derived from people's listName)
     addPeopleList: (list: PeopleList) => void;
     updatePeopleList: (id: string, list: PeopleList) => void;
     deletePeopleList: (id: string) => void;
     loadPeopleList: (id: string) => void;
+    clearPeopleLists: () => void;  // Clear legacy localStorage lists
 
     // Helpers
     setActiveListName: (name: string | undefined) => void;
@@ -155,6 +156,13 @@ export const usePeopleStore = create<PeopleStore>()(
                         get().updateSpaceAllocation();
                     }
                 },
+
+                clearPeopleLists: () => 
+                    set({ 
+                        peopleLists: [],
+                        activeListId: undefined,
+                        activeListName: undefined,
+                    }, false, 'clearPeopleLists'),
 
                 // Helpers
                 setActiveListName: (name) => set({ activeListName: name }, false, 'setActiveListName'),

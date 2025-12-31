@@ -10,7 +10,7 @@
 | 1 | Conference Room NFC URL Fix | ✅ Completed | Dec 30 | Dec 30 |
 | 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 31 |
 | 3 | File Optimization | ✅ Completed | Dec 30 | Dec 31 |
-| 4 | People-List Feature | ⬜ Not Started | - | - |
+| 4 | People-List Feature | 🔄 In Progress | Dec 31 | - |
 | 5 | Section Loading Indicators | ⬜ Not Started | - | - |
 | 6 | Logger Enhancement | ⬜ Not Started | - | - |
 | 7 | App Manual Feature | ⬜ Not Started | - | - |
@@ -18,6 +18,18 @@
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
 ### Recent Updates (Dec 31, 2025)
+- **Feature 4 Implementation**: People-List feature with AIMS integration
+  - Added `listName`, `listSpaceId` fields to Person type for AIMS list persistence
+  - Enhanced `PeopleList` type with `storageName` and `isFromAIMS` fields
+  - Added list name validation (max 20 chars, letters/numbers/spaces only)
+  - Created `PeopleListPanel` component with Apply Assignments button
+  - Updated `usePeopleLists` hook with `saveListToAims()` function
+  - Load list now supports "load without auto-apply" behavior
+  - Added `postBulkAssignmentsWithMetadata()` for AIMS list sync
+  - Added "Sync to AIMS" button for cross-device persistence
+  - Added new translations for list management (EN/HE)
+  - **Auto-managed list fields**: `_LIST_NAME_`, `_LIST_SPACE_` are now automatically added/removed when People Mode is toggled
+  - Enhanced `SolumPeopleManagerSection` to modify article format on toggle
 - **Feature 3 Completed**: All file optimization sub-tasks finished
 - Extracted `useConferenceAIMS` hook from `useConferenceController.ts`
 - Split `solumService.ts` into 4 focused service modules (auth, articles, labels, store)

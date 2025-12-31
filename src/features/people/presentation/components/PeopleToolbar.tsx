@@ -1,13 +1,16 @@
-import { Box, Typography, Button, Stack } from '@mui/material';
+import { Box, Typography, Button, Stack, CircularProgress } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useTranslation } from 'react-i18next';
 
 interface PeopleToolbarProps {
     activeListName: string | null;
     totalPeople: number;
+    isSendingToAims?: boolean;
     onAddPerson: () => void;
     onUploadCSV: () => void;
+    onSendAllToAims: () => void;
 }
 
 /**
@@ -16,8 +19,10 @@ interface PeopleToolbarProps {
 export function PeopleToolbar({
     activeListName,
     totalPeople,
+    isSendingToAims = false,
     onAddPerson,
     onUploadCSV,
+    onSendAllToAims,
 }: PeopleToolbarProps) {
     const { t } = useTranslation();
 
@@ -62,6 +67,15 @@ export function PeopleToolbar({
                     onClick={onUploadCSV}
                 >
                     {t('people.uploadCSV')}
+                </Button>
+                <Button
+                    variant="text"
+                    color="success"
+                    startIcon={isSendingToAims ? <CircularProgress size={16} /> : <CloudUploadIcon />}
+                    onClick={onSendAllToAims}
+                    disabled={isSendingToAims}
+                >
+                    {t('people.sendAllToAims')}
                 </Button>
                 <Button
                     variant="contained"

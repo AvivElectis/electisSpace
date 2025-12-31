@@ -24,8 +24,7 @@ import {
     PeopleFiltersBar,
     PeopleBulkActionsBar,
     PeopleTable,
-    PeopleAimsActionsBar,
-    PeopleListActionsBar,
+    PeopleListPanel,
 } from './components';
 
 import type { Person, PeopleFilters } from '../domain/types';
@@ -52,7 +51,6 @@ export function PeopleManagerView() {
     // Store state
     const people = usePeopleStore((state) => state.people);
     const activeListName = usePeopleStore((state) => state.activeListName);
-    const activeListId = usePeopleStore((state) => state.activeListId);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
@@ -233,13 +231,13 @@ export function PeopleManagerView() {
         const selectedPeople = sortedPeople.filter(p => selectedIds.has(p.id) && !p.assignedSpaceId);
         if (selectedPeople.length === 0) return;
 
-        if (selectedPeople.length > availableSpaces) {
+        // Calculate how many can actually be assigned
+        const countToAssign = Math.min(selectedPeople.length, availableSpaces);
+        
+        if (countToAssign === 0) {
             await confirm({
-                title: tWithSpaceType('people.exceedsAvailableSpaces'),
-                message: tWithSpaceType('people.exceedsAvailableSpacesMessage', { 
-                    selected: selectedPeople.length, 
-                    available: availableSpaces 
-                }),
+                title: tWithSpaceType('people.noAvailableSpaces'),
+                message: tWithSpaceType('people.noAvailableSpacesMessage'),
                 confirmLabel: t('common.close'),
                 severity: 'warning',
                 showCancel: false
@@ -247,9 +245,17 @@ export function PeopleManagerView() {
             return;
         }
 
+        // Show different message if we're assigning fewer than selected
+        const message = selectedPeople.length > availableSpaces
+            ? tWithSpaceType('people.bulkAssignPartial', { 
+                selected: selectedPeople.length, 
+                available: countToAssign 
+            })
+            : tWithSpaceType('people.bulkAssignConfirmAuto', { count: countToAssign });
+
         const confirmed = await confirm({
             title: tWithSpaceType('people.bulkAssign'),
-            message: tWithSpaceType('people.bulkAssignConfirmAuto', { count: selectedPeople.length }),
+            message,
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
         });
@@ -257,13 +263,15 @@ export function PeopleManagerView() {
         if (confirmed) {
             const usedSpaceIds = new Set(people.filter(p => p.assignedSpaceId).map(p => parseInt(p.assignedSpaceId!, 10)));
             const availableIds: number[] = [];
-            for (let i = 1; i <= totalSpaces && availableIds.length < selectedPeople.length; i++) {
+            for (let i = 1; i <= totalSpaces && availableIds.length < countToAssign; i++) {
                 if (!usedSpaceIds.has(i)) {
                     availableIds.push(i);
                 }
             }
             
-            const assignments = selectedPeople.map((p, index) => ({
+            // Only assign to the first N people (up to available spaces)
+            const peopleToAssign = selectedPeople.slice(0, countToAssign);
+            const assignments = peopleToAssign.map((p, index) => ({
                 personId: p.id,
                 spaceId: String(availableIds[index])
             }));
@@ -271,23 +279,6 @@ export function PeopleManagerView() {
             setSelectedIds(new Set());
         }
     }, [sortedPeople, selectedIds, availableSpaces, people, totalSpaces, confirm, t, tWithSpaceType, peopleController]);
-
-    const handleBulkPostToAims = useCallback(async () => {
-        const selectedPeople = sortedPeople.filter(p => selectedIds.has(p.id) && p.assignedSpaceId);
-        if (selectedPeople.length === 0) return;
-
-        const confirmed = await confirm({
-            title: t('people.postToAims'),
-            message: t('people.postToAimsConfirm', { count: selectedPeople.length }),
-            confirmLabel: t('common.confirm'),
-            cancelLabel: t('common.cancel'),
-        });
-
-        if (confirmed) {
-            await peopleController.postSelectedToAims(selectedPeople.map(p => p.id));
-            setSelectedIds(new Set());
-        }
-    }, [sortedPeople, selectedIds, confirm, t, peopleController]);
 
     const handleSendAllToAims = useCallback(async () => {
         const assignedPeople = people.filter(p => p.assignedSpaceId);
@@ -310,7 +301,12 @@ export function PeopleManagerView() {
         });
 
         if (confirmed) {
-            await peopleController.postAllAssignmentsToAims();
+            try {
+                setIsSyncing(true);
+                await peopleController.postAllAssignmentsToAims();
+            } finally {
+                setIsSyncing(false);
+            }
         }
     }, [people, confirm, t, peopleController]);
 
@@ -340,35 +336,16 @@ export function PeopleManagerView() {
         }
     }, [people, confirm, t, peopleController]);
 
-    const handleSyncFromAims = useCallback(async () => {
-        const confirmed = await confirm({
-            title: t('people.syncFromAims'),
-            message: t('people.syncFromAimsConfirm'),
-            confirmLabel: t('common.confirm'),
-            cancelLabel: t('common.cancel'),
-            severity: 'warning'
-        });
-
-        if (confirmed) {
-            try {
-                setIsSyncing(true);
-                await peopleController.syncFromAims();
-            } catch (error: any) {
-                logger.error('PeopleManagerView', 'Sync from AIMS failed', { error: error?.message || error });
-            } finally {
-                setIsSyncing(false);
-            }
-        }
-    }, [confirm, t, peopleController]);
-
     return (
         <Box>
             {/* Header Section */}
             <PeopleToolbar
-                activeListName={activeListName}
+                activeListName={activeListName ?? null}
                 totalPeople={people.length}
+                isSendingToAims={isSyncing}
                 onAddPerson={handleAdd}
                 onUploadCSV={() => setCSVUploadOpen(true)}
+                onSendAllToAims={handleSendAllToAims}
             />
 
             {/* Space Allocation Panel */}
@@ -381,6 +358,12 @@ export function PeopleManagerView() {
                 onTotalSpacesChange={peopleController.setTotalSpaces}
             />
 
+             {/* List Management Panel */}
+            <PeopleListPanel
+                onManageLists={() => setListsManagerOpen(true)}
+                onSaveAsNew={() => setSaveListOpen(true)}
+            />
+
             {/* Search and Filter Bar */}
             <PeopleFiltersBar
                 searchQuery={searchQuery}
@@ -389,21 +372,12 @@ export function PeopleManagerView() {
                 onAssignmentFilterChange={setAssignmentFilter}
             />
 
-            {/* AIMS Actions */}
-            <PeopleAimsActionsBar
-                isSyncing={isSyncing}
-                assignedCount={assignedCount}
-                isConnected={!!settings.solumConfig?.tokens}
-                onSyncFromAims={handleSyncFromAims}
-                onSendAllToAims={handleSendAllToAims}
-                onCancelAllAssignments={handleCancelAllAssignments}
-            />
-
             {/* Bulk Actions */}
             <PeopleBulkActionsBar
                 selectedCount={selectedIds.size}
                 onBulkAssign={handleBulkAssign}
-                onBulkPostToAims={handleBulkPostToAims}
+                onCancelAllAssignments={handleCancelAllAssignments}
+                assignedCount={assignedCount}
             />
 
             {/* People Table */}
@@ -423,13 +397,6 @@ export function PeopleManagerView() {
                 onUnassignSpace={handleUnassignSpace}
             />
 
-            {/* Bottom Actions Bar */}
-            <PeopleListActionsBar
-                activeListId={activeListId}
-                onManageLists={() => setListsManagerOpen(true)}
-                onSaveAsNew={() => setSaveListOpen(true)}
-                onSaveChanges={() => peopleController.updateCurrentList()}
-            />
 
             {/* Dialogs */}
             <PersonDialog
