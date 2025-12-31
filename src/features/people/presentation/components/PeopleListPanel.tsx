@@ -97,6 +97,7 @@ export function PeopleListPanel({
                             label={t('people.unsavedChanges')}
                             size="small"
                             color="warning"
+                            sx={{paddingInlineStart: 1}}
                         />
                     )}
                 </Stack>

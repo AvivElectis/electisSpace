@@ -135,6 +135,21 @@ export class SolumSyncAdapter implements SyncAdapter {
                 continue;
             }
 
+            // DEBUG: Log first article structure from AIMS
+            if (spaces.length === 0) {
+                console.log('[DEBUG SolumSyncAdapter] First article from AIMS (list endpoint):', {
+                    articleId: article.articleId,
+                    rootKeys: Object.keys(article),
+                    hasData: 'data' in article,
+                    hasArticleData: 'articleData' in article,
+                    dataValue: article.data,
+                    articleDataValue: article.articleData,
+                    listMembershipsAtRoot: article['_LIST_MEMBERSHIPS_'],
+                    listMembershipsInData: article.data?.['_LIST_MEMBERSHIPS_'],
+                    listMembershipsInArticleData: article.articleData?.['_LIST_MEMBERSHIPS_'],
+                });
+            }
+
             // Find assigned label
             const label = labelsArray.find(l => l.articleId === article.articleId);
 
@@ -193,9 +208,11 @@ export class SolumSyncAdapter implements SyncAdapter {
             }
 
             // Preserve People Mode metadata fields (these are hidden but necessary for cross-device sync)
+            // Check both articleData (nested) and article root level (AIMS may flatten fields)
             const metadataFields = ['_LIST_MEMBERSHIPS_', '__PERSON_UUID__', '__VIRTUAL_SPACE__', '__LAST_MODIFIED__'];
             for (const field of metadataFields) {
-                const value = articleData[field];
+                // Check nested data first, then root level
+                const value = articleData[field] ?? article[field];
                 if (value !== undefined && value !== null && value !== '') {
                     data[field] = String(value);
                 }

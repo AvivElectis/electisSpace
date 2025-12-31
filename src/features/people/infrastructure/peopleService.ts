@@ -369,6 +369,12 @@ export function buildArticleData(person: Person, mappingConfig?: SolumMappingCon
         aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
     }
 
+    // Preserve list memberships if present on person
+    // This ensures space assignments don't lose list membership data
+    if (person.listMemberships && person.listMemberships.length > 0) {
+        aimsArticle.data['_LIST_MEMBERSHIPS_'] = serializeListMemberships(person.listMemberships);
+    }
+
     logger.debug('PeopleService', 'Built AIMS article', {
         personId: person.id,
         virtualSpaceId: person.virtualSpaceId,

@@ -160,6 +160,7 @@ export function PeopleTableRow({
                     label={displayNames[0]} 
                     size="small" 
                     variant="outlined"
+                    sx={{px: .5}}
                     icon={<ListAltIcon fontSize="small" />}
                 />
             );
@@ -173,6 +174,7 @@ export function PeopleTableRow({
                     size="small" 
                     variant="outlined"
                     color="info"
+                    sx={{px: .5}}
                     icon={<ListAltIcon fontSize="small" />}
                 />
             </Tooltip>
