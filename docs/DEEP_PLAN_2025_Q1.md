@@ -8,7 +8,7 @@
 | # | Feature | Status | Started | Completed |
 |---|---------|--------|---------|-----------|
 | 1 | Conference Room NFC URL Fix | ✅ Completed | Dec 30 | Dec 30 |
-| 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 30 |
+| 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 31 |
 | 3 | File Optimization | 🔄 In Progress | Dec 30 | - |
 | 4 | People-List Feature | ⬜ Not Started | - | - |
 | 5 | Logger Enhancement | ⬜ Not Started | - | - |
@@ -16,14 +16,19 @@
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
+### Recent Updates (Dec 31, 2025)
+- **Feature 2 Enhanced**: Now captures `assignedLabels` array from AIMS article fetch response
+- Added `assignedLabels?: string[]` to Space, ConferenceRoom, and Person types
+- Dashboard counts actual assigned labels from AIMS data (supports multiple labels per article)
+
 ### File Optimization Progress (Feature 3)
 
 | Sub-Task | Status | Details |
 |----------|--------|---------|
 | 3.1 usePeopleController.ts splitting | ✅ Completed | Split into 4 focused hooks |
-| 3.2 PeopleManagerView.tsx extraction | ⬜ Not Started | - |
-| 3.3 SolumSettingsTab.tsx extraction | ⬜ Not Started | - |
-| 3.4 DashboardPage.tsx extraction | ⬜ Not Started | - |
+| 3.2 PeopleManagerView.tsx extraction | ✅ Completed | Split into 8 focused components |
+| 3.3 SolumSettingsTab.tsx extraction | ✅ Completed | Split into 5 focused components |
+| 3.4 DashboardPage.tsx extraction | ✅ Completed | Split into 5 focused components |
 | 3.5 useConferenceController.ts extraction | ⬜ Not Started | - |
 | 3.6 solumService.ts grouping | ⬜ Not Started | - |
 
@@ -33,6 +38,33 @@
 - `src/features/people/application/hooks/usePeopleAIMS.ts` - AIMS sync operations
 - `src/features/people/application/hooks/usePeopleLists.ts` - List management
 - `src/features/people/application/hooks/index.ts` - Barrel exports
+
+**Files Created (3.2):**
+- `src/features/people/presentation/components/PeopleToolbar.tsx` - Header section with title and actions
+- `src/features/people/presentation/components/PeopleStatsPanel.tsx` - Space allocation stats and progress
+- `src/features/people/presentation/components/PeopleFiltersBar.tsx` - Search and filter controls
+- `src/features/people/presentation/components/PeopleBulkActionsBar.tsx` - Bulk selection actions
+- `src/features/people/presentation/components/PeopleTable.tsx` - Main data table container
+- `src/features/people/presentation/components/PeopleTableRow.tsx` - Individual table row component
+- `src/features/people/presentation/components/PeopleAimsActionsBar.tsx` - AIMS sync action buttons
+- `src/features/people/presentation/components/PeopleListActionsBar.tsx` - List management actions
+- `src/features/people/presentation/components/index.ts` - Barrel exports
+
+**Files Created (3.3):**
+- `src/features/settings/presentation/solum/SolumApiConfigSection.tsx` - API cluster and base URL settings
+- `src/features/settings/presentation/solum/SolumCredentialsSection.tsx` - Authentication and connect/disconnect
+- `src/features/settings/presentation/solum/SolumSyncSettingsSection.tsx` - Sync configuration settings
+- `src/features/settings/presentation/solum/SolumPeopleManagerSection.tsx` - People Manager mode toggle
+- `src/features/settings/presentation/solum/SolumSchemaEditorSection.tsx` - Article schema fetch and edit
+- `src/features/settings/presentation/solum/index.ts` - Barrel exports
+
+**Files Created (3.4):**
+- `src/features/dashboard/components/DashboardStatusChip.tsx` - Reusable status chip component
+- `src/features/dashboard/components/DashboardSpacesCard.tsx` - Spaces overview card
+- `src/features/dashboard/components/DashboardConferenceCard.tsx` - Conference rooms overview card
+- `src/features/dashboard/components/DashboardPeopleCard.tsx` - People Manager overview card
+- `src/features/dashboard/components/DashboardAppInfoCard.tsx` - Application info card
+- `src/features/dashboard/components/index.ts` - Barrel exports
 
 ### Conference Controller Enhancements (Additional)
 
@@ -145,54 +177,59 @@ Assigned labels from SoluM sync are received but the dashboard is not showing th
 ### Root Cause
 The `storeSummary.labelCount` is only populated when initially connecting to SoluM. During regular sync operations, this value is not refreshed.
 
-### Implementation Plan
+### Implementation Plan ✅ COMPLETED
 
-#### Phase 2.1: Update Label Count on Sync (3h)
-**Option A: Fetch labels count during sync**
-
-**File:** `src/features/sync/infrastructure/SolumSyncAdapter.ts`
-
-Add label count tracking in the download function:
-```typescript
-// After fetching labels (around line 90)
-const labels = await solumService.getLabels(this.config, this.config.storeNumber, token);
-const assignedLabels = labels.filter(l => l.articleId); // Labels with assignments
-this.labelCount = assignedLabels.length;
+#### Phase 2.1: Capture assignedLabel from AIMS API Response ✅
+The AIMS API returns `assignedLabel` array in article fetch response:
+```json
+{
+  "articleList": [{
+    "articleId": "B100001",
+    "assignedLabel": ["04507B0AC391", "04509452C390"]
+  }]
+}
 ```
 
-**Option B: Calculate from spaces data**
+**Changes Made:**
 
-**File:** `src/features/dashboard/DashboardPage.tsx`
+1. **Added `assignedLabels` field to domain types:**
+   - `src/shared/domain/types.ts` - Added to `Space` and `ConferenceRoom` interfaces
+   - `src/features/people/domain/types.ts` - Added to `Person` interface
 
-Instead of relying on storeSummary, calculate from current spaces:
+2. **Capture assignedLabels during sync:**
+   - `src/features/sync/infrastructure/SolumSyncAdapter.ts` - Extract `article.assignedLabel` when mapping to Space
+   - `src/features/conference/application/useConferenceController.ts` - Extract `article.assignedLabel` when mapping to ConferenceRoom
+
+3. **Update Dashboard to count from assignedLabels arrays:**
+   - `src/features/dashboard/DashboardPage.tsx` - Sum all `assignedLabels.length` from spaces and conference rooms
+
+#### Phase 2.2: Dashboard Label Count Calculation ✅
 ```typescript
-// Replace line 90 with:
 const assignedLabelsCount = useMemo(() => {
-    const spaceLabels = spaceController.spaces.filter(s => s.labelCode).length;
-    const conferenceLabels = conferenceController.conferenceRooms.filter(r => r.labelCode).length;
-    return spaceLabels + conferenceLabels;
+    const spaceLabelsCount = spaceController.spaces.reduce(
+        (count, s) => count + (s.assignedLabels?.length || 0), 0
+    );
+    const conferenceLabelsCount = conferenceController.conferenceRooms.reduce(
+        (count, r) => count + (r.assignedLabels?.length || 0), 0
+    );
+    return spaceLabelsCount + conferenceLabelsCount;
 }, [spaceController.spaces, conferenceController.conferenceRooms]);
 ```
 
-**Recommended: Option B** (simpler, real-time accurate)
-
-#### Phase 2.2: Add People Labels Count in People Mode (1h)
-```typescript
-// Add to Dashboard:
-const peopleLabelsCount = isPeopleManagerMode 
-    ? peopleStore.people.filter(p => p.assignedSpaceId).length 
-    : 0;
-```
-
-#### Phase 2.3: Update Dashboard Display Logic (1h)
-Show different label sources based on mode:
-- Normal mode: spaces + conference rooms with labels
-- People Manager mode: assigned people count
-
-### Files to Modify
+### Files Modified
 | File | Changes |
 |------|---------|
-| `src/features/dashboard/DashboardPage.tsx` | Update assignedLabelsCount calculation |
+| `src/shared/domain/types.ts` | Added `assignedLabels?: string[]` to Space and ConferenceRoom |
+| `src/features/people/domain/types.ts` | Added `assignedLabels?: string[]` to Person |
+| `src/features/sync/infrastructure/SolumSyncAdapter.ts` | Capture `article.assignedLabel` array |
+| `src/features/conference/application/useConferenceController.ts` | Capture `article.assignedLabel` array |
+| `src/features/dashboard/DashboardPage.tsx` | Count from assignedLabels arrays |
+
+### Benefits
+- Accurate label count from actual AIMS data
+- Support for multiple labels per article
+- Can display label IDs in tables
+- Works for spaces, people, and conference rooms
 
 ---
 

@@ -196,6 +196,7 @@ export class SolumSyncAdapter implements SyncAdapter {
                 id: article.articleId,
                 data,
                 labelCode: label?.labelCode,
+                assignedLabels: Array.isArray(article.assignedLabel) ? article.assignedLabel : undefined,
             };
 
             spaces.push(space);
