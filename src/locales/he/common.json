@@ -39,6 +39,7 @@
         "name": "שם",
         "id": "מזהה",
         "actions": "פעולות",
+        "errorDetails": "פרטי שגיאה",
         "dialog": {
             "confirm": "אישור",
             "cancel": "ביטול",
@@ -184,7 +185,11 @@
         "currentConfig": "תצורה נוכחית",
         "enabled": "פעיל",
         "disabled": "כבוי",
-        "every": "כל"
+        "every": "כל",
+        "systemOperational": "המערכת פועלת תקין",
+        "checkConnection": "בדוק את החיבור",
+        "processingData": "מעבד נתונים...",
+        "attentionRequired": "נדרשת תשומת לב"
     },
     "settings": {
         "title": "הגדרות",
