@@ -3,7 +3,6 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 import SyncRoundedIcon from '@mui/icons-material/SyncRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
-import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import { useState } from 'react';
 import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -49,28 +48,36 @@ export function SyncStatusIndicator({
         switch (status) {
             case 'connected':
                 return {
-                    color: 'success' as const,
+                    color: theme.palette.success.main,
+                    bg: alpha(theme.palette.success.main, 0.1),
+                    borderColor: alpha(theme.palette.success.main, 0.5),
                     icon: <CheckCircleRoundedIcon fontSize="small" />,
                     label: t('sync.connected'),
                     description: t('sync.systemOperational'),
                 };
             case 'disconnected':
                 return {
-                    color: 'text' as const, // Use text.secondary for disconnected
+                    color: theme.palette.text.secondary,
+                    bg: theme.palette.action.hover,
+                    borderColor: theme.palette.divider,
                     icon: <CloudOffRoundedIcon fontSize="small" />,
                     label: t('sync.disconnected'),
                     description: t('sync.checkConnection'),
                 };
             case 'syncing':
                 return {
-                    color: 'primary' as const,
+                    color: theme.palette.primary.main,
+                    bg: alpha(theme.palette.primary.main, 0.1),
+                    borderColor: alpha(theme.palette.primary.main, 0.5),
                     icon: <CircularProgress size={16} color="inherit" />,
                     label: t('sync.syncing'),
                     description: t('sync.processingData'),
                 };
             case 'error':
                 return {
-                    color: 'error' as const,
+                    color: theme.palette.error.main,
+                    bg: alpha(theme.palette.error.main, 0.1),
+                    borderColor: alpha(theme.palette.error.main, 0.5),
                     icon: <ErrorRoundedIcon fontSize="small" />,
                     label: t('sync.error'),
                     description: t('sync.attentionRequired'),
@@ -79,8 +86,6 @@ export function SyncStatusIndicator({
     };
 
     const config = getStatusConfig();
-    const statusColor = status === 'disconnected' ? theme.palette.text.secondary : theme.palette[config.color].main;
-    const statusBg = status === 'disconnected' ? theme.palette.action.hover : alpha(theme.palette[config.color].main, 0.1);
 
     return (
         <>
@@ -91,19 +96,20 @@ export function SyncStatusIndicator({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.5,
-                    pl: 1,
-                    pr: 2.5,
+                    paddingInlineEnd: 2,
+                    paddingInlineStart: 1,
                     py: 1,
                     borderRadius: '28px',
                     cursor: 'pointer',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     border: '1px solid',
                     borderColor: 'divider',
-                    bgcolor: 'background.paper',
+                    bgcolor: 'hsla(120, 100%, 93%, 1.00)',
+                    opacity: '95%',   
                     '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: theme.shadows[4],
-                        borderColor: alpha(statusColor, 0.5),
+                        borderColor: config.borderColor,
                     }
                 }}
             >
@@ -115,8 +121,8 @@ export function SyncStatusIndicator({
                     width: 32,
                     height: 32,
                     borderRadius: '50%',
-                    bgcolor: statusBg,
-                    color: statusColor,
+                    bgcolor: config.bg,
+                    color: config.color,
                     transition: 'background-color 0.3s ease',
                 }}>
                     {config.icon}
@@ -124,10 +130,10 @@ export function SyncStatusIndicator({
                 
                 {/* Text Info */}
                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="subtitle2" fontWeight={600} lineHeight={1.2} color="text.primary">
+                    <Typography variant="subtitle2" fontWeight={700} lineHeight={1.2} color="text.primary">
                         {config.label}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.1, mt: 0.3 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.1, mt: 0.3 }}>
                         {workingMode} Mode
                     </Typography>
                 </Box>
@@ -158,7 +164,7 @@ export function SyncStatusIndicator({
                 {/* Popover Header */}
                 <Box sx={{ 
                     p: 2, 
-                    bgcolor: alpha(statusColor, 0.08),
+                    bgcolor: alpha(config.color, 0.08),
                     borderBottom: '1px solid',
                     borderColor: 'divider',
                     display: 'flex',
@@ -166,7 +172,7 @@ export function SyncStatusIndicator({
                     gap: 1.5
                 }}>
                     <Box sx={{
-                        color: statusColor,
+                        color: config.color,
                         display: 'flex'
                     }}>
                         {config.icon}
@@ -243,9 +249,8 @@ export function SyncStatusIndicator({
                                     fullWidth
                                     variant="outlined"
                                     color="primary"
-                                    startIcon={<RefreshRoundedIcon />}
+                                    startIcon={<SyncRoundedIcon />}
                                     onClick={onSyncClick}
-                                    disabled={status === 'syncing'}
                                     sx={{ borderRadius: 2, textTransform: 'none' }}
                                 >
                                     {t('sync.manualSync')}
