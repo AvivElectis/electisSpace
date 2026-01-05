@@ -11,7 +11,7 @@ interface DashboardPeopleCardProps {
     unassignedPeople: number;
     assignedLabelsCount: number;
     savedLists: number;
-    activeListName: string | null;
+    activeListName?: string | null;
 }
 
 /**

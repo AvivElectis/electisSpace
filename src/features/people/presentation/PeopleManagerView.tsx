@@ -1,6 +1,6 @@
 import { logger } from '@shared/infrastructure/services/logger';
 import { Box } from '@mui/material';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { usePeopleController } from '../application/usePeopleController';
@@ -10,12 +10,12 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 
-// Dialogs
-import { PersonDialog } from './PersonDialog';
-import { CSVUploadDialog } from './CSVUploadDialog.tsx';
-import { PeopleSaveListDialog } from './PeopleSaveListDialog';
-import { PeopleListsManagerDialog } from './PeopleListsManagerDialog.tsx';
-import { SpaceSelectionDialog } from './SpaceSelectionDialog';
+// Lazy load dialogs - not needed on initial render
+const PersonDialog = lazy(() => import('./PersonDialog').then(m => ({ default: m.PersonDialog })));
+const CSVUploadDialog = lazy(() => import('./CSVUploadDialog').then(m => ({ default: m.CSVUploadDialog })));
+const PeopleSaveListDialog = lazy(() => import('./PeopleSaveListDialog').then(m => ({ default: m.PeopleSaveListDialog })));
+const PeopleListsManagerDialog = lazy(() => import('./PeopleListsManagerDialog').then(m => ({ default: m.PeopleListsManagerDialog })));
+const SpaceSelectionDialog = lazy(() => import('./SpaceSelectionDialog').then(m => ({ default: m.SpaceSelectionDialog })));
 
 // Extracted components
 import {
@@ -400,38 +400,50 @@ export function PeopleManagerView() {
             />
 
 
-            {/* Dialogs */}
-            <PersonDialog
-                open={personDialogOpen}
-                onClose={() => setPersonDialogOpen(false)}
-                person={editingPerson}
-            />
+            {/* Dialogs - Lazy loaded */}
+            <Suspense fallback={null}>
+                {personDialogOpen && (
+                    <PersonDialog
+                        open={personDialogOpen}
+                        onClose={() => setPersonDialogOpen(false)}
+                        person={editingPerson}
+                    />
+                )}
 
-            <CSVUploadDialog
-                open={csvUploadOpen}
-                onClose={() => setCSVUploadOpen(false)}
-            />
+                {csvUploadOpen && (
+                    <CSVUploadDialog
+                        open={csvUploadOpen}
+                        onClose={() => setCSVUploadOpen(false)}
+                    />
+                )}
 
-            <PeopleSaveListDialog
-                open={saveListOpen}
-                onClose={() => setSaveListOpen(false)}
-            />
+                {saveListOpen && (
+                    <PeopleSaveListDialog
+                        open={saveListOpen}
+                        onClose={() => setSaveListOpen(false)}
+                    />
+                )}
 
-            <PeopleListsManagerDialog
-                open={listsManagerOpen}
-                onClose={() => setListsManagerOpen(false)}
-            />
+                {listsManagerOpen && (
+                    <PeopleListsManagerDialog
+                        open={listsManagerOpen}
+                        onClose={() => setListsManagerOpen(false)}
+                    />
+                )}
 
-            <SpaceSelectionDialog
-                open={spaceSelectDialogOpen}
-                onClose={() => {
-                    setSpaceSelectDialogOpen(false);
-                    setSpaceSelectPerson(null);
-                }}
-                onSelect={handleSpaceSelected}
-                personId={spaceSelectPerson?.id || ''}
-                personName={spaceSelectPerson ? Object.values(spaceSelectPerson.data)[0] : undefined}
-            />
+                {spaceSelectDialogOpen && (
+                    <SpaceSelectionDialog
+                        open={spaceSelectDialogOpen}
+                        onClose={() => {
+                            setSpaceSelectDialogOpen(false);
+                            setSpaceSelectPerson(null);
+                        }}
+                        onSelect={handleSpaceSelected}
+                        personId={spaceSelectPerson?.id || ''}
+                        personName={spaceSelectPerson ? Object.values(spaceSelectPerson.data)[0] : undefined}
+                    />
+                )}
+            </Suspense>
 
             <ConfirmDialog />
         </Box>

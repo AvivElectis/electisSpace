@@ -553,11 +553,7 @@
         "confirmDelete": "Are you sure you want to delete this list?",
         "loaded": "Loaded",
         "loadList": "Load List",
-        "loadListConfirm": "Loading this list will sync changes to AIMS. Old spaces will be cleared and new assignments will be sent. Continue?",
-        "loadListConfirmAutoApply": "Loading this list will automatically apply all assignments and sync to AIMS. Old spaces will be cleared. Continue?",
-        "loadListConfirmNoApply": "Load this list? Assignments will NOT be applied until you press 'Apply Assignments'.",
-        "autoApplyAssignments": "Auto-apply assignments",
-        "autoApplyTooltip": "When enabled, assignments from the list will be applied immediately upon loading. When disabled, you can review before applying.",
+        "loadListConfirm": "Load this list? Saved assignments will be applied.",
         "savedLocallyAimsFailed": "List saved locally but failed to sync to AIMS: {{error}}. Please try 'Send All to AIMS' later."
     },
     "people": {

@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
 
 // Lazy load all page components for code splitting
@@ -23,20 +23,26 @@ const NotFoundPage = lazy(() =>
 );
 
 /**
+ * Wrapper that provides isolated Suspense boundary per route
+ * This ensures the loader shows immediately when navigating
+ */
+function SuspenseRoute({ children }: { children: ReactNode }) {
+    return <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>;
+}
+
+/**
  * Application routing configuration with lazy loading
- * Settings dialog is opened via icon in Dashboard/header, not a separate route
+ * Each route has its own Suspense boundary for immediate loader display
  */
 export function AppRoutes() {
     return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/spaces" element={<SpacesPage />} />
-                <Route path="/conference" element={<ConferencePage />} />
-                <Route path="/sync" element={<SyncPage />} />
-                <Route path="/people" element={<PeopleManagerView />} />
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-        </Suspense>
+        <Routes>
+            <Route path="/" element={<SuspenseRoute><DashboardPage /></SuspenseRoute>} />
+            <Route path="/spaces" element={<SuspenseRoute><SpacesPage /></SuspenseRoute>} />
+            <Route path="/conference" element={<SuspenseRoute><ConferencePage /></SuspenseRoute>} />
+            <Route path="/sync" element={<SuspenseRoute><SyncPage /></SuspenseRoute>} />
+            <Route path="/people" element={<SuspenseRoute><PeopleManagerView /></SuspenseRoute>} />
+            <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
+        </Routes>
     );
 }

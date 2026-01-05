@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useConferenceStore } from '../infrastructure/conferenceStore';
 import { validateConferenceRoom, isConferenceRoomIdUnique } from '../domain/validation';
 import { generateConferenceRoomId, createEmptyConferenceRoom, toggleMeetingStatus } from '../domain/businessRules';
@@ -45,6 +45,9 @@ export function useConferenceController({
         solumToken,
         solumMappingConfig,
     });
+
+    // Loading state for fetch operations
+    const [isFetching, setIsFetching] = useState(false);
 
     /**
      * Add new conference room
@@ -303,6 +306,7 @@ export function useConferenceController({
     const fetchFromSolum = useCallback(
         async (): Promise<void> => {
             logger.info('ConferenceController', 'Fetching conference rooms from SoluM');
+            setIsFetching(true);
 
             try {
                 const mappedRooms = await fetchFromAIMS();
@@ -310,6 +314,8 @@ export function useConferenceController({
             } catch (error) {
                 logger.error('ConferenceController', 'Failed to fetch from SoluM', { error });
                 throw error;
+            } finally {
+                setIsFetching(false);
             }
         },
         [fetchFromAIMS, importFromSync]
@@ -327,5 +333,6 @@ export function useConferenceController({
         fetchFromSolum,
         getAllConferenceRooms,
         conferenceRooms,
+        isFetching,
     };
 }

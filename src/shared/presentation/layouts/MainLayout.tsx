@@ -1,5 +1,5 @@
 import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import { type ReactNode, useState, useEffect, useCallback } from 'react';
+import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -8,7 +8,6 @@ import PeopleIcon from '@mui/icons-material/People';
 import SyncIcon from '@mui/icons-material/Sync';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
-import { SettingsDialog } from '../../../features/settings/presentation/SettingsDialog';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
@@ -18,6 +17,12 @@ import { useSyncController } from '@features/sync/application/useSyncController'
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { logger } from '@shared/infrastructure/services/logger';
+import { prefetchRoute, prefetchAllRoutes } from '../utils/routePrefetch';
+
+// Lazy load SettingsDialog - not needed on initial render
+const SettingsDialog = lazy(() => 
+    import('../../../features/settings/presentation/SettingsDialog').then(m => ({ default: m.SettingsDialog }))
+);
 
 interface MainLayoutProps {
     children: ReactNode;
@@ -55,6 +60,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
     const setPeople = usePeopleStore(state => state.setPeople);
+    const extractListsFromPeople = usePeopleStore(state => state.extractListsFromPeople);
 
     // Determine if People Manager mode is enabled
     const isPeopleManagerMode = settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API';
@@ -73,6 +79,8 @@ export function MainLayout({ children }: MainLayoutProps) {
             try {
                 const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
                 setPeople(people);
+                // Extract list names from people's listMemberships to populate peopleLists
+                extractListsFromPeople();
                 logger.info('MainLayout', 'Synced spaces to people store', { 
                     spacesCount: spaces.length, 
                     peopleCount: people.length 
@@ -81,7 +89,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 logger.error('MainLayout', 'Failed to convert spaces to people', { error: error.message });
             }
         }
-    }, [setSpaces, setPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
+    }, [setSpaces, setPeople, extractListsFromPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
 
     // Build navigation tabs dynamically
     const navTabs: NavTab[] = [
@@ -119,14 +127,29 @@ export function MainLayout({ children }: MainLayoutProps) {
         }
     }, [workingMode, setWorkingMode]);
 
+    // Prefetch all routes when app is idle for instant navigation
+    useEffect(() => {
+        const idleTimeout = setTimeout(() => {
+            prefetchAllRoutes();
+        }, 2000); // Wait 2 seconds after mount, then prefetch all
+        return () => clearTimeout(idleTimeout);
+    }, []);
+
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
+    // Use transition for non-blocking navigation - UI updates instantly
+    const [isPending, startTransition] = useTransition();
+
     const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
-        navigate(newValue);
+        startTransition(() => {
+            navigate(newValue);
+        });
     };
 
     const handleMobileNavClick = (value: string) => {
-        navigate(value);
+        startTransition(() => {
+            navigate(value);
+        });
         setMobileMenuOpen(false);
     };
 
@@ -163,6 +186,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                         <ListItemButton
                                             selected={currentTab === tab.value}
                                             onClick={() => handleMobileNavClick(tab.value)}
+                                            onMouseEnter={() => prefetchRoute(tab.value)}
                                         >
                                             <ListItemIcon>
                                                 {tab.icon}
@@ -220,6 +244,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                     icon={tab.icon}
                                     iconPosition="start"
                                     sx={{ p: 1, paddingInlineEnd: 2 }}
+                                    onMouseEnter={() => prefetchRoute(tab.value)}
                                 />
                             ))}
                         </Tabs>
@@ -229,7 +254,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                 {/* Main Content */}
                 <Box
                     component="main"
-                    sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                    sx={{ 
+                        flex: 1, 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        opacity: isPending ? 0.7 : 1,
+                        transition: 'opacity 0.15s ease-in-out',
+                    }}
                 >
                     <Container maxWidth={false} sx={{ flex: 1, py: 3 }}>
                         {children}
@@ -251,11 +282,15 @@ export function MainLayout({ children }: MainLayoutProps) {
                     />
                 </Box>
 
-                {/* Settings Dialog */}
-                <SettingsDialog
-                    open={settingsOpen}
-                    onClose={() => setSettingsOpen(false)}
-                />
+                {/* Settings Dialog - Lazy loaded */}
+                {settingsOpen && (
+                    <Suspense fallback={null}>
+                        <SettingsDialog
+                            open={settingsOpen}
+                            onClose={() => setSettingsOpen(false)}
+                        />
+                    </Suspense>
+                )}
             </Box>
         </SyncProvider>
     );

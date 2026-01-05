@@ -10,10 +10,10 @@ import {
     TableSortLabel,
     Typography,
 } from '@mui/material';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
-import { PeopleTableRow } from './PeopleTableRow';
+import { PeopleTableRow, type PeopleTableTranslations } from './PeopleTableRow';
 import type { Person } from '../../domain/types';
 
 interface VisibleField {
@@ -78,6 +78,20 @@ export function PeopleTable({
         [t, getLabel]
     );
 
+    // Create translations object once - passed to all rows
+    const rowTranslations = useMemo<PeopleTableTranslations>(() => ({
+        syncedToAims: t('people.syncedToAims'),
+        syncPending: t('people.syncPending'),
+        syncError: t('people.syncError'),
+        notSynced: t('people.notSynced'),
+        unassigned: t('people.unassigned'),
+        inListsFormat: (count: number) => t('people.inLists', { count }),
+        assignSpace: tWithSpaceType('people.assignSpace'),
+        unassignSpace: tWithSpaceType('people.unassignSpace'),
+        edit: t('common.edit'),
+        delete: t('common.delete'),
+    }), [t, tWithSpaceType]);
+
     const allSelected = people.length > 0 && selectedIds.size === people.length;
     const someSelected = selectedIds.size > 0 && selectedIds.size < people.length;
 
@@ -86,6 +100,7 @@ export function PeopleTable({
             <Table stickyHeader size="small" aria-label="people table">
                 <TableHead>
                     <TableRow>
+                        <TableCell sx={{ fontWeight: 600, textAlign: 'center', width: 50 }}>#</TableCell>
                         <TableCell padding="checkbox">
                             <Checkbox
                                 indeterminate={someSelected}
@@ -121,7 +136,7 @@ export function PeopleTable({
                 <TableBody>
                     {people.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={visibleFields.length + 5} align="center" sx={{ py: 4 }}>
+                            <TableCell colSpan={visibleFields.length + 6} align="center" sx={{ py: 4 }}>
                                 <Typography variant="body2" color="text.secondary">
                                     {searchQuery || assignmentFilter !== 'all'
                                         ? t('people.noResults')
@@ -130,12 +145,14 @@ export function PeopleTable({
                             </TableCell>
                         </TableRow>
                     ) : (
-                        people.map((person) => (
+                        people.map((person, index) => (
                             <PeopleTableRow
                                 key={person.id}
+                                index={index + 1}
                                 person={person}
                                 visibleFields={visibleFields}
                                 isSelected={selectedIds.has(person.id)}
+                                translations={rowTranslations}
                                 onSelect={onSelectOne}
                                 onEdit={onEdit}
                                 onDelete={onDelete}

@@ -1,6 +1,22 @@
 import { create } from 'zustand';
-import { persist, devtools } from 'zustand/middleware';
+import { persist, devtools, createJSONStorage } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
+import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import type { Person, PeopleList, SpaceAllocation } from '../domain/types';
+
+// IndexedDB storage adapter for Zustand persist
+const indexedDBStorage: StateStorage = {
+    getItem: async (name: string): Promise<string | null> => {
+        const value = await idbGet(name);
+        return value ?? null;
+    },
+    setItem: async (name: string, value: string): Promise<void> => {
+        await idbSet(name, value);
+    },
+    removeItem: async (name: string): Promise<void> => {
+        await idbDel(name);
+    },
+};
 
 export interface PeopleStore {
     // State
@@ -160,7 +176,6 @@ export const usePeopleStore = create<PeopleStore>()(
                     const list = state.peopleLists.find((l) => l.id === id);
                     if (list) {
                         set({
-                            people: list.people,
                             activeListName: list.name,
                             activeListId: list.id
                         }, false, 'loadPeopleList');
@@ -177,11 +192,6 @@ export const usePeopleStore = create<PeopleStore>()(
 
                 extractListsFromPeople: () => {
                     const state = get();
-                    console.log('[DEBUG extractListsFromPeople] Called with:', {
-                        peopleCount: state.people.length,
-                        existingListsCount: state.peopleLists.length,
-                        peopleWithListMemberships: state.people.filter(p => p.listMemberships && p.listMemberships.length > 0).length,
-                    });
                     
                     const existingListNames = new Set(state.peopleLists.map(l => l.storageName));
                     
@@ -200,24 +210,18 @@ export const usePeopleStore = create<PeopleStore>()(
                     // Create PeopleList objects for newly discovered lists
                     const newLists: PeopleList[] = [];
                     for (const storageName of listNamesFromPeople) {
-                        // Find all people who are members of this list
-                        const listPeople = state.people.filter(p => 
-                            p.listMemberships?.some(m => m.listName === storageName)
-                        );
-                        
                         const displayName = storageName.replace(/_/g, ' ');
                         newLists.push({
                             id: `list_${storageName}_${Date.now()}`,
                             name: displayName,
                             storageName: storageName,
                             createdAt: new Date().toISOString(),
-                            people: listPeople,
+                            // Don't store people array - it can be derived from main people array
                             isFromAIMS: true,
                         });
                     }
                     
                     if (newLists.length > 0) {
-                        console.log('[DEBUG extractListsFromPeople] Found lists from AIMS:', newLists.map(l => l.name));
                         set((state) => ({
                             peopleLists: [...state.peopleLists, ...newLists],
                         }), false, 'extractListsFromPeople');
@@ -253,6 +257,7 @@ export const usePeopleStore = create<PeopleStore>()(
             }),
             {
                 name: 'people-store',
+                storage: createJSONStorage(() => indexedDBStorage),
                 partialize: (state) => ({
                     people: state.people,
                     peopleLists: state.peopleLists,
@@ -260,6 +265,7 @@ export const usePeopleStore = create<PeopleStore>()(
                     activeListId: state.activeListId,
                     spaceAllocation: state.spaceAllocation,
                 }),
+
             }
         ),
         { name: 'PeopleStore' }

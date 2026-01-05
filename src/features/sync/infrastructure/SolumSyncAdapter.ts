@@ -135,20 +135,7 @@ export class SolumSyncAdapter implements SyncAdapter {
                 continue;
             }
 
-            // DEBUG: Log first article structure from AIMS
-            if (spaces.length === 0) {
-                console.log('[DEBUG SolumSyncAdapter] First article from AIMS (list endpoint):', {
-                    articleId: article.articleId,
-                    rootKeys: Object.keys(article),
-                    hasData: 'data' in article,
-                    hasArticleData: 'articleData' in article,
-                    dataValue: article.data,
-                    articleDataValue: article.articleData,
-                    listMembershipsAtRoot: article['_LIST_MEMBERSHIPS_'],
-                    listMembershipsInData: article.data?.['_LIST_MEMBERSHIPS_'],
-                    listMembershipsInArticleData: article.articleData?.['_LIST_MEMBERSHIPS_'],
-                });
-            }
+
 
             // Find assigned label
             const label = labelsArray.find(l => l.articleId === article.articleId);

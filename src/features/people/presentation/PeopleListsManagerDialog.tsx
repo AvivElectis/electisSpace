@@ -15,13 +15,9 @@ import {
     Box,
     Chip,
     CircularProgress,
-    FormControlLabel,
-    Checkbox,
-    Tooltip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ListAltIcon from '@mui/icons-material/ListAlt';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { usePeopleController } from '../application/usePeopleController';
@@ -40,30 +36,26 @@ interface PeopleListsManagerDialogProps {
 export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDialogProps) {
     const { t } = useTranslation();
     const peopleLists = usePeopleStore((state) => state.peopleLists);
+    const people = usePeopleStore((state) => state.people);
     const activeListId = usePeopleStore((state) => state.activeListId);
-    const activeListName = usePeopleStore((state) => state.activeListName);
     const extractListsFromPeople = usePeopleStore((state) => state.extractListsFromPeople);
     const peopleController = usePeopleController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [isLoading, setIsLoading] = useState(false);
-    const [autoApply, setAutoApply] = useState(false);
+
+    // Helper to get people count for a list (from main people array's listMemberships)
+    const getPeopleCountForList = (storageName: string): number => {
+        return people.filter(p => 
+            p.listMemberships?.some(m => m.listName === storageName)
+        ).length;
+    };
 
     // Extract lists from people's listMemberships when dialog opens (handles legacy data)
     useEffect(() => {
         if (open && peopleLists.length === 0) {
-            console.log('[DEBUG PeopleListsManagerDialog] peopleLists is empty, extracting from people...');
             extractListsFromPeople();
         }
     }, [open, peopleLists.length, extractListsFromPeople]);
-
-    // DEBUG: Log lists state when dialog opens
-    console.log('[DEBUG PeopleListsManagerDialog]', {
-        open,
-        peopleListsCount: peopleLists.length,
-        peopleLists: peopleLists.map(l => ({ id: l.id, name: l.name, storageName: l.storageName })),
-        activeListId,
-        activeListName,
-    });
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
@@ -71,14 +63,9 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             return;
         }
         
-        // Show different confirmation based on autoApply setting
-        const confirmMessage = autoApply 
-            ? t('lists.loadListConfirmAutoApply')
-            : t('lists.loadListConfirmNoApply');
-        
         const isConfirmed = await confirm({
             title: t('lists.loadList'),
-            message: confirmMessage,
+            message: t('lists.loadListConfirm'),
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
         });
@@ -89,7 +76,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
 
         try {
             setIsLoading(true);
-            await peopleController.loadList(id, autoApply);
+            await peopleController.loadList(id);
             onClose();
         } catch (error: any) {
             logger.error('PeopleListsManagerDialog', 'Failed to load list', { error: error?.message || error });
@@ -109,7 +96,14 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
         });
 
         if (isConfirmed) {
-            peopleController.deleteList(id);
+            try {
+                setIsLoading(true);
+                await peopleController.deleteList(id);
+            } catch (error: any) {
+                logger.error('PeopleListsManagerDialog', 'Failed to delete list', { error: error?.message || error });
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -176,7 +170,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                                                         />
                                                     )}
                                                     <Chip
-                                                        label={`${list.people.length} ${t('people.peopleCount')}`}
+                                                        label={`${getPeopleCountForList(list.storageName)} ${t('people.peopleCount')}`}
                                                         size="medium"
                                                         color={isActive ? "primary" : "default"}
                                                         variant="outlined"
@@ -207,27 +201,6 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                 )}
             </DialogContent>
             <DialogActions>
-                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, pl: 1 }}>
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={autoApply}
-                                onChange={(e) => setAutoApply(e.target.checked)}
-                                size="small"
-                            />
-                        }
-                        label={
-                            <Box display="flex" alignItems="center" gap={0.5}>
-                                <Typography variant="body2">
-                                    {t('lists.autoApplyAssignments')}
-                                </Typography>
-                                <Tooltip title={t('lists.autoApplyTooltip')}>
-                                    <InfoOutlinedIcon fontSize="small" color="action" />
-                                </Tooltip>
-                            </Box>
-                        }
-                    />
-                </Box>
                 <Button onClick={onClose}>{t('common.close')}</Button>
             </DialogActions>
             <ConfirmDialog />

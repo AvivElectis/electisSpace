@@ -15,7 +15,8 @@ import {
     SolumSchemaEditorSection,
 } from './solum';
 
-import type { SettingsData, SolumConfig, CSVConfig, PeopleManagerConfig } from '../domain/types';
+import type { SettingsData } from '../domain/types';
+import type { SolumConfig, CSVConfig } from '@shared/domain/types';
 
 interface SolumSettingsTabProps {
     settings: SettingsData;
@@ -54,8 +55,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
         onUpdate({ peopleManagerEnabled: enabled });
     };
 
-    const handlePeopleManagerConfigChange = (config: Partial<PeopleManagerConfig>) => {
-        onUpdate({ peopleManagerConfig: config });
+    const handlePeopleManagerConfigChange = (config: Partial<{ totalSpaces: number }>) => {
+        // Ensure totalSpaces has a valid value
+        onUpdate({ 
+            peopleManagerConfig: { 
+                totalSpaces: config.totalSpaces ?? settings.peopleManagerConfig?.totalSpaces ?? 0 
+            } 
+        });
     };
 
     return (

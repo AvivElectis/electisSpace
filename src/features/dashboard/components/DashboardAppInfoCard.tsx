@@ -11,12 +11,12 @@ import { useTranslation } from 'react-i18next';
 import { DashboardStatusChip } from './DashboardStatusChip';
 
 interface DashboardAppInfoCardProps {
-    workingMode: 'SFTP' | 'solum';
+    workingMode: string;
     spaceType: string;
     spaceTypeLabel: string;
     autoSyncEnabled: boolean;
     syncInterval: number;
-    lastSync: string | null;
+    lastSync?: string | Date | null;
 }
 
 /**

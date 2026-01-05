@@ -1,7 +1,8 @@
-import { Box, Typography, Button, Stack, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Stack, CircularProgress, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useTranslation } from 'react-i18next';
 
 interface PeopleToolbarProps {
@@ -40,20 +41,19 @@ export function PeopleToolbar({
                         {t('people.title')}
                     </Typography>
                     {activeListName && (
-                        <Typography
-                            variant="h6"
+                        <Chip
+                            icon={<ListAltIcon />}
+                            label={activeListName}
+                            color="info"
+                            variant="filled"
                             sx={{
-                                fontWeight: 600,
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                borderRadius: 0.5,
-                                px: 1,
-                                py: 0,
                                 mx: 2,
+                                paddingInlineStart: 1,
+                                fontWeight: 600,
+                                fontSize: '0.95rem',
+                                height: 32,
                             }}
-                        >
-                            {activeListName}
-                        </Typography>
+                        />
                     )}
                 </Stack>
                 <Typography variant="body2" color="text.secondary">

@@ -1,11 +1,15 @@
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, CircularProgress } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@shared/infrastructure/store/rootStore';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
-import { ArticleFormatEditor } from '@features/configuration/presentation/ArticleFormatEditor';
 import type { ArticleFormat } from '@features/configuration/domain/types';
+
+// Lazy load the heavy JSON editor component (~1MB vanilla-jsoneditor)
+const ArticleFormatEditor = lazy(() => 
+    import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
+);
 
 interface SolumSchemaEditorSectionProps {
     articleFormat: ArticleFormat | null;
@@ -60,7 +64,9 @@ export function SolumSchemaEditorSection({
                 {t('settings.fetchesConfig')}
             </Typography>
 
-            <ArticleFormatEditor schema={articleFormat} onSave={saveArticleFormat} readOnly={false} />
+            <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+                <ArticleFormatEditor schema={articleFormat} onSave={saveArticleFormat} readOnly={false} />
+            </Suspense>
         </Box>
     );
 }
