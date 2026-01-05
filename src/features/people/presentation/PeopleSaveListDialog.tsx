@@ -8,7 +8,6 @@ import {
     TextField,
     Box,
     Alert,
-    Typography,
     CircularProgress
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
@@ -45,9 +44,7 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
         setIsSaving(true);
         try {
             // Step 1: Save list locally (updates _LIST_MEMBERSHIPS_ on all people)
-            console.log('[SaveListDialog] Step 1: Saving list locally with name:', name.trim());
             const result = savePeopleList(name.trim());
-            console.log('[SaveListDialog] Local save result:', result);
             if (!result.success) {
                 setError(result.error || t('common.unknownError'));
                 setIsSaving(false);
@@ -56,9 +53,7 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
 
             // Step 2: Sync to AIMS for cross-device persistence
             // Pass the updated people directly to avoid stale closure issue
-            console.log('[SaveListDialog] Step 2: Syncing to AIMS with', result.updatedPeople?.length, 'people...');
             const aimsResult = await saveListToAims(result.updatedPeople);
-            console.log('[SaveListDialog] AIMS sync result:', aimsResult);
             if (!aimsResult.success) {
                 // List saved locally but AIMS sync failed - show warning
                 setError(t('lists.savedLocallyAimsFailed', { error: aimsResult.error }) || 
@@ -67,7 +62,6 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
                 return;
             }
 
-            console.log('[SaveListDialog] Success! List saved and synced.');
             setName('');
             setError(null);
             setIsSaving(false);

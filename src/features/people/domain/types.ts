@@ -120,7 +120,7 @@ export interface PeopleList {
     storageName: string;    // AIMS storage name (with underscores)
     createdAt: string;
     updatedAt?: string;
-    people: Person[];
+    people?: Person[];      // Optional - can be derived from main people array's listMemberships
     isFromAIMS?: boolean;   // True if fetched from AIMS
 }
 

@@ -234,31 +234,13 @@ export function convertSpacesToPeopleWithVirtualPool(
     const articleIdField = mappingInfo?.articleId || 'ARTICLE_ID';
     const people: Person[] = [];
 
-    // DEBUG: Log first space to trace list memberships parsing
-    if (spaces.length > 0) {
-        const firstSpace = spaces[0];
-        console.log('[DEBUG convertSpacesToPeopleWithVirtualPool] First space:', {
-            id: firstSpace.id,
-            dataKeys: Object.keys(firstSpace.data),
-            rawListMemberships: firstSpace.data['_LIST_MEMBERSHIPS_'],
-        });
-    }
-
-    spaces.forEach((space, index) => {
+    spaces.forEach((space) => {
         // Extract cross-device metadata (if present)
         const personId = space.data['__PERSON_UUID__'] || uuidv4();
         const virtualSpaceId = space.data['__VIRTUAL_SPACE__'] || space.id;
         
         // Extract list memberships from AIMS (JSON format)
         const listMemberships = parseListMemberships(space.data['_LIST_MEMBERSHIPS_']);
-
-        // DEBUG: Log if any space has list memberships
-        if (listMemberships.length > 0 && index < 5) {
-            console.log('[DEBUG convertSpacesToPeopleWithVirtualPool] Found listMemberships:', {
-                spaceId: space.id,
-                listMemberships,
-            });
-        }
 
         // Clean data - remove metadata fields
         const cleanData: Record<string, string> = {};

@@ -1,7 +1,7 @@
 # electisSpace Deep Implementation Plan - Q1 2025
 
 > Generated: December 30, 2025
-> Last Updated: January 1, 2026
+> Last Updated: January 5, 2026
 
 ## Implementation Status
 
@@ -10,14 +10,128 @@
 | 1 | Conference Room NFC URL Fix | ✅ Completed | Dec 30 | Dec 30 |
 | 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 31 |
 | 3 | File Optimization | ✅ Completed | Dec 30 | Dec 31 |
-| 4 | People-List Feature | 🔄 In Progress | Dec 31 | - |
-| 5 | Section Loading Indicators | ⬜ Not Started | - | - |
+| 4 | People-List Feature | ✅ Completed | Dec 31 | Jan 5 |
+| 5 | Section Loading Indicators | 🔄 In Progress | Jan 5 | - |
 | 6 | Logger Enhancement | ⬜ Not Started | - | - |
 | 7 | App Manual Feature | ⬜ Not Started | - | - |
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
-### Recent Updates (Dec 31, 2025)
+### Recent Updates (January 5, 2026) - Session 3
+
+#### Feature 5 In Progress - Section Loading Indicators
+
+##### Dashboard Loading
+- **Created DashboardSkeleton component**: New skeleton UI displayed while dashboard performs initial sync
+- **Added initial loading check**: Dashboard shows skeleton when `syncState.status === 'syncing'` and no `lastSync` exists
+
+##### Conference Page Loading
+- **Added isFetching state to useConferenceController**: Tracks when fetching from AIMS
+- **Added Skeleton cards**: Conference page shows 6 animated skeleton cards while `isFetching` is true
+- **Wrapped fetchFromSolum with try/finally**: Ensures `setIsFetching(false)` is always called
+
+##### Spaces Page Loading  
+- **Added isFetching state to useSpaceController**: Tracks when fetching from AIMS
+- **Added Skeleton rows**: SpacesManagementView shows 5 animated skeleton table rows while `isFetching` is true
+- **Wrapped fetchFromSolum with try/finally**: Ensures loading state is properly managed
+
+##### Files Modified
+| File | Changes |
+|------|---------|
+| `DashboardSkeleton.tsx` | NEW - Skeleton UI for dashboard loading |
+| `DashboardPage.tsx` | Added initial loading check with DashboardSkeleton |
+| `useConferenceController.ts` | Added `useState`, `isFetching` state, wrapped fetchFromSolum |
+| `ConferencePage.tsx` | Added Skeleton import, skeleton cards while fetching |
+| `useSpaceController.ts` | Added `useState`, `isFetching` state, wrapped fetchFromSolum |
+| `SpacesManagementView.tsx` | Added Skeleton import, skeleton rows while fetching |
+
+##### Remaining Tasks
+- [ ] People table (if applicable - currently loads from local store)
+- [ ] Settings page (if applicable - loads locally)
+- [ ] Update DEEP_PLAN to mark completed when done
+
+### Recent Updates (January 5, 2026) - Session 2
+
+#### Feature 4 Completed - Final Fixes
+
+##### List Loading & Active List Display
+- **Fixed loadList not setting activeListName**: Rewrote `loadList()` in `usePeopleController.ts` to properly set `activeListName` and `activeListId`
+- **Removed dependency on list.people**: Controller no longer expects `people` array in list - reads from `_LIST_MEMBERSHIPS_` instead
+- **Added Chip display for active list**: Toolbar now shows active list name as a colored Chip with ListAltIcon
+- **Restored assignments from memberships**: When loading a list, each person's `assignedSpaceId` is restored from their `_LIST_MEMBERSHIPS_`
+
+##### List Deletion with AIMS Sync
+- **Added AIMS sync on delete**: `deleteList()` now syncs affected people to AIMS after removing their `_LIST_MEMBERSHIPS_`
+- **Made deleteList async**: Now returns `Promise<void>` to support AIMS sync
+- **Added loading state**: Dialog shows loading indicator during delete+sync operation
+- **Error handling**: If AIMS sync fails, local deletion still succeeds (graceful degradation)
+
+##### UI/UX Improvements
+- **Removed confusing autoApply checkbox**: Eliminated `autoApply` state/checkbox from load dialog - assignments now always apply on load
+- **Simplified confirmation message**: Changed to single clear message: "לטעון רשימה זו? הקצאות השמורות ברשימה יוחלו."
+- **Added row index column**: People table now shows `#` column with row numbers (1, 2, 3...) for easy counting
+
+##### Storage Optimization
+- **Switched to IndexedDB**: Migrated from localStorage to IndexedDB via `idb-keyval` for larger storage capacity
+- **Removed people array from lists**: Lists no longer store full `people` array - uses `_LIST_MEMBERSHIPS_` on each person instead
+- **Made `people` optional in PeopleList type**: Type now reflects that people array is not stored
+
+##### Files Modified in Session 2
+| File | Changes |
+|------|---------|
+| `usePeopleController.ts` | Rewrote `loadList()` and `deleteList()` with AIMS sync, proper activeListName handling |
+| `peopleStore.ts` | IndexedDB storage adapter, fixed `loadPeopleList()` to not overwrite people array |
+| `PeopleToolbar.tsx` | Added Chip with ListAltIcon for active list display |
+| `PeopleListsManagerDialog.tsx` | Removed autoApply checkbox, simplified confirmation, async delete with loading |
+| `PeopleTable.tsx` | Added `#` column header, pass index to rows |
+| `PeopleTableRow.tsx` | Added `index` prop, display row number |
+| `common.json` (en/he) | Simplified loadListConfirm, removed autoApply translations |
+
+### Previous Updates (January 5, 2026) - Session 1
+- **Feature 4 Bug Fixes - People-List Feature**:
+  
+  #### Multi-List Architecture Implementation
+  - Migrated from single `listName`/`listSpaceId` fields to multi-list `listMemberships` array
+  - Each person can now belong to multiple lists with different assignments per list
+  - `_LIST_MEMBERSHIPS_` field stores JSON array: `[{listName, spaceId}, ...]`
+  
+  #### AIMS Save/Load Fixes
+  - **Fixed list save to AIMS**: Lists now properly save `_LIST_MEMBERSHIPS_` to AIMS
+  - **Fixed buildArticleData**: Now includes `_LIST_MEMBERSHIPS_` serialization to preserve list data during space assignments
+  - **Fixed buildArticleDataWithMetadata**: Full metadata including `_LIST_MEMBERSHIPS_`, `__PERSON_UUID__`, `__VIRTUAL_SPACE__`
+  
+  #### List Management Dialog Fixes
+  - **Fixed lists not appearing in dialog**: `savePeopleList()` now properly adds lists to `peopleLists` array via `addPeopleList()`
+  - **Added extractListsFromPeople()**: Extracts unique list names from people's `listMemberships` and populates `peopleLists`
+  - **Dialog auto-extracts lists**: When dialog opens with empty `peopleLists`, automatically calls `extractListsFromPeople()`
+  
+  #### Pending Changes & Save Button Fixes
+  - **Added pendingChanges to store**: `pendingChanges: boolean` in peopleStore tracks unsaved list changes
+  - **Added markPendingChanges()**: Sets `pendingChanges = true` when active list exists
+  - **Added clearPendingChanges()**: Clears pending changes flag after save
+  - **Auto-mark pending on assignment**: `assignSpace()` and `unassignSpace()` now set `pendingChanges = true` when `activeListId` exists
+  - **Fixed Save button state**: "Save List Changes" button now properly enables when assigning/unassigning spaces
+  
+  #### List Load State Restoration
+  - **Fixed loadList()**: Now restores people's `assignedSpaceId` to their saved state from `listMemberships`
+  - **Discard unsaved changes**: When loading a list, unsaved space assignments are reverted to the saved state
+  - **AutoApply option**: When `autoApply=true`, assignments are posted to AIMS after load
+  
+  #### Code Quality Fixes
+  - **Fixed syntax error**: Removed async `await` inside non-async `for` loop in SolumSyncAdapter
+  - **Added debug logging**: Extensive console logs for troubleshooting AIMS sync issues
+  
+  #### Files Modified
+  | File | Changes |
+  |------|---------|
+  | `peopleStore.ts` | Added `pendingChanges`, `markPendingChanges()`, `clearPendingChanges()`, `extractListsFromPeople()` |
+  | `usePeopleLists.ts` | Fixed `savePeopleList()` to add to `peopleLists`, fixed `loadList()` to restore saved state |
+  | `peopleService.ts` | Fixed `buildArticleData()` to include `_LIST_MEMBERSHIPS_` |
+  | `PeopleListsManagerDialog.tsx` | Auto-extract lists on open, added `extractListsFromPeople` call |
+  | `usePeopleAssignment.ts` | Added debug logging for list memberships |
+  | `SolumSyncAdapter.ts` | Fixed syntax error, improved debug logging |
+
+### Previous Updates (Dec 31, 2025)
 - **Feature 4 Implementation**: People-List feature with AIMS integration
   - Added `listName`, `listSpaceId` fields to Person type for AIMS list persistence
   - Enhanced `PeopleList` type with `storageName` and `isFromAIMS` fields
@@ -37,7 +151,53 @@
 - Added `assignedLabels?: string[]` to Space, ConferenceRoom, and Person types
 - Dashboard counts actual assigned labels from AIMS data (supports multiple labels per article)
 
-### File Optimization Progress (Feature 3)
+---
+
+## Next Steps - Feature 5: Section Loading Indicators
+
+### Overview
+Add visual feedback during slow-loading sections to improve user experience.
+
+### 🟢 Ready to Start
+
+| Task | Priority | Description |
+|------|----------|-------------|
+| Identify slow-loading sections | High | Audit app for sections that take >500ms to load |
+| Design loading skeleton/spinner | Medium | Create consistent loading indicators |
+| Add loading states to hooks | High | Add `isLoading` states where missing |
+| Implement skeleton components | Medium | MUI Skeleton for cards, tables, lists |
+| Add progress indicators | Low | Linear/circular progress for long operations |
+
+### Target Sections
+1. **Dashboard cards** - Initial AIMS sync data load
+2. **People table** - Large CSV uploads, AIMS fetch
+3. **Spaces list** - AIMS fetch operations
+4. **Conference rooms** - AIMS fetch operations
+5. **Settings** - Schema fetch, article count queries
+
+### Implementation Approach
+1. Create reusable `LoadingSkeleton` components for each section type
+2. Add `isLoading` boolean to relevant hooks/stores
+3. Show skeleton during load, fade in actual content
+4. Add timeout warnings for operations >5s
+
+---
+
+## Feature 4 Summary - People-List Feature (Completed)
+
+### Key Accomplishments
+- ✅ Multi-list architecture: People can belong to multiple lists with different space assignments per list
+- ✅ `_LIST_MEMBERSHIPS_` stored in AIMS for cross-device persistence
+- ✅ Lists persist to IndexedDB for offline/local access
+- ✅ Active list displayed as Chip in toolbar
+- ✅ Row index column for easy people counting
+- ✅ Simplified UX with auto-apply on list load
+- ✅ List deletion syncs to AIMS (removes `_LIST_MEMBERSHIPS_` from affected people)
+- ✅ 55 tests passing
+
+---
+
+## File Optimization Progress (Feature 3)
 
 | Sub-Task | Status | Details |
 |----------|--------|---------|

@@ -1,17 +1,19 @@
 import { Box, Typography, Grid } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
 import { useConferenceController } from '@features/conference/application/useConferenceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
-import { SpaceDialog } from '@features/space/presentation/SpaceDialog';
-import { ConferenceRoomDialog } from '@features/conference/presentation/ConferenceRoomDialog';
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+
+// Lazy load dialogs - not needed on initial render
+const SpaceDialog = lazy(() => import('@features/space/presentation/SpaceDialog').then(m => ({ default: m.SpaceDialog })));
+const ConferenceRoomDialog = lazy(() => import('@features/conference/presentation/ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
 
 // Extracted components
 import {
@@ -19,6 +21,7 @@ import {
     DashboardConferenceCard,
     DashboardPeopleCard,
     DashboardAppInfoCard,
+    DashboardSkeleton,
 } from './components';
 
 import type { Space, ConferenceRoom } from '@shared/domain/types';
@@ -100,6 +103,13 @@ export function DashboardPage() {
     // Extract space type for icons
     const spaceTypeIcon = settingsController.settings.spaceType.split('.').pop()?.toLowerCase() || 'chair';
 
+    // Show skeleton while initial sync is in progress
+    const isInitialLoading = syncState.status === 'syncing' && !syncState.lastSync;
+
+    if (isInitialLoading) {
+        return <DashboardSkeleton />;
+    }
+
     return (
         <Box>
             {/* Header */}
@@ -166,24 +176,30 @@ export function DashboardPage() {
                 </Grid>
             </Grid>
 
-            {/* Dialogs */}
-            <SpaceDialog
-                open={spaceDialogOpen}
-                onClose={() => setSpaceDialogOpen(false)}
-                onSave={handleAddSpace}
-                workingMode={settingsController.settings.workingMode}
-                solumMappingConfig={settingsController.settings.solumMappingConfig}
-                csvConfig={settingsController.settings.csvConfig}
-                spaceTypeLabel={getLabel('singular')}
-                existingIds={spaceController.spaces.map((s) => s.id)}
-            />
+            {/* Dialogs - Lazy loaded */}
+            <Suspense fallback={null}>
+                {spaceDialogOpen && (
+                    <SpaceDialog
+                        open={spaceDialogOpen}
+                        onClose={() => setSpaceDialogOpen(false)}
+                        onSave={handleAddSpace}
+                        workingMode={settingsController.settings.workingMode}
+                        solumMappingConfig={settingsController.settings.solumMappingConfig}
+                        csvConfig={settingsController.settings.csvConfig}
+                        spaceTypeLabel={getLabel('singular')}
+                        existingIds={spaceController.spaces.map((s) => s.id)}
+                    />
+                )}
 
-            <ConferenceRoomDialog
-                open={conferenceDialogOpen}
-                onClose={() => setConferenceDialogOpen(false)}
-                onSave={handleAddConferenceRoom}
-                existingIds={conferenceController.conferenceRooms.map((r) => r.id)}
-            />
+                {conferenceDialogOpen && (
+                    <ConferenceRoomDialog
+                        open={conferenceDialogOpen}
+                        onClose={() => setConferenceDialogOpen(false)}
+                        onSave={handleAddConferenceRoom}
+                        existingIds={conferenceController.conferenceRooms.map((r) => r.id)}
+                    />
+                )}
+            </Suspense>
         </Box>
     );
 }

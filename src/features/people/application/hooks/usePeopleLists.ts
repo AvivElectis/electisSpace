@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
 import { postBulkAssignments, postBulkAssignmentsWithMetadata } from '../../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
@@ -35,15 +35,8 @@ export function usePeopleLists() {
         }
     };
 
-    // Clear legacy localStorage lists on mount (migration to AIMS-derived lists)
-    useEffect(() => {
-        if (peopleStore.peopleLists.length > 0) {
-            logger.info('PeopleLists', 'Clearing legacy localStorage lists', { 
-                count: peopleStore.peopleLists.length 
-            });
-            peopleStore.clearPeopleLists();
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // NOTE: Removed legacy localStorage clearing useEffect - lists are now properly 
+    // stored in peopleLists array and should NOT be cleared on mount
 
     /**
      * Derive lists from people's listMemberships
@@ -93,7 +86,7 @@ export function usePeopleLists() {
             storageName: activeList.storageName,
             loadedAt: activeList.updatedAt || activeList.createdAt,
             isFromAIMS: activeList.isFromAIMS,
-            peopleCount: activeList.people.length,
+            peopleCount: activeList.people?.length ?? 0,
         };
     }, [peopleStore.activeListId, derivedLists]);
 
@@ -156,21 +149,22 @@ export function usePeopleLists() {
             // Check if list already exists in peopleLists, if not add it
             const existingList = peopleStore.peopleLists.find(l => l.storageName === storageName);
             if (!existingList) {
+                // Don't store the full people array - it can be derived from main people array's listMemberships
                 const newList: PeopleList = {
                     id: listId,
                     name: displayName,
                     storageName: storageName,
                     createdAt: new Date().toISOString(),
-                    people: peopleWithListMembership,
+                    // people array is omitted - derived from main people array via listMemberships
                 };
                 peopleStore.addPeopleList(newList);
                 logger.info('PeopleLists', 'Added list to peopleLists', { listId, name: displayName });
             } else {
-                // Update existing list
+                // Update existing list - don't store people array, it's derived
                 peopleStore.updatePeopleList(existingList.id, {
                     ...existingList,
                     updatedAt: new Date().toISOString(),
-                    people: peopleWithListMembership,
+                    people: undefined, // Don't store people array
                 });
                 logger.info('PeopleLists', 'Updated existing list in peopleLists', { listId: existingList.id, name: displayName });
             }
@@ -410,7 +404,7 @@ export function usePeopleLists() {
     }, [peopleStore, activeListStorageName]);
 
     /**
-     * Load a list - sets the active list filter and optionally applies assignments
+     * Load a list - sets the active list filter and restores people to their saved state
      * 
      * @param listId - ID of list to load (from derivedLists)
      * @param autoApply - If true, copy list's spaceId to assignedSpaceId for people in this list
@@ -422,39 +416,58 @@ export function usePeopleLists() {
                 throw new Error('Invalid list ID');
             }
 
-            // Find the list from derived lists
+            // Find the list from peopleLists (which has the saved state) or derived lists
+            const savedList = peopleStore.peopleLists.find(l => l.id === listId || l.storageName === storageName);
             const listToLoad = derivedLists.find(l => l.id === listId);
-            if (!listToLoad) {
+            
+            if (!listToLoad && !savedList) {
                 throw new Error('List not found');
             }
 
+            const listName = savedList?.name || listToLoad?.name || storageName;
+
             logger.info('PeopleLists', 'Loading list', {
                 listId,
-                name: listToLoad.name,
+                name: listName,
                 autoApply,
-                peopleCount: listToLoad.people.length
+                hasSavedList: !!savedList,
+                savedPeopleCount: savedList?.people?.length || 0
             });
 
             // Set active list metadata
             peopleStore.setActiveListId(listId);
-            peopleStore.setActiveListName(listToLoad.name);
+            peopleStore.setActiveListName(listName);
+
+            // Restore people's assignments to the saved state in the list
+            // For each person in the list, restore their assignedSpaceId to the list's saved spaceId
+            const updatedPeople: Person[] = peopleStore.people.map(p => {
+                if (!isPersonInList(p, storageName)) {
+                    return p; // Person not in this list, keep as-is
+                }
+                
+                // Get the saved space assignment from the list membership
+                const listSpaceId = getPersonListSpaceId(p, storageName);
+                
+                if (autoApply) {
+                    // Auto-apply: set assignedSpaceId to the list's saved spaceId
+                    return {
+                        ...p,
+                        assignedSpaceId: listSpaceId, // Restore to saved state
+                        aimsSyncStatus: listSpaceId ? 'pending' as const : p.aimsSyncStatus,
+                    };
+                } else {
+                    // No auto-apply: still restore assignedSpaceId to the saved state
+                    // This ensures unsaved changes are discarded when reloading the list
+                    return {
+                        ...p,
+                        assignedSpaceId: listSpaceId, // Restore to saved state (undefined if not set in list)
+                    };
+                }
+            });
+
+            peopleStore.setPeople(updatedPeople);
 
             if (autoApply) {
-                // Apply list assignments: copy list's spaceId to assignedSpaceId
-                const updatedPeople: Person[] = peopleStore.people.map(p => {
-                    const listSpaceId = getPersonListSpaceId(p, storageName);
-                    if (listSpaceId) {
-                        return {
-                            ...p,
-                            assignedSpaceId: listSpaceId,
-                            aimsSyncStatus: 'pending' as const,
-                        };
-                    }
-                    return p;
-                });
-
-                peopleStore.setPeople(updatedPeople);
-
                 // Post assignments to AIMS
                 const peopleToSync = updatedPeople.filter(
                     p => isPersonInList(p, storageName) && p.assignedSpaceId
@@ -478,7 +491,7 @@ export function usePeopleLists() {
                 }
             }
 
-            setPendingChanges(false);
+            peopleStore.clearPendingChanges();
             logger.info('PeopleLists', 'List loaded', { listId, autoApply });
         } catch (error: any) {
             logger.error('PeopleLists', 'Failed to load list', { error: error.message });

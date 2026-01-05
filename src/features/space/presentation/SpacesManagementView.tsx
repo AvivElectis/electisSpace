@@ -16,6 +16,7 @@ import {
     InputAdornment,
     Tooltip,
     TableSortLabel,
+    Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -23,19 +24,21 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import FolderIcon from '@mui/icons-material/Folder';
 import SaveIcon from '@mui/icons-material/Save';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useSpaceController } from '../application/useSpaceController';
 import { useListsController } from '@features/lists/application/useListsController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
-import { SpaceDialog } from './SpaceDialog';
 import type { Space } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
-import { ListsManagerDialog } from '@features/lists/presentation/ListsManagerDialog';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
-import { SaveListDialog } from '@features/lists/presentation/SaveListDialog';
+
+// Lazy load dialogs - not needed on initial render
+const SpaceDialog = lazy(() => import('./SpaceDialog').then(m => ({ default: m.SpaceDialog })));
+const ListsManagerDialog = lazy(() => import('@features/lists/presentation/ListsManagerDialog').then(m => ({ default: m.ListsManagerDialog })));
+const SaveListDialog = lazy(() => import('@features/lists/presentation/SaveListDialog').then(m => ({ default: m.SaveListDialog })));
 
 /**
  * Spaces Management View - Extracted from SpacesPage
@@ -321,7 +324,27 @@ export function SpacesManagementView() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredAndSortedSpaces.length === 0 ? (
+                        {spaceController.isFetching ? (
+                            // Show skeleton rows while fetching
+                            Array.from({ length: 5 }).map((_, index) => (
+                                <TableRow key={`skeleton-${index}`}>
+                                    <TableCell align="center">
+                                        <Skeleton variant="text" width="80%" />
+                                    </TableCell>
+                                    {visibleFields.map(field => (
+                                        <TableCell key={field.key} align="center">
+                                            <Skeleton variant="text" width="70%" />
+                                        </TableCell>
+                                    ))}
+                                    <TableCell align="center">
+                                        <Stack direction="row" gap={1} justifyContent="center">
+                                            <Skeleton variant="circular" width={32} height={32} />
+                                            <Skeleton variant="circular" width={32} height={32} />
+                                        </Stack>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredAndSortedSpaces.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={visibleFields.length + 2} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
@@ -427,28 +450,38 @@ export function SpacesManagementView() {
                 )}
             </Box>
 
-            {/* Add/Edit Dialog */}
-            <SpaceDialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                onSave={handleSave}
-                space={editingSpace}
-                workingMode={settingsController.settings.workingMode}
-                solumMappingConfig={settingsController.settings.solumMappingConfig}
-                csvConfig={settingsController.settings.csvConfig}
-                spaceTypeLabel={getLabel('singular')}
-            />
+            {/* Add/Edit Dialog - Lazy loaded */}
+            <Suspense fallback={null}>
+                {dialogOpen && (
+                    <SpaceDialog
+                        open={dialogOpen}
+                        onClose={() => setDialogOpen(false)}
+                        onSave={handleSave}
+                        space={editingSpace}
+                        workingMode={settingsController.settings.workingMode}
+                        solumMappingConfig={settingsController.settings.solumMappingConfig}
+                        csvConfig={settingsController.settings.csvConfig}
+                        spaceTypeLabel={getLabel('singular')}
+                    />
+                )}
+            </Suspense>
             <ConfirmDialog />
 
-            {/* Lists Dialogs */}
-            <ListsManagerDialog
-                open={listsManagerOpen}
-                onClose={() => setListsManagerOpen(false)}
-            />
-            <SaveListDialog
-                open={saveListOpen}
-                onClose={() => setSaveListOpen(false)}
-            />
+            {/* Lists Dialogs - Lazy loaded */}
+            <Suspense fallback={null}>
+                {listsManagerOpen && (
+                    <ListsManagerDialog
+                        open={listsManagerOpen}
+                        onClose={() => setListsManagerOpen(false)}
+                    />
+                )}
+                {saveListOpen && (
+                    <SaveListDialog
+                        open={saveListOpen}
+                        onClose={() => setSaveListOpen(false)}
+                    />
+                )}
+            </Suspense>
         </Box>
     );
 }

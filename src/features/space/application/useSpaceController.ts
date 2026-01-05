@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
@@ -42,6 +42,9 @@ export function useSpaceController({
         deleteSpacesList,
         loadSpacesList,
     } = useSpacesStore();
+
+    // Loading state for fetch operations
+    const [isFetching, setIsFetching] = useState(false);
 
     /**
      * Add new space
@@ -410,6 +413,7 @@ export function useSpaceController({
             }
 
             logger.info('SpaceController', 'Fetching spaces from SoluM using Adapter');
+            setIsFetching(true);
 
             try {
                 // Instantiate adapter solely for the purpose of downloading
@@ -435,6 +439,8 @@ export function useSpaceController({
             } catch (error) {
                 logger.error('SpaceController', 'Failed to fetch from SoluM', { error });
                 throw error;
+            } finally {
+                setIsFetching(false);
             }
         },
         [solumConfig, solumToken, solumMappingConfig, csvConfig, importFromSync]
@@ -500,6 +506,7 @@ export function useSpaceController({
         fetchFromSolum,
         getAllSpaces,
         spaces,
+        isFetching,
 
         // Space list operations
         saveSpacesList,

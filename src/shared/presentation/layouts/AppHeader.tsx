@@ -90,7 +90,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                     <Typography
                         variant="h1"
                         sx={{
-                            fontWeight: 600,
+                            fontWeight: 700,
                             color: 'text.primary',
                             fontSize: { xs: '2rem', sm: '2.25rem' },
                         }}
@@ -101,6 +101,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                         <Typography
                             variant="caption"
                             sx={{
+                                fontWeight: 700,
                                 color: 'text.secondary',
                                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 display: { xs: 'none', sm: 'block' },

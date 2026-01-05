@@ -61,7 +61,7 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1200, // Raised for lazy-loaded ArticleFormatEditor (~1.1MB vanilla-jsoneditor)
     sourcemap: false,
     minify: 'terser',
   },

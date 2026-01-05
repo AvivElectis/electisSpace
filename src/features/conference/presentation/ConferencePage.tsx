@@ -15,6 +15,7 @@ import {
     DialogContent,
     DialogActions,
     Grid,
+    Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -24,14 +25,16 @@ import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { ConferenceRoomDialog } from './ConferenceRoomDialog';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+
+// Lazy load dialog - not needed on initial render
+const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
 
 /**
  * Conference Rooms Page - Clean Card-based Design
@@ -276,7 +279,28 @@ export function ConferencePage() {
             />
 
             {/* Conference Rooms Grid */}
-            {filteredRooms.length === 0 ? (
+            {conferenceController.isFetching ? (
+                <Grid container spacing={3}>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`skeleton-${index}`}>
+                            <Card sx={{ height: 200 }}>
+                                <CardContent>
+                                    <Stack gap={2}>
+                                        <Skeleton variant="text" width="70%" height={28} />
+                                        <Skeleton variant="text" width="50%" height={20} />
+                                        <Skeleton variant="text" width="90%" />
+                                        <Skeleton variant="text" width="80%" />
+                                        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                                            <Skeleton variant="circular" width={32} height={32} />
+                                            <Skeleton variant="circular" width={32} height={32} />
+                                        </Box>
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            ) : filteredRooms.length === 0 ? (
                 <Card>
                     <CardContent sx={{ py: 8, textAlign: 'center' }}>
                         <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -478,14 +502,18 @@ export function ConferencePage() {
                 )}
             </Dialog>
 
-            {/* Add/Edit Dialog */}
-            <ConferenceRoomDialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                onSave={handleSave}
-                room={editingRoom}
-                existingIds={conferenceController.conferenceRooms.map(r => r.id)}
-            />
+            {/* Add/Edit Dialog - Lazy loaded */}
+            <Suspense fallback={null}>
+                {dialogOpen && (
+                    <ConferenceRoomDialog
+                        open={dialogOpen}
+                        onClose={() => setDialogOpen(false)}
+                        onSave={handleSave}
+                        room={editingRoom}
+                        existingIds={conferenceController.conferenceRooms.map(r => r.id)}
+                    />
+                )}
+            </Suspense>
             <ConfirmDialog />
         </Box>
     );

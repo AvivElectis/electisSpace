@@ -8,20 +8,31 @@ import {
     Tab,
     Box,
     IconButton,
+    CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState, type SyntheticEvent } from 'react';
+import { useState, lazy, Suspense, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppSettingsTab } from './AppSettingsTab';
-// import { SFTPSettingsTab } from './SFTPSettingsTab';
-import { SolumSettingsTab } from './SolumSettingsTab';
-import { LogoSettingsTab } from './LogoSettingsTab';
-import { SecuritySettingsTab } from './SecuritySettingsTab';
-import { LogsViewerTab } from './LogsViewerTab';
-import { UnlockDialog } from './UnlockDialog';
 import { useSettingsController } from '../application/useSettingsController';
 import { useAutoLock } from '../application/useAutoLock';
 import { useSettingsStore } from '../infrastructure/settingsStore';
+
+// Lazy load all tabs - they have heavy dependencies
+const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
+const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
+const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
+const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
+const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default: m.LogsViewerTab })));
+const UnlockDialog = lazy(() => import('./UnlockDialog').then(m => ({ default: m.UnlockDialog })));
+
+// Tab loading fallback
+function TabLoadingFallback() {
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+            <CircularProgress />
+        </Box>
+    );
+}
 
 interface SettingsDialogProps {
     open: boolean;
@@ -77,18 +88,20 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     // If locked, show unlock dialog instead
     if (settingsController.isLocked) {
         return (
-            <UnlockDialog
-                open={open}
-                onClose={handleClose}
-                onUnlock={(password) => {
-                    const success = settingsController.unlock(password);
-                    if (success) {
-                        // Update last access time on successful unlock
-                        updateSettings({ lastSettingsAccess: Date.now() });
-                    }
-                    return success;
-                }}
-            />
+            <Suspense fallback={<TabLoadingFallback />}>
+                <UnlockDialog
+                    open={open}
+                    onClose={handleClose}
+                    onUnlock={(password) => {
+                        const success = settingsController.unlock(password);
+                        if (success) {
+                            // Update last access time on successful unlock
+                            updateSettings({ lastSettingsAccess: Date.now() });
+                        }
+                        return success;
+                    }}
+                />
+            </Suspense>
         );
     }
 
@@ -157,53 +170,55 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </Tabs>
             </Box>
 
-            <DialogContent >
-                <TabPanel value={currentTab} index={0}>
-                    <AppSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                        onNavigateToTab={(tabIndex) => setCurrentTab(tabIndex)}
-                    />
-                </TabPanel>
+            <DialogContent>
+                <Suspense fallback={<TabLoadingFallback />}>
+                    <TabPanel value={currentTab} index={0}>
+                        <AppSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                            onNavigateToTab={(tabIndex) => setCurrentTab(tabIndex)}
+                        />
+                    </TabPanel>
 
-                {/* SFTP Panel Disabled
-                <TabPanel value={currentTab} index={1}>
-                    <SFTPSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
-                */}
+                    {/* SFTP Panel Disabled
+                    <TabPanel value={currentTab} index={1}>
+                        <SFTPSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
+                    */}
 
-                <TabPanel value={currentTab} index={2}>
-                    <SolumSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={2}>
+                        <SolumSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={3}>
-                    <LogoSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={3}>
+                        <LogoSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={4}>
-                    <SecuritySettingsTab
-                        isPasswordProtected={settingsController.isPasswordProtected}
-                        isLocked={settingsController.isLocked}
-                        settings={settingsController.settings}
-                        onSetPassword={(password) => settingsController.setPassword(password)}
-                        onLock={() => settingsController.lock()}
-                        onUnlock={(password) => settingsController.unlock(password)}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={4}>
+                        <SecuritySettingsTab
+                            isPasswordProtected={settingsController.isPasswordProtected}
+                            isLocked={settingsController.isLocked}
+                            settings={settingsController.settings}
+                            onSetPassword={(password) => settingsController.setPassword(password)}
+                            onLock={() => settingsController.lock()}
+                            onUnlock={(password) => settingsController.unlock(password)}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={5}>
-                    <LogsViewerTab />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={5}>
+                        <LogsViewerTab />
+                    </TabPanel>
+                </Suspense>
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>
