@@ -50,7 +50,8 @@
         "showing": "Showing",
         "selected": "Selected",
         "saving": "Saving...",
-        "actions": "Actions"
+        "actions": "Actions",
+        "errorDetails": "Error Details"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -173,7 +174,11 @@
         "currentConfig": "Current Configuration",
         "enabled": "Enabled",
         "disabled": "Disabled",
-        "every": "every"
+        "every": "every",
+        "systemOperational": "System is operational",
+        "checkConnection": "Check your connection",
+        "processingData": "Processing data...",
+        "attentionRequired": "Attention required"
     },
     "settings": {
         "title": "Settings",

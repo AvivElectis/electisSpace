@@ -155,7 +155,7 @@ export function SyncStatusIndicator({
                     sx: { 
                         mt: -1, 
                         borderRadius: 3,
-                        boxShadow: theme.shadows[8],
+                        boxShadow: '0px 0px 6px rgba(0, 0, 0, 0.32)',
                         overflow: 'hidden',
                         minWidth: 300
                     }
