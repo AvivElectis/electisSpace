@@ -24,6 +24,11 @@ const SettingsDialog = lazy(() =>
     import('../../../features/settings/presentation/SettingsDialog').then(m => ({ default: m.SettingsDialog }))
 );
 
+// Lazy load ManualDialog - not needed on initial render
+const ManualDialog = lazy(() =>
+    import('../../../features/manual/presentation/ManualDialog').then(m => ({ default: m.ManualDialog }))
+);
+
 interface MainLayoutProps {
     children: ReactNode;
 }
@@ -56,6 +61,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { t } = useTranslation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [manualOpen, setManualOpen] = useState(false);
     const { syncState, workingMode, setWorkingMode } = useSyncStore();
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
@@ -169,13 +175,14 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <AppHeader
                     onMenuClick={isMobile ? handleMenuClick : undefined}
                     onSettingsClick={() => setSettingsOpen(true)}
+                    onManualClick={() => setManualOpen(true)}
                     settingsOpen={settingsOpen}
                 />
 
                 {/* Navigation - Tabs for desktop, Drawer for mobile */}
                 {isMobile ? (
                     <Drawer
-                        anchor="left"
+                        anchor={theme.direction === 'rtl' ? 'right' : 'left'}
                         open={mobileMenuOpen}
                         onClose={() => setMobileMenuOpen(false)}
                     >
@@ -288,6 +295,16 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <SettingsDialog
                             open={settingsOpen}
                             onClose={() => setSettingsOpen(false)}
+                        />
+                    </Suspense>
+                )}
+
+                {/* Manual Dialog - Lazy loaded */}
+                {manualOpen && (
+                    <Suspense fallback={null}>
+                        <ManualDialog
+                            open={manualOpen}
+                            onClose={() => setManualOpen(false)}
                         />
                     </Suspense>
                 )}
