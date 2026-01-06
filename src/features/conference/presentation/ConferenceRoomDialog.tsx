@@ -11,6 +11,8 @@ import {
     Chip,
     Box,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +38,8 @@ export function ConferenceRoomDialog({
     existingIds = []
 }: ConferenceRoomDialogProps) {
     const { t, i18n } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isRtl = i18n.dir() === 'rtl';
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [id, setId] = useState('');
@@ -145,7 +149,7 @@ export function ConferenceRoomDialog({
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 {room ? t('conference.editRoom') : t('conference.addRoom')}
             </DialogTitle>

@@ -68,8 +68,8 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                     src={leftLogo}
                     alt="Left Logo"
                     sx={{
-                        height: { xs: 140, sm: 80 },
-                        maxWidth: { xs: 180, sm: 250 },
+                        height: { xs: 40, sm: 60, md: 80 },
+                        maxWidth: { xs: 100, sm: 180, md: 250 },
                         objectFit: 'contain',
                     }}
                 />
@@ -92,7 +92,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                         sx={{
                             fontWeight: 700,
                             color: 'text.primary',
-                            fontSize: { xs: '2rem', sm: '2.25rem' },
+                            fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.25rem' },
                         }}
                     >
                         {settings.appName}
@@ -114,15 +114,16 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                 </Box>
 
                 {/* Right Logo + Language Switcher + Settings */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
                     <Box
                         component="img"
                         src={rightLogo}
                         alt="Right Logo"
                         sx={{
-                            height: { xs: 140, sm: 80 },
-                            maxWidth: { xs: 180, sm: 250 },
+                            height: { xs: 40, sm: 60, md: 80 },
+                            maxWidth: { xs: 100, sm: 180, md: 250 },
                             objectFit: 'contain',
+                            display: { xs: 'none', sm: 'block' },
                         }}
                     />
                     {/* Sync Indicator moved to MainLayout */}

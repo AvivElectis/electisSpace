@@ -40,7 +40,7 @@ export function PeopleFiltersBar({
                     },
                 }}
             />
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
                 <InputLabel>{t('people.filterStatus')}</InputLabel>
                 <Select
                     value={assignmentFilter}

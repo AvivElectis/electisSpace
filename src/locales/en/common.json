@@ -578,6 +578,7 @@
         "noResults": "No people found matching your criteria",
         "noPeopleYet": "No people yet. Upload a CSV or add people manually.",
         "selectedCount": "{{count}} selected",
+        "selectAll": "Select All",
         "assignSpaces": "Assign {{spaceTypePlural}}",
         "autoAssignSpaces": "Auto Assign {{spaceTypePlural}}",
         "postToAims": "Post to AIMS",

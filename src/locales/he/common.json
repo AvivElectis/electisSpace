@@ -593,6 +593,7 @@
         "noResults": "לא נמצאו אנשים התואמים את הקריטריון",
         "noPeopleYet": "עדיין אין אנשים. העלה CSV או הוסף אנשים ידנית.",
         "selectedCount": "{{count}} נבחרו",
+        "selectAll": "בחר הכל",
         "assignSpaces": "הקצה {{spaceTypePlural}}",
         "autoAssignSpaces": "הקצה אוטומטית {{spaceTypePlural}}",
         "postToAims": "שלח ל-AIMS",

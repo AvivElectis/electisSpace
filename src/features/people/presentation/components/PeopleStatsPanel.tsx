@@ -52,10 +52,10 @@ export function PeopleStatsPanel({
                     size="small"
                     value={totalSpaces}
                     onChange={(e) => onTotalSpacesChange(Number(e.target.value))}
-                    sx={{ width: 150 }}
+                    sx={{ width: { xs: '100%', sm: 150 } }}
                     inputProps={{ min: 0 }}
                 />
-                <Box sx={{ flex: 1, minWidth: 200 }}>
+                <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 200 } }}>
                     <Stack direction="row" justifyContent="space-between" gap={1} mb={0.5}>
                         <Typography variant="body2">
                             {tWithSpaceType('people.spacesAssigned', { assigned: assignedCount, total: totalSpaces })}

@@ -9,6 +9,8 @@ import {
     Box,
     IconButton,
     CircularProgress,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState, lazy, Suspense, type SyntheticEvent } from 'react';
@@ -67,6 +69,8 @@ function TabPanel(props: TabPanelProps) {
  */
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const settingsController = useSettingsController();
     const { updateSettings } = useSettingsStore();
     const [currentTab, setCurrentTab] = useState(0);
@@ -111,11 +115,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             onClose={handleClose}
             maxWidth="md"
             fullWidth
+            fullScreen={isMobile}
             PaperProps={{
                 sx: {
-                    height: '80vh',
-                    maxHeight: '800px',
-                    px: 1,
+                    height: isMobile ? '100%' : '80vh',
+                    maxHeight: isMobile ? '100%' : '800px',
+                    px: { xs: 0.5, sm: 1 },
+                    borderRadius: isMobile ? 0 : undefined,
                 }
             }}
         >
