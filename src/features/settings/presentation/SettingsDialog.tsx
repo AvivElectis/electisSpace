@@ -45,10 +45,11 @@ interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
     value: number;
+    noPadding?: boolean;
 }
 
 function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
+    const { children, value, index, noPadding, ...other } = props;
 
     return (
         <div
@@ -56,9 +57,10 @@ function TabPanel(props: TabPanelProps) {
             hidden={value !== index}
             id={`settings-tabpanel-${index}`}
             aria-labelledby={`settings-tab-${index}`}
+            style={{ height: noPadding ? '100%' : 'auto' }}
             {...other}
         >
-            {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+            {value === index && <Box sx={{ py: noPadding ? 0 : 3, height: noPadding ? '100%' : 'auto' }}>{children}</Box>}
         </div>
     );
 }
@@ -176,7 +178,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </Tabs>
             </Box>
 
-            <DialogContent>
+            <DialogContent sx={{ px: { xs: 1, sm: 3 } }}>
                 <Suspense fallback={<TabLoadingFallback />}>
                     <TabPanel value={currentTab} index={0}>
                         <AppSettingsTab
@@ -221,7 +223,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         />
                     </TabPanel>
 
-                    <TabPanel value={currentTab} index={5}>
+                    <TabPanel value={currentTab} index={5} noPadding={isMobile}>
                         <LogsViewerTab />
                     </TabPanel>
                 </Suspense>

@@ -86,7 +86,8 @@ export function usePeopleController() {
      */
     const loadPeopleFromCSV = useCallback(async (file: File): Promise<void> => {
         try {
-            logger.info('PeopleController', 'Loading CSV file', { filename: file.name, size: file.size });
+            logger.info('CSV', 'Loading CSV file', { filename: file.name, size: file.size });
+            logger.startTimer('csv-file-load');
 
             if (!settings.solumArticleFormat) {
                 throw new Error('SoluM article format not configured');
@@ -96,9 +97,13 @@ export function usePeopleController() {
             const people = parsePeopleCSV(csvContent, settings.solumArticleFormat, settings.solumMappingConfig);
 
             getStoreState().setPeople(people);
-            logger.info('PeopleController', 'People loaded from CSV', { count: people.length });
+            logger.endTimer('csv-file-load', 'CSV', 'CSV file loaded and parsed', { 
+                filename: file.name,
+                peopleCount: people.length 
+            });
         } catch (error: any) {
-            logger.error('PeopleController', 'Failed to load CSV', { error: error.message });
+            logger.endTimer('csv-file-load', 'CSV', 'CSV file load failed', { error: error.message });
+            logger.error('CSV', 'Failed to load CSV', { error: error.message });
             throw error;
         }
     }, [settings.solumArticleFormat, settings.solumMappingConfig]);
