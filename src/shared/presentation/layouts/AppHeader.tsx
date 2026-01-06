@@ -1,7 +1,9 @@
-import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
+import { AppBar, Toolbar, Box, IconButton, Typography, Tooltip } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useTranslation } from 'react-i18next';
 
 // import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 // import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
@@ -10,6 +12,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 interface AppHeaderProps {
     onSettingsClick?: () => void;
     onMenuClick?: () => void;
+    onManualClick?: () => void;
     settingsOpen?: boolean;
 }
 
@@ -18,11 +21,12 @@ interface AppHeaderProps {
  * Displays logos, app title (centered), language switcher, and settings icon
  * Title and subtitle are configurable through app settings
  */
-export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHeaderProps) {
+export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, settingsOpen }: AppHeaderProps) {
     // Get settings from store
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
     const isLocked = useSettingsStore((state) => state.isLocked);
+    const { t } = useTranslation();
     // Sync state moved to MainLayout
 
     // Use dynamic logos or fall back to defaults
@@ -113,8 +117,9 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
 
                 </Box>
 
-                {/* Right Logo + Language Switcher + Settings */}
+                {/* Right Logo + Language Switcher + Manual + Settings */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+                    
                     <Box
                         component="img"
                         src={rightLogo}
@@ -127,7 +132,17 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                         }}
                     />
                     {/* Sync Indicator moved to MainLayout */}
+                    <Tooltip title={t('manual.title')}>
+                        <IconButton
+                            color="default"
+                            onClick={onManualClick}
+                            sx={{ mx: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }}
+                        >
+                            <HelpOutlineIcon />
+                        </IconButton>
+                    </Tooltip>
                     <LanguageSwitcher />
+
                     <IconButton
                         color={iconColor}
                         onClick={onSettingsClick}

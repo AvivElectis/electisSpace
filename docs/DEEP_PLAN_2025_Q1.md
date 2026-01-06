@@ -14,9 +14,96 @@
 | 5 | Section Loading Indicators | ✅ Completed | Jan 5 | Jan 5 |
 | 6 | UI Responsiveness | ✅ Completed | Jan 6 | Jan 6 |
 | 7 | Logger Enhancement | ✅ Completed | Jan 6 | Jan 6 |
-| 8 | App Manual Feature | ⬜ Not Started | - | - |
+| 8 | App Manual Feature | ✅ Completed | Jan 6 | Jan 6 |
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
+
+### Recent Updates (January 6, 2026) - Session 8
+
+#### Feature 8 Enhanced - App Manual Improvements
+
+Additional improvements to the manual feature based on user feedback.
+
+##### Phase 8.7: RTL-Aware Mobile Drawer
+- **Dynamic drawer anchor**: Changed from fixed `"left"` to `{theme.direction === 'rtl' ? 'right' : 'left'}`
+- **Proper RTL behavior**: Mobile navigation drawer now opens from the correct side based on language direction
+
+##### Phase 8.8: Tab Styling Consistency
+- **Matched SettingsDialog styling**: Manual tabs now use same design as Settings dialog
+- **Border and shadow on selected**: Added `border: '1px solid'`, `borderColor: 'primary.main'`, `boxShadow`
+- **Hidden indicator**: Used `TabIndicatorProps={{ sx: { display: 'none' } }}`
+- **Removed Paper wrapper**: Simplified tab container structure
+
+##### Phase 8.9: Accurate Manual Content
+- **Connection Setup details**: Corrected to show real fields (API Cluster, Base URL, Company Code, Store Number)
+- **Real URL examples**: Changed from fake URLs to actual format (e.g., `https://eu.common.solumesl.com`)
+- **People Manager specifics**: Added `_LIST_MEMBERSHIPS_` field explanation, Total Spaces config
+- **Troubleshooting enhanced**: Added Logs tab reference, browser cache clearing, credential verification steps
+- **Security details**: Added password reset information (clear browser data)
+
+##### Files Modified (Session 8)
+| File | Changes |
+|------|---------|
+| `src/shared/presentation/layouts/MainLayout.tsx` | RTL-aware drawer anchor |
+| `src/features/manual/presentation/ManualDialog.tsx` | Tabs styled like SettingsDialog, removed Paper |
+| `src/locales/en/common.json` | Enhanced manual content with accurate details |
+| `src/locales/he/common.json` | Enhanced Hebrew manual content with accurate details |
+
+---
+
+### Recent Updates (January 6, 2026) - Session 7
+
+#### Feature 8 Completed - App Manual Feature
+
+In-app bilingual user manual with tab-based navigation for all app features.
+
+##### Phase 8.1: Domain Types
+- **Created `ManualTab` and `ManualSection` types**: Type-safe structure for manual content
+- **Created `MANUAL_TABS` configuration**: 6 tabs with sections for each feature area
+- **Tab structure**: Getting Started, Spaces, People, Conference, Sync, Settings
+
+##### Phase 8.2: ManualDialog Component
+- **Full-screen on mobile**: Uses `fullScreen={isMobile}` for responsive layout
+- **Tab-based navigation**: Scrollable tabs with icons (icons-only on mobile)
+- **Lazy loaded**: Uses `React.lazy()` for code splitting
+- **RTL support**: Proper Hebrew layout with `insetInlineEnd` positioning
+
+##### Phase 8.3: ManualSection Component
+- **Paper-based layout**: Each section displayed in outlined Paper component
+- **Multi-paragraph support**: Content split by newlines into separate Typography elements
+- **Consistent styling**: Primary color titles, secondary color content
+
+##### Phase 8.4: Translations
+- **Comprehensive EN/HE content**: Full manual translations for both languages
+- **6 feature areas covered**: Getting Started, Spaces, People Manager, Conference, Sync, Settings
+- **Each area has 2-4 sections**: Overview plus detailed topic sections
+
+##### Phase 8.5: Header Integration
+- **Help button added**: HelpOutlineIcon with tooltip between LanguageSwitcher and Settings
+- **New `onManualClick` prop**: Passed from MainLayout to AppHeader
+
+##### Phase 8.6: MainLayout Integration
+- **ManualDialog state**: `manualOpen` state for dialog visibility
+- **Lazy loaded dialog**: Suspense wrapper for optimal bundle size
+- **Click handler**: Opens manual dialog from header button
+
+##### Files Created
+| File | Purpose |
+|------|---------|
+| `src/features/manual/domain/types.ts` | Manual types and tab configuration |
+| `src/features/manual/presentation/ManualDialog.tsx` | Main dialog component |
+| `src/features/manual/presentation/ManualSection.tsx` | Section content renderer |
+| `src/features/manual/index.ts` | Barrel exports |
+
+##### Files Modified
+| File | Changes |
+|------|---------|
+| `src/shared/presentation/layouts/AppHeader.tsx` | Added HelpOutlineIcon button, `onManualClick` prop |
+| `src/shared/presentation/layouts/MainLayout.tsx` | Added ManualDialog lazy import, `manualOpen` state |
+| `src/locales/en/common.json` | Added comprehensive `manual` translations |
+| `src/locales/he/common.json` | Added comprehensive `manual` translations (Hebrew) |
+
+---
 
 ### Recent Updates (January 6, 2026) - Session 6
 
@@ -62,6 +149,14 @@ Comprehensive logging system enhancement with typed categories, performance timi
 - **Added initialization log**: Logs app version, language, and environment on startup
 - **Added language change log**: Logs when language/direction changes
 
+##### Phase 7.8: Responsive LogsViewer
+- **Mobile-first toolbar**: Search and filter inputs stack vertically on mobile, full-width controls
+- **Adaptive log items**: Card layout on mobile (stacked info), table row layout on desktop
+- **Dynamic row height**: 64px for mobile cards, 42px for desktop table rows
+- **Full-width on mobile**: Removed horizontal padding from LogsViewerTab and TabPanel on mobile
+- **Responsive DialogContent**: Reduced padding on mobile (`px: { xs: 1, sm: 3 }`)
+- **Compact action buttons**: Icons-only on mobile for Export/Clear buttons
+
 ##### Files Modified
 | File | Changes |
 |------|---------|
@@ -71,6 +166,9 @@ Comprehensive logging system enhancement with typed categories, performance timi
 | `ErrorBoundary.tsx` | NEW - Error boundary component with logger integration |
 | `App.tsx` | Wrapped with ErrorBoundary, added initialization logging |
 | `AppRoutes.tsx` | Added useNavigationLogger hook for route change logging |
+| `LogsViewer.tsx` | Added MobileLogItem/DesktopLogItem, responsive toolbar, isMobile detection |
+| `LogsViewerTab.tsx` | Responsive horizontal padding (`px: { xs: 0, sm: 2 }`) |
+| `SettingsDialog.tsx` | Added noPadding prop to TabPanel, responsive DialogContent padding |
 
 ##### New Logger API Summary
 ```typescript

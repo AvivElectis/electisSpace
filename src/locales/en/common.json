@@ -662,5 +662,104 @@
         "syncListToAimsTooltip": "Sync list data to AIMS for cross-device persistence. Requires _LIST_MEMBERSHIPS_ field.",
         "listSyncedToAims": "{{count}} people synced to AIMS with list data",
         "syncToAimsFailed": "Failed to sync list to AIMS"
+    },
+    "manual": {
+        "title": "User Manual",
+        "tabs": {
+            "gettingStarted": "Getting Started",
+            "spaces": "Spaces",
+            "people": "People Manager",
+            "conference": "Conference Rooms",
+            "sync": "Synchronization",
+            "settings": "Settings"
+        },
+        "gettingStarted": {
+            "overview": {
+                "title": "Overview",
+                "content": "electis Space is an ESL (Electronic Shelf Label) management system that helps you manage spaces, people assignments, and conference rooms.\nThe application connects to the SoluM AIMS platform to synchronize data with electronic labels.\nUse the navigation tabs at the top to access different features: Dashboard, Spaces/People, Conference Rooms, and Sync."
+            },
+            "firstSteps": {
+                "title": "First Steps",
+                "content": "1. Click the Settings icon (gear) in the top-right corner.\n2. Go to the 'SoluM' tab and enter your connection credentials.\n3. Click 'Connect' to establish a connection with the AIMS server.\n4. Once connected, your spaces and labels will be synchronized automatically.\n5. Return to the Dashboard to see an overview of your system status."
+            },
+            "connection": {
+                "title": "Connection Setup",
+                "content": "To connect to SoluM AIMS, you need the following information from your SoluM provider:\n• API Cluster: Select 'Common' or 'C1' based on your region.\n• Base URL: The AIMS server address (e.g., https://eu.common.solumesl.com).\n• Company Code: Your company identifier in the SoluM system.\n• Store Number: The specific store you want to manage.\n• Username & Password: Your AIMS login credentials.\nEnter these in Settings > SoluM tab, then click 'Connect'."
+            }
+        },
+        "spaces": {
+            "overview": {
+                "title": "Overview",
+                "content": "The Spaces section allows you to manage physical locations in your facility (rooms, desks, lockers, etc.).\nEach space represents an 'article' in SoluM AIMS that can be assigned to an electronic label.\nSpaces are synchronized bidirectionally - changes you make here are pushed to AIMS, and AIMS data is pulled during sync."
+            },
+            "management": {
+                "title": "Managing Spaces",
+                "content": "• Add Space: Click the 'Add' button to create a new space with a unique ID.\n• Edit Space: Click the edit icon on any row to modify its data fields.\n• Delete Space: Click the delete icon to remove a space (this also deletes it from AIMS).\n• Search: Use the search bar to filter spaces by any field value.\n• The table shows all fields defined in your article format schema."
+            },
+            "labels": {
+                "title": "Label Assignment",
+                "content": "ESL labels are physical electronic displays that show space information.\n• Labels are assigned to spaces through the SoluM AIMS platform or mobile app.\n• The 'With Labels' count shows how many spaces have assigned labels.\n• When a label is assigned, it automatically displays the space's data.\n• Label assignments sync automatically - no manual action required in this app."
+            }
+        },
+        "people": {
+            "overview": {
+                "title": "Overview",
+                "content": "People Manager mode transforms the app for person-to-space assignments.\nUseful for: desk booking, locker assignments, hot-desking, temporary seating arrangements.\nTo enable: Go to Settings > SoluM tab > toggle 'Enable People Manager Mode'.\nThis adds a hidden field (_LIST_MEMBERSHIPS_) to your article format for storing assignment data."
+            },
+            "csvImport": {
+                "title": "CSV Import",
+                "content": "Import a list of people from a CSV file:\n1. Click the 'Upload CSV' button in the toolbar.\n2. Select a CSV file with columns matching your field configuration.\n3. The file is parsed and people are loaded into the table.\n4. Each row becomes a 'person' that can be assigned to a space.\nNote: CSV headers should match field names in your article format."
+            },
+            "assignments": {
+                "title": "Space Assignments",
+                "content": "Assign people to spaces (desks, lockers, etc.):\n• Single Assignment: Click the assign button next to a person's name.\n• Bulk Assignment: Select multiple people using checkboxes, then click 'Assign Selected'.\n• The system assigns spaces sequentially based on available inventory.\n• Progress bar shows: assigned / total available spaces.\n• Total Spaces is configured in Settings > SoluM > People Manager section."
+            },
+            "lists": {
+                "title": "List Management",
+                "content": "Save and manage multiple assignment configurations:\n• Save List: After making assignments, save them as a named list.\n• Load List: Restore a previously saved list to see/apply those assignments.\n• Lists are stored locally in your browser (IndexedDB).\n• Sync to AIMS: Click 'Send All to AIMS' to push assignments to the server.\n• Lists can be synced across devices via the _LIST_MEMBERSHIPS_ field in AIMS."
+            }
+        },
+        "conference": {
+            "overview": {
+                "title": "Overview",
+                "content": "Conference Rooms mode manages meeting room displays on ESL labels.\nEach room shows meeting information: room name, current meeting, time, participants.\nRoom data is synchronized with AIMS and displayed on labels outside meeting rooms."
+            },
+            "rooms": {
+                "title": "Managing Rooms",
+                "content": "• Add Room: Click 'Add Room' to create a new conference room entry.\n• Edit Room: Click the edit icon to update room details and meeting info.\n• Delete Room: Remove a room from the system and AIMS.\n• Room ID: Unique identifier that matches the article ID in AIMS.\n• Each room's data fields are defined by your article format schema."
+            },
+            "meetings": {
+                "title": "Meeting Display",
+                "content": "Configure what displays on conference room labels:\n• Room Name: The display name of the meeting room.\n• Meeting Name: Current or next meeting title.\n• Start/End Time: Meeting schedule.\n• Participants: Number of attendees.\n• Status: Available (green) or Occupied (red) indicator.\nFields are configured in the room edit dialog and synced to AIMS."
+            }
+        },
+        "sync": {
+            "overview": {
+                "title": "Overview",
+                "content": "The Sync page shows your connection status to SoluM AIMS.\nThe floating sync indicator (bottom-left) shows: Connected (green), Syncing (blue), Error (red), or Disconnected (gray).\nClick the sync indicator to trigger a manual sync or see the last sync time."
+            },
+            "autoSync": {
+                "title": "Auto-Sync",
+                "content": "Automatic synchronization keeps your data current:\n• Enable/Disable: Toggle auto-sync in Settings > SoluM tab.\n• Sync Interval: Configure how often to sync (in seconds).\n• During sync: Data is pulled from AIMS and local changes are pushed.\n• Sync indicator shows current status in real-time.\n• Last sync time appears on the Dashboard and in the sync popup."
+            },
+            "troubleshooting": {
+                "title": "Troubleshooting",
+                "content": "If synchronization fails:\n1. Check your internet connection.\n2. Verify credentials in Settings > SoluM tab.\n3. Ensure Base URL is correct for your region.\n4. Check Settings > Logs tab for detailed error messages.\n5. Try clicking 'Disconnect' then 'Connect' again.\n6. Clear browser cache if issues persist.\n7. Contact your SoluM administrator for credential issues."
+            }
+        },
+        "settings": {
+            "overview": {
+                "title": "Overview",
+                "content": "Access Settings by clicking the gear icon in the top-right corner.\nSettings tabs:\n• App: Application name, subtitle, and general preferences.\n• SoluM: AIMS connection, credentials, and sync configuration.\n• Logo: Customize left and right header logos.\n• Security: Password protection for settings.\n• Logs: View application logs for debugging."
+            },
+            "solum": {
+                "title": "SoluM Configuration",
+                "content": "Configure your SoluM AIMS connection:\n• API Cluster: Select 'Common' or 'C1' cluster.\n• Base URL: AIMS server address (e.g., https://eu.common.solumesl.com).\n• Company Code: Your company identifier.\n• Store Number: The store to manage.\n• Username/Password: Your login credentials.\n• Auto-Sync: Toggle automatic synchronization.\n• People Manager: Enable for person-to-space assignments.\n• Total Spaces: Set available space count for People Manager mode."
+            },
+            "security": {
+                "title": "Security Settings",
+                "content": "Protect your settings with a password:\n• Set Password: Create a password to lock the settings dialog.\n• Auto-Lock Timer: Settings lock automatically after a period of inactivity.\n• Unlock: Enter your password to access locked settings.\n• Password Reset: If forgotten, clear browser data to reset (loses all settings).\nUse this to prevent unauthorized changes to critical configuration."
+            }
+        }
     }
 }
