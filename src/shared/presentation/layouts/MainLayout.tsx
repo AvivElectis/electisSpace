@@ -268,7 +268,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Box>
 
                 {/* Sync Status Indicator - Fixed at bottom left (End in RTL) */}
-                <Box sx={{ position: 'fixed', bottom: 24, left: 24, zIndex: 1200 }}>
+                <Box sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, left: { xs: 16, sm: 24 }, zIndex: 1200 }}>
                     <SyncStatusIndicator
                         status={
                             syncState.status === 'syncing' ? 'syncing' :

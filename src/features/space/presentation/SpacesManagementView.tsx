@@ -17,6 +17,10 @@ import {
     Tooltip,
     TableSortLabel,
     Skeleton,
+    Card,
+    CardContent,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -46,6 +50,8 @@ const SaveListDialog = lazy(() => import('@features/lists/presentation/SaveListD
  */
 export function SpacesManagementView() {
     const { t, i18n } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const settingsController = useSettingsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const activeListName = useSpacesStore((state) => state.activeListName);
@@ -277,6 +283,7 @@ export function SpacesManagementView() {
 
             {/* Search Bar */}
             <TextField
+                fullWidth
                 placeholder={t('spaces.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -289,14 +296,85 @@ export function SpacesManagementView() {
                 }}
                 sx={{
                     mb: 3,
+                    maxWidth: { xs: '100%', sm: 400 },
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 4,
                     }
                 }}
             />
 
-            {/* Spaces Table */}
-            <TableContainer component={Paper} sx={{ maxHeight: '70vh' }}>
+            {/* Spaces Table / Mobile Card View */}
+            {isMobile ? (
+                /* Mobile Card View */
+                <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
+                    {spaceController.isFetching ? (
+                        <Stack gap={1}>
+                            {Array.from({ length: 5 }).map((_, index) => (
+                                <Card key={`skeleton-${index}`} variant="outlined">
+                                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                        <Skeleton variant="text" width="60%" height={24} />
+                                        <Skeleton variant="text" width="80%" height={20} />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Stack>
+                    ) : filteredAndSortedSpaces.length === 0 ? (
+                        <Paper sx={{ p: 4, textAlign: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {searchQuery
+                                    ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
+                                    : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
+                            </Typography>
+                        </Paper>
+                    ) : (
+                        <Stack gap={1}>
+                            {filteredAndSortedSpaces.map((space) => (
+                                <Card key={space.id} variant="outlined">
+                                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                        {/* Row 1: ID + Actions */}
+                                        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
+                                            <Typography variant="subtitle2" fontWeight={600}>
+                                                {space.id}
+                                            </Typography>
+                                            <Stack direction="row" gap={0.5}>
+                                                <Tooltip title={t('common.edit')}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => handleEdit(space)}
+                                                    >
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title={t('common.delete')}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleDelete(space.id)}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Stack>
+                                        </Stack>
+                                        {/* Row 2: Fields (stacked) */}
+                                        <Typography variant="body2" color="text.secondary" noWrap>
+                                            {visibleFields.slice(0, 3).map((field, i) => (
+                                                <span key={field.key}>
+                                                    {i > 0 && ' • '}
+                                                    {space.data[field.key] || '-'}
+                                                </span>
+                                            ))}
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Stack>
+                    )}
+                </Box>
+            ) : (
+                /* Desktop Table View */
+                <TableContainer component={Paper} sx={{ maxHeight: { xs: '55vh', sm: '65vh', md: '70vh' } }}>
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'background.default' }}>
@@ -404,6 +482,7 @@ export function SpacesManagementView() {
                     </TableBody>
                 </Table>
             </TableContainer>
+            )}
 
             {/* Bottom Actions Bar */}
             <Box sx={{

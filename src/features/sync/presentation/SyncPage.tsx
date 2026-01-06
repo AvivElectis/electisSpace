@@ -148,7 +148,7 @@ export function SyncPage() {
                 startIcon={<SyncIcon />}
                 onClick={handleSync}
                 disabled={syncing || !syncState.isConnected}
-                sx={{ minWidth: 200 }}
+                sx={{ minWidth: { xs: '100%', sm: 200 } }}
             >
                 {syncing ? t('sync.syncing') : t('sync.manualSync')}
             </Button>

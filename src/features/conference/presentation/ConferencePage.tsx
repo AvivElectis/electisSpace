@@ -260,6 +260,7 @@ export function ConferencePage() {
 
             {/* Search Bar */}
             <TextField
+                fullWidth
                 placeholder={t('conference.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -272,6 +273,7 @@ export function ConferencePage() {
                 }}
                 sx={{
                     mb: 3,
+                    maxWidth: { xs: '100%', sm: 400 },
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 4,
                     }
