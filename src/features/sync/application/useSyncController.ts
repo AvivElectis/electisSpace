@@ -208,7 +208,8 @@ export function useSyncController({
      * Perform sync (download data)
      */
     const sync = useCallback(async (): Promise<void> => {
-        logger.info('SyncController', 'Starting sync', { mode: workingMode });
+        logger.info('Sync', 'Starting sync', { mode: workingMode });
+        logger.startTimer('sync-download');
 
         try {
             setSyncState({ status: 'syncing', progress: 0 });
@@ -229,9 +230,15 @@ export function useSyncController({
             const status = adapter.getStatus();
             setSyncState(status);
 
-            logger.info('SyncController', 'Sync complete', { count: spaces.length });
+            logger.endTimer('sync-download', 'Sync', 'Sync download completed', { 
+                spacesCount: spaces.length,
+                mode: workingMode 
+            });
         } catch (error) {
-            logger.error('SyncController', 'Sync failed', { error });
+            logger.endTimer('sync-download', 'Sync', 'Sync download failed', { 
+                error: error instanceof Error ? error.message : String(error) 
+            });
+            logger.error('Sync', 'Sync failed', { error });
             setSyncState({
                 status: 'error',
                 lastError: error instanceof Error ? error.message : 'Sync failed',
@@ -245,7 +252,8 @@ export function useSyncController({
      * Upload space data
      */
     const upload = useCallback(async (spaces: Space[]): Promise<void> => {
-        logger.info('SyncController', 'Uploading spaces', { count: spaces.length });
+        logger.info('Sync', 'Uploading spaces', { count: spaces.length });
+        logger.startTimer('sync-upload');
 
         try {
             setSyncState({ status: 'syncing', progress: 0 });
@@ -262,9 +270,14 @@ export function useSyncController({
             const status = adapter.getStatus();
             setSyncState(status);
 
-            logger.info('SyncController', 'Upload complete');
+            logger.endTimer('sync-upload', 'Sync', 'Upload completed', { 
+                spacesCount: spaces.length 
+            });
         } catch (error) {
-            logger.error('SyncController', 'Upload failed', { error });
+            logger.endTimer('sync-upload', 'Sync', 'Upload failed', { 
+                error: error instanceof Error ? error.message : String(error) 
+            });
+            logger.error('Sync', 'Upload failed', { error });
             setSyncState({
                 status: 'error',
                 lastError: error instanceof Error ? error.message : 'Upload failed',
