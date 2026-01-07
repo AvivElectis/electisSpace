@@ -56,8 +56,8 @@ export function SolumCredentialsSection({
         }
     };
 
-    const handleDisconnect = () => {
-        disconnectFromSolum();
+    const handleDisconnect = async () => {
+        await disconnectFromSolum();
         showSuccess(t('settings.disconnected'));
     };
 

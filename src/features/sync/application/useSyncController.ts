@@ -20,6 +20,7 @@ interface UseSyncControllerProps {
     autoSyncEnabled: boolean;
     onSpaceUpdate: (spaces: Space[]) => void;
     solumMappingConfig?: SolumMappingConfig;
+    isConnected?: boolean;  // Connection status from settings
 }
 
 export function useSyncController({
@@ -29,6 +30,7 @@ export function useSyncController({
     autoSyncEnabled: autoSyncEnabledProp,
     onSpaceUpdate,
     solumMappingConfig,
+    isConnected: isConnectedProp,
 }: UseSyncControllerProps) {
     const {
         workingMode,
@@ -118,6 +120,32 @@ export function useSyncController({
             }
         }
     }, [autoSyncEnabledProp, autoSyncEnabled, setAutoSyncEnabled, workingMode, solumConfig, autoSyncInterval, setAutoSyncInterval]);
+
+    /**
+     * Handle disconnect from settings
+     * When isConnectedProp changes to false, clean up the adapter and reset state
+     */
+    useEffect(() => {
+        if (!isConnectedProp) {
+            logger.info('SyncController', 'Connection status changed to disconnected');
+            
+            // Clear the adapter
+            if (adapterRef.current) {
+                adapterRef.current.disconnect().catch(() => {/* ignore */});
+                adapterRef.current = null;
+                logger.info('SyncController', 'Adapter cleared');
+            }
+            
+            // Reset sync state to disconnected
+            if (syncState.isConnected || syncState.status !== 'disconnected') {
+                setSyncState({
+                    status: 'disconnected',
+                    isConnected: false,
+                });
+                logger.info('SyncController', 'Sync state reset to disconnected');
+            }
+        }
+    }, [isConnectedProp, syncState.isConnected, syncState.status, setSyncState]);
 
     /**
      * Initialize state from adapter on mount/change
@@ -331,18 +359,25 @@ export function useSyncController({
 
     /**
      * Setup auto-sync interval
+     * Only runs when connected and enabled
      */
     useEffect(() => {
+        const shouldAutoSync = autoSyncEnabled && autoSyncInterval > 0 && isConnectedProp;
+        
         logger.info('SyncController', 'Auto-sync effect triggered', {
             enabled: autoSyncEnabled,
             interval: autoSyncInterval,
+            isConnected: isConnectedProp,
+            shouldAutoSync,
             hasTimer: !!autoSyncTimerRef.current
         });
 
-        if (!autoSyncEnabled || autoSyncInterval <= 0) {
+        if (!shouldAutoSync) {
             // Clear existing timer
             if (autoSyncTimerRef.current) {
-                logger.info('SyncController', 'Clearing auto-sync timer (disabled/invalid)');
+                logger.info('SyncController', 'Clearing auto-sync timer (disabled/disconnected)', {
+                    reason: !autoSyncEnabled ? 'disabled' : !isConnectedProp ? 'disconnected' : 'invalid interval'
+                });
                 clearInterval(autoSyncTimerRef.current);
                 autoSyncTimerRef.current = null;
             }
@@ -360,6 +395,11 @@ export function useSyncController({
 
         // Setup new timer
         autoSyncTimerRef.current = setInterval(() => {
+            // Double-check connection before syncing
+            if (!isConnectedProp) {
+                logger.warn('SyncController', 'Auto-sync skipped - not connected');
+                return;
+            }
             logger.info('SyncController', 'Auto-sync triggered by timer');
             syncRef.current().catch((error) => {
                 logger.error('SyncController', 'Auto-sync failed', { error });
@@ -374,7 +414,7 @@ export function useSyncController({
                 autoSyncTimerRef.current = null;
             }
         };
-    }, [autoSyncEnabled, autoSyncInterval]); // Removed sync from dependencies
+    }, [autoSyncEnabled, autoSyncInterval, isConnectedProp]); // Added isConnectedProp
 
     /**
      * Cleanup adapter when dependencies change

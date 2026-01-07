@@ -103,13 +103,12 @@ export function SyncStatusIndicator({
                     cursor: 'pointer',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'hsla(120, 100%, 93%, 1.00)',
-                    opacity: '95%',   
+                    borderColor: config.borderColor,
+                    bgcolor: config.bg,
                     '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: theme.shadows[4],
-                        borderColor: config.borderColor,
+                        borderColor: config.color,
                     }
                 }}
             >
@@ -251,6 +250,7 @@ export function SyncStatusIndicator({
                                     color="primary"
                                     startIcon={<SyncRoundedIcon />}
                                     onClick={onSyncClick}
+                                    disabled={status === 'disconnected'}
                                     sx={{ borderRadius: 2, textTransform: 'none' }}
                                 >
                                     {t('sync.manualSync')}

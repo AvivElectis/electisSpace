@@ -12,6 +12,9 @@ interface ConferenceStore {
     updateConferenceRoom: (id: string, updates: Partial<ConferenceRoom>) => void;
     deleteConferenceRoom: (id: string) => void;
     toggleMeeting: (id: string) => void;
+
+    // Cleanup
+    clearAllData: () => void;
 }
 
 export const useConferenceStore = create<ConferenceStore>()(
@@ -60,6 +63,9 @@ export const useConferenceStore = create<ConferenceStore>()(
                             : r
                     ),
                 })),
+
+            // Cleanup
+            clearAllData: () => set({ conferenceRooms: [] }),
         }),
         {
             name: 'conference-store',
