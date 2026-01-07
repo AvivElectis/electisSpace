@@ -58,11 +58,14 @@ export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [manualOpen, setManualOpen] = useState(false);
-    const { syncState, workingMode, setWorkingMode } = useSyncStore();
+    const { syncState } = useSyncStore();
+    
+    // Determine drawer direction based on current language (more reliable than theme.direction)
+    const isRtl = i18n.language === 'he';
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
     const setPeople = usePeopleStore(state => state.setPeople);
@@ -111,6 +114,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     ];
 
     // Initialize global sync controller
+    // Determine connection status based on working mode
+    const isConnected = settings.workingMode === 'SFTP' 
+        ? settings.sftpCredentials?.isConnected || false
+        : settings.solumConfig?.isConnected || false;
+        
     const syncController = useSyncController({
         sftpCredentials: settings.sftpCredentials,
         solumConfig: settings.solumConfig,
@@ -119,7 +127,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         autoSyncEnabled: settings.autoSyncEnabled,
         onSpaceUpdate: handleSpaceUpdate,  // Use combined handler for People Mode support
         solumMappingConfig: settings.solumMappingConfig,
-        isConnected: settings.solumConfig?.isConnected || false,
+        isConnected,
     });
 
     // Get active list name for tab label
@@ -128,12 +136,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     const { sync } = syncController;
 
-    // Force migration from SFTP to SoluM since SFTP is disabled
-    useEffect(() => {
-        if (workingMode === 'SFTP') {
-            setWorkingMode('SOLUM_API');
-        }
-    }, [workingMode, setWorkingMode]);
+    // SFTP mode is now enabled - no force migration needed
 
     // Prefetch all routes when app is idle for instant navigation
     useEffect(() => {
@@ -184,14 +187,17 @@ export function MainLayout({ children }: MainLayoutProps) {
                 {/* Navigation - Tabs for desktop, Drawer for mobile */}
                 {isMobile ? (
                     <Drawer
-                        anchor={theme.direction === 'rtl' ? 'right' : 'left'}
+                        anchor={isRtl ? 'right' : 'left'}
                         open={mobileMenuOpen}
                         onClose={() => setMobileMenuOpen(false)}
+                        slotProps={{
+                            transition: { direction: isRtl ? 'left' : 'right' }
+                        }}
+
                     >
-                        <Box sx={{ width: 250 }}>
                             <List>
                                 {navTabs.map(tab => (
-                                    <ListItem key={tab.value} disablePadding>
+                                    <ListItem key={tab.value} disablePadding sx={{py: 2}}>
                                         <ListItemButton
                                             selected={currentTab === tab.value}
                                             onClick={() => handleMobileNavClick(tab.value)}
@@ -211,7 +217,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                                     </ListItem>
                                 ))}
                             </List>
-                        </Box>
                     </Drawer>
                 ) : (
                     <Box sx={{
@@ -238,7 +243,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                                     }
                                 }
                             }}
-                            TabIndicatorProps={{ sx: { display: 'none' } }}
+                            slotProps={{
+                                indicator: { sx: { display: 'none' } }
+                            }}
 
                         >
                             {navTabs.map(tab => (
@@ -282,10 +289,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                         status={
                             syncState.status === 'syncing' ? 'syncing' :
                                 syncState.status === 'error' ? 'error' :
-                                    syncState.isConnected ? 'connected' : 'disconnected'
+                                    isConnected ? 'connected' : 'disconnected'
                         }
                         lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
-                        workingMode="SoluM"
+                        workingMode={settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM'}
                         errorMessage={syncState.lastError}
                         onSyncClick={() => sync().catch(() => {/* console.error */ })}
                     />

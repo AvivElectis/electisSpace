@@ -210,7 +210,7 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             label={t('settings.workingMode')}
                             onChange={(e) => handleModeChange(e.target.value as WorkingMode)}
                         >
-                            {/* <MenuItem value="SFTP">{t('sync.sftpMode')}</MenuItem> */}
+                            <MenuItem value="SFTP">{t('sync.sftpMode')}</MenuItem>
                             <MenuItem value="SOLUM_API">{t('sync.solumMode')}</MenuItem>
                         </Select>
                     </FormControl>

@@ -65,8 +65,8 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         settings.sftpCredentials?.remoteFilename
     );
 
-    // Track SFTP connected state
-    const isConnected = Boolean(settings.sftpCredentials && hasCredentials);
+    // Track SFTP connected state from credentials
+    const isConnected = Boolean(settings.sftpCredentials?.isConnected);
 
     const handleTestConnection = async () => {
         if (!settings.sftpCredentials) {
@@ -107,7 +107,13 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
             const result = await testConnection(settings.sftpCredentials);
             
             if (result.success) {
-                // Mark as connected by ensuring credentials are saved
+                // Mark as connected
+                onUpdate({
+                    sftpCredentials: {
+                        ...settings.sftpCredentials,
+                        isConnected: true,
+                    }
+                });
                 logger.info('Settings', 'SFTP connected successfully');
             } else {
                 throw new Error(result.error || 'Connection failed');
@@ -123,10 +129,15 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
     const handleDisconnect = () => {
         logger.info('Settings', 'Disconnecting from SFTP server');
-        // Clear credentials to disconnect
-        onUpdate({
-            sftpCredentials: undefined,
-        });
+        // Mark as disconnected (preserve credentials for reconnection)
+        if (settings.sftpCredentials) {
+            onUpdate({
+                sftpCredentials: {
+                    ...settings.sftpCredentials,
+                    isConnected: false,
+                },
+            });
+        }
         setTestResult(null);
     };
 
@@ -136,7 +147,9 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                 username: settings.sftpCredentials?.username || '',
                 password: settings.sftpCredentials?.password || '',
                 host: settings.sftpCredentials?.host || '',
+                port: settings.sftpCredentials?.port || 22,
                 remoteFilename: settings.sftpCredentials?.remoteFilename || 'esl.csv',
+                isConnected: settings.sftpCredentials?.isConnected || false,
                 ...updates,
             }
         });
@@ -179,6 +192,18 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             onChange={(e) => updateCredentials({ host: e.target.value })}
                             placeholder="sftp.example.com"
                             disabled={connecting}
+                        />
+
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={t('settings.port')}
+                            type="number"
+                            value={settings.sftpCredentials?.port || 22}
+                            onChange={(e) => updateCredentials({ port: parseInt(e.target.value) || 22 })}
+                            placeholder="22"
+                            disabled={connecting}
+                            inputProps={{ min: 1, max: 65535 }}
                         />
 
                         <TextField

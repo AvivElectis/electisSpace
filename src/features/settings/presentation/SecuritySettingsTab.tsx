@@ -172,8 +172,10 @@ export function SecuritySettingsTab({
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 helperText={strength.text}
-                                FormHelperTextProps={{
-                                    sx: { color: `${strength.color}.main`, m: 0 }
+                                slotProps={{
+                                    formHelperText: {
+                                        sx: { color: `${strength.color}.main`, m: 0 }
+                                    }
                                 }}
                             />
                             <TextField

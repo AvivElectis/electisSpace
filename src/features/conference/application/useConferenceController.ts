@@ -1,11 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { useConferenceStore } from '../infrastructure/conferenceStore';
 import { validateConferenceRoom, isConferenceRoomIdUnique } from '../domain/validation';
 import { generateConferenceRoomId, createEmptyConferenceRoom, toggleMeetingStatus } from '../domain/businessRules';
-import type { ConferenceRoom, SolumConfig } from '@shared/domain/types';
+import type { ConferenceRoom, SolumConfig, SFTPCredentials, WorkingMode } from '@shared/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
+import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
 import { logger } from '@shared/infrastructure/services/logger';
 import { useConferenceAIMS } from './hooks/useConferenceAIMS';
+import { SFTPSyncAdapter } from '@features/sync/infrastructure/SFTPSyncAdapter';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 
 /**
  * Conference Controller Hook
@@ -17,6 +20,10 @@ interface UseConferenceControllerProps {
     solumConfig?: SolumConfig;     // For SoluM label page flipping
     solumToken?: string;            // Current SoluM access token
     solumMappingConfig?: SolumMappingConfig; // SoluM field mappings
+    // SFTP mode props
+    workingMode?: WorkingMode;
+    sftpCredentials?: SFTPCredentials;
+    sftpCsvConfig?: EnhancedCSVConfig;
 }
 
 export function useConferenceController({
@@ -24,6 +31,9 @@ export function useConferenceController({
     solumConfig,
     solumToken,
     solumMappingConfig,
+    workingMode = 'SOLUM_API',
+    sftpCredentials,
+    sftpCsvConfig,
 }: UseConferenceControllerProps) {
     const {
         conferenceRooms,
@@ -32,6 +42,12 @@ export function useConferenceController({
         updateConferenceRoom: updateInStore,
         deleteConferenceRoom: deleteFromStore,
     } = useConferenceStore();
+
+    // Get spaces for combined CSV upload in SFTP mode
+    const spaces = useSpacesStore((state) => state.spaces);
+
+    // SFTP Adapter ref for reuse
+    const sftpAdapterRef = useRef<SFTPSyncAdapter | null>(null);
 
     // Use the extracted AIMS hook for all AIMS operations
     const { 
@@ -48,6 +64,34 @@ export function useConferenceController({
 
     // Loading state for fetch operations
     const [isFetching, setIsFetching] = useState(false);
+
+    /**
+     * Get or create SFTP adapter for uploads
+     */
+    const getSFTPAdapter = useCallback((): SFTPSyncAdapter | null => {
+        if (!sftpCredentials || !sftpCsvConfig) return null;
+        
+        if (!sftpAdapterRef.current) {
+            sftpAdapterRef.current = new SFTPSyncAdapter(sftpCredentials, sftpCsvConfig);
+        } else {
+            // Update with latest config
+            sftpAdapterRef.current.updateCredentials(sftpCredentials);
+            sftpAdapterRef.current.updateCSVConfig(sftpCsvConfig);
+        }
+        return sftpAdapterRef.current;
+    }, [sftpCredentials, sftpCsvConfig]);
+
+    /**
+     * Upload current data to SFTP after changes
+     */
+    const uploadToSFTP = useCallback(async (): Promise<void> => {
+        const adapter = getSFTPAdapter();
+        if (!adapter) {
+            throw new Error('SFTP not configured');
+        }
+        // Upload combined spaces and conference rooms
+        await adapter.upload(spaces, conferenceRooms);
+    }, [getSFTPAdapter, spaces, conferenceRooms]);
 
     /**
      * Add new conference room
@@ -87,27 +131,43 @@ export function useConferenceController({
                 throw new Error('Conference room ID already exists');
             }
 
-            // Post to AIMS if using SoluM mode
-            if (isAIMSConfigured) {
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Add to local store then upload CSV
+                logger.info('ConferenceController', 'Adding conference room in SFTP mode', { id: finalRoom.id });
+                addToStore(finalRoom);
+                
+                try {
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Conference room added and uploaded to SFTP', { id: finalRoom.id });
+                } catch (error) {
+                    // Rollback on failure
+                    deleteFromStore(finalRoom.id);
+                    logger.error('ConferenceController', 'Failed to upload after add, rolling back', { error });
+                    throw error;
+                }
+            } else if (isAIMSConfigured) {
+                // SoluM API mode: Post to AIMS
                 try {
                     await pushToAIMS(finalRoom);
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to push article to AIMS', { error });
                     throw new Error(`Failed to push to AIMS: ${error}`);
                 }
-            }
 
-            // Add to store
-            addToStore(finalRoom);
+                // Add to store
+                addToStore(finalRoom);
 
-            // Refresh from AIMS to get the latest state
-            if (isAIMSConfigured) {
+                // Refresh from AIMS to get the latest state
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after add');
                 } catch (error) {
                     logger.warn('ConferenceController', 'Failed to refresh from AIMS after add', { error });
                 }
+            } else {
+                // Fallback: add to store directly (no external sync)
+                addToStore(finalRoom);
             }
 
             // Trigger sync
@@ -121,7 +181,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room added', { id: finalRoom.id });
         },
-        [conferenceRooms, addToStore, onSync, isAIMSConfigured, pushToAIMS]
+        [conferenceRooms, addToStore, deleteFromStore, onSync, isAIMSConfigured, pushToAIMS, workingMode, uploadToSFTP]
     );
 
     /**
@@ -150,8 +210,24 @@ export function useConferenceController({
                 throw new Error(`Validation failed: ${errorMsg}`);
             }
 
-            // Push to AIMS if using SoluM mode
-            if (isAIMSConfigured) {
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Update in local store then upload CSV
+                logger.info('ConferenceController', 'Updating conference room in SFTP mode', { id });
+                const originalRoom = { ...existingRoom };
+                updateInStore(id, updatedRoom);
+                
+                try {
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Conference room updated and uploaded to SFTP', { id });
+                } catch (error) {
+                    // Rollback on failure
+                    updateInStore(id, originalRoom);
+                    logger.error('ConferenceController', 'Failed to upload after update, rolling back', { error });
+                    throw error;
+                }
+            } else if (isAIMSConfigured) {
+                // SoluM API mode: Push to AIMS
                 try {
                     await pushToAIMS(updatedRoom);
                     logger.info('ConferenceController', 'Article updated in AIMS successfully', { id });
@@ -159,19 +235,20 @@ export function useConferenceController({
                     logger.error('ConferenceController', 'Failed to update article in AIMS', { error });
                     throw new Error(`Failed to update in AIMS: ${error}`);
                 }
-            }
 
-            // Update in store
-            updateInStore(id, updatedRoom);
+                // Update in store
+                updateInStore(id, updatedRoom);
 
-            // Refresh from AIMS to get the latest state
-            if (isAIMSConfigured) {
+                // Refresh from AIMS to get the latest state
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after update');
                 } catch (error) {
                     logger.warn('ConferenceController', 'Failed to refresh from AIMS after update', { error });
                 }
+            } else {
+                // Fallback: update in store directly (no external sync)
+                updateInStore(id, updatedRoom);
             }
 
             // Trigger sync
@@ -185,7 +262,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room updated', { id });
         },
-        [conferenceRooms, updateInStore, onSync, isAIMSConfigured, pushToAIMS]
+        [conferenceRooms, updateInStore, onSync, isAIMSConfigured, pushToAIMS, workingMode, uploadToSFTP]
     );
 
     /**
@@ -200,27 +277,44 @@ export function useConferenceController({
                 throw new Error('Conference room not found');
             }
 
-            // Delete from AIMS if using SoluM mode
-            if (isAIMSConfigured) {
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Delete from local store then upload CSV
+                logger.info('ConferenceController', 'Deleting conference room in SFTP mode', { id });
+                const originalRoom = { ...existingRoom };
+                deleteFromStore(id);
+                
+                try {
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Conference room deleted and uploaded to SFTP', { id });
+                } catch (error) {
+                    // Rollback on failure
+                    addToStore(originalRoom);
+                    logger.error('ConferenceController', 'Failed to upload after delete, rolling back', { error });
+                    throw error;
+                }
+            } else if (isAIMSConfigured) {
+                // SoluM API mode: Delete from AIMS
                 try {
                     await deleteFromAIMS(id);
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to delete article from AIMS', { error });
                     throw new Error(`Failed to delete from AIMS: ${error}`);
                 }
-            }
 
-            // Delete from store
-            deleteFromStore(id);
+                // Delete from store
+                deleteFromStore(id);
 
-            // Refresh from AIMS to get the latest state
-            if (isAIMSConfigured) {
+                // Refresh from AIMS to get the latest state
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after delete');
                 } catch (error) {
                     logger.warn('ConferenceController', 'Failed to refresh from AIMS after delete', { error });
                 }
+            } else {
+                // Fallback: delete from store directly (no external sync)
+                deleteFromStore(id);
             }
 
             // Trigger sync
@@ -234,7 +328,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room deleted', { id });
         },
-        [conferenceRooms, deleteFromStore, onSync, isAIMSConfigured, deleteFromAIMS]
+        [conferenceRooms, addToStore, deleteFromStore, onSync, isAIMSConfigured, deleteFromAIMS, workingMode, uploadToSFTP]
     );
 
     /**
@@ -250,7 +344,25 @@ export function useConferenceController({
             }
 
             const updatedRoom = toggleMeetingStatus(room);
-            updateInStore(id, updatedRoom);
+            
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Update in local store then upload CSV
+                const originalRoom = { ...room };
+                updateInStore(id, updatedRoom);
+                
+                try {
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Meeting status toggled and uploaded to SFTP', { id });
+                } catch (error) {
+                    // Rollback on failure
+                    updateInStore(id, originalRoom);
+                    logger.error('ConferenceController', 'Failed to upload after toggle, rolling back', { error });
+                    throw error;
+                }
+            } else {
+                updateInStore(id, updatedRoom);
+            }
 
             // Trigger sync
             if (onSync) {
@@ -263,7 +375,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Meeting status toggled', { id, hasMeeting: updatedRoom.hasMeeting });
         },
-        [conferenceRooms, updateInStore, onSync]
+        [conferenceRooms, updateInStore, onSync, workingMode, uploadToSFTP]
     );
 
     /**
