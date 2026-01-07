@@ -25,16 +25,28 @@ const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
  * Called on disconnect or mode switch
  */
 async function clearAllDataStores(): Promise<void> {
-    // Dynamic imports to avoid circular dependencies
-    const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
-    const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
-    const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
-    
-    useSpacesStore.getState().clearAllData();
-    usePeopleStore.getState().clearAllData();
-    useConferenceStore.getState().clearAllData();
-    
-    logger.info('Settings', 'Cleared all data stores (spaces, people, conference rooms)');
+    try {
+        // Dynamic imports to avoid circular dependencies
+        const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
+        const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
+        const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
+        
+        logger.info('Settings', 'Clearing all data stores...');
+        
+        useSpacesStore.getState().clearAllData();
+        logger.info('Settings', 'Spaces store cleared');
+        
+        usePeopleStore.getState().clearAllData();
+        logger.info('Settings', 'People store cleared');
+        
+        useConferenceStore.getState().clearAllData();
+        logger.info('Settings', 'Conference store cleared');
+        
+        logger.info('Settings', 'All data stores cleared successfully');
+    } catch (error) {
+        logger.error('Settings', 'Failed to clear data stores', { error });
+        throw error;
+    }
 }
 
 /**
