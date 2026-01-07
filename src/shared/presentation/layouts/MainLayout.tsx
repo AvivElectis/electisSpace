@@ -118,6 +118,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         autoSyncEnabled: settings.autoSyncEnabled,
         onSpaceUpdate: handleSpaceUpdate,  // Use combined handler for People Mode support
         solumMappingConfig: settings.solumMappingConfig,
+        isConnected: settings.solumConfig?.isConnected || false,
     });
 
     // Get active list name for tab label
