@@ -1,7 +1,7 @@
-# electisSpace Deep Implementation Plan - Q1 2025
+# electisSpace Deep Implementation Plan - Q1 2025/Q1 2026
 
 > Generated: December 30, 2025
-> Last Updated: January 6, 2026
+> Last Updated: January 7, 2026
 
 ## Implementation Status
 
@@ -15,6 +15,8 @@
 | 6 | UI Responsiveness | ✅ Completed | Jan 6 | Jan 6 |
 | 7 | Logger Enhancement | ✅ Completed | Jan 6 | Jan 6 |
 | 8 | App Manual Feature | ✅ Completed | Jan 6 | Jan 6 |
+| 9 | Data Cleanup on Disconnect/Mode Switch | ⬜ Not Started | - | - |
+| 10 | SFTP Mode Implementation | ⬜ Not Started | - | - |
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
@@ -1700,7 +1702,9 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | File Optimization | 27h |
 | People-List Feature | 27h |
 | Logger Enhancement | 12h |
-| **Total** | **91h** |
+| Data Cleanup | 4h |
+| SFTP Mode | 37h |
+| **Total** | **132h** |
 
 ---
 
@@ -1712,6 +1716,8 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | People-List feature complexity | High | Thorough testing, phased rollout |
 | Translation coverage | Medium | Review with native speakers |
 | AIMS API changes | Medium | Version check, error handling |
+| SFTP API availability | Medium | Retry logic, offline mode fallback |
+| Mode switch data loss | High | Confirmation dialog, clear user messaging |
 
 ---
 
@@ -1723,6 +1729,691 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 4. ✅ No file exceeds 500 lines (except tests)
 5. ✅ People lists sync cross-platform via AIMS
 6. ✅ Comprehensive logging with export capability
+7. ⬜ Data properly cleared on disconnect and mode switch
+8. ⬜ SFTP mode fully functional with CSV sync
+
+---
+
+## Feature 9: Data Cleanup on Disconnect/Mode Switch
+
+### Problem Statement
+
+When disconnecting from a connection or switching between working modes (SFTP ↔ SoluM API), the application does NOT properly clean up data:
+- Spaces, People, Conference rooms remain in stores
+- Saved lists persist
+- When switching modes: old credentials and field mappings remain
+
+### Required Behavior
+
+| Action | Data to Clear | Settings to Clear |
+|--------|---------------|-------------------|
+| **Disconnect (same mode)** | Spaces, People, Conference rooms, Lists | ❌ Keep credentials |
+| **Switch to different mode** | All above + | ✅ Clear old mode credentials, field mappings |
+
+### Implementation Plan
+
+#### Phase 9.1: Add Store Clear Methods (2h)
+
+**Files to Modify:**
+
+| File | Changes |
+|------|---------|
+| `spacesStore.ts` | Add `clearAllData()` method |
+| `peopleStore.ts` | Add `clearAllData()` method |
+| `conferenceStore.ts` | Add `clearAllData()` method |
+
+```typescript
+// spacesStore.ts
+clearAllData: () => set({
+    spaces: [],
+    spacesLists: [],
+    activeListName: undefined,
+    activeListId: undefined
+}, false, 'clearAllData'),
+
+// peopleStore.ts
+clearAllData: () => set({
+    people: [],
+    peopleLists: [],
+    activeListName: undefined,
+    activeListId: undefined,
+    pendingChanges: false,
+    spaceAllocation: { total: 0, assigned: 0, unassigned: 0 }
+}, false, 'clearAllData'),
+
+// conferenceStore.ts
+clearAllData: () => set({
+    conferenceRooms: []
+}, false, 'clearAllData'),
+```
+
+#### Phase 9.2: Add Settings Clear Methods (1h)
+
+**File:** `settingsStore.ts`
+
+```typescript
+// Clear credentials for a specific mode
+clearModeCredentials: (mode: WorkingMode) => set((state) => ({
+    settings: {
+        ...state.settings,
+        ...(mode === 'SFTP' ? { sftpCredentials: undefined } : {}),
+        ...(mode === 'SOLUM_API' ? {
+            solumConfig: undefined,
+            solumMappingConfig: undefined
+        } : {})
+    }
+}), false, 'clearModeCredentials'),
+
+// Clear all field mappings
+clearFieldMappings: () => set((state) => ({
+    settings: {
+        ...state.settings,
+        solumMappingConfig: undefined
+    }
+}), false, 'clearFieldMappings'),
+```
+
+#### Phase 9.3: Disconnect Button Behavior (1h)
+
+**Files to Modify:**
+
+| File | Changes |
+|------|---------|
+| `SolumSettingsTab.tsx` | Call data cleanup on disconnect |
+| `SFTPSettingsTab.tsx` | Call data cleanup on disconnect |
+| `useSyncController.ts` | Expose `clearAllData()` helper |
+
+```typescript
+// In disconnect handler
+const handleDisconnect = async () => {
+    // Clear sync state
+    await adapter.disconnect();
+    
+    // Clear all data stores
+    useSpacesStore.getState().clearAllData();
+    usePeopleStore.getState().clearAllData();
+    useConferenceStore.getState().clearAllData();
+    
+    // Reset sync state
+    useSyncStore.getState().resetSyncState();
+};
+```
+
+#### Phase 9.4: Mode Switch Confirmation (1h)
+
+**File:** `SettingsDialog.tsx` or new `ModeSwitch` component
+
+```typescript
+const handleModeSwitch = async (newMode: WorkingMode) => {
+    const currentMode = syncStore.workingMode;
+    
+    if (currentMode !== newMode) {
+        // Show confirmation dialog
+        const confirmed = await showConfirmDialog({
+            title: t('settings.switchModeTitle'),
+            message: t('settings.switchModeWarning'),
+            confirmText: t('common.switch'),
+            cancelText: t('common.cancel')
+        });
+        
+        if (confirmed) {
+            // Clear ALL data
+            useSpacesStore.getState().clearAllData();
+            usePeopleStore.getState().clearAllData();
+            useConferenceStore.getState().clearAllData();
+            
+            // Clear OLD mode credentials and mappings
+            settingsStore.clearModeCredentials(currentMode);
+            
+            // Switch mode
+            syncStore.setWorkingMode(newMode);
+        }
+    }
+};
+```
+
+### Files Summary
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `spacesStore.ts` | Modify | Add `clearAllData()` |
+| `peopleStore.ts` | Modify | Add `clearAllData()` |
+| `conferenceStore.ts` | Modify | Add `clearAllData()` |
+| `settingsStore.ts` | Modify | Add `clearModeCredentials()`, `clearFieldMappings()` |
+| `SolumSettingsTab.tsx` | Modify | Call cleanup on disconnect |
+| `SFTPSettingsTab.tsx` | Modify | Call cleanup on disconnect |
+| `SettingsDialog.tsx` | Modify | Mode switch confirmation |
+| `common.json` (en/he) | Modify | Add switch mode translations |
+
+### Estimated Time: 4h
+
+---
+
+## Feature 10: SFTP Mode Implementation
+
+### Overview
+
+Full implementation of SFTP working mode using the existing SFTP API at `https://solum.co.il/sftp`.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SFTP Working Mode                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐    ┌──────────────────┐                   │
+│  │  SFTPSettings   │───▶│   sftpService    │                   │
+│  │   (Component)   │    │   (Singleton)    │                   │
+│  └─────────────────┘    └────────┬─────────┘                   │
+│                                  │                              │
+│  ┌─────────────────┐    ┌────────▼─────────┐                   │
+│  │  SFTPSyncAdapter│───▶│  sftpApiClient   │                   │
+│  │                 │    │                  │                   │
+│  └─────────────────┘    └────────┬─────────┘                   │
+│                                  │                              │
+│  ┌─────────────────┐    ┌────────▼─────────┐                   │
+│  │  csvService     │    │   encryption.ts  │                   │
+│  │  (parse/gen)    │    │  (AES-256-CBC)   │                   │
+│  └─────────────────┘    └────────┬─────────┘                   │
+│                                  │                              │
+│                         ┌────────▼─────────┐                   │
+│                         │   SFTP API       │                   │
+│                         │ solum.co.il/sftp │                   │
+│                         └──────────────────┘                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/sftp/fetch` | POST | Test connection (fetch directory tree) |
+| `/sftp/file` | GET | Download file |
+| `/sftp/file` | POST | Upload file |
+| `/sftp/file` | DELETE | Delete file |
+| `/sftp/users` | POST | Create user |
+| `/sftp/users` | GET | Get all users |
+| `/sftp/users` | DELETE | Delete user |
+| `/sftp/password` | POST | Reset password |
+
+**Base URL:** `https://solum.co.il/sftp`
+**Auth:** Bearer token (permanent)
+**Encryption:** AES-256-CBC for username, password, filename
+
+### Implementation Plan
+
+#### Phase 10.1: Encryption Service (2h)
+
+**File:** `src/shared/infrastructure/services/encryption.ts`
+
+```typescript
+import CryptoJS from 'crypto-js';
+
+const ENCRYPTION_KEY = 'gBfdx3Mkyi8IVAH6OQBcV4VtGRgf5XJV';
+const IV_LENGTH = 16;
+
+export function encrypt(text: string): string {
+    const iv = CryptoJS.lib.WordArray.random(IV_LENGTH);
+    const key = CryptoJS.enc.Utf8.parse(ENCRYPTION_KEY);
+    
+    const encrypted = CryptoJS.AES.encrypt(text, key, {
+        iv: iv,
+        padding: CryptoJS.pad.Pkcs7,
+        mode: CryptoJS.mode.CBC,
+    });
+    
+    const ivHex = iv.toString(CryptoJS.enc.Hex);
+    const encryptedText = encrypted.toString();
+    
+    return `${ivHex}:${encryptedText}`;
+}
+
+export function decrypt(text: string): string {
+    const textParts = text.split(':');
+    const iv = CryptoJS.enc.Hex.parse(textParts[0]);
+    const encryptedText = textParts[1];
+    const key = CryptoJS.enc.Utf8.parse(ENCRYPTION_KEY);
+    
+    const decrypted = CryptoJS.AES.decrypt(encryptedText, key, {
+        iv: iv,
+        padding: CryptoJS.pad.Pkcs7,
+        mode: CryptoJS.mode.CBC,
+    });
+    
+    return decrypted.toString(CryptoJS.enc.Utf8);
+}
+```
+
+#### Phase 10.2: SFTP API Client (4h)
+
+**File:** `src/shared/infrastructure/services/sftpApiClient.ts`
+
+```typescript
+import axios from 'axios';
+import { encrypt } from './encryption';
+import { logger } from './logger';
+
+const API_BASE_URL = import.meta.env.DEV 
+    ? '/api' 
+    : 'https://solum.co.il/sftp';
+    
+const API_TOKEN = 'SFTP_APi_T0k3n_2025_c0mpl3x_S3cur3_P3rm4n3nt_K3y_X9zQ7mN5bR8wF2vH4pL';
+
+const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Authorization': `Bearer ${API_TOKEN}`,
+    }
+});
+
+export interface SFTPCredentials {
+    username: string;
+    password: string;
+    remoteFileName: string;  // default: "esl.csv"
+    store: string;           // default: "01"
+}
+
+export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
+    logger.startTimer('sftp-test-connection');
+    try {
+        const response = await apiClient.post('/sftp/fetch', {
+            username: encrypt(creds.username),
+            password: encrypt(creds.password)
+        });
+        logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test successful');
+        return response.status === 200;
+    } catch (error) {
+        logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test failed', { error });
+        throw error;
+    }
+}
+
+export async function downloadFile(creds: SFTPCredentials): Promise<string> {
+    logger.startTimer('sftp-download');
+    try {
+        const response = await apiClient.get('/sftp/file', {
+            params: {
+                username: encrypt(creds.username),
+                password: encrypt(creds.password),
+                filename: encrypt(creds.remoteFileName)
+            }
+        });
+        logger.endTimer('sftp-download', 'SFTP', 'File downloaded', { 
+            size: response.data?.length 
+        });
+        return response.data;
+    } catch (error) {
+        logger.endTimer('sftp-download', 'SFTP', 'Download failed', { error });
+        throw error;
+    }
+}
+
+export async function uploadFile(creds: SFTPCredentials, content: string): Promise<void> {
+    logger.startTimer('sftp-upload');
+    try {
+        const formData = new FormData();
+        const blob = new Blob([content], { type: 'text/csv' });
+        formData.append('file', blob, creds.remoteFileName);
+        formData.append('username', encrypt(creds.username));
+        formData.append('password', encrypt(creds.password));
+        formData.append('filename', encrypt(creds.remoteFileName));
+        
+        await apiClient.post('/sftp/file', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        logger.endTimer('sftp-upload', 'SFTP', 'File uploaded');
+    } catch (error) {
+        logger.endTimer('sftp-upload', 'SFTP', 'Upload failed', { error });
+        throw error;
+    }
+}
+
+export async function deleteFile(creds: SFTPCredentials): Promise<void> {
+    await apiClient.delete('/sftp/file', {
+        params: {
+            username: encrypt(creds.username),
+            password: encrypt(creds.password),
+            filename: encrypt(creds.remoteFileName)
+        }
+    });
+}
+```
+
+#### Phase 10.3: Vite Proxy Configuration (1h)
+
+**File:** `vite.config.ts`
+
+```typescript
+server: {
+    proxy: {
+        '/api': {
+            target: 'https://solum.co.il/sftp',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api/, ''),
+            secure: true
+        }
+    }
+}
+```
+
+#### Phase 10.4: CSV Service Enhancement (4h)
+
+**File:** `src/shared/infrastructure/services/csvService.ts`
+
+```typescript
+import Papa from 'papaparse';
+import type { Space, ConferenceRoom, CSVConfig } from '@shared/domain/types';
+
+export interface CSVConfig {
+    hasHeader: boolean;
+    delimiter: ',' | ';' | '\t';
+    columns: CSVColumnMapping[];
+    idColumn: string;
+}
+
+export interface CSVColumnMapping {
+    fieldName: string;     // Field name in app
+    csvColumn: number;     // Column index in CSV (0-based)
+    friendlyName: string;  // Display name
+    required: boolean;
+}
+
+export function parseCSV(content: string, config: CSVConfig): Space[] {
+    const parsed = Papa.parse(content, {
+        delimiter: config.delimiter,
+        header: config.hasHeader,
+        skipEmptyLines: true
+    });
+    
+    return parsed.data.map((row: any, index: number) => {
+        const data: Record<string, string> = {};
+        
+        config.columns.forEach(col => {
+            const value = config.hasHeader 
+                ? row[col.fieldName] 
+                : row[col.csvColumn];
+            data[col.fieldName] = value || '';
+        });
+        
+        return {
+            id: data[config.idColumn] || `row-${index}`,
+            data
+        };
+    });
+}
+
+export function generateCSV(spaces: Space[], config: CSVConfig): string {
+    const rows = spaces.map(space => {
+        const row: string[] = [];
+        config.columns.forEach(col => {
+            row[col.csvColumn] = space.data[col.fieldName] || '';
+        });
+        return row;
+    });
+    
+    if (config.hasHeader) {
+        const header = config.columns.map(col => col.fieldName);
+        rows.unshift(header);
+    }
+    
+    return Papa.unparse(rows, { delimiter: config.delimiter });
+}
+```
+
+#### Phase 10.5: SFTP Sync Adapter Completion (4h)
+
+**File:** `src/features/sync/infrastructure/SFTPSyncAdapter.ts`
+
+Complete implementation with:
+- Proper error handling
+- Retry logic with exponential backoff
+- Progress tracking
+- Logger integration
+
+#### Phase 10.6: SFTP Settings Tab Enhancement (6h)
+
+**File:** `src/features/settings/presentation/SFTPSettingsTab.tsx`
+
+Features:
+- Connection form (username, password, remote filename)
+- Test connection button with feedback
+- Connect/Disconnect toggle
+- CSV structure editor integration
+- Auto-sync toggle and interval selector (30s, 1min, 2min, 5min, 10min)
+- "Sync when idle" checkbox with explanation tooltip
+- Status display with countdown to next auto-sync
+
+#### Phase 10.7: CSV Structure Editor (4h)
+
+**File:** `src/features/configuration/presentation/CSVStructureEditor.tsx`
+
+Features:
+- Add/remove column mappings
+- Set column index for each field
+- Set ID column
+- Set delimiter
+- Toggle header row
+- Preview parsed data
+
+#### Phase 10.8: Sync Controller SFTP Integration (4h)
+
+**File:** `src/features/sync/application/useSyncController.ts`
+
+- Proper SFTP adapter initialization
+- Auto-sync support for SFTP mode
+- Status synced with UI
+
+**Periodic Auto-Sync Feature:**
+- When idle (no user interaction), automatically sync from CSV at configurable interval
+- Default interval: 30 seconds (minimum)
+- User-configurable: 30s, 1min, 2min, 5min, 10min options
+- Idle detection: no mouse/keyboard activity for 10 seconds
+- Sync skipped if user is actively editing
+- Visual indicator showing "Auto-sync in Xs" countdown
+- Manual sync button to force immediate sync
+
+```typescript
+interface AutoSyncConfig {
+    enabled: boolean;
+    intervalSeconds: 30 | 60 | 120 | 300 | 600;
+    idleThresholdMs: 10000;
+}
+
+// Idle detection using activity listeners
+useEffect(() => {
+    let idleTimer: NodeJS.Timeout;
+    let syncInterval: NodeJS.Timeout;
+    
+    const resetIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            // User is idle, start auto-sync interval
+            syncInterval = setInterval(syncFromCSV, config.intervalSeconds * 1000);
+        }, config.idleThresholdMs);
+    };
+    
+    window.addEventListener('mousemove', resetIdleTimer);
+    window.addEventListener('keydown', resetIdleTimer);
+    
+    return () => {
+        clearTimeout(idleTimer);
+        clearInterval(syncInterval);
+        window.removeEventListener('mousemove', resetIdleTimer);
+        window.removeEventListener('keydown', resetIdleTimer);
+    };
+}, [config]);
+```
+
+**Settings stored in:** `settingsStore.ts` → `sftpAutoSyncConfig`
+
+#### Phase 10.9: Translations (2h)
+
+**Files:** `src/locales/en/common.json`, `src/locales/he/common.json`
+
+Add all SFTP-related translations:
+- Connection labels
+- Status messages
+- Error messages
+- CSV structure labels
+
+#### Phase 10.10: Spaces Management SFTP Support (3h)
+
+**Key Difference:** In SFTP mode, Spaces do NOT sync with AIMS. Instead, they are managed entirely via CSV file on the SFTP server.
+
+**Behavior in SFTP Mode:**
+- **Add Space:** Creates row in local store → triggers CSV regeneration → uploads to SFTP
+- **Edit Space:** Updates row in local store → triggers CSV regeneration → uploads to SFTP
+- **Delete Space:** Removes row from local store → triggers CSV regeneration → uploads to SFTP
+- **No label assignment:** Labels are not available in SFTP mode (no AIMS connection)
+- **Sync:** Downloads CSV → parses with field mapping → updates spacesStore
+
+**Files to Modify:**
+
+1. **`src/features/space/application/useSpaceController.ts`**
+   - Add working mode check at start of each operation
+   - Route add/edit/delete to SFTP sync adapter instead of AIMS API
+   - Skip label-related operations in SFTP mode
+
+```typescript
+const workingMode = useSettingsStore.getState().workingMode;
+
+if (workingMode === 'SFTP') {
+    // Update local store
+    spacesStore.addSpace(spaceData);
+    // Regenerate CSV and upload
+    await sftpSyncAdapter.uploadSpaces();
+} else {
+    // Existing SOLUM_API flow
+    await aimsApi.createSpace(spaceData);
+}
+```
+
+2. **`src/features/space/presentation/SpacesManagementView.tsx`**
+   - Hide label assignment UI when in SFTP mode
+   - Show "SFTP Mode" indicator
+   - Disable real-time sync status (batch sync only)
+
+3. **`src/features/sync/infrastructure/SFTPSyncAdapter.ts`**
+   - Add `uploadSpaces()` method
+   - Add `downloadSpaces()` method
+   - Integrate with csvService for parsing/generation
+
+**CSV Structure for Spaces:**
+```csv
+id,name,location,floor,capacity,status
+SP001,Meeting Room A,Building 1,3,10,active
+SP002,Conference Hall,Building 2,1,50,active
+```
+
+#### Phase 10.11: Conference Management SFTP Support (3h)
+
+**Key Difference:** In SFTP mode, Conference rooms sync via CSV, not AIMS. NFC URL generation still works locally.
+
+**Behavior in SFTP Mode:**
+- **Add Room:** Creates row in local store → triggers CSV regeneration → uploads to SFTP
+- **Edit Room:** Updates row in local store → triggers CSV regeneration → uploads to SFTP
+- **Delete Room:** Removes row from local store → triggers CSV regeneration → uploads to SFTP
+- **NFC URL:** Generated locally using room ID (no server dependency)
+- **Sync:** Downloads CSV → parses with field mapping → updates conferenceStore
+
+**Files to Modify:**
+
+1. **`src/features/conference/application/useConferenceController.ts`**
+   - Add working mode check at start of each operation
+   - Route add/edit/delete to SFTP sync adapter instead of AIMS API
+   - NFC URL generation remains unchanged (local operation)
+
+```typescript
+const workingMode = useSettingsStore.getState().workingMode;
+
+if (workingMode === 'SFTP') {
+    // Update local store
+    conferenceStore.addRoom(roomData);
+    // Regenerate CSV and upload
+    await sftpSyncAdapter.uploadConferenceRooms();
+} else {
+    // Existing SOLUM_API flow
+    await aimsApi.createConferenceRoom(roomData);
+}
+```
+
+2. **`src/features/conference/presentation/ConferencePage.tsx`**
+   - Show "SFTP Mode" indicator
+   - Adjust sync button behavior for batch sync
+
+3. **`src/features/sync/infrastructure/SFTPSyncAdapter.ts`**
+   - Add `uploadConferenceRooms()` method
+   - Add `downloadConferenceRooms()` method
+   - Support separate CSV file for conference rooms (configurable)
+
+**CSV Structure for Conference Rooms:**
+```csv
+room_id,room_name,building,floor,capacity,nfc_enabled
+CR001,Board Room,HQ,5,20,true
+CR002,Training Room,HQ,2,30,true
+```
+
+**Note:** Conference rooms may share the same CSV file as Spaces (configurable) or use a separate file based on user preference in SFTP settings.
+
+### Files Summary
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `encryption.ts` | Create | AES-256-CBC encryption |
+| `sftpApiClient.ts` | Create | SFTP API HTTP client |
+| `csvService.ts` | Modify | CSV parse/generate with config |
+| `SFTPSyncAdapter.ts` | Modify | Complete sync implementation |
+| `SFTPSettingsTab.tsx` | Modify | Full settings UI |
+| `CSVStructureEditor.tsx` | Modify | Column mapping UI |
+| `useSyncController.ts` | Modify | SFTP adapter support |
+| `useSpaceController.ts` | Modify | SFTP mode routing |
+| `SpacesManagementView.tsx` | Modify | SFTP mode UI adjustments |
+| `useConferenceController.ts` | Modify | SFTP mode routing |
+| `ConferencePage.tsx` | Modify | SFTP mode UI adjustments |
+| `vite.config.ts` | Modify | Add proxy for dev |
+| `common.json` (en/he) | Modify | SFTP translations |
+| Domain types | Modify | Add CSVConfig interface |
+
+### Data Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     SFTP Sync Flow                           │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  DOWNLOAD (Server → App):                                    │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
+│  │ SFTP API   │─▶│ CSV String │─▶│ parseCSV() │─▶ Stores    │
+│  │ GET /file  │  │            │  │            │             │
+│  └────────────┘  └────────────┘  └────────────┘             │
+│                                                              │
+│  UPLOAD (App → Server):                                      │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
+│  │  Stores    │─▶│generateCSV │─▶│ SFTP API   │             │
+│  │            │  │            │  │ POST /file │             │
+│  └────────────┘  └────────────┘  └────────────┘             │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Estimated Time: 37h
+
+| Phase | Description | Hours |
+|-------|-------------|-------|
+| 10.1 | Encryption service | 2h |
+| 10.2 | SFTP API client | 4h |
+| 10.3 | Vite proxy config | 1h |
+| 10.4 | CSV service enhancement | 4h |
+| 10.5 | SFTP sync adapter | 4h |
+| 10.6 | SFTP settings tab | 6h |
+| 10.7 | CSV structure editor | 4h |
+| 10.8 | Sync controller + auto-sync | 4h |
+| 10.9 | Translations | 2h |
+| 10.10 | Spaces Management SFTP Support | 3h |
+| 10.11 | Conference Management SFTP Support | 3h |
+| **Total** | | **37h** |
 
 ---
 
@@ -1744,3 +2435,12 @@ App.tsx
         │   └── PeopleListPanel.tsx (NEW)
         └── ...
 ```
+
+## Appendix: SFTP API Reference
+
+See [SFTP_WORKING_MODE_DOCUMENTATION.md](./SFTP_WORKING_MODE_DOCUMENTATION.md) for complete API documentation including:
+- All endpoint specifications
+- Authentication details
+- Encryption specification
+- Error handling
+- Test commands
