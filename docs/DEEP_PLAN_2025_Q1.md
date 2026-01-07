@@ -16,11 +16,98 @@
 | 7 | Logger Enhancement | ✅ Completed | Jan 6 | Jan 6 |
 | 8 | App Manual Feature | ✅ Completed | Jan 6 | Jan 6 |
 | 9 | Data Cleanup on Disconnect/Mode Switch | ✅ Completed | Jan 7 | Jan 7 |
-| 10 | SFTP Mode Implementation | ⬜ Not Started | - | - |
+| 10 | SFTP Mode Implementation | 🔄 In Progress | Jan 7 | - |
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
 ### Recent Updates (January 7, 2026) - Session 9
+
+#### Feature 10 In Progress - SFTP Mode Implementation
+
+SFTP mode infrastructure and core services completed. UI integration and controller routing still pending.
+
+##### Phase 10.1: Encryption Service ✅
+- **Created `encryption.ts`**: AES-256-CBC encryption for SFTP credentials
+- **Functions**: `encrypt(plainText)`, `decrypt(encryptedText)`
+- **Uses environment variable**: `VITE_SFTP_ENCRYPTION_KEY`
+- **Random IV per encryption**: Prepended to ciphertext for secure storage
+
+##### Phase 10.2: SFTP API Client ✅
+- **Created `sftpApiClient.ts`**: HTTP client for SFTP proxy API
+- **Functions**: `testConnection()`, `downloadFile()`, `uploadFile()`, `deleteFile()`, `listFiles()`
+- **Encrypted credentials**: Uses encryption service before sending to API
+- **Bearer token auth**: Uses `VITE_SFTP_API_TOKEN`
+- **Comprehensive logging**: All operations logged with timing
+
+##### Phase 10.3: Vite Proxy Configuration ✅
+- **Added server.proxy to vite.config.ts**: `/sftp-api` → `https://solum.co.il/sftp`
+- **Configuration**: `changeOrigin: true`, `secure: true`, path rewrite
+
+##### Phase 10.4: CSV Service Enhancement ✅
+- **Added `EnhancedCSVConfig` interface**: `hasHeader`, `delimiter`, `columns`, `idColumn`, `conferenceEnabled`
+- **Added `CSVColumnMapping` interface**: `fieldName`, `csvColumn`, `friendlyName`, `required`
+- **Added `parseCSVEnhanced()`**: Parses CSV with enhanced config, returns spaces and conference rooms
+- **Added `generateCSVEnhanced()`**: Generates CSV from spaces and conference rooms
+- **Added `validateCSVConfigEnhanced()`**: Validates config with detailed error messages
+- **Added `createDefaultEnhancedCSVConfig()`**: Creates default config for new SFTP setups
+- **Backward compatible**: Legacy `parseCSV()` and `generateCSV()` still available
+
+##### Phase 10.5: SFTP Sync Adapter ✅
+- **Complete rewrite of `SFTPSyncAdapter.ts`**: Now uses new sftpApiClient
+- **Retry logic**: Exponential backoff with jitter (3 retries, 1-10s delay)
+- **Progress tracking**: Real-time progress updates via callback
+- **Methods**: `connect()`, `disconnect()`, `download()`, `downloadWithConference()`, `upload()`, `safeUpload()`, `sync()`
+- **Configuration methods**: `setProgressCallback()`, `updateCSVConfig()`, `updateCredentials()`, `isConnected()`
+
+##### Phase 10.6: SFTP Settings Tab Enhancement ✅
+- **Enhanced `SFTPSettingsTab.tsx`**: 3 sub-tabs (Connection, CSV Structure, Auto-Sync)
+- **Connection tab**: Host, username, password, remote filename fields
+- **Test connection button**: Uses real sftpApiClient with success/error feedback
+- **Connect/Disconnect buttons**: With loading states and status chip
+- **CSV Structure tab**: Delimiter config, header toggle, CSVStructureEditor integration
+- **Auto-Sync tab**: Enable toggle, interval selector (30s to 10min)
+
+##### Phase 10.7: CSV Structure Editor ✅
+- **Already exists**: `CSVStructureEditor.tsx` with full functionality
+- **Features**: Drag-drop reorder, up/down buttons, add/remove columns, field type selection, mandatory checkbox
+
+##### Phase 10.8: Sync Controller SFTP Integration ✅
+- **Added `sftpCsvConfig` prop**: Passes enhanced CSV config to adapter
+- **Updated `getAdapter()`**: Creates SFTP adapter with enhanced config
+- **Updated MainLayout**: Passes `sftpCsvConfig` to sync controller
+
+##### Phase 10.9: Translations ✅
+- **Added EN translations**: `sftpServerConfig`, `connected`, `connect`, `disconnect`, `fillCredentials`, `connectionSuccess`, `connectionFailed`, `autoSyncConfig`, `enableAutoSync`, `autoSyncInfo`, `csvHasHeader`, `csvFileStructure`, `remoteFilenameHelp`, `testing`, `connecting`
+- **Added HE translations**: Corresponding Hebrew translations for all new keys
+
+##### Files Created
+| File | Purpose |
+|------|---------|
+| `encryption.ts` | AES-256-CBC encryption service |
+| `sftpApiClient.ts` | SFTP proxy API HTTP client |
+
+##### Files Modified
+| File | Changes |
+|------|---------|
+| `vite.config.ts` | Added `/sftp-api` proxy configuration |
+| `csvService.ts` | Added enhanced CSV parsing/generation functions |
+| `SFTPSyncAdapter.ts` | Complete rewrite with retry, progress, new API client |
+| `SFTPSettingsTab.tsx` | Enhanced with 3 tabs, real connection testing |
+| `useSyncController.ts` | Added `sftpCsvConfig` prop, updated adapter creation |
+| `MainLayout.tsx` | Passes `sftpCsvConfig` to sync controller |
+| `common.json` (en) | Added SFTP-related translations |
+| `common.json` (he) | Added SFTP Hebrew translations |
+| `.env.example` | Added `VITE_SFTP_ENCRYPTION_KEY`, `VITE_SFTP_API_TOKEN` |
+
+##### Remaining Phases (Not Started)
+| Phase | Description | Estimated |
+|-------|-------------|-----------|
+| 10.10 | Spaces Management SFTP Support | 3h |
+| 10.11 | Conference Management SFTP Support | 3h |
+| 10.12 | Enable SFTP Mode in UI | 1h |
+| 10.13 | Extended Testing | 4h |
+
+---
 
 #### Feature 9 Completed - Data Cleanup on Disconnect/Mode Switch
 
@@ -2488,7 +2575,175 @@ CR002,Training Room,HQ,2,30,true
 | 10.9 | Translations | 2h |
 | 10.10 | Spaces Management SFTP Support | 3h |
 | 10.11 | Conference Management SFTP Support | 3h |
-| **Total** | | **37h** |
+| 10.12 | Enable SFTP Mode in UI | 1h |
+| 10.13 | Extended Testing | 4h |
+| **Total** | | **42h** |
+
+---
+
+### Phase 10.12: Enable SFTP Mode in UI (1h)
+
+**Goal:** Remove the force migration and enable SFTP mode selection in the UI.
+
+**Files to Modify:**
+
+1. **`MainLayout.tsx`**: Remove the force migration effect
+2. **`SettingsDialog.tsx`**: Enable SFTP settings panel
+3. **`AppSettingsTab.tsx`**: Enable working mode toggle
+
+**Changes:**
+```typescript
+// Remove from MainLayout.tsx:
+useEffect(() => {
+    if (workingMode === 'SFTP') {
+        setWorkingMode('SOLUM_API');
+    }
+}, [workingMode, setWorkingMode]);
+
+// Enable in SettingsDialog.tsx:
+// Uncomment SFTP Panel
+```
+
+---
+
+### Phase 10.13: SFTP Mode Extended Testing Plan (4h)
+
+**Goal:** Comprehensive testing of SFTP mode functionality across all features.
+
+#### Test Categories
+
+##### 1. Connection Tests (30min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| C1 | Valid connection | Enter valid SFTP credentials → Click Test Connection | Success alert, green status chip |
+| C2 | Invalid credentials | Enter wrong password → Click Test Connection | Error alert with message |
+| C3 | Invalid host | Enter non-existent host → Click Test Connection | Connection timeout error |
+| C4 | Empty fields | Leave username empty → Click Test/Connect | Disabled button or validation error |
+| C5 | Connect then disconnect | Connect → Verify chip → Disconnect | Status changes, data cleared |
+| C6 | Reconnect after disconnect | Disconnect → Re-enter credentials → Connect | Successful reconnection |
+
+##### 2. CSV Download Tests (45min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| D1 | Download valid CSV | Connect → Sync | Spaces appear in list |
+| D2 | Download with header | CSV has header row → Download | Fields mapped correctly |
+| D3 | Download without header | Configure no-header → Download | Uses column indices |
+| D4 | Download empty CSV | Empty file on server → Download | Empty spaces list, no error |
+| D5 | Download malformed CSV | Invalid CSV syntax → Download | Error message, previous data preserved |
+| D6 | Download missing file | Non-existent filename → Download | Clear error message |
+| D7 | Large file download | 1000+ rows → Download | Progress updates, successful completion |
+| D8 | Download with conference | CSV has conference rows → Download | Spaces and conference rooms parsed |
+
+##### 3. CSV Upload Tests (45min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| U1 | Upload spaces | Add/edit space → Sync | CSV updated on server |
+| U2 | Upload conference rooms | Add conference room → Sync | CSV includes conference data |
+| U3 | Upload empty list | Delete all spaces → Sync | Empty CSV (header only) uploaded |
+| U4 | Upload after edit | Edit space → Sync | Changes reflected in CSV |
+| U5 | Upload after delete | Delete space → Sync | Row removed from CSV |
+| U6 | Concurrent upload | Rapid add/edit → Sync | Last state uploaded correctly |
+| U7 | Upload failure recovery | Disconnect during upload → Reconnect | No data loss, can retry |
+
+##### 4. CSV Structure Configuration Tests (30min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| S1 | Add column | Click Add Column → Configure → Save | Column appears in editor |
+| S2 | Remove column | Select column → Delete | Column removed, reindexed |
+| S3 | Reorder columns | Drag column to new position | Order updated, indices recalculated |
+| S4 | Change delimiter | Set to semicolon → Sync | CSV uses semicolon delimiter |
+| S5 | Toggle header row | Disable header → Sync | CSV generated without header |
+| S6 | Field type validation | Set type to number, enter text | Validation warning |
+| S7 | Required field missing | Make field required, CSV missing it | Parse warning logged |
+
+##### 5. Auto-Sync Tests (30min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| A1 | Enable auto-sync | Toggle on, set 30s → Wait | Sync triggers at interval |
+| A2 | Disable auto-sync | Toggle off → Wait | No sync after interval |
+| A3 | Change interval | Set to 1min → Verify | Interval changes |
+| A4 | Auto-sync during edit | Editing form → Auto-sync triggers | Sync delayed or skipped |
+| A5 | Auto-sync on disconnect | Disconnect → Wait interval | No sync attempts |
+| A6 | Auto-sync reconnect | Disconnect → Reconnect → Wait | Auto-sync resumes |
+
+##### 6. Mode Switch Tests (30min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| M1 | Switch SFTP → SoluM | Confirm switch dialog | SFTP credentials cleared, data cleared |
+| M2 | Switch SoluM → SFTP | Confirm switch dialog | SoluM credentials cleared, data cleared |
+| M3 | Cancel mode switch | Click Cancel in dialog | No changes, stays in current mode |
+| M4 | Switch with pending changes | Unsaved edits → Switch | Warning dialog, data cleared on confirm |
+| M5 | Settings preserved | Switch modes → Check app settings | Name, subtitle, space type preserved |
+
+##### 7. Error Handling & Recovery Tests (30min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| E1 | Network timeout | Slow connection → Sync | Retry with backoff, eventual error |
+| E2 | Server 500 error | API returns error → Sync | Error displayed, retry option |
+| E3 | Encryption failure | Invalid encryption key → Connect | Graceful error handling |
+| E4 | Parse error recovery | Corrupt CSV → Sync → Fix CSV → Sync | Recovery after fix |
+| E5 | Token expiry | Invalid API token → Sync | Clear error message |
+
+##### 8. UI State Tests (30min)
+| # | Test Case | Steps | Expected Result |
+|---|-----------|-------|-----------------|
+| UI1 | Status indicator | Connect/Disconnect | Color changes (green/gray) |
+| UI2 | Loading states | During sync | Spinner, disabled buttons |
+| UI3 | SFTP mode indicator | Enter SFTP mode | "SFTP Mode" visible in header/settings |
+| UI4 | Disabled label assignment | In SFTP mode → Try assign label | Option hidden or disabled |
+| UI5 | Responsive layout | Mobile view → SFTP settings | Proper layout, scrollable |
+| UI6 | RTL support | Switch to Hebrew → SFTP settings | Correct RTL layout |
+
+#### Test Environment Setup
+
+```bash
+# 1. Start dev server
+npm run dev
+
+# 2. Ensure SFTP proxy is running (or mock server)
+# The vite proxy forwards /sftp-api to production
+
+# 3. Prepare test CSV files on SFTP server:
+# - valid.csv (standard format)
+# - empty.csv (header only)
+# - large.csv (1000+ rows)
+# - malformed.csv (syntax errors)
+# - no-header.csv (no header row)
+```
+
+#### Test Data Files
+
+**valid.csv:**
+```csv
+ID,NAME,RANK,TITLE
+001,John Doe,Major,Commander
+002,Jane Smith,Captain,Deputy
+003,Bob Wilson,Lieutenant,Officer
+```
+
+**conference.csv:**
+```csv
+ID,NAME,RANK,TITLE,MEETING,START,END
+001,Office A,Floor 1,Building A,,,
+002,Office B,Floor 2,Building A,,,
+C01,Board Room,Floor 3,Building A,Weekly Standup,09:00,10:00
+C02,Training Room,Floor 1,Building B,,,
+```
+
+#### Acceptance Criteria
+
+- [ ] All connection tests pass (C1-C6)
+- [ ] All download tests pass (D1-D8)
+- [ ] All upload tests pass (U1-U7)
+- [ ] All structure tests pass (S1-S7)
+- [ ] All auto-sync tests pass (A1-A6)
+- [ ] All mode switch tests pass (M1-M5)
+- [ ] All error handling tests pass (E1-E5)
+- [ ] All UI state tests pass (UI1-UI6)
+- [ ] No TypeScript errors
+- [ ] No console errors during normal operation
+- [ ] Hebrew translations complete and correct
+- [ ] Mobile layout works correctly
 
 ---
 

@@ -114,7 +114,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     const syncController = useSyncController({
         sftpCredentials: settings.sftpCredentials,
         solumConfig: settings.solumConfig,
-        csvConfig: settings.sftpCsvConfig as any, // Cast for legacy compatibility
+        csvConfig: settings.csvConfig,
+        sftpCsvConfig: settings.sftpCsvConfig as any,  // Enhanced CSV config for SFTP mode
         autoSyncEnabled: settings.autoSyncEnabled,
         onSpaceUpdate: handleSpaceUpdate,  // Use combined handler for People Mode support
         solumMappingConfig: settings.solumMappingConfig,
