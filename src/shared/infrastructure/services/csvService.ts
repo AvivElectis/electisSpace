@@ -8,6 +8,270 @@ import { logger } from './logger';
  */
 
 /**
+ * Enhanced CSV column mapping for SFTP mode
+ */
+export interface CSVColumnMapping {
+    fieldName: string;     // Field name in app (e.g., 'id', 'name', 'rank')
+    csvColumn: number;     // Column index in CSV (0-based)
+    friendlyName: string;  // Display name for UI
+    required: boolean;     // Whether this column is required
+}
+
+/**
+ * Enhanced CSV configuration for SFTP mode
+ */
+export interface EnhancedCSVConfig {
+    hasHeader: boolean;           // Whether CSV has a header row
+    delimiter: ',' | ';' | '\t';  // Column delimiter
+    columns: CSVColumnMapping[];  // Column mappings
+    idColumn: string;             // Field name to use as unique ID
+    conferenceEnabled: boolean;   // Whether to parse conference rooms
+    conferencePrefix?: string;    // Prefix for conference room IDs (default: 'C')
+}
+
+/**
+ * Parse CSV content using enhanced configuration (for SFTP mode)
+ * @param content - Raw CSV string
+ * @param config - Enhanced CSV configuration
+ * @returns Array of parsed spaces
+ */
+export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { spaces: Space[]; conferenceRooms: ConferenceRoom[] } {
+    logger.info('CSVService', 'Parsing CSV (enhanced)', { 
+        length: content.length, 
+        hasHeader: config.hasHeader,
+        delimiter: config.delimiter 
+    });
+
+    const parsed = Papa.parse<string[]>(content, {
+        delimiter: config.delimiter,
+        header: false,  // We handle header manually for more control
+        skipEmptyLines: true
+    });
+
+    if (parsed.errors.length > 0) {
+        logger.error('CSVService', 'CSV parsing errors', { errors: parsed.errors });
+        throw new Error(`CSV parsing failed: ${parsed.errors[0].message}`);
+    }
+
+    const rows = parsed.data;
+    if (rows.length === 0) {
+        logger.warn('CSVService', 'Empty CSV file');
+        return { spaces: [], conferenceRooms: [] };
+    }
+
+    // Skip header row if present
+    const dataRows = config.hasHeader ? rows.slice(1) : rows;
+    const headerRow = config.hasHeader ? rows[0] : null;
+
+    if (headerRow) {
+        logger.debug('CSVService', 'Header row', { header: headerRow });
+    }
+
+    const spaces: Space[] = [];
+    const conferenceRooms: ConferenceRoom[] = [];
+    const conferencePrefix = config.conferencePrefix || 'C';
+
+    for (let i = 0; i < dataRows.length; i++) {
+        const row = dataRows[i];
+
+        // Build data object from row using column mappings
+        const data: Record<string, string> = {};
+        
+        for (const col of config.columns) {
+            const value = row[col.csvColumn];
+            
+            // Check required columns
+            if (col.required && (value === undefined || value === '')) {
+                logger.warn('CSVService', `Row ${i + 1}: missing required field "${col.fieldName}"`, { row });
+            }
+            
+            data[col.fieldName] = value || '';
+        }
+
+        // Get ID from configured ID column
+        const id = data[config.idColumn] || `row-${i + 1}`;
+
+        // Check if this is a conference room (ID starts with conference prefix)
+        const isConferenceRoom = config.conferenceEnabled && id.startsWith(conferencePrefix);
+
+        if (isConferenceRoom) {
+            // Parse conference room
+            const room: ConferenceRoom = {
+                id,
+                hasMeeting: data['hasMeeting'] === 'true' || data['hasMeeting'] === '1',
+                meetingName: data['meetingName'] || '',
+                startTime: data['startTime'] || '',
+                endTime: data['endTime'] || '',
+                participants: data['participants']?.split(';').filter(Boolean) || [],
+                labelCode: data['labelCode'],
+                data,
+            };
+            conferenceRooms.push(room);
+        } else {
+            // Parse space
+            const space: Space = {
+                id,
+                data,
+                labelCode: data['labelCode'],
+                templateName: data['templateName'],
+            };
+            spaces.push(space);
+        }
+    }
+
+    logger.info('CSVService', 'CSV parsed successfully (enhanced)', {
+        spacesCount: spaces.length,
+        conferenceCount: conferenceRooms.length,
+    });
+
+    return { spaces, conferenceRooms };
+}
+
+/**
+ * Generate CSV string using enhanced configuration (for SFTP mode)
+ * @param spaces - Array of spaces
+ * @param conferenceRooms - Optional array of conference rooms
+ * @param config - Enhanced CSV configuration
+ * @returns CSV string
+ */
+export function generateCSVEnhanced(
+    spaces: Space[], 
+    conferenceRooms: ConferenceRoom[] = [], 
+    config: EnhancedCSVConfig
+): string {
+    logger.info('CSVService', 'Generating CSV (enhanced)', {
+        spacesCount: spaces.length,
+        conferenceCount: conferenceRooms.length,
+    });
+
+    // Find max column index for proper array sizing
+    const maxColumnIndex = Math.max(...config.columns.map(c => c.csvColumn), 0);
+    
+    const rows: string[][] = [];
+
+    // Add header row if configured
+    if (config.hasHeader) {
+        const header = new Array(maxColumnIndex + 1).fill('');
+        config.columns.forEach(col => {
+            header[col.csvColumn] = col.fieldName;
+        });
+        rows.push(header);
+    }
+
+    // Add space rows
+    for (const space of spaces) {
+        const row = new Array(maxColumnIndex + 1).fill('');
+        
+        for (const col of config.columns) {
+            if (col.fieldName === config.idColumn) {
+                row[col.csvColumn] = space.id;
+            } else {
+                row[col.csvColumn] = space.data[col.fieldName] || '';
+            }
+        }
+        
+        rows.push(row);
+    }
+
+    // Add conference room rows if enabled
+    if (config.conferenceEnabled) {
+        for (const room of conferenceRooms) {
+            const row = new Array(maxColumnIndex + 1).fill('');
+            
+            for (const col of config.columns) {
+                if (col.fieldName === config.idColumn) {
+                    row[col.csvColumn] = room.id;
+                } else if (col.fieldName === 'hasMeeting') {
+                    row[col.csvColumn] = room.hasMeeting ? 'true' : 'false';
+                } else if (col.fieldName === 'meetingName') {
+                    row[col.csvColumn] = room.meetingName;
+                } else if (col.fieldName === 'startTime') {
+                    row[col.csvColumn] = room.startTime;
+                } else if (col.fieldName === 'endTime') {
+                    row[col.csvColumn] = room.endTime;
+                } else if (col.fieldName === 'participants') {
+                    row[col.csvColumn] = room.participants.join(';');
+                } else if (room.data) {
+                    row[col.csvColumn] = room.data[col.fieldName] || '';
+                }
+            }
+            
+            rows.push(row);
+        }
+    }
+
+    // Generate CSV
+    const csv = Papa.unparse(rows, { delimiter: config.delimiter });
+
+    logger.info('CSVService', 'CSV generated successfully (enhanced)', { rowCount: rows.length });
+    return csv;
+}
+
+/**
+ * Validate enhanced CSV configuration
+ * @param config - Enhanced CSV configuration to validate
+ * @returns Validation result with error messages
+ */
+export function validateCSVConfigEnhanced(config: EnhancedCSVConfig): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Check ID column exists in mappings
+    const hasIdColumn = config.columns.some(c => c.fieldName === config.idColumn);
+    if (!hasIdColumn) {
+        errors.push(`ID column "${config.idColumn}" is not defined in column mappings`);
+    }
+
+    // Check required columns have valid indices
+    for (const col of config.columns) {
+        if (col.csvColumn < 0) {
+            errors.push(`Column "${col.fieldName}" has invalid index: ${col.csvColumn}`);
+        }
+    }
+
+    // Check for duplicate column indices
+    const indices = config.columns.map(c => c.csvColumn);
+    const duplicates = indices.filter((v, i) => indices.indexOf(v) !== i);
+    if (duplicates.length > 0) {
+        errors.push(`Duplicate column indices: ${[...new Set(duplicates)].join(', ')}`);
+    }
+
+    // Check for duplicate field names
+    const fieldNames = config.columns.map(c => c.fieldName);
+    const dupFields = fieldNames.filter((v, i) => fieldNames.indexOf(v) !== i);
+    if (dupFields.length > 0) {
+        errors.push(`Duplicate field names: ${[...new Set(dupFields)].join(', ')}`);
+    }
+
+    if (errors.length > 0) {
+        logger.error('CSVService', 'CSV config validation failed', { errors });
+    }
+
+    return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Create default enhanced CSV config for SFTP mode
+ */
+export function createDefaultEnhancedCSVConfig(): EnhancedCSVConfig {
+    return {
+        hasHeader: true,
+        delimiter: ',',
+        columns: [
+            { fieldName: 'id', csvColumn: 0, friendlyName: 'ID', required: true },
+            { fieldName: 'name', csvColumn: 1, friendlyName: 'Name', required: true },
+            { fieldName: 'rank', csvColumn: 2, friendlyName: 'Rank', required: false },
+            { fieldName: 'title', csvColumn: 3, friendlyName: 'Title', required: false },
+        ],
+        idColumn: 'id',
+        conferenceEnabled: false,
+    };
+}
+
+// ========================================
+// Legacy CSV functions (for backwards compatibility)
+// ========================================
+
+/**
  * Parse CSV content into AppData
  * @param csvContent - Raw CSV string
  * @param config - CSV configuration (delimiter, mappings)

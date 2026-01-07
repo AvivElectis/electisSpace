@@ -37,6 +37,17 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './src/shared'),
     },
   },
+  server: {
+    proxy: {
+      // SFTP API proxy for development (avoids CORS)
+      '/sftp-api': {
+        target: 'https://solum.co.il/sftp',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sftp-api/, ''),
+        secure: true,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {
