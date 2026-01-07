@@ -178,7 +178,6 @@ export function UpdateNotification() {
                     </Box>
                 </Alert>
             </Snackbar>
-
             {/* Update Dialog for detailed view */}
             <UpdateDialog
                 open={showDialog}
@@ -191,7 +190,6 @@ export function UpdateNotification() {
                     setShowDialog(false);
                 }}
             />
-
             {/* Update Progress Dialog */}
             <UpdateProgress />
         </>

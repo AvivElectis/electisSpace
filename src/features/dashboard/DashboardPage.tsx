@@ -42,12 +42,20 @@ export function DashboardPage() {
         solumConfig: settingsController.settings.solumConfig,
         solumToken: settingsController.settings.solumConfig?.tokens?.accessToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
+        // SFTP mode props
+        workingMode: settingsController.settings.workingMode,
+        sftpCredentials: settingsController.settings.sftpCredentials,
+        sftpCsvConfig: settingsController.settings.sftpCsvConfig,
     });
 
     const conferenceController = useConferenceController({
         solumConfig: settingsController.settings.solumConfig,
         solumToken: settingsController.settings.solumConfig?.tokens?.accessToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
+        // SFTP mode props
+        workingMode: settingsController.settings.workingMode,
+        sftpCredentials: settingsController.settings.sftpCredentials,
+        sftpCsvConfig: settingsController.settings.sftpCsvConfig,
     });
 
     // Stats - Spaces

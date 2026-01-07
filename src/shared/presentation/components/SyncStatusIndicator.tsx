@@ -137,7 +137,6 @@ export function SyncStatusIndicator({
                     </Typography>
                 </Box>
             </Paper>
-
             <Popover
                 open={open}
                 anchorEl={anchorEl}
@@ -150,13 +149,15 @@ export function SyncStatusIndicator({
                     vertical: 'bottom',
                     horizontal: 'left',
                 }}
-                PaperProps={{
-                    sx: { 
-                        mt: -1, 
-                        borderRadius: 3,
-                        boxShadow: '0px 0px 6px rgba(0, 0, 0, 0.32)',
-                        overflow: 'hidden',
-                        minWidth: { xs: 260, sm: 300 }
+                slotProps={{
+                    paper: {
+                        sx: { 
+                            mt: -1, 
+                            borderRadius: 3,
+                            boxShadow: '0px 0px 6px rgba(0, 0, 0, 0.32)',
+                            overflow: 'hidden',
+                            minWidth: { xs: 260, sm: 300 }
+                        }
                     }
                 }}
             >

@@ -31,6 +31,7 @@ export interface SFTPCredentials {
     password: string;
     remoteFilename: string;  // default: "esl.csv"
     host?: string;           // SFTP host (optional, may be implicit)
+    port?: number;           // SFTP port (default: 22)
 }
 
 /**
@@ -110,7 +111,7 @@ function handleApiError(error: AxiosError, operation: string): never {
  */
 export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
     logger.startTimer('sftp-test-connection');
-    logger.info('SFTP', 'Testing connection', { username: creds.username });
+    logger.info('SFTP', 'Testing connection', { username: creds.username, host: creds.host, port: creds.port });
 
     const client = createApiClient();
 
@@ -118,6 +119,8 @@ export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
         const response = await client.post<SFTPFetchResponse>('/fetch', {
             username: encrypt(creds.username),
             password: encrypt(creds.password),
+            host: creds.host ? encrypt(creds.host) : undefined,
+            port: creds.port || 22,
         });
 
         const duration = logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test completed');
@@ -149,7 +152,7 @@ export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
  */
 export async function downloadFile(creds: SFTPCredentials): Promise<string> {
     logger.startTimer('sftp-download');
-    logger.info('SFTP', 'Downloading file', { filename: creds.remoteFilename });
+    logger.info('SFTP', 'Downloading file', { filename: creds.remoteFilename, host: creds.host, port: creds.port });
 
     const client = createApiClient();
 
@@ -159,6 +162,8 @@ export async function downloadFile(creds: SFTPCredentials): Promise<string> {
                 username: encrypt(creds.username),
                 password: encrypt(creds.password),
                 filename: encrypt(creds.remoteFilename),
+                host: creds.host ? encrypt(creds.host) : undefined,
+                port: creds.port || 22,
             },
             responseType: 'text',
         });
@@ -192,7 +197,9 @@ export async function uploadFile(creds: SFTPCredentials, content: string): Promi
     logger.startTimer('sftp-upload');
     logger.info('SFTP', 'Uploading file', { 
         filename: creds.remoteFilename,
-        size: content.length 
+        size: content.length,
+        host: creds.host,
+        port: creds.port 
     });
 
     const client = createApiClient();
@@ -204,6 +211,8 @@ export async function uploadFile(creds: SFTPCredentials, content: string): Promi
         formData.append('username', encrypt(creds.username));
         formData.append('password', encrypt(creds.password));
         formData.append('filename', encrypt(creds.remoteFilename));
+        if (creds.host) formData.append('host', encrypt(creds.host));
+        formData.append('port', String(creds.port || 22));
 
         await client.post('/file', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -229,7 +238,7 @@ export async function uploadFile(creds: SFTPCredentials, content: string): Promi
  * @param creds - SFTP credentials
  */
 export async function deleteFile(creds: SFTPCredentials): Promise<void> {
-    logger.info('SFTP', 'Deleting file', { filename: creds.remoteFilename });
+    logger.info('SFTP', 'Deleting file', { filename: creds.remoteFilename, host: creds.host, port: creds.port });
 
     const client = createApiClient();
 
@@ -239,6 +248,8 @@ export async function deleteFile(creds: SFTPCredentials): Promise<void> {
                 username: encrypt(creds.username),
                 password: encrypt(creds.password),
                 filename: encrypt(creds.remoteFilename),
+                host: creds.host ? encrypt(creds.host) : undefined,
+                port: creds.port || 22,
             },
         });
 
@@ -258,7 +269,7 @@ export async function deleteFile(creds: SFTPCredentials): Promise<void> {
  * @returns Array of directory items
  */
 export async function listFiles(creds: SFTPCredentials): Promise<SFTPDirectoryItem[]> {
-    logger.info('SFTP', 'Listing files');
+    logger.info('SFTP', 'Listing files', { host: creds.host, port: creds.port });
 
     const client = createApiClient();
 
@@ -266,6 +277,8 @@ export async function listFiles(creds: SFTPCredentials): Promise<SFTPDirectoryIt
         const response = await client.post<SFTPFetchResponse>('/fetch', {
             username: encrypt(creds.username),
             password: encrypt(creds.password),
+            host: creds.host ? encrypt(creds.host) : undefined,
+            port: creds.port || 22,
         });
 
         if (response.data.success && response.data.tree) {

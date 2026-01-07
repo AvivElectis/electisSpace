@@ -51,7 +51,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
             <Toolbar sx={{
                 justifyContent: 'space-between',
                 minHeight: { xs: 56, sm: 64 },
-                px: { xs: 2, sm: 3 },
+                px: { xs: .5, sm: 3 },
             }}>
                 {/* Mobile Menu Button (left side on mobile) */}
                 {onMenuClick && (
@@ -60,9 +60,9 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                         color="inherit"
                         aria-label="menu"
                         onClick={onMenuClick}
-                        sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }}
+                        sx={{ display: { xs: 'flex', md: 'none' }, mx: .5 }}
                     >
-                        <MenuIcon />
+                        <MenuIcon sx={{fontSize: '40px', padding: 0, borderRadius: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)'}} />
                     </IconButton>
                 )}
 

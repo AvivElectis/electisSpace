@@ -444,7 +444,6 @@ export function PeopleManagerView() {
                     </Button>
                 </Stack>
             </Stack>
-
             {/* Space Allocation Panel */}
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} gap={3} alignItems="center">
@@ -455,7 +454,9 @@ export function PeopleManagerView() {
                         value={totalSpaces}
                         onChange={(e) => peopleController.setTotalSpaces(Number(e.target.value))}
                         sx={{ width: 150 }}
-                        inputProps={{ min: 0 }}
+                        slotProps={{
+                            htmlInput: { min: 0 }
+                        }}
                     />
                     <Box sx={{ flex: 1, minWidth: 200 }}>
                         <Stack direction="row" justifyContent="space-between" gap={1} mb={0.5}>
@@ -487,24 +488,25 @@ export function PeopleManagerView() {
                     </Stack>
                 </Stack>
             </Paper>
-
             {/* Search and Filter Bar */}
             <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} sx={{ mb: 3 }}>
                 <TextField
                     placeholder={t('people.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }}
                     sx={{
                         flex: 1,
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 4,
+                        }
+                    }}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
                         }
                     }}
                 />
@@ -521,8 +523,7 @@ export function PeopleManagerView() {
                     </Select>
                 </FormControl>
             </Stack>
-
-                        {/* Left: AIMS Actions */}
+            {/* Left: AIMS Actions */}
             <Stack direction="row" gap={1} flexWrap="wrap" mb={2}>
                 <Button
                     variant="text"
@@ -552,7 +553,6 @@ export function PeopleManagerView() {
                     {t('people.cancelAllAssignments')}
                 </Button>
             </Stack>
-
             {/* Bulk Actions */}
             {selectedIds.size > 0 && (
                 <Paper sx={{ p: 1.5, mb: 2, bgcolor: 'action.selected' }}>
@@ -578,7 +578,6 @@ export function PeopleManagerView() {
                     </Stack>
                 </Paper>
             )}
-
             {/* People Table */}
             <TableContainer component={Paper} sx={{ maxHeight: '60vh' }}>
                 <Table stickyHeader size="small" aria-label="people table">
@@ -749,7 +748,6 @@ export function PeopleManagerView() {
                     </TableBody>
                 </Table>
             </TableContainer>
-
             {/* Bottom Actions Bar */}
             <Paper sx={{ mt: 2, p: 2 }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={2}>
@@ -783,29 +781,24 @@ export function PeopleManagerView() {
                     </Stack>
                 </Stack>
             </Paper>
-
             {/* Dialogs */}
             <PersonDialog
                 open={personDialogOpen}
                 onClose={() => setPersonDialogOpen(false)}
                 person={editingPerson}
             />
-
             <CSVUploadDialog
                 open={csvUploadOpen}
                 onClose={() => setCSVUploadOpen(false)}
             />
-
             <PeopleSaveListDialog
                 open={saveListOpen}
                 onClose={() => setSaveListOpen(false)}
             />
-
             <PeopleListsManagerDialog
                 open={listsManagerOpen}
                 onClose={() => setListsManagerOpen(false)}
             />
-
             <SpaceSelectionDialog
                 open={spaceSelectDialogOpen}
                 onClose={() => {
@@ -816,7 +809,6 @@ export function PeopleManagerView() {
                 personId={spaceSelectPerson?.id || ''}
                 personName={spaceSelectPerson ? Object.values(spaceSelectPerson.data)[0] : undefined}
             />
-
             <ConfirmDialog />
         </Box>
     );

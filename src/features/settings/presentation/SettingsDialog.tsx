@@ -21,6 +21,7 @@ import { useSettingsStore } from '../infrastructure/settingsStore';
 
 // Lazy load all tabs - they have heavy dependencies
 const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
+const SFTPSettingsTab = lazy(() => import('./SFTPSettingsTab').then(m => ({ default: m.SFTPSettingsTab })));
 const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
 const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
 const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
@@ -165,7 +166,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     <Tab label={t('settings.appSettings')} />
                     <Tab
                         label={t('settings.sftpSettings')}
-                        disabled={true} // {settingsController.settings.workingMode !== 'SFTP'}
+                        disabled={settingsController.settings.workingMode !== 'SFTP'}
                     />
 
                     <Tab
@@ -188,14 +189,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         />
                     </TabPanel>
 
-                    {/* SFTP Panel Disabled
                     <TabPanel value={currentTab} index={1}>
                         <SFTPSettingsTab
                             settings={settingsController.settings}
                             onUpdate={(updates) => settingsController.updateSettings(updates)}
                         />
                     </TabPanel>
-                    */}
 
                     <TabPanel value={currentTab} index={2}>
                         <SolumSettingsTab

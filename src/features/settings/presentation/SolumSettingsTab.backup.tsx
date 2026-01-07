@@ -87,11 +87,12 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         }
                     }
                 }}
-                TabIndicatorProps={{ sx: { display: 'none' } }}>
+                slotProps={{
+                    indicator: { sx: { display: 'none' } }
+                }}>
                 <Tab label={t('settings.connectionTab')} />
                 <Tab label={t('settings.fieldMappingTab')} disabled={!settings.solumConfig?.isConnected} />
             </Tabs>
-
             {/* Connection Tab */}
             {subTab === 0 && (
                 <Stack gap={2}>
@@ -174,9 +175,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                             syncInterval: Math.max(60, Number(e.target.value)),
                                         }
                                     })}
-                                    InputProps={{ inputProps: { min: 60 } }}
                                     helperText={t('settings.syncIntervalHelp')}
                                     disabled={isCredentialsLocked}
+                                    slotProps={{
+                                        input: { inputProps: { min: 60 } }
+                                    }}
                                 />
                             )}
                         </Stack>
@@ -393,14 +396,15 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         }
                                     })}
                                     helperText={t('settings.peopleManager.totalSpacesHelp')}
-                                    inputProps={{ min: 0 }}
+                                    slotProps={{
+                                        htmlInput: { min: 0 }
+                                    }}
                                 />
                             )}
                         </Stack>
                     </Box>
                 </Stack>
             )}
-
             {/* Field Mapping Tab */}
             {subTab === 1 && (
                 <Stack gap={2}>

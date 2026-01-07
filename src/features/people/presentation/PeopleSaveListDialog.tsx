@@ -113,8 +113,10 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
                         onChange={(e) => handleNameChange(e.target.value)}
                         error={!!error}
                         disabled={isSaving}
-                        inputProps={{ maxLength: LIST_NAME_MAX_LENGTH }}
                         helperText={t('lists.nameRules', { max: LIST_NAME_MAX_LENGTH })}
+                        slotProps={{
+                            htmlInput: { maxLength: LIST_NAME_MAX_LENGTH }
+                        }}
                     />
                 </Box>
             </DialogContent>

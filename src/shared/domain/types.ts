@@ -114,7 +114,9 @@ export interface SFTPCredentials {
     username: string;
     password: string;
     host: string;
+    port?: number;  // SFTP port (default: 22)
     remoteFilename: string;
+    isConnected?: boolean;  // SFTP connection status
 }
 
 /**

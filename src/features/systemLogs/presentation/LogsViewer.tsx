@@ -256,7 +256,9 @@ const DaySection: React.FC<{
     const VirtualList = FixedSizeList as any;
 
     return (
-        <Accordion expanded={expanded} onChange={() => setExpanded(!expanded)} TransitionProps={{ unmountOnExit: true }}>
+        <Accordion expanded={expanded} onChange={() => setExpanded(!expanded)} slotProps={{
+            transition: { unmountOnExit: true }
+        }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Stack direction="row" gap={2} alignItems="center" sx={{ width: '100%' }}>
                     <Checkbox
@@ -457,11 +459,13 @@ export const LogsViewer: React.FC = () => {
                     placeholder={t('appLogs.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                        startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                    }}
                     sx={{ minWidth: { xs: '100%', sm: 250 } }}
                     fullWidth={isMobile}
+                    slotProps={{
+                        input: {
+                            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                        }
+                    }}
                 />
 
                 <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }} fullWidth={isMobile}>
@@ -535,7 +539,6 @@ export const LogsViewer: React.FC = () => {
                     </Tooltip>
                 </Stack>
             </Stack>
-
             {/* Days list */}
             <Box sx={{ flexGrow: 1, overflow: 'auto', pr: 1 }}>
                 {allDays.length === 0 ? (
@@ -560,7 +563,6 @@ export const LogsViewer: React.FC = () => {
                     ))
                 )}
             </Box>
-
             {/* Log Details Sidebar */}
             <Collapse in={!!selectedLog} unmountOnExit orientation="horizontal" sx={{ position: 'fixed', right: 0, top: 0, height: '100%', zIndex: 1301 }}>
                 {selectedLog && (
@@ -610,7 +612,6 @@ export const LogsViewer: React.FC = () => {
                     </Paper>
                 )}
             </Collapse>
-
             <ConfirmDialog />
         </Box>
     );
