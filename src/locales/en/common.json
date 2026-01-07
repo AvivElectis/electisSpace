@@ -224,6 +224,7 @@
         "username": "Username",
         "password": "Password",
         "host": "Host",
+        "port": "Port",
         "remoteFilename": "Remote Filename",
         "remoteFilenameHelp": "Name of the CSV file on the SFTP server (e.g., esl.csv)",
         "delimiter": "Delimiter",

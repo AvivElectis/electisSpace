@@ -50,16 +50,17 @@ export function UpdateProgress() {
             maxWidth="sm"
             fullWidth
             disableEscapeKeyDown={installing}
-            PaperProps={{
-                sx: {
-                    borderRadius: 2,
-                },
+            slotProps={{
+                paper: {
+                    sx: {
+                        borderRadius: 2,
+                    },
+                }
             }}
         >
             <DialogTitle>
                 {installing ? t('update.installing') : t('update.downloading')}
             </DialogTitle>
-
             <DialogContent>
                 <Box sx={{ width: '100%', mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -115,7 +116,6 @@ export function UpdateProgress() {
                     </Box>
                 )}
             </DialogContent>
-
             {downloadComplete && !installing && (
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button

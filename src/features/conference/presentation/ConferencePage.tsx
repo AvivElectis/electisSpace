@@ -51,6 +51,10 @@ export function ConferencePage() {
         solumConfig: settings.solumConfig,
         solumToken,
         solumMappingConfig: settings.solumMappingConfig,
+        // SFTP mode props
+        workingMode: settings.workingMode,
+        sftpCredentials: settings.sftpCredentials,
+        sftpCsvConfig: settings.sftpCsvConfig,
     });
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
@@ -175,7 +179,6 @@ export function ConferencePage() {
                     {t('conference.addRoom')}
                 </Button>
             </Stack>
-
             {/* Stats Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -257,20 +260,12 @@ export function ConferencePage() {
                     </Card>
                 </Grid>
             </Grid>
-
             {/* Search Bar */}
             <TextField
                 fullWidth
                 placeholder={t('conference.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon />
-                        </InputAdornment>
-                    ),
-                }}
                 sx={{
                     mb: 3,
                     maxWidth: { xs: '100%', sm: 400 },
@@ -278,8 +273,16 @@ export function ConferencePage() {
                         borderRadius: 4,
                     }
                 }}
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }
+                }}
             />
-
             {/* Conference Rooms Grid */}
             {conferenceController.isFetching ? (
                 <Grid container spacing={3}>
@@ -421,7 +424,6 @@ export function ConferencePage() {
                     </Grid>
                 </Box>
             )}
-
             {/* Details Dialog */}
             <Dialog
                 open={detailsOpen}
@@ -503,7 +505,6 @@ export function ConferencePage() {
                     </>
                 )}
             </Dialog>
-
             {/* Add/Edit Dialog - Lazy loaded */}
             <Suspense fallback={null}>
                 {dialogOpen && (

@@ -112,11 +112,13 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
             maxWidth="md"
             fullWidth
             fullScreen={isMobile}
-            PaperProps={{
-                sx: {
-                    height: isMobile ? '100%' : '85vh',
-                    maxHeight: isMobile ? '100%' : '900px',
-                    borderRadius: isMobile ? 0 : undefined,
+            slotProps={{
+                paper: {
+                    sx: {
+                        height: isMobile ? '100%' : '85vh',
+                        maxHeight: isMobile ? '100%' : '900px',
+                        borderRadius: isMobile ? 0 : undefined,
+                    }
                 }
             }}
         >
@@ -138,7 +140,6 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-
             {/* Tabs Navigation - styled like SettingsDialog */}
             <Box sx={{ px: { xs: 1, sm: 2 } }}>
                 <Tabs
@@ -162,7 +163,9 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
                             }
                         },
                     }}
-                    TabIndicatorProps={{ sx: { display: 'none' } }}
+                    slotProps={{
+                        indicator: { sx: { display: 'none' } }
+                    }}
                 >
                     {MANUAL_TABS.map((tab, index) => (
                         <Tab
@@ -176,7 +179,6 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
                     ))}
                 </Tabs>
             </Box>
-
             {/* Tab Content */}
             <DialogContent 
                 sx={{ 

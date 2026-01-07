@@ -79,6 +79,10 @@ export function SpacesManagementView() {
         solumConfig: settingsController.settings.solumConfig,
         solumToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
+        // SFTP mode props
+        workingMode: settingsController.settings.workingMode,
+        sftpCredentials: settingsController.settings.sftpCredentials,
+        sftpCsvConfig: settingsController.settings.sftpCsvConfig,
     });
 
     const { getLabel } = useSpaceTypeLabels();
@@ -280,20 +284,12 @@ export function SpacesManagementView() {
                     </Button>
                 </Stack>
             </Stack>
-
             {/* Search Bar */}
             <TextField
                 fullWidth
                 placeholder={t('spaces.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon />
-                        </InputAdornment>
-                    ),
-                }}
                 sx={{
                     mb: 3,
                     maxWidth: { xs: '100%', sm: 400 },
@@ -301,12 +297,20 @@ export function SpacesManagementView() {
                         borderRadius: 4,
                     }
                 }}
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }
+                }}
             />
-
             {/* Spaces Table / Mobile Card View */}
             {isMobile ? (
                 /* Mobile Card View */
-                <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
+                (<Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
                     {spaceController.isFetching ? (
                         <Stack gap={1}>
                             {Array.from({ length: 5 }).map((_, index) => (
@@ -371,119 +375,118 @@ export function SpacesManagementView() {
                             ))}
                         </Stack>
                     )}
-                </Box>
+                </Box>)
             ) : (
                 /* Desktop Table View */
-                <TableContainer component={Paper} sx={{ maxHeight: { xs: '55vh', sm: '65vh', md: '70vh' } }}>
-                <Table stickyHeader>
-                    <TableHead>
-                        <TableRow sx={{ bgcolor: 'background.default' }}>
-                            <TableCell sx={{ fontWeight: 600 }} align="center">
-                                <TableSortLabel
-                                    active={sortConfig?.key === 'id'}
-                                    direction={sortConfig?.key === 'id' ? sortConfig.direction : 'asc'}
-                                    onClick={() => handleSort('id')}
-                                >
-                                    {t('spaces.id')}
-                                </TableSortLabel>
-                            </TableCell>
-                            {visibleFields.map(field => (
-                                <TableCell key={field.key} sx={{ fontWeight: 600 }} align="center">
+                (<TableContainer component={Paper} sx={{ maxHeight: { xs: '55vh', sm: '65vh', md: '70vh' } }}>
+                    <Table stickyHeader>
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: 'background.default' }}>
+                                <TableCell sx={{ fontWeight: 600 }} align="center">
                                     <TableSortLabel
-                                        active={sortConfig?.key === field.key}
-                                        direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'}
-                                        onClick={() => handleSort(field.key)}
+                                        active={sortConfig?.key === 'id'}
+                                        direction={sortConfig?.key === 'id' ? sortConfig.direction : 'asc'}
+                                        onClick={() => handleSort('id')}
                                     >
-                                        {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                        {t('spaces.id')}
                                     </TableSortLabel>
                                 </TableCell>
-                            ))}
-                            <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.actions')}</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {spaceController.isFetching ? (
-                            // Show skeleton rows while fetching
-                            Array.from({ length: 5 }).map((_, index) => (
-                                <TableRow key={`skeleton-${index}`}>
-                                    <TableCell align="center">
-                                        <Skeleton variant="text" width="80%" />
+                                {visibleFields.map(field => (
+                                    <TableCell key={field.key} sx={{ fontWeight: 600 }} align="center">
+                                        <TableSortLabel
+                                            active={sortConfig?.key === field.key}
+                                            direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'}
+                                            onClick={() => handleSort(field.key)}
+                                        >
+                                            {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                        </TableSortLabel>
                                     </TableCell>
-                                    {visibleFields.map(field => (
-                                        <TableCell key={field.key} align="center">
-                                            <Skeleton variant="text" width="70%" />
-                                        </TableCell>
-                                    ))}
-                                    <TableCell align="center">
-                                        <Stack direction="row" gap={1} justifyContent="center">
-                                            <Skeleton variant="circular" width={32} height={32} />
-                                            <Skeleton variant="circular" width={32} height={32} />
-                                        </Stack>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : filteredAndSortedSpaces.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={visibleFields.length + 2} align="center" sx={{ py: 4 }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {searchQuery
-                                            ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
-                                            : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
-                                    </Typography>
-                                </TableCell>
+                                ))}
+                                <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.actions')}</TableCell>
                             </TableRow>
-                        ) : (
-                            filteredAndSortedSpaces.map((space) => (
-                                <TableRow
-                                    key={space.id}
-                                    sx={{
-                                        '&:hover': {
-                                            bgcolor: 'action.hover',
-                                        },
-                                    }}
-                                >
-                                    <TableCell align="center">
-                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                            {space.id}
+                        </TableHead>
+                        <TableBody>
+                            {spaceController.isFetching ? (
+                                // Show skeleton rows while fetching
+                                (Array.from({ length: 5 }).map((_, index) => (
+                                    <TableRow key={`skeleton-${index}`}>
+                                        <TableCell align="center">
+                                            <Skeleton variant="text" width="80%" />
+                                        </TableCell>
+                                        {visibleFields.map(field => (
+                                            <TableCell key={field.key} align="center">
+                                                <Skeleton variant="text" width="70%" />
+                                            </TableCell>
+                                        ))}
+                                        <TableCell align="center">
+                                            <Stack direction="row" gap={1} justifyContent="center">
+                                                <Skeleton variant="circular" width={32} height={32} />
+                                                <Skeleton variant="circular" width={32} height={32} />
+                                            </Stack>
+                                        </TableCell>
+                                    </TableRow>
+                                )))
+                            ) : filteredAndSortedSpaces.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={visibleFields.length + 2} align="center" sx={{ py: 4 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {searchQuery
+                                                ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
+                                                : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
                                         </Typography>
                                     </TableCell>
-                                    {visibleFields.map(field => (
-                                        <TableCell key={field.key} align="center">
-                                            <Typography variant="body2">
-                                                {space.data[field.key] || '-'}
+                                </TableRow>
+                            ) : (
+                                filteredAndSortedSpaces.map((space) => (
+                                    <TableRow
+                                        key={space.id}
+                                        sx={{
+                                            '&:hover': {
+                                                bgcolor: 'action.hover',
+                                            },
+                                        }}
+                                    >
+                                        <TableCell align="center">
+                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                {space.id}
                                             </Typography>
                                         </TableCell>
-                                    ))}
-                                    <TableCell align="center">
-                                        <Stack direction="row" gap={1} justifyContent="center">
-                                            <Tooltip title="Edit">
-                                                <IconButton
-                                                    size="small"
-                                                    color="primary"
-                                                    onClick={() => handleEdit(space)}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Delete">
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleDelete(space.id)}
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </Stack>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                                        {visibleFields.map(field => (
+                                            <TableCell key={field.key} align="center">
+                                                <Typography variant="body2">
+                                                    {space.data[field.key] || '-'}
+                                                </Typography>
+                                            </TableCell>
+                                        ))}
+                                        <TableCell align="center">
+                                            <Stack direction="row" gap={1} justifyContent="center">
+                                                <Tooltip title="Edit">
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => handleEdit(space)}
+                                                    >
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Delete">
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleDelete(space.id)}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Stack>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>)
             )}
-
             {/* Bottom Actions Bar */}
             <Box sx={{
                 mt: 2,
@@ -528,7 +531,6 @@ export function SpacesManagementView() {
                     </Button>
                 )}
             </Box>
-
             {/* Add/Edit Dialog - Lazy loaded */}
             <Suspense fallback={null}>
                 {dialogOpen && (
@@ -545,7 +547,6 @@ export function SpacesManagementView() {
                 )}
             </Suspense>
             <ConfirmDialog />
-
             {/* Lists Dialogs - Lazy loaded */}
             <Suspense fallback={null}>
                 {listsManagerOpen && (

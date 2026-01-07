@@ -199,8 +199,10 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                                 value={formData.data[field.key] || ''}
                                 onChange={(e) => handleFieldChange(field.key, e.target.value)}
                                 fullWidth
-                                InputProps={{
-                                    sx: { textAlign: isRtl ? 'right' : 'left' }
+                                slotProps={{
+                                    input: {
+                                        sx: { textAlign: isRtl ? 'right' : 'left' }
+                                    }
                                 }}
                             />
                         ))}

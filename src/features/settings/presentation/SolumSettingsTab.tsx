@@ -82,12 +82,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         },
                     },
                 }}
-                TabIndicatorProps={{ sx: { display: 'none' } }}
+                slotProps={{
+                    indicator: { sx: { display: 'none' } }
+                }}
             >
                 <Tab label={t('settings.connectionTab')} />
                 <Tab label={t('settings.fieldMappingTab')} disabled={!settings.solumConfig?.isConnected} />
             </Tabs>
-
             {/* Connection Tab */}
             {subTab === 0 && (
                 <Stack gap={2}>
@@ -126,7 +127,6 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     />
                 </Stack>
             )}
-
             {/* Field Mapping Tab */}
             {subTab === 1 && (
                 <Stack gap={2}>

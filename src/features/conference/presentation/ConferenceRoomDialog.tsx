@@ -211,7 +211,9 @@ export function ConferenceRoomDialog({
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
                                     required={hasMeeting}
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{
+                                        inputLabel: { shrink: true }
+                                    }}
                                 />
                                 <TextField
                                     fullWidth
@@ -220,7 +222,9 @@ export function ConferenceRoomDialog({
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
                                     required={hasMeeting}
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{
+                                        inputLabel: { shrink: true }
+                                    }}
                                 />
                             </Stack>
 

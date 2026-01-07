@@ -58,9 +58,11 @@ export function ConfirmDialog({ open, options, onConfirm, onCancel, sx }: Confir
             onClose={onCancel}
             maxWidth="xs"
             fullWidth
-            PaperProps={{
-                elevation: 2,
-                sx: { borderRadius: 2 }
+            slotProps={{
+                paper: {
+                    elevation: 2,
+                    sx: { borderRadius: 2 }
+                }
             }}
         >
             <DialogTitle sx={{ pb: 1, pr: 6 }}>

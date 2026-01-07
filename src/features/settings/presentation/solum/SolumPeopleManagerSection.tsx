@@ -150,7 +150,9 @@ export function SolumPeopleManagerSection({
                             })
                         }
                         helperText={t('settings.peopleManager.totalSpacesHelp')}
-                        inputProps={{ min: 0 }}
+                        slotProps={{
+                            htmlInput: { min: 0 }
+                        }}
                     />
                 )}
             </Stack>

@@ -235,6 +235,7 @@
         "username": "שם משתמש",
         "password": "סיסמה",
         "host": "שרת מארח",
+        "port": "פורט",
         "remoteFilename": "שם קובץ מרוחק",
         "remoteFilenameHelp": "שם קובץ ה-CSV בשרת ה-SFTP (לדוגמה: esl.csv)",
         "delimiter": "מפריד",

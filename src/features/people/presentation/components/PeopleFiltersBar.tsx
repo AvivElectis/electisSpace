@@ -26,18 +26,20 @@ export function PeopleFiltersBar({
                 placeholder={t('people.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon />
-                        </InputAdornment>
-                    ),
-                }}
                 sx={{
                     flex: 1,
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 4,
                     },
+                }}
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }
                 }}
             />
             <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
