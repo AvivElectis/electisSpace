@@ -23,6 +23,7 @@ export function FeatureTestDemo() {
         onSpaceUpdate: (spaces) => {
             spaceController.importFromSync(spaces);
         },
+        isConnected: settingsController.settings.solumConfig?.isConnected || false,
     });
 
     const addResult = (message: string) => {

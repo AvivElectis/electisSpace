@@ -54,6 +54,9 @@ export interface PeopleStore {
     setActiveListId: (id: string | undefined) => void;
     setSpaceAllocation: (allocation: SpaceAllocation) => void;
     updateSpaceAllocation: () => void;  // Recalculate based on assignments
+
+    // Cleanup
+    clearAllData: () => void;
 }
 
 export const usePeopleStore = create<PeopleStore>()(
@@ -254,6 +257,20 @@ export const usePeopleStore = create<PeopleStore>()(
                     }
                 },
                 clearPendingChanges: () => set({ pendingChanges: false }, false, 'clearPendingChanges'),
+
+                // Cleanup
+                clearAllData: () => set({
+                    people: [],
+                    peopleLists: [],
+                    activeListName: undefined,
+                    activeListId: undefined,
+                    pendingChanges: false,
+                    spaceAllocation: {
+                        totalSpaces: 0,
+                        assignedSpaces: 0,
+                        availableSpaces: 0,
+                    }
+                }, false, 'clearAllData'),
             }),
             {
                 name: 'people-store',

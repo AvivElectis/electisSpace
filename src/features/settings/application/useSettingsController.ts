@@ -16,8 +16,26 @@ import { logger } from '@shared/infrastructure/services/logger';
 /**
  * Admin password for emergency access to settings
  * This password always works to unlock settings, even if user forgets their password
+ * Loaded from environment variable for security
  */
-const ADMIN_PASSWORD = 'Kkkvd24nr!!#';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
+
+/**
+ * Helper function to clear all data stores
+ * Called on disconnect or mode switch
+ */
+async function clearAllDataStores(): Promise<void> {
+    // Dynamic imports to avoid circular dependencies
+    const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
+    const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
+    const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
+    
+    useSpacesStore.getState().clearAllData();
+    usePeopleStore.getState().clearAllData();
+    useConferenceStore.getState().clearAllData();
+    
+    logger.info('Settings', 'Cleared all data stores (spaces, people, conference rooms)');
+}
 
 /**
  * Settings Controller Hook
@@ -320,14 +338,17 @@ export function useSettingsController() {
 
     /**
      * Disconnect from SoluM API
-     * Clears tokens and connection state
+     * Clears tokens, connection state, and all data stores
      */
-    const disconnectFromSolum = useCallback((): void => {
-        logger.info('SettingsController', 'Disconnecting from SoluM API');
+    const disconnectFromSolum = useCallback(async (): Promise<void> => {
+        logger.info('Settings', 'Disconnecting from SoluM API');
 
         if (!settings.solumConfig) {
             return;
         }
+
+        // Clear all data stores using async helper to avoid circular dependencies
+        await clearAllDataStores();
 
         updateInStore({
             solumConfig: {
@@ -339,7 +360,7 @@ export function useSettingsController() {
             },
         });
 
-        logger.info('SettingsController', 'Disconnected from SoluM API');
+        logger.info('Settings', 'Disconnected from SoluM API');
     }, [settings.solumConfig, updateInStore]);
 
     /**

@@ -26,6 +26,9 @@ export interface SpacesStore {
     setActiveListName: (name: string | undefined) => void;
     setActiveListId: (id: string | undefined) => void;
     mergeSpacesList: (spaces: Space[]) => void;
+
+    // Cleanup
+    clearAllData: () => void;
 }
 
 export const useSpacesStore = create<SpacesStore>()(
@@ -113,6 +116,14 @@ export const useSpacesStore = create<SpacesStore>()(
                             spaces: Array.from(existingSpacesMap.values()),
                         };
                     }, false, 'mergeSpacesList'),
+
+                // Cleanup
+                clearAllData: () => set({
+                    spaces: [],
+                    spacesLists: [],
+                    activeListName: undefined,
+                    activeListId: undefined
+                }, false, 'clearAllData'),
             }),
             {
                 name: 'spaces-store',
