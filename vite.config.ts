@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteCompression from 'vite-plugin-compression';
@@ -13,6 +14,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    basicSsl(),  // HTTPS with self-signed certificate for dev
     // Gzip compression
     viteCompression({
       algorithm: 'gzip',
@@ -38,6 +40,7 @@ export default defineConfig({
     },
   },
   server: {
+    port: 3000,
     proxy: {
       // SFTP API proxy for development (avoids CORS)
       '/sftp-api': {

@@ -118,6 +118,25 @@ export function SpacesManagementView() {
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
+        const workingMode = settingsController.settings.workingMode;
+        
+        // SFTP Mode: use sftpCsvConfig.columns
+        if (workingMode === 'SFTP') {
+            const columns = settingsController.settings.sftpCsvConfig?.columns;
+            if (!columns || columns.length === 0) return [];
+            
+            const idColumn = settingsController.settings.sftpCsvConfig?.idColumn;
+            
+            return columns
+                .filter(col => col.fieldName !== idColumn) // Exclude ID column (shown separately)
+                .map(col => ({
+                    key: col.fieldName,
+                    labelEn: col.friendlyName,
+                    labelHe: col.friendlyName,  // Use same for both languages in SFTP mode
+                }));
+        }
+        
+        // SoluM API Mode: use solumMappingConfig.fields
         if (!settingsController.settings.solumMappingConfig?.fields) return [];
 
         const idFieldKey = settingsController.settings.solumMappingConfig.mappingInfo?.articleId;
@@ -132,7 +151,7 @@ export function SpacesManagementView() {
                 labelEn: config.friendlyNameEn,
                 labelHe: config.friendlyNameHe
             }));
-    }, [settingsController.settings.solumMappingConfig]);
+    }, [settingsController.settings.solumMappingConfig, settingsController.settings.sftpCsvConfig, settingsController.settings.workingMode]);
 
     // Handle sort request
     const handleSort = (key: string) => {
@@ -332,8 +351,8 @@ export function SpacesManagementView() {
                         </Paper>
                     ) : (
                         <Stack gap={1}>
-                            {filteredAndSortedSpaces.map((space) => (
-                                <Card key={space.id} variant="outlined">
+                            {filteredAndSortedSpaces.map((space, index) => (
+                                <Card key={`${space.id}-${index}`} variant="outlined">
                                     <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                                         {/* Row 1: ID + Actions */}
                                         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
@@ -437,9 +456,9 @@ export function SpacesManagementView() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredAndSortedSpaces.map((space) => (
+                                filteredAndSortedSpaces.map((space, index) => (
                                     <TableRow
-                                        key={space.id}
+                                        key={`${space.id}-${index}`}
                                         sx={{
                                             '&:hover': {
                                                 bgcolor: 'action.hover',
