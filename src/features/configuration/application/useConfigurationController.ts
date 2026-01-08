@@ -129,18 +129,18 @@ export function useConfigurationController() {
             return false;
         }
 
-        // Build field mapping from columns
-        const mapping: FieldMapping = {};
-        columns.forEach(col => {
-            mapping[col.aimsValue] = col.index;
-        });
-
         // Update SFTP CSV config
         updateSettings({
             sftpCsvConfig: {
+                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                 delimiter: settings.sftpCsvConfig?.delimiter || ',',
-                columns,
-                mapping,
+                columns: columns.map((col, idx) => ({
+                    fieldName: col.aimsValue,
+                    csvColumn: col.index,
+                    friendlyName: col.headerEn || col.aimsValue,
+                    required: col.mandatory ?? false,
+                })),
+                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
                 conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
             }
         });
@@ -160,9 +160,10 @@ export function useConfigurationController() {
 
         updateSettings({
             sftpCsvConfig: {
+                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                 delimiter,
                 columns: settings.sftpCsvConfig?.columns || [],
-                mapping: settings.sftpCsvConfig?.mapping || {},
+                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
                 conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
             }
         });
@@ -177,9 +178,10 @@ export function useConfigurationController() {
     const toggleConferenceEnabled = useCallback((enabled: boolean) => {
         updateSettings({
             sftpCsvConfig: {
+                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                 delimiter: settings.sftpCsvConfig?.delimiter || ',',
                 columns: settings.sftpCsvConfig?.columns || [],
-                mapping: settings.sftpCsvConfig?.mapping || {},
+                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
                 conferenceEnabled: enabled,
             }
         });

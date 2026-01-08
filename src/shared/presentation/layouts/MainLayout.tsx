@@ -62,7 +62,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [manualOpen, setManualOpen] = useState(false);
-    const { syncState } = useSyncStore();
+    const { syncState, setWorkingMode } = useSyncStore();
     
     // Determine drawer direction based on current language (more reliable than theme.direction)
     const isRtl = i18n.language === 'he';
@@ -70,6 +70,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     const setSpaces = useSpacesStore(state => state.setSpaces);
     const setPeople = usePeopleStore(state => state.setPeople);
     const extractListsFromPeople = usePeopleStore(state => state.extractListsFromPeople);
+
+    // Sync settings.workingMode to syncStore.workingMode
+    useEffect(() => {
+        setWorkingMode(settings.workingMode);
+    }, [settings.workingMode, setWorkingMode]);
 
     // Determine if People Manager mode is enabled
     const isPeopleManagerMode = settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API';

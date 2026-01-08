@@ -20,6 +20,16 @@ export interface CSVColumnMapping {
 /**
  * Enhanced CSV configuration for SFTP mode
  */
+/**
+ * Conference field mapping for SFTP mode
+ */
+export interface ConferenceFieldMapping {
+    meetingName: string;     // Field name for meeting name
+    meetingTime: string;     // Field name for meeting time (or startTime)
+    endTime?: string;        // Field name for meeting end time
+    participants?: string;   // Field name for participants (semicolon-separated)
+}
+
 export interface EnhancedCSVConfig {
     hasHeader: boolean;           // Whether CSV has a header row
     delimiter: ',' | ';' | '\t';  // Column delimiter
@@ -27,6 +37,8 @@ export interface EnhancedCSVConfig {
     idColumn: string;             // Field name to use as unique ID
     conferenceEnabled: boolean;   // Whether to parse conference rooms
     conferencePrefix?: string;    // Prefix for conference room IDs (default: 'C')
+    conferenceMapping?: ConferenceFieldMapping;  // Field mappings for conference rooms
+    globalFieldAssignments?: { [fieldKey: string]: string };  // Global field values applied to all records
 }
 
 /**
@@ -88,6 +100,11 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
             data[col.fieldName] = value || '';
         }
 
+        // Apply global field assignments (override any existing values)
+        if (config.globalFieldAssignments) {
+            Object.assign(data, config.globalFieldAssignments);
+        }
+
         // Get ID from configured ID column
         const id = data[config.idColumn] || `row-${i + 1}`;
 
@@ -95,14 +112,20 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
         const isConferenceRoom = config.conferenceEnabled && id.startsWith(conferencePrefix);
 
         if (isConferenceRoom) {
-            // Parse conference room
+            // Parse conference room using configured field mappings
+            const confMap = config.conferenceMapping;
+            const meetingNameField = confMap?.meetingName || 'meetingName';
+            const meetingTimeField = confMap?.meetingTime || 'startTime';
+            const endTimeField = confMap?.endTime || 'endTime';
+            const participantsField = confMap?.participants || 'participants';
+            
             const room: ConferenceRoom = {
                 id,
-                hasMeeting: data['hasMeeting'] === 'true' || data['hasMeeting'] === '1',
-                meetingName: data['meetingName'] || '',
-                startTime: data['startTime'] || '',
-                endTime: data['endTime'] || '',
-                participants: data['participants']?.split(';').filter(Boolean) || [],
+                hasMeeting: !!(data[meetingNameField] || data[meetingTimeField]),
+                meetingName: data[meetingNameField] || '',
+                startTime: data[meetingTimeField] || '',
+                endTime: data[endTimeField] || '',
+                participants: data[participantsField]?.split(';').filter(Boolean) || [],
                 labelCode: data['labelCode'],
                 data,
             };
@@ -255,7 +278,7 @@ export function validateCSVConfigEnhanced(config: EnhancedCSVConfig): { valid: b
 export function createDefaultEnhancedCSVConfig(): EnhancedCSVConfig {
     return {
         hasHeader: true,
-        delimiter: ',',
+        delimiter: ';',
         columns: [
             { fieldName: 'id', csvColumn: 0, friendlyName: 'ID', required: true },
             { fieldName: 'name', csvColumn: 1, friendlyName: 'Name', required: true },
@@ -264,7 +287,68 @@ export function createDefaultEnhancedCSVConfig(): EnhancedCSVConfig {
         ],
         idColumn: 'id',
         conferenceEnabled: false,
+        conferenceMapping: {
+            meetingName: 'meetingName',
+            meetingTime: 'startTime',
+            endTime: 'endTime',
+            participants: 'participants',
+        },
     };
+}
+
+/**
+ * Extract headers from CSV content and create column mappings
+ * @param content - Raw CSV string
+ * @param delimiter - Column delimiter (default ';')
+ * @returns Array of column mappings derived from headers
+ */
+export function extractHeadersFromCSV(content: string, delimiter: string = ';'): CSVColumnMapping[] {
+    logger.info('CSVService', 'Extracting headers from CSV', { delimiter, contentLength: content.length });
+
+    // Remove BOM if present
+    let cleanContent = content;
+    if (cleanContent.charCodeAt(0) === 0xFEFF) {
+        cleanContent = cleanContent.slice(1);
+        logger.debug('CSVService', 'Removed BOM from CSV content');
+    }
+
+    const parsed = Papa.parse<string[]>(cleanContent, {
+        delimiter,
+        header: false,
+        skipEmptyLines: true,
+        preview: 1  // Only read first row
+    });
+
+    if (parsed.errors.length > 0 || parsed.data.length === 0) {
+        logger.warn('CSVService', 'Could not extract headers', { errors: parsed.errors });
+        return [];
+    }
+
+    const headerRow = parsed.data[0];
+    
+    const columns: CSVColumnMapping[] = headerRow.map((header, index) => {
+        // Clean up header name - keep original case
+        const cleanHeader = header.trim();
+        // Use original header as fieldName (for data mapping), just clean special characters
+        const fieldName = cleanHeader
+            .replace(/[^a-zA-Z0-9_\u0590-\u05FF]+/g, '_')  // Replace non-alphanumeric with underscore (keep Hebrew and case)
+            .replace(/^_+|_+$/g, '')  // Remove leading/trailing underscores
+            || `column_${index}`;
+        
+        return {
+            fieldName,  // Original case preserved (e.g., 'STORE_ID', 'ITEM_NAME')
+            csvColumn: index,
+            friendlyName: cleanHeader || `Column ${index + 1}`,
+            required: index === 0  // First column is typically ID/required
+        };
+    });
+
+    logger.info('CSVService', 'Headers extracted', { 
+        count: columns.length,
+        headers: columns.map(c => c.friendlyName)
+    });
+
+    return columns;
 }
 
 // ========================================

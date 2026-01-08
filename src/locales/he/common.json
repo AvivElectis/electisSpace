@@ -312,6 +312,8 @@
         "fieldName": "שם שדה",
         "headerEn": "כותרת באנגלית",
         "headerHe": "כותרת בעברית",
+        "type": "סוג",
+        "required": "חובה",
         "typeText": "טקסט",
         "typeNumber": "מספר",
         "typeEmail": "דואר אלקטרוני",
