@@ -11,10 +11,11 @@ import { logger } from './logger';
  * Enhanced CSV column mapping for SFTP mode
  */
 export interface CSVColumnMapping {
-    fieldName: string;     // Field name in app (e.g., 'id', 'name', 'rank')
-    csvColumn: number;     // Column index in CSV (0-based)
-    friendlyName: string;  // Display name for UI
-    required: boolean;     // Whether this column is required
+    fieldName: string;       // Field name in app (e.g., 'id', 'name', 'rank')
+    csvColumn: number;       // Column index in CSV (0-based)
+    friendlyName: string;    // Display name for UI (English)
+    friendlyNameHe?: string; // Display name for UI (Hebrew)
+    required: boolean;       // Whether this column is required/visible
 }
 
 /**
@@ -24,6 +25,7 @@ export interface CSVColumnMapping {
  * Conference field mapping for SFTP mode
  */
 export interface ConferenceFieldMapping {
+    roomName?: string;       // Field name for conference room name
     meetingName: string;     // Field name for meeting name
     meetingTime: string;     // Field name for meeting time (or startTime)
     endTime?: string;        // Field name for meeting end time
@@ -48,10 +50,15 @@ export interface EnhancedCSVConfig {
  * @returns Array of parsed spaces
  */
 export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { spaces: Space[]; conferenceRooms: ConferenceRoom[] } {
+    // In SFTP mode, conference detection is ALWAYS enabled - we detect by ID prefix 'C'
+    const isConferenceDetectionEnabled = true;
+
     logger.info('CSVService', 'Parsing CSV (enhanced)', { 
-        length: content.length, 
+        length: content.length,
         hasHeader: config.hasHeader,
-        delimiter: config.delimiter 
+        delimiter: config.delimiter,
+        idColumn: config.idColumn,
+        columnsCount: config.columns.length,
     });
 
     const parsed = Papa.parse<string[]>(content, {
@@ -92,8 +99,9 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
         for (const col of config.columns) {
             const value = row[col.csvColumn];
             
-            // Check required columns
-            if (col.required && (value === undefined || value === '')) {
+            // Check required columns - only warn if column is truly missing (out of range)
+            // Empty string values are valid and should not trigger a warning
+            if (col.required && value === undefined) {
                 logger.warn('CSVService', `Row ${i + 1}: missing required field "${col.fieldName}"`, { row });
             }
             
@@ -108,8 +116,10 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
         // Get ID from configured ID column
         const id = data[config.idColumn] || `row-${i + 1}`;
 
-        // Check if this is a conference room (ID starts with conference prefix)
-        const isConferenceRoom = config.conferenceEnabled && id.startsWith(conferencePrefix);
+        // Check if this is a conference room (ID starts with conference prefix 'C' or 'c')
+        // In SFTP mode, conference rooms are ALWAYS detected by ID prefix
+        const isConferenceRoom = isConferenceDetectionEnabled && 
+            (id.startsWith(conferencePrefix) || id.startsWith(conferencePrefix.toLowerCase()));
 
         if (isConferenceRoom) {
             // Parse conference room using configured field mappings
@@ -119,15 +129,40 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
             const endTimeField = confMap?.endTime || 'endTime';
             const participantsField = confMap?.participants || 'participants';
             
+            // Get room name from configured field in settings (dynamic mapping from SFTP settings)
+            const roomNameField = confMap?.roomName;
+            const roomName = roomNameField ? (data[roomNameField] || '') : '';
+            
+            // Debug logging for room name extraction
+            logger.info('CSVService', 'Conference room name extraction', {
+                roomNameField,
+                roomName,
+                dataKeys: Object.keys(data),
+            });
+            
+            // In SFTP mode, hasMeeting is ONLY true if meeting name is present
+            const meetingName = data[meetingNameField] || '';
+            
+            // Strip the 'C' or 'c' prefix from conference room ID
+            const displayId = id.startsWith('C') || id.startsWith('c') ? id.substring(1) : id;
+            
+            // Ensure roomName is set in data for UI display
+            // Also update the ID column in data to not have the 'C' prefix
+            const enhancedData = { 
+                ...data, 
+                roomName,
+                [config.idColumn]: displayId,  // Update ID column to not have 'C' prefix
+            };
+            
             const room: ConferenceRoom = {
-                id,
-                hasMeeting: !!(data[meetingNameField] || data[meetingTimeField]),
-                meetingName: data[meetingNameField] || '',
+                id: displayId, // Use ID without the 'C' prefix
+                hasMeeting: !!meetingName, // Only meeting name triggers hasMeeting, not time alone
+                meetingName,
                 startTime: data[meetingTimeField] || '',
                 endTime: data[endTimeField] || '',
                 participants: data[participantsField]?.split(';').filter(Boolean) || [],
                 labelCode: data['labelCode'],
-                data,
+                data: enhancedData,
             };
             conferenceRooms.push(room);
         } else {
@@ -196,31 +231,41 @@ export function generateCSVEnhanced(
         rows.push(row);
     }
 
-    // Add conference room rows if enabled
-    if (config.conferenceEnabled) {
-        for (const room of conferenceRooms) {
-            const row = new Array(maxColumnIndex + 1).fill('');
-            
-            for (const col of config.columns) {
-                if (col.fieldName === config.idColumn) {
-                    row[col.csvColumn] = room.id;
-                } else if (col.fieldName === 'hasMeeting') {
-                    row[col.csvColumn] = room.hasMeeting ? 'true' : 'false';
-                } else if (col.fieldName === 'meetingName') {
-                    row[col.csvColumn] = room.meetingName;
-                } else if (col.fieldName === 'startTime') {
-                    row[col.csvColumn] = room.startTime;
-                } else if (col.fieldName === 'endTime') {
-                    row[col.csvColumn] = room.endTime;
-                } else if (col.fieldName === 'participants') {
-                    row[col.csvColumn] = room.participants.join(';');
-                } else if (room.data) {
-                    row[col.csvColumn] = room.data[col.fieldName] || '';
-                }
+    // Add conference room rows - always add them (we detect by ID prefix)
+    // Re-add the 'C' prefix that was stripped during parsing
+    const confMap = config.conferenceMapping;
+    const roomNameField = confMap?.roomName;  // e.g., "ITEM_NAME"
+    
+    for (const room of conferenceRooms) {
+        const row = new Array(maxColumnIndex + 1).fill('');
+        
+        // Add 'C' prefix back to conference room ID for CSV output
+        const csvRoomId = room.id.startsWith('C') || room.id.startsWith('c') 
+            ? room.id 
+            : `C${room.id}`;
+        
+        for (const col of config.columns) {
+            if (col.fieldName === config.idColumn) {
+                row[col.csvColumn] = csvRoomId;
+            } else if (roomNameField && col.fieldName === roomNameField) {
+                // Write room name to the configured roomName column (e.g., ITEM_NAME)
+                row[col.csvColumn] = room.data?.roomName || '';
+            } else if (col.fieldName === 'hasMeeting') {
+                row[col.csvColumn] = room.hasMeeting ? 'true' : 'false';
+            } else if (col.fieldName === 'meetingName') {
+                row[col.csvColumn] = room.meetingName;
+            } else if (col.fieldName === 'startTime') {
+                row[col.csvColumn] = room.startTime;
+            } else if (col.fieldName === 'endTime') {
+                row[col.csvColumn] = room.endTime;
+            } else if (col.fieldName === 'participants') {
+                row[col.csvColumn] = room.participants.join(';');
+            } else if (room.data) {
+                row[col.csvColumn] = room.data[col.fieldName] || '';
             }
-            
-            rows.push(row);
         }
+        
+        rows.push(row);
     }
 
     // Generate CSV
@@ -286,7 +331,7 @@ export function createDefaultEnhancedCSVConfig(): EnhancedCSVConfig {
             { fieldName: 'title', csvColumn: 3, friendlyName: 'Title', required: false },
         ],
         idColumn: 'id',
-        conferenceEnabled: false,
+        conferenceEnabled: true,  // Always enabled - conference rooms detected by ID prefix 'C'
         conferenceMapping: {
             meetingName: 'meetingName',
             meetingTime: 'startTime',
@@ -410,9 +455,10 @@ export function parseCSV(csvContent: string, config: CSVConfig): AppData {
             storeNumber = data['storeNumber'];
         }
 
-        // Check if this is a conference room (ID starts with 'C' or room type field indicates conference)
-        const isConferenceRoom = config.conferenceEnabled && (
-            id.startsWith('C') || data['type'] === 'conference'
+        // Check if this is a conference room (ID starts with 'C' or 'c', or room type field indicates conference)
+        // Conference detection is always active unless explicitly disabled
+        const isConferenceRoom = (config.conferenceEnabled !== false) && (
+            id.startsWith('C') || id.startsWith('c') || data['type'] === 'conference'
         );
 
         if (isConferenceRoom) {

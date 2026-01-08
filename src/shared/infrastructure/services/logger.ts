@@ -80,24 +80,24 @@ class Logger {
             // console.error('Failed to log to store:', error);
         }
 
-        // Console output with formatting (commented out - logs now go to logsStore)
+        // Console output with formatting
         // const prefix = `[${level.toUpperCase()}] [${category}]`;
         // const logData = data ? ` ${JSON.stringify(data)}` : '';
 
-        switch (level) {
-            case 'debug':
-                // console.debug(`${prefix} ${message}${logData}`);
-                break;
-            case 'info':
-                // console.info(`${prefix} ${message}${logData}`);
-                break;
-            case 'warn':
-                // console.warn(`${prefix} ${message}${logData}`);
-                break;
-            case 'error':
-                // console.error(`${prefix} ${message}${logData}`);
-                break;
-        }
+        // switch (level) {
+        //     case 'debug':
+        //         // console.debug(`${prefix} ${message}${logData}`);
+        //         break;
+        //     case 'info':
+        //         console.info(`${prefix} ${message}${logData}`);
+        //         break;
+        //     case 'warn':
+        //         console.warn(`${prefix} ${message}${logData}`);
+        //         break;
+        //     case 'error':
+        //         console.error(`${prefix} ${message}${logData}`);
+        //         break;
+        // }
     }
 
     /**
