@@ -49,6 +49,19 @@ export function useSyncController({
 
     const adapterRef = useRef<SyncAdapter | null>(null);
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastWorkingModeRef = useRef<string>(workingMode);
+
+    // Clear adapter when working mode changes
+    useEffect(() => {
+        if (lastWorkingModeRef.current !== workingMode) {
+            logger.info('SyncController', `Working mode changed from ${lastWorkingModeRef.current} to ${workingMode}, clearing adapter`);
+            if (adapterRef.current) {
+                adapterRef.current.disconnect().catch(() => {/* ignore */});
+                adapterRef.current = null;
+            }
+            lastWorkingModeRef.current = workingMode;
+        }
+    }, [workingMode]);
 
     /**
      * Get current adapter based on working mode

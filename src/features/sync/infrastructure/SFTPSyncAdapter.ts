@@ -113,13 +113,13 @@ export class SFTPSyncAdapter implements SyncAdapter {
         this.updateProgress(0);
 
         try {
-            const result = await this.withRetry(
+            const success = await this.withRetry(
                 () => sftpApiClient.testConnection(this.credentials),
                 'connect'
             );
 
-            if (!result.success) {
-                throw new Error(result.error || 'SFTP connection failed');
+            if (!success) {
+                throw new Error('SFTP connection failed');
             }
 
             this.state.isConnected = true;
@@ -150,22 +150,19 @@ export class SFTPSyncAdapter implements SyncAdapter {
 
         try {
             // Download CSV file with retry
-            const result = await this.withRetry(
-                () => sftpApiClient.downloadFile(
-                    this.credentials,
-                    this.credentials.remoteFilename
-                ),
+            const content = await this.withRetry(
+                () => sftpApiClient.downloadFile(this.credentials),
                 'download'
             );
 
-            if (!result.success || !result.content) {
-                throw new Error(result.error || 'Download returned no content');
+            if (!content) {
+                throw new Error('Download returned no content');
             }
 
             this.updateProgress(50);
 
             // Parse CSV using enhanced parser
-            const parsed = parseCSVEnhanced(result.content, this.csvConfig);
+            const parsed = parseCSVEnhanced(content, this.csvConfig);
             this.updateProgress(90);
 
             logger.info('SFTPSyncAdapter', 'Download complete', {
@@ -196,21 +193,18 @@ export class SFTPSyncAdapter implements SyncAdapter {
         this.updateProgress(10);
 
         try {
-            const result = await this.withRetry(
-                () => sftpApiClient.downloadFile(
-                    this.credentials,
-                    this.credentials.remoteFilename
-                ),
+            const content = await this.withRetry(
+                () => sftpApiClient.downloadFile(this.credentials),
                 'downloadWithConference'
             );
 
-            if (!result.success || !result.content) {
-                throw new Error(result.error || 'Download returned no content');
+            if (!content) {
+                throw new Error('Download returned no content');
             }
 
             this.updateProgress(50);
 
-            const parsed = parseCSVEnhanced(result.content, this.csvConfig);
+            const parsed = parseCSVEnhanced(content, this.csvConfig);
             this.updateProgress(90);
 
             logger.info('SFTPSyncAdapter', 'Download complete (with conference)', {
@@ -250,18 +244,10 @@ export class SFTPSyncAdapter implements SyncAdapter {
             this.updateProgress(30);
 
             // Upload to SFTP with retry
-            const result = await this.withRetry(
-                () => sftpApiClient.uploadFile(
-                    this.credentials,
-                    this.credentials.remoteFilename,
-                    csvContent
-                ),
+            await this.withRetry(
+                () => sftpApiClient.uploadFile(this.credentials, csvContent),
                 'upload'
             );
-
-            if (!result.success) {
-                throw new Error(result.error || 'Upload failed');
-            }
 
             this.updateProgress(90);
 

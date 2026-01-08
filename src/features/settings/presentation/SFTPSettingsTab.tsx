@@ -16,20 +16,28 @@ import {
     Alert,
     CircularProgress,
     Chip,
+    IconButton,
+    Paper,
 } from '@mui/material';
 import TestIcon from '@mui/icons-material/Cable';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
-import { useState } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import { CSVStructureEditor } from '@features/configuration/presentation/CSVStructureEditor';
-import { testConnection } from '@shared/infrastructure/services/sftpApiClient';
+import { testConnection, downloadFile } from '@shared/infrastructure/services/sftpApiClient';
+import { extractHeadersFromCSV } from '@shared/infrastructure/services/csvService';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { SettingsData } from '../domain/types';
 import type { SFTPCredentials } from '@shared/domain/types';
+import type { CSVColumn } from '@features/configuration/domain/types';
+import type { CSVColumnMapping, EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
+import { parseCSVEnhanced } from '@shared/infrastructure/services/csvService';
 
 interface SFTPSettingsTabProps {
     settings: SettingsData;
@@ -56,6 +64,68 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [connecting, setConnecting] = useState(false);
+    
+    // Global field assignment state
+    const [newGlobalFieldKey, setNewGlobalFieldKey] = useState('');
+    const [newGlobalFieldValue, setNewGlobalFieldValue] = useState('');
+    
+    // Get global field assignments from settings
+    const globalFieldAssignments = settings.sftpCsvConfig?.globalFieldAssignments || {};
+
+    // Transform CSVColumnMapping[] to CSVColumn[] for the editor
+    const editorColumns = useMemo((): CSVColumn[] => {
+        return (csvColumns as CSVColumnMapping[]).map((col, idx) => ({
+            index: col.csvColumn ?? idx,
+            aimsValue: col.fieldName,
+            headerEn: col.friendlyName,
+            headerHe: col.friendlyName,  // Use same name for both
+            type: 'text' as const,
+            mandatory: col.required,
+        }));
+    }, [csvColumns]);
+    
+    // Helper to create full sftpCsvConfig with all fields preserved
+    const buildSftpCsvConfig = (overrides: Partial<EnhancedCSVConfig>): EnhancedCSVConfig => ({
+        hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
+        delimiter: (settings.sftpCsvConfig?.delimiter || ';') as ',' | ';' | '\t',
+        columns: settings.sftpCsvConfig?.columns || [],
+        idColumn: settings.sftpCsvConfig?.idColumn || 'id',
+        conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? false,
+        conferenceMapping: settings.sftpCsvConfig?.conferenceMapping,
+        globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
+        ...overrides,
+    });
+    
+    // Update global field assignments
+    const updateGlobalFieldAssignments = (assignments: { [key: string]: string }) => {
+        onUpdate({
+            sftpCsvConfig: buildSftpCsvConfig({ globalFieldAssignments: assignments })
+        });
+    };
+    
+    const handleAddGlobalField = () => {
+        if (newGlobalFieldKey.trim() && newGlobalFieldValue.trim()) {
+            updateGlobalFieldAssignments({
+                ...globalFieldAssignments,
+                [newGlobalFieldKey.trim()]: newGlobalFieldValue.trim(),
+            });
+            setNewGlobalFieldKey('');
+            setNewGlobalFieldValue('');
+        }
+    };
+    
+    const handleRemoveGlobalField = (fieldKey: string) => {
+        const updated = { ...globalFieldAssignments };
+        delete updated[fieldKey];
+        updateGlobalFieldAssignments(updated);
+    };
+    
+    const handleUpdateGlobalFieldValue = (fieldKey: string, value: string) => {
+        updateGlobalFieldAssignments({
+            ...globalFieldAssignments,
+            [fieldKey]: value,
+        });
+    };
 
     // Check if credentials are filled
     const hasCredentials = Boolean(
@@ -81,12 +151,12 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         try {
             const result = await testConnection(settings.sftpCredentials);
             
-            if (result.success) {
+            if (result === true) {
                 setTestResult({ success: true, message: t('settings.connectionSuccess') });
                 logger.info('Settings', 'SFTP connection test successful');
             } else {
-                setTestResult({ success: false, message: result.error || t('settings.connectionFailed') });
-                logger.error('Settings', 'SFTP connection test failed', { error: result.error });
+                setTestResult({ success: false, message: t('settings.connectionFailed') });
+                logger.error('Settings', 'SFTP connection test failed');
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : t('settings.connectionFailed');
@@ -98,7 +168,9 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
     };
 
     const handleConnect = async () => {
-        if (!settings.sftpCredentials) return;
+        if (!settings.sftpCredentials) {
+            return;
+        }
         
         setConnecting(true);
         logger.info('Settings', 'Connecting to SFTP server');
@@ -106,17 +178,70 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         try {
             const result = await testConnection(settings.sftpCredentials);
             
-            if (result.success) {
-                // Mark as connected
-                onUpdate({
+            if (result === true) {
+                // Connection successful - now download file, extract headers, and parse data
+                let extractedColumns: CSVColumnMapping[] = [];
+                let csvContent: string | null = null;
+                
+                try {
+                    csvContent = await downloadFile(settings.sftpCredentials);
+                    const delimiter = settings.sftpCsvConfig?.delimiter || ';';
+                    logger.info('Settings', 'CSV content downloaded', { 
+                        length: csvContent?.length,
+                        delimiter
+                    });
+                    if (csvContent && (settings.sftpCsvConfig?.hasHeader ?? true)) {
+                        extractedColumns = extractHeadersFromCSV(csvContent, delimiter);
+                        logger.info('Settings', 'Extracted CSV headers', { count: extractedColumns.length });
+                    }
+                } catch (downloadError) {
+                    // Don't fail connection if file download fails - just log it
+                    logger.warn('Settings', 'Could not download file for header extraction', { 
+                        error: downloadError instanceof Error ? downloadError.message : 'Unknown error' 
+                    });
+                }
+                
+                // Build the new sftpCsvConfig with extracted columns
+                const delimiter = (settings.sftpCsvConfig?.delimiter || ';') as ',' | ';' | '\t';
+                const newSftpCsvConfig: EnhancedCSVConfig = {
+                    hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
+                    delimiter,
+                    columns: extractedColumns.length > 0 ? extractedColumns : (settings.sftpCsvConfig?.columns || []),
+                    idColumn: extractedColumns.length > 0 ? (extractedColumns[0]?.fieldName || 'id') : (settings.sftpCsvConfig?.idColumn || 'id'),
+                    conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? false,
+                    globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
+                };
+                
+                // Update settings with connection status and extracted columns
+                const updates: Partial<SettingsData> = {
                     sftpCredentials: {
                         ...settings.sftpCredentials,
                         isConnected: true,
+                    },
+                    sftpCsvConfig: newSftpCsvConfig,
+                };
+                
+                onUpdate(updates);
+                
+                // If we have CSV content and columns, parse and populate the spaces store
+                if (csvContent && newSftpCsvConfig.columns.length > 0) {
+                    try {
+                        const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
+                        const parsed = parseCSVEnhanced(csvContent, newSftpCsvConfig);
+                        useSpacesStore.getState().setSpaces(parsed.spaces);
+                        logger.info('Settings', 'Spaces populated from SFTP', { count: parsed.spaces.length });
+                    } catch (parseError) {
+                        logger.warn('Settings', 'Could not parse CSV content', { 
+                            error: parseError instanceof Error ? parseError.message : 'Unknown error' 
+                        });
                     }
+                }
+                
+                logger.info('Settings', 'SFTP connected successfully', { 
+                    columnsExtracted: extractedColumns.length 
                 });
-                logger.info('Settings', 'SFTP connected successfully');
             } else {
-                throw new Error(result.error || 'Connection failed');
+                throw new Error('Connection failed');
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Connection failed';
@@ -127,8 +252,24 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         }
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = async () => {
         logger.info('Settings', 'Disconnecting from SFTP server');
+        
+        // Clear all data stores (same as SoluM disconnect)
+        try {
+            const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
+            const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
+            const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
+            
+            useSpacesStore.getState().clearAllData();
+            usePeopleStore.getState().clearAllData();
+            useConferenceStore.getState().clearAllData();
+            
+            logger.info('Settings', 'All data stores cleared');
+        } catch (error) {
+            logger.error('Settings', 'Failed to clear data stores', { error });
+        }
+        
         // Mark as disconnected (preserve credentials for reconnection)
         if (settings.sftpCredentials) {
             onUpdate({
@@ -158,12 +299,29 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
     };
 
     return (
-        <Box sx={{ px: 2, py: 1, maxWidth: 600, mx: 'auto' }}>
+        <Box sx={{ px: 2, py: 0, mx: 'auto' }}>
             {/* Sub-tabs */}
-            <Tabs value={subtab} onChange={(_, val) => setSubtab(val)} sx={{ mb: 2 }}>
+            <Tabs 
+                value={subtab} 
+                onChange={(_, val) => setSubtab(val)} 
+                sx={{
+                    borderBottom: 0,
+                    pb: 2,
+                    '& .MuiTab-root': {
+                        border: '1px solid transparent',
+                        borderRadius: 2,
+                        '&.Mui-selected': {
+                            border: '1px solid',
+                            borderColor: 'primary',
+                            boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
+                        },
+                    },
+                }}
+                slotProps={{
+                    indicator: { sx: { display: 'none' } }
+                }}>
                 <Tab label={t('settings.connection')} />
                 <Tab label={t('settings.csvStructure')} />
-                <Tab label={t('settings.autoSync')} />
             </Tabs>
 
             {/* Connection Tab */}
@@ -179,6 +337,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                                 label={t('settings.connected')} 
                                 color="success" 
                                 size="small"
+                                sx={{paddingInlineStart: 1}}
                             />
                         )}
                     </Box>
@@ -191,7 +350,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             value={settings.sftpCredentials?.host || ''}
                             onChange={(e) => updateCredentials({ host: e.target.value })}
                             placeholder="sftp.example.com"
-                            disabled={connecting}
+                            disabled={connecting || isConnected}
                         />
 
                         <TextField
@@ -202,7 +361,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             value={settings.sftpCredentials?.port || 22}
                             onChange={(e) => updateCredentials({ port: parseInt(e.target.value) || 22 })}
                             placeholder="22"
-                            disabled={connecting}
+                            disabled={connecting || isConnected}
                             inputProps={{ min: 1, max: 65535 }}
                         />
 
@@ -212,7 +371,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             label={t('settings.username')}
                             value={settings.sftpCredentials?.username || ''}
                             onChange={(e) => updateCredentials({ username: e.target.value })}
-                            disabled={connecting}
+                            disabled={connecting || isConnected}
                         />
 
                         <TextField
@@ -222,7 +381,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             label={t('settings.password')}
                             value={settings.sftpCredentials?.password || ''}
                             onChange={(e) => updateCredentials({ password: e.target.value })}
-                            disabled={connecting}
+                            disabled={connecting || isConnected}
                         />
 
                         <TextField
@@ -233,7 +392,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             onChange={(e) => updateCredentials({ remoteFilename: e.target.value })}
                             placeholder="esl.csv"
                             helperText={t('settings.remoteFilenameHelp')}
-                            disabled={connecting}
+                            disabled={connecting || isConnected}
                         />
                     </Stack>
 
@@ -281,66 +440,10 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             </Button>
                         )}
                     </Stack>
-                </Stack>
-            )}
-
-            {/* CSV Structure Tab */}
-            {subtab === 1 && (
-                <Stack gap={2}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.csvFileStructure')}
-                    </Typography>
-
-                    <TextField
-                        fullWidth
-                        size="small"
-                        label={t('settings.delimiter')}
-                        value={settings.csvConfig.delimiter}
-                        onChange={(e) => onUpdate({
-                            csvConfig: {
-                                ...settings.csvConfig,
-                                delimiter: e.target.value,
-                            }
-                        })}
-                        helperText={t('settings.suggestedDelimiter')}
-                        inputProps={{ maxLength: 1 }}
-                    />
-
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={settings.sftpCsvConfig?.hasHeader ?? true}
-                                onChange={(e) => onUpdate({
-                                    sftpCsvConfig: {
-                                        ...settings.sftpCsvConfig,
-                                        hasHeader: e.target.checked,
-                                        delimiter: settings.sftpCsvConfig?.delimiter || ',',
-                                        columns: settings.sftpCsvConfig?.columns || [],
-                                        mapping: settings.sftpCsvConfig?.mapping || {},
-                                        conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? false,
-                                    }
-                                })}
-                            />
-                        }
-                        label={t('settings.csvHasHeader')}
-                    />
 
                     <Divider />
 
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                        {t('settings.csvStructureNote')}
-                    </Typography>
-
-                    <CSVStructureEditor
-                        columns={csvColumns}
-                        onColumnsChange={saveCSVStructure}
-                    />
-                </Stack>
-            )}
-
-            {/* Auto-Sync Tab */}
-            {subtab === 2 && (
-                <Stack gap={2}>
+                    {/* Auto-Sync Configuration */}
                     <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.autoSyncConfig')}
                     </Typography>
@@ -377,6 +480,118 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                             </Alert>
                         </>
                     )}
+                </Stack>
+            )}
+
+            {/* CSV Structure Tab */}
+            {subtab === 1 && (
+                <Stack gap={2}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('settings.csvFileStructure')}
+                    </Typography>
+
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label={t('settings.delimiter')}
+                        value={settings.sftpCsvConfig?.delimiter || ';'}
+                        onChange={(e) => onUpdate({
+                            sftpCsvConfig: buildSftpCsvConfig({ 
+                                delimiter: (e.target.value || ';') as ',' | ';' | '\t' 
+                            })
+                        })}
+                        helperText={t('settings.suggestedDelimiter')}
+                        inputProps={{ maxLength: 1 }}
+                    />
+
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={settings.sftpCsvConfig?.hasHeader ?? true}
+                                onChange={(e) => onUpdate({
+                                    sftpCsvConfig: buildSftpCsvConfig({ hasHeader: e.target.checked })
+                                })}
+                            />
+                        }
+                        label={t('settings.csvHasHeader')}
+                    />
+
+                    <Divider />
+
+                    {/* Global Field Assignments */}
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('settings.globalFieldAssignments')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                        {t('settings.globalFieldAssignmentsHelp')}
+                    </Typography>
+                    
+                    {/* Existing global field assignments */}
+                    <Stack gap={1} sx={{ mb: 2 }}>
+                        {Object.entries(globalFieldAssignments).map(([fieldKey, value]) => (
+                            <Paper key={fieldKey} variant="outlined" sx={{ p: 1.5 }}>
+                                <Stack direction="row" gap={1} alignItems="center">
+                                    <Typography variant="body2" sx={{ minWidth: 120, fontWeight: 500 }}>
+                                        {fieldKey}
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={value}
+                                        onChange={(e) => handleUpdateGlobalFieldValue(fieldKey, e.target.value)}
+                                        placeholder={t('settings.globalFieldValue')}
+                                    />
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleRemoveGlobalField(fieldKey)}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </Stack>
+                            </Paper>
+                        ))}
+                    </Stack>
+                    
+                    {/* Add new global field */}
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
+                        <Stack direction="row" gap={1} alignItems="center">
+                            <TextField
+                                size="small"
+                                value={newGlobalFieldKey}
+                                onChange={(e) => setNewGlobalFieldKey(e.target.value)}
+                                placeholder={t('settings.fieldName')}
+                                sx={{ minWidth: 120 }}
+                            />
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={newGlobalFieldValue}
+                                onChange={(e) => setNewGlobalFieldValue(e.target.value)}
+                                placeholder={t('settings.globalFieldValue')}
+                            />
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={handleAddGlobalField}
+                                disabled={!newGlobalFieldKey.trim() || !newGlobalFieldValue.trim()}
+                            >
+                                {t('common.add')}
+                            </Button>
+                        </Stack>
+                    </Paper>
+
+                    <Divider />
+
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                        {t('settings.csvStructureNote')}
+                    </Typography>
+
+                    <CSVStructureEditor
+                        columns={editorColumns}
+                        onColumnsChange={saveCSVStructure}
+                    />
                 </Stack>
             )}
         </Box>

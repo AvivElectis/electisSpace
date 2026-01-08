@@ -5,23 +5,18 @@
  * All credentials are encrypted using AES-256-CBC before transmission
  */
 
-import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import { encrypt } from './encryption';
 import { logger } from './logger';
 
 /**
  * SFTP API Base URL
- * In development, uses Vite proxy to avoid CORS
- * In production, uses the direct URL
  */
-const API_BASE_URL = import.meta.env.DEV
-    ? '/sftp-api'
-    : 'https://solum.co.il/sftp';
+const API_BASE_URL = 'https://solum.co.il/sftp';
 
 /**
  * SFTP API Bearer Token
  */
-const API_TOKEN = import.meta.env.VITE_SFTP_API_TOKEN || '';
+const API_TOKEN = import.meta.env.VITE_SFTP_API_TOKEN || 'SFTP_APi_T0k3n_2025_c0mpl3x_S3cur3_P3rm4n3nt_K3y_X9zQ7mN5bR8wF2vH4pL';
 
 /**
  * SFTP Credentials interface
@@ -29,9 +24,9 @@ const API_TOKEN = import.meta.env.VITE_SFTP_API_TOKEN || '';
 export interface SFTPCredentials {
     username: string;
     password: string;
-    remoteFilename: string;  // default: "esl.csv"
-    host?: string;           // SFTP host (optional, may be implicit)
-    port?: number;           // SFTP port (default: 22)
+    remoteFilename: string;
+    host?: string;
+    port?: number;
 }
 
 /**
@@ -47,59 +42,32 @@ export interface SFTPDirectoryItem {
 /**
  * SFTP API response types
  */
-interface SFTPFetchResponse {
-    success: boolean;
-    tree?: SFTPDirectoryItem[];
-    error?: string;
-}
-
 export interface SFTPFileResponse {
     success: boolean;
     content?: string;
     error?: string;
 }
 
-/**
- * Create axios instance with auth headers
- */
-function createApiClient(): AxiosInstance {
-    if (!API_TOKEN) {
-        logger.warn('SFTP', 'SFTP API token not configured');
-    }
-
-    return axios.create({
-        baseURL: API_BASE_URL,
-        headers: {
-            'Authorization': `Bearer ${API_TOKEN}`,
-        },
-        timeout: 30000, // 30 second timeout
-    });
+export interface SFTPConnectionTestResult {
+    success: boolean;
+    message: string;
+    error?: string;
+    data?: unknown;
 }
 
 /**
- * Handle API errors with logging
+ * Get authorization headers
  */
-function handleApiError(error: AxiosError, operation: string): never {
-    const status = error.response?.status;
-    const message = error.response?.data 
-        ? (typeof error.response.data === 'object' && 'error' in error.response.data 
-            ? (error.response.data as { error: string }).error 
-            : JSON.stringify(error.response.data))
-        : error.message;
+function getHeaders(includeContentType = true): Record<string, string> {
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${API_TOKEN}`,
+    };
 
-    logger.error('SFTP', `${operation} failed`, { status, message });
-    
-    if (status === 401) {
-        throw new Error('SFTP API authentication failed. Check API token.');
-    } else if (status === 403) {
-        throw new Error('SFTP access denied. Check credentials.');
-    } else if (status === 404) {
-        throw new Error('File not found on SFTP server.');
-    } else if (status === 500) {
-        throw new Error('SFTP server error. Please try again later.');
-    } else {
-        throw new Error(`SFTP ${operation} failed: ${message}`);
+    if (includeContentType) {
+        headers['Content-Type'] = 'application/json';
     }
+
+    return headers;
 }
 
 /**
@@ -111,36 +79,36 @@ function handleApiError(error: AxiosError, operation: string): never {
  */
 export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
     logger.startTimer('sftp-test-connection');
-    logger.info('SFTP', 'Testing connection', { username: creds.username, host: creds.host, port: creds.port });
-
-    const client = createApiClient();
+    logger.info('SFTP', 'Testing connection', { username: creds.username });
 
     try {
-        const response = await client.post<SFTPFetchResponse>('/fetch', {
-            username: encrypt(creds.username),
-            password: encrypt(creds.password),
-            host: creds.host ? encrypt(creds.host) : undefined,
-            port: creds.port || 22,
+        const encryptedUsername = encrypt(creds.username);
+        const encryptedPassword = encrypt(creds.password);
+
+        const response = await fetch(`${API_BASE_URL}/fetch`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                username: encryptedUsername,
+                password: encryptedPassword,
+            }),
         });
 
         const duration = logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test completed');
-        
-        if (response.data.success) {
-            logger.info('SFTP', 'Connection test successful', { 
-                duration,
-                fileCount: response.data.tree?.length || 0 
-            });
-            return true;
-        } else {
-            logger.warn('SFTP', 'Connection test failed', { error: response.data.error });
+
+        if (!response.ok) {
+            logger.error('SFTP', 'Connection test failed', { status: response.status });
             return false;
         }
-    } catch (error) {
+
+        logger.info('SFTP', 'Connection test successful', { duration });
+        return true;
+
+    } catch (error: unknown) {
         logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test failed');
-        if (axios.isAxiosError(error)) {
-            handleApiError(error, 'Connection test');
-        }
-        throw error;
+        const err = error as { message?: string };
+        logger.error('SFTP', 'Connection test failed', { error: err?.message || 'Unknown error' });
+        throw new Error(err?.message || 'Connection test failed');
     }
 }
 
@@ -152,23 +120,30 @@ export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
  */
 export async function downloadFile(creds: SFTPCredentials): Promise<string> {
     logger.startTimer('sftp-download');
-    logger.info('SFTP', 'Downloading file', { filename: creds.remoteFilename, host: creds.host, port: creds.port });
-
-    const client = createApiClient();
+    logger.info('SFTP', 'Downloading file', { filename: creds.remoteFilename });
 
     try {
-        const response = await client.get<string>('/file', {
-            params: {
-                username: encrypt(creds.username),
-                password: encrypt(creds.password),
-                filename: encrypt(creds.remoteFilename),
-                host: creds.host ? encrypt(creds.host) : undefined,
-                port: creds.port || 22,
-            },
-            responseType: 'text',
+        const encryptedUsername = encrypt(creds.username);
+        const encryptedPassword = encrypt(creds.password);
+        const encryptedFilename = encrypt(creds.remoteFilename);
+
+        const params = new URLSearchParams({
+            username: encryptedUsername,
+            password: encryptedPassword,
+            filename: encryptedFilename,
         });
 
-        const content = response.data;
+        const response = await fetch(`${API_BASE_URL}/file?${params}`, {
+            method: 'GET',
+            headers: getHeaders(false),
+        });
+
+        if (!response.ok) {
+            logger.endTimer('sftp-download', 'SFTP', 'Download failed');
+            throw new Error(`Download failed: HTTP ${response.status}`);
+        }
+
+        const content = await response.text();
         const duration = logger.endTimer('sftp-download', 'SFTP', 'File downloaded');
         
         logger.info('SFTP', 'Download successful', { 
@@ -178,11 +153,9 @@ export async function downloadFile(creds: SFTPCredentials): Promise<string> {
         });
         
         return content;
-    } catch (error) {
+
+    } catch (error: unknown) {
         logger.endTimer('sftp-download', 'SFTP', 'Download failed');
-        if (axios.isAxiosError(error)) {
-            handleApiError(error, 'Download');
-        }
         throw error;
     }
 }
@@ -198,36 +171,41 @@ export async function uploadFile(creds: SFTPCredentials, content: string): Promi
     logger.info('SFTP', 'Uploading file', { 
         filename: creds.remoteFilename,
         size: content.length,
-        host: creds.host,
-        port: creds.port 
     });
 
-    const client = createApiClient();
-
     try {
-        const formData = new FormData();
-        const blob = new Blob([content], { type: 'text/csv' });
-        formData.append('file', blob, creds.remoteFilename);
-        formData.append('username', encrypt(creds.username));
-        formData.append('password', encrypt(creds.password));
-        formData.append('filename', encrypt(creds.remoteFilename));
-        if (creds.host) formData.append('host', encrypt(creds.host));
-        formData.append('port', String(creds.port || 22));
+        const encryptedUsername = encrypt(creds.username);
+        const encryptedPassword = encrypt(creds.password);
+        const encryptedFilename = encrypt(creds.remoteFilename);
 
-        await client.post('/file', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+        const formData = new FormData();
+        const blob = new Blob([content], { type: 'text/plain' });
+        formData.append('file', blob, creds.remoteFilename);
+        formData.append('username', encryptedUsername);
+        formData.append('password', encryptedPassword);
+        formData.append('filename', encryptedFilename);
+
+        const response = await fetch(`${API_BASE_URL}/file`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${API_TOKEN}`,
+            },
+            body: formData,
         });
 
-        const duration = logger.endTimer('sftp-upload', 'SFTP', 'File uploaded');
+        const duration = logger.endTimer('sftp-upload', 'SFTP', 'Upload completed');
+
+        if (!response.ok) {
+            throw new Error(`Upload failed: HTTP ${response.status}`);
+        }
+
         logger.info('SFTP', 'Upload successful', { 
             duration,
             filename: creds.remoteFilename 
         });
-    } catch (error) {
+
+    } catch (error: unknown) {
         logger.endTimer('sftp-upload', 'SFTP', 'Upload failed');
-        if (axios.isAxiosError(error)) {
-            handleApiError(error, 'Upload');
-        }
         throw error;
     }
 }
@@ -238,26 +216,33 @@ export async function uploadFile(creds: SFTPCredentials, content: string): Promi
  * @param creds - SFTP credentials
  */
 export async function deleteFile(creds: SFTPCredentials): Promise<void> {
-    logger.info('SFTP', 'Deleting file', { filename: creds.remoteFilename, host: creds.host, port: creds.port });
-
-    const client = createApiClient();
+    logger.info('SFTP', 'Deleting file', { filename: creds.remoteFilename });
 
     try {
-        await client.delete('/file', {
-            params: {
-                username: encrypt(creds.username),
-                password: encrypt(creds.password),
-                filename: encrypt(creds.remoteFilename),
-                host: creds.host ? encrypt(creds.host) : undefined,
-                port: creds.port || 22,
-            },
+        const encryptedUsername = encrypt(creds.username);
+        const encryptedPassword = encrypt(creds.password);
+        const encryptedFilename = encrypt(creds.remoteFilename);
+
+        const params = new URLSearchParams({
+            username: encryptedUsername,
+            password: encryptedPassword,
+            filename: encryptedFilename,
         });
 
-        logger.info('SFTP', 'File deleted', { filename: creds.remoteFilename });
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            handleApiError(error, 'Delete');
+        const response = await fetch(`${API_BASE_URL}/file?${params}`, {
+            method: 'DELETE',
+            headers: getHeaders(false),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Delete failed: HTTP ${response.status}`);
         }
+
+        logger.info('SFTP', 'File deleted', { filename: creds.remoteFilename });
+
+    } catch (error: unknown) {
+        const err = error as { message?: string };
+        logger.error('SFTP', 'Delete failed', { error: err?.message });
         throw error;
     }
 }
@@ -269,32 +254,45 @@ export async function deleteFile(creds: SFTPCredentials): Promise<void> {
  * @returns Array of directory items
  */
 export async function listFiles(creds: SFTPCredentials): Promise<SFTPDirectoryItem[]> {
-    logger.info('SFTP', 'Listing files', { host: creds.host, port: creds.port });
-
-    const client = createApiClient();
+    logger.info('SFTP', 'Listing files');
 
     try {
-        const response = await client.post<SFTPFetchResponse>('/fetch', {
-            username: encrypt(creds.username),
-            password: encrypt(creds.password),
-            host: creds.host ? encrypt(creds.host) : undefined,
-            port: creds.port || 22,
+        const encryptedUsername = encrypt(creds.username);
+        const encryptedPassword = encrypt(creds.password);
+
+        const response = await fetch(`${API_BASE_URL}/fetch`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                username: encryptedUsername,
+                password: encryptedPassword,
+            }),
         });
 
-        if (response.data.success && response.data.tree) {
-            logger.info('SFTP', 'File list retrieved', { 
-                count: response.data.tree.length 
-            });
-            return response.data.tree;
-        } else {
-            logger.warn('SFTP', 'Failed to list files', { error: response.data.error });
+        if (!response.ok) {
+            logger.warn('SFTP', 'Failed to list files', { status: response.status });
             return [];
         }
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            handleApiError(error, 'List files');
+
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch {
+            return [];
         }
-        throw error;
+
+        if (data.tree && Array.isArray(data.tree)) {
+            logger.info('SFTP', 'File list retrieved', { count: data.tree.length });
+            return data.tree;
+        }
+
+        return [];
+
+    } catch (error: unknown) {
+        const err = error as { message?: string };
+        logger.error('SFTP', 'List files failed', { error: err?.message });
+        return [];
     }
 }
 
