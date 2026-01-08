@@ -12,6 +12,7 @@ import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { convertSpacesToPeopleWithVirtualPool } from '@features/people/infrastructure/peopleService';
 import { useSyncController } from '@features/sync/application/useSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
@@ -70,6 +71,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const setSpaces = useSpacesStore(state => state.setSpaces);
     const setPeople = usePeopleStore(state => state.setPeople);
     const extractListsFromPeople = usePeopleStore(state => state.extractListsFromPeople);
+    const setConferenceRooms = useConferenceStore(state => state.setConferenceRooms);
 
     // Sync settings.workingMode to syncStore.workingMode
     useEffect(() => {
@@ -105,6 +107,16 @@ export function MainLayout({ children }: MainLayoutProps) {
         }
     }, [setSpaces, setPeople, extractListsFromPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
 
+    /**
+     * Conference rooms update handler for SFTP mode
+     */
+    const handleConferenceUpdate = useCallback((conferenceRooms: any[]) => {
+        setConferenceRooms(conferenceRooms);
+        logger.info('MainLayout', 'Synced conference rooms from SFTP', { 
+            count: conferenceRooms.length 
+        });
+    }, [setConferenceRooms]);
+
     // Build navigation tabs dynamically
     const navTabs: NavTab[] = [
         { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
@@ -130,7 +142,9 @@ export function MainLayout({ children }: MainLayoutProps) {
         csvConfig: settings.csvConfig,
         sftpCsvConfig: settings.sftpCsvConfig as any,  // Enhanced CSV config for SFTP mode
         autoSyncEnabled: settings.autoSyncEnabled,
+        autoSyncInterval: settings.autoSyncInterval,  // Pass interval from settings
         onSpaceUpdate: handleSpaceUpdate,  // Use combined handler for People Mode support
+        onConferenceUpdate: handleConferenceUpdate,  // Conference rooms update for SFTP mode
         solumMappingConfig: settings.solumMappingConfig,
         isConnected,
     });
@@ -150,6 +164,20 @@ export function MainLayout({ children }: MainLayoutProps) {
         }, 2000); // Wait 2 seconds after mount, then prefetch all
         return () => clearTimeout(idleTimeout);
     }, []);
+
+    // Auto-sync on app load when connected
+    useEffect(() => {
+        if (isConnected && sync) {
+            logger.info('MainLayout', 'Auto-syncing on app load (connected)');
+            // Small delay to ensure stores are ready
+            const syncTimeout = setTimeout(() => {
+                sync().catch((err) => {
+                    logger.warn('MainLayout', 'Initial sync failed', { error: err instanceof Error ? err.message : 'Unknown' });
+                });
+            }, 500);
+            return () => clearTimeout(syncTimeout);
+        }
+    }, []); // Run only once on mount
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useSyncStore } from '../infrastructure/syncStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { SFTPSyncAdapter } from '../infrastructure/SFTPSyncAdapter';
 import { SolumSyncAdapter } from '../infrastructure/SolumSyncAdapter';
 import type { SyncAdapter } from '../domain/types';
-import type { Space, SFTPCredentials, SolumConfig, CSVConfig } from '@shared/domain/types';
+import type { Space, ConferenceRoom, SFTPCredentials, SolumConfig, CSVConfig } from '@shared/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import { createDefaultEnhancedCSVConfig, type EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
@@ -20,7 +21,9 @@ interface UseSyncControllerProps {
     csvConfig: CSVConfig;
     sftpCsvConfig?: EnhancedCSVConfig;  // Enhanced CSV config for SFTP mode
     autoSyncEnabled: boolean;
+    autoSyncInterval?: number;  // Auto-sync interval in seconds (from settings)
     onSpaceUpdate: (spaces: Space[]) => void;
+    onConferenceUpdate?: (conferenceRooms: ConferenceRoom[]) => void;  // Callback for conference rooms (SFTP mode)
     solumMappingConfig?: SolumMappingConfig;
     isConnected?: boolean;  // Connection status from settings
 }
@@ -31,7 +34,9 @@ export function useSyncController({
     csvConfig,
     sftpCsvConfig,
     autoSyncEnabled: autoSyncEnabledProp,
+    autoSyncInterval: autoSyncIntervalProp,
     onSpaceUpdate,
+    onConferenceUpdate,
     solumMappingConfig,
     isConnected: isConnectedProp,
 }: UseSyncControllerProps) {
@@ -132,13 +137,19 @@ export function useSyncController({
             setAutoSyncEnabled(autoSyncEnabledProp);
         }
 
-        // Sync interval if in SoluM mode
-        if (workingMode === 'SOLUM_API' && solumConfig?.syncInterval) {
+        // Sync interval based on working mode
+        if (workingMode === 'SFTP' && autoSyncIntervalProp) {
+            // SFTP mode: use interval from settings prop
+            if (autoSyncIntervalProp !== autoSyncInterval) {
+                setAutoSyncInterval(autoSyncIntervalProp);
+            }
+        } else if (workingMode === 'SOLUM_API' && solumConfig?.syncInterval) {
+            // SoluM mode: use interval from solumConfig
             if (solumConfig.syncInterval !== autoSyncInterval) {
                 setAutoSyncInterval(solumConfig.syncInterval);
             }
         }
-    }, [autoSyncEnabledProp, autoSyncEnabled, setAutoSyncEnabled, workingMode, solumConfig, autoSyncInterval, setAutoSyncInterval]);
+    }, [autoSyncEnabledProp, autoSyncEnabled, setAutoSyncEnabled, workingMode, solumConfig, autoSyncInterval, setAutoSyncInterval, autoSyncIntervalProp]);
 
     /**
      * Handle disconnect from settings
@@ -268,19 +279,48 @@ export function useSyncController({
                 await adapter.connect();
             }
 
-            // Download spaces
-            const spaces = await adapter.download();
+            // In SFTP mode, use downloadWithConference to get both spaces and conference rooms
+            if (workingMode === 'SFTP' && adapter instanceof SFTPSyncAdapter) {
+                const { spaces, conferenceRooms } = await adapter.downloadWithConference();
+                
+                logger.info('Sync', 'SFTP download results', {
+                    spacesCount: spaces.length,
+                    conferenceCount: conferenceRooms.length,
+                    hasConferenceCallback: !!onConferenceUpdate,
+                });
+                
+                // Update spaces in parent
+                onSpaceUpdate(spaces);
+                
+                // Update conference rooms if callback provided
+                if (onConferenceUpdate) {
+                    logger.info('Sync', 'Updating conference rooms', { count: conferenceRooms.length });
+                    onConferenceUpdate(conferenceRooms);
+                }
+                
+                const status = adapter.getStatus();
+                setSyncState(status);
 
-            // Update spaces in parent
-            onSpaceUpdate(spaces);
+                logger.endTimer('sync-download', 'Sync', 'Sync download completed', { 
+                    spacesCount: spaces.length,
+                    conferenceCount: conferenceRooms.length,
+                    mode: workingMode 
+                });
+            } else {
+                // SoluM mode: just download spaces
+                const spaces = await adapter.download();
 
-            const status = adapter.getStatus();
-            setSyncState(status);
+                // Update spaces in parent
+                onSpaceUpdate(spaces);
 
-            logger.endTimer('sync-download', 'Sync', 'Sync download completed', { 
-                spacesCount: spaces.length,
-                mode: workingMode 
-            });
+                const status = adapter.getStatus();
+                setSyncState(status);
+
+                logger.endTimer('sync-download', 'Sync', 'Sync download completed', { 
+                    spacesCount: spaces.length,
+                    mode: workingMode 
+                });
+            }
         } catch (error) {
             logger.endTimer('sync-download', 'Sync', 'Sync download failed', { 
                 error: error instanceof Error ? error.message : String(error) 
@@ -293,13 +333,22 @@ export function useSyncController({
             });
             throw error;
         }
-    }, [workingMode, syncState.isConnected, getAdapter, onSpaceUpdate, setSyncState]);
+    }, [workingMode, syncState.isConnected, getAdapter, onSpaceUpdate, onConferenceUpdate, setSyncState]);
 
     /**
      * Upload space data
+     * In SFTP mode, also includes conference rooms to preserve them in the CSV
      */
     const upload = useCallback(async (spaces: Space[]): Promise<void> => {
-        logger.info('Sync', 'Uploading spaces', { count: spaces.length });
+        // Get conference rooms to include in upload (SFTP mode)
+        const conferenceRooms = workingMode === 'SFTP' 
+            ? useConferenceStore.getState().conferenceRooms 
+            : [];
+
+        logger.info('Sync', 'Uploading spaces', { 
+            count: spaces.length,
+            conferenceCount: conferenceRooms.length,
+        });
         logger.startTimer('sync-upload');
 
         try {
@@ -312,13 +361,19 @@ export function useSyncController({
                 await adapter.connect();
             }
 
-            await adapter.upload(spaces);
+            // In SFTP mode, include conference rooms
+            if (workingMode === 'SFTP' && adapter instanceof SFTPSyncAdapter) {
+                await adapter.upload(spaces, conferenceRooms);
+            } else {
+                await adapter.upload(spaces);
+            }
 
             const status = adapter.getStatus();
             setSyncState(status);
 
             logger.endTimer('sync-upload', 'Sync', 'Upload completed', { 
-                spacesCount: spaces.length 
+                spacesCount: spaces.length,
+                conferenceCount: conferenceRooms.length,
             });
         } catch (error) {
             logger.endTimer('sync-upload', 'Sync', 'Upload failed', { 
@@ -332,13 +387,22 @@ export function useSyncController({
             });
             throw error;
         }
-    }, [syncState.isConnected, getAdapter, setSyncState]);
+    }, [workingMode, syncState.isConnected, getAdapter, setSyncState]);
 
     /**
      * Safe upload space data (Fetch -> Merge -> Push)
+     * In SFTP mode, also includes conference rooms to preserve them in the CSV
      */
     const safeUpload = useCallback(async (spaces: Space[]): Promise<void> => {
-        logger.info('SyncController', 'Safe Uploading spaces', { count: spaces.length });
+        // Get conference rooms to include in upload (SFTP mode)
+        const conferenceRooms = workingMode === 'SFTP' 
+            ? useConferenceStore.getState().conferenceRooms 
+            : [];
+
+        logger.info('SyncController', 'Safe Uploading spaces', { 
+            count: spaces.length,
+            conferenceCount: conferenceRooms.length,
+        });
 
         try {
             setSyncState({ status: 'syncing', progress: 0 });
@@ -350,7 +414,12 @@ export function useSyncController({
                 await adapter.connect();
             }
 
-            await adapter.safeUpload(spaces);
+            // In SFTP mode, use upload with conference rooms (safeUpload just calls upload for SFTP)
+            if (workingMode === 'SFTP' && adapter instanceof SFTPSyncAdapter) {
+                await adapter.upload(spaces, conferenceRooms);
+            } else {
+                await adapter.safeUpload(spaces);
+            }
 
             const status = adapter.getStatus();
             setSyncState(status);
@@ -365,7 +434,7 @@ export function useSyncController({
             });
             throw error;
         }
-    }, [syncState.isConnected, getAdapter, setSyncState]);
+    }, [workingMode, syncState.isConnected, getAdapter, setSyncState]);
 
     /**
      * Setup auto-sync interval

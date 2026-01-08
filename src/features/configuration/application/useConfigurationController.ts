@@ -122,8 +122,11 @@ export function useConfigurationController() {
      * Validates and updates sftpCsvConfig
      */
     const saveCSVStructure = useCallback((columns: CSVColumn[]) => {
+        // Get current ID column from settings
+        const idColumn = settings.sftpCsvConfig?.idColumn;
+        
         // Validate structure
-        const validation = validateCSVStructure(columns);
+        const validation = validateCSVStructure(columns, idColumn);
         if (!validation.valid) {
             showError(`Validation failed: ${validation.errors.join(', ')}`);
             return false;
@@ -138,10 +141,13 @@ export function useConfigurationController() {
                     fieldName: col.aimsValue,
                     csvColumn: col.index,
                     friendlyName: col.headerEn || col.aimsValue,
-                    required: col.mandatory ?? false,
+                    friendlyNameHe: col.headerHe || col.headerEn || col.aimsValue,
+                    required: col.visible ?? true,
                 })),
-                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
-                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
+                idColumn: idColumn || 'id',
+                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
+                conferenceMapping: settings.sftpCsvConfig?.conferenceMapping,
+                globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
             }
         });
 
@@ -164,7 +170,7 @@ export function useConfigurationController() {
                 delimiter,
                 columns: settings.sftpCsvConfig?.columns || [],
                 idColumn: settings.sftpCsvConfig?.idColumn || 'id',
-                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
+                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
             }
         });
 

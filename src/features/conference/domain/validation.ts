@@ -20,11 +20,11 @@ export function validateConferenceRoom(room: Partial<ConferenceRoom>): Validatio
         });
     }
 
-    // ID should start with 'C' for conference rooms
-    if (room.id && !room.id.startsWith('C')) {
+    // ID should be numeric (the 'C' prefix is added only in CSV output, not stored internally)
+    if (room.id && !/^\d+$/.test(room.id)) {
         errors.push({
             field: 'id',
-            message: 'Conference room ID must start with "C"',
+            message: 'Conference room ID must be numeric',
         });
     }
 
