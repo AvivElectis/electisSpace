@@ -29,6 +29,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
+import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
@@ -47,7 +48,11 @@ export function ConferencePage() {
     // Get SoluM access token if available
     const solumToken = settings.solumConfig?.tokens?.accessToken;
 
+    // Get sync context for triggering sync after SFTP operations
+    const { sync } = useSyncContext();
+
     const conferenceController = useConferenceController({
+        onSync: sync,  // Trigger sync after add/edit/delete in SFTP mode
         solumConfig: settings.solumConfig,
         solumToken,
         solumMappingConfig: settings.solumMappingConfig,

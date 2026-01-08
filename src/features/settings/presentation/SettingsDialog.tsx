@@ -13,8 +13,9 @@ import {
     useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState, lazy, Suspense, type SyntheticEvent } from 'react';
+import { useState, lazy, Suspense, type SyntheticEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSettingsController } from '../application/useSettingsController';
 import { useAutoLock } from '../application/useAutoLock';
 import { useSettingsStore } from '../infrastructure/settingsStore';
@@ -77,20 +78,52 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const settingsController = useSettingsController();
     const { updateSettings } = useSettingsStore();
     const [currentTab, setCurrentTab] = useState(0);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Enable auto-lock functionality
     useAutoLock();
 
-    const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
+    // Check for unsaved changes before tab switch
+    const handleTabChange = useCallback(async (_event: SyntheticEvent, newValue: number) => {
+        // If leaving SFTP tab (index 1) with unsaved changes, prompt user
+        if (currentTab === 1 && hasUnsavedChanges) {
+            const confirmed = await confirm({
+                title: t('common.dialog.warning'),
+                message: t('settings.unsavedChangesWarning'),
+                confirmLabel: t('settings.discardChanges'),
+                cancelLabel: t('common.cancel'),
+                severity: 'warning',
+            });
+            
+            if (!confirmed) {
+                return; // Stay on current tab
+            }
+            setHasUnsavedChanges(false);
+        }
         setCurrentTab(newValue);
-    };
+    }, [currentTab, hasUnsavedChanges, confirm, t]);
 
     // Track when dialog closes to update last access time
-    const handleClose = () => {
+    const handleClose = useCallback(async () => {
+        // Check for unsaved changes before closing
+        if (hasUnsavedChanges) {
+            const confirmed = await confirm({
+                title: t('common.dialog.warning'),
+                message: t('settings.unsavedChangesWarning'),
+                confirmLabel: t('settings.discardChanges'),
+                cancelLabel: t('common.cancel'),
+                severity: 'warning',
+            });
+            
+            if (!confirmed) {
+                return; // Don't close
+            }
+        }
         // Update last access timestamp when closing settings
         updateSettings({ lastSettingsAccess: Date.now() });
         onClose();
-    };
+    }, [hasUnsavedChanges, confirm, t, updateSettings, onClose]);
 
     // If locked, show unlock dialog instead
     if (settingsController.isLocked) {
@@ -193,6 +226,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         <SFTPSettingsTab
                             settings={settingsController.settings}
                             onUpdate={(updates) => settingsController.updateSettings(updates)}
+                            onHasUnsavedChanges={setHasUnsavedChanges}
                         />
                     </TabPanel>
 
@@ -232,6 +266,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     {t('common.close')}
                 </Button>
             </DialogActions>
+            <ConfirmDialog />
         </Dialog>
     );
 }

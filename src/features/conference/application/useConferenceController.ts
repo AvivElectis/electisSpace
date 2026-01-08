@@ -43,9 +43,6 @@ export function useConferenceController({
         deleteConferenceRoom: deleteFromStore,
     } = useConferenceStore();
 
-    // Get spaces for combined CSV upload in SFTP mode
-    const spaces = useSpacesStore((state) => state.spaces);
-
     // SFTP Adapter ref for reuse
     const sftpAdapterRef = useRef<SFTPSyncAdapter | null>(null);
 
@@ -89,9 +86,12 @@ export function useConferenceController({
         if (!adapter) {
             throw new Error('SFTP not configured');
         }
+        // Get current data from stores (not from closure which may be stale)
+        const currentSpaces = useSpacesStore.getState().spaces;
+        const currentConferenceRooms = useConferenceStore.getState().conferenceRooms;
         // Upload combined spaces and conference rooms
-        await adapter.upload(spaces, conferenceRooms);
-    }, [getSFTPAdapter, spaces, conferenceRooms]);
+        await adapter.upload(currentSpaces, currentConferenceRooms);
+    }, [getSFTPAdapter]);
 
     /**
      * Add new conference room

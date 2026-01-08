@@ -2,7 +2,7 @@
  * Settings Feature Domain Types
  */
 
-import type { ArticleFormat, CSVColumn, FieldMapping, MappingInfo } from '@features/configuration/domain/types';
+import type { ArticleFormat, MappingInfo } from '@features/configuration/domain/types';
 import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
 
 export type { EnhancedCSVConfig };

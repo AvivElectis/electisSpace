@@ -69,8 +69,11 @@ export interface CSVColumn {
     /** Data type for validation */
     type?: FieldType;
 
-    /** Whether this field is required */
-    mandatory?: boolean;
+    /** Whether this field is visible in the spaces table */
+    visible?: boolean;
+
+    /** Whether this field is locked (used as global field) */
+    lockedForGlobal?: boolean;
 }
 
 /**

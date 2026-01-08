@@ -1,6 +1,7 @@
 import { useCallback, useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useSpacesStore } from '../infrastructure/spacesStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
 import type { Space, CSVConfig, SolumConfig, SFTPCredentials, WorkingMode } from '@shared/domain/types';
@@ -73,6 +74,7 @@ export function useSpaceController({
 
     /**
      * Upload spaces to SFTP (used after add/edit/delete in SFTP mode)
+     * Also includes conference rooms to preserve them in the CSV
      */
     const uploadToSFTP = useCallback(async (): Promise<void> => {
         const adapter = getSFTPAdapter();
@@ -80,17 +82,25 @@ export function useSpaceController({
             throw new Error('SFTP credentials not configured');
         }
 
-        logger.info('SpaceController', 'Uploading spaces to SFTP');
+        // Get current spaces from store (not from closure which may be stale)
+        const currentSpaces = useSpacesStore.getState().spaces;
+        // Get conference rooms from store to include in upload
+        const conferenceRooms = useConferenceStore.getState().conferenceRooms;
+
+        logger.info('SpaceController', 'Uploading spaces to SFTP', {
+            spacesCount: currentSpaces.length,
+            conferenceCount: conferenceRooms.length,
+        });
         
         try {
             await adapter.connect();
-            await adapter.upload(spaces);
+            await adapter.upload(currentSpaces, conferenceRooms);
             logger.info('SpaceController', 'Spaces uploaded to SFTP successfully');
         } catch (error) {
             logger.error('SpaceController', 'Failed to upload to SFTP', { error });
             throw error;
         }
-    }, [getSFTPAdapter, spaces]);
+    }, [getSFTPAdapter]);
 
     /**
      * Add new space

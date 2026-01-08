@@ -32,6 +32,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useSpaceController } from '../application/useSpaceController';
+import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useListsController } from '@features/lists/application/useListsController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -74,7 +75,11 @@ export function SpacesManagementView() {
     // Get SoluM access token if available
     const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
 
+    // Get sync context for triggering sync after SFTP operations
+    const { sync } = useSyncContext();
+
     const spaceController = useSpaceController({
+        onSync: sync,  // Trigger sync after add/edit/delete in SFTP mode
         csvConfig: settingsController.settings.csvConfig,
         solumConfig: settingsController.settings.solumConfig,
         solumToken,
@@ -126,13 +131,21 @@ export function SpacesManagementView() {
             if (!columns || columns.length === 0) return [];
             
             const idColumn = settingsController.settings.sftpCsvConfig?.idColumn;
+            const globalFields = Object.keys(settingsController.settings.sftpCsvConfig?.globalFieldAssignments || {});
             
             return columns
-                .filter(col => col.fieldName !== idColumn) // Exclude ID column (shown separately)
+                .filter(col => {
+                    // Exclude ID column (shown separately as first column)
+                    if (col.fieldName === idColumn) return false;
+                    // Exclude global fields (they are not in the CSV data)
+                    if (globalFields.includes(col.fieldName)) return false;
+                    // Only include fields marked as visible (required field maps to visible)
+                    return col.required !== false;
+                })
                 .map(col => ({
                     key: col.fieldName,
                     labelEn: col.friendlyName,
-                    labelHe: col.friendlyName,  // Use same for both languages in SFTP mode
+                    labelHe: col.friendlyNameHe || col.friendlyName,
                 }));
         }
         
@@ -165,9 +178,18 @@ export function SpacesManagementView() {
     // Filter AND Sort spaces
     const filteredAndSortedSpaces = useMemo(() => {
         const query = debouncedSearchQuery.toLowerCase();
+        const workingMode = settingsController.settings.workingMode;
         let result = spaceController.spaces;
 
-        // 1. Filter
+        // 0. In SFTP mode, always filter out conference rooms (IDs starting with C/c)
+        if (workingMode === 'SFTP') {
+            result = result.filter(space => {
+                const id = space.id.trim();
+                return !id.startsWith('C') && !id.startsWith('c');
+            });
+        }
+
+        // 1. Filter by search query
         if (query) {
             result = result.filter((space) => {
                 return (
@@ -562,6 +584,7 @@ export function SpacesManagementView() {
                         solumMappingConfig={settingsController.settings.solumMappingConfig}
                         csvConfig={settingsController.settings.csvConfig}
                         spaceTypeLabel={getLabel('singular')}
+                        existingIds={spaceController.spaces.map(s => s.id)}
                     />
                 )}
             </Suspense>

@@ -18,6 +18,7 @@ import {
     Chip,
     IconButton,
     Paper,
+    Tooltip,
 } from '@mui/material';
 import TestIcon from '@mui/icons-material/Cable';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -26,13 +27,15 @@ import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { useMemo, useState } from 'react';
+import InfoIcon from '@mui/icons-material/Info';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import { CSVStructureEditor } from '@features/configuration/presentation/CSVStructureEditor';
 import { testConnection, downloadFile } from '@shared/infrastructure/services/sftpApiClient';
 import { extractHeadersFromCSV } from '@shared/infrastructure/services/csvService';
 import { logger } from '@shared/infrastructure/services/logger';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import type { SettingsData } from '../domain/types';
 import type { SFTPCredentials } from '@shared/domain/types';
 import type { CSVColumn } from '@features/configuration/domain/types';
@@ -42,6 +45,8 @@ import { parseCSVEnhanced } from '@shared/infrastructure/services/csvService';
 interface SFTPSettingsTabProps {
     settings: SettingsData;
     onUpdate: (updates: Partial<SettingsData>) => void;
+    /** Callback to notify parent about unsaved changes */
+    onHasUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
 /** Auto-sync interval options (in seconds) */
@@ -57,13 +62,20 @@ const AUTO_SYNC_INTERVALS = [
  * SFTP Settings Tab
  * Connection and CSV structure configuration
  */
-export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
+export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFTPSettingsTabProps) {
     const { t } = useTranslation();
     const { csvColumns, saveCSVStructure } = useConfigurationController();
     const [subtab, setSubtab] = useState(0);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [connecting, setConnecting] = useState(false);
+    const [hasFieldMappingChanges, setHasFieldMappingChanges] = useState(false);
+    const { confirm, ConfirmDialog } = useConfirmDialog();
+    
+    // Bubble up unsaved changes to parent
+    useEffect(() => {
+        onHasUnsavedChanges?.(hasFieldMappingChanges);
+    }, [hasFieldMappingChanges, onHasUnsavedChanges]);
     
     // Global field assignment state
     const [newGlobalFieldKey, setNewGlobalFieldKey] = useState('');
@@ -78,11 +90,21 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
             index: col.csvColumn ?? idx,
             aimsValue: col.fieldName,
             headerEn: col.friendlyName,
-            headerHe: col.friendlyName,  // Use same name for both
+            headerHe: col.friendlyNameHe || col.friendlyName,
             type: 'text' as const,
-            mandatory: col.required,
+            visible: col.required ?? true,
         }));
     }, [csvColumns]);
+    
+    // Get available field names for dropdowns (from sftpCsvConfig columns)
+    const availableFields = useMemo(() => {
+        return settings.sftpCsvConfig?.columns?.map(col => col.fieldName) || [];
+    }, [settings.sftpCsvConfig?.columns]);
+    
+    // Get locked fields (fields used as global field keys)
+    const lockedFields = useMemo(() => {
+        return Object.keys(globalFieldAssignments);
+    }, [globalFieldAssignments]);
     
     // Helper to create full sftpCsvConfig with all fields preserved
     const buildSftpCsvConfig = (overrides: Partial<EnhancedCSVConfig>): EnhancedCSVConfig => ({
@@ -90,7 +112,7 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         delimiter: (settings.sftpCsvConfig?.delimiter || ';') as ',' | ';' | '\t',
         columns: settings.sftpCsvConfig?.columns || [],
         idColumn: settings.sftpCsvConfig?.idColumn || 'id',
-        conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? false,
+        conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Always enabled in SFTP mode
         conferenceMapping: settings.sftpCsvConfig?.conferenceMapping,
         globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
         ...overrides,
@@ -203,12 +225,34 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                 
                 // Build the new sftpCsvConfig with extracted columns
                 const delimiter = (settings.sftpCsvConfig?.delimiter || ';') as ',' | ';' | '\t';
+                
+                // Try to auto-detect conference mapping fields from column names
+                // Look for common patterns: ITEM_NAME for room name, etc.
+                const existingConfMapping = settings.sftpCsvConfig?.conferenceMapping;
+                let conferenceMapping = existingConfMapping;
+                if (extractedColumns.length > 0 && !existingConfMapping?.roomName) {
+                    // Auto-detect roomName field - typically ITEM_NAME or column at index 2
+                    const nameCol = extractedColumns.find(c => 
+                        c.fieldName.toUpperCase().includes('NAME') || 
+                        c.fieldName.toUpperCase().includes('ITEM_NAME')
+                    ) || extractedColumns[2];  // Fallback to column 2
+                    
+                    conferenceMapping = {
+                        roomName: nameCol?.fieldName || '',
+                        meetingName: existingConfMapping?.meetingName || '',
+                        meetingTime: existingConfMapping?.meetingTime || '',
+                        endTime: existingConfMapping?.endTime,
+                        participants: existingConfMapping?.participants,
+                    };
+                }
+                
                 const newSftpCsvConfig: EnhancedCSVConfig = {
                     hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                     delimiter,
                     columns: extractedColumns.length > 0 ? extractedColumns : (settings.sftpCsvConfig?.columns || []),
                     idColumn: extractedColumns.length > 0 ? (extractedColumns[0]?.fieldName || 'id') : (settings.sftpCsvConfig?.idColumn || 'id'),
-                    conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? false,
+                    conferenceEnabled: true,  // Always enabled in SFTP mode
+                    conferenceMapping,
                     globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
                 };
                 
@@ -227,8 +271,14 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                 if (csvContent && newSftpCsvConfig.columns.length > 0) {
                     try {
                         const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
+                        const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
                         const parsed = parseCSVEnhanced(csvContent, newSftpCsvConfig);
                         useSpacesStore.getState().setSpaces(parsed.spaces);
+                        // Also populate conference rooms if any
+                        if (parsed.conferenceRooms.length > 0) {
+                            useConferenceStore.getState().setConferenceRooms(parsed.conferenceRooms);
+                            logger.info('Settings', 'Conference rooms populated from SFTP', { count: parsed.conferenceRooms.length });
+                        }
                         logger.info('Settings', 'Spaces populated from SFTP', { count: parsed.spaces.length });
                     } catch (parseError) {
                         logger.warn('Settings', 'Could not parse CSV content', { 
@@ -298,12 +348,32 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
         setTestResult(null);
     };
 
+    // Handle tab change with unsaved changes check
+    const handleTabChange = useCallback(async (_: React.SyntheticEvent, newValue: number) => {
+        // If leaving CSV Structure tab (index 1) with unsaved changes, prompt user
+        if (subtab === 1 && hasFieldMappingChanges) {
+            const confirmed = await confirm({
+                title: t('common.dialog.warning'),
+                message: t('settings.unsavedChangesWarning'),
+                confirmLabel: t('settings.discardChanges'),
+                cancelLabel: t('common.cancel'),
+                severity: 'warning',
+            });
+            
+            if (!confirmed) {
+                return; // Stay on current tab
+            }
+        }
+        
+        setSubtab(newValue);
+    }, [subtab, hasFieldMappingChanges, confirm, t]);
+
     return (
         <Box sx={{ px: 2, py: 0, mx: 'auto' }}>
             {/* Sub-tabs */}
             <Tabs 
                 value={subtab} 
-                onChange={(_, val) => setSubtab(val)} 
+                onChange={handleTabChange} 
                 sx={{
                     borderBottom: 0,
                     pb: 2,
@@ -317,6 +387,8 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                         },
                     },
                 }}
+                variant="scrollable"
+                scrollButtons="auto"
                 slotProps={{
                     indicator: { sx: { display: 'none' } }
                 }}>
@@ -460,15 +532,24 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     {settings.autoSyncEnabled && (
                         <>
-                            <FormControl fullWidth size="small">
+                            <FormControl size="small" sx={{ maxWidth: 200 }}>
                                 <InputLabel>{t('settings.syncInterval')}</InputLabel>
                                 <Select
                                     value={settings.autoSyncInterval}
                                     label={t('settings.syncInterval')}
                                     onChange={(e) => onUpdate({ autoSyncInterval: e.target.value as number })}
+                                    sx={{ 
+                                        direction: 'ltr',  // Always LTR for time values
+                                        '& .MuiSelect-select': { textAlign: 'left' }
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            sx: { direction: 'ltr' }
+                                        }
+                                    }}
                                 >
                                     {AUTO_SYNC_INTERVALS.map((interval) => (
-                                        <MenuItem key={interval.value} value={interval.value}>
+                                        <MenuItem key={interval.value} value={interval.value} sx={{ direction: 'ltr' }}>
                                             {interval.label}
                                         </MenuItem>
                                     ))}
@@ -518,16 +599,51 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     <Divider />
 
+                    {/* ID Field Selection */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                            {t('settings.idField')}
+                        </Typography>
+                        <Tooltip title={t('settings.idFieldHelp')}>
+                            <InfoIcon fontSize="small" color="action" />
+                        </Tooltip>
+                        <Chip label={t('settings.required')} size="small" color="error" variant="outlined" />
+                    </Box>
+                    <FormControl fullWidth size="small" required>
+                        <InputLabel>{t('settings.selectIdField')}</InputLabel>
+                        <Select
+                            value={settings.sftpCsvConfig?.idColumn || ''}
+                            label={t('settings.selectIdField')}
+                            onChange={(e) => onUpdate({
+                                sftpCsvConfig: buildSftpCsvConfig({ idColumn: e.target.value as string })
+                            })}
+                        >
+                            <MenuItem value="">
+                                <em>{t('common.none')}</em>
+                            </MenuItem>
+                            {availableFields.map((field) => (
+                                <MenuItem key={field} value={field}>{field}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <Divider />
+
                     {/* Global Field Assignments */}
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.globalFieldAssignments')}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                        {t('settings.globalFieldAssignmentsHelp')}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                            {t('settings.globalFieldAssignments')}
+                        </Typography>
+                        <Tooltip title={t('settings.globalFieldAssignmentsHelp')}>
+                            <InfoIcon fontSize="small" color="action" />
+                        </Tooltip>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {t('settings.globalFieldLockedNote')}
                     </Typography>
                     
                     {/* Existing global field assignments */}
-                    <Stack gap={1} sx={{ mb: 2 }}>
+                    <Stack gap={1} sx={{ mb: 1 }}>
                         {Object.entries(globalFieldAssignments).map(([fieldKey, value]) => (
                             <Paper key={fieldKey} variant="outlined" sx={{ p: 1.5 }}>
                                 <Stack direction="row" gap={1} alignItems="center">
@@ -553,16 +669,26 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                         ))}
                     </Stack>
                     
-                    {/* Add new global field */}
+                    {/* Add new global field - using dropdown for field selection */}
                     <Paper variant="outlined" sx={{ p: 1.5 }}>
                         <Stack direction="row" gap={1} alignItems="center">
-                            <TextField
-                                size="small"
-                                value={newGlobalFieldKey}
-                                onChange={(e) => setNewGlobalFieldKey(e.target.value)}
-                                placeholder={t('settings.fieldName')}
-                                sx={{ minWidth: 120 }}
-                            />
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                                <InputLabel>{t('settings.selectField')}</InputLabel>
+                                <Select
+                                    value={newGlobalFieldKey}
+                                    label={t('settings.selectField')}
+                                    onChange={(e) => setNewGlobalFieldKey(e.target.value as string)}
+                                >
+                                    <MenuItem value="">
+                                        <em>{t('common.none')}</em>
+                                    </MenuItem>
+                                    {availableFields
+                                        .filter(field => !lockedFields.includes(field))
+                                        .map((field) => (
+                                            <MenuItem key={field} value={field}>{field}</MenuItem>
+                                        ))}
+                                </Select>
+                            </FormControl>
                             <TextField
                                 fullWidth
                                 size="small"
@@ -584,6 +710,127 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
 
                     <Divider />
 
+                    {/* Conference Field Mapping - Always active in SFTP mode */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                            {t('settings.conferenceFieldMapping')}
+                        </Typography>
+                        <Tooltip title={t('settings.conferenceFieldMappingHelp')}>
+                            <InfoIcon fontSize="small" color="action" />
+                        </Tooltip>
+                    </Box>
+                    
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {t('settings.conferenceAlwaysActiveNote')}
+                    </Typography>
+
+                    <Paper variant="outlined" sx={{ p: 2 }}>
+                        <Stack gap={2}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>{t('settings.conferenceRoomField')}</InputLabel>
+                                <Select
+                                    value={settings.sftpCsvConfig?.conferenceMapping?.roomName || ''}
+                                    label={t('settings.conferenceRoomField')}
+                                    onChange={(e) => onUpdate({
+                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                            conferenceMapping: {
+                                                ...settings.sftpCsvConfig?.conferenceMapping,
+                                                roomName: e.target.value as string,
+                                                meetingName: settings.sftpCsvConfig?.conferenceMapping?.meetingName || '',
+                                                meetingTime: settings.sftpCsvConfig?.conferenceMapping?.meetingTime || '',
+                                            }
+                                        })
+                                    })}
+                                >
+                                    <MenuItem value="">
+                                        <em>{t('common.none')}</em>
+                                    </MenuItem>
+                                    {availableFields.map((field) => (
+                                        <MenuItem key={field} value={field}>{field}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            <FormControl fullWidth size="small">
+                                <InputLabel>{t('settings.meetingNameField')}</InputLabel>
+                                <Select
+                                    value={settings.sftpCsvConfig?.conferenceMapping?.meetingName || ''}
+                                    label={t('settings.meetingNameField')}
+                                    onChange={(e) => onUpdate({
+                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                            conferenceMapping: {
+                                                ...settings.sftpCsvConfig?.conferenceMapping,
+                                                roomName: settings.sftpCsvConfig?.conferenceMapping?.roomName || '',
+                                                meetingName: e.target.value as string,
+                                                meetingTime: settings.sftpCsvConfig?.conferenceMapping?.meetingTime || '',
+                                            }
+                                        })
+                                    })}
+                                >
+                                    <MenuItem value="">
+                                        <em>{t('common.none')}</em>
+                                    </MenuItem>
+                                    {availableFields.map((field) => (
+                                        <MenuItem key={field} value={field}>{field}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            <FormControl fullWidth size="small">
+                                <InputLabel>{t('settings.meetingTimeField')}</InputLabel>
+                                <Select
+                                    value={settings.sftpCsvConfig?.conferenceMapping?.meetingTime || ''}
+                                    label={t('settings.meetingTimeField')}
+                                    onChange={(e) => onUpdate({
+                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                            conferenceMapping: {
+                                                ...settings.sftpCsvConfig?.conferenceMapping,
+                                                roomName: settings.sftpCsvConfig?.conferenceMapping?.roomName || '',
+                                                meetingName: settings.sftpCsvConfig?.conferenceMapping?.meetingName || '',
+                                                meetingTime: e.target.value as string,
+                                            }
+                                        })
+                                    })}
+                                >
+                                    <MenuItem value="">
+                                        <em>{t('common.none')}</em>
+                                    </MenuItem>
+                                    {availableFields.map((field) => (
+                                        <MenuItem key={field} value={field}>{field}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            <FormControl fullWidth size="small">
+                                <InputLabel>{t('settings.participantsField')}</InputLabel>
+                                <Select
+                                    value={settings.sftpCsvConfig?.conferenceMapping?.participants || ''}
+                                    label={t('settings.participantsField')}
+                                    onChange={(e) => onUpdate({
+                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                            conferenceMapping: {
+                                                ...settings.sftpCsvConfig?.conferenceMapping,
+                                                roomName: settings.sftpCsvConfig?.conferenceMapping?.roomName || '',
+                                                meetingName: settings.sftpCsvConfig?.conferenceMapping?.meetingName || '',
+                                                meetingTime: settings.sftpCsvConfig?.conferenceMapping?.meetingTime || '',
+                                                participants: e.target.value as string,
+                                            }
+                                        })
+                                    })}
+                                >
+                                    <MenuItem value="">
+                                        <em>{t('common.none')}</em>
+                                    </MenuItem>
+                                    {availableFields.map((field) => (
+                                        <MenuItem key={field} value={field}>{field}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Stack>
+                    </Paper>
+
+                    <Divider />
+
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                         {t('settings.csvStructureNote')}
                     </Typography>
@@ -591,9 +838,14 @@ export function SFTPSettingsTab({ settings, onUpdate }: SFTPSettingsTabProps) {
                     <CSVStructureEditor
                         columns={editorColumns}
                         onColumnsChange={saveCSVStructure}
+                        lockedFields={lockedFields}
+                        idColumn={settings.sftpCsvConfig?.idColumn}
+                        onHasUnsavedChanges={setHasFieldMappingChanges}
                     />
                 </Stack>
             )}
+            
+            <ConfirmDialog />
         </Box>
     );
 }
