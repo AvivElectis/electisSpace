@@ -1,13 +1,12 @@
-# electisSpace Deep Implementation Plan - Q1 2025/Q1 2026
+# electisSpace Deep Implementation Plan - Q1 2025
 
 > Generated: December 30, 2025
-> Last Updated: January 8, 2026 (Session 10 - SFTP Conference Room Fixes)
+> Last Updated: January 13, 2026
 
 ## Implementation Status
 
 | # | Feature | Status | Started | Completed |
 |---|---------|--------|---------|-----------|
-
 | 1 | Conference Room NFC URL Fix | ✅ Completed | Dec 30 | Dec 30 |
 | 2 | Dashboard Assigned Labels Display | ✅ Completed | Dec 30 | Dec 31 |
 | 3 | File Optimization | ✅ Completed | Dec 30 | Dec 31 |
@@ -16,310 +15,39 @@
 | 6 | UI Responsiveness | ✅ Completed | Jan 6 | Jan 6 |
 | 7 | Logger Enhancement | ✅ Completed | Jan 6 | Jan 6 |
 | 8 | App Manual Feature | ✅ Completed | Jan 6 | Jan 6 |
-| 9 | Data Cleanup on Disconnect/Mode Switch | ✅ Completed | Jan 7 | Jan 7 |
-| 10 | SFTP Mode Implementation | 🔄 In Progress | Jan 7 | - |
+| 9 | Project Rescan & Optimization | 🔄 In Progress | Jan 13 | - |
+| 10 | Deep Testing System | ⬜ Not Started | - | - |
+| 11 | Comprehensive Documentation | ⬜ Not Started | - | - |
 
 **Legend:** ⬜ Not Started | 🔄 In Progress | ✅ Completed | ⚠️ Blocked
 
-### Recent Updates (January 8, 2026) - Session 10
+### Recent Updates (January 13, 2026) - Session 9
 
-#### Feature 10 Progress - SFTP Mode Conference Room & Sync Fixes
+#### Phase 9 In Progress - Project Rescan & Optimization
 
-Major fixes for conference room handling in SFTP mode, ensuring proper ID format, room name persistence, and automatic sync after operations.
+##### Phase 9.2.0: Backup File Cleanup ✅
+- **Deleted 3 backup files**: `PeopleManagerView.backup.tsx`, `SolumSettingsTab.backup.tsx`, `DashboardPage.backup.tsx`
+- Build verified to pass after deletion
 
-##### Phase 10.15: Conference Room ID & Sync Fixes ✅
+##### Phase 9.2.1: Security Fix ✅
+- `npm audit` shows **0 vulnerabilities** (resolved)
 
-- **Conference ID Format**: Internal storage uses numeric-only IDs ("01", "02"), CSV output adds 'C' prefix ("C01", "C02")
-- **parseCSVEnhanced()**: Strips 'C'/'c' prefix when parsing, conference detection always enabled
-- **generateCSVEnhanced()**: Re-adds 'C' prefix to conference room IDs for CSV output
-- **Room Name Persistence**: Fixed roomName extraction and CSV column writing using configured `conferenceMapping.roomName` field
-- **Stale Closure Fix**: Upload functions now use `store.getState()` to get current data instead of closure variables
-- **Sync After Operations**: Added `onSync` callback to controllers, triggered after SFTP add/edit/delete operations
-- **Auto-detect Room Name Field**: SFTP connection auto-detects roomName column from CSV headers
-- **Validation Update**: Changed ID validation from "must start with C" to "must be numeric"
-- **CSV Warnings Fix**: Only warn on undefined required fields, not empty strings
-
-##### Files Modified (Phase 10.15)
-
-| File | Changes |
-|------|---------|
-
-| `csvService.ts` | Always enable conference detection; strip 'C' prefix on parse, re-add on generate; extract/write roomName to configured column; only warn on undefined fields; added debug logging |
-| `useSpaceController.ts` | Fixed stale closure: use `useSpacesStore.getState().spaces`; added `onSync` callback prop |
-| `useConferenceController.ts` | Fixed stale closure: use both stores' `.getState()`; added `onSync` callback prop; call `onSync?.()` after SFTP operations |
-| `ConferenceRoomDialog.tsx` | Removed 'C' prefix handling; accepts numeric IDs only; pads to 2 digits |
-| `businessRules.ts` | `generateConferenceRoomId()` returns "01", "02" (no 'C' prefix) |
-| `validation.ts` | ID validation: numeric-only instead of requiring 'C' prefix |
-| `SFTPSettingsTab.tsx` | Auto-detect `conferenceMapping.roomName` from CSV column names on connect |
-| `ConferencePage.tsx` | Added `useSyncContext`, pass `onSync: sync` to controller |
-| `SpacesManagementView.tsx` | Added `useSyncContext`, pass `onSync: sync` to controller |
-| `logger.ts` | Enabled console logging for INFO/WARN/ERROR levels |
-
-##### Technical Details
-
-**Conference Room ID Flow:**
-1. CSV contains `C01`, `C02`, etc.
-2. `parseCSVEnhanced()` strips 'C' prefix → internal ID is `01`, `02`
-3. UI displays and edits numeric IDs only
-4. `generateCSVEnhanced()` re-adds 'C' prefix → CSV output is `C01`, `C02`
-
-**Room Name Persistence:**
-1. CSV column configured via `conferenceMapping.roomName` (e.g., "ITEM_NAME")
-2. Parse extracts value to `room.data.roomName`
-3. Generate writes `room.data.roomName` back to configured column
-
-**Sync Flow:**
-1. Controller receives `onSync` callback from view (via SyncContext)
-2. After successful SFTP operation, `onSync?.()` is called
-3. Triggers full sync to refresh data from server
-
----
-
-### Previous Updates (January 7, 2026) - Session 9 Continued
-
-#### Feature 10 Progress - SFTP Mode Implementation
-
-SFTP mode is now fully functional! Controllers route operations based on working mode, with rollback support on failure.
-
-##### Phase 10.10: Spaces Management SFTP Support ✅
-
-- **Updated `useSpaceController.ts`**: Added workingMode, sftpCredentials, sftpCsvConfig props
-- **Added SFTP adapter helpers**: `getSFTPAdapter()` and `uploadToSFTP()` functions
-- **Modified `addSpace()`**: Routes to SFTP mode with rollback on upload failure
-- **Modified `updateSpace()`**: Routes to SFTP mode with rollback on upload failure
-- **Modified `deleteSpace()`**: Routes to SFTP mode with rollback (re-add) on upload failure
-- **Updated callers**: SpacesManagementView, DashboardPage, FeatureTestDemo now pass SFTP props
-
-##### Phase 10.11: Conference Management SFTP Support ✅
-
-- **Updated `useConferenceController.ts`**: Added workingMode, sftpCredentials, sftpCsvConfig props
-- **Added SFTP adapter helpers**: `getSFTPAdapter()` and `uploadToSFTP()` functions
-- **Modified `addConferenceRoom()`**: Routes to SFTP mode with rollback on upload failure
-- **Modified `updateConferenceRoom()`**: Routes to SFTP mode with rollback on upload failure
-- **Modified `deleteConferenceRoom()`**: Routes to SFTP mode with rollback (re-add) on upload failure
-- **Modified `toggleMeeting()`**: Routes to SFTP mode with rollback on upload failure
-- **Updated callers**: ConferencePage, DashboardPage, FeatureTestDemo now pass SFTP props
-
-##### Phase 10.12: Enable SFTP Mode in UI ✅
-
-- **MainLayout.tsx**: Removed force migration effect that blocked SFTP mode
-- **SettingsDialog.tsx**: Enabled SFTP settings tab (removed disabled={true})
-- **SettingsDialog.tsx**: Enabled SFTP TabPanel (was commented)
-- **AppSettingsTab.tsx**: Uncommented SFTP MenuItem in working mode dropdown
-
-##### Phase 10.14: SFTP Connection State Management ✅
-
-- **Added `isConnected` to SFTPCredentials**: Tracks SFTP connection state
-- **Updated SFTPSettingsTab**: Connect sets `isConnected: true`, Disconnect sets `isConnected: false`
-- **Updated MainLayout**: Determines connection status based on working mode (SFTP vs SoluM)
-- **Updated SyncStatusIndicator**: Shows correct working mode label (SFTP vs SoluM)
-
-##### Files Modified (Phases 10.10-10.14)
-
-| File | Changes |
-|------|---------|
-
-| `useSpaceController.ts` | Added SFTP mode routing with rollback for add/update/delete |
-| `useConferenceController.ts` | Added SFTP mode routing with rollback for all CRUD + toggleMeeting |
-| `SpacesManagementView.tsx` | Passes SFTP props to useSpaceController |
-| `ConferencePage.tsx` | Passes SFTP props to useConferenceController |
-| `DashboardPage.tsx` | Passes SFTP props to both controllers |
-| `FeatureTestDemo.tsx` | Passes SFTP props to both controllers |
-| `MainLayout.tsx` | Removed force migration, dynamic isConnected check, working mode label |
-| `SettingsDialog.tsx` | Enabled SFTP tab and panel |
-| `AppSettingsTab.tsx` | Enabled SFTP mode selection in dropdown |
-| `SFTPSettingsTab.tsx` | Connect/Disconnect set isConnected flag, preserve credentials on disconnect |
-| `types.ts` | Added isConnected to SFTPCredentials interface |
-
-##### Remaining Phases
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-
-| 10.13 | Extended Testing | ⬜ Not Started |
-| 10.15 | Conference Room ID & Sync Fixes | ✅ Completed |
-
----
-
-#### Feature 10 Earlier Progress - SFTP Mode Implementation
-
-##### Phase 10.1: Encryption Service ✅
-
-- **Created `encryption.ts`**: AES-256-CBC encryption for SFTP credentials
-- **Functions**: `encrypt(plainText)`, `decrypt(encryptedText)`
-- **Uses environment variable**: `VITE_SFTP_ENCRYPTION_KEY`
-- **Random IV per encryption**: Prepended to ciphertext for secure storage
-
-##### Phase 10.2: SFTP API Client ✅
-
-- **Created `sftpApiClient.ts`**: HTTP client for SFTP proxy API
-- **Functions**: `testConnection()`, `downloadFile()`, `uploadFile()`, `deleteFile()`, `listFiles()`
-- **Encrypted credentials**: Uses encryption service before sending to API
-- **Bearer token auth**: Uses `VITE_SFTP_API_TOKEN`
-- **Comprehensive logging**: All operations logged with timing
-
-##### Phase 10.3: Vite Proxy Configuration ✅
-
-- **Added server.proxy to vite.config.ts**: `/sftp-api` → `https://solum.co.il/sftp`
-- **Configuration**: `changeOrigin: true`, `secure: true`, path rewrite
-
-##### Phase 10.4: CSV Service Enhancement ✅
-
-- **Added `EnhancedCSVConfig` interface**: `hasHeader`, `delimiter`, `columns`, `idColumn`, `conferenceEnabled`
-- **Added `CSVColumnMapping` interface**: `fieldName`, `csvColumn`, `friendlyName`, `required`
-- **Added `parseCSVEnhanced()`**: Parses CSV with enhanced config, returns spaces and conference rooms
-- **Added `generateCSVEnhanced()`**: Generates CSV from spaces and conference rooms
-- **Added `validateCSVConfigEnhanced()`**: Validates config with detailed error messages
-- **Added `createDefaultEnhancedCSVConfig()`**: Creates default config for new SFTP setups
-- **Backward compatible**: Legacy `parseCSV()` and `generateCSV()` still available
-
-##### Phase 10.5: SFTP Sync Adapter ✅
-
-- **Complete rewrite of `SFTPSyncAdapter.ts`**: Now uses new sftpApiClient
-- **Retry logic**: Exponential backoff with jitter (3 retries, 1-10s delay)
-- **Progress tracking**: Real-time progress updates via callback
-- **Methods**: `connect()`, `disconnect()`, `download()`, `downloadWithConference()`, `upload()`, `safeUpload()`, `sync()`
-- **Configuration methods**: `setProgressCallback()`, `updateCSVConfig()`, `updateCredentials()`, `isConnected()`
-
-##### Phase 10.6: SFTP Settings Tab Enhancement ✅
-
-- **Enhanced `SFTPSettingsTab.tsx`**: 3 sub-tabs (Connection, CSV Structure, Auto-Sync)
-- **Connection tab**: Host, username, password, remote filename fields
-- **Test connection button**: Uses real sftpApiClient with success/error feedback
-- **Connect/Disconnect buttons**: With loading states and status chip
-- **CSV Structure tab**: Delimiter config, header toggle, CSVStructureEditor integration
-- **Auto-Sync tab**: Enable toggle, interval selector (30s to 10min)
-
-##### Phase 10.7: CSV Structure Editor ✅
-
-- **Already exists**: `CSVStructureEditor.tsx` with full functionality
-- **Features**: Drag-drop reorder, up/down buttons, add/remove columns, field type selection, mandatory checkbox
-
-##### Phase 10.8: Sync Controller SFTP Integration ✅
-
-- **Added `sftpCsvConfig` prop**: Passes enhanced CSV config to adapter
-- **Updated `getAdapter()`**: Creates SFTP adapter with enhanced config
-- **Updated MainLayout**: Passes `sftpCsvConfig` to sync controller
-
-##### Phase 10.9: Translations ✅
-
-- **Added EN translations**: `sftpServerConfig`, `connected`, `connect`, `disconnect`, `fillCredentials`, `connectionSuccess`, `connectionFailed`, `autoSyncConfig`, `enableAutoSync`, `autoSyncInfo`, `csvHasHeader`, `csvFileStructure`, `remoteFilenameHelp`, `testing`, `connecting`
-- **Added HE translations**: Corresponding Hebrew translations for all new keys
+##### Phase 9.2.2: Large File Splitting 🔄
+- **Split `usePeopleLists.ts`**: 683 → 565 lines
+- **Created `usePeopleListsSync.ts`**: 180 lines (AIMS sync operations)
+- All 121 tests pass (12 skipped)
+- Test file splitting deferred (tests work, lower priority)
 
 ##### Files Created
-
-| File | Purpose |
-|------|---------|
-
-| `encryption.ts` | AES-256-CBC encryption service |
-| `sftpApiClient.ts` | SFTP proxy API HTTP client |
+| File | Lines | Purpose |
+|------|-------|---------|
+| `hooks/usePeopleListsSync.ts` | 180 | AIMS sync operations extracted |
 
 ##### Files Modified
-
 | File | Changes |
 |------|---------|
-
-| `vite.config.ts` | Added `/sftp-api` proxy configuration |
-| `csvService.ts` | Added enhanced CSV parsing/generation functions |
-| `SFTPSyncAdapter.ts` | Complete rewrite with retry, progress, new API client |
-| `SFTPSettingsTab.tsx` | Enhanced with 3 tabs, real connection testing |
-| `useSyncController.ts` | Added `sftpCsvConfig` prop, updated adapter creation |
-| `MainLayout.tsx` | Passes `sftpCsvConfig` to sync controller |
-| `common.json` (en) | Added SFTP-related translations |
-| `common.json` (he) | Added SFTP Hebrew translations |
-| `.env.example` | Added `VITE_SFTP_ENCRYPTION_KEY`, `VITE_SFTP_API_TOKEN` |
-
-##### Remaining Phases (Not Started)
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-
-| 10.13 | Extended Testing | ⬜ Not Started |
-| 10.15 | Conference Room ID & Sync Fixes | ✅ Completed |
-
----
-
-#### Feature 9 Completed - Data Cleanup on Disconnect/Mode Switch
-
-Proper data cleanup when disconnecting from a connection or switching between working modes.
-
-##### Phase 9.1: Store Clear Methods
-
-- **Added `clearAllData()` to spacesStore**: Clears spaces, spacesLists, activeListName, activeListId
-- **Added `clearAllData()` to peopleStore**: Clears people, peopleLists, activeListName, activeListId, pendingChanges, spaceAllocation
-- **Added `clearAllData()` to conferenceStore**: Clears conferenceRooms
-
-##### Phase 9.2: Settings Clear Methods
-
-- **Added `clearModeCredentials(mode)` to settingsStore**: Clears credentials and config for the specified mode (SFTP or SOLUM_API)
-- **Added `clearFieldMappings()` to settingsStore**: Clears solumMappingConfig and sftpCsvConfig.mapping
-
-##### Phase 9.3: Disconnect Data Cleanup
-
-- **Updated `disconnectFromSolum()` in useSettingsController**: Now clears all data stores before disconnecting
-- **Uses dynamic imports**: Avoids circular dependencies by dynamically importing stores
-- **Logs cleanup action**: Added logger entries with category `Settings`
-
-##### Phase 9.4: Mode Switch Confirmation Dialog
-
-- **Created mode switch confirmation in AppSettingsTab**: Shows warning dialog when switching modes
-- **Confirmation dialog contents**: Warning icon, title, and message explaining data will be cleared
-- **On confirm**: Clears all data stores, clears old mode credentials, then switches mode
-- **Loading state**: Shows spinner and disables buttons during mode switch
-- **Dynamic imports**: Uses async helper function to avoid circular dependencies
-
-##### Phase 9.5: Translations
-
-- **Added `settings.switchModeTitle`**: "Switch Working Mode" / "החלפת מצב עבודה"
-- **Added `settings.switchModeWarning`**: Full warning message in EN and HE
-- **Added `settings.switchMode`**: "Switch Mode" / "החלף מצב"
-
-##### Phase 9.6: Security & Environment Variables
-
-- **Moved ADMIN_PASSWORD to .env**: Uses `import.meta.env.VITE_ADMIN_PASSWORD`
-- **Updated .env.example**: Added `VITE_ADMIN_PASSWORD` placeholder
-- **Created .env file**: With actual admin password value
-
-##### Phase 9.7: Logger Integration
-
-- **Added logging to mode switch**: Logs mode switch request, data clearing, credential clearing, success
-- **Updated disconnect logging**: Uses `Settings` category consistently
-- **Added clearAllDataStores helper**: Logs when all stores are cleared
-
-##### Phase 9.8: Auto-Sync Disconnect Fix
-
-- **Added `isConnected` prop to useSyncController**: Receives connection status from settings
-- **Auto-sync stops on disconnect**: Timer is cleared when `isConnected` is false
-- **Added disconnect effect**: Clears adapter and resets sync state when connection is lost
-- **Double-check in timer callback**: Skips sync if not connected even if timer fires
-- **Enhanced logging**: Logs connection status changes and timer management
-
-##### Phase 9.9: SyncStatusIndicator Dynamic Styling
-
-- **Dynamic background color**: Indicator background now changes based on status (green=connected, red=error, gray=disconnected, blue=syncing)
-- **Dynamic border color**: Border matches status color scheme
-- **Manual sync disabled when disconnected**: Button is disabled when status is 'disconnected'
-
-##### Files Modified
-
-| File | Changes |
-|------|---------|
-
-| `spacesStore.ts` | Added `clearAllData()` method |
-| `peopleStore.ts` | Added `clearAllData()` method |
-| `conferenceStore.ts` | Added `clearAllData()` method |
-| `settingsStore.ts` | Added `clearModeCredentials()`, `clearFieldMappings()` |
-| `useSettingsController.ts` | Updated `disconnectFromSolum()` with async/dynamic imports, env var for admin password |
-| `AppSettingsTab.tsx` | Added mode switch dialog with async/dynamic imports, loading state, logging |
-| `SolumCredentialsSection.tsx` | Updated `handleDisconnect` to be async |
-| `useSyncController.ts` | Added `isConnected` prop, auto-sync stop on disconnect, connection change effect |
-| `MainLayout.tsx` | Passes `isConnected` to useSyncController |
-| `FeatureTestDemo.tsx` | Passes `isConnected` to useSyncController |
-| `SyncStatusIndicator.tsx` | Dynamic bgcolor/borderColor based on status, disabled sync button when disconnected |
-| `.env.example` | Added `VITE_ADMIN_PASSWORD` |
-| `.env` | Created with admin password |
-| `common.json` (en) | Added switch mode translations |
-| `common.json` (he) | Added switch mode translations |
+| `hooks/usePeopleLists.ts` | Refactored to use sync hook (683→565 lines) |
+| `hooks/index.ts` | Added usePeopleListsSync export |
 
 ---
 
@@ -330,19 +58,16 @@ Proper data cleanup when disconnecting from a connection or switching between wo
 Additional improvements to the manual feature based on user feedback.
 
 ##### Phase 8.7: RTL-Aware Mobile Drawer
-
 - **Dynamic drawer anchor**: Changed from fixed `"left"` to `{theme.direction === 'rtl' ? 'right' : 'left'}`
 - **Proper RTL behavior**: Mobile navigation drawer now opens from the correct side based on language direction
 
 ##### Phase 8.8: Tab Styling Consistency
-
 - **Matched SettingsDialog styling**: Manual tabs now use same design as Settings dialog
 - **Border and shadow on selected**: Added `border: '1px solid'`, `borderColor: 'primary.main'`, `boxShadow`
 - **Hidden indicator**: Used `TabIndicatorProps={{ sx: { display: 'none' } }}`
 - **Removed Paper wrapper**: Simplified tab container structure
 
 ##### Phase 8.9: Accurate Manual Content
-
 - **Connection Setup details**: Corrected to show real fields (API Cluster, Base URL, Company Code, Store Number)
 - **Real URL examples**: Changed from fake URLs to actual format (e.g., `https://eu.common.solumesl.com`)
 - **People Manager specifics**: Added `_LIST_MEMBERSHIPS_` field explanation, Total Spaces config
@@ -350,10 +75,8 @@ Additional improvements to the manual feature based on user feedback.
 - **Security details**: Added password reset information (clear browser data)
 
 ##### Files Modified (Session 8)
-
 | File | Changes |
 |------|---------|
-
 | `src/shared/presentation/layouts/MainLayout.tsx` | RTL-aware drawer anchor |
 | `src/features/manual/presentation/ManualDialog.tsx` | Tabs styled like SettingsDialog, removed Paper |
 | `src/locales/en/common.json` | Enhanced manual content with accurate details |
@@ -368,56 +91,46 @@ Additional improvements to the manual feature based on user feedback.
 In-app bilingual user manual with tab-based navigation for all app features.
 
 ##### Phase 8.1: Domain Types
-
 - **Created `ManualTab` and `ManualSection` types**: Type-safe structure for manual content
 - **Created `MANUAL_TABS` configuration**: 6 tabs with sections for each feature area
 - **Tab structure**: Getting Started, Spaces, People, Conference, Sync, Settings
 
 ##### Phase 8.2: ManualDialog Component
-
 - **Full-screen on mobile**: Uses `fullScreen={isMobile}` for responsive layout
 - **Tab-based navigation**: Scrollable tabs with icons (icons-only on mobile)
 - **Lazy loaded**: Uses `React.lazy()` for code splitting
 - **RTL support**: Proper Hebrew layout with `insetInlineEnd` positioning
 
 ##### Phase 8.3: ManualSection Component
-
 - **Paper-based layout**: Each section displayed in outlined Paper component
 - **Multi-paragraph support**: Content split by newlines into separate Typography elements
 - **Consistent styling**: Primary color titles, secondary color content
 
 ##### Phase 8.4: Translations
-
 - **Comprehensive EN/HE content**: Full manual translations for both languages
 - **6 feature areas covered**: Getting Started, Spaces, People Manager, Conference, Sync, Settings
 - **Each area has 2-4 sections**: Overview plus detailed topic sections
 
 ##### Phase 8.5: Header Integration
-
 - **Help button added**: HelpOutlineIcon with tooltip between LanguageSwitcher and Settings
 - **New `onManualClick` prop**: Passed from MainLayout to AppHeader
 
 ##### Phase 8.6: MainLayout Integration
-
 - **ManualDialog state**: `manualOpen` state for dialog visibility
 - **Lazy loaded dialog**: Suspense wrapper for optimal bundle size
 - **Click handler**: Opens manual dialog from header button
 
 ##### Files Created
-
 | File | Purpose |
 |------|---------|
-
 | `src/features/manual/domain/types.ts` | Manual types and tab configuration |
 | `src/features/manual/presentation/ManualDialog.tsx` | Main dialog component |
 | `src/features/manual/presentation/ManualSection.tsx` | Section content renderer |
 | `src/features/manual/index.ts` | Barrel exports |
 
 ##### Files Modified
-
 | File | Changes |
 |------|---------|
-
 | `src/shared/presentation/layouts/AppHeader.tsx` | Added HelpOutlineIcon button, `onManualClick` prop |
 | `src/shared/presentation/layouts/MainLayout.tsx` | Added ManualDialog lazy import, `manualOpen` state |
 | `src/locales/en/common.json` | Added comprehensive `manual` translations |
@@ -432,13 +145,11 @@ In-app bilingual user manual with tab-based navigation for all app features.
 Comprehensive logging system enhancement with typed categories, performance timing, and error boundary integration.
 
 ##### Phase 7.1: Log Categories System
-
 - **Added `LogCategory` type**: 13 predefined categories (`App`, `Auth`, `Sync`, `AIMS`, `People`, `Conference`, `Spaces`, `Settings`, `Navigation`, `Performance`, `Storage`, `CSV`, `Error`)
 - **Exported `LOG_CATEGORIES` array**: For UI components to display category filters
 - **Added `getCategories()` method**: Returns unique categories from current logs
 
 ##### Phase 7.2: Performance Logging
-
 - **Added `startTimer(operationId)`**: Start a performance timer for an operation
 - **Added `endTimer(operationId, category, message, data)`**: End timer and log duration with formatted output
 - **Added `measureAsync()` helper**: Automatically measures async operations with success/failure tracking
@@ -446,20 +157,17 @@ Comprehensive logging system enhancement with typed categories, performance timi
 - **Added timing to sync operations**: Download and upload operations now log performance data
 
 ##### Phase 7.3: Log Export
-
 - **Added `exportLogsAsJson(filter?)`**: Export logs in JSON format with optional filtering
 - **Added `exportLogsAsCsv(filter?)`**: Export logs in CSV format with proper escaping
 - **Added `exportLogs(format, filter?)`**: Unified export method for JSON or CSV
 - **Added `getStats()`**: Get log statistics (total, by level, by category, active timers)
 
 ##### Phase 7.4: Strategic Logging Points
-
 - **Sync operations**: Added performance timing to `sync()` and `upload()` functions
 - **CSV import**: Added performance timing to `loadPeopleFromCSV()`
 - **Updated log categories**: Changed from component names to semantic categories (e.g., `SyncController` → `Sync`)
 
 ##### Phase 7.5: Error Boundary Integration
-
 - **Created `ErrorBoundary.tsx` component**: Class component that catches JavaScript errors
 - **Logs errors to logger service**: Captures error message, stack trace, and component stack
 - **Fallback UI**: Professional error display with "Try Again" and "Reload Page" buttons
@@ -467,17 +175,14 @@ Comprehensive logging system enhancement with typed categories, performance timi
 - **Integrated in App.tsx**: Wraps entire application with ErrorBoundary
 
 ##### Phase 7.6: Navigation Logging
-
 - **Added `useNavigationLogger` hook**: Logs route changes with path, search, and hash
 - **Integrated in AppRoutes.tsx**: Automatic navigation event logging
 
 ##### Phase 7.7: App Initialization Logging
-
 - **Added initialization log**: Logs app version, language, and environment on startup
 - **Added language change log**: Logs when language/direction changes
 
 ##### Phase 7.8: Responsive LogsViewer
-
 - **Mobile-first toolbar**: Search and filter inputs stack vertically on mobile, full-width controls
 - **Adaptive log items**: Card layout on mobile (stacked info), table row layout on desktop
 - **Dynamic row height**: 64px for mobile cards, 42px for desktop table rows
@@ -486,10 +191,8 @@ Comprehensive logging system enhancement with typed categories, performance timi
 - **Compact action buttons**: Icons-only on mobile for Export/Clear buttons
 
 ##### Files Modified
-
 | File | Changes |
 |------|---------|
-
 | `logger.ts` | Added LogCategory type, performance timing, export functions, getStats() |
 | `useSyncController.ts` | Added startTimer/endTimer to sync and upload operations |
 | `usePeopleController.ts` | Added performance timing to CSV file loading |
@@ -501,7 +204,6 @@ Comprehensive logging system enhancement with typed categories, performance timi
 | `SettingsDialog.tsx` | Added noPadding prop to TabPanel, responsive DialogContent padding |
 
 ##### New Logger API Summary
-
 ```typescript
 // Categories
 type LogCategory = 'App' | 'Auth' | 'Sync' | 'AIMS' | 'People' | 'Conference' | 
@@ -531,55 +233,45 @@ const stats = logger.getStats();
 Full responsive design implementation to ensure the app works seamlessly on mobile devices (Capacitor Android) while maintaining backward compatibility with desktop.
 
 ##### Phase 1: Critical Layout Fixes
-
 - **SyncStatusIndicator**: Popover minWidth responsive `{ xs: 260, sm: 300 }`
 - **MainLayout**: Sync indicator position `{ xs: 16, sm: 24 }`
 - **SettingsDialog**: `fullScreen={isMobile}` for mobile, responsive height
 
 ##### Phase 2: Table Responsiveness
-
 - **PeopleTable**: Added mobile card view with 2-column grid layout for all visible fields
 - **SpacesManagementView**: Added mobile card view with stacked content
 - **TableContainer**: maxHeight breakpoints `{ xs: '55vh', sm: '65vh', md: '70vh' }`
 
 ##### Phase 3: Form Controls
-
 - **PeopleFiltersBar**: FormControl minWidth responsive `{ xs: '100%', sm: 150 }`
 - **PeopleStatsPanel**: TextField and Box minWidth responsive
 - **SyncPage**: Button minWidth responsive `{ xs: 'auto', sm: 120 }`
 
 ##### Phase 4: Dialog Improvements
-
 - **SpaceDialog**: `fullScreen={isMobile}` with useMediaQuery
 - **ConferenceRoomDialog**: `fullScreen={isMobile}` with useMediaQuery
 
 ##### Phase 5: Typography & Spacing
-
 - **AppHeader**: Logo heights responsive `{ xs: 40, sm: 60, md: 80 }`, title font sizes reduced
 - **ConferencePage**: Search bar responsive, TextField fullWidth on mobile
 
 ##### Mobile Card Views (Tables)
-
 To avoid horizontal scrolling on mobile, tables are converted to card-based layouts:
 
 **PeopleTable Mobile Card:**
-
 - Row 1: Checkbox + Index # + Assignment status chip (right-aligned)
 - Row 2: All visible fields in 2-column grid with labels
 - Row 3: Lists chip + Action buttons (assign/unassign, edit, delete)
 
 **SpacesManagementView Mobile Card:**
-
 - ID prominently displayed
 - Visible fields with labels
 - Action buttons (edit, delete)
 
 ##### Localization Updates
-
 - Added `people.selectAll` translation to EN and HE locales
 
 ##### Files Modified
-
 | File | Changes |
 |------|---------|
 | `SyncStatusIndicator.tsx` | Responsive popover minWidth |
@@ -597,7 +289,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 | `common.json` (en/he) | Added `people.selectAll` |
 
 ##### Design Principles Applied
-
 - **Backward Compatible**: Desktop appearance unchanged
 - **Progressive Enhancement**: Uses MUI breakpoints (xs, sm, md, lg, xl)
 - **RTL Support**: Hebrew layout works correctly on mobile
@@ -611,35 +302,29 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 #### Performance Optimizations (Completed)
 
 ##### Debug Logs Cleanup
-
 - **Removed console.log debug statements** from `peopleService.ts` (`[DEBUG convertSpacesToPeopleWithVirtualPool]`)
 
 ##### Lazy Loading & Code Splitting
-
 - **SettingsDialog tabs lazy loaded**: All 5 tabs (App, Solum, Logo, Security, Logs) now lazy load with Suspense
 - **ArticleFormatEditor lazy loaded**: 1.1MB vanilla-jsoneditor dependency now loads only when needed
 - **Chunk size optimized**: Main SettingsDialog reduced from 1.2MB to 4.7KB
 
 ##### Route Prefetching
-
 - **Created `routePrefetch.ts` utility**: Preloads route components before navigation
 - **Prefetch on hover**: Navigation tabs trigger prefetch on mouse enter
 - **Idle prefetch**: After 2 seconds idle, all routes are prefetched automatically
 
 ##### Instant Navigation with useTransition
-
 - **Per-route Suspense boundaries**: Each route wrapped in isolated `<SuspenseRoute>` for immediate loader display
 - **React useTransition**: Navigation wrapped in `startTransition()` for non-blocking UI updates
 - **Visual pending feedback**: Content dims to 70% opacity during route transitions
 - **Immediate response**: Tab clicks respond instantly - old content stays visible while new route loads
 
 ##### RouteLoadingFallback Improvements
-
 - **Skeleton-based fallback**: Shows page header, filter bar, and spinner immediately
 - **No fade delay**: Removed transition delay for instant visibility
 
 ##### SyncStatusIndicator Redesign
-
 - **Professional "Status Pill" design**: Replaced basic Chip with floating pill badge
 - **Theme-integrated colors**: Uses palette (`success.main`, `error.main`, etc.) instead of hardcoded hex values
 - **Enhanced popover**: Colored header, structured details, styled error box
@@ -647,7 +332,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 - **Dark mode compatible**: Automatically adapts to theme
 
 ##### Files Modified
-
 | File | Changes |
 |------|---------|
 | `peopleService.ts` | Removed DEBUG console.logs |
@@ -661,7 +345,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 | `vite.config.ts` | Raised chunkSizeWarningLimit to 1200 |
 
 ##### Build Output Improvements
-
 - No build warnings
 - ArticleFormatEditor: 1,136 KB (lazy loaded, only when needed)
 - SettingsDialog: 4.72 KB (was 1.2MB)
@@ -672,24 +355,20 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 #### Feature 5 In Progress - Section Loading Indicators
 
 ##### Dashboard Loading
-
 - **Created DashboardSkeleton component**: New skeleton UI displayed while dashboard performs initial sync
 - **Added initial loading check**: Dashboard shows skeleton when `syncState.status === 'syncing'` and no `lastSync` exists
 
 ##### Conference Page Loading
-
 - **Added isFetching state to useConferenceController**: Tracks when fetching from AIMS
 - **Added Skeleton cards**: Conference page shows 6 animated skeleton cards while `isFetching` is true
 - **Wrapped fetchFromSolum with try/finally**: Ensures `setIsFetching(false)` is always called
 
 ##### Spaces Page Loading  
-
 - **Added isFetching state to useSpaceController**: Tracks when fetching from AIMS
 - **Added Skeleton rows**: SpacesManagementView shows 5 animated skeleton table rows while `isFetching` is true
 - **Wrapped fetchFromSolum with try/finally**: Ensures loading state is properly managed
 
 ##### Files Modified
-
 | File | Changes |
 |------|---------|
 | `DashboardSkeleton.tsx` | NEW - Skeleton UI for dashboard loading |
@@ -700,7 +379,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 | `SpacesManagementView.tsx` | Added Skeleton import, skeleton rows while fetching |
 
 ##### Remaining Tasks
-
 - [ ] People table (if applicable - currently loads from local store)
 - [ ] Settings page (if applicable - loads locally)
 - [ ] Update DEEP_PLAN to mark completed when done
@@ -710,33 +388,28 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 #### Feature 4 Completed - Final Fixes
 
 ##### List Loading & Active List Display
-
 - **Fixed loadList not setting activeListName**: Rewrote `loadList()` in `usePeopleController.ts` to properly set `activeListName` and `activeListId`
 - **Removed dependency on list.people**: Controller no longer expects `people` array in list - reads from `_LIST_MEMBERSHIPS_` instead
 - **Added Chip display for active list**: Toolbar now shows active list name as a colored Chip with ListAltIcon
 - **Restored assignments from memberships**: When loading a list, each person's `assignedSpaceId` is restored from their `_LIST_MEMBERSHIPS_`
 
 ##### List Deletion with AIMS Sync
-
 - **Added AIMS sync on delete**: `deleteList()` now syncs affected people to AIMS after removing their `_LIST_MEMBERSHIPS_`
 - **Made deleteList async**: Now returns `Promise<void>` to support AIMS sync
 - **Added loading state**: Dialog shows loading indicator during delete+sync operation
 - **Error handling**: If AIMS sync fails, local deletion still succeeds (graceful degradation)
 
 ##### UI/UX Improvements
-
 - **Removed confusing autoApply checkbox**: Eliminated `autoApply` state/checkbox from load dialog - assignments now always apply on load
 - **Simplified confirmation message**: Changed to single clear message: "לטעון רשימה זו? הקצאות השמורות ברשימה יוחלו."
 - **Added row index column**: People table now shows `#` column with row numbers (1, 2, 3...) for easy counting
 
 ##### Storage Optimization
-
 - **Switched to IndexedDB**: Migrated from localStorage to IndexedDB via `idb-keyval` for larger storage capacity
 - **Removed people array from lists**: Lists no longer store full `people` array - uses `_LIST_MEMBERSHIPS_` on each person instead
 - **Made `people` optional in PeopleList type**: Type now reflects that people array is not stored
 
 ##### Files Modified in Session 2
-
 | File | Changes |
 |------|---------|
 | `usePeopleController.ts` | Rewrote `loadList()` and `deleteList()` with AIMS sync, proper activeListName handling |
@@ -748,29 +421,24 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 | `common.json` (en/he) | Simplified loadListConfirm, removed autoApply translations |
 
 ### Previous Updates (January 5, 2026) - Session 1
-
 - **Feature 4 Bug Fixes - People-List Feature**:
   
   #### Multi-List Architecture Implementation
-
   - Migrated from single `listName`/`listSpaceId` fields to multi-list `listMemberships` array
   - Each person can now belong to multiple lists with different assignments per list
   - `_LIST_MEMBERSHIPS_` field stores JSON array: `[{listName, spaceId}, ...]`
   
   #### AIMS Save/Load Fixes
-
   - **Fixed list save to AIMS**: Lists now properly save `_LIST_MEMBERSHIPS_` to AIMS
   - **Fixed buildArticleData**: Now includes `_LIST_MEMBERSHIPS_` serialization to preserve list data during space assignments
   - **Fixed buildArticleDataWithMetadata**: Full metadata including `_LIST_MEMBERSHIPS_`, `__PERSON_UUID__`, `__VIRTUAL_SPACE__`
   
   #### List Management Dialog Fixes
-
   - **Fixed lists not appearing in dialog**: `savePeopleList()` now properly adds lists to `peopleLists` array via `addPeopleList()`
   - **Added extractListsFromPeople()**: Extracts unique list names from people's `listMemberships` and populates `peopleLists`
   - **Dialog auto-extracts lists**: When dialog opens with empty `peopleLists`, automatically calls `extractListsFromPeople()`
   
   #### Pending Changes & Save Button Fixes
-
   - **Added pendingChanges to store**: `pendingChanges: boolean` in peopleStore tracks unsaved list changes
   - **Added markPendingChanges()**: Sets `pendingChanges = true` when active list exists
   - **Added clearPendingChanges()**: Clears pending changes flag after save
@@ -778,18 +446,15 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
   - **Fixed Save button state**: "Save List Changes" button now properly enables when assigning/unassigning spaces
   
   #### List Load State Restoration
-
   - **Fixed loadList()**: Now restores people's `assignedSpaceId` to their saved state from `listMemberships`
   - **Discard unsaved changes**: When loading a list, unsaved space assignments are reverted to the saved state
   - **AutoApply option**: When `autoApply=true`, assignments are posted to AIMS after load
   
   #### Code Quality Fixes
-
   - **Fixed syntax error**: Removed async `await` inside non-async `for` loop in SolumSyncAdapter
   - **Added debug logging**: Extensive console logs for troubleshooting AIMS sync issues
   
   #### Files Modified
-
   | File | Changes |
   |------|---------|
   | `peopleStore.ts` | Added `pendingChanges`, `markPendingChanges()`, `clearPendingChanges()`, `extractListsFromPeople()` |
@@ -800,7 +465,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
   | `SolumSyncAdapter.ts` | Fixed syntax error, improved debug logging |
 
 ### Previous Updates (Dec 31, 2025)
-
 - **Feature 4 Implementation**: People-List feature with AIMS integration
   - Added `listName`, `listSpaceId` fields to Person type for AIMS list persistence
   - Enhanced `PeopleList` type with `storageName` and `isFromAIMS` fields
@@ -825,7 +489,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 ## Feature 5 Summary - Section Loading Indicators (Completed)
 
 ### Key Accomplishments
-
 - ✅ Dashboard skeleton while initial AIMS sync
 - ✅ Conference page skeleton cards while fetching from AIMS
 - ✅ Spaces page skeleton rows while fetching from AIMS
@@ -841,7 +504,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 ## Feature 4 Summary - People-List Feature (Completed)
 
 ### Key Accomplishments
-
 - ✅ Multi-list architecture: People can belong to multiple lists with different space assignments per list
 - ✅ `_LIST_MEMBERSHIPS_` stored in AIMS for cross-device persistence
 - ✅ Lists persist to IndexedDB for offline/local access
@@ -865,7 +527,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 | 3.6 solumService.ts grouping | ✅ Completed | Split into 4 focused service modules |
 
 **Files Created (3.1):**
-
 - `src/features/people/application/hooks/usePeopleCSV.ts` - CSV loading operations
 - `src/features/people/application/hooks/usePeopleAssignment.ts` - Space assignment logic  
 - `src/features/people/application/hooks/usePeopleAIMS.ts` - AIMS sync operations
@@ -873,7 +534,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 - `src/features/people/application/hooks/index.ts` - Barrel exports
 
 **Files Created (3.2):**
-
 - `src/features/people/presentation/components/PeopleToolbar.tsx` - Header section with title and actions
 - `src/features/people/presentation/components/PeopleStatsPanel.tsx` - Space allocation stats and progress
 - `src/features/people/presentation/components/PeopleFiltersBar.tsx` - Search and filter controls
@@ -885,7 +545,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 - `src/features/people/presentation/components/index.ts` - Barrel exports
 
 **Files Created (3.3):**
-
 - `src/features/settings/presentation/solum/SolumApiConfigSection.tsx` - API cluster and base URL settings
 - `src/features/settings/presentation/solum/SolumCredentialsSection.tsx` - Authentication and connect/disconnect
 - `src/features/settings/presentation/solum/SolumSyncSettingsSection.tsx` - Sync configuration settings
@@ -894,7 +553,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 - `src/features/settings/presentation/solum/index.ts` - Barrel exports
 
 **Files Created (3.4):**
-
 - `src/features/dashboard/components/DashboardStatusChip.tsx` - Reusable status chip component
 - `src/features/dashboard/components/DashboardSpacesCard.tsx` - Spaces overview card
 - `src/features/dashboard/components/DashboardConferenceCard.tsx` - Conference rooms overview card
@@ -903,13 +561,11 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 - `src/features/dashboard/components/index.ts` - Barrel exports
 
 **Files Created (3.5):**
-
 - `src/features/conference/application/hooks/useConferenceAIMS.ts` - AIMS push/fetch/delete operations
 - `src/features/conference/application/hooks/index.ts` - Barrel exports
 - `src/features/conference/application/utils/conferenceTransformers.ts` - Article transformation utilities
 
 **Files Created (3.6):**
-
 - `src/shared/infrastructure/services/solum/authService.ts` - Login, token refresh, URL building
 - `src/shared/infrastructure/services/solum/articlesService.ts` - Article CRUD operations
 - `src/shared/infrastructure/services/solum/labelsService.ts` - Label operations
@@ -926,7 +582,6 @@ To avoid horizontal scrolling on mobile, tables are converted to card-based layo
 | Test file updated | ✅ Completed | useConferenceController.test.ts fixed and aligned |
 
 **Key Changes Made:**
-
 - `useConferenceController.ts`: Dynamic article building from mappingInfo (no hardcoded fields)
 - `SolumMappingSelectors.tsx`: Added Article Name and NFC URL field selectors
 - `SolumSettingsTab.tsx`: Added onMappingInfoChange handler
@@ -951,35 +606,28 @@ This document provides a comprehensive implementation plan for the following fea
 ## 1. Conference Room NFC URL Fix
 
 ### Problem Statement
-
 The conference room feature does not save the NFC URL in the mapped info field when posting to AIMS. This should work similarly to the space posting functionality.
 
 ### Current Behavior Analysis
-
 - **useSpaceController.ts** (lines 137-138): Correctly maps nfcUrl from mappingInfo
-
   ```typescript
   if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) {
       aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
   }
   ```
-
 - **useConferenceController.ts**: Missing nfcUrl mapping in aimsArticle construction
 
 ### Root Cause
-
 The conference controller builds the AIMS article without checking for nfcUrl mapping from the globalFieldAssignments or mappingInfo configuration.
 
 ### Implementation Plan
 
 #### Phase 1.1: Add NFC URL Mapping to Conference Room Add (2h)
-
 **File:** `src/features/conference/application/useConferenceController.ts`
 
 **Changes Required:**
 
 1. After applying globalFieldAssignments, add nfcUrl to root aimsArticle object:
-
 ```typescript
 // Location: Around line 150 (after articleData construction, before aimsArticle creation)
 
@@ -1005,7 +653,6 @@ if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
 ```
 
 #### Phase 1.2: Add NFC URL Mapping to Conference Room Update (2h)
-
 **File:** `src/features/conference/application/useConferenceController.ts`
 
 **Changes Required:**
@@ -1013,13 +660,11 @@ if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
 1. Apply same nfcUrl mapping logic in the `updateConferenceRoom` function (around line 300)
 
 #### Phase 1.3: Testing (1h)
-
 - Create conference room with NFC URL in global fields
 - Verify AIMS receives nfcUrl at root level
 - Test update flow preserves nfcUrl
 
 ### Files to Modify
-
 | File | Changes |
 |------|---------|
 | `src/features/conference/application/useConferenceController.ts` | Add nfcUrl mapping in addConferenceRoom and updateConferenceRoom |
@@ -1029,25 +674,20 @@ if (mappingInfo?.nfcUrl && articleData[mappingInfo.nfcUrl]) {
 ## 2. Dashboard Assigned Labels Display Fix
 
 ### Problem Statement
-
 Assigned labels from SoluM sync are received but the dashboard is not showing them correctly.
 
 ### Current Behavior Analysis
-
 - **DashboardPage.tsx** (line 90): Uses `settings.solumConfig?.storeSummary?.labelCount || 0`
 - **useSettingsController.ts** (line 281-302): Fetches storeSummary on connect only
 - **Problem**: The labelCount is fetched only on initial connection, not updated during sync
 
 ### Root Cause
-
 The `storeSummary.labelCount` is only populated when initially connecting to SoluM. During regular sync operations, this value is not refreshed.
 
 ### Implementation Plan ✅ COMPLETED
 
 #### Phase 2.1: Capture assignedLabel from AIMS API Response ✅
-
 The AIMS API returns `assignedLabel` array in article fetch response:
-
 ```json
 {
   "articleList": [{
@@ -1071,7 +711,6 @@ The AIMS API returns `assignedLabel` array in article fetch response:
    - `src/features/dashboard/DashboardPage.tsx` - Sum all `assignedLabels.length` from spaces and conference rooms
 
 #### Phase 2.2: Dashboard Label Count Calculation ✅
-
 ```typescript
 const assignedLabelsCount = useMemo(() => {
     const spaceLabelsCount = spaceController.spaces.reduce(
@@ -1085,7 +724,6 @@ const assignedLabelsCount = useMemo(() => {
 ```
 
 ### Files Modified
-
 | File | Changes |
 |------|---------|
 | `src/shared/domain/types.ts` | Added `assignedLabels?: string[]` to Space and ConferenceRoom |
@@ -1095,7 +733,6 @@ const assignedLabelsCount = useMemo(() => {
 | `src/features/dashboard/DashboardPage.tsx` | Count from assignedLabels arrays |
 
 ### Benefits
-
 - Accurate label count from actual AIMS data
 - Support for multiple labels per article
 - Can display label IDs in tables
@@ -1106,7 +743,6 @@ const assignedLabelsCount = useMemo(() => {
 ## 3. App Manual Feature
 
 ### Requirements
-
 - In-app manual accessible via icon button next to settings
 - Available in both languages (English and Hebrew)
 - Tab-based navigation for each mode
@@ -1138,7 +774,6 @@ src/features/manual/
 #### Phase 3.1: Create Manual Feature Structure (2h)
 
 **File:** `src/features/manual/domain/types.ts`
-
 ```typescript
 export interface ManualSection {
     id: string;
@@ -1159,7 +794,6 @@ export interface ManualTab {
 **File:** `src/features/manual/presentation/ManualDialog.tsx`
 
 Features:
-
 - Fullscreen or large dialog (like SettingsDialog)
 - Tabs: Getting Started, Spaces Mode, People Mode, Conference, Sync, Settings
 - RTL support for Hebrew
@@ -1192,13 +826,11 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
 
 #### Phase 3.3: Add Translations (3h)
 
-**Files:**
-
+**Files:** 
 - `src/locales/en/translation.json`
 - `src/locales/he/translation.json`
 
 Add comprehensive manual content in both languages:
-
 ```json
 {
   "manual": {
@@ -1224,7 +856,6 @@ Add comprehensive manual content in both languages:
 **File:** `src/shared/presentation/layouts/AppHeader.tsx`
 
 Add HelpIcon button between LanguageSwitcher and Settings:
-
 ```typescript
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
@@ -1239,7 +870,6 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 **File:** `src/shared/presentation/layouts/MainLayout.tsx`
 
 Add state and handler for manual dialog:
-
 ```typescript
 const [manualOpen, setManualOpen] = useState(false);
 
@@ -1251,7 +881,6 @@ const [manualOpen, setManualOpen] = useState(false);
 ```
 
 ### Files to Create
-
 | File | Purpose |
 |------|---------|
 | `src/features/manual/domain/types.ts` | Type definitions |
@@ -1260,7 +889,6 @@ const [manualOpen, setManualOpen] = useState(false);
 | `src/features/manual/index.ts` | Exports |
 
 ### Files to Modify
-
 | File | Changes |
 |------|---------|
 | `src/shared/presentation/layouts/AppHeader.tsx` | Add manual button |
@@ -1292,7 +920,6 @@ const [manualOpen, setManualOpen] = useState(false);
 #### 4.1: usePeopleController.ts → Split into Focused Hooks (6h)
 
 **New Structure:**
-
 ```
 src/features/people/application/
 ├── usePeopleController.ts         # Main orchestrator (reduced)
@@ -1307,7 +934,6 @@ src/features/people/application/
 ```
 
 **Splitting Strategy:**
-
 1. Extract CSV upload logic → `usePeopleCSV.ts` (~200 lines)
 2. Extract single/bulk assignment → `usePeopleAssignment.ts` (~300 lines)
 3. Extract AIMS operations → `usePeopleAIMS.ts` (~250 lines)
@@ -1317,7 +943,6 @@ src/features/people/application/
 #### 4.2: PeopleManagerView.tsx → Extract Components (4h)
 
 **New Structure:**
-
 ```
 src/features/people/presentation/
 ├── PeopleManagerView.tsx          # Main view (reduced)
@@ -1334,7 +959,6 @@ src/features/people/presentation/
 #### 4.3: SolumSettingsTab.tsx → Extract Field Components (3h)
 
 **New Structure:**
-
 ```
 src/features/settings/presentation/
 ├── SolumSettingsTab.tsx           # Main tab (reduced)
@@ -1348,7 +972,6 @@ src/features/settings/presentation/
 #### 4.4: DashboardPage.tsx → Extract Card Components (3h)
 
 **New Structure:**
-
 ```
 src/features/dashboard/
 ├── DashboardPage.tsx              # Main page (reduced)
@@ -1363,7 +986,6 @@ src/features/dashboard/
 #### 4.5: useConferenceController.ts → Extract AIMS Logic (4h)
 
 **New Structure:**
-
 ```
 src/features/conference/application/
 ├── useConferenceController.ts     # Main controller (reduced)
@@ -1377,7 +999,6 @@ src/features/conference/application/
 #### 4.6: solumService.ts → Group by Endpoint (3h)
 
 **New Structure:**
-
 ```
 src/shared/infrastructure/services/
 ├── solumService.ts                # Re-export & types
@@ -1410,11 +1031,11 @@ src/shared/infrastructure/services/
 
 1. **Article Format Integration**: When enabling People mode, update article format with 2 hidden fields (`list` and `space`)
 2. **List Persistence**: Lists stored in AIMS via hidden fields, synced cross-platform
-3. **Assignment Behavior**:
+3. **Assignment Behavior**: 
    - Loading a list does NOT auto-assign spaces
    - Separate "Apply Assignments" button required
    - Building and saving a list preserves space assignments
-4. **List Naming**:
+4. **List Naming**: 
    - Letters, numbers, spaces only
    - Max 20 characters
    - Spaces saved as underscores in AIMS
@@ -1741,7 +1362,6 @@ export function PeopleListPanel() {
 **Total: 27h**
 
 ### Files to Create
-
 | File | Purpose |
 |------|---------|
 | `src/features/people/application/hooks/usePeopleListManager.ts` | List management logic |
@@ -1749,7 +1369,6 @@ export function PeopleListPanel() {
 | `src/features/people/presentation/ListSelectionDialog.tsx` | List selection dialog |
 
 ### Files to Modify
-
 | File | Changes |
 |------|---------|
 | `src/features/people/domain/types.ts` | Add list-related types |
@@ -1763,11 +1382,9 @@ export function PeopleListPanel() {
 ## 6. Section Loading Indicators
 
 ### Problem Statement
-
 Sections like People Manager can take significant time to load (fetching from AIMS, parsing CSV, etc.). Users may think the app is stuck when no visual feedback is provided during these loading operations.
 
 ### Requirements
-
 - Display loading spinner/skeleton when sections are loading data
 - Provide feedback during AIMS sync operations
 - Show progress for bulk operations where applicable
@@ -1778,7 +1395,6 @@ Sections like People Manager can take significant time to load (fetching from AI
 #### 6.1: Create Loading Component Library (2h)
 
 **Files to Create:**
-
 ```
 src/shared/presentation/components/
 ├── LoadingSpinner.tsx        # Centered spinning indicator
@@ -1788,7 +1404,6 @@ src/shared/presentation/components/
 ```
 
 **LoadingSpinner.tsx:**
-
 ```typescript
 import { CircularProgress, Box } from '@mui/material';
 
@@ -1808,7 +1423,6 @@ export function LoadingSpinner({ size = 40, message }: LoadingSpinnerProps) {
 ```
 
 **LoadingOverlay.tsx:**
-
 ```typescript
 import { Box, CircularProgress, Typography, Fade } from '@mui/material';
 
@@ -1848,14 +1462,12 @@ export function LoadingOverlay({ loading, message, children }: LoadingOverlayPro
 #### 6.2: Add Loading States to Controllers (3h)
 
 **Files to Modify:**
-
 - `src/features/people/application/usePeopleController.ts` - Add `isLoading` state
 - `src/features/conference/application/useConferenceController.ts` - Add `isLoading` state
 - `src/features/sync/application/useSyncController.ts` - Add `isSyncing` state
 - `src/features/settings/application/useSettingsController.ts` - Add `isConnecting` state
 
 **Example (usePeopleController.ts):**
-
 ```typescript
 const [isLoading, setIsLoading] = useState(false);
 const [loadingMessage, setLoadingMessage] = useState<string | undefined>();
@@ -1881,14 +1493,12 @@ return {
 #### 6.3: Integrate Loading UI in Views (3h)
 
 **Files to Modify:**
-
 - `src/features/people/presentation/PeopleManagerView.tsx`
 - `src/features/conference/presentation/ConferencePage.tsx`
 - `src/features/spaces/presentation/SpacesPage.tsx`
 - `src/features/dashboard/DashboardPage.tsx`
 
 **Example (PeopleManagerView.tsx):**
-
 ```typescript
 import { LoadingOverlay } from '@shared/presentation/components';
 
@@ -1906,7 +1516,6 @@ export function PeopleManagerView() {
 #### 6.4: Add Translations (1h)
 
 **Files to Modify:**
-
 - `src/locales/en/translation.json`
 - `src/locales/he/translation.json`
 
@@ -1944,9 +1553,7 @@ export function PeopleManagerView() {
 ## 7. Logger Implementation - App-Wide Enhancement
 
 ### Current State
-
 The logger already exists at `src/shared/infrastructure/services/logger.ts` with:
-
 - In-memory storage (max 1000 logs)
 - Log levels: debug, info, warn, error
 - Integration with logsStore for persistence
@@ -2025,7 +1632,6 @@ Add logging to key operations:
 | Settings | Changes to critical settings |
 
 Example additions:
-
 ```typescript
 // In useSettingsController.ts
 logger.info('Settings', 'Settings updated', { 
@@ -2072,14 +1678,12 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 ## Implementation Schedule
 
 ### Week 1: Critical Fixes
-
 | Day | Task | Hours |
 |-----|------|-------|
 | 1 | Conference NFC URL fix | 5h |
 | 2 | Dashboard labels fix | 5h |
 
 ### Week 2: Manual Feature
-
 | Day | Task | Hours |
 |-----|------|-------|
 | 1-2 | Manual structure & components | 6h |
@@ -2088,7 +1692,6 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | 5 | Integration & testing | 3h |
 
 ### Week 3-4: File Optimization
-
 | Days | Task | Hours |
 |------|------|-------|
 | 1-2 | usePeopleController splitting | 6h |
@@ -2100,7 +1703,6 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | 8 | Testing all changes | 4h |
 
 ### Week 5-6: People-List Feature
-
 | Days | Task | Hours |
 |------|------|-------|
 | 1 | Domain types & validation | 2h |
@@ -2113,7 +1715,6 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | 10 | Testing | 4h |
 
 ### Week 7: Logger Enhancement
-
 | Day | Task | Hours |
 |-----|------|-------|
 | 1 | Categories & performance logging | 4h |
@@ -2132,9 +1733,7 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | File Optimization | 27h |
 | People-List Feature | 27h |
 | Logger Enhancement | 12h |
-| Data Cleanup | 4h |
-| SFTP Mode | 37h |
-| **Total** | **132h** |
+| **Total** | **91h** |
 
 ---
 
@@ -2146,8 +1745,6 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 | People-List feature complexity | High | Thorough testing, phased rollout |
 | Translation coverage | Medium | Review with native speakers |
 | AIMS API changes | Medium | Version check, error handling |
-| SFTP API availability | Medium | Retry logic, offline mode fallback |
-| Mode switch data loss | High | Confirmation dialog, clear user messaging |
 
 ---
 
@@ -2159,880 +1756,1410 @@ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 4. ✅ No file exceeds 500 lines (except tests)
 5. ✅ People lists sync cross-platform via AIMS
 6. ✅ Comprehensive logging with export capability
-7. ⬜ Data properly cleared on disconnect and mode switch
-8. ⬜ SFTP mode fully functional with CSV sync
 
 ---
 
-## Feature 9: Data Cleanup on Disconnect/Mode Switch
-
-### Problem Statement
-
-When disconnecting from a connection or switching between working modes (SFTP ↔ SoluM API), the application does NOT properly clean up data:
-
-- Spaces, People, Conference rooms remain in stores
-- Saved lists persist
-- When switching modes: old credentials and field mappings remain
-
-### Required Behavior
-
-| Action | Data to Clear | Settings to Clear |
-|--------|---------------|-------------------|
-| **Disconnect (same mode)** | Spaces, People, Conference rooms, Lists | ❌ Keep credentials |
-| **Switch to different mode** | All above + | ✅ Clear old mode credentials, field mappings |
-
-### Implementation Plan
-
-#### Phase 9.1: Add Store Clear Methods (2h)
-
-**Files to Modify:**
-
-| File | Changes |
-|------|---------|
-| `spacesStore.ts` | Add `clearAllData()` method |
-| `peopleStore.ts` | Add `clearAllData()` method |
-| `conferenceStore.ts` | Add `clearAllData()` method |
-
-```typescript
-// spacesStore.ts
-clearAllData: () => set({
-    spaces: [],
-    spacesLists: [],
-    activeListName: undefined,
-    activeListId: undefined
-}, false, 'clearAllData'),
-
-// peopleStore.ts
-clearAllData: () => set({
-    people: [],
-    peopleLists: [],
-    activeListName: undefined,
-    activeListId: undefined,
-    pendingChanges: false,
-    spaceAllocation: { total: 0, assigned: 0, unassigned: 0 }
-}, false, 'clearAllData'),
-
-// conferenceStore.ts
-clearAllData: () => set({
-    conferenceRooms: []
-}, false, 'clearAllData'),
-```
-
-#### Phase 9.2: Add Settings Clear Methods (1h)
-
-**File:** `settingsStore.ts`
-
-```typescript
-// Clear credentials for a specific mode
-clearModeCredentials: (mode: WorkingMode) => set((state) => ({
-    settings: {
-        ...state.settings,
-        ...(mode === 'SFTP' ? { sftpCredentials: undefined } : {}),
-        ...(mode === 'SOLUM_API' ? {
-            solumConfig: undefined,
-            solumMappingConfig: undefined
-        } : {})
-    }
-}), false, 'clearModeCredentials'),
-
-// Clear all field mappings
-clearFieldMappings: () => set((state) => ({
-    settings: {
-        ...state.settings,
-        solumMappingConfig: undefined
-    }
-}), false, 'clearFieldMappings'),
-```
-
-#### Phase 9.3: Disconnect Button Behavior (1h)
-
-**Files to Modify:**
-
-| File | Changes |
-|------|---------|
-| `SolumSettingsTab.tsx` | Call data cleanup on disconnect |
-| `SFTPSettingsTab.tsx` | Call data cleanup on disconnect |
-| `useSyncController.ts` | Expose `clearAllData()` helper |
-
-```typescript
-// In disconnect handler
-const handleDisconnect = async () => {
-    // Clear sync state
-    await adapter.disconnect();
-    
-    // Clear all data stores
-    useSpacesStore.getState().clearAllData();
-    usePeopleStore.getState().clearAllData();
-    useConferenceStore.getState().clearAllData();
-    
-    // Reset sync state
-    useSyncStore.getState().resetSyncState();
-};
-```
-
-#### Phase 9.4: Mode Switch Confirmation (1h)
-
-**File:** `SettingsDialog.tsx` or new `ModeSwitch` component
-
-```typescript
-const handleModeSwitch = async (newMode: WorkingMode) => {
-    const currentMode = syncStore.workingMode;
-    
-    if (currentMode !== newMode) {
-        // Show confirmation dialog
-        const confirmed = await showConfirmDialog({
-            title: t('settings.switchModeTitle'),
-            message: t('settings.switchModeWarning'),
-            confirmText: t('common.switch'),
-            cancelText: t('common.cancel')
-        });
-        
-        if (confirmed) {
-            // Clear ALL data
-            useSpacesStore.getState().clearAllData();
-            usePeopleStore.getState().clearAllData();
-            useConferenceStore.getState().clearAllData();
-            
-            // Clear OLD mode credentials and mappings
-            settingsStore.clearModeCredentials(currentMode);
-            
-            // Switch mode
-            syncStore.setWorkingMode(newMode);
-        }
-    }
-};
-```
-
-### Files Summary
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `spacesStore.ts` | Modify | Add `clearAllData()` |
-| `peopleStore.ts` | Modify | Add `clearAllData()` |
-| `conferenceStore.ts` | Modify | Add `clearAllData()` |
-| `settingsStore.ts` | Modify | Add `clearModeCredentials()`, `clearFieldMappings()` |
-| `SolumSettingsTab.tsx` | Modify | Call cleanup on disconnect |
-| `SFTPSettingsTab.tsx` | Modify | Call cleanup on disconnect |
-| `SettingsDialog.tsx` | Modify | Mode switch confirmation |
-| `common.json` (en/he) | Modify | Add switch mode translations |
-
-### Estimated Time: 4h
-
----
-
-## Feature 10: SFTP Mode Implementation
+## 9. Project Rescan & Optimization
 
 ### Overview
+Comprehensive project audit to identify deprecated methods, oversized files, performance bottlenecks, and areas for optimization.
 
-Full implementation of SFTP working mode using the existing SFTP API at `https://solum.co.il/sftp`.
+### 9.1 Current State Analysis (January 13, 2026)
 
-### Architecture
+#### Identified Large Files (>300 lines)
+| File | Lines | Status | Action Required |
+|------|-------|--------|-----------------|
+| `peopleFeatures.test.ts` | 1,466 | ⚠️ Very Large | Split by feature area |
+| `usePeopleController.ts` | 1,046 | ⚠️ Very Large | Further splitting needed |
+| `PeopleManagerView.backup.tsx` | 764 | 🗑️ Backup | Delete after verification |
+| `usePeopleLists.ts` | 611 | ⚠️ Large | Consider splitting |
+| `peopleService.ts` | 602 | ⚠️ Large | Split by responsibility |
+| `LogsViewer.tsx` | 572 | ⚠️ Large | Extract components |
+| `SpacesManagementView.tsx` | 530 | ⚠️ Large | Extract components |
+| `SolumSettingsTab.backup.tsx` | 519 | 🗑️ Backup | Delete after verification |
+| `ConferencePage.tsx` | 499 | ⚠️ Moderate | Monitor |
+| `DashboardPage.backup.tsx` | 477 | 🗑️ Backup | Delete after verification |
+
+#### Identified Deprecated Code
+| File | Line | Description | Action |
+|------|------|-------------|--------|
+| `settings/domain/types.ts` | 55 | Legacy CSV Config | Remove after migration check |
+| `people/domain/types.ts` | 25-28 | Legacy `listName`, `listSpaceId` fields | Remove after verifying `listMemberships` usage |
+
+### 9.2 Cleanup Plan
+
+#### Phase 9.2.1: Backup File Cleanup (1h)
+- [ ] Verify current implementations work correctly
+- [ ] Delete `PeopleManagerView.backup.tsx`
+- [ ] Delete `SolumSettingsTab.backup.tsx`
+- [ ] Delete `DashboardPage.backup.tsx`
+- [ ] Ensure no imports reference backup files
+
+#### Phase 9.2.2: Deprecated Code Removal (3h)
+- [ ] Audit all usages of `listName` and `listSpaceId` in Person type
+- [ ] Verify `listMemberships` is used consistently throughout
+- [ ] Remove deprecated fields from `types.ts`
+- [ ] Update any remaining usages
+- [ ] Remove legacy CSV Config from settings types
+
+#### Phase 9.2.3: Large File Splitting (12h)
+
+**9.2.3a: Split peopleFeatures.test.ts (4h)**
+```
+src/features/people/__tests__/
+├── peopleCSV.test.ts           # CSV upload/parsing tests (~300 lines)
+├── peopleAssignment.test.ts    # Space assignment tests (~350 lines)
+├── peopleLists.test.ts         # List management tests (~400 lines)
+├── peopleAIMS.test.ts          # AIMS sync tests (~250 lines)
+└── peopleIntegration.test.ts   # End-to-end integration tests (~200 lines)
+```
+
+**9.2.3b: Further Split usePeopleController.ts (4h)**
+```
+src/features/people/application/
+├── usePeopleController.ts      # Main orchestrator (~300 lines)
+├── hooks/
+│   ├── usePeopleCSV.ts         # ✅ Already extracted
+│   ├── usePeopleAssignment.ts  # ✅ Already extracted
+│   ├── usePeopleAIMS.ts        # ✅ Already extracted
+│   ├── usePeopleLists.ts       # ⚠️ 611 lines - needs splitting
+│   ├── usePeopleListsCore.ts   # NEW - Core list operations
+│   └── usePeopleListsSync.ts   # NEW - AIMS sync for lists
+└── utils/
+    └── peopleTransformers.ts   # Data transformations
+```
+
+**9.2.3c: Split LogsViewer.tsx (2h)**
+```
+src/features/systemLogs/presentation/
+├── LogsViewer.tsx              # Main container (~150 lines)
+├── components/
+│   ├── LogsToolbar.tsx         # Search, filters, export (~120 lines)
+│   ├── LogsTable.tsx           # Virtualized log list (~150 lines)
+│   ├── LogItem.tsx             # Single log entry (~80 lines)
+│   └── LogsStats.tsx           # Statistics panel (~70 lines)
+```
+
+**9.2.3d: Split SpacesManagementView.tsx (2h)**
+```
+src/features/space/presentation/
+├── SpacesManagementView.tsx    # Main container (~200 lines)
+├── components/
+│   ├── SpacesToolbar.tsx       # Actions toolbar (~100 lines)
+│   ├── SpacesTable.tsx         # Table with rows (~150 lines)
+│   └── SpacesMobileCard.tsx    # Mobile card view (~80 lines)
+```
+
+### 9.3 Dependency Audit
+
+#### Phase 9.3.1: Check for Outdated Packages (2h)
+```bash
+# Commands to run
+npm outdated                    # List outdated packages
+npm audit                       # Security vulnerabilities
+npx depcheck                    # Unused dependencies
+```
+
+**Current Package Observations:**
+| Package | Current | Latest | Risk | Notes |
+|---------|---------|--------|------|-------|
+| react-beautiful-dnd | 13.1.1 | 13.1.1 | ⚠️ Deprecated | Consider @hello-pangea/dnd |
+| vanilla-jsoneditor | 3.11.0 | Check | ⚠️ Large (1.1MB) | Already lazy loaded |
+| @mui/material | 7.3.6 | Check | ✅ Recent | Monitor for v8 |
+
+#### Phase 9.3.2: Bundle Analysis (2h)
+- [ ] Run `npm run analyze` to generate bundle visualization
+- [ ] Identify largest chunks
+- [ ] Verify lazy loading is effective
+- [ ] Check for duplicate dependencies
+- [ ] Optimize imports (tree shaking)
+
+### 9.4 Performance Optimization
+
+#### Phase 9.4.1: React Rendering Optimization (4h)
+- [ ] Add `React.memo()` to frequently re-rendered components
+- [ ] Implement `useMemo()` for expensive computations
+- [ ] Add `useCallback()` for callback props
+- [ ] Review and optimize context usage
+- [ ] Implement virtualization where applicable
+
+**Target Components:**
+| Component | Issue | Solution |
+|-----------|-------|----------|
+| `PeopleTableRow` | Re-renders on parent update | Wrap in `React.memo()` |
+| `PeopleTable` | Full re-render on any change | Memoize filtered/sorted data |
+| `SpacesTable` | Similar issues | Apply same optimizations |
+| `LogItem` | Already virtualized | Verify memo usage |
+
+#### Phase 9.4.2: API Call Optimization (3h)
+- [ ] Implement request deduplication
+- [ ] Add request caching layer
+- [ ] Optimize batch operations
+- [ ] Implement retry with exponential backoff
+- [ ] Add request cancellation for unmounted components
+
+#### Phase 9.4.3: Storage Optimization (2h)
+- [ ] Review IndexedDB usage patterns
+- [ ] Implement data compression for large datasets
+- [ ] Add data cleanup for old/unused entries
+- [ ] Optimize sync state persistence
+
+### 9.5 Code Quality Improvements
+
+#### Phase 9.5.1: Type Safety Audit (3h)
+- [ ] Eliminate all `any` types where possible
+- [ ] Add strict null checks
+- [ ] Implement exhaustive type guards
+- [ ] Add branded types for IDs (ArticleId, SpaceId, etc.)
+
+#### Phase 9.5.2: Error Handling Audit (2h)
+- [ ] Ensure all async operations have proper error handling
+- [ ] Add user-friendly error messages
+- [ ] Implement error recovery mechanisms
+- [ ] Add error boundaries to all major sections
+
+#### Phase 9.5.3: Accessibility Audit (2h)
+- [ ] Run axe-core accessibility checks
+- [ ] Add proper ARIA labels
+- [ ] Ensure keyboard navigation works
+- [ ] Test with screen readers
+- [ ] Verify color contrast ratios
+
+### 9.6 Implementation Timeline
+
+| Phase | Description | Hours | Priority |
+|-------|-------------|-------|----------|
+| 9.2.1 | Backup file cleanup | 1h | High |
+| 9.2.2 | Deprecated code removal | 3h | High |
+| 9.2.3 | Large file splitting | 12h | Medium |
+| 9.3.1 | Package audit | 2h | Medium |
+| 9.3.2 | Bundle analysis | 2h | Medium |
+| 9.4.1 | React optimization | 4h | Medium |
+| 9.4.2 | API optimization | 3h | Low |
+| 9.4.3 | Storage optimization | 2h | Low |
+| 9.5.1 | Type safety | 3h | Medium |
+| 9.5.2 | Error handling | 2h | High |
+| 9.5.3 | Accessibility | 2h | Medium |
+
+**Total Estimated Time: 36h**
+
+### 9.7 Success Criteria
+- [ ] No file exceeds 400 lines (except test files)
+- [ ] No deprecated code remains
+- [ ] No backup files in codebase
+- [ ] Zero high-severity security vulnerabilities
+- [ ] Bundle size reduced by 10%+
+- [ ] Lighthouse performance score > 90
+
+---
+
+## 10. Deep Testing System
+
+### Overview
+Comprehensive testing infrastructure covering all app modes, features, and edge cases with unit, integration, and E2E tests.
+
+### 10.1 Current Test Coverage Analysis
+
+#### Existing Test Files
+| File | Coverage Area | Lines | Status |
+|------|---------------|-------|--------|
+| `peopleFeatures.test.ts` | People feature | 1,466 | ⚠️ Needs splitting |
+| `useConferenceController.test.ts` | Conference controller | ~200 | ✅ Good |
+| `encryptionService.test.ts` | Encryption | ~100 | ✅ Good |
+| `csvService.test.ts` | CSV parsing | ~150 | ✅ Good |
+| `performanceMonitor.test.ts` | Performance | ~100 | ✅ Good |
+| `validation.test.ts` | Domain validation | ~100 | ✅ Good |
+| `dashboard.spec.ts` (E2E) | Dashboard | ~50 | ⚠️ Needs expansion |
+| `spaces.spec.ts` (E2E) | Spaces | ~100 | ⚠️ Needs expansion |
+
+### 10.2 Testing Architecture
+
+#### Test Pyramid Strategy
+```
+          ┌────────────────┐
+          │   E2E Tests    │ ~20% - Critical user journeys
+          │  (Playwright)  │
+          ├────────────────┤
+          │ Integration    │ ~30% - Feature interactions
+          │ Tests (Vitest) │
+          ├────────────────┤
+          │   Unit Tests   │ ~50% - Individual functions
+          │   (Vitest)     │
+          └────────────────┘
+```
+
+### 10.3 Test Directory Structure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     SFTP Working Mode                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌─────────────────┐    ┌──────────────────┐                   │
-│  │  SFTPSettings   │───▶│   sftpService    │                   │
-│  │   (Component)   │    │   (Singleton)    │                   │
-│  └─────────────────┘    └────────┬─────────┘                   │
-│                                  │                              │
-│  ┌─────────────────┐    ┌────────▼─────────┐                   │
-│  │  SFTPSyncAdapter│───▶│  sftpApiClient   │                   │
-│  │                 │    │                  │                   │
-│  └─────────────────┘    └────────┬─────────┘                   │
-│                                  │                              │
-│  ┌─────────────────┐    ┌────────▼─────────┐                   │
-│  │  csvService     │    │   encryption.ts  │                   │
-│  │  (parse/gen)    │    │  (AES-256-CBC)   │                   │
-│  └─────────────────┘    └────────┬─────────┘                   │
-│                                  │                              │
-│                         ┌────────▼─────────┐                   │
-│                         │   SFTP API       │                   │
-│                         │ solum.co.il/sftp │                   │
-│                         └──────────────────┘                   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+src/
+├── test/
+│   ├── setup.ts                    # Global test setup
+│   ├── mockData.ts                 # Shared mock data
+│   ├── testUtils.tsx               # Custom render, providers
+│   └── mocks/
+│       ├── handlers.ts             # MSW API handlers
+│       ├── solumApi.ts             # SoluM API mocks
+│       └── capacitorMocks.ts       # Capacitor plugin mocks
+│
+├── features/
+│   ├── people/__tests__/
+│   │   ├── unit/
+│   │   │   ├── peopleService.test.ts
+│   │   │   ├── peopleStore.test.ts
+│   │   │   └── peopleValidation.test.ts
+│   │   ├── integration/
+│   │   │   ├── peopleAssignment.test.ts
+│   │   │   ├── peopleLists.test.ts
+│   │   │   └── peopleAIMS.test.ts
+│   │   └── components/
+│   │       ├── PeopleTable.test.tsx
+│   │       ├── PeopleFiltersBar.test.tsx
+│   │       └── PeopleToolbar.test.tsx
+│   │
+│   ├── spaces/__tests__/
+│   │   ├── unit/
+│   │   │   ├── spaceService.test.ts
+│   │   │   └── spaceStore.test.ts
+│   │   ├── integration/
+│   │   │   └── spaceAIMS.test.ts
+│   │   └── components/
+│   │       └── SpacesManagementView.test.tsx
+│   │
+│   ├── conference/__tests__/
+│   │   ├── unit/
+│   │   │   └── conferenceService.test.ts
+│   │   ├── integration/
+│   │   │   └── conferenceAIMS.test.ts
+│   │   └── components/
+│   │       └── ConferencePage.test.tsx
+│   │
+│   ├── sync/__tests__/
+│   │   ├── unit/
+│   │   │   ├── SolumSyncAdapter.test.ts
+│   │   │   └── syncStore.test.ts
+│   │   └── integration/
+│   │       └── syncFlow.test.ts
+│   │
+│   ├── settings/__tests__/
+│   │   ├── unit/
+│   │   │   └── settingsStore.test.ts
+│   │   └── components/
+│   │       ├── SolumSettingsTab.test.tsx
+│   │       └── SecuritySettingsTab.test.tsx
+│   │
+│   └── dashboard/__tests__/
+│       └── components/
+│           └── DashboardPage.test.tsx
+│
+e2e/
+├── fixtures/
+│   ├── testData.ts                 # Test data generators
+│   └── pageObjects/
+│       ├── DashboardPage.ts
+│       ├── SpacesPage.ts
+│       ├── PeoplePage.ts
+│       ├── ConferencePage.ts
+│       └── SettingsDialog.ts
+├── specs/
+│   ├── dashboard.spec.ts
+│   ├── spaces/
+│   │   ├── spaces-crud.spec.ts
+│   │   ├── spaces-aims.spec.ts
+│   │   └── spaces-mobile.spec.ts
+│   ├── people/
+│   │   ├── people-csv.spec.ts
+│   │   ├── people-assignment.spec.ts
+│   │   ├── people-lists.spec.ts
+│   │   └── people-aims.spec.ts
+│   ├── conference/
+│   │   ├── conference-crud.spec.ts
+│   │   └── conference-aims.spec.ts
+│   ├── sync/
+│   │   └── sync-flow.spec.ts
+│   └── settings/
+│       ├── settings-connection.spec.ts
+│       └── settings-security.spec.ts
+└── playwright.config.ts
 ```
 
-### API Reference
+### 10.4 Unit Test Plan
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/sftp/fetch` | POST | Test connection (fetch directory tree) |
-| `/sftp/file` | GET | Download file |
-| `/sftp/file` | POST | Upload file |
-| `/sftp/file` | DELETE | Delete file |
-| `/sftp/users` | POST | Create user |
-| `/sftp/users` | GET | Get all users |
-| `/sftp/users` | DELETE | Delete user |
-| `/sftp/password` | POST | Reset password |
+#### 10.4.1 Domain Layer Tests (8h)
 
-**Base URL:** `https://solum.co.il/sftp`
-**Auth:** Bearer token (permanent)
-**Encryption:** AES-256-CBC for username, password, filename
-
-### Implementation Plan
-
-#### Phase 10.1: Encryption Service (2h)
-
-**File:** `src/shared/infrastructure/services/encryption.ts`
-
+**People Domain:**
 ```typescript
-import CryptoJS from 'crypto-js';
-
-const ENCRYPTION_KEY = 'gBfdx3Mkyi8IVAH6OQBcV4VtGRgf5XJV';
-const IV_LENGTH = 16;
-
-export function encrypt(text: string): string {
-    const iv = CryptoJS.lib.WordArray.random(IV_LENGTH);
-    const key = CryptoJS.enc.Utf8.parse(ENCRYPTION_KEY);
-    
-    const encrypted = CryptoJS.AES.encrypt(text, key, {
-        iv: iv,
-        padding: CryptoJS.pad.Pkcs7,
-        mode: CryptoJS.mode.CBC,
-    });
-    
-    const ivHex = iv.toString(CryptoJS.enc.Hex);
-    const encryptedText = encrypted.toString();
-    
-    return `${ivHex}:${encryptedText}`;
-}
-
-export function decrypt(text: string): string {
-    const textParts = text.split(':');
-    const iv = CryptoJS.enc.Hex.parse(textParts[0]);
-    const encryptedText = textParts[1];
-    const key = CryptoJS.enc.Utf8.parse(ENCRYPTION_KEY);
-    
-    const decrypted = CryptoJS.AES.decrypt(encryptedText, key, {
-        iv: iv,
-        padding: CryptoJS.pad.Pkcs7,
-        mode: CryptoJS.mode.CBC,
-    });
-    
-    return decrypted.toString(CryptoJS.enc.Utf8);
-}
+// src/features/people/__tests__/unit/peopleValidation.test.ts
+describe('Person Validation', () => {
+  describe('validateListName', () => {
+    it('should accept valid names with letters, numbers, spaces');
+    it('should reject names exceeding 20 characters');
+    it('should reject names with special characters');
+    it('should reject empty names');
+  });
+  
+  describe('toStorageName / toDisplayName', () => {
+    it('should convert spaces to underscores for storage');
+    it('should convert underscores to spaces for display');
+    it('should handle edge cases (empty, all spaces)');
+  });
+});
 ```
 
-#### Phase 10.2: SFTP API Client (4h)
-
-**File:** `src/shared/infrastructure/services/sftpApiClient.ts`
-
+**Spaces Domain:**
 ```typescript
-import axios from 'axios';
-import { encrypt } from './encryption';
-import { logger } from './logger';
+// src/features/space/__tests__/unit/spaceValidation.test.ts
+describe('Space Validation', () => {
+  it('should validate space ID format');
+  it('should validate required fields');
+  it('should handle optional fields');
+});
+```
 
-const API_BASE_URL = import.meta.env.DEV 
-    ? '/api' 
-    : 'https://solum.co.il/sftp';
-    
-const API_TOKEN = 'SFTP_APi_T0k3n_2025_c0mpl3x_S3cur3_P3rm4n3nt_K3y_X9zQ7mN5bR8wF2vH4pL';
+#### 10.4.2 Infrastructure Layer Tests (10h)
 
-const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Authorization': `Bearer ${API_TOKEN}`,
-    }
+**Services:**
+```typescript
+// src/shared/infrastructure/services/__tests__/
+describe('SolumService', () => {
+  describe('authService', () => {
+    it('should login and return token');
+    it('should refresh expired token');
+    it('should handle invalid credentials');
+  });
+  
+  describe('articlesService', () => {
+    it('should fetch articles with pagination');
+    it('should push articles in batches');
+    it('should handle rate limiting');
+  });
 });
 
-export interface SFTPCredentials {
-    username: string;
-    password: string;
-    remoteFileName: string;  // default: "esl.csv"
-    store: string;           // default: "01"
-}
-
-export async function testConnection(creds: SFTPCredentials): Promise<boolean> {
-    logger.startTimer('sftp-test-connection');
-    try {
-        const response = await apiClient.post('/sftp/fetch', {
-            username: encrypt(creds.username),
-            password: encrypt(creds.password)
-        });
-        logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test successful');
-        return response.status === 200;
-    } catch (error) {
-        logger.endTimer('sftp-test-connection', 'SFTP', 'Connection test failed', { error });
-        throw error;
-    }
-}
-
-export async function downloadFile(creds: SFTPCredentials): Promise<string> {
-    logger.startTimer('sftp-download');
-    try {
-        const response = await apiClient.get('/sftp/file', {
-            params: {
-                username: encrypt(creds.username),
-                password: encrypt(creds.password),
-                filename: encrypt(creds.remoteFileName)
-            }
-        });
-        logger.endTimer('sftp-download', 'SFTP', 'File downloaded', { 
-            size: response.data?.length 
-        });
-        return response.data;
-    } catch (error) {
-        logger.endTimer('sftp-download', 'SFTP', 'Download failed', { error });
-        throw error;
-    }
-}
-
-export async function uploadFile(creds: SFTPCredentials, content: string): Promise<void> {
-    logger.startTimer('sftp-upload');
-    try {
-        const formData = new FormData();
-        const blob = new Blob([content], { type: 'text/csv' });
-        formData.append('file', blob, creds.remoteFileName);
-        formData.append('username', encrypt(creds.username));
-        formData.append('password', encrypt(creds.password));
-        formData.append('filename', encrypt(creds.remoteFileName));
-        
-        await apiClient.post('/sftp/file', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        logger.endTimer('sftp-upload', 'SFTP', 'File uploaded');
-    } catch (error) {
-        logger.endTimer('sftp-upload', 'SFTP', 'Upload failed', { error });
-        throw error;
-    }
-}
-
-export async function deleteFile(creds: SFTPCredentials): Promise<void> {
-    await apiClient.delete('/sftp/file', {
-        params: {
-            username: encrypt(creds.username),
-            password: encrypt(creds.password),
-            filename: encrypt(creds.remoteFileName)
-        }
-    });
-}
+describe('Logger', () => {
+  it('should log with correct levels');
+  it('should track performance timers');
+  it('should export logs in JSON format');
+  it('should export logs in CSV format');
+  it('should respect max log limit');
+});
 ```
 
-#### Phase 10.3: Vite Proxy Configuration (1h)
+**Stores:**
+```typescript
+// src/features/people/infrastructure/__tests__/peopleStore.test.ts
+describe('PeopleStore', () => {
+  it('should add people to store');
+  it('should update person by ID');
+  it('should filter by assigned/unassigned');
+  it('should persist to IndexedDB');
+  it('should restore from IndexedDB');
+  it('should handle list memberships');
+});
+```
 
-**File:** `vite.config.ts`
+#### 10.4.3 Application Layer Tests (12h)
+
+**Hooks:**
+```typescript
+// src/features/people/application/hooks/__tests__/
+describe('usePeopleCSV', () => {
+  it('should parse CSV file correctly');
+  it('should handle CSV with headers');
+  it('should detect column types');
+  it('should report parsing errors');
+});
+
+describe('usePeopleAssignment', () => {
+  it('should assign person to space');
+  it('should unassign person from space');
+  it('should handle bulk assignment');
+  it('should update list memberships');
+});
+
+describe('usePeopleLists', () => {
+  it('should create new list');
+  it('should save list with people');
+  it('should load list and restore assignments');
+  it('should delete list and clean up memberships');
+  it('should sync list to AIMS');
+});
+```
+
+### 10.5 Integration Test Plan (16h)
+
+#### 10.5.1 Feature Integration Tests
+
+**People + AIMS Integration:**
+```typescript
+describe('People AIMS Integration', () => {
+  it('should fetch people from AIMS and populate store');
+  it('should push people updates to AIMS');
+  it('should handle AIMS connection errors gracefully');
+  it('should sync list memberships to AIMS');
+  it('should handle partial sync failures');
+});
+```
+
+**Spaces + Sync Integration:**
+```typescript
+describe('Spaces Sync Integration', () => {
+  it('should sync spaces with AIMS on connect');
+  it('should update local store after sync');
+  it('should handle sync conflicts');
+  it('should show sync status correctly');
+});
+```
+
+**Conference + AIMS Integration:**
+```typescript
+describe('Conference AIMS Integration', () => {
+  it('should fetch conference rooms from AIMS');
+  it('should push new conference room to AIMS');
+  it('should update conference room in AIMS');
+  it('should delete conference room from AIMS');
+  it('should toggle meeting status');
+});
+```
+
+#### 10.5.2 Cross-Feature Integration
 
 ```typescript
-server: {
-    proxy: {
-        '/api': {
-            target: 'https://solum.co.il/sftp',
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api/, ''),
-            secure: true
-        }
-    }
-}
+describe('Cross-Feature Integration', () => {
+  describe('Dashboard Data Aggregation', () => {
+    it('should show correct space count from spaces feature');
+    it('should show correct people count from people feature');
+    it('should show correct conference count from conference feature');
+    it('should show correct label count from all features');
+  });
+  
+  describe('Settings Impact', () => {
+    it('should update features when connection changes');
+    it('should update features when mode changes');
+    it('should persist and restore settings correctly');
+  });
+});
 ```
 
-#### Phase 10.4: CSV Service Enhancement (4h)
+### 10.6 E2E Test Plan (20h)
 
-**File:** `src/shared/infrastructure/services/csvService.ts`
+#### 10.6.1 Page Object Pattern
 
 ```typescript
-import Papa from 'papaparse';
-import type { Space, ConferenceRoom, CSVConfig } from '@shared/domain/types';
-
-export interface CSVConfig {
-    hasHeader: boolean;
-    delimiter: ',' | ';' | '\t';
-    columns: CSVColumnMapping[];
-    idColumn: string;
-}
-
-export interface CSVColumnMapping {
-    fieldName: string;     // Field name in app
-    csvColumn: number;     // Column index in CSV (0-based)
-    friendlyName: string;  // Display name
-    required: boolean;
-}
-
-export function parseCSV(content: string, config: CSVConfig): Space[] {
-    const parsed = Papa.parse(content, {
-        delimiter: config.delimiter,
-        header: config.hasHeader,
-        skipEmptyLines: true
-    });
-    
-    return parsed.data.map((row: any, index: number) => {
-        const data: Record<string, string> = {};
-        
-        config.columns.forEach(col => {
-            const value = config.hasHeader 
-                ? row[col.fieldName] 
-                : row[col.csvColumn];
-            data[col.fieldName] = value || '';
-        });
-        
-        return {
-            id: data[config.idColumn] || `row-${index}`,
-            data
-        };
-    });
-}
-
-export function generateCSV(spaces: Space[], config: CSVConfig): string {
-    const rows = spaces.map(space => {
-        const row: string[] = [];
-        config.columns.forEach(col => {
-            row[col.csvColumn] = space.data[col.fieldName] || '';
-        });
-        return row;
-    });
-    
-    if (config.hasHeader) {
-        const header = config.columns.map(col => col.fieldName);
-        rows.unshift(header);
-    }
-    
-    return Papa.unparse(rows, { delimiter: config.delimiter });
+// e2e/fixtures/pageObjects/PeoplePage.ts
+export class PeoplePage {
+  constructor(private page: Page) {}
+  
+  async goto() {
+    await this.page.goto('/people');
+  }
+  
+  async uploadCSV(filePath: string) {
+    await this.page.getByRole('button', { name: 'Upload CSV' }).click();
+    await this.page.setInputFiles('input[type="file"]', filePath);
+    await this.page.getByRole('button', { name: 'Upload' }).click();
+  }
+  
+  async assignPerson(personId: string, spaceId: string) {
+    // ...implementation
+  }
+  
+  async createList(name: string) {
+    // ...implementation
+  }
+  
+  async getPersonCount(): Promise<number> {
+    return this.page.locator('[data-testid="person-row"]').count();
+  }
 }
 ```
 
-#### Phase 10.5: SFTP Sync Adapter Completion (4h)
+#### 10.6.2 Test Scenarios by Mode
 
-**File:** `src/features/sync/infrastructure/SFTPSyncAdapter.ts`
+**Spaces Mode E2E:**
+```typescript
+describe('Spaces Mode', () => {
+  test('should create space with all fields', async ({ page }) => {});
+  test('should edit existing space', async ({ page }) => {});
+  test('should delete space with confirmation', async ({ page }) => {});
+  test('should sync space to AIMS', async ({ page }) => {});
+  test('should handle AIMS connection error', async ({ page }) => {});
+  test('should display assigned labels', async ({ page }) => {});
+  test('should work on mobile viewport', async ({ page }) => {});
+});
+```
 
-Complete implementation with:
+**People Mode E2E:**
+```typescript
+describe('People Mode', () => {
+  describe('CSV Operations', () => {
+    test('should upload CSV with valid data', async ({ page }) => {});
+    test('should show error for invalid CSV', async ({ page }) => {});
+    test('should detect CSV columns correctly', async ({ page }) => {});
+  });
+  
+  describe('Assignment', () => {
+    test('should assign single person to space', async ({ page }) => {});
+    test('should bulk assign selected people', async ({ page }) => {});
+    test('should unassign person from space', async ({ page }) => {});
+  });
+  
+  describe('Lists', () => {
+    test('should create new list', async ({ page }) => {});
+    test('should save current assignments to list', async ({ page }) => {});
+    test('should load list and apply assignments', async ({ page }) => {});
+    test('should delete list', async ({ page }) => {});
+    test('should sync list to AIMS', async ({ page }) => {});
+  });
+  
+  describe('AIMS Sync', () => {
+    test('should push assignments to AIMS', async ({ page }) => {});
+    test('should fetch assignments from AIMS', async ({ page }) => {});
+  });
+});
+```
 
-- Proper error handling
-- Retry logic with exponential backoff
-- Progress tracking
-- Logger integration
+**Conference Mode E2E:**
+```typescript
+describe('Conference Mode', () => {
+  test('should create conference room', async ({ page }) => {});
+  test('should edit conference room', async ({ page }) => {});
+  test('should delete conference room', async ({ page }) => {});
+  test('should toggle meeting status', async ({ page }) => {});
+  test('should push to AIMS', async ({ page }) => {});
+  test('should fetch from AIMS', async ({ page }) => {});
+});
+```
 
-#### Phase 10.6: SFTP Settings Tab Enhancement (6h)
+**Settings E2E:**
+```typescript
+describe('Settings', () => {
+  describe('Connection', () => {
+    test('should connect to SoluM with valid credentials', async ({ page }) => {});
+    test('should show error for invalid credentials', async ({ page }) => {});
+    test('should disconnect and clear session', async ({ page }) => {});
+  });
+  
+  describe('Security', () => {
+    test('should set and verify password', async ({ page }) => {});
+    test('should lock app after timeout', async ({ page }) => {});
+  });
+  
+  describe('Working Mode', () => {
+    test('should switch between modes', async ({ page }) => {});
+    test('should enable People Manager mode', async ({ page }) => {});
+  });
+});
+```
 
-**File:** `src/features/settings/presentation/SFTPSettingsTab.tsx`
+### 10.7 Test Utilities & Mocks
 
-Features:
-
-- Connection form (username, password, remote filename)
-- Test connection button with feedback
-- Connect/Disconnect toggle
-- CSV structure editor integration
-- Auto-sync toggle and interval selector (30s, 1min, 2min, 5min, 10min)
-- "Sync when idle" checkbox with explanation tooltip
-- Status display with countdown to next auto-sync
-
-#### Phase 10.7: CSV Structure Editor (4h)
-
-**File:** `src/features/configuration/presentation/CSVStructureEditor.tsx`
-
-Features:
-
-- Add/remove column mappings
-- Set column index for each field
-- Set ID column
-- Set delimiter
-- Toggle header row
-- Preview parsed data
-
-#### Phase 10.8: Sync Controller SFTP Integration (4h)
-
-**File:** `src/features/sync/application/useSyncController.ts`
-
-- Proper SFTP adapter initialization
-- Auto-sync support for SFTP mode
-- Status synced with UI
-
-**Periodic Auto-Sync Feature:**
-
-- When idle (no user interaction), automatically sync from CSV at configurable interval
-- Default interval: 30 seconds (minimum)
-- User-configurable: 30s, 1min, 2min, 5min, 10min options
-- Idle detection: no mouse/keyboard activity for 10 seconds
-- Sync skipped if user is actively editing
-- Visual indicator showing "Auto-sync in Xs" countdown
-- Manual sync button to force immediate sync
+#### 10.7.1 Custom Render with Providers
 
 ```typescript
-interface AutoSyncConfig {
-    enabled: boolean;
-    intervalSeconds: 30 | 60 | 120 | 300 | 600;
-    idleThresholdMs: 10000;
+// src/test/testUtils.tsx
+import { render, RenderOptions } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { I18nextProvider } from 'react-i18next';
+
+function AllProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <BrowserRouter>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider theme={theme}>
+          {children}
+        </ThemeProvider>
+      </I18nextProvider>
+    </BrowserRouter>
+  );
 }
 
-// Idle detection using activity listeners
-useEffect(() => {
-    let idleTimer: NodeJS.Timeout;
-    let syncInterval: NodeJS.Timeout;
-    
-    const resetIdleTimer = () => {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => {
-            // User is idle, start auto-sync interval
-            syncInterval = setInterval(syncFromCSV, config.intervalSeconds * 1000);
-        }, config.idleThresholdMs);
-    };
-    
-    window.addEventListener('mousemove', resetIdleTimer);
-    window.addEventListener('keydown', resetIdleTimer);
-    
-    return () => {
-        clearTimeout(idleTimer);
-        clearInterval(syncInterval);
-        window.removeEventListener('mousemove', resetIdleTimer);
-        window.removeEventListener('keydown', resetIdleTimer);
-    };
-}, [config]);
+export function renderWithProviders(
+  ui: React.ReactElement,
+  options?: RenderOptions
+) {
+  return render(ui, { wrapper: AllProviders, ...options });
+}
 ```
 
-**Settings stored in:** `settingsStore.ts` → `sftpAutoSyncConfig`
-
-#### Phase 10.9: Translations (2h)
-
-**Files:** `src/locales/en/common.json`, `src/locales/he/common.json`
-
-Add all SFTP-related translations:
-
-- Connection labels
-- Status messages
-- Error messages
-- CSV structure labels
-
-#### Phase 10.10: Spaces Management SFTP Support (3h)
-
-**Key Difference:** In SFTP mode, Spaces do NOT sync with AIMS. Instead, they are managed entirely via CSV file on the SFTP server.
-
-**Behavior in SFTP Mode:**
-
-- **Add Space:** Creates row in local store → triggers CSV regeneration → uploads to SFTP
-- **Edit Space:** Updates row in local store → triggers CSV regeneration → uploads to SFTP
-- **Delete Space:** Removes row from local store → triggers CSV regeneration → uploads to SFTP
-- **No label assignment:** Labels are not available in SFTP mode (no AIMS connection)
-- **Sync:** Downloads CSV → parses with field mapping → updates spacesStore
-
-**Files to Modify:**
-
-1. **`src/features/space/application/useSpaceController.ts`**
-   - Add working mode check at start of each operation
-   - Route add/edit/delete to SFTP sync adapter instead of AIMS API
-   - Skip label-related operations in SFTP mode
+#### 10.7.2 MSW API Handlers
 
 ```typescript
-const workingMode = useSettingsStore.getState().workingMode;
+// src/test/mocks/handlers.ts
+import { rest } from 'msw';
 
-if (workingMode === 'SFTP') {
-    // Update local store
-    spacesStore.addSpace(spaceData);
-    // Regenerate CSV and upload
-    await sftpSyncAdapter.uploadSpaces();
-} else {
-    // Existing SOLUM_API flow
-    await aimsApi.createSpace(spaceData);
-}
+export const handlers = [
+  rest.post('*/api/v2/login', (req, res, ctx) => {
+    return res(ctx.json({ access_token: 'mock-token', expires_in: 3600 }));
+  }),
+  
+  rest.get('*/api/v1/articles', (req, res, ctx) => {
+    return res(ctx.json({
+      articleList: [
+        { articleId: 'B100001', data: { name: 'Test Space' } }
+      ]
+    }));
+  }),
+  
+  // ...more handlers
+];
 ```
 
-1. **`src/features/space/presentation/SpacesManagementView.tsx`**
-   - Hide label assignment UI when in SFTP mode
-   - Show "SFTP Mode" indicator
-   - Disable real-time sync status (batch sync only)
+### 10.8 Coverage Requirements
 
-2. **`src/features/sync/infrastructure/SFTPSyncAdapter.ts`**
-   - Add `uploadSpaces()` method
-   - Add `downloadSpaces()` method
-   - Integrate with csvService for parsing/generation
+| Area | Target Coverage | Current | Gap |
+|------|-----------------|---------|-----|
+| Domain Layer | 95% | ~60% | +35% |
+| Infrastructure | 85% | ~40% | +45% |
+| Application Hooks | 90% | ~50% | +40% |
+| Components | 80% | ~30% | +50% |
+| E2E Critical Paths | 100% | ~40% | +60% |
 
-**CSV Structure for Spaces:**
+### 10.9 CI/CD Integration
 
-```csv
-id,name,location,floor,capacity,status
-SP001,Meeting Room A,Building 1,3,10,active
-SP002,Conference Hall,Building 2,1,50,active
+```yaml
+# .github/workflows/test.yml
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run test:coverage
+      - uses: codecov/codecov-action@v4
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run build
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
 ```
 
-#### Phase 10.11: Conference Management SFTP Support (3h)
+### 10.10 Implementation Timeline
 
-**Key Difference:** In SFTP mode, Conference rooms sync via CSV, not AIMS. NFC URL generation still works locally.
+| Phase | Description | Hours | Priority |
+|-------|-------------|-------|----------|
+| 10.4.1 | Domain layer tests | 8h | High |
+| 10.4.2 | Infrastructure tests | 10h | High |
+| 10.4.3 | Application hooks tests | 12h | High |
+| 10.5 | Integration tests | 16h | High |
+| 10.6 | E2E tests | 20h | Medium |
+| 10.7 | Test utilities & mocks | 4h | High |
+| 10.8 | Coverage configuration | 2h | Medium |
+| 10.9 | CI/CD setup | 2h | Medium |
 
-**Behavior in SFTP Mode:**
+**Total Estimated Time: 74h**
 
-- **Add Room:** Creates row in local store → triggers CSV regeneration → uploads to SFTP
-- **Edit Room:** Updates row in local store → triggers CSV regeneration → uploads to SFTP
-- **Delete Room:** Removes row from local store → triggers CSV regeneration → uploads to SFTP
-- **NFC URL:** Generated locally using room ID (no server dependency)
-- **Sync:** Downloads CSV → parses with field mapping → updates conferenceStore
-
-**Files to Modify:**
-
-1. **`src/features/conference/application/useConferenceController.ts`**
-   - Add working mode check at start of each operation
-   - Route add/edit/delete to SFTP sync adapter instead of AIMS API
-   - NFC URL generation remains unchanged (local operation)
-
-```typescript
-const workingMode = useSettingsStore.getState().workingMode;
-
-if (workingMode === 'SFTP') {
-    // Update local store
-    conferenceStore.addRoom(roomData);
-    // Regenerate CSV and upload
-    await sftpSyncAdapter.uploadConferenceRooms();
-} else {
-    // Existing SOLUM_API flow
-    await aimsApi.createConferenceRoom(roomData);
-}
-```
-
-1. **`src/features/conference/presentation/ConferencePage.tsx`**
-   - Show "SFTP Mode" indicator
-   - Adjust sync button behavior for batch sync
-
-2. **`src/features/sync/infrastructure/SFTPSyncAdapter.ts`**
-   - Add `uploadConferenceRooms()` method
-   - Add `downloadConferenceRooms()` method
-   - Support separate CSV file for conference rooms (configurable)
-
-**CSV Structure for Conference Rooms:**
-
-```csv
-room_id,room_name,building,floor,capacity,nfc_enabled
-CR001,Board Room,HQ,5,20,true
-CR002,Training Room,HQ,2,30,true
-```
-
-**Note:** Conference rooms may share the same CSV file as Spaces (configurable) or use a separate file based on user preference in SFTP settings.
-
-### Files Summary
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `encryption.ts` | Create | AES-256-CBC encryption |
-| `sftpApiClient.ts` | Create | SFTP API HTTP client |
-| `csvService.ts` | Modify | CSV parse/generate with config |
-| `SFTPSyncAdapter.ts` | Modify | Complete sync implementation |
-| `SFTPSettingsTab.tsx` | Modify | Full settings UI |
-| `CSVStructureEditor.tsx` | Modify | Column mapping UI |
-| `useSyncController.ts` | Modify | SFTP adapter support |
-| `useSpaceController.ts` | Modify | SFTP mode routing |
-| `SpacesManagementView.tsx` | Modify | SFTP mode UI adjustments |
-| `useConferenceController.ts` | Modify | SFTP mode routing |
-| `ConferencePage.tsx` | Modify | SFTP mode UI adjustments |
-| `vite.config.ts` | Modify | Add proxy for dev |
-| `common.json` (en/he) | Modify | SFTP translations |
-| Domain types | Modify | Add CSVConfig interface |
-
-### Data Flow
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                     SFTP Sync Flow                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  DOWNLOAD (Server → App):                                    │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
-│  │ SFTP API   │─▶│ CSV String │─▶│ parseCSV() │─▶ Stores    │
-│  │ GET /file  │  │            │  │            │             │
-│  └────────────┘  └────────────┘  └────────────┘             │
-│                                                              │
-│  UPLOAD (App → Server):                                      │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
-│  │  Stores    │─▶│generateCSV │─▶│ SFTP API   │             │
-│  │            │  │            │  │ POST /file │             │
-│  └────────────┘  └────────────┘  └────────────┘             │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Estimated Time: 37h
-
-| Phase | Description | Hours |
-|-------|-------------|-------|
-| 10.1 | Encryption service | 2h |
-| 10.2 | SFTP API client | 4h |
-| 10.3 | Vite proxy config | 1h |
-| 10.4 | CSV service enhancement | 4h |
-| 10.5 | SFTP sync adapter | 4h |
-| 10.6 | SFTP settings tab | 6h |
-| 10.7 | CSV structure editor | 4h |
-| 10.8 | Sync controller + auto-sync | 4h |
-| 10.9 | Translations | 2h |
-| 10.10 | Spaces Management SFTP Support | 3h |
-| 10.11 | Conference Management SFTP Support | 3h |
-| 10.12 | Enable SFTP Mode in UI | 1h |
-| 10.13 | Extended Testing | 4h |
-| **Total** | | **42h** |
+### 10.11 Success Criteria
+- [ ] All unit tests passing with >85% coverage
+- [ ] All integration tests passing
+- [ ] All critical E2E paths covered
+- [ ] CI/CD pipeline runs tests on every PR
+- [ ] Test execution time < 5 minutes for unit tests
+- [ ] Test execution time < 15 minutes for E2E tests
 
 ---
 
-### Phase 10.12: Enable SFTP Mode in UI (1h)
+## 11. Comprehensive Documentation
 
-**Goal:** Remove the force migration and enable SFTP mode selection in the UI.
+### Overview
+Multi-layered documentation system covering global app documentation, workflows, architecture (HLD/LLD), and feature-specific documentation.
 
-**Files to Modify:**
+### 11.1 Documentation Structure
 
-1. **`MainLayout.tsx`**: Remove the force migration effect
-2. **`SettingsDialog.tsx`**: Enable SFTP settings panel
-3. **`AppSettingsTab.tsx`**: Enable working mode toggle
-
-**Changes:**
-
-```typescript
-// Remove from MainLayout.tsx:
-useEffect(() => {
-    if (workingMode === 'SFTP') {
-        setWorkingMode('SOLUM_API');
-    }
-}, [workingMode, setWorkingMode]);
-
-// Enable in SettingsDialog.tsx:
-// Uncomment SFTP Panel
+```
+docs/
+├── README.md                           # Project overview & quick start
+├── ARCHITECTURE.md                     # High-level architecture overview
+├── CONTRIBUTING.md                     # Contribution guidelines
+├── CHANGELOG.md                        # Version history
+│
+├── global/
+│   ├── OVERVIEW.md                     # Full app overview
+│   ├── TECH_STACK.md                   # Technology choices & rationale
+│   ├── WORKFLOWS.md                    # User workflows & journeys
+│   ├── HIGH_LEVEL_DESIGN.md            # HLD document
+│   ├── LOW_LEVEL_DESIGN.md             # LLD document
+│   ├── DATA_FLOW.md                    # Data flow diagrams
+│   ├── API_INTEGRATION.md              # SoluM AIMS API integration
+│   └── SECURITY.md                     # Security considerations
+│
+├── features/
+│   ├── spaces/
+│   │   ├── README.md                   # Feature overview
+│   │   ├── WORKFLOWS.md                # Space management workflows
+│   │   ├── HLD.md                      # Feature high-level design
+│   │   ├── LLD.md                      # Feature low-level design
+│   │   └── API.md                      # API endpoints used
+│   │
+│   ├── people/
+│   │   ├── README.md                   # Feature overview
+│   │   ├── WORKFLOWS.md                # People management workflows
+│   │   ├── HLD.md                      # Feature high-level design
+│   │   ├── LLD.md                      # Feature low-level design
+│   │   ├── LISTS.md                    # List management documentation
+│   │   └── CSV_FORMAT.md               # CSV import format specification
+│   │
+│   ├── conference/
+│   │   ├── README.md                   # Feature overview
+│   │   ├── WORKFLOWS.md                # Conference room workflows
+│   │   ├── HLD.md                      # Feature high-level design
+│   │   └── LLD.md                      # Feature low-level design
+│   │
+│   ├── sync/
+│   │   ├── README.md                   # Sync feature overview
+│   │   ├── ARCHITECTURE.md             # Sync architecture
+│   │   └── ERROR_HANDLING.md           # Sync error handling
+│   │
+│   ├── settings/
+│   │   ├── README.md                   # Settings overview
+│   │   ├── CONFIGURATION.md            # Configuration options
+│   │   └── SECURITY.md                 # Security settings
+│   │
+│   └── manual/
+│       └── README.md                   # In-app manual structure
+│
+├── development/
+│   ├── SETUP.md                        # Development environment setup
+│   ├── CODING_STANDARDS.md             # Code style & conventions
+│   ├── TESTING.md                      # Testing guidelines
+│   ├── DEBUGGING.md                    # Debugging tips
+│   └── DEPLOYMENT.md                   # Deployment procedures
+│
+└── api/
+    ├── INTERNAL_API.md                 # Internal service APIs
+    └── EXTERNAL_API.md                 # SoluM AIMS API reference
 ```
 
----
+### 11.2 Global Documentation
 
-### Phase 10.13: SFTP Mode Extended Testing Plan (4h)
+#### 11.2.1 OVERVIEW.md Template (4h)
 
-**Goal:** Comprehensive testing of SFTP mode functionality across all features.
+```markdown
+# electisSpace - Complete Application Overview
 
-#### Test Categories
+## Introduction
+electisSpace is an ESL (Electronic Shelf Label) management system...
 
-##### 1. Connection Tests (30min)
+## Key Features
+1. **Spaces Management** - Create and manage labeled spaces
+2. **People Manager** - Assign people to spaces via CSV
+3. **Conference Rooms** - Manage meeting room labels
+4. **AIMS Integration** - Full SoluM AIMS API integration
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| C1 | Valid connection | Enter valid SFTP credentials → Click Test Connection | Success alert, green status chip |
-| C2 | Invalid credentials | Enter wrong password → Click Test Connection | Error alert with message |
-| C3 | Invalid host | Enter non-existent host → Click Test Connection | Connection timeout error |
-| C4 | Empty fields | Leave username empty → Click Test/Connect | Disabled button or validation error |
-| C5 | Connect then disconnect | Connect → Verify chip → Disconnect | Status changes, data cleared |
-| C6 | Reconnect after disconnect | Disconnect → Re-enter credentials → Connect | Successful reconnection |
+## Application Modes
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| Standard | Basic space management | General labeling |
+| People Manager | CSV-based people assignment | Large-scale deployments |
+| Conference | Meeting room management | Office environments |
 
-##### 2. CSV Download Tests (45min)
+## Platform Support
+- Web (React SPA)
+- Desktop (Electron)
+- Mobile (Capacitor Android)
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| D1 | Download valid CSV | Connect → Sync | Spaces appear in list |
-| D2 | Download with header | CSV has header row → Download | Fields mapped correctly |
-| D3 | Download without header | Configure no-header → Download | Uses column indices |
-| D4 | Download empty CSV | Empty file on server → Download | Empty spaces list, no error |
-| D5 | Download malformed CSV | Invalid CSV syntax → Download | Error message, previous data preserved |
-| D6 | Download missing file | Non-existent filename → Download | Clear error message |
-| D7 | Large file download | 1000+ rows → Download | Progress updates, successful completion |
-| D8 | Download with conference | CSV has conference rows → Download | Spaces and conference rooms parsed |
+## Technology Stack
+[See TECH_STACK.md for detailed rationale]
+```
 
-##### 3. CSV Upload Tests (45min)
+#### 11.2.2 HIGH_LEVEL_DESIGN.md Template (6h)
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| U1 | Upload spaces | Add/edit space → Sync | CSV updated on server |
-| U2 | Upload conference rooms | Add conference room → Sync | CSV includes conference data |
-| U3 | Upload empty list | Delete all spaces → Sync | Empty CSV (header only) uploaded |
-| U4 | Upload after edit | Edit space → Sync | Changes reflected in CSV |
-| U5 | Upload after delete | Delete space → Sync | Row removed from CSV |
-| U6 | Concurrent upload | Rapid add/edit → Sync | Last state uploaded correctly |
-| U7 | Upload failure recovery | Disconnect during upload → Reconnect | No data loss, can retry |
+```markdown
+# High-Level Design Document
 
-##### 4. CSV Structure Configuration Tests (30min)
+## 1. System Overview
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| S1 | Add column | Click Add Column → Configure → Save | Column appears in editor |
-| S2 | Remove column | Select column → Delete | Column removed, reindexed |
-| S3 | Reorder columns | Drag column to new position | Order updated, indices recalculated |
-| S4 | Change delimiter | Set to semicolon → Sync | CSV uses semicolon delimiter |
-| S5 | Toggle header row | Disable header → Sync | CSV generated without header |
-| S6 | Field type validation | Set type to number, enter text | Validation warning |
-| S7 | Required field missing | Make field required, CSV missing it | Parse warning logged |
+### 1.1 Purpose
+Provide a comprehensive ESL management solution...
 
-##### 5. Auto-Sync Tests (30min)
+### 1.2 Scope
+- Multi-platform support (Web, Desktop, Mobile)
+- SoluM AIMS API integration
+- Offline-first architecture
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| A1 | Enable auto-sync | Toggle on, set 30s → Wait | Sync triggers at interval |
-| A2 | Disable auto-sync | Toggle off → Wait | No sync after interval |
-| A3 | Change interval | Set to 1min → Verify | Interval changes |
-| A4 | Auto-sync during edit | Editing form → Auto-sync triggers | Sync delayed or skipped |
-| A5 | Auto-sync on disconnect | Disconnect → Wait interval | No sync attempts |
-| A6 | Auto-sync reconnect | Disconnect → Reconnect → Wait | Auto-sync resumes |
+## 2. Architecture Overview
 
-##### 6. Mode Switch Tests (30min)
+### 2.1 Architecture Diagram
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        WEB[Web Browser]
+        ELECTRON[Electron Desktop]
+        ANDROID[Capacitor Android]
+    end
+    
+    subgraph "Application Layer"
+        REACT[React Application]
+        ROUTER[React Router]
+        ZUSTAND[Zustand Stores]
+    end
+    
+    subgraph "Feature Layer"
+        SPACES[Spaces Feature]
+        PEOPLE[People Feature]
+        CONFERENCE[Conference Feature]
+        SYNC[Sync Feature]
+        SETTINGS[Settings Feature]
+    end
+    
+    subgraph "Infrastructure Layer"
+        SOLUM[SoluM AIMS API]
+        IDB[IndexedDB]
+        STORAGE[Local Storage]
+    end
+```
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| M1 | Switch SFTP → SoluM | Confirm switch dialog | SFTP credentials cleared, data cleared |
-| M2 | Switch SoluM → SFTP | Confirm switch dialog | SoluM credentials cleared, data cleared |
-| M3 | Cancel mode switch | Click Cancel in dialog | No changes, stays in current mode |
-| M4 | Switch with pending changes | Unsaved edits → Switch | Warning dialog, data cleared on confirm |
-| M5 | Settings preserved | Switch modes → Check app settings | Name, subtitle, space type preserved |
+### 2.2 Component Architecture
+[Domain-Driven Design layers explanation]
 
-##### 7. Error Handling & Recovery Tests (30min)
+### 2.3 Data Flow
+[Unidirectional data flow description]
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| E1 | Network timeout | Slow connection → Sync | Retry with backoff, eventual error |
-| E2 | Server 500 error | API returns error → Sync | Error displayed, retry option |
-| E3 | Encryption failure | Invalid encryption key → Connect | Graceful error handling |
-| E4 | Parse error recovery | Corrupt CSV → Sync → Fix CSV → Sync | Recovery after fix |
-| E5 | Token expiry | Invalid API token → Sync | Clear error message |
+## 3. Feature Architecture
 
-##### 8. UI State Tests (30min)
+### 3.1 Spaces Feature
+[High-level overview]
 
-| # | Test Case | Steps | Expected Result |
-|---|-----------|-------|-----------------|
-| UI1 | Status indicator | Connect/Disconnect | Color changes (green/gray) |
-| UI2 | Loading states | During sync | Spinner, disabled buttons |
-| UI3 | SFTP mode indicator | Enter SFTP mode | "SFTP Mode" visible in header/settings |
-| UI4 | Disabled label assignment | In SFTP mode → Try assign label | Option hidden or disabled |
-| UI5 | Responsive layout | Mobile view → SFTP settings | Proper layout, scrollable |
-| UI6 | RTL support | Switch to Hebrew → SFTP settings | Correct RTL layout |
+### 3.2 People Feature
+[High-level overview with list management]
 
-#### Test Environment Setup
+### 3.3 Conference Feature
+[High-level overview]
 
+## 4. External Integrations
+
+### 4.1 SoluM AIMS API
+- Authentication flow
+- Article management
+- Label operations
+
+## 5. Security Architecture
+- Credential encryption
+- Session management
+- Password protection
+
+## 6. Deployment Architecture
+- Web deployment
+- Electron distribution
+- Android APK
+```
+
+#### 11.2.3 LOW_LEVEL_DESIGN.md Template (8h)
+
+```markdown
+# Low-Level Design Document
+
+## 1. Module Structure
+
+### 1.1 Feature Module Pattern
+```
+feature/
+├── domain/          # Business logic, types
+├── application/     # Hooks, controllers
+├── infrastructure/  # Services, stores
+└── presentation/    # React components
+```
+
+## 2. Data Models
+
+### 2.1 Space Entity
+```typescript
+interface Space {
+  id: string;
+  data: Record<string, string>;
+  assignedLabels?: string[];
+  aimsSyncStatus?: SyncStatus;
+}
+```
+
+### 2.2 Person Entity
+[Full type definition with explanations]
+
+### 2.3 ConferenceRoom Entity
+[Full type definition with explanations]
+
+## 3. State Management
+
+### 3.1 Store Architecture
+```typescript
+// Zustand store pattern
+interface PeopleStore {
+  people: Person[];
+  peopleLists: PeopleList[];
+  activeListId: string | null;
+  
+  // Actions
+  addPerson: (person: Person) => void;
+  updatePerson: (id: string, updates: Partial<Person>) => void;
+  // ...
+}
+```
+
+## 4. API Layer
+
+### 4.1 Service Module Structure
+[Detailed service breakdown]
+
+### 4.2 Request/Response Types
+[API DTOs and transformations]
+
+## 5. Component Specifications
+
+### 5.1 PeopleTable Component
+- Props interface
+- State management
+- Event handlers
+- Rendering logic
+
+## 6. Algorithm Specifications
+
+### 6.1 CSV Parsing Algorithm
+[Step-by-step algorithm]
+
+### 6.2 Space Assignment Algorithm
+[Matching and assignment logic]
+
+### 6.3 List Sync Algorithm
+[AIMS synchronization flow]
+```
+
+#### 11.2.4 WORKFLOWS.md Template (4h)
+
+```markdown
+# User Workflows
+
+## 1. Initial Setup Workflow
+
+```mermaid
+flowchart TD
+    A[Open App] --> B[Settings Dialog]
+    B --> C[Enter API Credentials]
+    C --> D{Valid Credentials?}
+    D -->|Yes| E[Connect to AIMS]
+    D -->|No| F[Show Error]
+    E --> G[Fetch Store Data]
+    G --> H[Ready to Use]
+```
+
+## 2. Space Management Workflow
+
+### 2.1 Create Space
+1. Navigate to Spaces tab
+2. Click "Add Space"
+3. Fill in space details
+4. Save locally
+5. Push to AIMS (optional)
+
+### 2.2 Edit Space
+[Step-by-step workflow]
+
+## 3. People Assignment Workflow
+
+### 3.1 Upload CSV
+[Detailed workflow with screenshots]
+
+### 3.2 Assign to Spaces
+[Step-by-step with edge cases]
+
+### 3.3 List Management
+[Create, save, load, sync workflows]
+
+## 4. Conference Room Workflow
+[Complete workflow documentation]
+
+## 5. Sync Workflow
+[Manual and auto-sync documentation]
+```
+
+### 11.3 Feature Documentation
+
+#### 11.3.1 Feature Documentation Template
+
+Each feature folder follows this structure:
+
+**README.md** (2h per feature)
+```markdown
+# [Feature Name] Feature
+
+## Overview
+Brief description of the feature and its purpose.
+
+## User Stories
+- As a user, I want to...
+- As an admin, I want to...
+
+## Key Capabilities
+1. Capability 1
+2. Capability 2
+
+## Architecture
+[Brief architecture overview with diagram]
+
+## Files Structure
+```
+feature/
+├── domain/types.ts
+├── application/useController.ts
+├── infrastructure/service.ts
+└── presentation/View.tsx
+```
+
+## Dependencies
+- Other features this depends on
+- External libraries used
+
+## Configuration
+[Any configurable options]
+```
+
+**HLD.md** (3h per feature)
+```markdown
+# [Feature Name] - High-Level Design
+
+## 1. Feature Scope
+### 1.1 In Scope
+### 1.2 Out of Scope
+
+## 2. Architecture
+### 2.1 Component Diagram
+### 2.2 Interaction Flow
+
+## 3. Data Model
+### 3.1 Entity Definitions
+### 3.2 Relationships
+
+## 4. Integration Points
+### 4.1 AIMS API
+### 4.2 Other Features
+
+## 5. Error Handling Strategy
+
+## 6. Performance Considerations
+```
+
+**LLD.md** (4h per feature)
+```markdown
+# [Feature Name] - Low-Level Design
+
+## 1. Domain Layer
+### 1.1 Types
+### 1.2 Validation Functions
+
+## 2. Application Layer
+### 2.1 Hooks
+### 2.2 Controllers
+
+## 3. Infrastructure Layer
+### 3.1 Store Design
+### 3.2 Service Implementation
+
+## 4. Presentation Layer
+### 4.1 Component Tree
+### 4.2 Props Interfaces
+### 4.3 State Management
+
+## 5. Algorithm Details
+[Detailed algorithm specifications]
+
+## 6. Testing Strategy
+[Unit and integration test approach]
+```
+
+### 11.4 Development Documentation
+
+#### 11.4.1 SETUP.md (2h)
+
+```markdown
+# Development Environment Setup
+
+## Prerequisites
+- Node.js 20+
+- npm 10+
+- Git
+- VS Code (recommended)
+
+## Quick Start
 ```bash
-# 1. Start dev server
+git clone <repo-url>
+cd electisSpace
+npm install
 npm run dev
-
-# 2. Ensure SFTP proxy is running (or mock server)
-# The vite proxy forwards /sftp-api to production
-
-# 3. Prepare test CSV files on SFTP server:
-# - valid.csv (standard format)
-# - empty.csv (header only)
-# - large.csv (1000+ rows)
-# - malformed.csv (syntax errors)
-# - no-header.csv (no header row)
 ```
 
-#### Test Data Files
+## Environment Configuration
+[Environment variables and configuration]
 
-**valid.csv:**
+## IDE Setup
+[VS Code extensions and settings]
 
-```csv
-ID,NAME,RANK,TITLE
-001,John Doe,Major,Commander
-002,Jane Smith,Captain,Deputy
-003,Bob Wilson,Lieutenant,Officer
+## Troubleshooting
+[Common setup issues and solutions]
 ```
 
-**conference.csv:**
+#### 11.4.2 CODING_STANDARDS.md (2h)
 
-```csv
-ID,NAME,RANK,TITLE,MEETING,START,END
-001,Office A,Floor 1,Building A,,,
-002,Office B,Floor 2,Building A,,,
-C01,Board Room,Floor 3,Building A,Weekly Standup,09:00,10:00
-C02,Training Room,Floor 1,Building B,,,
+```markdown
+# Coding Standards
+
+## TypeScript Guidelines
+- Use strict mode
+- Avoid `any` types
+- Use interfaces over types for objects
+
+## React Guidelines
+- Functional components only
+- Hooks for state and side effects
+- Props destructuring
+
+## Naming Conventions
+| Element | Convention | Example |
+|---------|------------|---------|
+| Components | PascalCase | `PeopleTable` |
+| Hooks | camelCase with `use` | `usePeopleController` |
+| Services | camelCase | `peopleService` |
+| Types | PascalCase | `Person` |
+
+## File Structure
+[Standard file organization]
+
+## Import Order
+[Import grouping and ordering]
 ```
 
-#### Acceptance Criteria
+### 11.5 API Documentation
 
-- [ ] All connection tests pass (C1-C6)
-- [ ] All download tests pass (D1-D8)
-- [ ] All upload tests pass (U1-U7)
-- [ ] All structure tests pass (S1-S7)
-- [ ] All auto-sync tests pass (A1-A6)
-- [ ] All mode switch tests pass (M1-M5)
-- [ ] All error handling tests pass (E1-E5)
-- [ ] All UI state tests pass (UI1-UI6)
-- [ ] No TypeScript errors
-- [ ] No console errors during normal operation
-- [ ] Hebrew translations complete and correct
-- [ ] Mobile layout works correctly
+#### 11.5.1 INTERNAL_API.md (4h)
+
+```markdown
+# Internal API Documentation
+
+## Service Layer APIs
+
+### People Service
+
+#### `loadPeopleFromCSV(file: File): Promise<Person[]>`
+Parses a CSV file and returns an array of Person objects.
+
+**Parameters:**
+| Name | Type | Description |
+|------|------|-------------|
+| file | File | CSV file to parse |
+
+**Returns:**
+Promise<Person[]> - Array of parsed people
+
+**Throws:**
+- `CSVParseError` - If CSV is malformed
+
+**Example:**
+```typescript
+const people = await peopleService.loadPeopleFromCSV(file);
+```
+
+[Continue for all services...]
+```
+
+#### 11.5.2 EXTERNAL_API.md (3h)
+
+```markdown
+# SoluM AIMS API Integration
+
+## Authentication
+
+### Login
+```
+POST /api/v2/login
+Content-Type: application/json
+
+{
+  "username": "string",
+  "password": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "string",
+  "expires_in": 3600
+}
+```
+
+## Articles API
+
+### Fetch Articles
+[Detailed endpoint documentation]
+
+### Push Articles
+[Detailed endpoint documentation]
+
+## Labels API
+[Label management endpoints]
+
+## Error Codes
+| Code | Description | Resolution |
+|------|-------------|------------|
+| 401 | Unauthorized | Refresh token |
+| 404 | Not found | Check article ID |
+```
+
+### 11.6 Documentation Generation Tools
+
+#### 11.6.1 TypeDoc Setup
+```bash
+npm install --save-dev typedoc typedoc-plugin-markdown
+```
+
+```json
+// typedoc.json
+{
+  "entryPoints": ["src"],
+  "out": "docs/api-reference",
+  "plugin": ["typedoc-plugin-markdown"],
+  "excludePrivate": true
+}
+```
+
+#### 11.6.2 Automated Diagram Generation
+
+Using Mermaid for architecture diagrams:
+- Component diagrams
+- Sequence diagrams
+- Data flow diagrams
+- State machines
+
+### 11.7 Implementation Timeline
+
+| Phase | Description | Hours | Priority |
+|-------|-------------|-------|----------|
+| 11.2.1 | Global OVERVIEW.md | 4h | High |
+| 11.2.2 | HIGH_LEVEL_DESIGN.md | 6h | High |
+| 11.2.3 | LOW_LEVEL_DESIGN.md | 8h | High |
+| 11.2.4 | WORKFLOWS.md | 4h | Medium |
+| 11.3 | Feature docs (6 features × 9h) | 54h | Medium |
+| 11.4 | Development docs | 4h | High |
+| 11.5 | API documentation | 7h | Medium |
+| 11.6 | Documentation tooling | 3h | Low |
+
+**Total Estimated Time: 90h**
+
+### 11.8 Documentation Maintenance
+
+#### Review Cycle
+- Monthly review of documentation accuracy
+- Update docs with every feature change
+- Quarterly full documentation audit
+
+#### Documentation Standards
+- All code changes must include doc updates
+- PR template includes documentation checklist
+- Automated link checking
+
+### 11.9 Success Criteria
+- [ ] All major features documented at HLD and LLD level
+- [ ] All user workflows documented with diagrams
+- [ ] API documentation complete and accurate
+- [ ] Development setup documented and tested
+- [ ] TypeDoc API reference generated
+- [ ] All diagrams using Mermaid for easy updates
+
+---
+
+## Combined Implementation Schedule (Features 9-11)
+
+### Phase 1: Quick Wins (Week 1) - 8h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Backup file cleanup | 1h | 9 |
+| Deprecated code audit | 2h | 9 |
+| Development docs (SETUP, CODING_STANDARDS) | 4h | 11 |
+| Test utilities setup | 1h | 10 |
+
+### Phase 2: Documentation Foundation (Week 2) - 18h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Global OVERVIEW.md | 4h | 11 |
+| HIGH_LEVEL_DESIGN.md | 6h | 11 |
+| LOW_LEVEL_DESIGN.md | 8h | 11 |
+
+### Phase 3: Testing Infrastructure (Week 3) - 20h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Domain layer tests | 8h | 10 |
+| Infrastructure tests | 10h | 10 |
+| MSW handlers setup | 2h | 10 |
+
+### Phase 4: File Optimization (Week 4) - 14h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Split test files | 4h | 9 |
+| Split large hooks | 4h | 9 |
+| Split large components | 4h | 9 |
+| Bundle analysis | 2h | 9 |
+
+### Phase 5: Application Tests (Week 5) - 16h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Application hooks tests | 12h | 10 |
+| Integration tests (part 1) | 4h | 10 |
+
+### Phase 6: Feature Documentation (Week 6-7) - 36h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Spaces feature docs | 9h | 11 |
+| People feature docs | 9h | 11 |
+| Conference feature docs | 9h | 11 |
+| Sync/Settings docs | 9h | 11 |
+
+### Phase 7: E2E Tests (Week 8) - 20h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Page objects | 4h | 10 |
+| Spaces E2E | 4h | 10 |
+| People E2E | 8h | 10 |
+| Conference/Settings E2E | 4h | 10 |
+
+### Phase 8: Performance & Polish (Week 9) - 18h
+| Task | Hours | Feature |
+|------|-------|---------|
+| React rendering optimization | 4h | 9 |
+| API optimization | 3h | 9 |
+| Accessibility audit | 2h | 9 |
+| API documentation | 7h | 11 |
+| CI/CD test integration | 2h | 10 |
+
+### Phase 9: Finalization (Week 10) - 10h
+| Task | Hours | Feature |
+|------|-------|---------|
+| Coverage verification | 2h | 10 |
+| WORKFLOWS.md | 4h | 11 |
+| Final documentation review | 2h | 11 |
+| Documentation tooling | 2h | 11 |
+
+---
+
+## Total Effort Summary
+
+| Feature | Total Hours |
+|---------|-------------|
+| Feature 9: Project Rescan & Optimization | 36h |
+| Feature 10: Deep Testing System | 74h |
+| Feature 11: Comprehensive Documentation | 90h |
+| **Total** | **200h** |
 
 ---
 
@@ -3054,13 +3181,3 @@ App.tsx
         │   └── PeopleListPanel.tsx (NEW)
         └── ...
 ```
-
-## Appendix: SFTP API Reference
-
-See [SFTP_WORKING_MODE_DOCUMENTATION.md](./SFTP_WORKING_MODE_DOCUMENTATION.md) for complete API documentation including:
-
-- All endpoint specifications
-- Authentication details
-- Encryption specification
-- Error handling
-- Test commands
