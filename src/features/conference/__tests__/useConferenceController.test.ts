@@ -1,5 +1,47 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
+import { useConferenceController } from '../application/useConferenceController';
+import { useConferenceStore } from '../infrastructure/conferenceStore';
+
+// Mock the adapters
+vi.mock('@features/sync/infrastructure/SFTPSyncAdapter', () => ({
+    SFTPSyncAdapter: vi.fn().mockImplementation(() => ({
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        upload: vi.fn().mockResolvedValue(undefined),
+        updateCredentials: vi.fn(),
+        updateCSVConfig: vi.fn(),
+    })),
+}));
+
+// Mock solumService
+vi.mock('@shared/infrastructure/services/solumService', () => ({
+    pushArticles: vi.fn().mockResolvedValue(undefined),
+    putArticles: vi.fn().mockResolvedValue(undefined),
+    deleteArticle: vi.fn().mockResolvedValue(undefined),
+    fetchArticles: vi.fn().mockResolvedValue([]),
+    flipLabelPage: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock logger
+vi.mock('@shared/infrastructure/services/logger', () => ({
+    logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        startTimer: vi.fn(),
+        endTimer: vi.fn(),
+    },
+}));
+
+// Mock spaces store
+vi.mock('@features/space/infrastructure/spacesStore', () => ({
+    useSpacesStore: {
+        getState: () => ({ spaces: [] }),
+    },
+}));
 
 /**
  * Test the dynamic article building logic from mappingInfo
@@ -279,6 +321,342 @@ describe('useConferenceController - Dynamic Article Building', () => {
             expect(result.data).toBe(articleData);
             expect(result.data.meeting_name).toBe('Team Sync');
             expect(result.data.meeting_time).toBe('10:00 - 11:00');
+        });
+    });
+});
+
+/**
+ * Hook-based tests for useConferenceController
+ */
+describe('useConferenceController - Hook Tests', () => {
+    const mockSolumConfig = {
+        companyCode: 'TEST',
+        storeNumber: 'STORE001',
+        apiCluster: 'C1' as const,
+        baseUrl: 'https://test.api.com',
+    };
+
+    const mockMappingConfig: SolumMappingConfig = {
+        uniqueIdField: 'article_id',
+        fields: {
+            article_id: { friendlyNameEn: 'ID', friendlyNameHe: 'מזהה', visible: true },
+            name: { friendlyNameEn: 'Name', friendlyNameHe: 'שם', visible: true },
+        },
+        conferenceMapping: {
+            meetingName: 'meeting_name',
+            meetingTime: 'meeting_time',
+            participants: 'participants',
+        },
+        mappingInfo: {
+            articleId: 'article_id',
+            articleName: 'name',
+        },
+        globalFieldAssignments: {},
+    };
+
+    beforeEach(() => {
+        // Reset store before each test
+        useConferenceStore.getState().clearAllData();
+        vi.clearAllMocks();
+    });
+
+    describe('Initialization', () => {
+        it('should initialize with empty conference rooms', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            expect(result.current.conferenceRooms).toEqual([]);
+            expect(result.current.isFetching).toBe(false);
+        });
+
+        it('should expose all required functions', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            expect(typeof result.current.addConferenceRoom).toBe('function');
+            expect(typeof result.current.updateConferenceRoom).toBe('function');
+            expect(typeof result.current.deleteConferenceRoom).toBe('function');
+            expect(typeof result.current.toggleMeeting).toBe('function');
+            expect(typeof result.current.fetchFromSolum).toBe('function');
+            expect(typeof result.current.flipLabelPage).toBe('function');
+        });
+
+        it('should initialize in SoluM mode with config', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({
+                    workingMode: 'SOLUM_API',
+                    solumConfig: mockSolumConfig,
+                    solumToken: 'mock-token',
+                    solumMappingConfig: mockMappingConfig,
+                })
+            );
+
+            expect(result.current.conferenceRooms).toEqual([]);
+        });
+
+        it('should initialize in SFTP mode', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({
+                    workingMode: 'SFTP',
+                    sftpCredentials: {
+                        host: 'sftp.example.com',
+                        port: 22,
+                        username: 'test',
+                        password: 'test',
+                        remotePath: '/data',
+                    },
+                })
+            );
+
+            expect(result.current.conferenceRooms).toEqual([]);
+        });
+    });
+
+    describe('Add Conference Room', () => {
+        it('should add a conference room to the store', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    id: '001',
+                    hasMeeting: false,
+                    data: { roomName: 'Conference Room A' },
+                });
+            });
+
+            expect(result.current.conferenceRooms).toHaveLength(1);
+            expect(result.current.conferenceRooms[0].id).toBe('001');
+        });
+
+        it('should generate ID if not provided', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    hasMeeting: false,
+                    data: { roomName: 'New Room' },
+                });
+            });
+
+            expect(result.current.conferenceRooms).toHaveLength(1);
+            expect(result.current.conferenceRooms[0].id).toBeTruthy();
+            // ID should be numeric
+            expect(/^\d+$/.test(result.current.conferenceRooms[0].id)).toBe(true);
+        });
+
+        it('should throw error for duplicate ID', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    id: '001',
+                    hasMeeting: false,
+                    data: { roomName: 'Room A' },
+                });
+            });
+
+            await expect(
+                act(async () => {
+                    await result.current.addConferenceRoom({
+                        id: '001',
+                        hasMeeting: false,
+                        data: { roomName: 'Room B' },
+                    });
+                })
+            ).rejects.toThrow('Conference room ID already exists');
+        });
+    });
+
+    describe('Update Conference Room', () => {
+        it('should update an existing room', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    id: '001',
+                    hasMeeting: false,
+                    data: { roomName: 'Original Name' },
+                });
+            });
+
+            await act(async () => {
+                await result.current.updateConferenceRoom('001', {
+                    data: { roomName: 'Updated Name' },
+                });
+            });
+
+            expect(result.current.conferenceRooms[0].data?.roomName).toBe('Updated Name');
+        });
+
+        it('should throw error for non-existent room', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await expect(
+                act(async () => {
+                    await result.current.updateConferenceRoom('999', {
+                        data: { roomName: 'Test' },
+                    });
+                })
+            ).rejects.toThrow('Conference room not found');
+        });
+    });
+
+    describe('Delete Conference Room', () => {
+        it('should delete an existing room', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    id: '001',
+                    hasMeeting: false,
+                    data: { roomName: 'To Delete' },
+                });
+            });
+
+            expect(result.current.conferenceRooms).toHaveLength(1);
+
+            await act(async () => {
+                await result.current.deleteConferenceRoom('001');
+            });
+
+            expect(result.current.conferenceRooms).toHaveLength(0);
+        });
+
+        it('should throw error for non-existent room', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await expect(
+                act(async () => {
+                    await result.current.deleteConferenceRoom('999');
+                })
+            ).rejects.toThrow('Conference room not found');
+        });
+    });
+
+    describe('Toggle Meeting', () => {
+        it('should toggle meeting status', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    id: '001',
+                    hasMeeting: false,
+                    data: { roomName: 'Meeting Room' },
+                });
+            });
+
+            expect(result.current.conferenceRooms[0].hasMeeting).toBe(false);
+
+            await act(async () => {
+                await result.current.toggleMeeting('001');
+            });
+
+            expect(result.current.conferenceRooms[0].hasMeeting).toBe(true);
+        });
+
+        it('should toggle back to false', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await act(async () => {
+                await result.current.addConferenceRoom({
+                    id: '001',
+                    hasMeeting: true,
+                    meetingName: 'Team Standup',
+                    startTime: '09:00',
+                    endTime: '10:00',
+                    data: { roomName: 'Meeting Room' },
+                });
+            });
+
+            await act(async () => {
+                await result.current.toggleMeeting('001');
+            });
+
+            expect(result.current.conferenceRooms[0].hasMeeting).toBe(false);
+        });
+
+        it('should throw error for non-existent room', async () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            await expect(
+                act(async () => {
+                    await result.current.toggleMeeting('999');
+                })
+            ).rejects.toThrow('Conference room not found');
+        });
+    });
+
+    describe('Fetching State', () => {
+        it('should have isFetching state', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            expect(result.current.isFetching).toBe(false);
+        });
+    });
+
+    describe('Import from Sync', () => {
+        it('should import rooms from external data', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            act(() => {
+                result.current.importFromSync([
+                    { id: 'C001', name: 'Room 1', hasMeeting: false },
+                    { id: 'C002', name: 'Room 2', hasMeeting: true },
+                ]);
+            });
+
+            expect(result.current.conferenceRooms).toHaveLength(2);
+            expect(result.current.conferenceRooms[0].id).toBe('C001');
+            expect(result.current.conferenceRooms[1].id).toBe('C002');
+        });
+
+        it('should replace existing rooms on import', () => {
+            const { result } = renderHook(() =>
+                useConferenceController({})
+            );
+
+            // Add initial room
+            act(() => {
+                result.current.importFromSync([
+                    { id: 'C001', name: 'Original', hasMeeting: false },
+                ]);
+            });
+
+            // Import new rooms
+            act(() => {
+                result.current.importFromSync([
+                    { id: 'C002', name: 'New Room', hasMeeting: false },
+                ]);
+            });
+
+            expect(result.current.conferenceRooms).toHaveLength(1);
+            expect(result.current.conferenceRooms[0].id).toBe('C002');
         });
     });
 });
