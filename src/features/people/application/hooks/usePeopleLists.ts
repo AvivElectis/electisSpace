@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
-import { postBulkAssignments, postBulkAssignmentsWithMetadata } from '../../infrastructure/peopleService';
-import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { PeopleList, Person } from '../../domain/types';
-import { 
-    validateListName, 
-    toStorageName, 
+import {
+    validateListName,
+    toStorageName,
     toDisplayName,
     LIST_NAME_MAX_LENGTH,
     getPersonListNames,
@@ -15,6 +13,7 @@ import {
     setPersonListMembership,
     removePersonFromList,
 } from '../../domain/types';
+import { usePeopleListsSync } from './usePeopleListsSync';
 
 /**
  * Hook for People List management operations
@@ -23,8 +22,10 @@ import {
  */
 export function usePeopleLists() {
     const peopleStore = usePeopleStore();
-    const settings = useSettingsStore(state => state.settings);
-    
+
+    // Use the sync hook for AIMS operations
+    const { saveListToAims, applyListAssignmentsToAims, syncListLoadToAims } = usePeopleListsSync();
+
     // Use store's pendingChanges (shared with assignSpace/unassignSpace actions)
     const pendingChanges = peopleStore.pendingChanges;
     const setPendingChanges = (value: boolean) => {
@@ -44,7 +45,7 @@ export function usePeopleLists() {
      */
     const derivedLists = useMemo((): PeopleList[] => {
         const listMap = new Map<string, Person[]>();
-        
+
         // Group people by all lists they belong to
         peopleStore.people.forEach(person => {
             const listNames = getPersonListNames(person);
@@ -70,7 +71,7 @@ export function usePeopleLists() {
 
         // Sort by name
         lists.sort((a, b) => a.name.localeCompare(b.name));
-        
+
         return lists;
     }, [peopleStore.people]);
 
@@ -145,7 +146,7 @@ export function usePeopleLists() {
 
             // Set active list (derived list ID format)
             const listId = `aims-list-${storageName}`;
-            
+
             // Check if list already exists in peopleLists, if not add it
             const existingList = peopleStore.peopleLists.find(l => l.storageName === storageName);
             if (!existingList) {
@@ -168,16 +169,16 @@ export function usePeopleLists() {
                 });
                 logger.info('PeopleLists', 'Updated existing list in peopleLists', { listId: existingList.id, name: displayName });
             }
-            
+
             peopleStore.setActiveListId(listId);
             peopleStore.setActiveListName(displayName);
             peopleStore.clearPendingChanges();
 
-            logger.info('PeopleLists', 'People list created/updated', { 
+            logger.info('PeopleLists', 'People list created/updated', {
                 listId,
-                name: displayName, 
+                name: displayName,
                 storageName,
-                count: peopleWithListMembership.length 
+                count: peopleWithListMembership.length
             });
 
             // Return updated people so caller can pass to saveListToAims (avoids stale closure)
@@ -195,8 +196,8 @@ export function usePeopleLists() {
      * @param withCurrentAssignment - If true, copy current assignedSpaceId to list assignment
      */
     const addPeopleToList = useCallback((
-        peopleIds: string[], 
-        listName: string, 
+        peopleIds: string[],
+        listName: string,
         withCurrentAssignment: boolean = true
     ): { success: boolean; added: number; error?: string } => {
         try {
@@ -211,8 +212,8 @@ export function usePeopleLists() {
                     }
                     addedCount++;
                     return setPersonListMembership(
-                        p, 
-                        storageName, 
+                        p,
+                        storageName,
                         withCurrentAssignment ? p.assignedSpaceId : undefined
                     );
                 }
@@ -221,9 +222,9 @@ export function usePeopleLists() {
 
             peopleStore.setPeople(updatedPeople);
 
-            logger.info('PeopleLists', 'Added people to list', { 
-                listName: storageName, 
-                added: addedCount 
+            logger.info('PeopleLists', 'Added people to list', {
+                listName: storageName,
+                added: addedCount
             });
 
             return { success: true, added: addedCount };
@@ -239,7 +240,7 @@ export function usePeopleLists() {
      * @param listName - Storage name of list to remove from
      */
     const removePeopleFromList = useCallback((
-        peopleIds: string[], 
+        peopleIds: string[],
         listName: string
     ): { success: boolean; removed: number; error?: string } => {
         try {
@@ -256,9 +257,9 @@ export function usePeopleLists() {
 
             peopleStore.setPeople(updatedPeople);
 
-            logger.info('PeopleLists', 'Removed people from list', { 
-                listName: storageName, 
-                removed: removedCount 
+            logger.info('PeopleLists', 'Removed people from list', {
+                listName: storageName,
+                removed: removedCount
             });
 
             return { success: true, removed: removedCount };
@@ -275,13 +276,13 @@ export function usePeopleLists() {
      * @param spaceId - New space ID (undefined to clear)
      */
     const updateListAssignment = useCallback((
-        personId: string, 
-        listName: string, 
+        personId: string,
+        listName: string,
         spaceId: string | undefined
     ): { success: boolean; error?: string } => {
         try {
             const storageName = toStorageName(listName);
-            
+
             const updatedPeople = peopleStore.people.map(p => {
                 if (p.id === personId) {
                     return setPersonListMembership(p, storageName, spaceId);
@@ -292,10 +293,10 @@ export function usePeopleLists() {
             peopleStore.setPeople(updatedPeople);
             setPendingChanges(true);
 
-            logger.info('PeopleLists', 'Updated list assignment', { 
-                personId, 
-                listName: storageName, 
-                spaceId 
+            logger.info('PeopleLists', 'Updated list assignment', {
+                personId,
+                listName: storageName,
+                spaceId
             });
 
             return { success: true };
@@ -305,68 +306,7 @@ export function usePeopleLists() {
         }
     }, [peopleStore]);
 
-    /**
-     * Save list data to AIMS for cross-device persistence
-     * Posts all people with list memberships (_LIST_MEMBERSHIPS_ JSON) to AIMS
-     * Syncs people who have a POOL slot (virtualSpaceId) - these are their permanent AIMS articles
-     * @param peopleToSync - Optional: specific people to sync (use after savePeopleList to avoid stale closure)
-     */
-    const saveListToAims = useCallback(async (peopleToSync?: Person[]): Promise<{ success: boolean; syncedCount: number; error?: string }> => {
-        try {
-            console.log('[saveListToAims] Starting...');
-            console.log('[saveListToAims] solumConfig:', settings.solumConfig ? 'present' : 'missing');
-            console.log('[saveListToAims] tokens:', settings.solumConfig?.tokens ? 'present' : 'missing');
-            console.log('[saveListToAims] peopleToSync provided:', peopleToSync ? peopleToSync.length : 'no (using store)');
-            
-            if (!settings.solumConfig?.tokens) {
-                console.log('[saveListToAims] ERROR: Not connected to SoluM');
-                return { success: false, syncedCount: 0, error: 'Not connected to SoluM' };
-            }
-
-            // Use provided people or fall back to store (provided avoids stale closure issue)
-            const sourcePeople = peopleToSync || peopleStore.people;
-            
-            // Sync people who have a POOL slot (virtualSpaceId) - this is their permanent AIMS article
-            // People without virtualSpaceId don't exist in AIMS yet
-            const peopleWithPoolSlot = sourcePeople.filter(p => p.virtualSpaceId);
-            console.log('[saveListToAims] People with POOL slot:', peopleWithPoolSlot.length);
-            console.log('[saveListToAims] Sample person:', peopleWithPoolSlot[0] ? {
-                id: peopleWithPoolSlot[0].id,
-                virtualSpaceId: peopleWithPoolSlot[0].virtualSpaceId,
-                listMemberships: peopleWithPoolSlot[0].listMemberships,
-            } : 'none');
-            
-            if (peopleWithPoolSlot.length === 0) {
-                logger.warn('PeopleLists', 'No people with POOL slots to sync to AIMS');
-                return { success: true, syncedCount: 0 };
-            }
-
-            const withListMemberships = peopleWithPoolSlot.filter(p => p.listMemberships?.length);
-            console.log('[saveListToAims] People with list memberships:', withListMemberships.length);
-            
-            logger.info('PeopleLists', 'Saving list data to AIMS', { 
-                count: peopleWithPoolSlot.length,
-                withListMemberships: withListMemberships.length
-            });
-
-            // Post with metadata (includes _LIST_MEMBERSHIPS_ JSON)
-            console.log('[saveListToAims] Calling postBulkAssignmentsWithMetadata...');
-            await postBulkAssignmentsWithMetadata(
-                peopleWithPoolSlot,
-                settings.solumConfig,
-                settings.solumConfig.tokens.accessToken,
-                settings.solumMappingConfig
-            );
-            console.log('[saveListToAims] postBulkAssignmentsWithMetadata completed successfully');
-
-            logger.info('PeopleLists', 'List data saved to AIMS', { count: peopleWithPoolSlot.length });
-            return { success: true, syncedCount: peopleWithPoolSlot.length };
-        } catch (error: any) {
-            console.error('[saveListToAims] ERROR:', error);
-            logger.error('PeopleLists', 'Failed to save list to AIMS', { error: error.message });
-            return { success: false, syncedCount: 0, error: error.message };
-        }
-    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
+    // saveListToAims is now provided by usePeopleListsSync hook
 
     /**
      * Update the current active list with current people's assignment state
@@ -390,10 +330,10 @@ export function usePeopleLists() {
             setPendingChanges(false);
 
             const updatedCount = updatedPeople.filter(p => isPersonInList(p, activeListStorageName)).length;
-            logger.info('PeopleLists', 'List updated', { 
-                listId: peopleStore.activeListId, 
+            logger.info('PeopleLists', 'List updated', {
+                listId: peopleStore.activeListId,
                 storageName: activeListStorageName,
-                count: updatedCount 
+                count: updatedCount
             });
 
             return { success: true };
@@ -419,7 +359,7 @@ export function usePeopleLists() {
             // Find the list from peopleLists (which has the saved state) or derived lists
             const savedList = peopleStore.peopleLists.find(l => l.id === listId || l.storageName === storageName);
             const listToLoad = derivedLists.find(l => l.id === listId);
-            
+
             if (!listToLoad && !savedList) {
                 throw new Error('List not found');
             }
@@ -444,10 +384,10 @@ export function usePeopleLists() {
                 if (!isPersonInList(p, storageName)) {
                     return p; // Person not in this list, keep as-is
                 }
-                
+
                 // Get the saved space assignment from the list membership
                 const listSpaceId = getPersonListSpaceId(p, storageName);
-                
+
                 if (autoApply) {
                     // Auto-apply: set assignedSpaceId to the list's saved spaceId
                     return {
@@ -468,27 +408,8 @@ export function usePeopleLists() {
             peopleStore.setPeople(updatedPeople);
 
             if (autoApply) {
-                // Post assignments to AIMS
-                const peopleToSync = updatedPeople.filter(
-                    p => isPersonInList(p, storageName) && p.assignedSpaceId
-                );
-                if (peopleToSync.length > 0 && settings.solumConfig?.tokens) {
-                    try {
-                        const personIds = peopleToSync.map(p => p.id);
-
-                        await postBulkAssignments(
-                            peopleToSync,
-                            settings.solumConfig,
-                            settings.solumConfig.tokens.accessToken,
-                            settings.solumMappingConfig
-                        );
-
-                        peopleStore.updateSyncStatus(personIds, 'synced');
-                        logger.info('PeopleLists', 'List assignments synced to AIMS', { count: peopleToSync.length });
-                    } catch (postError: any) {
-                        logger.error('PeopleLists', 'Failed to sync list assignments to AIMS', { error: postError.message });
-                    }
-                }
+                // Post assignments to AIMS using the sync hook
+                await syncListLoadToAims(updatedPeople, storageName);
             }
 
             peopleStore.clearPendingChanges();
@@ -497,7 +418,7 @@ export function usePeopleLists() {
             logger.error('PeopleLists', 'Failed to load list', { error: error.message });
             throw error;
         }
-    }, [derivedLists, peopleStore, settings.solumConfig, settings.solumMappingConfig]);
+    }, [derivedLists, peopleStore, syncListLoadToAims]);
 
     /**
      * Apply active list's assignments
@@ -505,65 +426,8 @@ export function usePeopleLists() {
      * Then syncs assignments to AIMS
      */
     const applyListAssignments = useCallback(async (): Promise<{ success: boolean; applied: number; error?: string }> => {
-        try {
-            if (!activeListStorageName) {
-                return { success: false, applied: 0, error: 'No active list' };
-            }
-
-            const peopleWithListSpaces = peopleStore.people.filter(p => {
-                const listSpaceId = getPersonListSpaceId(p, activeListStorageName);
-                return listSpaceId !== undefined;
-            });
-            
-            if (peopleWithListSpaces.length === 0) {
-                logger.info('PeopleLists', 'No list assignments to apply');
-                return { success: true, applied: 0 };
-            }
-
-            logger.info('PeopleLists', 'Applying list assignments', { count: peopleWithListSpaces.length });
-
-            // Update local state: copy list's spaceId to assignedSpaceId
-            const updatedPeople: Person[] = peopleStore.people.map(p => {
-                const listSpaceId = getPersonListSpaceId(p, activeListStorageName);
-                if (listSpaceId) {
-                    return {
-                        ...p,
-                        assignedSpaceId: listSpaceId,
-                        aimsSyncStatus: 'pending' as const,
-                    };
-                }
-                return p;
-            });
-
-            peopleStore.setPeople(updatedPeople);
-
-            // Sync to AIMS
-            if (settings.solumConfig?.tokens) {
-                const personIds = peopleWithListSpaces.map(p => p.id);
-
-                try {
-                    await postBulkAssignments(
-                        updatedPeople.filter(p => personIds.includes(p.id)),
-                        settings.solumConfig,
-                        settings.solumConfig.tokens.accessToken,
-                        settings.solumMappingConfig
-                    );
-
-                    peopleStore.updateSyncStatus(personIds, 'synced');
-                    logger.info('PeopleLists', 'List assignments synced to AIMS', { count: personIds.length });
-                } catch (syncError: any) {
-                    peopleStore.updateSyncStatus(personIds, 'error');
-                    logger.error('PeopleLists', 'Failed to sync list assignments to AIMS', { error: syncError.message });
-                    return { success: false, applied: 0, error: syncError.message };
-                }
-            }
-
-            return { success: true, applied: peopleWithListSpaces.length };
-        } catch (error: any) {
-            logger.error('PeopleLists', 'Failed to apply list assignments', { error: error.message });
-            return { success: false, applied: 0, error: error.message };
-        }
-    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig, activeListStorageName]);
+        return applyListAssignmentsToAims(activeListStorageName);
+    }, [applyListAssignmentsToAims, activeListStorageName]);
 
     /**
      * Mark that there are pending (unsaved) changes
@@ -653,17 +517,17 @@ export function usePeopleLists() {
         pendingChanges,
         pendingAssignmentsCount,
         peopleInActiveList,
-        
+
         // Validation helpers
         validateListName,
         LIST_NAME_MAX_LENGTH,
-        
+
         // Multi-list helpers
         getPersonListCount,
         getPersonListNamesForDisplay,
         getActiveListAssignment,
         isPersonInList: (person: Person, listName: string) => isPersonInList(person, toStorageName(listName)),
-        
+
         // Actions
         savePeopleList,
         saveListToAims,
@@ -673,7 +537,7 @@ export function usePeopleLists() {
         clearActiveList,
         applyListAssignments,
         markPendingChanges,
-        
+
         // Multi-list actions
         addPeopleToList,
         removePeopleFromList,
