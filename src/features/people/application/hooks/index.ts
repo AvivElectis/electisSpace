@@ -12,3 +12,4 @@ export { usePeopleCSV } from './usePeopleCSV';
 export { usePeopleAssignment } from './usePeopleAssignment';
 export { usePeopleAIMS } from './usePeopleAIMS';
 export { usePeopleLists } from './usePeopleLists';
+export { usePeopleListsSync } from './usePeopleListsSync';
