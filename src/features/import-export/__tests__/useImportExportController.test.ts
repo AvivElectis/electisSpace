@@ -66,11 +66,22 @@ vi.mock('@shared/infrastructure/services/logger', () => ({
 describe('useImportExportController', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Reset settings store
+        // Reset settings store with full settings
         useSettingsStore.setState({
             settings: {
                 appName: 'Original App',
+                appSubtitle: 'Test Subtitle',
+                spaceType: 'office',
                 workingMode: 'SOLUM_API',
+                csvConfig: {
+                    delimiter: ';',
+                    columns: [],
+                    mapping: {},
+                    conferenceEnabled: false,
+                },
+                logos: {},
+                autoSyncEnabled: false,
+                autoSyncInterval: 300,
             },
         });
     });
@@ -226,7 +237,7 @@ describe('useImportExportController', () => {
             });
 
             const { validateSettings } = await import('@features/settings/domain/validation');
-            vi.mocked(validateSettings).mockReturnValueOnce({ valid: false });
+            vi.mocked(validateSettings).mockReturnValueOnce({ valid: false, errors: [{ field: 'settings', message: 'Invalid settings' }] });
 
             const { result } = renderHook(() => useImportExportController());
 
