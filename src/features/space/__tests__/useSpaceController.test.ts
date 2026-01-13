@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useSpaceController } from '../application/useSpaceController';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import type { CSVConfig } from '@shared/domain/types';
@@ -75,34 +75,47 @@ const resetSpacesStore = () => {
 };
 
 describe('useSpaceController', () => {
-    // CSV config without required 'id' in columns - ID is handled separately by the controller
+    // CSV config - CSVColumn requires index, name, required (no type field)
+    // Note: id should not be marked as required in columns since the controller generates it
     const mockCsvConfig: CSVConfig = {
         delimiter: ',',
         columns: [
-            { name: 'roomName', type: 'string', required: false },
-            { name: 'floor', type: 'string', required: false },
+            { index: 0, name: 'id', required: false },
+            { index: 1, name: 'roomName', required: false },
+            { index: 2, name: 'floor', required: false },
         ],
         mapping: {
-            roomName: 'roomName',
-            floor: 'floor',
+            id: 0,
+            roomName: 1,
+            floor: 2,
         },
         conferenceEnabled: false,
     };
 
     const mockSolumConfig = {
-        companyCode: 'TEST',
+        companyName: 'Test Company',
+        username: 'testuser',
+        password: 'testpass',
         storeNumber: 'STORE001',
-        apiCluster: 'C1' as const,
+        cluster: 'c1' as const,
         baseUrl: 'https://test.api.com',
+        syncInterval: 30,
     };
 
     const mockSolumMappingConfig: SolumMappingConfig = {
+        uniqueIdField: 'id',
         fields: {
-            id: { label: 'ID', visible: true, editable: true, type: 'string' },
-            roomName: { label: 'Room Name', visible: true, editable: true, type: 'string' },
+            id: { friendlyNameEn: 'ID', friendlyNameHe: 'מזהה', visible: true },
+            roomName: { friendlyNameEn: 'Room Name', friendlyNameHe: 'שם חדר', visible: true },
+        },
+        conferenceMapping: {
+            meetingName: 'MEETING_NAME',
+            meetingTime: 'MEETING_TIME',
+            participants: 'PARTICIPANTS',
         },
         globalFieldAssignments: {},
         mappingInfo: {
+            store: 'STORE001',
             articleId: 'id',
             articleName: 'roomName',
         },
@@ -416,7 +429,7 @@ describe('useSpaceController', () => {
             port: 22,
             username: 'testuser',
             password: 'testpass',
-            remotePath: '/data',
+            remoteFilename: 'spaces.csv',
         };
 
         it('should initialize in SFTP mode', () => {
