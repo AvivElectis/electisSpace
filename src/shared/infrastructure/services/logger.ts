@@ -45,7 +45,7 @@ export interface PerformanceLogEntry extends LogEntry {
 }
 
 
-class Logger {
+export class Logger {
     private logs: LogEntry[] = [];
     private maxLogs = 1000;  // Maximum number of logs to store in memory
     private timers: Map<string, number> = new Map();  // Performance timers
