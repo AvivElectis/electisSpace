@@ -65,7 +65,7 @@ export function DashboardAppInfoCard({
                             </Typography>
                             <Box>
                                 {workingMode === 'SFTP' ? (
-                                    <DashboardStatusChip label={t('sync.sftpMode')} color="info" icon={<SyncIcon />} />
+                                    <DashboardStatusChip label={t('sync.sftpMode')} color="info" icon={<SyncIcon />} sx={{ bgcolor: 'info.main', p: 2 }} />
                                 ) : (
                                     <DashboardStatusChip
                                         label={t('sync.solumMode')}
