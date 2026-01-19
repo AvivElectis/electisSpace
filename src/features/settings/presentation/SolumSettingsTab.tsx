@@ -1,31 +1,22 @@
-import {
-    Box,
-    TextField,
-    Stack,
-    Typography,
-    Divider,
-    Button,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    FormControlLabel,
-    Switch,
-    Alert,
-    Tabs,
-    Tab,
-} from '@mui/material';
-import CloudSyncIcon from '@mui/icons-material/CloudSync';
+import { Box, Stack, Divider, Typography, Tabs, Tab, Alert } from '@mui/material';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNotifications } from '@shared/infrastructure/store/rootStore';
-import { useSettingsController } from '../application/useSettingsController';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
-import { ArticleFormatEditor } from '@features/configuration/presentation/ArticleFormatEditor';
 import { SolumFieldMappingTable } from './SolumFieldMappingTable';
 import { SolumMappingSelectors } from './SolumMappingSelectors';
 import { SolumGlobalFieldsEditor } from './SolumGlobalFieldsEditor';
+
+// Extracted components
+import {
+    SolumApiConfigSection,
+    SolumCredentialsSection,
+    SolumSyncSettingsSection,
+    SolumPeopleManagerSection,
+    SolumSchemaEditorSection,
+} from './solum';
+
 import type { SettingsData } from '../domain/types';
+import type { SolumConfig, CSVConfig } from '@shared/domain/types';
 
 interface SolumSettingsTabProps {
     settings: SettingsData;
@@ -34,39 +25,43 @@ interface SolumSettingsTabProps {
 
 /**
  * SoluM Settings Tab
- * SoluM API configuration
+ * SoluM API configuration - Refactored to use extracted sub-components
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
-    const { showSuccess, showError } = useNotifications();
-    const { articleFormat, fetchArticleFormat, saveArticleFormat } = useConfigurationController();
-    const { connectToSolum, disconnectFromSolum } = useSettingsController();
-    const [fetchingSchema, setFetchingSchema] = useState(false);
-    const [connecting, setConnecting] = useState(false);
-    const [subTab, setSubTab] = useState(0); // Nested tab state
+    const { articleFormat } = useConfigurationController();
+    const [subTab, setSubTab] = useState(0);
 
     // Extract field keys from article format (ONLY articleData, not articleBasicInfo)
     const articleFormatFields = useMemo(() => {
         if (!articleFormat) return [];
-        // Issue #4: Only show articleData fields, not articleBasicInfo
         return articleFormat.articleData || [];
     }, [articleFormat]);
 
     // Input locking for credentials: disable when connected
-    // Issue #2: Field mapping should be EDITABLE when connected, NOT locked
     const isCredentialsLocked = settings.solumConfig?.isConnected || false;
-    const isMappingLocked = !settings.solumConfig?.isConnected; // Opposite: locked when NOT connected
+    const isMappingLocked = !settings.solumConfig?.isConnected;
 
-    const handleFetchSchema = async () => {
-        setFetchingSchema(true);
-        try {
-            await fetchArticleFormat();
-            showSuccess(t('settings.schemaFetchedSuccess'));
-        } catch (error) {
-            showError(t('settings.schemaFetchedError', { error: String(error) }));
-        } finally {
-            setFetchingSchema(false);
-        }
+    // Handlers for nested component updates
+    const handleSolumConfigChange = (config: Partial<SolumConfig>) => {
+        onUpdate({ solumConfig: config as SolumConfig });
+    };
+
+    const handleCsvConfigChange = (config: CSVConfig) => {
+        onUpdate({ csvConfig: config });
+    };
+
+    const handlePeopleManagerEnabledChange = (enabled: boolean) => {
+        onUpdate({ peopleManagerEnabled: enabled });
+    };
+
+    const handlePeopleManagerConfigChange = (config: Partial<{ totalSpaces: number }>) => {
+        // Ensure totalSpaces has a valid value
+        onUpdate({ 
+            peopleManagerConfig: { 
+                totalSpaces: config.totalSpaces ?? settings.peopleManagerConfig?.totalSpaces ?? 0 
+            } 
+        });
     };
 
     return (
@@ -84,352 +79,61 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                             border: '1px solid',
                             borderColor: 'primary',
                             boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
-                        }
-                    }
+                        },
+                    },
                 }}
-                TabIndicatorProps={{ sx: { display: 'none' } }}>
+                slotProps={{
+                    indicator: { sx: { display: 'none' } }
+                }}
+            >
                 <Tab label={t('settings.connectionTab')} />
                 <Tab label={t('settings.fieldMappingTab')} disabled={!settings.solumConfig?.isConnected} />
             </Tabs>
-
             {/* Connection Tab */}
             {subTab === 0 && (
                 <Stack gap={2}>
-                    {/* API Configuration */}
-                    <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                            {t('settings.solumApiConfig')}
-                        </Typography>
-                        <Stack gap={1.5}>
-                            <FormControl fullWidth size="small" disabled={isCredentialsLocked}>
-                                <InputLabel>{t('settings.apiCluster')}</InputLabel>
-                                <Select
-                                    value={settings.solumConfig?.cluster || 'common'}
-                                    label={t('settings.apiCluster')}
-                                    onChange={(e) => onUpdate({
-                                        solumConfig: {
-                                            ...settings.solumConfig,
-                                            companyName: settings.solumConfig?.companyName || '',
-                                            username: settings.solumConfig?.username || '',
-                                            password: settings.solumConfig?.password || '',
-                                            storeNumber: settings.solumConfig?.storeNumber || '',
-                                            cluster: e.target.value as 'common' | 'c1',
-                                            baseUrl: settings.solumConfig?.baseUrl || '',
-                                            syncInterval: settings.solumConfig?.syncInterval || 60,
-                                        }
-                                    })}
-                                >
-                                    <MenuItem value="common">{t('settings.commonCluster')}</MenuItem>
-                                    <MenuItem value="c1">{t('settings.c1Cluster')}</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label={t('settings.baseUrl')}
-                                value={settings.solumConfig?.baseUrl || ''}
-                                onChange={(e) => onUpdate({
-                                    solumConfig: {
-                                        ...settings.solumConfig,
-                                        companyName: settings.solumConfig?.companyName || '',
-                                        username: settings.solumConfig?.username || '',
-                                        password: settings.solumConfig?.password || '',
-                                        storeNumber: settings.solumConfig?.storeNumber || '',
-                                        cluster: settings.solumConfig?.cluster || 'common',
-                                        baseUrl: e.target.value,
-                                        syncInterval: settings.solumConfig?.syncInterval || 60,
-                                    }
-                                })}
-                                placeholder="https://eu.common.solumesl.com"
-                                disabled={isCredentialsLocked}
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        size="small"
-                                        checked={settings.autoSyncEnabled}
-                                        onChange={(e) => onUpdate({ autoSyncEnabled: e.target.checked })}
-                                    />
-                                }
-                                label={<Typography variant="body2">{t('settings.enableAutoSync')}</Typography>}
-                            />
-
-                            {settings.autoSyncEnabled && (
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    type="number"
-                                    label={t('settings.syncInterval')}
-                                    value={settings.solumConfig?.syncInterval || 60}
-                                    onChange={(e) => onUpdate({
-                                        solumConfig: {
-                                            ...settings.solumConfig,
-                                            companyName: settings.solumConfig?.companyName || '',
-                                            username: settings.solumConfig?.username || '',
-                                            password: settings.solumConfig?.password || '',
-                                            storeNumber: settings.solumConfig?.storeNumber || '',
-                                            cluster: settings.solumConfig?.cluster || 'common',
-                                            baseUrl: settings.solumConfig?.baseUrl || '',
-                                            syncInterval: Math.max(60, Number(e.target.value)),
-                                        }
-                                    })}
-                                    InputProps={{ inputProps: { min: 60 } }}
-                                    helperText={t('settings.syncIntervalHelp')}
-                                    disabled={isCredentialsLocked}
-                                />
-                            )}
-                        </Stack>
-                    </Box>
+                    <SolumApiConfigSection
+                        solumConfig={settings.solumConfig || {}}
+                        autoSyncEnabled={settings.autoSyncEnabled}
+                        isLocked={isCredentialsLocked}
+                        onConfigChange={handleSolumConfigChange}
+                        onAutoSyncChange={(enabled) => onUpdate({ autoSyncEnabled: enabled })}
+                    />
 
                     <Divider />
 
-                    {/* Credentials */}
-                    <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                            {t('settings.authentication')}
-                        </Typography>
-                        <Stack gap={1.5}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label={t('settings.companyCode')}
-                                value={settings.solumConfig?.companyName || ''}
-                                onChange={(e) => onUpdate({
-                                    solumConfig: {
-                                        ...settings.solumConfig,
-                                        companyName: e.target.value,
-                                        username: settings.solumConfig?.username || '',
-                                        password: settings.solumConfig?.password || '',
-                                        storeNumber: settings.solumConfig?.storeNumber || '',
-                                        cluster: settings.solumConfig?.cluster || 'common',
-                                        baseUrl: settings.solumConfig?.baseUrl || '',
-                                        syncInterval: settings.solumConfig?.syncInterval || 60,
-                                    }
-                                })}
-                                disabled={isCredentialsLocked}
-                            />
-
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label={t('settings.storeNumber')}
-                                value={settings.solumConfig?.storeNumber || ''}
-                                onChange={(e) => onUpdate({
-                                    solumConfig: {
-                                        ...settings.solumConfig,
-                                        companyName: settings.solumConfig?.companyName || '',
-                                        username: settings.solumConfig?.username || '',
-                                        password: settings.solumConfig?.password || '',
-                                        storeNumber: e.target.value,
-                                        cluster: settings.solumConfig?.cluster || 'common',
-                                        baseUrl: settings.solumConfig?.baseUrl || '',
-                                        syncInterval: settings.solumConfig?.syncInterval || 60,
-                                    }
-                                })}
-                                disabled={isCredentialsLocked}
-                            />
-
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label={t('settings.username')}
-                                value={settings.solumConfig?.username || ''}
-                                onChange={(e) => onUpdate({
-                                    solumConfig: {
-                                        ...settings.solumConfig,
-                                        companyName: settings.solumConfig?.companyName || '',
-                                        username: e.target.value,
-                                        password: settings.solumConfig?.password || '',
-                                        storeNumber: settings.solumConfig?.storeNumber || '',
-                                        cluster: settings.solumConfig?.cluster || 'common',
-                                        baseUrl: settings.solumConfig?.baseUrl || '',
-                                        syncInterval: settings.solumConfig?.syncInterval || 60,
-                                    }
-                                })}
-                                disabled={isCredentialsLocked}
-                            />
-
-                            <TextField
-                                fullWidth
-                                size="small"
-                                type="password"
-                                label={t('settings.password')}
-                                value={settings.solumConfig?.password || ''}
-                                onChange={(e) => onUpdate({
-                                    solumConfig: {
-                                        ...settings.solumConfig,
-                                        companyName: settings.solumConfig?.companyName || '',
-                                        username: settings.solumConfig?.username || '',
-                                        password: e.target.value,
-                                        storeNumber: settings.solumConfig?.storeNumber || '',
-                                        cluster: settings.solumConfig?.cluster || 'common',
-                                        baseUrl: settings.solumConfig?.baseUrl || '',
-                                        syncInterval: settings.solumConfig?.syncInterval || 60,
-                                    }
-                                })}
-                                disabled={isCredentialsLocked}
-                            />
-
-                            {settings.solumConfig?.isConnected ? (
-                                <>
-                                    <Alert severity="success" sx={{ py: 0, px: 2, alignItems: 'center' }}>
-                                        {t('settings.connectedToSolum')}
-                                    </Alert>
-                                    <Button
-                                        variant="outlined"
-                                        color="error"
-                                        onClick={() => {
-                                            disconnectFromSolum();
-                                            showSuccess(t('settings.disconnected'));
-                                        }}
-                                        sx={{ width: 'fit-content' }}
-                                    >
-                                        {t('settings.disconnect')}
-                                    </Button>
-                                </>
-                            ) : (
-                                <Button
-                                    variant="contained"
-                                    onClick={async () => {
-                                        setConnecting(true);
-                                        try {
-                                            await connectToSolum();
-                                            showSuccess(t('settings.connectionSuccess'));
-                                        } catch (error) {
-                                            showError(t('settings.connectionError', {
-                                                error: error instanceof Error ? error.message : String(error)
-                                            }));
-                                        } finally {
-                                            setConnecting(false);
-                                        }
-                                    }}
-                                    disabled={connecting}
-                                    sx={{ width: 'fit-content' }}
-                                >
-                                    {connecting ? t('settings.connecting') : t('settings.connect')}
-                                </Button>
-                            )}
-                        </Stack>
-                    </Box>
+                    <SolumCredentialsSection
+                        solumConfig={settings.solumConfig || {}}
+                        isConnected={settings.solumConfig?.isConnected || false}
+                        isLocked={isCredentialsLocked}
+                        onConfigChange={handleSolumConfigChange}
+                    />
 
                     <Divider />
 
-                    {/* Sync Settings */}
-                    <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                            {t('settings.synchronization')}
-                        </Typography>
-                        <Stack gap={1.5}>
-                            {/* Sync Interval Removed - managed by Sync Store or Server Config directly
-                            <FormControl fullWidth size="small">
-                                <InputLabel id="sync-interval-label">{t('settings.syncInterval')}</InputLabel>
-                                <Select...
-                                </Select>
-                            </FormControl>
-                            */}
-
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        size="small"
-                                        checked={settings.csvConfig?.conferenceEnabled || false}
-                                        onChange={(e) => onUpdate({
-                                            csvConfig: {
-                                                ...settings.csvConfig,
-                                                delimiter: settings.csvConfig?.delimiter || ',',
-                                                columns: settings.csvConfig?.columns || [],
-                                                mapping: settings.csvConfig?.mapping || {},
-                                                conferenceEnabled: e.target.checked,
-                                            }
-                                        })}
-                                    />
-                                }
-                                label={<Typography variant="body2">{t('settings.simpleConferenceMode')}</Typography>}
-                            />
-
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: '-8px !important', ml: '38px !important' }}>
-                                {t('settings.simpleConferenceModeDesc')}
-                            </Typography>
-                        </Stack>
-                    </Box>
+                    <SolumSyncSettingsSection
+                        csvConfig={settings.csvConfig || {}}
+                        onConfigChange={handleCsvConfigChange}
+                    />
 
                     <Divider />
 
-                    {/* People Manager Mode */}
-                    <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                            {t('settings.peopleManager.title')}
-                        </Typography>
-                        <Stack gap={1.5}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        size="small"
-                                        checked={settings.peopleManagerEnabled || false}
-                                        onChange={(e) => onUpdate({
-                                            peopleManagerEnabled: e.target.checked,
-                                        })}
-                                    />
-                                }
-                                label={<Typography variant="body2">{t('settings.peopleManager.enable')}</Typography>}
-                            />
-
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: '-8px !important', ml: '38px !important' }}>
-                                {t('settings.peopleManager.description')}
-                            </Typography>
-
-                            {settings.peopleManagerEnabled && (
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    type="number"
-                                    label={t('settings.peopleManager.totalSpaces')}
-                                    value={settings.peopleManagerConfig?.totalSpaces || 0}
-                                    onChange={(e) => onUpdate({
-                                        peopleManagerConfig: {
-                                            ...settings.peopleManagerConfig,
-                                            totalSpaces: parseInt(e.target.value, 10) || 0,
-                                        }
-                                    })}
-                                    helperText={t('settings.peopleManager.totalSpacesHelp')}
-                                    inputProps={{ min: 0 }}
-                                />
-                            )}
-                        </Stack>
-                    </Box>
+                    <SolumPeopleManagerSection
+                        enabled={settings.peopleManagerEnabled || false}
+                        config={settings.peopleManagerConfig || {}}
+                        articleFormat={articleFormat}
+                        onEnabledChange={handlePeopleManagerEnabledChange}
+                        onConfigChange={handlePeopleManagerConfigChange}
+                    />
                 </Stack>
             )}
-
             {/* Field Mapping Tab */}
             {subTab === 1 && (
                 <Stack gap={2}>
-                    {/* Schema */}
-                    <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                            {t('settings.articleFormatSchema')}
-                        </Typography>
-
-                        <Button
-                            variant="outlined"
-                            startIcon={<CloudSyncIcon />}
-                            onClick={handleFetchSchema}
-                            disabled={fetchingSchema || !settings.solumConfig?.isConnected}
-                            sx={{ mb: 1, width: 'fit-content' }}
-                        >
-                            {fetchingSchema ? t('settings.fetchingSchema') : t('settings.fetchArticleSchema')}
-                        </Button>
-
-                        <Typography variant="caption" color="info.main" sx={{ mb: 1, display: 'block' }}>
-                            {t('settings.fetchesConfig')}
-                        </Typography>
-
-                        <ArticleFormatEditor
-                            schema={articleFormat}
-                            onSave={saveArticleFormat}
-                            readOnly={false}
-                        />
-                    </Box>
+                    <SolumSchemaEditorSection
+                        articleFormat={articleFormat}
+                        isConnected={settings.solumConfig?.isConnected || false}
+                    />
 
                     {/* Data Mapping - shown only when article format exists */}
                     {articleFormatFields.length > 0 && (
@@ -437,7 +141,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                             <Divider />
 
                             <Box>
-                                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                                <Typography
+                                    variant="subtitle2"
+                                    color="text.secondary"
+                                    sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}
+                                >
                                     {t('settings.dataMapping')}
                                 </Typography>
 
@@ -449,41 +157,40 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                 <SolumMappingSelectors
                                     articleFormatFields={articleFormatFields}
                                     uniqueIdField={settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0]}
-                                    conferenceMapping={settings.solumMappingConfig?.conferenceMapping || {
-                                        meetingName: articleFormatFields[0] || '',
-                                        meetingTime: articleFormatFields[0] || '',
-                                        participants: articleFormatFields[0] || '',
-                                    }}
-                                    onUniqueIdChange={(field) => onUpdate({
-                                        solumMappingConfig: {
-                                            ...settings.solumMappingConfig,
-                                            uniqueIdField: field,
-                                            fields: settings.solumMappingConfig?.fields || {},
-                                            conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
-                                                meetingName: '',
-                                                meetingTime: '',
-                                                participants: '',
+                                    conferenceMapping={
+                                        settings.solumMappingConfig?.conferenceMapping || {
+                                            meetingName: articleFormatFields[0] || '',
+                                            meetingTime: articleFormatFields[0] || '',
+                                            participants: articleFormatFields[0] || '',
+                                        }
+                                    }
+                                    onUniqueIdChange={(field) =>
+                                        onUpdate({
+                                            solumMappingConfig: {
+                                                ...settings.solumMappingConfig,
+                                                uniqueIdField: field,
+                                                fields: settings.solumMappingConfig?.fields || {},
+                                                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                    meetingName: '',
+                                                    meetingTime: '',
+                                                    participants: '',
+                                                },
                                             },
-                                        }
-                                    })}
-                                    onConferenceMappingChange={(mapping) => onUpdate({
-                                        solumMappingConfig: {
-                                            ...settings.solumMappingConfig,
-                                            uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
-                                            fields: settings.solumMappingConfig?.fields || {},
-                                            conferenceMapping: mapping,
-                                        }
-                                    })}
+                                        })
+                                    }
+                                    onConferenceMappingChange={(mapping) =>
+                                        onUpdate({
+                                            solumMappingConfig: {
+                                                ...settings.solumMappingConfig,
+                                                uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                                fields: settings.solumMappingConfig?.fields || {},
+                                                conferenceMapping: mapping,
+                                            },
+                                        })
+                                    }
                                     mappingInfo={settings.solumMappingConfig?.mappingInfo}
-                                    disabled={isMappingLocked}
-                                />
-
-                                {/* Global Field Assignments */}
-                                <Box sx={{ mt: 3 }}>
-                                    <SolumGlobalFieldsEditor
-                                        articleFormatFields={articleFormatFields}
-                                        globalAssignments={settings.solumMappingConfig?.globalFieldAssignments || {}}
-                                        onChange={(assignments) => onUpdate({
+                                    onMappingInfoChange={(newMappingInfo) =>
+                                        onUpdate({
                                             solumMappingConfig: {
                                                 ...settings.solumMappingConfig,
                                                 uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
@@ -493,34 +200,64 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                                     meetingTime: '',
                                                     participants: '',
                                                 },
-                                                globalFieldAssignments: assignments,
-                                            }
-                                        })}
+                                                mappingInfo: newMappingInfo,
+                                            },
+                                        })
+                                    }
+                                    disabled={isMappingLocked}
+                                />
+
+                                {/* Global Field Assignments */}
+                                <Box sx={{ mt: 3 }}>
+                                    <SolumGlobalFieldsEditor
+                                        articleFormatFields={articleFormatFields}
+                                        globalAssignments={settings.solumMappingConfig?.globalFieldAssignments || {}}
+                                        onChange={(assignments) =>
+                                            onUpdate({
+                                                solumMappingConfig: {
+                                                    ...settings.solumMappingConfig,
+                                                    uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                                    fields: settings.solumMappingConfig?.fields || {},
+                                                    conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                        meetingName: '',
+                                                        meetingTime: '',
+                                                        participants: '',
+                                                    },
+                                                    globalFieldAssignments: assignments,
+                                                },
+                                            })
+                                        }
                                         disabled={isMappingLocked}
                                     />
                                 </Box>
 
                                 {/* Field Mapping Table */}
                                 <Box sx={{ mt: 3 }}>
-                                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+                                    <Typography
+                                        variant="subtitle2"
+                                        color="text.secondary"
+                                        sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}
+                                    >
                                         {t('settings.fieldFriendlyNames')}
                                     </Typography>
                                     <SolumFieldMappingTable
                                         articleFormatFields={articleFormatFields}
                                         mappings={settings.solumMappingConfig?.fields || {}}
                                         excludeFields={Object.keys(settings.solumMappingConfig?.globalFieldAssignments || {})}
-                                        onChange={(mappings) => onUpdate({
-                                            solumMappingConfig: {
-                                                ...settings.solumMappingConfig,
-                                                uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
-                                                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
-                                                    meetingName: '',
-                                                    meetingTime: '',
-                                                    participants: '',
+                                        onChange={(mappings) =>
+                                            onUpdate({
+                                                solumMappingConfig: {
+                                                    ...settings.solumMappingConfig,
+                                                    uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                                    conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                        meetingName: '',
+                                                        meetingTime: '',
+                                                        participants: '',
+                                                    },
+                                                    fields: mappings,
                                                 },
-                                                fields: mappings,
-                                            }
-                                        })}
+                                            })
+                                        }
                                         disabled={isMappingLocked}
                                     />
                                 </Box>

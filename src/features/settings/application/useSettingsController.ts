@@ -12,12 +12,40 @@ import {
 import { login, refreshToken as refreshSolumToken, getStoreSummary } from '@shared/infrastructure/services/solumService';
 import type { SettingsData, ExportedSettings } from '../domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 
 /**
  * Admin password for emergency access to settings
  * This password always works to unlock settings, even if user forgets their password
+ * Loaded from environment variable for security
  */
-const ADMIN_PASSWORD = 'Kkkvd24nr!!#';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
+
+/**
+ * Helper function to clear all data stores
+ * Called on disconnect or mode switch
+ */
+function clearAllDataStores(): void {
+    try {
+        logger.info('Settings', 'Clearing all data stores...');
+
+        useSpacesStore.getState().clearAllData();
+        logger.info('Settings', 'Spaces store cleared');
+
+        usePeopleStore.getState().clearAllData();
+        logger.info('Settings', 'People store cleared');
+
+        useConferenceStore.getState().clearAllData();
+        logger.info('Settings', 'Conference store cleared');
+
+        logger.info('Settings', 'All data stores cleared successfully');
+    } catch (error) {
+        logger.error('Settings', 'Failed to clear data stores', { error });
+        throw error;
+    }
+}
 
 /**
  * Settings Controller Hook
@@ -320,14 +348,17 @@ export function useSettingsController() {
 
     /**
      * Disconnect from SoluM API
-     * Clears tokens and connection state
+     * Clears tokens, connection state, and all data stores
      */
-    const disconnectFromSolum = useCallback((): void => {
-        logger.info('SettingsController', 'Disconnecting from SoluM API');
+    const disconnectFromSolum = useCallback(async (): Promise<void> => {
+        logger.info('Settings', 'Disconnecting from SoluM API');
 
         if (!settings.solumConfig) {
             return;
         }
+
+        // Clear all data stores using async helper to avoid circular dependencies
+        await clearAllDataStores();
 
         updateInStore({
             solumConfig: {
@@ -339,7 +370,7 @@ export function useSettingsController() {
             },
         });
 
-        logger.info('SettingsController', 'Disconnected from SoluM API');
+        logger.info('Settings', 'Disconnected from SoluM API');
     }, [settings.solumConfig, updateInStore]);
 
     /**

@@ -135,6 +135,8 @@ export class SolumSyncAdapter implements SyncAdapter {
                 continue;
             }
 
+
+
             // Find assigned label
             const label = labelsArray.find(l => l.articleId === article.articleId);
 
@@ -192,10 +194,22 @@ export class SolumSyncAdapter implements SyncAdapter {
                 }
             }
 
+            // Preserve People Mode metadata fields (these are hidden but necessary for cross-device sync)
+            // Check both articleData (nested) and article root level (AIMS may flatten fields)
+            const metadataFields = ['_LIST_MEMBERSHIPS_', '__PERSON_UUID__', '__VIRTUAL_SPACE__', '__LAST_MODIFIED__'];
+            for (const field of metadataFields) {
+                // Check nested data first, then root level
+                const value = articleData[field] ?? article[field];
+                if (value !== undefined && value !== null && value !== '') {
+                    data[field] = String(value);
+                }
+            }
+
             const space: Space = {
                 id: article.articleId,
                 data,
                 labelCode: label?.labelCode,
+                assignedLabels: Array.isArray(article.assignedLabel) ? article.assignedLabel : undefined,
             };
 
             spaces.push(space);

@@ -7,6 +7,8 @@ import {
     TextField,
     Stack,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +43,8 @@ export function SpaceDialog({
     existingIds = []
 }: SpaceDialogProps) {
     const { i18n, t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const currentLanguage = i18n.language as 'en' | 'he';
     const [formData, setFormData] = useState<Partial<Space>>({});
@@ -175,7 +179,7 @@ export function SpaceDialog({
     }, [workingMode, solumMappingConfig, csvConfig, currentLanguage, nameFieldKey]);
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 {space ? `${t('common.edit')} ${spaceTypeLabel}` : `${t('common.add')} ${spaceTypeLabel}`}
             </DialogTitle>

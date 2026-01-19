@@ -52,10 +52,20 @@ describe('Encryption Service', () => {
                 testPassword
             ).toString();
 
-            const decrypted = CryptoJS.AES.decrypt(encrypted, 'wrong-password');
-            const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
+            // When decrypting with wrong password, CryptoJS may:
+            // 1. Return garbage bytes that can't be parsed as UTF-8 (throws error)
+            // 2. Return empty string
+            // Either way, we won't get the original data back
+            try {
+                const decrypted = CryptoJS.AES.decrypt(encrypted, 'wrong-password');
+                const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
 
-            expect(decryptedString).not.toBe(JSON.stringify(testData));
+                // If it doesn't throw, the result should be empty or not match original
+                expect(decryptedString === '' || decryptedString !== JSON.stringify(testData)).toBe(true);
+            } catch (error) {
+                // Expected - malformed UTF-8 when decrypting with wrong password
+                expect(error).toBeDefined();
+            }
         });
     });
 

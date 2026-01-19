@@ -3,12 +3,13 @@
  * 
  * Allows configuration of CSV columns for SFTP mode:
  * - Add/remove/edit columns
- * - Dual reordering: drag-drop + up/down buttons
- * - Field type selection
- * - Mandatory field configuration
+ * - Up/down button reordering
+ * - Visible field configuration
+ * - Lock icon for fields used as global assignments or ID column
+ * - Unsaved changes detection and warning
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Button,
@@ -20,23 +21,28 @@ import {
     TableRow,
     TextField,
     IconButton,
-    Select,
-    MenuItem,
-    FormControl,
     Checkbox,
+    Tooltip,
+    Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import AddIcon from '@mui/icons-material/Add';
+import LockIcon from '@mui/icons-material/Lock';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useTranslation } from 'react-i18next';
-import { DragDropContext, Draggable, Droppable, type DropResult } from 'react-beautiful-dnd';
-import type { CSVColumn, FieldType } from '../domain/types';
+import type { CSVColumn } from '../domain/types';
 
 interface CSVStructureEditorProps {
     columns: CSVColumn[];
     onColumnsChange: (columns: CSVColumn[]) => boolean;
+    /** Field names that are locked (used as global fields) */
+    lockedFields?: string[];
+    /** The field name selected as unique ID column */
+    idColumn?: string;
+    /** Callback to check if navigation should be blocked (returns true if has unsaved changes) */
+    onHasUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
 /**
@@ -44,31 +50,57 @@ interface CSVStructureEditorProps {
  * 
  * Features:
  * - Table-based column configuration
- * - Drag-and-drop reordering
  * - Up/down button reordering
  * - Add/remove columns
  * - Field type selection
- * - Mandatory field checkbox
+ * - Visible field checkbox
+ * - Lock icon for fields used as global assignments or as ID column
  */
-export function CSVStructureEditor({ columns, onColumnsChange }: CSVStructureEditorProps) {
+export function CSVStructureEditor({ columns, onColumnsChange, lockedFields = [], idColumn, onHasUnsavedChanges }: CSVStructureEditorProps) {
     const { t } = useTranslation();
     const [editingColumns, setEditingColumns] = useState<CSVColumn[]>(columns);
-
-    // Drag-drop reordering
-    const handleDragEnd = (result: DropResult) => {
-        if (!result.destination) return;
-
-        const items = Array.from(editingColumns);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-
-        // Re-index all columns
-        items.forEach((col, i) => {
-            col.index = i;
+    const [originalColumns, setOriginalColumns] = useState<CSVColumn[]>(columns);
+    
+    // Helper to check if a field is locked (global field or ID column)
+    const isFieldLocked = (fieldName: string) => lockedFields.includes(fieldName) || fieldName === idColumn;
+    
+    // Helper to check if field is the ID column
+    const isIdColumn = (fieldName: string) => fieldName === idColumn;
+    
+    // Check if there are unsaved changes
+    const hasUnsavedChanges = useMemo(() => {
+        if (editingColumns.length !== originalColumns.length) return true;
+        
+        return editingColumns.some((col, index) => {
+            const original = originalColumns[index];
+            if (!original) return true;
+            return (
+                col.aimsValue !== original.aimsValue ||
+                col.headerEn !== original.headerEn ||
+                col.headerHe !== original.headerHe ||
+                col.visible !== original.visible ||
+                col.index !== original.index
+            );
         });
+    }, [editingColumns, originalColumns]);
+    
+    // Notify parent about unsaved changes
+    useEffect(() => {
+        onHasUnsavedChanges?.(hasUnsavedChanges);
+    }, [hasUnsavedChanges, onHasUnsavedChanges]);
 
-        setEditingColumns(items);
-    };
+    // Sync local state with props when columns change externally
+    // Use JSON comparison to avoid resetting on reference changes
+    useEffect(() => {
+        const columnsJson = JSON.stringify(columns);
+        const originalJson = JSON.stringify(originalColumns);
+        
+        // Only reset if the external columns actually changed (content, not just reference)
+        if (columnsJson !== originalJson) {
+            setEditingColumns(columns);
+            setOriginalColumns(columns);
+        }
+    }, [columns, originalColumns]);
 
     // Button reordering
     const handleMoveUp = (index: number) => {
@@ -107,7 +139,7 @@ export function CSVStructureEditor({ columns, onColumnsChange }: CSVStructureEdi
             headerEn: '',
             headerHe: '',
             type: 'text',
-            mandatory: false,
+            visible: true,
         };
         setEditingColumns([...editingColumns, newColumn]);
     };
@@ -132,11 +164,26 @@ export function CSVStructureEditor({ columns, onColumnsChange }: CSVStructureEdi
 
     // Save changes
     const handleSave = () => {
-        onColumnsChange(editingColumns);
+        const success = onColumnsChange(editingColumns);
+        if (success) {
+            // Update original to match current after successful save
+            setOriginalColumns([...editingColumns]);
+        }
     };
 
     return (
         <Stack gap={2}>
+            {/* Unsaved changes warning */}
+            {hasUnsavedChanges && (
+                <Alert 
+                    severity="warning" 
+                    icon={<WarningIcon />}
+                    sx={{ py: 0.5 }}
+                >
+                    {t('settings.unsavedChangesNotice')}
+                </Alert>
+            )}
+            
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Button
                     variant="outlined"
@@ -148,150 +195,141 @@ export function CSVStructureEditor({ columns, onColumnsChange }: CSVStructureEdi
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={editingColumns.length === 0}
+                    disabled={editingColumns.length === 0 || !hasUnsavedChanges}
                 >
                     {t('common.save')}
                 </Button>
             </Box>
 
-            <DragDropContext onDragEnd={handleDragEnd}>
-                <Box sx={{ overflowX: 'auto' }}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ width: 50 }}></TableCell>
-                                <TableCell>{t('settings.columnOrder')}</TableCell>
-                                <TableCell>{t('settings.fieldName')}</TableCell>
-                                <TableCell>{t('settings.headerEn')}</TableCell>
-                                <TableCell>{t('settings.headerHe')}</TableCell>
-                                <TableCell>{t('settings.type')}</TableCell>
-                                <TableCell>{t('settings.required')}</TableCell>
-                                <TableCell>{t('common.actions')}</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <Droppable droppableId="columns">
-                            {(provided) => (
-                                <TableBody {...provided.droppableProps} ref={provided.innerRef}>
-                                    {editingColumns.map((col, index) => (
-                                        <Draggable
-                                            key={`column-${index}`}
-                                            draggableId={`column-${index}`}
-                                            index={index}
+            <Box sx={{ overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 650 }}>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ width: 60 }}>{t('settings.columnOrder')}</TableCell>
+                            <TableCell sx={{ width: 150 }}>{t('settings.fieldName')}</TableCell>
+                            <TableCell sx={{ width: 150 }}>{t('settings.headerEn')}</TableCell>
+                            <TableCell sx={{ width: 150 }}>{t('settings.headerHe')}</TableCell>
+                            <TableCell sx={{ width: 70 }}>{t('settings.visible')}</TableCell>
+                            <TableCell sx={{ width: 120 }}>{t('common.actions')}</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {editingColumns.map((col, index) => {
+                            const locked = isFieldLocked(col.aimsValue);
+                            const isId = isIdColumn(col.aimsValue);
+                            const lockTooltip = isId 
+                                ? t('settings.fieldLockedAsId') 
+                                : t('settings.fieldLockedAsGlobal');
+                            return (
+                            <TableRow 
+                                key={`${col.aimsValue}-${index}`}
+                                sx={locked ? { 
+                                    backgroundColor: isId ? 'primary.50' : 'action.hover',
+                                    opacity: 0.9
+                                } : undefined}
+                            >
+                                <TableCell>
+                                    {locked ? (
+                                        <Tooltip title={lockTooltip}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <LockIcon fontSize="small" color={isId ? 'primary' : 'action'} />
+                                                {index + 1}
+                                            </Box>
+                                        </Tooltip>
+                                    ) : (
+                                        index + 1
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    <TextField
+                                        size="small"
+                                        value={col.aimsValue}
+                                        onChange={(e) =>
+                                            handleUpdateColumn(index, 'aimsValue', e.target.value)
+                                        }
+                                        placeholder="fieldName"
+                                        fullWidth
+                                        disabled={locked}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <TextField
+                                        size="small"
+                                        value={col.headerEn}
+                                        onChange={(e) =>
+                                            handleUpdateColumn(index, 'headerEn', e.target.value)
+                                        }
+                                        placeholder="English Header"
+                                        fullWidth
+                                        disabled={locked}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <TextField
+                                        size="small"
+                                        value={col.headerHe}
+                                        onChange={(e) =>
+                                            handleUpdateColumn(index, 'headerHe', e.target.value)
+                                        }
+                                        placeholder="כותרת עברית"
+                                        fullWidth
+                                        disabled={locked}
+                                    />
+                                </TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>
+                                    {locked ? (
+                                        <Tooltip title={lockTooltip}>
+                                            <span>
+                                                <Checkbox
+                                                    checked={isId ? true : false}
+                                                    disabled={true}
+                                                />
+                                            </span>
+                                        </Tooltip>
+                                    ) : (
+                                        <Checkbox
+                                            checked={col.visible ?? true}
+                                            onChange={(e) =>
+                                                handleUpdateColumn(index, 'visible', e.target.checked)
+                                            }
+                                        />
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleMoveUp(index)}
+                                            disabled={index === 0}
+                                            title={t('settings.moveUp')}
                                         >
-                                            {(provided, snapshot) => (
-                                                <TableRow
-                                                    ref={provided.innerRef}
-                                                    {...provided.draggableProps}
-                                                    sx={{
-                                                        backgroundColor: snapshot.isDragging
-                                                            ? 'action.hover'
-                                                            : 'inherit',
-                                                    }}
-                                                >
-                                                    <TableCell {...provided.dragHandleProps}>
-                                                        <DragIndicatorIcon sx={{ cursor: 'grab' }} />
-                                                    </TableCell>
-                                                    <TableCell>{index + 1}</TableCell>
-                                                    <TableCell>
-                                                        <TextField
-                                                            size="small"
-                                                            value={col.aimsValue}
-                                                            onChange={(e) =>
-                                                                handleUpdateColumn(index, 'aimsValue', e.target.value)
-                                                            }
-                                                            placeholder="fieldName"
-                                                            fullWidth
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <TextField
-                                                            size="small"
-                                                            value={col.headerEn}
-                                                            onChange={(e) =>
-                                                                handleUpdateColumn(index, 'headerEn', e.target.value)
-                                                            }
-                                                            placeholder="English Header"
-                                                            fullWidth
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <TextField
-                                                            size="small"
-                                                            value={col.headerHe}
-                                                            onChange={(e) =>
-                                                                handleUpdateColumn(index, 'headerHe', e.target.value)
-                                                            }
-                                                            placeholder="כותרת עברית"
-                                                            fullWidth
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <FormControl size="small" sx={{ minWidth: 100 }}>
-                                                            <Select
-                                                                value={col.type || 'text'}
-                                                                onChange={(e) =>
-                                                                    handleUpdateColumn(
-                                                                        index,
-                                                                        'type',
-                                                                        e.target.value as FieldType
-                                                                    )
-                                                                }
-                                                            >
-                                                                <MenuItem value="text">{t('settings.typeText')}</MenuItem>
-                                                                <MenuItem value="number">{t('settings.typeNumber')}</MenuItem>
-                                                                <MenuItem value="email">{t('settings.typeEmail')}</MenuItem>
-                                                                <MenuItem value="phone">{t('settings.typePhone')}</MenuItem>
-                                                                <MenuItem value="url">{t('settings.typeUrl')}</MenuItem>
-                                                            </Select>
-                                                        </FormControl>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Checkbox
-                                                            checked={col.mandatory || false}
-                                                            onChange={(e) =>
-                                                                handleUpdateColumn(index, 'mandatory', e.target.checked)
-                                                            }
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleMoveUp(index)}
-                                                                disabled={index === 0}
-                                                                title={t('settings.moveUp')}
-                                                            >
-                                                                <ArrowUpwardIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleMoveDown(index)}
-                                                                disabled={index === editingColumns.length - 1}
-                                                                title={t('settings.moveDown')}
-                                                            >
-                                                                <ArrowDownwardIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                color="error"
-                                                                onClick={() => handleRemoveColumn(index)}
-                                                                title={t('settings.removeColumn')}
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Box>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </Draggable>
-                                    ))}
-                                    {provided.placeholder}
-                                </TableBody>
-                            )}
-                        </Droppable>
-                    </Table>
-                </Box>
-            </DragDropContext>
+                                            <ArrowUpwardIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleMoveDown(index)}
+                                            disabled={index === editingColumns.length - 1}
+                                            title={t('settings.moveDown')}
+                                        >
+                                            <ArrowDownwardIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={() => handleRemoveColumn(index)}
+                                            disabled={locked}
+                                            title={t('settings.removeColumn')}
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </Box>
+                                </TableCell>
+                            </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </Box>
 
             {editingColumns.length === 0 && (
                 <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>

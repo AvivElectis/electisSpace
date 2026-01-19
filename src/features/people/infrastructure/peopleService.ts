@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import { v4 as uuidv4 } from 'uuid';
-import type { Person } from '../domain/types';
+import type { Person, ListMembership } from '../domain/types';
 import { getVirtualSpaceId } from '../domain/types';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
@@ -8,6 +8,31 @@ import type { SolumConfig } from '@shared/domain/types';
 import { pushArticles } from '@shared/infrastructure/services/solumService';
 import { logger } from '@shared/infrastructure/services/logger';
 import { generatePoolIds, isPoolId } from './virtualPoolService';
+
+/**
+ * Parse list memberships JSON from AIMS field
+ * Returns empty array if parsing fails or field is empty
+ */
+function parseListMemberships(jsonStr: string | undefined): ListMembership[] {
+    if (!jsonStr || jsonStr.trim() === '') return [];
+    try {
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed)) {
+            return parsed.filter(m => m && typeof m.listName === 'string');
+        }
+    } catch (e) {
+        logger.warn('PeopleService', 'Failed to parse list memberships JSON', { jsonStr });
+    }
+    return [];
+}
+
+/**
+ * Serialize list memberships to JSON for AIMS storage
+ */
+function serializeListMemberships(memberships: ListMembership[] | undefined): string {
+    if (!memberships || memberships.length === 0) return '';
+    return JSON.stringify(memberships);
+}
 
 /**
  * People Service
@@ -209,15 +234,19 @@ export function convertSpacesToPeopleWithVirtualPool(
     const articleIdField = mappingInfo?.articleId || 'ARTICLE_ID';
     const people: Person[] = [];
 
-    spaces.forEach(space => {
+    spaces.forEach((space) => {
         // Extract cross-device metadata (if present)
         const personId = space.data['__PERSON_UUID__'] || uuidv4();
         const virtualSpaceId = space.data['__VIRTUAL_SPACE__'] || space.id;
+        
+        // Extract list memberships from AIMS (JSON format)
+        const listMemberships = parseListMemberships(space.data['_LIST_MEMBERSHIPS_']);
 
-        // Clean data - remove metadata fields (those starting with __)
+        // Clean data - remove metadata fields
         const cleanData: Record<string, string> = {};
         Object.entries(space.data).forEach(([key, value]) => {
-            if (!key.startsWith('__')) {
+            if (!key.startsWith('__') && 
+                key !== '_LIST_MEMBERSHIPS_') {
                 cleanData[key] = value;
             }
         });
@@ -245,6 +274,8 @@ export function convertSpacesToPeopleWithVirtualPool(
             data: cleanData,
             aimsSyncStatus: 'synced',
             lastSyncedAt: space.data['__LAST_MODIFIED__'] || new Date().toISOString(),
+            // New multi-list format
+            listMemberships: listMemberships.length > 0 ? listMemberships : undefined,
         };
 
         people.push(person);
@@ -264,7 +295,8 @@ export function convertSpacesToPeopleWithVirtualPool(
  * - Root level: articleId, articleName, store, nfcUrl (values pulled from data)
  * - data object: all articleData fields with their values
  * 
- * For People Manager, the assigned space number is set as the articleId field value
+ * For People Mode (POOL-based), virtualSpaceId is the AIMS article ID (POOL slot).
+ * For assigned spaces, assignedSpaceId is used.
  * 
  * @param person - Person to build article for
  * @param mappingConfig - SoluM mapping configuration
@@ -273,6 +305,10 @@ export function convertSpacesToPeopleWithVirtualPool(
 export function buildArticleData(person: Person, mappingConfig?: SolumMappingConfig): Record<string, any> {
     const globalFields = mappingConfig?.globalFieldAssignments || {};
     const mappingInfo = mappingConfig?.mappingInfo;
+
+    // Determine the effective article ID - POOL slot (virtualSpaceId) takes priority
+    // This ensures People Mode people are saved to their POOL article in AIMS
+    const effectiveArticleId = person.virtualSpaceId || person.assignedSpaceId || person.id;
 
     // Build the data object with all fields
     const data: Record<string, any> = {};
@@ -285,32 +321,24 @@ export function buildArticleData(person: Person, mappingConfig?: SolumMappingCon
     // Apply global field assignments
     Object.assign(data, globalFields);
 
-    // The assigned space number becomes the articleId field value
-    // Find the articleId field from mapping (e.g., "ARTICLE_ID")
+    // The article ID field in the data object - use the effective article ID
     const articleIdField = mappingInfo?.articleId;
-    if (articleIdField && person.assignedSpaceId) {
-        data[articleIdField] = person.assignedSpaceId;
+    if (articleIdField) {
+        data[articleIdField] = effectiveArticleId;
     }
 
     // Construct the root article object
+    // AIMS format: root level has mapped fields, data object has all fields
     const aimsArticle: Record<string, any> = {
-        data: data
+        articleId: effectiveArticleId,
+        data: data,
     };
-
-    // Map root-level fields from mappingInfo
-    // articleId: use the value from data[mappingInfo.articleId]
-    if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
-        aimsArticle.articleId = String(data[mappingInfo.articleId]);
-    } else {
-        // Fallback to space number or person id
-        aimsArticle.articleId = person.assignedSpaceId || person.id;
-    }
 
     // articleName: use the value from data[mappingInfo.articleName]
     if (mappingInfo?.articleName && data[mappingInfo.articleName]) {
         aimsArticle.articleName = String(data[mappingInfo.articleName]);
     } else {
-        aimsArticle.articleName = aimsArticle.articleId;
+        aimsArticle.articleName = effectiveArticleId;
     }
 
     // store: use the value from data[mappingInfo.store]
@@ -323,9 +351,17 @@ export function buildArticleData(person: Person, mappingConfig?: SolumMappingCon
         aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
     }
 
+    // Preserve list memberships if present on person
+    // This ensures space assignments don't lose list membership data
+    if (person.listMemberships && person.listMemberships.length > 0) {
+        aimsArticle.data['_LIST_MEMBERSHIPS_'] = serializeListMemberships(person.listMemberships);
+    }
+
     logger.debug('PeopleService', 'Built AIMS article', {
         personId: person.id,
+        virtualSpaceId: person.virtualSpaceId,
         assignedSpaceId: person.assignedSpaceId,
+        effectiveArticleId,
         articleId: aimsArticle.articleId,
         articleName: aimsArticle.articleName,
         dataFields: Object.keys(data).length
@@ -337,6 +373,7 @@ export function buildArticleData(person: Person, mappingConfig?: SolumMappingCon
 /**
  * Build article data with cross-device sync metadata
  * Adds __PERSON_UUID__, __VIRTUAL_SPACE__, __LAST_MODIFIED__ to article data
+ * Also includes list memberships (_LIST_MEMBERSHIPS_ JSON) if present on person
  * @param person - Person to convert
  * @param mappingConfig - SoluM mapping configuration
  * @returns Article in AIMS format with metadata fields
@@ -347,13 +384,15 @@ export function buildArticleDataWithMetadata(
 ): Record<string, any> {
     const article = buildArticleData(person, mappingConfig);
     
-    // Add metadata for cross-device sync
-    article.data = {
-        ...article.data,
-        '__PERSON_UUID__': person.id,
-        '__VIRTUAL_SPACE__': getVirtualSpaceId(person),
-        '__LAST_MODIFIED__': new Date().toISOString(),
-    };
+    // Add metadata to the data object
+    article.data['__PERSON_UUID__'] = person.id;
+    article.data['__VIRTUAL_SPACE__'] = getVirtualSpaceId(person);
+    article.data['__LAST_MODIFIED__'] = new Date().toISOString();
+
+    // Add list memberships as JSON to the data object
+    if (person.listMemberships && person.listMemberships.length > 0) {
+        article.data['_LIST_MEMBERSHIPS_'] = serializeListMemberships(person.listMemberships);
+    }
     
     return article;
 }
@@ -394,15 +433,12 @@ export function buildEmptyArticleData(
     }
 
     // Construct the root article object
+    // AIMS format: root level has mapped fields, data object has all fields
     const aimsArticle: Record<string, any> = {
-        data: data
+        articleId: spaceId,
+        articleName: '',
+        data: data,
     };
-
-    // Set root-level articleId (the space number)
-    aimsArticle.articleId = spaceId;
-    
-    // Set root-level articleName to empty
-    aimsArticle.articleName = '';
 
     // Set store if configured in global fields
     if (mappingInfo?.store && globalFields[mappingInfo.store]) {
@@ -490,6 +526,43 @@ export async function postBulkAssignments(
     await pushArticles(config, config.storeNumber, token, articles);
 
     logger.info('PeopleService', 'Bulk assignments posted successfully', { count: people.length });
+}
+
+/**
+ * Post bulk assignments to AIMS with full metadata (including list info)
+ * Use this when you need to persist list data (_LIST_NAME_, _LIST_SPACE_) to AIMS
+ * @param people - People to post (should have listName and listSpaceId set)
+ * @param config - SoluM configuration
+ * @param token - Access token
+ * @param mappingConfig - SoluM mapping configuration
+ */
+export async function postBulkAssignmentsWithMetadata(
+    people: Person[],
+    config: SolumConfig,
+    token: string,
+    mappingConfig?: SolumMappingConfig
+): Promise<void> {
+    console.log('[postBulkAssignmentsWithMetadata] Starting with', people.length, 'people');
+    
+    logger.info('PeopleService', 'Posting bulk assignments with metadata to AIMS', { 
+        count: people.length,
+        withListData: people.filter(p => p.listMemberships?.length).length 
+    });
+
+    // Build article data with metadata (includes __PERSON_UUID__, __VIRTUAL_SPACE__, _LIST_MEMBERSHIPS_)
+    const articles = people.map(person => buildArticleDataWithMetadata(person, mappingConfig));
+    
+    console.log('[postBulkAssignmentsWithMetadata] Built', articles.length, 'articles');
+    if (articles.length > 0) {
+        console.log('[postBulkAssignmentsWithMetadata] Sample article:', JSON.stringify(articles[0], null, 2));
+    }
+
+    // Push all articles to AIMS in one batch using POST
+    console.log('[postBulkAssignmentsWithMetadata] Pushing to AIMS...');
+    await pushArticles(config, config.storeNumber, token, articles);
+    console.log('[postBulkAssignmentsWithMetadata] Push completed');
+
+    logger.info('PeopleService', 'Bulk assignments with metadata posted successfully', { count: people.length });
 }
 
 /**

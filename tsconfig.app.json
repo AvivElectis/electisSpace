@@ -28,13 +28,15 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     /* Path Aliases */
-    "baseUrl": ".",
     "paths": {
       "@features/*": [
         "./src/features/*"
       ],
       "@shared/*": [
         "./src/shared/*"
+      ],
+      "@test/*": [
+        "./src/test/*"
       ]
     }
   },

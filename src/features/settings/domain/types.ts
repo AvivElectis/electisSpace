@@ -2,7 +2,10 @@
  * Settings Feature Domain Types
  */
 
-import type { ArticleFormat, CSVColumn, FieldMapping, MappingInfo } from '@features/configuration/domain/types';
+import type { ArticleFormat, MappingInfo } from '@features/configuration/domain/types';
+import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
+
+export type { EnhancedCSVConfig };
 
 export interface LogoConfig {
     logo1?: string;  // Base64 encoded image
@@ -41,13 +44,8 @@ export interface SettingsData {
     workingMode: import('@shared/domain/types').WorkingMode;
 
     // MODE SEPARATION: Each mode has its own configuration
-    // SFTP Mode: CSV structure configuration
-    sftpCsvConfig?: {
-        delimiter: string;
-        columns: CSVColumn[];
-        mapping: FieldMapping;
-        conferenceEnabled: boolean;
-    };
+    // SFTP Mode: CSV structure configuration (uses EnhancedCSVConfig from csvService)
+    sftpCsvConfig?: EnhancedCSVConfig;
 
     // SoluM Mode: Article format schema
     solumArticleFormat?: ArticleFormat;

@@ -16,6 +16,7 @@ export interface LogEntry {
 export interface LogsStore {
     availableDays: string[]; // List of dates YYYY-MM-DD that have logs
     loadedLogs: Record<string, LogEntry[]>; // In-memory cache of loaded days
+    dayLogCounts: Record<string, number>; // Log counts per day (pre-loaded for display)
     isLoading: boolean;
     maxDays: number;
 
@@ -26,6 +27,7 @@ export interface LogsStore {
     clearOldLogs: () => Promise<void>;
     getFilteredLogs: (date: string, level?: LogLevel, search?: string) => LogEntry[];
     exportMultipleDays: (dates: string[]) => Promise<Blob>;
+    getDayLogCount: (date: string) => number;
 }
 
 const MAX_DAYS = 10;
@@ -106,6 +108,7 @@ export const useLogsStore = create<LogsStore>()(
         (set, get) => ({
             availableDays: [],
             loadedLogs: {},
+            dayLogCounts: {},
             isLoading: false,
             maxDays: MAX_DAYS,
 
@@ -119,7 +122,19 @@ export const useLogsStore = create<LogsStore>()(
                         .sort()
                         .reverse();
 
-                    set({ availableDays: days, isLoading: false });
+                    // Pre-load log counts for all days
+                    const counts: Record<string, number> = {};
+                    for (const day of days) {
+                        try {
+                            const storageKey = `${LOG_KEY_PREFIX}${day}`;
+                            const logs = (await idbGet(storageKey)) as LogEntry[] | undefined;
+                            counts[day] = logs?.length || 0;
+                        } catch {
+                            counts[day] = 0;
+                        }
+                    }
+
+                    set({ availableDays: days, dayLogCounts: counts, isLoading: false });
 
                     // Trigger cleanup on init
                     get().clearOldLogs();
@@ -155,6 +170,11 @@ export const useLogsStore = create<LogsStore>()(
                     if (!state.availableDays.includes(dateKey)) {
                         updates.availableDays = [dateKey, ...state.availableDays].sort().reverse();
                     }
+                    // Update the day log count
+                    updates.dayLogCounts = {
+                        ...state.dayLogCounts,
+                        [dateKey]: (state.dayLogCounts[dateKey] || 0) + 1
+                    };
                     return updates;
                 });
 
@@ -191,9 +211,11 @@ export const useLogsStore = create<LogsStore>()(
                         await idbDel(storageKey);
                         set(state => {
                             const { [date]: _, ...restLoaded } = state.loadedLogs;
+                            const { [date]: __, ...restCounts } = state.dayLogCounts;
                             return {
                                 availableDays: state.availableDays.filter(d => d !== date),
-                                loadedLogs: restLoaded
+                                loadedLogs: restLoaded,
+                                dayLogCounts: restCounts
                             };
                         });
                     } else {
@@ -201,7 +223,7 @@ export const useLogsStore = create<LogsStore>()(
                         const allKeys = await idbKeys();
                         const logKeys = allKeys.filter((k: IDBValidKey) => String(k).startsWith(LOG_KEY_PREFIX));
                         await Promise.all(logKeys.map((k: IDBValidKey) => idbDel(k)));
-                        set({ availableDays: [], loadedLogs: {} });
+                        set({ availableDays: [], loadedLogs: {}, dayLogCounts: {} });
                     }
                 } catch (error) {
                     console.error('Failed to clear logs:', error);
@@ -257,6 +279,16 @@ export const useLogsStore = create<LogsStore>()(
                 }
 
                 return await zip.generateAsync({ type: 'blob' });
+            },
+
+            getDayLogCount: (date) => {
+                // If logs are loaded, use the actual loaded count
+                const loadedLogs = get().loadedLogs[date];
+                if (loadedLogs) {
+                    return loadedLogs.length;
+                }
+                // Otherwise use the pre-loaded count
+                return get().dayLogCounts[date] || 0;
             }
         }),
         { name: 'LogsStore' }

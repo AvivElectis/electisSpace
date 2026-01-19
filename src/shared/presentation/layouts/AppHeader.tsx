@@ -1,7 +1,9 @@
-import { AppBar, Toolbar, Box, IconButton, Typography } from '@mui/material';
+import { AppBar, Toolbar, Box, IconButton, Typography, Tooltip } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useTranslation } from 'react-i18next';
 
 // import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 // import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
@@ -10,6 +12,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 interface AppHeaderProps {
     onSettingsClick?: () => void;
     onMenuClick?: () => void;
+    onManualClick?: () => void;
     settingsOpen?: boolean;
 }
 
@@ -18,11 +21,12 @@ interface AppHeaderProps {
  * Displays logos, app title (centered), language switcher, and settings icon
  * Title and subtitle are configurable through app settings
  */
-export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHeaderProps) {
+export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, settingsOpen }: AppHeaderProps) {
     // Get settings from store
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
     const isLocked = useSettingsStore((state) => state.isLocked);
+    const { t } = useTranslation();
     // Sync state moved to MainLayout
 
     // Use dynamic logos or fall back to defaults
@@ -47,7 +51,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
             <Toolbar sx={{
                 justifyContent: 'space-between',
                 minHeight: { xs: 56, sm: 64 },
-                px: { xs: 2, sm: 3 },
+                px: { xs: .5, sm: 3 },
             }}>
                 {/* Mobile Menu Button (left side on mobile) */}
                 {onMenuClick && (
@@ -56,9 +60,9 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                         color="inherit"
                         aria-label="menu"
                         onClick={onMenuClick}
-                        sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }}
+                        sx={{ display: { xs: 'flex', md: 'none' }, mx: .5 }}
                     >
-                        <MenuIcon />
+                        <MenuIcon sx={{fontSize: '40px', padding: 0, borderRadius: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)'}} />
                     </IconButton>
                 )}
 
@@ -68,8 +72,8 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                     src={leftLogo}
                     alt="Left Logo"
                     sx={{
-                        height: { xs: 140, sm: 80 },
-                        maxWidth: { xs: 180, sm: 250 },
+                        height: { xs: 40, sm: 60, md: 80 },
+                        maxWidth: { xs: 100, sm: 180, md: 250 },
                         objectFit: 'contain',
                     }}
                 />
@@ -90,9 +94,9 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                     <Typography
                         variant="h1"
                         sx={{
-                            fontWeight: 600,
+                            fontWeight: 700,
                             color: 'text.primary',
-                            fontSize: { xs: '2rem', sm: '2.25rem' },
+                            fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.25rem' },
                         }}
                     >
                         {settings.appName}
@@ -101,6 +105,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
                         <Typography
                             variant="caption"
                             sx={{
+                                fontWeight: 700,
                                 color: 'text.secondary',
                                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 display: { xs: 'none', sm: 'block' },
@@ -112,20 +117,32 @@ export function AppHeader({ onSettingsClick, onMenuClick, settingsOpen }: AppHea
 
                 </Box>
 
-                {/* Right Logo + Language Switcher + Settings */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* Right Logo + Language Switcher + Manual + Settings */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+                    
                     <Box
                         component="img"
                         src={rightLogo}
                         alt="Right Logo"
                         sx={{
-                            height: { xs: 140, sm: 80 },
-                            maxWidth: { xs: 180, sm: 250 },
+                            height: { xs: 40, sm: 60, md: 80 },
+                            maxWidth: { xs: 100, sm: 180, md: 250 },
                             objectFit: 'contain',
+                            display: { xs: 'none', sm: 'block' },
                         }}
                     />
                     {/* Sync Indicator moved to MainLayout */}
+                    <Tooltip title={t('manual.title')}>
+                        <IconButton
+                            color="default"
+                            onClick={onManualClick}
+                            sx={{ mx: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }}
+                        >
+                            <HelpOutlineIcon />
+                        </IconButton>
+                    </Tooltip>
                     <LanguageSwitcher />
+
                     <IconButton
                         color={iconColor}
                         onClick={onSettingsClick}

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteCompression from 'vite-plugin-compression';
@@ -13,6 +14,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    basicSsl(),  // HTTPS with self-signed certificate for dev
     // Gzip compression
     viteCompression({
       algorithm: 'gzip',
@@ -35,6 +37,19 @@ export default defineConfig({
     alias: {
       '@features': path.resolve(__dirname, './src/features'),
       '@shared': path.resolve(__dirname, './src/shared'),
+      '@test': path.resolve(__dirname, './src/test'),
+    },
+  },
+  server: {
+    port: 3000,
+    proxy: {
+      // SFTP API proxy for development (avoids CORS)
+      '/sftp-api': {
+        target: 'https://solum.co.il/sftp',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sftp-api/, ''),
+        secure: true,
+      },
     },
   },
   build: {
@@ -61,7 +76,7 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1200, // Raised for lazy-loaded ArticleFormatEditor (~1.1MB vanilla-jsoneditor)
     sourcemap: false,
     minify: 'terser',
   },

@@ -7,14 +7,17 @@ import type { ConferenceStats } from './types';
 
 /**
  * Generate unique conference room ID
- * @param existingIds - List of existing IDs
- * @returns Unique ID in format C01, C02, etc.
+ * @param existingIds - List of existing IDs (without 'C' prefix)
+ * @returns Unique ID in format 01, 02, etc. (without 'C' prefix - prefix added only in CSV output)
  */
 export function generateConferenceRoomId(existingIds: string[]): string {
     // Extract numeric parts from existing IDs
+    // IDs may or may not have 'C' prefix depending on where they came from
     const numbers = existingIds
-        .filter(id => id.startsWith('C'))
-        .map(id => parseInt(id.substring(1), 10))
+        .map(id => {
+            const cleanId = id.startsWith('C') || id.startsWith('c') ? id.substring(1) : id;
+            return parseInt(cleanId, 10);
+        })
         .filter(n => !isNaN(n));
 
     // Find next available number
@@ -23,8 +26,8 @@ export function generateConferenceRoomId(existingIds: string[]): string {
         nextNumber++;
     }
 
-    // Format as C01, C02, etc.
-    return `C${String(nextNumber).padStart(2, '0')}`;
+    // Format as 01, 02, etc. (no 'C' prefix - added only in CSV output)
+    return String(nextNumber).padStart(2, '0');
 }
 
 /**
