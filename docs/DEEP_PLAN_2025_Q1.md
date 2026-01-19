@@ -189,6 +189,45 @@ Added manual feature, layout, hook, and space domain tests. **ACHIEVED 1000+ TES
   - **validateSpaceListName**: Valid name, empty name, whitespace, max 50 chars, Hebrew, numbers
   - **isSpaceIdUnique**: Unique ID, duplicate ID, exclude ID for updates, empty list
 
+##### Phase 10.34: Domain & Infrastructure Tests
+- **Created `useDynamicImport.test.tsx`**: 16 tests covering:
+  - **initial state**: Null module, loading false, no error, control functions
+  - **auto-load behavior**: No auto-load by default, auto-load when enabled
+  - **manual load**: Load on call, loading state during import, no re-import
+  - **error handling**: Set error on failure, loading false on error
+  - **retry/reset**: Clear error, reset module to null
+  - **module formats**: Default exports, named exports
+
+- **Created `usePerformanceMonitor.test.tsx`**: 10 tests covering:
+  - **disabled state**: No tracking, no throw
+  - **enabled state**: Track metrics, store component name, count renders, duration, average
+  - **multiple components**: Separate tracking, no interference
+  - **return value**: Returns void
+
+- **Created `settings/domain/businessRules.test.ts`**: 26 tests covering:
+  - **createDefaultSettings**: App name, subtitle, space type, working mode, CSV config, SoluM config, auto-sync
+  - **exportSettings**: Version, timestamp, unencrypted default, serialized data, encrypted with password
+  - **importSettings**: Unencrypted, encrypted with correct password, error without password, wrong password error
+  - **sanitizeSettings**: Include app info, CSV config, logos, auto-sync; omit credentials
+
+- **Created `settings/domain/validation.test.ts`**: 31 tests covering:
+  - **validatePassword**: Valid, empty, whitespace, min 4 chars
+  - **validateLogoFile**: Valid PNG/JPEG, size limit 2MB, format check, logo index
+  - **validateAppName**: Valid, empty, whitespace, max 50 chars, Hebrew
+  - **validateSettings**: Valid, invalid name, auto-sync interval min 30s
+  - **validateSolumMappingConfig**: Valid, undefined, uniqueIdField, fields mapping, conference mapping
+
+- **Created `configuration/domain/validation.test.ts`**: 24 tests covering:
+  - **validateArticleFormat**: Valid, missing store/articleId/articleName, basicInfo, delimiter, extension
+  - **validateCSVStructure**: Valid, empty, duplicate indices/aimsValues, ID column, column fields
+  - **validateCSVColumn**: Valid, empty aimsValue/headers, negative index, multiple errors
+
+- **Created `notificationStore.test.ts`**: 15 tests covering:
+  - **useNotificationStore**: Empty start, add, unique IDs, default/custom duration, auto-dismiss, remove, clear
+  - **useNotifications hook**: showSuccess/Error/Info/Warning, custom duration, custom notification
+
+🎉🎉🎉 **1127 TESTS MILESTONE!** 🎉🎉🎉
+
 ---
 
 ### Recent Updates (January 13, 2026) - Session 10 Continued (Part 13)
