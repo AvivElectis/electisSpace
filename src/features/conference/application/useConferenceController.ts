@@ -1,11 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { useConferenceStore } from '../infrastructure/conferenceStore';
 import { validateConferenceRoom, isConferenceRoomIdUnique } from '../domain/validation';
 import { generateConferenceRoomId, createEmptyConferenceRoom, toggleMeetingStatus } from '../domain/businessRules';
-import type { ConferenceRoom, SolumConfig } from '@shared/domain/types';
+import type { ConferenceRoom, SolumConfig, SFTPCredentials, WorkingMode } from '@shared/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
+import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
 import { logger } from '@shared/infrastructure/services/logger';
-import * as solumService from '@shared/infrastructure/services/solumService';
+import { useConferenceAIMS } from './hooks/useConferenceAIMS';
+import { SFTPSyncAdapter } from '@features/sync/infrastructure/SFTPSyncAdapter';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 
 /**
  * Conference Controller Hook
@@ -17,6 +20,10 @@ interface UseConferenceControllerProps {
     solumConfig?: SolumConfig;     // For SoluM label page flipping
     solumToken?: string;            // Current SoluM access token
     solumMappingConfig?: SolumMappingConfig; // SoluM field mappings
+    // SFTP mode props
+    workingMode?: WorkingMode;
+    sftpCredentials?: SFTPCredentials;
+    sftpCsvConfig?: EnhancedCSVConfig;
 }
 
 export function useConferenceController({
@@ -24,6 +31,9 @@ export function useConferenceController({
     solumConfig,
     solumToken,
     solumMappingConfig,
+    workingMode = 'SOLUM_API',
+    sftpCredentials,
+    sftpCsvConfig,
 }: UseConferenceControllerProps) {
     const {
         conferenceRooms,
@@ -32,6 +42,56 @@ export function useConferenceController({
         updateConferenceRoom: updateInStore,
         deleteConferenceRoom: deleteFromStore,
     } = useConferenceStore();
+
+    // SFTP Adapter ref for reuse
+    const sftpAdapterRef = useRef<SFTPSyncAdapter | null>(null);
+
+    // Use the extracted AIMS hook for all AIMS operations
+    const { 
+        pushToAIMS, 
+        deleteFromAIMS, 
+        fetchFromAIMS, 
+        flipLabelPage: flipLabelPageInternal,
+        isAIMSConfigured 
+    } = useConferenceAIMS({
+        solumConfig,
+        solumToken,
+        solumMappingConfig,
+    });
+
+    // Loading state for fetch operations
+    const [isFetching, setIsFetching] = useState(false);
+
+    /**
+     * Get or create SFTP adapter for uploads
+     */
+    const getSFTPAdapter = useCallback((): SFTPSyncAdapter | null => {
+        if (!sftpCredentials || !sftpCsvConfig) return null;
+        
+        if (!sftpAdapterRef.current) {
+            sftpAdapterRef.current = new SFTPSyncAdapter(sftpCredentials, sftpCsvConfig);
+        } else {
+            // Update with latest config
+            sftpAdapterRef.current.updateCredentials(sftpCredentials);
+            sftpAdapterRef.current.updateCSVConfig(sftpCsvConfig);
+        }
+        return sftpAdapterRef.current;
+    }, [sftpCredentials, sftpCsvConfig]);
+
+    /**
+     * Upload current data to SFTP after changes
+     */
+    const uploadToSFTP = useCallback(async (): Promise<void> => {
+        const adapter = getSFTPAdapter();
+        if (!adapter) {
+            throw new Error('SFTP not configured');
+        }
+        // Get current data from stores (not from closure which may be stale)
+        const currentSpaces = useSpacesStore.getState().spaces;
+        const currentConferenceRooms = useConferenceStore.getState().conferenceRooms;
+        // Upload combined spaces and conference rooms
+        await adapter.upload(currentSpaces, currentConferenceRooms);
+    }, [getSFTPAdapter]);
 
     /**
      * Add new conference room
@@ -71,119 +131,43 @@ export function useConferenceController({
                 throw new Error('Conference room ID already exists');
             }
 
-            // Post to AIMS if using SoluM mode
-            if (solumConfig && solumMappingConfig && solumToken) {
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Add to local store then upload CSV
+                logger.info('ConferenceController', 'Adding conference room in SFTP mode', { id: finalRoom.id });
+                addToStore(finalRoom);
+                
                 try {
-                    logger.info('ConferenceController', 'Pushing article to AIMS', { id: finalRoom.id });
-
-                    // Transform conference room to AIMS article format using mapping config
-                    const articleData: Record<string, any> = {};
-
-                    // Debug: Log the conference room object and mapping config
-                    // console.log('[DEBUG] Conference Room Object:', finalRoom);
-                    // console.log('[DEBUG] Mapping Config Fields:', solumMappingConfig.fields);
-                    // console.log('[DEBUG] Conference Mapping:', solumMappingConfig.conferenceMapping);
-
-                    // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
-                    const { conferenceMapping } = solumMappingConfig;
-
-                    // Map meeting name
-                    if (conferenceMapping.meetingName && finalRoom.meetingName) {
-                        articleData[conferenceMapping.meetingName] = finalRoom.meetingName;
-                        // console.log(`[DEBUG] Mapped meetingName -> ${conferenceMapping.meetingName}:`, finalRoom.meetingName);
-                    }
-
-                    // Map meeting time (combine start and end)
-                    if (conferenceMapping.meetingTime) {
-                        if (finalRoom.startTime && finalRoom.endTime) {
-                            articleData[conferenceMapping.meetingTime] = `${finalRoom.startTime} - ${finalRoom.endTime}`;
-                            // console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
-                        } else if (finalRoom.startTime) {
-                            articleData[conferenceMapping.meetingTime] = finalRoom.startTime;
-                            // console.log(`[DEBUG] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, finalRoom.startTime);
-                        }
-                    }
-
-                    // Map participants
-                    if (conferenceMapping.participants && finalRoom.participants?.length > 0) {
-                        articleData[conferenceMapping.participants] = finalRoom.participants.join(', ');
-                        // console.log(`[DEBUG] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
-                    }
-
-                    // Second: Map other visible fields from config
-                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                        if (fieldConfig.visible) {
-                            // Skip if already mapped by conferenceMapping
-                            if (articleData[fieldKey] !== undefined) {
-                                return;
-                            }
-
-                            let value: any = undefined;
-                            const fieldKeyLower = fieldKey.toLowerCase();
-
-                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
-                                value = finalRoom.id;
-                            } else if (finalRoom.data && finalRoom.data[fieldKey] !== undefined) {
-                                value = finalRoom.data[fieldKey];
-                            } else if ((finalRoom as any)[fieldKey] !== undefined) {
-                                value = (finalRoom as any)[fieldKey];
-                            }
-
-                            // console.log(`[DEBUG] Field '${fieldKey}' -> value:`, value);
-
-                            if (value !== undefined && value !== null && value !== '') {
-                                articleData[fieldKey] = value;
-                            }
-                        }
-                    });
-
-                    // Apply global field assignments from mapping config
-                    if (solumMappingConfig.globalFieldAssignments) {
-                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
-                    }
-
-                    // Mapped field names only apply to the data object
-                    const aimsArticle = {
-                        articleId: finalRoom.id,
-                        articleName: finalRoom.data?.roomName || finalRoom.id,
-                        data: articleData
-                    };
-
-                    // Log the complete AIMS POST request
-                    // console.log('[AIMS POST REQUEST]', {
-                    //     url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
-                    //     method: 'POST',
-                    //     headers: {
-                    //         'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
-                    //         'Content-Type': 'application/json'
-                    //     },
-                    //     body: [aimsArticle]
-                    // });
-
-                    await solumService.pushArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [aimsArticle]
-                    );
-                    logger.info('ConferenceController', 'Article pushed to AIMS successfully', { id: finalRoom.id });
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Conference room added and uploaded to SFTP', { id: finalRoom.id });
+                } catch (error) {
+                    // Rollback on failure
+                    deleteFromStore(finalRoom.id);
+                    logger.error('ConferenceController', 'Failed to upload after add, rolling back', { error });
+                    throw error;
+                }
+            } else if (isAIMSConfigured) {
+                // SoluM API mode: Post to AIMS
+                try {
+                    await pushToAIMS(finalRoom);
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to push article to AIMS', { error });
                     throw new Error(`Failed to push to AIMS: ${error}`);
                 }
-            }
 
-            // Add to store
-            addToStore(finalRoom);
+                // Add to store
+                addToStore(finalRoom);
 
-            // Refresh from AIMS to get the latest state
-            if (solumConfig && solumMappingConfig && solumToken) {
+                // Refresh from AIMS to get the latest state
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after add');
                 } catch (error) {
                     logger.warn('ConferenceController', 'Failed to refresh from AIMS after add', { error });
                 }
+            } else {
+                // Fallback: add to store directly (no external sync)
+                addToStore(finalRoom);
             }
 
             // Trigger sync
@@ -197,7 +181,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room added', { id: finalRoom.id });
         },
-        [conferenceRooms, addToStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [conferenceRooms, addToStore, deleteFromStore, onSync, isAIMSConfigured, pushToAIMS, workingMode, uploadToSFTP]
     );
 
     /**
@@ -226,121 +210,45 @@ export function useConferenceController({
                 throw new Error(`Validation failed: ${errorMsg}`);
             }
 
-            // Push to AIMS if using SoluM mode
-            if (solumConfig && solumMappingConfig && solumToken) {
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Update in local store then upload CSV
+                logger.info('ConferenceController', 'Updating conference room in SFTP mode', { id });
+                const originalRoom = { ...existingRoom };
+                updateInStore(id, updatedRoom);
+                
                 try {
-                    logger.info('ConferenceController', 'Pushing updated article to AIMS', { id });
-
-                    // Transform conference room to AIMS article format using mapping config
-                    const articleData: Record<string, any> = {};
-                    const room = updatedRoom as ConferenceRoom;
-
-                    // Debug: Log the conference room object and mapping config
-                    // console.log('[DEBUG UPDATE] Conference Room Object:', room);
-                    // console.log('[DEBUG UPDATE] Mapping Config Fields:', solumMappingConfig.fields);
-                    // console.log('[DEBUG UPDATE] Conference Mapping:', solumMappingConfig.conferenceMapping);
-
-                    // First: Map conference-specific fields using conferenceMapping (regardless of visibility)
-                    const { conferenceMapping } = solumMappingConfig;
-
-                    // Map meeting name
-                    if (conferenceMapping.meetingName && room.meetingName) {
-                        articleData[conferenceMapping.meetingName] = room.meetingName;
-                        // console.log(`[DEBUG UPDATE] Mapped meetingName -> ${conferenceMapping.meetingName}:`, room.meetingName);
-                    }
-
-                    // Map meeting time (combine start and end)
-                    if (conferenceMapping.meetingTime) {
-                        if (room.startTime && room.endTime) {
-                            articleData[conferenceMapping.meetingTime] = `${room.startTime} - ${room.endTime}`;
-                            // console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, articleData[conferenceMapping.meetingTime]);
-                        } else if (room.startTime) {
-                            articleData[conferenceMapping.meetingTime] = room.startTime;
-                            // console.log(`[DEBUG UPDATE] Mapped meetingTime -> ${conferenceMapping.meetingTime}:`, room.startTime);
-                        }
-                    }
-
-                    // Map participants
-                    if (conferenceMapping.participants && room.participants?.length > 0) {
-                        articleData[conferenceMapping.participants] = room.participants.join(', ');
-                        // console.log(`[DEBUG UPDATE] Mapped participants -> ${conferenceMapping.participants}:`, articleData[conferenceMapping.participants]);
-                    }
-
-                    // Second: Map other visible fields from config
-                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                        if (fieldConfig.visible) {
-                            // Skip if already mapped by conferenceMapping
-                            if (articleData[fieldKey] !== undefined) {
-                                return;
-                            }
-
-                            let value: any = undefined;
-                            const fieldKeyLower = fieldKey.toLowerCase();
-
-                            if (fieldKeyLower === 'id' || fieldKeyLower === 'article_id') {
-                                value = room.id;
-                            } else if (room.data && room.data[fieldKey] !== undefined) {
-                                value = room.data[fieldKey];
-                            } else if ((room as any)[fieldKey] !== undefined) {
-                                value = (room as any)[fieldKey];
-                            }
-
-                            // console.log(`[DEBUG UPDATE] Field '${fieldKey}' -> value:`, value);
-
-                            // Only add if value exists
-                            if (value !== undefined && value !== null && value !== '') {
-                                articleData[fieldKey] = value;
-                            }
-                        }
-                    });
-
-                    // Apply global field assignments
-                    if (solumMappingConfig.globalFieldAssignments) {
-                        Object.assign(articleData, solumMappingConfig.globalFieldAssignments);
-                    }
-
-                    // Mapped field names only apply to the data object
-                    const aimsArticle = {
-                        articleId: room.id,
-                        articleName: room.data?.roomName || room.id,
-                        data: articleData
-                    };
-
-                    // Log the complete AIMS POST request
-                    // console.log('[AIMS POST REQUEST - UPDATE]', {
-                    //     url: `${solumConfig.baseUrl}/common/api/v2/common/articles?company=${solumConfig.companyName}&store=${solumConfig.storeNumber}`,
-                    //     method: 'POST',
-                    //     headers: {
-                    //         'Authorization': `Bearer ${solumToken.substring(0, 20)}...`,
-                    //         'Content-Type': 'application/json'
-                    //     },
-                    //     body: [aimsArticle]
-                    // });
-
-                    await solumService.pushArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [aimsArticle]
-                    );
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Conference room updated and uploaded to SFTP', { id });
+                } catch (error) {
+                    // Rollback on failure
+                    updateInStore(id, originalRoom);
+                    logger.error('ConferenceController', 'Failed to upload after update, rolling back', { error });
+                    throw error;
+                }
+            } else if (isAIMSConfigured) {
+                // SoluM API mode: Push to AIMS
+                try {
+                    await pushToAIMS(updatedRoom);
                     logger.info('ConferenceController', 'Article updated in AIMS successfully', { id });
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to update article in AIMS', { error });
                     throw new Error(`Failed to update in AIMS: ${error}`);
                 }
-            }
 
-            // Update in store
-            updateInStore(id, updatedRoom);
+                // Update in store
+                updateInStore(id, updatedRoom);
 
-            // Refresh from AIMS to get the latest state
-            if (solumConfig && solumMappingConfig && solumToken) {
+                // Refresh from AIMS to get the latest state
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after update');
                 } catch (error) {
                     logger.warn('ConferenceController', 'Failed to refresh from AIMS after update', { error });
                 }
+            } else {
+                // Fallback: update in store directly (no external sync)
+                updateInStore(id, updatedRoom);
             }
 
             // Trigger sync
@@ -354,7 +262,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room updated', { id });
         },
-        [conferenceRooms, updateInStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [conferenceRooms, updateInStore, onSync, isAIMSConfigured, pushToAIMS, workingMode, uploadToSFTP]
     );
 
     /**
@@ -369,34 +277,44 @@ export function useConferenceController({
                 throw new Error('Conference room not found');
             }
 
-            // Delete from AIMS if using SoluM mode
-            if (solumConfig && solumMappingConfig && solumToken) {
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Delete from local store then upload CSV
+                logger.info('ConferenceController', 'Deleting conference room in SFTP mode', { id });
+                const originalRoom = { ...existingRoom };
+                deleteFromStore(id);
+                
                 try {
-                    logger.info('ConferenceController', 'Deleting article from AIMS', { id });
-                    await solumService.deleteArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [`C${id}`]  // Prepend 'C' to match AIMS article ID format
-                    );
-                    logger.info('ConferenceController', 'Article deleted from AIMS successfully', { id });
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Conference room deleted and uploaded to SFTP', { id });
+                } catch (error) {
+                    // Rollback on failure
+                    addToStore(originalRoom);
+                    logger.error('ConferenceController', 'Failed to upload after delete, rolling back', { error });
+                    throw error;
+                }
+            } else if (isAIMSConfigured) {
+                // SoluM API mode: Delete from AIMS
+                try {
+                    await deleteFromAIMS(id);
                 } catch (error) {
                     logger.error('ConferenceController', 'Failed to delete article from AIMS', { error });
                     throw new Error(`Failed to delete from AIMS: ${error}`);
                 }
-            }
 
-            // Delete from store
-            deleteFromStore(id);
+                // Delete from store
+                deleteFromStore(id);
 
-            // Refresh from AIMS to get the latest state
-            if (solumConfig && solumMappingConfig && solumToken) {
+                // Refresh from AIMS to get the latest state
                 try {
                     await fetchFromSolum();
                     logger.info('ConferenceController', 'Refreshed from AIMS after delete');
                 } catch (error) {
                     logger.warn('ConferenceController', 'Failed to refresh from AIMS after delete', { error });
                 }
+            } else {
+                // Fallback: delete from store directly (no external sync)
+                deleteFromStore(id);
             }
 
             // Trigger sync
@@ -410,7 +328,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Conference room deleted', { id });
         },
-        [conferenceRooms, deleteFromStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [conferenceRooms, addToStore, deleteFromStore, onSync, isAIMSConfigured, deleteFromAIMS, workingMode, uploadToSFTP]
     );
 
     /**
@@ -426,7 +344,25 @@ export function useConferenceController({
             }
 
             const updatedRoom = toggleMeetingStatus(room);
-            updateInStore(id, updatedRoom);
+            
+            // Handle based on working mode
+            if (workingMode === 'SFTP') {
+                // SFTP mode: Update in local store then upload CSV
+                const originalRoom = { ...room };
+                updateInStore(id, updatedRoom);
+                
+                try {
+                    await uploadToSFTP();
+                    logger.info('ConferenceController', 'Meeting status toggled and uploaded to SFTP', { id });
+                } catch (error) {
+                    // Rollback on failure
+                    updateInStore(id, originalRoom);
+                    logger.error('ConferenceController', 'Failed to upload after toggle, rolling back', { error });
+                    throw error;
+                }
+            } else {
+                updateInStore(id, updatedRoom);
+            }
 
             // Trigger sync
             if (onSync) {
@@ -439,7 +375,7 @@ export function useConferenceController({
 
             logger.info('ConferenceController', 'Meeting status toggled', { id, hasMeeting: updatedRoom.hasMeeting });
         },
-        [conferenceRooms, updateInStore, onSync]
+        [conferenceRooms, updateInStore, onSync, workingMode, uploadToSFTP]
     );
 
     /**
@@ -449,30 +385,9 @@ export function useConferenceController({
      */
     const flipLabelPage = useCallback(
         async (labelCode: string, currentPage: number): Promise<void> => {
-            if (!solumConfig || !solumToken) {
-                throw new Error('SoluM configuration or token not available');
-            }
-
-            logger.info('ConferenceController', 'Flipping label page', { labelCode, currentPage });
-
-            const newPage = currentPage === 0 ? 1 : 0;
-
-            try {
-                await solumService.updateLabelPage(
-                    solumConfig,
-                    solumConfig.storeNumber,
-                    solumToken,
-                    labelCode,
-                    newPage
-                );
-
-                logger.info('ConferenceController', 'Label page flipped', { labelCode, newPage });
-            } catch (error) {
-                logger.error('ConferenceController', 'Flip page failed', { error });
-                throw error;
-            }
+            await flipLabelPageInternal(labelCode, currentPage);
         },
-        [solumConfig, solumToken]
+        [flipLabelPageInternal]
     );
 
     /**
@@ -502,124 +417,20 @@ export function useConferenceController({
      */
     const fetchFromSolum = useCallback(
         async (): Promise<void> => {
-            if (!solumConfig || !solumToken || !solumMappingConfig) {
-                throw new Error('SoluM configuration, token, or mapping config not available');
-            }
-
             logger.info('ConferenceController', 'Fetching conference rooms from SoluM');
+            setIsFetching(true);
 
             try {
-                // Fetch all articles from SoluM
-                const articles = await solumService.fetchArticles(
-                    solumConfig,
-                    solumConfig.storeNumber,
-                    solumToken
-                );
-
-                // Filter IN articles where articleId starts with 'C' (conference rooms)
-                // AIMS returns articleId in camelCase, not the configured field name
-                const { uniqueIdField, fields, conferenceMapping, globalFieldAssignments } = solumMappingConfig;
-                const conferenceArticles = articles.filter((article: any) => {
-                    // Check both the configured uniqueIdField and the standard articleId property
-                    const uniqueId = article.articleId || article[uniqueIdField];
-                    const idStr = String(uniqueId || '').toUpperCase();
-                    // console.log('[DEBUG] Checking article:', article.articleId, 'starts with C?', idStr.startsWith('C'));
-                    return uniqueId && idStr.startsWith('C');
-                });
-
-                // Map articles to ConferenceRoom entities
-                const mappedRooms: ConferenceRoom[] = conferenceArticles.map((article: any) => {
-                    // AIMS returns articleId and articleName in camelCase
-                    const rawId = String(article.articleId || article[uniqueIdField] || '');
-                    const id = rawId.toUpperCase().startsWith('C') ? rawId.substring(1) : rawId;
-
-                    // console.log('[DEBUG] Mapping article to conference room:', {
-                    //     rawId,
-                    //     mappedId: id,
-                    //     articleName: article.articleName,
-                    //     article
-                    // });
-
-                    // Apply global field assignments
-                    const mergedArticle = {
-                        ...article,
-                        ...(globalFieldAssignments || {}),
-                    };
-
-                    // Parse meeting fields from conferenceMapping
-                    // Note: The detailed API returns fields inside article.data object
-                    const articleData = mergedArticle.data || {};
-                    const meetingNameField = conferenceMapping.meetingName;
-                    const meetingTimeField = conferenceMapping.meetingTime;
-                    const participantsField = conferenceMapping.participants;
-
-                    // Get meeting name from data object
-                    const meetingName = articleData[meetingNameField] || '';
-
-                    // Parse meeting time (expected format: "START - END", e.g., "09:00 - 15:00")
-                    const meetingTimeRaw = articleData[meetingTimeField] || '';
-                    const [startTime, endTime] = String(meetingTimeRaw)
-                        .split('-')
-                        .map(t => t.trim());
-
-                    // Parse participants (expected format: comma-separated, e.g., "John, Jane, Bob")
-                    const participantsRaw = articleData[participantsField] || '';
-                    const participants = String(participantsRaw)
-                        .split(',')
-                        .map(p => p.trim())
-                        .filter(p => p.length > 0);
-
-                    // console.log('[DEBUG FETCH] Parsed meeting data:', {
-                    //     meetingName,
-                    //     startTime,
-                    //     endTime,
-                    //     participants,
-                    //     rawMeetingTime: meetingTimeRaw,
-                    //     rawParticipants: participantsRaw
-                    // });
-
-                    // Build dynamic data object from visible fields with actual article values
-                    const data: Record<string, string> = {};
-
-                    Object.keys(fields).forEach(fieldKey => {
-                        const mapping = fields[fieldKey];
-                        if (mapping.visible && mergedArticle[fieldKey] !== undefined) {
-                            const fieldValue = String(mergedArticle[fieldKey]);
-                            data[fieldKey] = fieldValue;
-                        }
-                    });
-
-                    // Set roomName in data if not already present from fields
-                    if (!data.roomName) {
-                        data.roomName = article.articleName || id;
-                    }
-
-                    return {
-                        id,
-                        hasMeeting: !!meetingName,
-                        meetingName,
-                        startTime: startTime || '',
-                        endTime: endTime || '',
-                        participants,
-                        labelCode: article.labelCode,
-                        data,
-                    };
-                });
-
-                // Import mapped conference rooms
+                const mappedRooms = await fetchFromAIMS();
                 importFromSync(mappedRooms);
-
-                logger.info('ConferenceController', 'Conference rooms fetched from SoluM', {
-                    total: articles.length,
-                    conferenceRooms: mappedRooms.length,
-                    spaces: articles.length - mappedRooms.length
-                });
             } catch (error) {
                 logger.error('ConferenceController', 'Failed to fetch from SoluM', { error });
                 throw error;
+            } finally {
+                setIsFetching(false);
             }
         },
-        [solumConfig, solumToken, solumMappingConfig, importFromSync]
+        [fetchFromAIMS, importFromSync]
     );
 
 
@@ -634,5 +445,6 @@ export function useConferenceController({
         fetchFromSolum,
         getAllConferenceRooms,
         conferenceRooms,
+        isFetching,
     };
 }

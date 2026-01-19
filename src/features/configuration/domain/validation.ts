@@ -65,8 +65,10 @@ export function validateArticleFormat(schema: ArticleFormat): ValidationResult {
  * Validate CSV Structure Configuration
  * 
  * Ensures all mandatory fields are present and no duplicate indices
+ * @param columns - The CSV columns to validate
+ * @param idColumn - The field name selected as the unique ID column (optional)
  */
-export function validateCSVStructure(columns: CSVColumn[]): ValidationResult {
+export function validateCSVStructure(columns: CSVColumn[], idColumn?: string): ValidationResult {
     const errors: string[] = [];
 
     // Check for empty configuration
@@ -91,13 +93,11 @@ export function validateCSVStructure(columns: CSVColumn[]): ValidationResult {
         errors.push('Duplicate field names (aimsValue) found');
     }
 
-    // Check mandatory SFTP fields are present
-    const mandatoryFields = ['store', 'id'];
-    const configuredFields = columns.map(c => c.aimsValue);
-
-    for (const field of mandatoryFields) {
-        if (!configuredFields.includes(field)) {
-            errors.push(`Mandatory field missing: ${field}`);
+    // Check that ID column is configured (if provided)
+    if (idColumn) {
+        const configuredFields = columns.map(c => c.aimsValue);
+        if (!configuredFields.includes(idColumn)) {
+            errors.push(`ID column "${idColumn}" is not in the configured columns`);
         }
     }
 

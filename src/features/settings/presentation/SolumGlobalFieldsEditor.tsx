@@ -63,11 +63,9 @@ export function SolumGlobalFieldsEditor({
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                 {t('settings.globalFieldAssignments')}
             </Typography>
-
             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
                 {t('settings.globalFieldAssignmentsHelp')}
             </Typography>
-
             {/* Existing Assignments */}
             <Stack gap={1} sx={{ mb: 2 }}>
                 {Object.entries(globalAssignments).map(([fieldKey, value]) => (
@@ -96,7 +94,6 @@ export function SolumGlobalFieldsEditor({
                     </Paper>
                 ))}
             </Stack>
-
             {/* Add New Assignment */}
             {availableFields.length > 0 && (
                 <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
@@ -108,7 +105,9 @@ export function SolumGlobalFieldsEditor({
                             onChange={(e) => setNewFieldKey(e.target.value)}
                             disabled={disabled}
                             sx={{ minWidth: 150 }}
-                            SelectProps={{ native: true }}
+                            slotProps={{
+                                select: { native: true }
+                            }}
                         >
                             <option value="">{t('settings.selectField')}</option>
                             {availableFields.map(field => (
@@ -135,7 +134,6 @@ export function SolumGlobalFieldsEditor({
                     </Stack>
                 </Paper>
             )}
-
             {availableFields.length === 0 && Object.keys(globalAssignments).length === 0 && (
                 <Typography variant="caption" color="text.secondary">
                     {t('settings.noFieldsAvailable')}

@@ -8,20 +8,35 @@ import {
     Tab,
     Box,
     IconButton,
+    CircularProgress,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState, type SyntheticEvent } from 'react';
+import { useState, lazy, Suspense, type SyntheticEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppSettingsTab } from './AppSettingsTab';
-// import { SFTPSettingsTab } from './SFTPSettingsTab';
-import { SolumSettingsTab } from './SolumSettingsTab';
-import { LogoSettingsTab } from './LogoSettingsTab';
-import { SecuritySettingsTab } from './SecuritySettingsTab';
-import { LogsViewerTab } from './LogsViewerTab';
-import { UnlockDialog } from './UnlockDialog';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSettingsController } from '../application/useSettingsController';
 import { useAutoLock } from '../application/useAutoLock';
 import { useSettingsStore } from '../infrastructure/settingsStore';
+
+// Lazy load all tabs - they have heavy dependencies
+const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
+const SFTPSettingsTab = lazy(() => import('./SFTPSettingsTab').then(m => ({ default: m.SFTPSettingsTab })));
+const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
+const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
+const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
+const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default: m.LogsViewerTab })));
+const UnlockDialog = lazy(() => import('./UnlockDialog').then(m => ({ default: m.UnlockDialog })));
+
+// Tab loading fallback
+function TabLoadingFallback() {
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+            <CircularProgress />
+        </Box>
+    );
+}
 
 interface SettingsDialogProps {
     open: boolean;
@@ -32,10 +47,11 @@ interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
     value: number;
+    noPadding?: boolean;
 }
 
 function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
+    const { children, value, index, noPadding, ...other } = props;
 
     return (
         <div
@@ -43,9 +59,10 @@ function TabPanel(props: TabPanelProps) {
             hidden={value !== index}
             id={`settings-tabpanel-${index}`}
             aria-labelledby={`settings-tab-${index}`}
+            style={{ height: noPadding ? '100%' : 'auto' }}
             {...other}
         >
-            {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+            {value === index && <Box sx={{ py: noPadding ? 0 : 3, height: noPadding ? '100%' : 'auto' }}>{children}</Box>}
         </div>
     );
 }
@@ -56,39 +73,75 @@ function TabPanel(props: TabPanelProps) {
  */
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const settingsController = useSettingsController();
     const { updateSettings } = useSettingsStore();
     const [currentTab, setCurrentTab] = useState(0);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Enable auto-lock functionality
     useAutoLock();
 
-    const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
+    // Check for unsaved changes before tab switch
+    const handleTabChange = useCallback(async (_event: SyntheticEvent, newValue: number) => {
+        // If leaving SFTP tab (index 1) with unsaved changes, prompt user
+        if (currentTab === 1 && hasUnsavedChanges) {
+            const confirmed = await confirm({
+                title: t('common.dialog.warning'),
+                message: t('settings.unsavedChangesWarning'),
+                confirmLabel: t('settings.discardChanges'),
+                cancelLabel: t('common.cancel'),
+                severity: 'warning',
+            });
+            
+            if (!confirmed) {
+                return; // Stay on current tab
+            }
+            setHasUnsavedChanges(false);
+        }
         setCurrentTab(newValue);
-    };
+    }, [currentTab, hasUnsavedChanges, confirm, t]);
 
     // Track when dialog closes to update last access time
-    const handleClose = () => {
+    const handleClose = useCallback(async () => {
+        // Check for unsaved changes before closing
+        if (hasUnsavedChanges) {
+            const confirmed = await confirm({
+                title: t('common.dialog.warning'),
+                message: t('settings.unsavedChangesWarning'),
+                confirmLabel: t('settings.discardChanges'),
+                cancelLabel: t('common.cancel'),
+                severity: 'warning',
+            });
+            
+            if (!confirmed) {
+                return; // Don't close
+            }
+        }
         // Update last access timestamp when closing settings
         updateSettings({ lastSettingsAccess: Date.now() });
         onClose();
-    };
+    }, [hasUnsavedChanges, confirm, t, updateSettings, onClose]);
 
     // If locked, show unlock dialog instead
     if (settingsController.isLocked) {
         return (
-            <UnlockDialog
-                open={open}
-                onClose={handleClose}
-                onUnlock={(password) => {
-                    const success = settingsController.unlock(password);
-                    if (success) {
-                        // Update last access time on successful unlock
-                        updateSettings({ lastSettingsAccess: Date.now() });
-                    }
-                    return success;
-                }}
-            />
+            <Suspense fallback={<TabLoadingFallback />}>
+                <UnlockDialog
+                    open={open}
+                    onClose={handleClose}
+                    onUnlock={(password) => {
+                        const success = settingsController.unlock(password);
+                        if (success) {
+                            // Update last access time on successful unlock
+                            updateSettings({ lastSettingsAccess: Date.now() });
+                        }
+                        return success;
+                    }}
+                />
+            </Suspense>
         );
     }
 
@@ -98,11 +151,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             onClose={handleClose}
             maxWidth="md"
             fullWidth
+            fullScreen={isMobile}
             PaperProps={{
                 sx: {
-                    height: '80vh',
-                    maxHeight: '800px',
-                    px: 1,
+                    height: isMobile ? '100%' : '80vh',
+                    maxHeight: isMobile ? '100%' : '800px',
+                    px: { xs: 0.5, sm: 1 },
+                    borderRadius: isMobile ? 0 : undefined,
                 }
             }}
         >
@@ -144,7 +199,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     <Tab label={t('settings.appSettings')} />
                     <Tab
                         label={t('settings.sftpSettings')}
-                        disabled={true} // {settingsController.settings.workingMode !== 'SFTP'}
+                        disabled={settingsController.settings.workingMode !== 'SFTP'}
                     />
 
                     <Tab
@@ -157,59 +212,61 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </Tabs>
             </Box>
 
-            <DialogContent >
-                <TabPanel value={currentTab} index={0}>
-                    <AppSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                        onNavigateToTab={(tabIndex) => setCurrentTab(tabIndex)}
-                    />
-                </TabPanel>
+            <DialogContent sx={{ px: { xs: 1, sm: 3 } }}>
+                <Suspense fallback={<TabLoadingFallback />}>
+                    <TabPanel value={currentTab} index={0}>
+                        <AppSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                            onNavigateToTab={(tabIndex) => setCurrentTab(tabIndex)}
+                        />
+                    </TabPanel>
 
-                {/* SFTP Panel Disabled
-                <TabPanel value={currentTab} index={1}>
-                    <SFTPSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
-                */}
+                    <TabPanel value={currentTab} index={1}>
+                        <SFTPSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                            onHasUnsavedChanges={setHasUnsavedChanges}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={2}>
-                    <SolumSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={2}>
+                        <SolumSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={3}>
-                    <LogoSettingsTab
-                        settings={settingsController.settings}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={3}>
+                        <LogoSettingsTab
+                            settings={settingsController.settings}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={4}>
-                    <SecuritySettingsTab
-                        isPasswordProtected={settingsController.isPasswordProtected}
-                        isLocked={settingsController.isLocked}
-                        settings={settingsController.settings}
-                        onSetPassword={(password) => settingsController.setPassword(password)}
-                        onLock={() => settingsController.lock()}
-                        onUnlock={(password) => settingsController.unlock(password)}
-                        onUpdate={(updates) => settingsController.updateSettings(updates)}
-                    />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={4}>
+                        <SecuritySettingsTab
+                            isPasswordProtected={settingsController.isPasswordProtected}
+                            isLocked={settingsController.isLocked}
+                            settings={settingsController.settings}
+                            onSetPassword={(password) => settingsController.setPassword(password)}
+                            onLock={() => settingsController.lock()}
+                            onUnlock={(password) => settingsController.unlock(password)}
+                            onUpdate={(updates) => settingsController.updateSettings(updates)}
+                        />
+                    </TabPanel>
 
-                <TabPanel value={currentTab} index={5}>
-                    <LogsViewerTab />
-                </TabPanel>
+                    <TabPanel value={currentTab} index={5} noPadding={isMobile}>
+                        <LogsViewerTab />
+                    </TabPanel>
+                </Suspense>
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>
                     {t('common.close')}
                 </Button>
             </DialogActions>
+            <ConfirmDialog />
         </Dialog>
     );
 }

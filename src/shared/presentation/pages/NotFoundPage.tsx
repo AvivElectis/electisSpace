@@ -38,7 +38,9 @@ export function NotFoundPage() {
                 <Typography variant="h5" color="text.secondary" gutterBottom>
                     {t('notFound.heading')}
                 </Typography>
-                <Typography variant="body1" color="text.secondary" paragraph>
+                <Typography variant="body1" color="text.secondary" sx={{
+                    marginBottom: "16px"
+                }}>
                     {t('notFound.message')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>

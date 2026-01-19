@@ -80,7 +80,7 @@ export function createDefaultSettings(): SettingsData {
         spaceType: 'office',
         workingMode: 'SFTP',
         csvConfig: {
-            delimiter: ',',
+            delimiter: ';',
             columns: [],
             mapping: {},
             conferenceEnabled: false,

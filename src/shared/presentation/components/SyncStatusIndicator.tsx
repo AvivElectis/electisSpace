@@ -1,8 +1,8 @@
-import { Box, Chip, CircularProgress, Tooltip, IconButton, Popover, Typography, Stack, Divider } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ErrorIcon from '@mui/icons-material/Error';
-import SyncIcon from '@mui/icons-material/Sync';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
+import { Box, CircularProgress, Popover, Typography, Stack, Divider, Paper, Button, useTheme, alpha } from '@mui/material';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
+import SyncRoundedIcon from '@mui/icons-material/SyncRounded';
+import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
 import { useState } from 'react';
 import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,16 +20,8 @@ interface SyncStatusIndicatorProps {
 /**
  * SyncStatusIndicator Component
  * 
- * Displays connection/sync status with a clickable indicator.
+ * Displays connection/sync status with a professional floating badge design.
  * Shows detailed info in a popover on click.
- * 
- * @example
- * <SyncStatusIndicator
- *   status="connected"
- *   lastSyncTime={lastSync}
- *   workingMode="SFTP"
- *   onSyncClick={handleManualSync}
- * />
  */
 export function SyncStatusIndicator({
     status,
@@ -39,6 +31,7 @@ export function SyncStatusIndicator({
     onSyncClick,
 }: SyncStatusIndicatorProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const handleClick = (event: MouseEvent<HTMLElement>) => {
@@ -51,53 +44,43 @@ export function SyncStatusIndicator({
 
     const open = Boolean(anchorEl);
 
-    const buttonStates = {
-        connected: {
-            bgcolor: '#4caf4f8f',
-            color: '#000',
-            fontWeight: 600,
-            //border: '1px solid #313131ff',
-        },
-        disconnected: {
-            bgcolor: '#e66e6587',
-            color: '#FFFFFF',
-            //border: '1px solid #313131ff',
-        },
-        syncing: {
-            bgcolor: '#2195f38a',
-            color: '#FFFFFF',
-        },
-        error: {
-            bgcolor: '#f4433681',
-            color: '#FFFFFF',
-        },
-    };
-
     const getStatusConfig = () => {
         switch (status) {
             case 'connected':
                 return {
-                    color: 'success' as const,
-                    icon: <CheckCircleOutlineIcon />,
+                    color: theme.palette.success.main,
+                    bg: alpha(theme.palette.success.main, 0.1),
+                    borderColor: alpha(theme.palette.success.main, 0.5),
+                    icon: <CheckCircleRoundedIcon fontSize="small" />,
                     label: t('sync.connected'),
+                    description: t('sync.systemOperational'),
                 };
             case 'disconnected':
                 return {
-                    color: 'default' as const,
-                    icon: <CloudOffIcon fontSize="small" />,
+                    color: theme.palette.text.secondary,
+                    bg: theme.palette.action.hover,
+                    borderColor: theme.palette.divider,
+                    icon: <CloudOffRoundedIcon fontSize="small" />,
                     label: t('sync.disconnected'),
+                    description: t('sync.checkConnection'),
                 };
             case 'syncing':
                 return {
-                    color: 'primary' as const,
-                    icon: <CircularProgress size={16} />,
+                    color: theme.palette.primary.main,
+                    bg: alpha(theme.palette.primary.main, 0.1),
+                    borderColor: alpha(theme.palette.primary.main, 0.5),
+                    icon: <CircularProgress size={16} color="inherit" />,
                     label: t('sync.syncing'),
+                    description: t('sync.processingData'),
                 };
             case 'error':
                 return {
-                    color: 'error' as const,
-                    icon: <ErrorIcon fontSize="small" />,
+                    color: theme.palette.error.main,
+                    bg: alpha(theme.palette.error.main, 0.1),
+                    borderColor: alpha(theme.palette.error.main, 0.5),
+                    icon: <ErrorRoundedIcon fontSize="small" />,
                     label: t('sync.error'),
+                    description: t('sync.attentionRequired'),
                 };
         }
     };
@@ -106,31 +89,54 @@ export function SyncStatusIndicator({
 
     return (
         <>
-            <Tooltip title={t('sync.syncStatus')}>
-                <Chip
-                    icon={config.icon}
-                    label={config.label}
-                    size="small"
-                    onClick={handleClick}
-                    sx={{
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                        px: 3,
-                        paddingInlineEnd: 2,
-                        borderRadius: 2,
-                        py: 3,
-                        boxShadow: '0px 0px 2px 1px rgba(0, 0, 0, 0.61)',
-                        ...buttonStates[status],
-                        '&:hover': {
-                            backgroundColor: '#ffffffff',
-                            color: '#363535ff',
-                            textShadow: 'none',
-                            transform: 'scale(1.05)',
-                        },
-                    }}
-                />
-            </Tooltip>
-
+            <Paper
+                elevation={2}
+                onClick={handleClick}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    paddingInlineEnd: 2,
+                    paddingInlineStart: 1,
+                    py: 1,
+                    borderRadius: '28px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    border: '1px solid',
+                    borderColor: config.borderColor,
+                    bgcolor: config.bg,
+                    '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: theme.shadows[4],
+                        borderColor: config.color,
+                    }
+                }}
+            >
+                {/* Status Icon Circle */}
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: config.bg,
+                    color: config.color,
+                    transition: 'background-color 0.3s ease',
+                }}>
+                    {config.icon}
+                </Box>
+                
+                {/* Text Info */}
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="subtitle2" fontWeight={700} lineHeight={1.2} color="text.primary">
+                        {config.label}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.1, mt: 0.3 }}>
+                        {workingMode} Mode
+                    </Typography>
+                </Box>
+            </Paper>
             <Popover
                 open={open}
                 anchorEl={anchorEl}
@@ -143,73 +149,113 @@ export function SyncStatusIndicator({
                     vertical: 'bottom',
                     horizontal: 'left',
                 }}
+                slotProps={{
+                    paper: {
+                        sx: { 
+                            mt: -1, 
+                            borderRadius: 3,
+                            boxShadow: '0px 0px 6px rgba(0, 0, 0, 0.32)',
+                            overflow: 'hidden',
+                            minWidth: { xs: 260, sm: 300 }
+                        }
+                    }
+                }}
             >
-                <Box sx={{ p: 2.5, minWidth: 280 }}>
-                    <Stack gap={2}>
-                        {/* Status */}
-                        <Box>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                                {t('sync.status')}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                {config.icon}
-                                <Typography variant="body2" fontWeight={500}>
-                                    {config.label}
-                                </Typography>
-                            </Box>
-                        </Box>
+                {/* Popover Header */}
+                <Box sx={{ 
+                    p: 2, 
+                    bgcolor: alpha(config.color, 0.08),
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5
+                }}>
+                    <Box sx={{
+                        color: config.color,
+                        display: 'flex'
+                    }}>
+                        {config.icon}
+                    </Box>
+                    <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                            {config.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {config.description}
+                        </Typography>
+                    </Box>
+                </Box>
 
-                        <Divider />
-
-                        {/* Working Mode */}
-                        <Box>
-                            <Typography variant="caption" color="text.secondary" display="block">
+                <Box sx={{ p: 2.5 }}>
+                    <Stack gap={2.5}>
+                        {/* Working Mode Detail */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">
                                 {t('sync.workingMode')}
                             </Typography>
-                            <Typography variant="body2" fontWeight={500}>
+                            <Paper 
+                                variant="outlined" 
+                                sx={{ 
+                                    px: 1, 
+                                    py: 0.5, 
+                                    borderRadius: 1, 
+                                    bgcolor: 'action.hover',
+                                    typography: 'caption',
+                                    fontWeight: 600
+                                }}
+                            >
                                 {workingMode === 'SFTP' ? t('sync.sftpMode') : t('sync.solumMode')}
-                            </Typography>
+                            </Paper>
                         </Box>
 
                         {/* Last Sync Time */}
                         {lastSyncTime && (
-                            <Box>
-                                <Typography variant="caption" color="text.secondary" display="block">
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" color="text.secondary">
                                     {t('sync.lastSync')}
                                 </Typography>
-                                <Typography variant="body2">{lastSyncTime}</Typography>
+                                <Typography variant="body2" fontWeight={500}>
+                                    {lastSyncTime}
+                                </Typography>
                             </Box>
                         )}
 
                         {/* Error Message */}
                         {status === 'error' && errorMessage && (
-                            <Box>
-                                <Typography variant="caption" color="error.main" display="block">
-                                    {t('common.error')}
+                            <Paper 
+                                variant="outlined" 
+                                sx={{ 
+                                    p: 1.5, 
+                                    bgcolor: alpha(theme.palette.error.main, 0.05),
+                                    borderColor: alpha(theme.palette.error.main, 0.2),
+                                    borderRadius: 2
+                                }}
+                            >
+                                <Typography variant="caption" color="error.main" fontWeight={600} display="block" gutterBottom>
+                                    {t('common.errorDetails')}
                                 </Typography>
-                                <Typography variant="body2" color="error.main">
+                                <Typography variant="body2" color="text.primary" sx={{ wordBreak: 'break-word' }}>
                                     {errorMessage}
                                 </Typography>
-                            </Box>
+                            </Paper>
                         )}
 
                         {/* Manual Sync Button */}
-                        {onSyncClick && status !== 'syncing' && status !== 'disconnected' && (
+                        {onSyncClick && status !== 'syncing' && (
                             <>
                                 <Divider />
-                                <IconButton
-                                    size="small"
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    color="primary"
+                                    startIcon={<SyncRoundedIcon />}
                                     onClick={onSyncClick}
-                                    sx={{
-                                        alignSelf: 'flex-start',
-                                        gap: 1,
-                                        px: 2,
-                                        borderRadius: 1,
-                                    }}
+                                    disabled={status === 'disconnected'}
+                                    sx={{ borderRadius: 2, textTransform: 'none' }}
                                 >
-                                    <SyncIcon fontSize="small" />
-                                    <Typography variant="caption">{t('sync.manualSync')}</Typography>
-                                </IconButton>
+                                    {t('sync.manualSync')}
+                                </Button>
                             </>
                         )}
                     </Stack>
