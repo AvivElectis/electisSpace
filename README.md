@@ -2,7 +2,7 @@
 
 **ESL Management System** - A comprehensive Electronic Shelf Label management application with SoluM AIMS integration.
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web%20%7C%20Android-green.svg)
 ![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 
@@ -18,9 +18,11 @@ electisSpace is a multi-platform application for managing Electronic Shelf Label
 
 - **Multi-Mode Support**: Office, Room, Chair, and People management modes
 - **SoluM AIMS Integration**: Full API integration for ESL synchronization
-- **People Manager with Virtual Pool IDs**: Cross-device personnel sync (v1.1.0)
+- **People Manager with Virtual Pool IDs**: Cross-device personnel sync
 - **CSV Import/Export**: Bulk data management with Hebrew support
-- **Auto-Sync**: Automatic 5-minute sync cycles
+- **Auto-Sync**: Configurable automatic sync cycles
+- **Auto-Update**: Built-in update system via GitHub Releases (v1.3.0)
+- **Deep Testing**: 1000+ unit/integration tests with Playwright E2E (v1.3.0)
 - **Multi-Platform**: Windows (Electron), Web, and Android (Capacitor)
 - **i18n Support**: English and Hebrew localization
 
@@ -77,11 +79,10 @@ npm run electron:dev
 
 ## Documentation
 
-- [README](docs/1_1_0/README.md) - v1.1.0 Overview
-- [CHANGELOG](docs/1_1_0/CHANGELOG.md) - Version history
-- [RELEASE_NOTES](docs/1_1_0/RELEASE_NOTES.md) - Release details
-- [BUILD_INSTRUCTIONS](docs/1_1_0/BUILD_INSTRUCTIONS.md) - Build guide
+- [CHANGELOG](CHANGELOG.md) - Version history & release notes
+- [Electron Guide](docs/ELECTRON_INSTALLATION_GUIDE.md) - Installation & build guide
 - [People Mode Guide](docs/PEOPLE_MODE_AUTO_SYNC_GUIDE.md) - Auto-sync implementation
+- [App Book](docs/app_book/) - Comprehensive feature documentation
 
 ---
 
@@ -98,7 +99,7 @@ npm run test:e2e
 npm run test:coverage
 ```
 
-**Test Status**: 65 tests (53 unit, 12 integration)
+**Test Status**: 1000+ tests (unit, integration, E2E)
 
 ---
 
@@ -107,7 +108,7 @@ npm run test:coverage
 ### Windows (Electron)
 ```bash
 npm run electron:build
-# Output: dist-electron/electisSpace.Setup.1.1.0.exe
+# Output: dist-electron/electisSpace.Setup.1.3.0.exe
 ```
 
 ### Web
@@ -126,13 +127,13 @@ npm run cap:open:android
 
 ## License
 
-Proprietary - 2025 Electis. All rights reserved.
+Proprietary - 2026 Aviv Ben Waiss. All rights reserved.
 
 ---
 
 ## Author
 
-**Aviv Electis**
+**Aviv Ben Waiss**
 Email: aviv@electis.co.il
 
 ---
