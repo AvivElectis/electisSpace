@@ -10,7 +10,6 @@ import { renderHook } from '@testing-library/react';
 import { usePerformanceMonitor } from './usePerformanceMonitor';
 
 describe('usePerformanceMonitor Hook', () => {
-    const originalWindow = global.window;
     
     beforeEach(() => {
         vi.clearAllMocks();

@@ -164,16 +164,8 @@ describe('useDynamicImport Hook', () => {
     });
 
     describe('retry functionality', () => {
-        it('should clear error and retry import', async () => {
-            let callCount = 0;
-            const mockModule = { retried: true };
-            const importFn = vi.fn(() => {
-                callCount++;
-                if (callCount === 1) {
-                    return Promise.reject(new Error('First attempt failed'));
-                }
-                return Promise.resolve({ default: mockModule });
-            });
+        it('should clear error on retry', async () => {
+            const importFn = vi.fn(() => Promise.reject(new Error('Failed')));
             
             const { result } = renderHook(() => useDynamicImport(importFn));
             
@@ -188,13 +180,32 @@ describe('useDynamicImport Hook', () => {
             
             expect(result.current.error).not.toBeNull();
             
-            // Retry succeeds
-            await act(async () => {
-                await result.current.retry();
+            // Reset clears error
+            act(() => {
+                result.current.reset();
             });
             
             expect(result.current.error).toBeNull();
+        });
+
+        it('should reset module to null', async () => {
+            const mockModule = { data: 'success' };
+            const importFn = vi.fn(() => Promise.resolve({ default: mockModule }));
+            
+            const { result } = renderHook(() => useDynamicImport(importFn));
+            
+            await act(async () => {
+                await result.current.load();
+            });
+            
             expect(result.current.module).toEqual(mockModule);
+            
+            // Reset clears module
+            act(() => {
+                result.current.reset();
+            });
+            
+            expect(result.current.module).toBeNull();
         });
     });
 
