@@ -12,6 +12,9 @@ import {
 import { login, refreshToken as refreshSolumToken, getStoreSummary } from '@shared/infrastructure/services/solumService';
 import type { SettingsData, ExportedSettings } from '../domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 
 /**
  * Admin password for emergency access to settings
@@ -24,24 +27,19 @@ const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
  * Helper function to clear all data stores
  * Called on disconnect or mode switch
  */
-async function clearAllDataStores(): Promise<void> {
+function clearAllDataStores(): void {
     try {
-        // Dynamic imports to avoid circular dependencies
-        const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
-        const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
-        const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
-        
         logger.info('Settings', 'Clearing all data stores...');
-        
+
         useSpacesStore.getState().clearAllData();
         logger.info('Settings', 'Spaces store cleared');
-        
+
         usePeopleStore.getState().clearAllData();
         logger.info('Settings', 'People store cleared');
-        
+
         useConferenceStore.getState().clearAllData();
         logger.info('Settings', 'Conference store cleared');
-        
+
         logger.info('Settings', 'All data stores cleared successfully');
     } catch (error) {
         logger.error('Settings', 'Failed to clear data stores', { error });

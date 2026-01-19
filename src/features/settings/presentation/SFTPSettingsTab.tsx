@@ -36,6 +36,9 @@ import { testConnection, downloadFile } from '@shared/infrastructure/services/sf
 import { extractHeadersFromCSV } from '@shared/infrastructure/services/csvService';
 import { logger } from '@shared/infrastructure/services/logger';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import type { SettingsData } from '../domain/types';
 import type { SFTPCredentials } from '@shared/domain/types';
 import type { CSVColumn } from '@features/configuration/domain/types';
@@ -71,16 +74,16 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
     const [connecting, setConnecting] = useState(false);
     const [hasFieldMappingChanges, setHasFieldMappingChanges] = useState(false);
     const { confirm, ConfirmDialog } = useConfirmDialog();
-    
+
     // Bubble up unsaved changes to parent
     useEffect(() => {
         onHasUnsavedChanges?.(hasFieldMappingChanges);
     }, [hasFieldMappingChanges, onHasUnsavedChanges]);
-    
+
     // Global field assignment state
     const [newGlobalFieldKey, setNewGlobalFieldKey] = useState('');
     const [newGlobalFieldValue, setNewGlobalFieldValue] = useState('');
-    
+
     // Get global field assignments from settings
     const globalFieldAssignments = settings.sftpCsvConfig?.globalFieldAssignments || {};
 
@@ -95,17 +98,17 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
             visible: col.required ?? true,
         }));
     }, [csvColumns]);
-    
+
     // Get available field names for dropdowns (from sftpCsvConfig columns)
     const availableFields = useMemo(() => {
         return settings.sftpCsvConfig?.columns?.map(col => col.fieldName) || [];
     }, [settings.sftpCsvConfig?.columns]);
-    
+
     // Get locked fields (fields used as global field keys)
     const lockedFields = useMemo(() => {
         return Object.keys(globalFieldAssignments);
     }, [globalFieldAssignments]);
-    
+
     // Helper to create full sftpCsvConfig with all fields preserved
     const buildSftpCsvConfig = (overrides: Partial<EnhancedCSVConfig>): EnhancedCSVConfig => ({
         hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
@@ -117,14 +120,14 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
         globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
         ...overrides,
     });
-    
+
     // Update global field assignments
     const updateGlobalFieldAssignments = (assignments: { [key: string]: string }) => {
         onUpdate({
             sftpCsvConfig: buildSftpCsvConfig({ globalFieldAssignments: assignments })
         });
     };
-    
+
     const handleAddGlobalField = () => {
         if (newGlobalFieldKey.trim() && newGlobalFieldValue.trim()) {
             updateGlobalFieldAssignments({
@@ -135,13 +138,13 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
             setNewGlobalFieldValue('');
         }
     };
-    
+
     const handleRemoveGlobalField = (fieldKey: string) => {
         const updated = { ...globalFieldAssignments };
         delete updated[fieldKey];
         updateGlobalFieldAssignments(updated);
     };
-    
+
     const handleUpdateGlobalFieldValue = (fieldKey: string, value: string) => {
         updateGlobalFieldAssignments({
             ...globalFieldAssignments,
@@ -172,7 +175,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
 
         try {
             const result = await testConnection(settings.sftpCredentials);
-            
+
             if (result === true) {
                 setTestResult({ success: true, message: t('settings.connectionSuccess') });
                 logger.info('Settings', 'SFTP connection test successful');
@@ -193,22 +196,22 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
         if (!settings.sftpCredentials) {
             return;
         }
-        
+
         setConnecting(true);
         logger.info('Settings', 'Connecting to SFTP server');
 
         try {
             const result = await testConnection(settings.sftpCredentials);
-            
+
             if (result === true) {
                 // Connection successful - now download file, extract headers, and parse data
                 let extractedColumns: CSVColumnMapping[] = [];
                 let csvContent: string | null = null;
-                
+
                 try {
                     csvContent = await downloadFile(settings.sftpCredentials);
                     const delimiter = settings.sftpCsvConfig?.delimiter || ';';
-                    logger.info('Settings', 'CSV content downloaded', { 
+                    logger.info('Settings', 'CSV content downloaded', {
                         length: csvContent?.length,
                         delimiter
                     });
@@ -218,25 +221,25 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                     }
                 } catch (downloadError) {
                     // Don't fail connection if file download fails - just log it
-                    logger.warn('Settings', 'Could not download file for header extraction', { 
-                        error: downloadError instanceof Error ? downloadError.message : 'Unknown error' 
+                    logger.warn('Settings', 'Could not download file for header extraction', {
+                        error: downloadError instanceof Error ? downloadError.message : 'Unknown error'
                     });
                 }
-                
+
                 // Build the new sftpCsvConfig with extracted columns
                 const delimiter = (settings.sftpCsvConfig?.delimiter || ';') as ',' | ';' | '\t';
-                
+
                 // Try to auto-detect conference mapping fields from column names
                 // Look for common patterns: ITEM_NAME for room name, etc.
                 const existingConfMapping = settings.sftpCsvConfig?.conferenceMapping;
                 let conferenceMapping = existingConfMapping;
                 if (extractedColumns.length > 0 && !existingConfMapping?.roomName) {
                     // Auto-detect roomName field - typically ITEM_NAME or column at index 2
-                    const nameCol = extractedColumns.find(c => 
-                        c.fieldName.toUpperCase().includes('NAME') || 
+                    const nameCol = extractedColumns.find(c =>
+                        c.fieldName.toUpperCase().includes('NAME') ||
                         c.fieldName.toUpperCase().includes('ITEM_NAME')
                     ) || extractedColumns[2];  // Fallback to column 2
-                    
+
                     conferenceMapping = {
                         roomName: nameCol?.fieldName || '',
                         meetingName: existingConfMapping?.meetingName || '',
@@ -245,7 +248,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                         participants: existingConfMapping?.participants,
                     };
                 }
-                
+
                 const newSftpCsvConfig: EnhancedCSVConfig = {
                     hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                     delimiter,
@@ -255,7 +258,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                     conferenceMapping,
                     globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
                 };
-                
+
                 // Update settings with connection status and extracted columns
                 const updates: Partial<SettingsData> = {
                     sftpCredentials: {
@@ -264,14 +267,12 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                     },
                     sftpCsvConfig: newSftpCsvConfig,
                 };
-                
+
                 onUpdate(updates);
-                
+
                 // If we have CSV content and columns, parse and populate the spaces store
                 if (csvContent && newSftpCsvConfig.columns.length > 0) {
                     try {
-                        const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
-                        const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
                         const parsed = parseCSVEnhanced(csvContent, newSftpCsvConfig);
                         useSpacesStore.getState().setSpaces(parsed.spaces);
                         // Also populate conference rooms if any
@@ -281,14 +282,14 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                         }
                         logger.info('Settings', 'Spaces populated from SFTP', { count: parsed.spaces.length });
                     } catch (parseError) {
-                        logger.warn('Settings', 'Could not parse CSV content', { 
-                            error: parseError instanceof Error ? parseError.message : 'Unknown error' 
+                        logger.warn('Settings', 'Could not parse CSV content', {
+                            error: parseError instanceof Error ? parseError.message : 'Unknown error'
                         });
                     }
                 }
-                
-                logger.info('Settings', 'SFTP connected successfully', { 
-                    columnsExtracted: extractedColumns.length 
+
+                logger.info('Settings', 'SFTP connected successfully', {
+                    columnsExtracted: extractedColumns.length
                 });
             } else {
                 throw new Error('Connection failed');
@@ -302,24 +303,20 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
         }
     };
 
-    const handleDisconnect = async () => {
+    const handleDisconnect = () => {
         logger.info('Settings', 'Disconnecting from SFTP server');
-        
+
         // Clear all data stores (same as SoluM disconnect)
         try {
-            const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
-            const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
-            const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
-            
             useSpacesStore.getState().clearAllData();
             usePeopleStore.getState().clearAllData();
             useConferenceStore.getState().clearAllData();
-            
+
             logger.info('Settings', 'All data stores cleared');
         } catch (error) {
             logger.error('Settings', 'Failed to clear data stores', { error });
         }
-        
+
         // Mark as disconnected (preserve credentials for reconnection)
         if (settings.sftpCredentials) {
             onUpdate({
@@ -359,21 +356,21 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                 cancelLabel: t('common.cancel'),
                 severity: 'warning',
             });
-            
+
             if (!confirmed) {
                 return; // Stay on current tab
             }
         }
-        
+
         setSubtab(newValue);
     }, [subtab, hasFieldMappingChanges, confirm, t]);
 
     return (
         <Box sx={{ px: 2, py: 0, mx: 'auto' }}>
             {/* Sub-tabs */}
-            <Tabs 
-                value={subtab} 
-                onChange={handleTabChange} 
+            <Tabs
+                value={subtab}
+                onChange={handleTabChange}
                 sx={{
                     borderBottom: 0,
                     pb: 2,
@@ -404,12 +401,12 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                             {t('settings.sftpServerConfig')}
                         </Typography>
                         {isConnected && (
-                            <Chip 
-                                icon={<CheckCircleIcon />} 
-                                label={t('settings.connected')} 
-                                color="success" 
+                            <Chip
+                                icon={<CheckCircleIcon />}
+                                label={t('settings.connected')}
+                                color="success"
                                 size="small"
-                                sx={{paddingInlineStart: 1}}
+                                sx={{ paddingInlineStart: 1 }}
                             />
                         )}
                     </Box>
@@ -470,7 +467,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
 
                     {/* Test Result Alert */}
                     {testResult && (
-                        <Alert 
+                        <Alert
                             severity={testResult.success ? 'success' : 'error'}
                             icon={testResult.success ? <CheckCircleIcon /> : <ErrorIcon />}
                         >
@@ -538,7 +535,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                                     value={settings.autoSyncInterval}
                                     label={t('settings.syncInterval')}
                                     onChange={(e) => onUpdate({ autoSyncInterval: e.target.value as number })}
-                                    sx={{ 
+                                    sx={{
                                         direction: 'ltr',  // Always LTR for time values
                                         '& .MuiSelect-select': { textAlign: 'left' }
                                     }}
@@ -577,8 +574,8 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                         label={t('settings.delimiter')}
                         value={settings.sftpCsvConfig?.delimiter || ';'}
                         onChange={(e) => onUpdate({
-                            sftpCsvConfig: buildSftpCsvConfig({ 
-                                delimiter: (e.target.value || ';') as ',' | ';' | '\t' 
+                            sftpCsvConfig: buildSftpCsvConfig({
+                                delimiter: (e.target.value || ';') as ',' | ';' | '\t'
                             })
                         })}
                         helperText={t('settings.suggestedDelimiter')}
@@ -641,7 +638,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {t('settings.globalFieldLockedNote')}
                     </Typography>
-                    
+
                     {/* Existing global field assignments */}
                     <Stack gap={1} sx={{ mb: 1 }}>
                         {Object.entries(globalFieldAssignments).map(([fieldKey, value]) => (
@@ -668,7 +665,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                             </Paper>
                         ))}
                     </Stack>
-                    
+
                     {/* Add new global field - using dropdown for field selection */}
                     <Paper variant="outlined" sx={{ p: 1.5 }}>
                         <Stack direction="row" gap={1} alignItems="center">
@@ -719,7 +716,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                             <InfoIcon fontSize="small" color="action" />
                         </Tooltip>
                     </Box>
-                    
+
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {t('settings.conferenceAlwaysActiveNote')}
                     </Typography>
@@ -732,7 +729,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                                     value={settings.sftpCsvConfig?.conferenceMapping?.roomName || ''}
                                     label={t('settings.conferenceRoomField')}
                                     onChange={(e) => onUpdate({
-                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                        sftpCsvConfig: buildSftpCsvConfig({
                                             conferenceMapping: {
                                                 ...settings.sftpCsvConfig?.conferenceMapping,
                                                 roomName: e.target.value as string,
@@ -757,7 +754,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                                     value={settings.sftpCsvConfig?.conferenceMapping?.meetingName || ''}
                                     label={t('settings.meetingNameField')}
                                     onChange={(e) => onUpdate({
-                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                        sftpCsvConfig: buildSftpCsvConfig({
                                             conferenceMapping: {
                                                 ...settings.sftpCsvConfig?.conferenceMapping,
                                                 roomName: settings.sftpCsvConfig?.conferenceMapping?.roomName || '',
@@ -782,7 +779,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                                     value={settings.sftpCsvConfig?.conferenceMapping?.meetingTime || ''}
                                     label={t('settings.meetingTimeField')}
                                     onChange={(e) => onUpdate({
-                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                        sftpCsvConfig: buildSftpCsvConfig({
                                             conferenceMapping: {
                                                 ...settings.sftpCsvConfig?.conferenceMapping,
                                                 roomName: settings.sftpCsvConfig?.conferenceMapping?.roomName || '',
@@ -807,7 +804,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                                     value={settings.sftpCsvConfig?.conferenceMapping?.participants || ''}
                                     label={t('settings.participantsField')}
                                     onChange={(e) => onUpdate({
-                                        sftpCsvConfig: buildSftpCsvConfig({ 
+                                        sftpCsvConfig: buildSftpCsvConfig({
                                             conferenceMapping: {
                                                 ...settings.sftpCsvConfig?.conferenceMapping,
                                                 roomName: settings.sftpCsvConfig?.conferenceMapping?.roomName || '',
@@ -844,7 +841,7 @@ export function SFTPSettingsTab({ settings, onUpdate, onHasUnsavedChanges }: SFT
                     />
                 </Stack>
             )}
-            
+
             <ConfirmDialog />
         </Box>
     );

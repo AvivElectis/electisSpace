@@ -28,6 +28,9 @@ import { useTranslation } from 'react-i18next';
 import { useUpdateController } from '@features/update/application/useUpdateController';
 import { useSettingsStore } from '../infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import type { SettingsData } from '../domain/types';
 import type { WorkingMode } from '@shared/domain/types';
 
@@ -39,13 +42,9 @@ interface AppSettingsTabProps {
 
 /**
  * Helper function to clear all data stores
- * Uses dynamic imports to avoid circular dependencies
+ * Uses static imports
  */
-async function clearAllDataStores(): Promise<void> {
-    const { useSpacesStore } = await import('@features/space/infrastructure/spacesStore');
-    const { usePeopleStore } = await import('@features/people/infrastructure/peopleStore');
-    const { useConferenceStore } = await import('@features/conference/infrastructure/conferenceStore');
-    
+function clearAllDataStores(): void {
     useSpacesStore.getState().clearAllData();
     usePeopleStore.getState().clearAllData();
     useConferenceStore.getState().clearAllData();
@@ -85,21 +84,21 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
         if (pendingMode) {
             setIsSwitching(true);
             const currentMode = settings.workingMode;
-            
+
             logger.info('Settings', `Switching working mode from ${currentMode} to ${pendingMode}`);
-            
+
             // Clear all data stores using async helper
             await clearAllDataStores();
             logger.info('Settings', 'Cleared all data stores (spaces, people, conference rooms)');
-            
+
             // Clear old mode credentials and mappings
             clearModeCredentials(currentMode);
             logger.info('Settings', `Cleared credentials for ${currentMode} mode`);
-            
+
             // Switch to new mode
             onUpdate({ workingMode: pendingMode });
             logger.info('Settings', `Successfully switched to ${pendingMode} mode`);
-            
+
             setIsSwitching(false);
         }
         setShowModeSwitchDialog(false);
@@ -131,9 +130,9 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                     <Button onClick={handleCancelModeSwitch} disabled={isSwitching}>
                         {t('common.cancel')}
                     </Button>
-                    <Button 
-                        onClick={handleConfirmModeSwitch} 
-                        color="warning" 
+                    <Button
+                        onClick={handleConfirmModeSwitch}
+                        color="warning"
                         variant="contained"
                         autoFocus
                         disabled={isSwitching}
@@ -258,9 +257,9 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
                             value={`v${currentVersion}`}
                             InputProps={{
                                 readOnly: true,
-                               
+
                             }}
-                            sx={{ width: 'fit-content'}}
+                            sx={{ width: 'fit-content' }}
                             variant="filled"
                         />
 
