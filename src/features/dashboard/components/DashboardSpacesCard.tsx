@@ -48,7 +48,7 @@ export function DashboardSpacesCard({
     };
 
     return (
-        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
+        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="spaces-card">
             <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                     <Stack direction="row" gap={1} alignItems="center">

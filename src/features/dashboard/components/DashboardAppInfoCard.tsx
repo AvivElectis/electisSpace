@@ -48,7 +48,7 @@ export function DashboardAppInfoCard({
     };
 
     return (
-        <Card>
+        <Card data-testid="app-info-card">
             <CardContent>
                 <Stack direction="row" gap={1} alignItems="center" sx={{ mb: 3 }}>
                     <SettingsIcon color="action" />
