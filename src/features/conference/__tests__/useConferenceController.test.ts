@@ -87,11 +87,11 @@ function buildAimsArticle(
     if (mappingInfo) {
         Object.entries(mappingInfo).forEach(([rootField, dataField]) => {
             if (!dataField) return;
-            
+
             // Check articleData first
             if (articleData[dataField]) {
                 aimsArticle[rootField] = String(articleData[dataField]);
-            } 
+            }
             // Then check globalFieldAssignments
             else if (solumMappingConfig.globalFieldAssignments?.[dataField]) {
                 aimsArticle[rootField] = String(solumMappingConfig.globalFieldAssignments[dataField]);
@@ -330,10 +330,13 @@ describe('useConferenceController - Dynamic Article Building', () => {
  */
 describe('useConferenceController - Hook Tests', () => {
     const mockSolumConfig = {
-        companyCode: 'TEST',
+        companyName: 'TestCompany',
+        username: 'test_user',
+        password: 'test_password',
         storeNumber: 'STORE001',
-        apiCluster: 'C1' as const,
+        cluster: 'c1' as const,
         baseUrl: 'https://test.api.com',
+        syncInterval: 300,
     };
 
     const mockMappingConfig: SolumMappingConfig = {
@@ -348,6 +351,7 @@ describe('useConferenceController - Hook Tests', () => {
             participants: 'participants',
         },
         mappingInfo: {
+            store: 'store_id',
             articleId: 'article_id',
             articleName: 'name',
         },
@@ -405,7 +409,7 @@ describe('useConferenceController - Hook Tests', () => {
                         port: 22,
                         username: 'test',
                         password: 'test',
-                        remotePath: '/data',
+                        remoteFilename: 'data.csv',
                     },
                 })
             );
@@ -626,8 +630,8 @@ describe('useConferenceController - Hook Tests', () => {
 
             act(() => {
                 result.current.importFromSync([
-                    { id: 'C001', name: 'Room 1', hasMeeting: false },
-                    { id: 'C002', name: 'Room 2', hasMeeting: true },
+                    { id: 'C001', hasMeeting: false, meetingName: '', startTime: '', endTime: '', participants: [], data: { roomName: 'Room 1' } },
+                    { id: 'C002', hasMeeting: true, meetingName: 'Meeting', startTime: '09:00', endTime: '10:00', participants: [], data: { roomName: 'Room 2' } },
                 ]);
             });
 
@@ -644,14 +648,14 @@ describe('useConferenceController - Hook Tests', () => {
             // Add initial room
             act(() => {
                 result.current.importFromSync([
-                    { id: 'C001', name: 'Original', hasMeeting: false },
+                    { id: 'C001', hasMeeting: false, meetingName: '', startTime: '', endTime: '', participants: [], data: { roomName: 'Original' } },
                 ]);
             });
 
             // Import new rooms
             act(() => {
                 result.current.importFromSync([
-                    { id: 'C002', name: 'New Room', hasMeeting: false },
+                    { id: 'C002', hasMeeting: false, meetingName: '', startTime: '', endTime: '', participants: [], data: { roomName: 'New Room' } },
                 ]);
             });
 

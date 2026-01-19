@@ -11,7 +11,7 @@ import { useNotifications } from '@shared/infrastructure/store/rootStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { SolumSchemaAdapter } from '../infrastructure/solumSchemaAdapter';
 import { validateArticleFormat, validateCSVStructure } from '../domain/validation';
-import type { ArticleFormat, CSVColumn, FieldMapping } from '../domain/types';
+import type { ArticleFormat, CSVColumn } from '../domain/types';
 
 /**
  * Configuration management controller hook
@@ -124,7 +124,7 @@ export function useConfigurationController() {
     const saveCSVStructure = useCallback((columns: CSVColumn[]) => {
         // Get current ID column from settings
         const idColumn = settings.sftpCsvConfig?.idColumn;
-        
+
         // Validate structure
         const validation = validateCSVStructure(columns, idColumn);
         if (!validation.valid) {
@@ -137,7 +137,7 @@ export function useConfigurationController() {
             sftpCsvConfig: {
                 hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                 delimiter: settings.sftpCsvConfig?.delimiter || ',',
-                columns: columns.map((col, idx) => ({
+                columns: columns.map((col) => ({
                     fieldName: col.aimsValue,
                     csvColumn: col.index,
                     friendlyName: col.headerEn || col.aimsValue,
@@ -167,7 +167,7 @@ export function useConfigurationController() {
         updateSettings({
             sftpCsvConfig: {
                 hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
-                delimiter,
+                delimiter: delimiter as ',' | ';' | '\t',
                 columns: settings.sftpCsvConfig?.columns || [],
                 idColumn: settings.sftpCsvConfig?.idColumn || 'id',
                 conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
