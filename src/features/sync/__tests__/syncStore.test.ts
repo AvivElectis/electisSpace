@@ -98,12 +98,12 @@ describe('SyncStore', () => {
 
             setSyncState({
                 status: 'error',
-                error: 'Connection failed'
+                lastError: 'Connection failed'
             });
 
             const { syncState } = useSyncStore.getState();
             expect(syncState.status).toBe('error');
-            expect(syncState.error).toBe('Connection failed');
+            expect(syncState.lastError).toBe('Connection failed');
         });
 
         it('should merge partial state updates', () => {
@@ -120,13 +120,13 @@ describe('SyncStore', () => {
         it('should reset sync state', () => {
             const { setSyncState, resetSyncState } = useSyncStore.getState();
 
-            setSyncState({ status: 'error', error: 'Test error', isConnected: true });
+            setSyncState({ status: 'error', lastError: 'Test error', isConnected: true });
             resetSyncState();
 
             const { syncState } = useSyncStore.getState();
             expect(syncState.status).toBe('idle');
             expect(syncState.isConnected).toBe(false);
-            expect(syncState.error).toBeUndefined();
+            expect(syncState.lastError).toBeUndefined();
         });
     });
 
