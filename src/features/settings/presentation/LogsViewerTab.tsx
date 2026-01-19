@@ -7,7 +7,7 @@ import { LogsViewer } from '@features/systemLogs/presentation/LogsViewer';
  */
 export function LogsViewerTab() {
     return (
-        <Box sx={{ px: 2, height: '100%' }}>
+        <Box sx={{ px: { xs: 0, sm: 2 }, height: '100%' }}>
             <LogsViewer />
         </Box>
     );

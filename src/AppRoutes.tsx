@@ -1,6 +1,7 @@
-import { Routes, Route } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { lazy, Suspense, type ReactNode, useEffect } from 'react';
 import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
+import { logger } from '@shared/infrastructure/services/logger';
 
 // Lazy load all page components for code splitting
 const DashboardPage = lazy(() =>
@@ -23,20 +24,44 @@ const NotFoundPage = lazy(() =>
 );
 
 /**
+ * Wrapper that provides isolated Suspense boundary per route
+ * This ensures the loader shows immediately when navigating
+ */
+function SuspenseRoute({ children }: { children: ReactNode }) {
+    return <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>;
+}
+
+/**
+ * Hook to log navigation events
+ */
+function useNavigationLogger() {
+    const location = useLocation();
+
+    useEffect(() => {
+        logger.info('Navigation', 'Route changed', {
+            path: location.pathname,
+            search: location.search || undefined,
+            hash: location.hash || undefined,
+        });
+    }, [location]);
+}
+
+/**
  * Application routing configuration with lazy loading
- * Settings dialog is opened via icon in Dashboard/header, not a separate route
+ * Each route has its own Suspense boundary for immediate loader display
  */
 export function AppRoutes() {
+    // Log navigation events
+    useNavigationLogger();
+
     return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/spaces" element={<SpacesPage />} />
-                <Route path="/conference" element={<ConferencePage />} />
-                <Route path="/sync" element={<SyncPage />} />
-                <Route path="/people" element={<PeopleManagerView />} />
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-        </Suspense>
+        <Routes>
+            <Route path="/" element={<SuspenseRoute><DashboardPage /></SuspenseRoute>} />
+            <Route path="/spaces" element={<SuspenseRoute><SpacesPage /></SuspenseRoute>} />
+            <Route path="/conference" element={<SuspenseRoute><ConferencePage /></SuspenseRoute>} />
+            <Route path="/sync" element={<SuspenseRoute><SyncPage /></SuspenseRoute>} />
+            <Route path="/people" element={<SuspenseRoute><PeopleManagerView /></SuspenseRoute>} />
+            <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
+        </Routes>
     );
 }

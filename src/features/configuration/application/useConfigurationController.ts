@@ -11,7 +11,7 @@ import { useNotifications } from '@shared/infrastructure/store/rootStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { SolumSchemaAdapter } from '../infrastructure/solumSchemaAdapter';
 import { validateArticleFormat, validateCSVStructure } from '../domain/validation';
-import type { ArticleFormat, CSVColumn, FieldMapping } from '../domain/types';
+import type { ArticleFormat, CSVColumn } from '../domain/types';
 
 /**
  * Configuration management controller hook
@@ -122,26 +122,32 @@ export function useConfigurationController() {
      * Validates and updates sftpCsvConfig
      */
     const saveCSVStructure = useCallback((columns: CSVColumn[]) => {
+        // Get current ID column from settings
+        const idColumn = settings.sftpCsvConfig?.idColumn;
+
         // Validate structure
-        const validation = validateCSVStructure(columns);
+        const validation = validateCSVStructure(columns, idColumn);
         if (!validation.valid) {
             showError(`Validation failed: ${validation.errors.join(', ')}`);
             return false;
         }
 
-        // Build field mapping from columns
-        const mapping: FieldMapping = {};
-        columns.forEach(col => {
-            mapping[col.aimsValue] = col.index;
-        });
-
         // Update SFTP CSV config
         updateSettings({
             sftpCsvConfig: {
+                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                 delimiter: settings.sftpCsvConfig?.delimiter || ',',
-                columns,
-                mapping,
-                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
+                columns: columns.map((col) => ({
+                    fieldName: col.aimsValue,
+                    csvColumn: col.index,
+                    friendlyName: col.headerEn || col.aimsValue,
+                    friendlyNameHe: col.headerHe || col.headerEn || col.aimsValue,
+                    required: col.visible ?? true,
+                })),
+                idColumn: idColumn || 'id',
+                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
+                conferenceMapping: settings.sftpCsvConfig?.conferenceMapping,
+                globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
             }
         });
 
@@ -160,10 +166,11 @@ export function useConfigurationController() {
 
         updateSettings({
             sftpCsvConfig: {
-                delimiter,
+                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
+                delimiter: delimiter as ',' | ';' | '\t',
                 columns: settings.sftpCsvConfig?.columns || [],
-                mapping: settings.sftpCsvConfig?.mapping || {},
-                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
+                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
+                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
             }
         });
 
@@ -177,9 +184,10 @@ export function useConfigurationController() {
     const toggleConferenceEnabled = useCallback((enabled: boolean) => {
         updateSettings({
             sftpCsvConfig: {
+                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
                 delimiter: settings.sftpCsvConfig?.delimiter || ',',
                 columns: settings.sftpCsvConfig?.columns || [],
-                mapping: settings.sftpCsvConfig?.mapping || {},
+                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
                 conferenceEnabled: enabled,
             }
         });

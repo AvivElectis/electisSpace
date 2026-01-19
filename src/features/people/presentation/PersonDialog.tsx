@@ -43,7 +43,9 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         return t(key, {
             ...options,
             spaceTypeSingular: getLabel('singular').toLowerCase(),
+            spaceTypeSingularDef: getLabel('singularDef').toLowerCase(),
             spaceTypePlural: getLabel('plural').toLowerCase(),
+            spaceTypePluralDef: getLabel('pluralDef').toLowerCase(),
         });
     }, [t, getLabel]);
 
@@ -197,8 +199,10 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                                 value={formData.data[field.key] || ''}
                                 onChange={(e) => handleFieldChange(field.key, e.target.value)}
                                 fullWidth
-                                InputProps={{
-                                    sx: { textAlign: isRtl ? 'right' : 'left' }
+                                slotProps={{
+                                    input: {
+                                        sx: { textAlign: isRtl ? 'right' : 'left' }
+                                    }
                                 }}
                             />
                         ))}

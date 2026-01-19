@@ -8,11 +8,12 @@ import {
     TextField,
     Box,
     Alert,
-    Typography
+    CircularProgress
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useTranslation } from 'react-i18next';
-import { usePeopleController } from '../application/usePeopleController';
+import { usePeopleLists } from '../application/hooks/usePeopleLists';
+import { LIST_NAME_MAX_LENGTH } from '../domain/types';
 
 interface PeopleSaveListDialogProps {
     open: boolean;
@@ -22,25 +23,52 @@ interface PeopleSaveListDialogProps {
 /**
  * Save People List Dialog
  * Allows saving current people as a named list
+ * Validates: max 20 chars, letters/numbers/spaces only
+ * Auto-syncs to AIMS after saving for cross-device persistence
  */
 export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProps) {
     const { t } = useTranslation();
-    const peopleController = usePeopleController();
+    const { savePeopleList, validateListName, saveListToAims } = usePeopleLists();
     const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = () => {
-        if (!name.trim()) {
-            setError(t('validation.required'));
+    const handleSave = async () => {
+        // Validate the name
+        const validation = validateListName(name);
+        if (!validation.valid) {
+            setError(validation.error || t('validation.invalidInput'));
             return;
         }
 
+        setIsSaving(true);
         try {
-            peopleController.savePeopleList(name.trim());
+            // Step 1: Save list locally (updates _LIST_MEMBERSHIPS_ on all people)
+            const result = savePeopleList(name.trim());
+            if (!result.success) {
+                setError(result.error || t('common.unknownError'));
+                setIsSaving(false);
+                return;
+            }
+
+            // Step 2: Sync to AIMS for cross-device persistence
+            // Pass the updated people directly to avoid stale closure issue
+            const aimsResult = await saveListToAims(result.updatedPeople);
+            if (!aimsResult.success) {
+                // List saved locally but AIMS sync failed - show warning
+                setError(t('lists.savedLocallyAimsFailed', { error: aimsResult.error }) || 
+                    `List saved locally but AIMS sync failed: ${aimsResult.error}`);
+                setIsSaving(false);
+                return;
+            }
+
             setName('');
             setError(null);
+            setIsSaving(false);
             onClose();
         } catch (err) {
+            console.error('[SaveListDialog] Error:', err);
+            setIsSaving(false);
             if (err instanceof Error) {
                 setError(err.message);
             } else {
@@ -49,7 +77,16 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
         }
     };
 
+    const handleNameChange = (value: string) => {
+        setName(value);
+        // Clear error when user types
+        if (error) {
+            setError(null);
+        }
+    };
+
     const handleClose = () => {
+        if (isSaving) return; // Prevent closing while saving
         setName('');
         setError(null);
         onClose();
@@ -73,18 +110,25 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
                         fullWidth
                         variant="outlined"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => handleNameChange(e.target.value)}
                         error={!!error}
+                        disabled={isSaving}
+                        helperText={t('lists.nameRules', { max: LIST_NAME_MAX_LENGTH })}
+                        slotProps={{
+                            htmlInput: { maxLength: LIST_NAME_MAX_LENGTH }
+                        }}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        {t('people.saveListDescription')}
-                    </Typography>
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={handleClose}>{t('common.cancel')}</Button>
-                <Button onClick={handleSave} variant="contained" startIcon={<SaveIcon />}>
-                    {t('common.save')}
+                <Button onClick={handleClose} disabled={isSaving}>{t('common.cancel')}</Button>
+                <Button 
+                    onClick={handleSave} 
+                    variant="contained" 
+                    disabled={isSaving || !name.trim()}
+                    startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                >
+                    {isSaving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
         </Dialog>

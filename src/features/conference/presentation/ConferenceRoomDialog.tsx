@@ -11,6 +11,8 @@ import {
     Chip,
     Box,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +38,8 @@ export function ConferenceRoomDialog({
     existingIds = []
 }: ConferenceRoomDialogProps) {
     const { t, i18n } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isRtl = i18n.dir() === 'rtl';
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [id, setId] = useState('');
@@ -75,26 +79,13 @@ export function ConferenceRoomDialog({
     }, [open, room]);
 
     const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.toUpperCase().trim();
+        // Allow only numbers for conference room ID (no 'C' prefix needed internally)
+        const value = e.target.value.replace(/[^0-9]/g, '').trim();
         setId(value);
 
-        // Live Validation
-        let checkId = value;
-        if (checkId && !checkId.startsWith('C')) {
-            checkId = 'C' + checkId;
-        }
-
-        // Check both raw and C-prefixed types just in case, but existingIds likely has full IDs
-        // Actually the user types "101", we might save "C101". 
-        // If existing is "C101".
-        // If user types "101", we should check "C101". 
-        // If user types "C101", we check "C101".
-
-        const possibleId = value.startsWith('C') ? value : 'C' + value;
-
-        if (existingIds.includes(possibleId) && (!room || room.id !== possibleId)) {
-            setIdError(t('errors.idExists'));
-        } else if (existingIds.includes(value) && (!room || room.id !== value)) {
+        // Live Validation - check if ID already exists
+        // Internal IDs are stored without 'C' prefix
+        if (existingIds.includes(value) && (!room || room.id !== value)) {
             setIdError(t('errors.idExists'));
         } else {
             setIdError('');
@@ -109,11 +100,15 @@ export function ConferenceRoomDialog({
                 .map(p => p.trim())
                 .filter(p => p.length > 0);
 
-            // Auto-format conference room ID: ensure C prefix
-            let finalId = room ? room.id : id.toUpperCase().trim();
-            if (finalId && !finalId.startsWith('C')) {
-                // Add C prefix if not present
-                finalId = 'C' + finalId;
+            // Internal ID without 'C' prefix - the 'C' is added only in CSV output
+            // Strip 'C' prefix if user somehow entered it
+            let finalId = room ? room.id : id.trim();
+            if (finalId.startsWith('C') || finalId.startsWith('c')) {
+                finalId = finalId.substring(1);
+            }
+            // Pad to 2 digits if needed
+            if (finalId.length === 1) {
+                finalId = '0' + finalId;
             }
 
             const roomData: Partial<ConferenceRoom> = {
@@ -145,7 +140,7 @@ export function ConferenceRoomDialog({
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 {room ? t('conference.editRoom') : t('conference.addRoom')}
             </DialogTitle>
@@ -207,7 +202,9 @@ export function ConferenceRoomDialog({
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
                                     required={hasMeeting}
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{
+                                        inputLabel: { shrink: true }
+                                    }}
                                 />
                                 <TextField
                                     fullWidth
@@ -216,7 +213,9 @@ export function ConferenceRoomDialog({
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
                                     required={hasMeeting}
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{
+                                        inputLabel: { shrink: true }
+                                    }}
                                 />
                             </Stack>
 

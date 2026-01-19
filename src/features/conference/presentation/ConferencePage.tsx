@@ -15,6 +15,7 @@ import {
     DialogContent,
     DialogActions,
     Grid,
+    Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -24,14 +25,17 @@ import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
+import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { ConferenceRoomDialog } from './ConferenceRoomDialog';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+
+// Lazy load dialog - not needed on initial render
+const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
 
 /**
  * Conference Rooms Page - Clean Card-based Design
@@ -44,10 +48,18 @@ export function ConferencePage() {
     // Get SoluM access token if available
     const solumToken = settings.solumConfig?.tokens?.accessToken;
 
+    // Get sync context for triggering sync after SFTP operations
+    const { sync } = useSyncContext();
+
     const conferenceController = useConferenceController({
+        onSync: sync,  // Trigger sync after add/edit/delete in SFTP mode
         solumConfig: settings.solumConfig,
         solumToken,
         solumMappingConfig: settings.solumMappingConfig,
+        // SFTP mode props
+        workingMode: settings.workingMode,
+        sftpCredentials: settings.sftpCredentials,
+        sftpCsvConfig: settings.sftpCsvConfig,
     });
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
@@ -172,7 +184,6 @@ export function ConferencePage() {
                     {t('conference.addRoom')}
                 </Button>
             </Stack>
-
             {/* Stats Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -254,29 +265,52 @@ export function ConferencePage() {
                     </Card>
                 </Grid>
             </Grid>
-
             {/* Search Bar */}
             <TextField
+                fullWidth
                 placeholder={t('conference.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon />
-                        </InputAdornment>
-                    ),
-                }}
                 sx={{
                     mb: 3,
+                    maxWidth: { xs: '100%', sm: 400 },
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 4,
                     }
                 }}
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }
+                }}
             />
-
             {/* Conference Rooms Grid */}
-            {filteredRooms.length === 0 ? (
+            {conferenceController.isFetching ? (
+                <Grid container spacing={3}>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`skeleton-${index}`}>
+                            <Card sx={{ height: 200 }}>
+                                <CardContent>
+                                    <Stack gap={2}>
+                                        <Skeleton variant="text" width="70%" height={28} />
+                                        <Skeleton variant="text" width="50%" height={20} />
+                                        <Skeleton variant="text" width="90%" />
+                                        <Skeleton variant="text" width="80%" />
+                                        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                                            <Skeleton variant="circular" width={32} height={32} />
+                                            <Skeleton variant="circular" width={32} height={32} />
+                                        </Box>
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            ) : filteredRooms.length === 0 ? (
                 <Card>
                     <CardContent sx={{ py: 8, textAlign: 'center' }}>
                         <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -395,7 +429,6 @@ export function ConferencePage() {
                     </Grid>
                 </Box>
             )}
-
             {/* Details Dialog */}
             <Dialog
                 open={detailsOpen}
@@ -477,15 +510,18 @@ export function ConferencePage() {
                     </>
                 )}
             </Dialog>
-
-            {/* Add/Edit Dialog */}
-            <ConferenceRoomDialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                onSave={handleSave}
-                room={editingRoom}
-                existingIds={conferenceController.conferenceRooms.map(r => r.id)}
-            />
+            {/* Add/Edit Dialog - Lazy loaded */}
+            <Suspense fallback={null}>
+                {dialogOpen && (
+                    <ConferenceRoomDialog
+                        open={dialogOpen}
+                        onClose={() => setDialogOpen(false)}
+                        onSave={handleSave}
+                        room={editingRoom}
+                        existingIds={conferenceController.conferenceRooms.map(r => r.id)}
+                    />
+                )}
+            </Suspense>
             <ConfirmDialog />
         </Box>
     );

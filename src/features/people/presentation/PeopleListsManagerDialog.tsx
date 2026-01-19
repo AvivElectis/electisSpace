@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { logger } from '@shared/infrastructure/services/logger';
 import {
     Dialog,
@@ -14,10 +14,10 @@ import {
     Typography,
     Box,
     Chip,
-    CircularProgress
+    CircularProgress,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import FolderIcon from '@mui/icons-material/Folder';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
 import { usePeopleController } from '../application/usePeopleController';
@@ -31,14 +31,31 @@ interface PeopleListsManagerDialogProps {
 /**
  * People Lists Manager Dialog
  * Displays saved people lists and allows loading/deleting them
+ * Enhanced with option to load without auto-applying assignments
  */
 export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDialogProps) {
     const { t } = useTranslation();
     const peopleLists = usePeopleStore((state) => state.peopleLists);
+    const people = usePeopleStore((state) => state.people);
     const activeListId = usePeopleStore((state) => state.activeListId);
+    const extractListsFromPeople = usePeopleStore((state) => state.extractListsFromPeople);
     const peopleController = usePeopleController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [isLoading, setIsLoading] = useState(false);
+
+    // Helper to get people count for a list (from main people array's listMemberships)
+    const getPeopleCountForList = (storageName: string): number => {
+        return people.filter(p => 
+            p.listMemberships?.some(m => m.listName === storageName)
+        ).length;
+    };
+
+    // Extract lists from people's listMemberships when dialog opens (handles legacy data)
+    useEffect(() => {
+        if (open && peopleLists.length === 0) {
+            extractListsFromPeople();
+        }
+    }, [open, peopleLists.length, extractListsFromPeople]);
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
@@ -46,7 +63,6 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             return;
         }
         
-        // Confirm before loading (will sync with AIMS)
         const isConfirmed = await confirm({
             title: t('lists.loadList'),
             message: t('lists.loadListConfirm'),
@@ -80,7 +96,14 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
         });
 
         if (isConfirmed) {
-            peopleController.deleteList(id);
+            try {
+                setIsLoading(true);
+                await peopleController.deleteList(id);
+            } catch (error: any) {
+                logger.error('PeopleListsManagerDialog', 'Failed to delete list', { error: error?.message || error });
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -88,7 +111,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
                 <Box display="flex" alignItems="center" gap={1}>
-                    <FolderIcon />
+                    <ListAltIcon />
                     {t('lists.manageLists')}
                 </Box>
             </DialogTitle>
@@ -147,7 +170,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                                                         />
                                                     )}
                                                     <Chip
-                                                        label={`${list.people.length} ${t('people.peopleCount')}`}
+                                                        label={`${getPeopleCountForList(list.storageName)} ${t('people.peopleCount')}`}
                                                         size="medium"
                                                         color={isActive ? "primary" : "default"}
                                                         variant="outlined"

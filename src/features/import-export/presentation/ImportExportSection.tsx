@@ -46,7 +46,7 @@ export function ImportExportSection() {
     const handleImportClick = async () => {
         try {
             // Load the file first
-            const fileAdapter = new (await import('../infrastructure/fileAdapter')).ImportExportFileAdapter();
+            const fileAdapter = new ((await import('../infrastructure/fileAdapter')).ImportExportFileAdapter)();
             const exported = await fileAdapter.loadImport();
 
             if (!exported) {
