@@ -29,7 +29,7 @@ export function DashboardConferenceCard({
     const navigate = useNavigate();
 
     return (
-        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
+        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="conference-card">
             <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                     <Stack direction="row" gap={1} alignItems="center">
