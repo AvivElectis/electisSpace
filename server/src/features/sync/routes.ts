@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../../config/index.js';
 import { authenticate, requirePermission } from '../../shared/middleware/index.js';
 import { solumService, SolumConfig } from '../../shared/infrastructure/services/solumService.js';
+import { getSolumConfig } from '../../shared/utils/solumConfig.js';
 import { decrypt } from '../../shared/utils/encryption.js';
 import { env } from '../../config/env.js';
 
@@ -10,38 +11,6 @@ const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
-
-// Helper to get SoluM config
-async function getSolumConfig(organizationId: string): Promise<SolumConfig | null> {
-    const org = await prisma.organization.findUnique({
-        where: { id: organizationId },
-        select: { solumConfig: true }
-    });
-
-    if (!org?.solumConfig) return null;
-
-    // Decrypt if necessary. We assume the stored JSON values might be encrypted strings
-    // or the whole JSON structure is what we need.
-    // Based on typical pattern: solumConfig is JSON object. Passwords inside might be encrypted.
-    // Simplifying assumption: usage of EncryptionService implies specific fields are encrypted or the whole blob.
-    // For now, let's assume the client stores it as a plain JSON object in the 'Json' field for simplicity,
-    // OR we decrypt specific fields like password.
-
-    // If the client sends encrypted password, we decrypt it.
-    const config = org.solumConfig as unknown as SolumConfig;
-
-    // NOTE: In a real prod scenario with client-side encryption, we need to share the key or 
-    // mechanism. If 'env.ENCRYPTION_KEY' is shared, we can decrypt.
-    // Here we assume the config is ready to use (or we'd decrypt password).
-
-    // Mock decryption for password if it looks like a cipher (checking length/format)
-    // This is a placeholder for the actual agreed encryption contract.
-    // if (config.password && config.password.length > 50) {
-    //    config.password = decrypt(config.password, env.ENCRYPTION_KEY);
-    // }
-
-    return config;
-}
 
 // GET /sync/status - Get current sync status
 router.get('/status', requirePermission('sync', 'view'), async (req, res, next) => {

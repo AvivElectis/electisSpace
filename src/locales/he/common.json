@@ -59,6 +59,13 @@
         "selected": "נבחר",
         "syncing": "מסנכרן..."
     },
+    "login": {
+        "email": "כתובת דוא״ל",
+        "password": "סיסמה",
+        "subtitle": "התחבר כדי לגשת ללוח הבקרה שלך",
+        "signIn": "התחבר",
+        "signingIn": "מתחבר..."
+    },
     "dashboard": {
         "title": "לוח בקרה",
         "welcome": "ברוכים הבאים",
@@ -480,7 +487,12 @@
         "version": "גרסה",
         "size": "גודל",
         "releaseDate": "תאריך שחרור",
-        "checkIntervalHelper": "באיזו תדירות לבדוק עדכונים (12-168 שעות)"
+        "checkIntervalHelper": "באיזו תדירות לבדוק עדכונים (12-168 שעות)",
+        "installingMessage": "מתקין עדכון {{version}}. אנא המתן...",
+        "noReleaseNotes": "אין הערות שחרור זמינות לגרסה {{version}}",
+        "electronInstructions": "לחץ על 'התקן והפעל מחדש' כדי להחיל את העדכון ולהפעיל את האפליקציה מחדש.",
+        "androidInstructions": "העדכון יורד באופן אוטומטי. תתבקש להתקין אותו.",
+        "webInstructions": "האפליקציה תטען מחדש עם הגרסה האחרונה עם השלמת ההורדה."
     },
     "importExport": {
         "title": "ייבוא/ייצוא הגדרות",

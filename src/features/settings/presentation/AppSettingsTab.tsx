@@ -19,7 +19,6 @@ import {
     DialogContentText,
     DialogActions,
 } from '@mui/material';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -37,7 +36,6 @@ import type { WorkingMode } from '@shared/domain/types';
 interface AppSettingsTabProps {
     settings: SettingsData;
     onUpdate: (updates: Partial<SettingsData>) => void;
-    onNavigateToTab?: (tabIndex: number) => void;
 }
 
 /**
@@ -54,7 +52,7 @@ function clearAllDataStores(): void {
  * App Settings Tab
  * General application configuration with mode navigation
  */
-export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSettingsTabProps) {
+export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
     const { t } = useTranslation();
     const { clearModeCredentials } = useSettingsStore();
     const [pendingMode, setPendingMode] = useState<WorkingMode | null>(null);
@@ -71,14 +69,14 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
         await checkForUpdates();
     };
 
+    // Mode switching logic removed/deprecated
+    /*
     const handleModeChange = (newMode: WorkingMode) => {
         if (newMode !== settings.workingMode) {
-            // Show confirmation dialog for mode switch
-            setPendingMode(newMode);
-            setShowModeSwitchDialog(true);
-            logger.info('Settings', `Mode switch requested: ${settings.workingMode} → ${newMode}`);
+             // ...
         }
     };
+    */
 
     const handleConfirmModeSwitch = async () => {
         if (pendingMode) {
@@ -196,51 +194,15 @@ export function AppSettingsTab({ settings, onUpdate, onNavigateToTab }: AppSetti
 
                 <Divider />
 
-                {/* Working Mode */}
+                {/* Working Mode (Hidden/Deprecated - SoluM API Only) */}
+                {/* 
                 <Box>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
                         {t('settings.syncMode')}
                     </Typography>
-
-                    <FormControl fullWidth size="small">
-                        <InputLabel>{t('settings.workingMode')}</InputLabel>
-                        <Select
-                            value={settings.workingMode}
-                            label={t('settings.workingMode')}
-                            onChange={(e) => handleModeChange(e.target.value as WorkingMode)}
-                        >
-                            <MenuItem value="SFTP">{t('sync.sftpMode')}</MenuItem>
-                            <MenuItem value="SOLUM_API">{t('sync.solumMode')}</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Mode Info Alert */}
-                    <Alert severity="info" sx={{ mt: 1.5, py: 0, px: 2 }}>
-                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                            <strong>
-                                {settings.workingMode === 'SFTP' ? t('settings.sftpModeActive') : t('settings.solumModeActive')}
-                            </strong>
-                            {' - '}
-                            {settings.workingMode === 'SFTP'
-                                ? t('settings.usingCsvSync')
-                                : t('settings.usingSolumApi')
-                            }
-                        </Typography>
-                    </Alert>
-
-                    {/* Navigate to Mode Settings */}
-                    {onNavigateToTab && (
-                        <Button
-                            variant="text"
-                            color="primary"
-                            endIcon={<ArrowForwardIcon />}
-                            onClick={() => onNavigateToTab(settings.workingMode === 'SFTP' ? 1 : 2)}
-                            sx={{ mt: 1, width: 'fit-content' }}
-                        >
-                            {t('settings.goToSettings').replace('{mode}', settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM')}
-                        </Button>
-                    )}
+                     ... Removed selector ...
                 </Box>
+                */}
 
 
 

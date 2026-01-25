@@ -78,7 +78,7 @@ export function createDefaultSettings(): SettingsData {
         appName: 'electis Space',
         appSubtitle: 'ESL Management System',
         spaceType: 'office',
-        workingMode: 'SFTP',
+        workingMode: 'SOLUM_API',
         csvConfig: {
             delimiter: ';',
             columns: [],

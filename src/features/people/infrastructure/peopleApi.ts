@@ -4,7 +4,7 @@
  */
 
 import api, { type PaginatedResponse } from '@shared/infrastructure/services/apiClient';
-import type { Person, PeopleList } from '../domain/types';
+import type { Person } from '../domain/types';
 
 // Server person type (matches server response)
 interface ServerPerson {

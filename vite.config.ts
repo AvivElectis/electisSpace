@@ -50,6 +50,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/sftp-api/, ''),
         secure: true,
       },
+      // Backend API proxy
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false, // Allow HTTP target
+      },
     },
   },
   build: {
