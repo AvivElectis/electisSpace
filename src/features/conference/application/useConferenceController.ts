@@ -38,21 +38,21 @@ export function useConferenceController({
     const {
         conferenceRooms,
         setConferenceRooms,
-        addConferenceRoom: addToStore,
-        updateConferenceRoom: updateInStore,
-        deleteConferenceRoom: deleteFromStore,
+        addConferenceRoomLocal: addToStore,
+        updateConferenceRoomLocal: updateInStore,
+        deleteConferenceRoomLocal: deleteFromStore,
     } = useConferenceStore();
 
     // SFTP Adapter ref for reuse
     const sftpAdapterRef = useRef<SFTPSyncAdapter | null>(null);
 
     // Use the extracted AIMS hook for all AIMS operations
-    const { 
-        pushToAIMS, 
-        deleteFromAIMS, 
-        fetchFromAIMS, 
+    const {
+        pushToAIMS,
+        deleteFromAIMS,
+        fetchFromAIMS,
         flipLabelPage: flipLabelPageInternal,
-        isAIMSConfigured 
+        isAIMSConfigured
     } = useConferenceAIMS({
         solumConfig,
         solumToken,
@@ -67,7 +67,7 @@ export function useConferenceController({
      */
     const getSFTPAdapter = useCallback((): SFTPSyncAdapter | null => {
         if (!sftpCredentials || !sftpCsvConfig) return null;
-        
+
         if (!sftpAdapterRef.current) {
             sftpAdapterRef.current = new SFTPSyncAdapter(sftpCredentials, sftpCsvConfig);
         } else {
@@ -136,7 +136,7 @@ export function useConferenceController({
                 // SFTP mode: Add to local store then upload CSV
                 logger.info('ConferenceController', 'Adding conference room in SFTP mode', { id: finalRoom.id });
                 addToStore(finalRoom);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('ConferenceController', 'Conference room added and uploaded to SFTP', { id: finalRoom.id });
@@ -216,7 +216,7 @@ export function useConferenceController({
                 logger.info('ConferenceController', 'Updating conference room in SFTP mode', { id });
                 const originalRoom = { ...existingRoom };
                 updateInStore(id, updatedRoom);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('ConferenceController', 'Conference room updated and uploaded to SFTP', { id });
@@ -283,7 +283,7 @@ export function useConferenceController({
                 logger.info('ConferenceController', 'Deleting conference room in SFTP mode', { id });
                 const originalRoom = { ...existingRoom };
                 deleteFromStore(id);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('ConferenceController', 'Conference room deleted and uploaded to SFTP', { id });
@@ -344,13 +344,13 @@ export function useConferenceController({
             }
 
             const updatedRoom = toggleMeetingStatus(room);
-            
+
             // Handle based on working mode
             if (workingMode === 'SFTP') {
                 // SFTP mode: Update in local store then upload CSV
                 const originalRoom = { ...room };
                 updateInStore(id, updatedRoom);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('ConferenceController', 'Meeting status toggled and uploaded to SFTP', { id });

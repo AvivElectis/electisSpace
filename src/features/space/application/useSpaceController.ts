@@ -45,9 +45,9 @@ export function useSpaceController({
         spaces,
         spacesLists,
         setSpaces,
-        addSpace: addToStore,
-        updateSpace: updateInStore,
-        deleteSpace: deleteFromStore,
+        addSpaceLocal: addToStore,
+        updateSpaceLocal: updateInStore,
+        deleteSpaceLocal: deleteFromStore,
         addSpacesList,
         updateSpacesList,
         deleteSpacesList,
@@ -65,7 +65,7 @@ export function useSpaceController({
      */
     const getSFTPAdapter = useCallback((): SFTPSyncAdapter | null => {
         if (!sftpCredentials) return null;
-        
+
         if (!sftpAdapterRef.current) {
             sftpAdapterRef.current = new SFTPSyncAdapter(sftpCredentials, sftpCsvConfig);
         }
@@ -91,7 +91,7 @@ export function useSpaceController({
             spacesCount: currentSpaces.length,
             conferenceCount: conferenceRooms.length,
         });
-        
+
         try {
             await adapter.connect();
             await adapter.upload(currentSpaces, conferenceRooms);
@@ -141,7 +141,7 @@ export function useSpaceController({
                 // SFTP mode: Add to local store then upload CSV
                 logger.info('SpaceController', 'Adding space in SFTP mode', { id: space.id });
                 addToStore(space);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('SpaceController', 'Space added and uploaded to SFTP', { id: space.id });
@@ -291,7 +291,7 @@ export function useSpaceController({
                 logger.info('SpaceController', 'Updating space in SFTP mode', { id });
                 const originalSpace = { ...existingSpace };
                 updateInStore(id, updatedSpace);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('SpaceController', 'Space updated and uploaded to SFTP', { id });
@@ -416,7 +416,7 @@ export function useSpaceController({
                 logger.info('SpaceController', 'Deleting space in SFTP mode', { id });
                 const originalSpace = { ...existingSpace };
                 deleteFromStore(id);
-                
+
                 try {
                     await uploadToSFTP();
                     logger.info('SpaceController', 'Space deleted and uploaded to SFTP', { id });

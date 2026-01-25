@@ -26,10 +26,12 @@ export interface AppData {
  */
 export interface Space {
     id: string;
+    externalId?: string;  // External identifier from server
     data: Record<string, string>;  // Dynamic fields from CSV or SoluM
     labelCode?: string;  // Optional - for display only, assigned separately
     templateName?: string;  // Optional - for display only
     assignedLabels?: string[];  // Array of label IDs assigned to this article from AIMS
+    syncStatus?: 'PENDING' | 'SYNCED' | 'ERROR';  // Server sync status
 }
 
 /**

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
 import { authenticate, requirePermission, notFound, badRequest } from '../../shared/middleware/index.js';
+import type { Prisma } from '@prisma/client';
 
 const router = Router();
 
@@ -74,7 +75,7 @@ router.get('/:id', requirePermission('people', 'read'), async (req, res, next) =
     try {
         const person = await prisma.person.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
             include: {
@@ -108,7 +109,8 @@ router.post('/', requirePermission('people', 'create'), async (req, res, next) =
 
         const person = await prisma.person.create({
             data: {
-                ...data,
+                externalId: data.externalId,
+                data: data.data as Prisma.InputJsonValue,
                 virtualSpaceId,
                 organizationId: req.user!.organizationId,
                 syncStatus: 'PENDING',
@@ -130,7 +132,7 @@ router.patch('/:id', requirePermission('people', 'update'), async (req, res, nex
 
         const existing = await prisma.person.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -144,9 +146,9 @@ router.patch('/:id', requirePermission('people', 'update'), async (req, res, nex
             : existing.data;
 
         const person = await prisma.person.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: {
-                data: mergedData,
+                data: mergedData as Prisma.InputJsonValue,
                 syncStatus: 'PENDING',
             },
         });
@@ -164,7 +166,7 @@ router.delete('/:id', requirePermission('people', 'delete'), async (req, res, ne
     try {
         const existing = await prisma.person.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -174,7 +176,7 @@ router.delete('/:id', requirePermission('people', 'delete'), async (req, res, ne
         }
 
         await prisma.person.delete({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
         });
 
         // TODO: Queue sync job to clear from SoluM
@@ -192,7 +194,7 @@ router.post('/:id/assign', requirePermission('people', 'assign'), async (req, re
 
         const person = await prisma.person.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -216,7 +218,7 @@ router.post('/:id/assign', requirePermission('people', 'assign'), async (req, re
         const alreadyAssigned = await prisma.person.findFirst({
             where: {
                 assignedSpaceId: spaceId,
-                id: { not: req.params.id },
+                id: { not: req.params.id as string },
             },
         });
 
@@ -225,7 +227,7 @@ router.post('/:id/assign', requirePermission('people', 'assign'), async (req, re
         }
 
         const updated = await prisma.person.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: {
                 assignedSpaceId: spaceId,
                 syncStatus: 'PENDING',
@@ -246,7 +248,7 @@ router.delete('/:id/unassign', requirePermission('people', 'assign'), async (req
     try {
         const person = await prisma.person.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -256,7 +258,7 @@ router.delete('/:id/unassign', requirePermission('people', 'assign'), async (req
         }
 
         const updated = await prisma.person.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: {
                 assignedSpaceId: null,
                 syncStatus: 'PENDING',

@@ -20,30 +20,30 @@ async function fetchEmptyPoolArticlesFromAims(
     mappingConfig?: SolumMappingConfig
 ): Promise<Set<string>> {
     const emptyPoolIds = new Set<string>();
-    
+
     try {
         const { fetchArticles } = await import('@shared/infrastructure/services/solumService');
-        
+
         if (!solumConfig.tokens?.accessToken) {
             return emptyPoolIds;
         }
-        
+
         const articles = await fetchArticles(
             solumConfig,
             solumConfig.storeNumber,
             solumConfig.tokens.accessToken
         );
-        
+
         const articleIdField = mappingConfig?.mappingInfo?.articleId || 'ARTICLE_ID';
-        
+
         articles.forEach((article: any) => {
             const articleId = article.id || article.data?.[articleIdField] || article.data?.ARTICLE_ID;
-            
+
             // Only consider POOL-ID articles
             if (!articleId || !isPoolId(articleId)) {
                 return;
             }
-            
+
             // Check if this article is empty (no meaningful data beyond the ID)
             const data = article.data || {};
             const hasData = Object.entries(data).some(([key, value]) => {
@@ -53,18 +53,18 @@ async function fetchEmptyPoolArticlesFromAims(
                 }
                 return value && String(value).trim().length > 0;
             });
-            
+
             if (!hasData) {
                 emptyPoolIds.add(articleId);
                 logger.debug('PeopleController', 'Found empty POOL article in AIMS', { poolId: articleId });
             }
         });
-        
+
         logger.info('PeopleController', 'Fetched empty POOL articles from AIMS', { count: emptyPoolIds.size });
     } catch (error: any) {
         logger.warn('PeopleController', 'Failed to fetch empty POOL articles from AIMS', { error: error.message });
     }
-    
+
     return emptyPoolIds;
 }
 
@@ -97,9 +97,9 @@ export function usePeopleController() {
             const people = parsePeopleCSV(csvContent, settings.solumArticleFormat, settings.solumMappingConfig);
 
             getStoreState().setPeople(people);
-            logger.endTimer('csv-file-load', 'CSV', 'CSV file loaded and parsed', { 
+            logger.endTimer('csv-file-load', 'CSV', 'CSV file loaded and parsed', {
                 filename: file.name,
-                peopleCount: people.length 
+                peopleCount: people.length
             });
         } catch (error: any) {
             logger.endTimer('csv-file-load', 'CSV', 'CSV file load failed', { error: error.message });
@@ -135,15 +135,15 @@ export function usePeopleController() {
                     settings.solumConfig,
                     settings.solumMappingConfig
                 );
-                logger.info('PeopleController', 'Fetched empty POOL articles for CSV import', { 
-                    count: preferredPoolIds.size 
+                logger.info('PeopleController', 'Fetched empty POOL articles for CSV import', {
+                    count: preferredPoolIds.size
                 });
             }
 
             const people = parsePeopleCSV(
-                csvContent, 
-                settings.solumArticleFormat, 
-                settings.solumMappingConfig, 
+                csvContent,
+                settings.solumArticleFormat,
+                settings.solumMappingConfig,
                 existingPoolIds,
                 preferredPoolIds
             );
@@ -155,22 +155,22 @@ export function usePeopleController() {
             // Sync to AIMS if connected
             if (settings.solumConfig?.tokens?.accessToken && people.length > 0) {
                 const personIds = people.map(p => p.id);
-                getStoreState().updateSyncStatus(personIds, 'pending');
+                getStoreState().updateSyncStatusLocal(personIds, 'pending');
 
                 try {
                     const { pushArticles } = await import('@shared/infrastructure/services/solumService');
-                    
+
                     // Batch sync in chunks of 10
                     const batchSize = 10;
                     for (let i = 0; i < people.length; i += batchSize) {
                         const batch = people.slice(i, i + batchSize);
-                        
+
                         const articles = batch.map(person => {
                             const articleData = buildArticleDataWithMetadata(person, settings.solumMappingConfig);
                             articleData.articleId = getVirtualSpaceId(person) || person.id;
                             return articleData;
                         });
-                        
+
                         await pushArticles(
                             settings.solumConfig!,
                             settings.solumConfig!.storeNumber,
@@ -179,10 +179,10 @@ export function usePeopleController() {
                         );
                     }
 
-                    getStoreState().updateSyncStatus(personIds, 'synced');
+                    getStoreState().updateSyncStatusLocal(personIds, 'synced');
                     logger.info('PeopleController', 'CSV content synced to AIMS', { count: people.length });
                 } catch (syncError: any) {
-                    getStoreState().updateSyncStatus(personIds, 'error');
+                    getStoreState().updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleController', 'Failed to sync CSV content to AIMS', { error: syncError.message });
                 }
             }
@@ -210,15 +210,15 @@ export function usePeopleController() {
 
             const oldSpaceId = person.assignedSpaceId;
             const oldVirtualSpaceId = person.virtualSpaceId;
-            logger.info('PeopleController', 'Assigning space to person', { 
-                personId, spaceId, oldSpaceId, oldVirtualSpaceId, postToAims 
+            logger.info('PeopleController', 'Assigning space to person', {
+                personId, spaceId, oldSpaceId, oldVirtualSpaceId, postToAims
             });
 
             // If person has a POOL-ID, clear it in AIMS first (we're moving to a physical space)
             if (postToAims && oldVirtualSpaceId && isPoolId(oldVirtualSpaceId) && settings.solumConfig?.tokens) {
                 try {
-                    logger.info('PeopleController', 'Clearing POOL-ID article before physical assignment', { 
-                        poolId: oldVirtualSpaceId, newSpaceId: spaceId 
+                    logger.info('PeopleController', 'Clearing POOL-ID article before physical assignment', {
+                        poolId: oldVirtualSpaceId, newSpaceId: spaceId
                     });
                     await clearSpaceInAims(
                         oldVirtualSpaceId,
@@ -253,14 +253,14 @@ export function usePeopleController() {
             }
 
             // Update local state - set both assignedSpaceId and virtualSpaceId to the physical space
-            getStoreState().assignSpace(personId, spaceId);
+            getStoreState().assignSpaceLocal(personId, spaceId);
             // Also update virtualSpaceId to the physical space (no longer in pool)
-            getStoreState().updatePerson(personId, { virtualSpaceId: spaceId });
+            getStoreState().updatePersonLocal(personId, { virtualSpaceId: spaceId });
 
             // Auto-post to AIMS (default behavior)
             if (postToAims && settings.solumConfig && settings.solumConfig.tokens) {
-                getStoreState().updateSyncStatus([personId], 'pending');
-                
+                getStoreState().updateSyncStatusLocal([personId], 'pending');
+
                 try {
                     await postPersonAssignment(
                         { ...person, assignedSpaceId: spaceId, virtualSpaceId: spaceId },
@@ -268,11 +268,11 @@ export function usePeopleController() {
                         settings.solumConfig.tokens.accessToken,
                         settings.solumMappingConfig
                     );
-                    getStoreState().updateSyncStatus([personId], 'synced');
+                    getStoreState().updateSyncStatusLocal([personId], 'synced');
                     logger.info('PeopleController', 'Assignment posted to AIMS', { personId });
                     return true;
                 } catch (aimsError: any) {
-                    getStoreState().updateSyncStatus([personId], 'error');
+                    getStoreState().updateSyncStatusLocal([personId], 'error');
                     logger.error('PeopleController', 'Failed to post to AIMS', { error: aimsError.message });
                     return false;
                 }
@@ -282,7 +282,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to assign space', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Bulk assign spaces (auto-posts to AIMS)
@@ -298,13 +298,13 @@ export function usePeopleController() {
 
             // Update local state
             assignments.forEach(({ personId, spaceId }) => {
-                getStoreState().assignSpace(personId, spaceId);
+                getStoreState().assignSpaceLocal(personId, spaceId);
             });
 
             // Auto-post to AIMS (default behavior)
             if (postToAims && settings.solumConfig && settings.solumConfig.tokens) {
-                getStoreState().updateSyncStatus(personIds, 'pending');
-                
+                getStoreState().updateSyncStatusLocal(personIds, 'pending');
+
                 try {
                     // Get updated people with assigned spaces
                     const assignedPeople = assignments.map(({ personId, spaceId }) => {
@@ -319,12 +319,12 @@ export function usePeopleController() {
                             settings.solumConfig.tokens.accessToken,
                             settings.solumMappingConfig
                         );
-                        getStoreState().updateSyncStatus(personIds, 'synced');
+                        getStoreState().updateSyncStatusLocal(personIds, 'synced');
                         logger.info('PeopleController', 'Bulk assignments posted to AIMS', { count: assignedPeople.length });
                         return { success: true, syncedCount: assignedPeople.length };
                     }
                 } catch (aimsError: any) {
-                    getStoreState().updateSyncStatus(personIds, 'error');
+                    getStoreState().updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleController', 'Failed to post bulk to AIMS', { error: aimsError.message });
                     return { success: false, syncedCount: 0 };
                 }
@@ -334,7 +334,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to bulk assign spaces', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Save current people as a list
@@ -421,7 +421,7 @@ export function usePeopleController() {
                 // Check if person is a member of this list
                 const memberships = (person as any)._LIST_MEMBERSHIPS_ as Array<{ listName: string; spaceId?: string }> | undefined;
                 const membership = memberships?.find(m => m.listName === storageName);
-                
+
                 if (membership) {
                     // Person is in this list - restore their saved assignment
                     return {
@@ -429,7 +429,7 @@ export function usePeopleController() {
                         assignedSpaceId: membership.spaceId || undefined
                     };
                 }
-                
+
                 // Person not in this list - clear their assignment
                 return {
                     ...person,
@@ -441,9 +441,9 @@ export function usePeopleController() {
             getStoreState().updateSpaceAllocation();
             getStoreState().clearPendingChanges();
 
-            logger.info('PeopleController', 'List loaded successfully', { 
-                listId, 
-                name: listToLoad.name 
+            logger.info('PeopleController', 'List loaded successfully', {
+                listId,
+                name: listToLoad.name
             });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to load people list', { error: error.message });
@@ -480,7 +480,7 @@ export function usePeopleController() {
             // Sync affected people to AIMS to update their _LIST_MEMBERSHIPS_
             if (affectedPeople.length > 0 && settings.solumConfig?.tokens?.accessToken) {
                 try {
-                    const updatedAffectedPeople = updatedPeople.filter(p => 
+                    const updatedAffectedPeople = updatedPeople.filter(p =>
                         affectedPeople.some(ap => ap.id === p.id)
                     );
 
@@ -491,14 +491,14 @@ export function usePeopleController() {
                         settings.solumMappingConfig
                     );
 
-                    logger.info('PeopleController', 'Synced list deletion to AIMS', { 
-                        listId, 
+                    logger.info('PeopleController', 'Synced list deletion to AIMS', {
+                        listId,
                         storageName,
-                        affectedCount: affectedPeople.length 
+                        affectedCount: affectedPeople.length
                     });
                 } catch (syncError: any) {
-                    logger.error('PeopleController', 'Failed to sync list deletion to AIMS', { 
-                        error: syncError.message 
+                    logger.error('PeopleController', 'Failed to sync list deletion to AIMS', {
+                        error: syncError.message
                     });
                     // Local deletion succeeded, just log the AIMS sync failure
                 }
@@ -509,7 +509,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to delete people list', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Set total spaces available
@@ -553,7 +553,7 @@ export function usePeopleController() {
                 throw new Error('No people found with the provided IDs');
             }
 
-            getStoreState().updateSyncStatus(personIds, 'pending');
+            getStoreState().updateSyncStatusLocal(personIds, 'pending');
 
             try {
                 await postBulkAssignments(
@@ -563,18 +563,18 @@ export function usePeopleController() {
                     settings.solumMappingConfig
                 );
 
-                getStoreState().updateSyncStatus(personIds, 'synced');
+                getStoreState().updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleController', 'Selected people posted to AIMS', { count: selectedPeople.length });
                 return { success: true, syncedCount: selectedPeople.length };
             } catch (aimsError: any) {
-                getStoreState().updateSyncStatus(personIds, 'error');
+                getStoreState().updateSyncStatusLocal(personIds, 'error');
                 throw aimsError;
             }
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to post selected people to AIMS', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Post ALL assigned people to AIMS
@@ -582,7 +582,7 @@ export function usePeopleController() {
     const postAllAssignmentsToAims = useCallback(async (): Promise<{ success: boolean; syncedCount: number }> => {
         try {
             const assignedPeople = getStoreState().people.filter(p => p.assignedSpaceId);
-            
+
             if (assignedPeople.length === 0) {
                 logger.warn('PeopleController', 'No assigned people to post');
                 return { success: true, syncedCount: 0 };
@@ -595,7 +595,7 @@ export function usePeopleController() {
             }
 
             const personIds = assignedPeople.map(p => p.id);
-            getStoreState().updateSyncStatus(personIds, 'pending');
+            getStoreState().updateSyncStatusLocal(personIds, 'pending');
 
             try {
                 await postBulkAssignments(
@@ -605,18 +605,18 @@ export function usePeopleController() {
                     settings.solumMappingConfig
                 );
 
-                getStoreState().updateSyncStatus(personIds, 'synced');
+                getStoreState().updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleController', 'All assignments posted to AIMS', { count: assignedPeople.length });
                 return { success: true, syncedCount: assignedPeople.length };
             } catch (aimsError: any) {
-                getStoreState().updateSyncStatus(personIds, 'error');
+                getStoreState().updateSyncStatusLocal(personIds, 'error');
                 throw aimsError;
             }
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to post all assignments to AIMS', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Cancel all assignments - clear locally and send empty data to AIMS
@@ -624,7 +624,7 @@ export function usePeopleController() {
     const cancelAllAssignments = useCallback(async (): Promise<{ success: boolean; clearedCount: number }> => {
         try {
             const assignedPeople = getStoreState().people.filter(p => p.assignedSpaceId);
-            
+
             if (assignedPeople.length === 0) {
                 logger.warn('PeopleController', 'No assignments to cancel');
                 return { success: true, clearedCount: 0 };
@@ -649,7 +649,7 @@ export function usePeopleController() {
             }
 
             // Clear all local assignments
-            getStoreState().unassignAllSpaces();
+            getStoreState().unassignAllSpacesLocal();
 
             logger.info('PeopleController', 'All assignments canceled', { count: assignedPeople.length });
             return { success: true, clearedCount: assignedPeople.length };
@@ -657,7 +657,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to cancel all assignments', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Unassign space from person with AIMS clearing
@@ -696,7 +696,7 @@ export function usePeopleController() {
             }
 
             // Clear local assignment
-            getStoreState().unassignSpace(personId);
+            getStoreState().unassignSpaceLocal(personId);
             logger.info('PeopleController', 'Space unassigned locally', { personId });
 
             return true;
@@ -704,7 +704,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to unassign space', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Sync people data FROM AIMS
@@ -723,7 +723,7 @@ export function usePeopleController() {
 
             // Import and use fetchArticles directly
             const { fetchArticles } = await import('@shared/infrastructure/services/solumService');
-            
+
             const token = settings.solumConfig.tokens.accessToken;
             const storeNumber = settings.solumConfig.storeNumber;
 
@@ -810,12 +810,12 @@ export function usePeopleController() {
                     settings.solumConfig,
                     settings.solumMappingConfig
                 );
-                
+
                 // Find an empty POOL article that's not in use locally
                 const reusablePoolId = Array.from(emptyPoolIds)
                     .filter(id => !existingPoolIds.has(id))
                     .sort()[0]; // Get the lowest available
-                
+
                 if (reusablePoolId) {
                     poolId = reusablePoolId;
                     logger.info('PeopleController', 'Reusing empty POOL article from AIMS', { poolId });
@@ -830,11 +830,11 @@ export function usePeopleController() {
             }
 
             // Determine if input is a Person object or just data
-            const isPerson = (input: any): input is Person => 
+            const isPerson = (input: any): input is Person =>
                 input && typeof input === 'object' && 'data' in input;
 
             // Create person with UUID and virtual pool ID
-            const person: Person = isPerson(personInput) 
+            const person: Person = isPerson(personInput)
                 ? {
                     ...personInput,
                     id: uuidv4(),  // Always generate new UUID
@@ -849,34 +849,34 @@ export function usePeopleController() {
                 };
 
             // Add to local store
-            getStoreState().addPerson(person);
+            getStoreState().addPersonLocal(person);
 
-            logger.info('PeopleController', 'Person added locally', { 
-                personId: person.id, 
+            logger.info('PeopleController', 'Person added locally', {
+                personId: person.id,
                 virtualSpaceId: person.virtualSpaceId,
-                assignedSpaceId: person.assignedSpaceId 
+                assignedSpaceId: person.assignedSpaceId
             });
 
             // Immediately sync to AIMS if connected
             if (settings.solumConfig?.tokens?.accessToken) {
                 try {
                     const { pushArticles } = await import('@shared/infrastructure/services/solumService');
-                    
+
                     const articleData = buildArticleDataWithMetadata(person, settings.solumMappingConfig);
                     // Use assigned space ID or virtual space ID as the article ID
                     articleData.articleId = person.assignedSpaceId || person.virtualSpaceId || poolId;
-                    
+
                     await pushArticles(
                         settings.solumConfig,
                         settings.solumConfig.storeNumber,
                         settings.solumConfig.tokens.accessToken,
                         [articleData]  // Wrap in array
                     );
-                    
-                    getStoreState().updateSyncStatus([person.id], 'synced');
+
+                    getStoreState().updateSyncStatusLocal([person.id], 'synced');
                     logger.info('PeopleController', 'Person synced to AIMS', { personId: person.id });
                 } catch (syncError: any) {
-                    getStoreState().updateSyncStatus([person.id], 'error');
+                    getStoreState().updateSyncStatusLocal([person.id], 'error');
                     logger.error('PeopleController', 'Failed to sync person to AIMS', { error: syncError.message });
                 }
             }
@@ -886,7 +886,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to add person', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Update a person with immediate AIMS sync
@@ -894,8 +894,8 @@ export function usePeopleController() {
     const updatePersonWithSync = useCallback(async (personId: string, updates: Partial<Person>): Promise<void> => {
         try {
             // Update locally first
-            getStoreState().updatePerson(personId, updates);
-            
+            getStoreState().updatePersonLocal(personId, updates);
+
             const person = getStoreState().people.find(p => p.id === personId);
             if (!person) {
                 throw new Error('Person not found after update');
@@ -905,26 +905,26 @@ export function usePeopleController() {
 
             // Immediately sync to AIMS if connected
             if (settings.solumConfig?.tokens?.accessToken) {
-                getStoreState().updateSyncStatus([personId], 'pending');
-                
+                getStoreState().updateSyncStatusLocal([personId], 'pending');
+
                 try {
                     const { pushArticles } = await import('@shared/infrastructure/services/solumService');
-                    
+
                     const articleData = buildArticleDataWithMetadata(person, settings.solumMappingConfig);
                     // Use assigned space ID or virtual space ID
                     articleData.articleId = person.assignedSpaceId || getVirtualSpaceId(person) || person.id;
-                    
+
                     await pushArticles(
                         settings.solumConfig,
                         settings.solumConfig.storeNumber,
                         settings.solumConfig.tokens.accessToken,
                         [articleData]  // Wrap in array
                     );
-                    
-                    getStoreState().updateSyncStatus([personId], 'synced');
+
+                    getStoreState().updateSyncStatusLocal([personId], 'synced');
                     logger.info('PeopleController', 'Person update synced to AIMS', { personId });
                 } catch (syncError: any) {
-                    getStoreState().updateSyncStatus([personId], 'error');
+                    getStoreState().updateSyncStatusLocal([personId], 'error');
                     logger.error('PeopleController', 'Failed to sync person update to AIMS', { error: syncError.message });
                 }
             }
@@ -932,7 +932,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to update person', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Delete a person with immediate AIMS sync
@@ -967,13 +967,13 @@ export function usePeopleController() {
             }
 
             // Delete locally
-            getStoreState().deletePerson(personId);
+            getStoreState().deletePersonLocal(personId);
             logger.info('PeopleController', 'Person deleted locally', { personId });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to delete person', { error: error.message });
             throw error;
         }
-    }, [ settings.solumConfig, settings.solumMappingConfig]);
+    }, [settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Load people from CSV with sync to AIMS
@@ -988,7 +988,7 @@ export function usePeopleController() {
             }
 
             const csvContent = await file.text();
-            
+
             // Get existing pool IDs to avoid collisions
             const existingPoolIds = new Set(
                 getStoreState().people
@@ -1005,22 +1005,22 @@ export function usePeopleController() {
             // Sync to AIMS if connected
             if (settings.solumConfig?.tokens?.accessToken && people.length > 0) {
                 const personIds = people.map(p => p.id);
-                getStoreState().updateSyncStatus(personIds, 'pending');
+                getStoreState().updateSyncStatusLocal(personIds, 'pending');
 
                 try {
                     const { pushArticles } = await import('@shared/infrastructure/services/solumService');
-                    
+
                     // Batch sync in chunks of 10
                     const batchSize = 10;
                     for (let i = 0; i < people.length; i += batchSize) {
                         const batch = people.slice(i, i + batchSize);
-                        
+
                         const articles = batch.map(person => {
                             const articleData = buildArticleDataWithMetadata(person, settings.solumMappingConfig);
                             articleData.articleId = getVirtualSpaceId(person) || person.id;
                             return articleData;
                         });
-                        
+
                         await pushArticles(
                             settings.solumConfig!,
                             settings.solumConfig!.storeNumber,
@@ -1029,10 +1029,10 @@ export function usePeopleController() {
                         );
                     }
 
-                    getStoreState().updateSyncStatus(personIds, 'synced');
+                    getStoreState().updateSyncStatusLocal(personIds, 'synced');
                     logger.info('PeopleController', 'CSV people synced to AIMS', { count: people.length });
                 } catch (syncError: any) {
-                    getStoreState().updateSyncStatus(personIds, 'error');
+                    getStoreState().updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleController', 'Failed to sync CSV people to AIMS', { error: syncError.message });
                 }
             }
@@ -1055,7 +1055,7 @@ export function usePeopleController() {
             }
 
             const { fetchArticles } = await import('@shared/infrastructure/services/solumService');
-            
+
             const token = settings.solumConfig.tokens.accessToken;
             const storeNumber = settings.solumConfig.storeNumber;
 
@@ -1125,7 +1125,7 @@ export function usePeopleController() {
 
             // Update the store with synced people
             getStoreState().setPeople(people);
-            
+
             // Extract unique list names from people's listMemberships and populate peopleLists
             getStoreState().extractListsFromPeople();
 
@@ -1159,11 +1159,11 @@ export function usePeopleController() {
         cancelAllAssignments,
 
         // Store actions (raw, no auto-sync)
-        addPersonRaw: getStoreState().addPerson,
-        updatePersonRaw: getStoreState().updatePerson,
-        deletePersonRaw: getStoreState().deletePerson,
+        addPersonRaw: getStoreState().addPersonLocal,
+        updatePersonRaw: getStoreState().updatePersonLocal,
+        deletePersonRaw: getStoreState().deletePersonLocal,
         unassignSpace: unassignSpaceWithAims,
-        updateSyncStatus: getStoreState().updateSyncStatus,
+        updateSyncStatus: getStoreState().updateSyncStatusLocal,
 
         // Sync-enabled actions (auto-sync to AIMS)
         addPerson: addPersonWithSync,

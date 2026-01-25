@@ -38,9 +38,9 @@ router.get('/', requirePermission('conference', 'read'), async (req, res, next) 
         // Calculate stats
         const stats = {
             total: rooms.length,
-            withLabels: rooms.filter((r) => r.labelCode).length,
-            withMeetings: rooms.filter((r) => r.hasMeeting).length,
-            available: rooms.filter((r) => !r.hasMeeting).length,
+            withLabels: rooms.filter((r: typeof rooms[0]) => r.labelCode).length,
+            withMeetings: rooms.filter((r: typeof rooms[0]) => r.hasMeeting).length,
+            available: rooms.filter((r: typeof rooms[0]) => !r.hasMeeting).length,
         };
 
         res.json({ data: rooms, stats });
@@ -54,7 +54,7 @@ router.get('/:id', requirePermission('conference', 'read'), async (req, res, nex
     try {
         const room = await prisma.conferenceRoom.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -109,7 +109,7 @@ router.patch('/:id', requirePermission('conference', 'update'), async (req, res,
 
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -119,7 +119,7 @@ router.patch('/:id', requirePermission('conference', 'update'), async (req, res,
         }
 
         const room = await prisma.conferenceRoom.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: {
                 ...data,
                 syncStatus: 'PENDING',
@@ -139,7 +139,7 @@ router.delete('/:id', requirePermission('conference', 'delete'), async (req, res
     try {
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -149,7 +149,7 @@ router.delete('/:id', requirePermission('conference', 'delete'), async (req, res
         }
 
         await prisma.conferenceRoom.delete({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
         });
 
         // TODO: Queue sync job
@@ -167,7 +167,7 @@ router.post('/:id/toggle', requirePermission('conference', 'toggle'), async (req
 
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -180,7 +180,7 @@ router.post('/:id/toggle', requirePermission('conference', 'toggle'), async (req
         const newHasMeeting = !existing.hasMeeting;
 
         const room = await prisma.conferenceRoom.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: {
                 hasMeeting: newHasMeeting,
                 // If turning on, use provided data; if turning off, clear data
@@ -205,7 +205,7 @@ router.post('/:id/flip-page', requirePermission('conference', 'toggle'), async (
     try {
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });

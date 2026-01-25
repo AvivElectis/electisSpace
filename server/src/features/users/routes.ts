@@ -85,7 +85,7 @@ router.get('/:id', authorize('ADMIN'), async (req, res, next) => {
     try {
         const user = await prisma.user.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
             select: {
@@ -163,7 +163,7 @@ router.patch('/:id', authorize('ADMIN'), async (req, res, next) => {
         // Find user
         const existing = await prisma.user.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -173,13 +173,13 @@ router.patch('/:id', authorize('ADMIN'), async (req, res, next) => {
         }
 
         // Prevent self-demotion
-        if (req.params.id === req.user!.id && data.role && data.role !== 'ADMIN') {
+        if (req.params.id as string === req.user!.id && data.role && data.role !== 'ADMIN') {
             throw badRequest('Cannot demote yourself');
         }
 
         // Update user
         const user = await prisma.user.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data,
             select: {
                 id: true,
@@ -202,14 +202,14 @@ router.patch('/:id', authorize('ADMIN'), async (req, res, next) => {
 router.delete('/:id', authorize('ADMIN'), async (req, res, next) => {
     try {
         // Prevent self-deletion
-        if (req.params.id === req.user!.id) {
+        if (req.params.id as string === req.user!.id) {
             throw badRequest('Cannot delete yourself');
         }
 
         // Find user
         const existing = await prisma.user.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
             },
         });
@@ -220,7 +220,7 @@ router.delete('/:id', authorize('ADMIN'), async (req, res, next) => {
 
         // Delete user
         await prisma.user.delete({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
         });
 
         res.status(204).send();

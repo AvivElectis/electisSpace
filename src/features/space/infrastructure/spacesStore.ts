@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import type { Space } from '@shared/domain/types';
 import type { SpacesList } from '../domain/types';
+import { spacesApi } from './spacesApi';
 
 export interface SpacesStore {
     // State
@@ -10,11 +11,21 @@ export interface SpacesStore {
     activeListName?: string;
     activeListId?: string; // Track ID of active list for updates
 
-    // Actions
+    // Loading/Error states
+    isLoading: boolean;
+    error: string | null;
+
+    // Actions - Local (for offline/CSV mode)
     setSpaces: (spaces: Space[]) => void;
-    addSpace: (space: Space) => void;
-    updateSpace: (id: string, updates: Partial<Space>) => void;
-    deleteSpace: (id: string) => void;
+    addSpaceLocal: (space: Space) => void;
+    updateSpaceLocal: (id: string, updates: Partial<Space>) => void;
+    deleteSpaceLocal: (id: string) => void;
+
+    // Actions - Server (for API mode)
+    fetchSpaces: () => Promise<void>;
+    createSpace: (data: { externalId: string; labelCode?: string; data?: Record<string, unknown> }) => Promise<Space | null>;
+    updateSpace: (id: string, updates: Partial<Space>) => Promise<Space | null>;
+    deleteSpace: (id: string) => Promise<boolean>;
 
     // Spaces List Management
     addSpacesList: (list: SpacesList) => void;
@@ -26,6 +37,9 @@ export interface SpacesStore {
     setActiveListName: (name: string | undefined) => void;
     setActiveListId: (id: string | undefined) => void;
     mergeSpacesList: (spaces: Space[]) => void;
+
+    // Error handling
+    clearError: () => void;
 
     // Cleanup
     clearAllData: () => void;
@@ -40,16 +54,18 @@ export const useSpacesStore = create<SpacesStore>()(
                 spacesLists: [],
                 activeListName: undefined,
                 activeListId: undefined,
+                isLoading: false,
+                error: null,
 
-                // Actions
+                // Local actions (for offline/CSV mode)
                 setSpaces: (spaces) => set({ spaces }, false, 'setSpaces'),
 
-                addSpace: (space) =>
+                addSpaceLocal: (space) =>
                     set((state) => ({
                         spaces: [...state.spaces, space],
-                    }), false, 'addSpace'),
+                    }), false, 'addSpaceLocal'),
 
-                updateSpace: (id, updates) =>
+                updateSpaceLocal: (id, updates) =>
                     set((state) => ({
                         spaces: state.spaces.map((s) =>
                             s.id === id ? {
@@ -58,12 +74,72 @@ export const useSpacesStore = create<SpacesStore>()(
                                 data: updates.data ? { ...s.data, ...updates.data } : s.data
                             } : s
                         ),
-                    }), false, 'updateSpace'),
+                    }), false, 'updateSpaceLocal'),
 
-                deleteSpace: (id) =>
+                deleteSpaceLocal: (id) =>
                     set((state) => ({
                         spaces: state.spaces.filter((s) => s.id !== id),
-                    }), false, 'deleteSpace'),
+                    }), false, 'deleteSpaceLocal'),
+
+                // Server actions (for API mode)
+                fetchSpaces: async () => {
+                    set({ isLoading: true, error: null }, false, 'fetchSpaces/start');
+                    try {
+                        const { spaces } = await spacesApi.getAll();
+                        set({ spaces, isLoading: false }, false, 'fetchSpaces/success');
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to fetch spaces';
+                        set({ error: message, isLoading: false }, false, 'fetchSpaces/error');
+                    }
+                },
+
+                createSpace: async (data) => {
+                    set({ isLoading: true, error: null }, false, 'createSpace/start');
+                    try {
+                        const space = await spacesApi.create(data);
+                        set((state) => ({
+                            spaces: [...state.spaces, space],
+                            isLoading: false,
+                        }), false, 'createSpace/success');
+                        return space;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to create space';
+                        set({ error: message, isLoading: false }, false, 'createSpace/error');
+                        return null;
+                    }
+                },
+
+                updateSpace: async (id, updates) => {
+                    set({ isLoading: true, error: null }, false, 'updateSpace/start');
+                    try {
+                        const space = await spacesApi.update(id, updates);
+                        set((state) => ({
+                            spaces: state.spaces.map((s) => s.id === id ? space : s),
+                            isLoading: false,
+                        }), false, 'updateSpace/success');
+                        return space;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to update space';
+                        set({ error: message, isLoading: false }, false, 'updateSpace/error');
+                        return null;
+                    }
+                },
+
+                deleteSpace: async (id) => {
+                    set({ isLoading: true, error: null }, false, 'deleteSpace/start');
+                    try {
+                        await spacesApi.delete(id);
+                        set((state) => ({
+                            spaces: state.spaces.filter((s) => s.id !== id),
+                            isLoading: false,
+                        }), false, 'deleteSpace/success');
+                        return true;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to delete space';
+                        set({ error: message, isLoading: false }, false, 'deleteSpace/error');
+                        return false;
+                    }
+                },
 
                 // Spaces List Management
                 addSpacesList: (list) =>
@@ -117,12 +193,16 @@ export const useSpacesStore = create<SpacesStore>()(
                         };
                     }, false, 'mergeSpacesList'),
 
+                // Error handling
+                clearError: () => set({ error: null }, false, 'clearError'),
+
                 // Cleanup
                 clearAllData: () => set({
                     spaces: [],
                     spacesLists: [],
                     activeListName: undefined,
-                    activeListId: undefined
+                    activeListId: undefined,
+                    error: null,
                 }, false, 'clearAllData'),
             }),
             {
@@ -131,7 +211,8 @@ export const useSpacesStore = create<SpacesStore>()(
                     spaces: state.spaces,
                     spacesLists: state.spacesLists,
                     activeListName: state.activeListName,
-                    activeListId: state.activeListId, // Persist activeListId
+                    activeListId: state.activeListId,
+                    // Don't persist loading/error states
                 }),
             }
         ),
