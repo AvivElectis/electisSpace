@@ -3,6 +3,7 @@ import { persist, devtools, createJSONStorage } from 'zustand/middleware';
 import type { StateStorage } from 'zustand/middleware';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import type { Person, PeopleList, SpaceAllocation } from '../domain/types';
+import { peopleApi } from './peopleApi';
 
 // IndexedDB storage adapter for Zustand persist
 const indexedDBStorage: StateStorage = {
@@ -21,39 +22,54 @@ const indexedDBStorage: StateStorage = {
 export interface PeopleStore {
     // State
     people: Person[];
-    peopleLists: PeopleList[];  // Legacy - now derived from people's listName
+    peopleLists: PeopleList[];
     activeListName?: string;
     activeListId?: string;
     spaceAllocation: SpaceAllocation;
-    pendingChanges: boolean;  // Track unsaved list changes
+    pendingChanges: boolean;
 
-    // Actions
+    // Loading/Error states
+    isLoading: boolean;
+    error: string | null;
+
+    // Actions - Local (for offline/CSV mode)
     setPeople: (people: Person[]) => void;
-    addPerson: (person: Person) => void;
-    updatePerson: (id: string, updates: Partial<Person>) => void;
-    deletePerson: (id: string) => void;
-    assignSpace: (personId: string, spaceId: string) => void;
-    unassignSpace: (personId: string) => void;
-    unassignAllSpaces: () => void;  // Clear all assignments
-    updateSyncStatus: (personIds: string[], status: 'pending' | 'synced' | 'error') => void;
-    
-    // Pending changes management
-    markPendingChanges: () => void;
-    clearPendingChanges: () => void;
+    addPersonLocal: (person: Person) => void;
+    updatePersonLocal: (id: string, updates: Partial<Person>) => void;
+    deletePersonLocal: (id: string) => void;
+    assignSpaceLocal: (personId: string, spaceId: string) => void;
+    unassignSpaceLocal: (personId: string) => void;
+    unassignAllSpacesLocal: () => void;
+    updateSyncStatusLocal: (personIds: string[], status: 'pending' | 'synced' | 'error') => void;
 
-    // People List Management (legacy - now lists are derived from people's listName)
+    // Actions - Server (for API mode)
+    fetchPeople: () => Promise<void>;
+    createPerson: (data: { externalId?: string; data?: Record<string, unknown> }) => Promise<Person | null>;
+    updatePerson: (id: string, updates: { data?: Record<string, unknown> }) => Promise<Person | null>;
+    deletePerson: (id: string) => Promise<boolean>;
+    assignSpace: (personId: string, spaceId: string) => Promise<Person | null>;
+    unassignSpace: (personId: string) => Promise<Person | null>;
+
+    // People List Management
     addPeopleList: (list: PeopleList) => void;
     updatePeopleList: (id: string, list: PeopleList) => void;
     deletePeopleList: (id: string) => void;
     loadPeopleList: (id: string) => void;
-    clearPeopleLists: () => void;  // Clear legacy localStorage lists
-    extractListsFromPeople: () => void;  // Extract unique lists from people's listMemberships after sync
+    clearPeopleLists: () => void;
+    extractListsFromPeople: () => void;
 
     // Helpers
     setActiveListName: (name: string | undefined) => void;
     setActiveListId: (id: string | undefined) => void;
     setSpaceAllocation: (allocation: SpaceAllocation) => void;
-    updateSpaceAllocation: () => void;  // Recalculate based on assignments
+    updateSpaceAllocation: () => void;
+
+    // Pending changes management
+    markPendingChanges: () => void;
+    clearPendingChanges: () => void;
+
+    // Error handling
+    clearError: () => void;
 
     // Cleanup
     clearAllData: () => void;
@@ -74,22 +90,21 @@ export const usePeopleStore = create<PeopleStore>()(
                     availableSpaces: 0,
                 },
                 pendingChanges: false,
+                isLoading: false,
+                error: null,
 
-                // Actions
+                // Local actions
                 setPeople: (people) => {
                     set({ people }, false, 'setPeople');
                     get().updateSpaceAllocation();
                 },
 
-                addPerson: (person) =>
-                    set((state) => {
-                        const newState = {
-                            people: [...state.people, person],
-                        };
-                        return newState;
-                    }, false, 'addPerson'),
+                addPersonLocal: (person) =>
+                    set((state) => ({
+                        people: [...state.people, person],
+                    }), false, 'addPersonLocal'),
 
-                updatePerson: (id, updates) =>
+                updatePersonLocal: (id, updates) =>
                     set((state) => ({
                         people: state.people.map((p) =>
                             p.id === id ? {
@@ -98,38 +113,36 @@ export const usePeopleStore = create<PeopleStore>()(
                                 data: updates.data ? { ...p.data, ...updates.data } : p.data
                             } : p
                         ),
-                    }), false, 'updatePerson'),
+                    }), false, 'updatePersonLocal'),
 
-                deletePerson: (id) => {
+                deletePersonLocal: (id) => {
                     set((state) => ({
                         people: state.people.filter((p) => p.id !== id),
-                    }), false, 'deletePerson');
+                    }), false, 'deletePersonLocal');
                     get().updateSpaceAllocation();
                 },
 
-                assignSpace: (personId, spaceId) => {
+                assignSpaceLocal: (personId, spaceId) => {
                     set((state) => ({
                         people: state.people.map((p) =>
                             p.id === personId ? { ...p, assignedSpaceId: spaceId } : p
                         ),
-                        // Mark pending changes if there's an active list
                         pendingChanges: state.activeListId ? true : state.pendingChanges,
-                    }), false, 'assignSpace');
+                    }), false, 'assignSpaceLocal');
                     get().updateSpaceAllocation();
                 },
 
-                unassignSpace: (personId) => {
+                unassignSpaceLocal: (personId) => {
                     set((state) => ({
                         people: state.people.map((p) =>
                             p.id === personId ? { ...p, assignedSpaceId: undefined, aimsSyncStatus: undefined } : p
                         ),
-                        // Mark pending changes if there's an active list
                         pendingChanges: state.activeListId ? true : state.pendingChanges,
-                    }), false, 'unassignSpace');
+                    }), false, 'unassignSpaceLocal');
                     get().updateSpaceAllocation();
                 },
 
-                unassignAllSpaces: () => {
+                unassignAllSpacesLocal: () => {
                     set((state) => ({
                         people: state.people.map((p) => ({
                             ...p,
@@ -137,11 +150,11 @@ export const usePeopleStore = create<PeopleStore>()(
                             aimsSyncStatus: undefined,
                             lastSyncedAt: undefined,
                         })),
-                    }), false, 'unassignAllSpaces');
+                    }), false, 'unassignAllSpacesLocal');
                     get().updateSpaceAllocation();
                 },
 
-                updateSyncStatus: (personIds, status) => {
+                updateSyncStatusLocal: (personIds, status) => {
                     const now = status === 'synced' ? new Date().toISOString() : undefined;
                     set((state) => ({
                         people: state.people.map((p) =>
@@ -149,7 +162,104 @@ export const usePeopleStore = create<PeopleStore>()(
                                 ? { ...p, aimsSyncStatus: status, lastSyncedAt: now || p.lastSyncedAt }
                                 : p
                         ),
-                    }), false, 'updateSyncStatus');
+                    }), false, 'updateSyncStatusLocal');
+                },
+
+                // Server actions
+                fetchPeople: async () => {
+                    set({ isLoading: true, error: null }, false, 'fetchPeople/start');
+                    try {
+                        const { people } = await peopleApi.getAll();
+                        set({ people, isLoading: false }, false, 'fetchPeople/success');
+                        get().updateSpaceAllocation();
+                        get().extractListsFromPeople();
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to fetch people';
+                        set({ error: message, isLoading: false }, false, 'fetchPeople/error');
+                    }
+                },
+
+                createPerson: async (data) => {
+                    set({ isLoading: true, error: null }, false, 'createPerson/start');
+                    try {
+                        const person = await peopleApi.create(data);
+                        set((state) => ({
+                            people: [...state.people, person],
+                            isLoading: false,
+                        }), false, 'createPerson/success');
+                        return person;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to create person';
+                        set({ error: message, isLoading: false }, false, 'createPerson/error');
+                        return null;
+                    }
+                },
+
+                updatePerson: async (id, updates) => {
+                    set({ isLoading: true, error: null }, false, 'updatePerson/start');
+                    try {
+                        const person = await peopleApi.update(id, updates);
+                        set((state) => ({
+                            people: state.people.map((p) => p.id === id ? person : p),
+                            isLoading: false,
+                        }), false, 'updatePerson/success');
+                        return person;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to update person';
+                        set({ error: message, isLoading: false }, false, 'updatePerson/error');
+                        return null;
+                    }
+                },
+
+                deletePerson: async (id) => {
+                    set({ isLoading: true, error: null }, false, 'deletePerson/start');
+                    try {
+                        await peopleApi.delete(id);
+                        set((state) => ({
+                            people: state.people.filter((p) => p.id !== id),
+                            isLoading: false,
+                        }), false, 'deletePerson/success');
+                        get().updateSpaceAllocation();
+                        return true;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to delete person';
+                        set({ error: message, isLoading: false }, false, 'deletePerson/error');
+                        return false;
+                    }
+                },
+
+                assignSpace: async (personId, spaceId) => {
+                    set({ isLoading: true, error: null }, false, 'assignSpace/start');
+                    try {
+                        const person = await peopleApi.assignToSpace(personId, spaceId);
+                        set((state) => ({
+                            people: state.people.map((p) => p.id === personId ? person : p),
+                            isLoading: false,
+                        }), false, 'assignSpace/success');
+                        get().updateSpaceAllocation();
+                        return person;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to assign space';
+                        set({ error: message, isLoading: false }, false, 'assignSpace/error');
+                        return null;
+                    }
+                },
+
+                unassignSpace: async (personId) => {
+                    set({ isLoading: true, error: null }, false, 'unassignSpace/start');
+                    try {
+                        const person = await peopleApi.unassignFromSpace(personId);
+                        set((state) => ({
+                            people: state.people.map((p) => p.id === personId ? person : p),
+                            isLoading: false,
+                        }), false, 'unassignSpace/success');
+                        get().updateSpaceAllocation();
+                        return person;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to unassign space';
+                        set({ error: message, isLoading: false }, false, 'unassignSpace/error');
+                        return null;
+                    }
                 },
 
                 // People List Management
@@ -186,8 +296,8 @@ export const usePeopleStore = create<PeopleStore>()(
                     }
                 },
 
-                clearPeopleLists: () => 
-                    set({ 
+                clearPeopleLists: () =>
+                    set({
                         peopleLists: [],
                         activeListId: undefined,
                         activeListName: undefined,
@@ -195,11 +305,9 @@ export const usePeopleStore = create<PeopleStore>()(
 
                 extractListsFromPeople: () => {
                     const state = get();
-                    
                     const existingListNames = new Set(state.peopleLists.map(l => l.storageName));
-                    
-                    // Extract unique list names from all people's listMemberships
                     const listNamesFromPeople = new Set<string>();
+
                     for (const person of state.people) {
                         if (person.listMemberships) {
                             for (const membership of person.listMemberships) {
@@ -209,8 +317,7 @@ export const usePeopleStore = create<PeopleStore>()(
                             }
                         }
                     }
-                    
-                    // Create PeopleList objects for newly discovered lists
+
                     const newLists: PeopleList[] = [];
                     for (const storageName of listNamesFromPeople) {
                         const displayName = storageName.replace(/_/g, ' ');
@@ -219,11 +326,10 @@ export const usePeopleStore = create<PeopleStore>()(
                             name: displayName,
                             storageName: storageName,
                             createdAt: new Date().toISOString(),
-                            // Don't store people array - it can be derived from main people array
                             isFromAIMS: true,
                         });
                     }
-                    
+
                     if (newLists.length > 0) {
                         set((state) => ({
                             peopleLists: [...state.peopleLists, ...newLists],
@@ -234,7 +340,6 @@ export const usePeopleStore = create<PeopleStore>()(
                 // Helpers
                 setActiveListName: (name) => set({ activeListName: name }, false, 'setActiveListName'),
                 setActiveListId: (id) => set({ activeListId: id }, false, 'setActiveListId'),
-
                 setSpaceAllocation: (allocation) => set({ spaceAllocation: allocation }, false, 'setSpaceAllocation'),
 
                 updateSpaceAllocation: () => {
@@ -249,7 +354,7 @@ export const usePeopleStore = create<PeopleStore>()(
                     }, false, 'updateSpaceAllocation');
                 },
 
-                // Pending changes management
+                // Pending changes (relevant for local changes)
                 markPendingChanges: () => {
                     const state = get();
                     if (state.activeListId) {
@@ -258,6 +363,9 @@ export const usePeopleStore = create<PeopleStore>()(
                 },
                 clearPendingChanges: () => set({ pendingChanges: false }, false, 'clearPendingChanges'),
 
+                // Error handling
+                clearError: () => set({ error: null }, false, 'clearError'),
+
                 // Cleanup
                 clearAllData: () => set({
                     people: [],
@@ -265,6 +373,7 @@ export const usePeopleStore = create<PeopleStore>()(
                     activeListName: undefined,
                     activeListId: undefined,
                     pendingChanges: false,
+                    error: null,
                     spaceAllocation: {
                         totalSpaces: 0,
                         assignedSpaces: 0,
@@ -282,7 +391,6 @@ export const usePeopleStore = create<PeopleStore>()(
                     activeListId: state.activeListId,
                     spaceAllocation: state.spaceAllocation,
                 }),
-
             }
         ),
         { name: 'PeopleStore' }

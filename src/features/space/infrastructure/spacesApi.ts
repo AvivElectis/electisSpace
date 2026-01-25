@@ -1,0 +1,123 @@
+/**
+ * Spaces API Service
+ * Server API calls for spaces management
+ */
+
+import api, { type PaginatedResponse } from '@shared/infrastructure/services/apiClient';
+import type { Space } from '@shared/domain/types';
+
+// Server space type (matches server response)
+interface ServerSpace {
+    id: string;
+    externalId: string;
+    labelCode: string | null;
+    templateName: string | null;
+    data: Record<string, unknown>;
+    syncStatus: 'PENDING' | 'SYNCED' | 'ERROR';
+    syncError: string | null;
+    organizationId: string;
+    createdById: string;
+    updatedById: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Transform server space to client space format
+function transformSpace(serverSpace: ServerSpace): Space {
+    // Convert data values to strings (client Space type expects Record<string, string>)
+    const stringData: Record<string, string> = {};
+    if (serverSpace.data) {
+        for (const [key, value] of Object.entries(serverSpace.data)) {
+            stringData[key] = value != null ? String(value) : '';
+        }
+    }
+
+    return {
+        id: serverSpace.id,
+        externalId: serverSpace.externalId,
+        labelCode: serverSpace.labelCode || undefined,
+        templateName: serverSpace.templateName || undefined,
+        data: stringData,
+        syncStatus: serverSpace.syncStatus,
+    };
+}
+
+// API query parameters
+interface SpacesQueryParams {
+    page?: number;
+    limit?: number;
+    search?: string;
+    hasLabel?: boolean;
+}
+
+// Spaces API service
+export const spacesApi = {
+    /**
+     * Get all spaces with optional pagination and filtering
+     */
+    getAll: async (params?: SpacesQueryParams): Promise<{ spaces: Space[]; total: number }> => {
+        const response = await api.get<PaginatedResponse<ServerSpace>>('/spaces', { params });
+        return {
+            spaces: response.data.data.map(transformSpace),
+            total: response.data.pagination.total,
+        };
+    },
+
+    /**
+     * Get a single space by ID
+     */
+    getById: async (id: string): Promise<Space> => {
+        const response = await api.get<ServerSpace>(`/spaces/${id}`);
+        return transformSpace(response.data);
+    },
+
+    /**
+     * Create a new space
+     */
+    create: async (data: {
+        externalId: string;
+        labelCode?: string;
+        templateName?: string;
+        data?: Record<string, unknown>;
+    }): Promise<Space> => {
+        const response = await api.post<ServerSpace>('/spaces', data);
+        return transformSpace(response.data);
+    },
+
+    /**
+     * Update an existing space
+     */
+    update: async (id: string, data: {
+        labelCode?: string | null;
+        templateName?: string | null;
+        data?: Record<string, unknown>;
+    }): Promise<Space> => {
+        const response = await api.patch<ServerSpace>(`/spaces/${id}`, data);
+        return transformSpace(response.data);
+    },
+
+    /**
+     * Delete a space
+     */
+    delete: async (id: string): Promise<void> => {
+        await api.delete(`/spaces/${id}`);
+    },
+
+    /**
+     * Assign a label to a space
+     */
+    assignLabel: async (id: string, labelCode: string): Promise<Space> => {
+        const response = await api.post<ServerSpace>(`/spaces/${id}/assign-label`, { labelCode });
+        return transformSpace(response.data);
+    },
+
+    /**
+     * Unassign label from a space
+     */
+    unassignLabel: async (id: string): Promise<Space> => {
+        const response = await api.delete<ServerSpace>(`/spaces/${id}/unassign-label`);
+        return transformSpace(response.data);
+    },
+};
+
+export default spacesApi;

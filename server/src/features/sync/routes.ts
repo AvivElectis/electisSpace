@@ -70,7 +70,7 @@ router.get('/jobs/:id', requirePermission('sync', 'view'), async (req, res, next
     try {
         // TODO: Query BullMQ for job status
         res.json({
-            jobId: req.params.id,
+            jobId: req.params.id as string,
             status: 'completed',
             type: 'full',
             startedAt: new Date().toISOString(),
@@ -111,7 +111,7 @@ router.post('/queue/:id/retry', requirePermission('sync', 'trigger'), async (req
     try {
         const item = await prisma.syncQueueItem.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 organizationId: req.user!.organizationId,
                 status: 'FAILED',
             },
@@ -123,7 +123,7 @@ router.post('/queue/:id/retry', requirePermission('sync', 'trigger'), async (req
         }
 
         await prisma.syncQueueItem.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: {
                 status: 'PENDING',
                 attempts: 0,
