@@ -479,6 +479,28 @@ Readiness check with dependencies.
 
 ---
 
+### GET /health/aims
+Direct health check for AIMS connectivity.
+
+**Response 200:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-01-21T12:00:00Z"
+}
+```
+
+**Response 503:**
+```json
+{
+  "status": "error",
+  "timestamp": "2026-01-21T12:00:00Z",
+  "error": "Timeout"
+}
+```
+
+---
+
 ### GET /health/detailed
 Detailed health metrics.
 
