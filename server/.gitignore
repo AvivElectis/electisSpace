@@ -4,11 +4,17 @@ node_modules/
 # Build output
 dist/
 
-# Environment files
+# Environment files (contain secrets - never commit)
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
+
+# Keep example files
 !.env.example
+!.env.*.example
 
 # Logs
 logs/
