@@ -54,9 +54,9 @@ describe('SpacesStore', () => {
         });
 
         it('should add a space', () => {
-            const { addSpace } = useSpacesStore.getState();
+            const { addSpaceLocal } = useSpacesStore.getState();
 
-            addSpace(mockSpace);
+            addSpaceLocal(mockSpace);
 
             const { spaces } = useSpacesStore.getState();
             expect(spaces).toHaveLength(1);
@@ -64,31 +64,31 @@ describe('SpacesStore', () => {
         });
 
         it('should add multiple spaces', () => {
-            const { addSpace } = useSpacesStore.getState();
+            const { addSpaceLocal } = useSpacesStore.getState();
 
-            addSpace({ id: '1', data: { name: 'Space 1' } });
-            addSpace({ id: '2', data: { name: 'Space 2' } });
-            addSpace({ id: '3', data: { name: 'Space 3' } });
+            addSpaceLocal({ id: '1', data: { name: 'Space 1' } });
+            addSpaceLocal({ id: '2', data: { name: 'Space 2' } });
+            addSpaceLocal({ id: '3', data: { name: 'Space 3' } });
 
             const { spaces } = useSpacesStore.getState();
             expect(spaces).toHaveLength(3);
         });
 
         it('should update space by ID', () => {
-            const { setSpaces, updateSpace } = useSpacesStore.getState();
+            const { setSpaces, updateSpaceLocal } = useSpacesStore.getState();
 
             setSpaces([mockSpace]);
-            updateSpace('101', { data: { ITEM_NAME: 'Updated Room', RANK: 'Captain' } });
+            updateSpaceLocal('101', { data: { ITEM_NAME: 'Updated Room', RANK: 'Captain' } });
 
             const { spaces } = useSpacesStore.getState();
             expect(spaces[0].data.ITEM_NAME).toBe('Updated Room');
         });
 
         it('should merge data when updating space', () => {
-            const { setSpaces, updateSpace } = useSpacesStore.getState();
+            const { setSpaces, updateSpaceLocal } = useSpacesStore.getState();
 
             setSpaces([mockSpace]);
-            updateSpace('101', { data: { TITLE: 'Manager' } });
+            updateSpaceLocal('101', { data: { TITLE: 'Manager' } });
 
             const { spaces } = useSpacesStore.getState();
             expect(spaces[0].data.ITEM_NAME).toBe('Room 101');
@@ -97,7 +97,7 @@ describe('SpacesStore', () => {
         });
 
         it('should delete space by ID', () => {
-            const { setSpaces, deleteSpace } = useSpacesStore.getState();
+            const { setSpaces, deleteSpaceLocal } = useSpacesStore.getState();
 
             setSpaces([
                 { id: '1', data: {} },
@@ -105,7 +105,7 @@ describe('SpacesStore', () => {
                 { id: '3', data: {} },
             ]);
 
-            deleteSpace('2');
+            deleteSpaceLocal('2');
 
             const { spaces } = useSpacesStore.getState();
             expect(spaces).toHaveLength(2);

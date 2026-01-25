@@ -56,6 +56,13 @@
         "actions": "Actions",
         "errorDetails": "Error Details"
     },
+    "login": {
+        "email": "Email Address",
+        "password": "Password",
+        "subtitle": "Sign in to access your dashboard",
+        "signIn": "Sign In",
+        "signingIn": "Signing in..."
+    },
     "dashboard": {
         "title": "Dashboard",
         "welcome": "Welcome to",
@@ -465,7 +472,12 @@
         "version": "Version",
         "size": "Size",
         "releaseDate": "Release Date",
-        "checkIntervalHelper": "How often to check for updates (12-168 hours)"
+        "checkIntervalHelper": "How often to check for updates (12-168 hours)",
+        "installingMessage": "Installing update {{version}}. Please wait...",
+        "noReleaseNotes": "No release notes available for version {{version}}",
+        "electronInstructions": "Click 'Install and Restart' to apply the update and restart the application.",
+        "androidInstructions": "The update will be downloaded automatically. You will be prompted to install it.",
+        "webInstructions": "The application will reload with the latest version once the download completes."
     },
     "importExport": {
         "title": "Import/Export Settings",
