@@ -27,17 +27,30 @@ const loadEnvironmentFiles = () => {
     }
 
     // 2. Environment-specific file
-    if (fs.existsSync(envFile)) {
-        dotenv.config({ path: envFile, override: true });
+    // Only load if NOT running in Docker (simplified check: if DATABASE_URL is already set in process.env, assume Docker)
+    if (fs.existsSync(envFile) && !process.env.DATABASE_URL) {
+        dotenv.config({ path: envFile });
         console.log(`📁 Loaded environment config: .env.${nodeEnv}`);
+    } else if (process.env.DATABASE_URL) {
+        console.log(`🐳 Docker environment detected (DATABASE_URL set), skipping .env.${nodeEnv} network config`);
+        // We still might want to load other non-network vars from .env.development if needed, 
+        // but for now, let's rely on Docker env vars or safe defaults.
+        // Actually, safer to load it but NOT override existing process.env
+        if (fs.existsSync(envFile)) {
+            dotenv.config({ path: envFile, override: false });
+            console.log(`📁 Loaded extra config from .env.${nodeEnv} (no override)`);
+        }
     } else {
         console.log(`⚠️ No .env.${nodeEnv} file found, using defaults`);
     }
 
     // 3. Local overrides (highest priority)
-    if (fs.existsSync(envLocalFile)) {
+    // Only load .env.local if NOT in Docker (same check as above)
+    if (fs.existsSync(envLocalFile) && !process.env.DATABASE_URL) {
         dotenv.config({ path: envLocalFile, override: true });
         console.log('📁 Loaded local overrides: .env.local');
+    } else if (fs.existsSync(envLocalFile) && process.env.DATABASE_URL) {
+        console.log('🐳 Docker environment detected, skipping .env.local overrides');
     }
 };
 

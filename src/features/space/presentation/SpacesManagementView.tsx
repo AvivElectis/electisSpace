@@ -104,35 +104,33 @@ export function SpacesManagementView() {
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
     const [saveListOpen, setSaveListOpen] = useState(false);
 
-    // Fetch spaces from AIMS on mount when in SoluM mode
+    // Fetch spaces from Server DB on mount (Source of Truth for Cloud Persistence)
     useEffect(() => {
-        if (
-            settingsController.settings.workingMode === 'SOLUM_API' &&
-            solumToken &&
-            settingsController.settings.solumMappingConfig
-        ) {
-            spaceController.fetchFromSolum().catch(() => {
-                // Error handled internally
+        if (settingsController.settings.workingMode !== 'SFTP') {
+            logger.info('SpacesManagementView', 'Fetching spaces from Server DB');
+            spaceController.fetchSpaces?.().catch(err => {
+                logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
             });
+
+            // Also fetch from SoluM if configured, to keep client updated with latest physical status?
+            // "Cloud Persistence" implies Server DB is master. 
+            // If we fetch from SoluM, we might overwrite Server DB changes locally?
+            // Let's stick to Server DB. If user wants to Sync, they use Sync Page.
         }
-    }, [
-        settingsController.settings.workingMode,
-        solumToken,
-        settingsController.settings.solumMappingConfig,
-    ]);
+    }, [settingsController.settings.workingMode]);
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
         const workingMode = settingsController.settings.workingMode;
-        
+
         // SFTP Mode: use sftpCsvConfig.columns
         if (workingMode === 'SFTP') {
             const columns = settingsController.settings.sftpCsvConfig?.columns;
             if (!columns || columns.length === 0) return [];
-            
+
             const idColumn = settingsController.settings.sftpCsvConfig?.idColumn;
             const globalFields = Object.keys(settingsController.settings.sftpCsvConfig?.globalFieldAssignments || {});
-            
+
             return columns
                 .filter(col => {
                     // Exclude ID column (shown separately as first column)
@@ -148,7 +146,7 @@ export function SpacesManagementView() {
                     labelHe: col.friendlyNameHe || col.friendlyName,
                 }));
         }
-        
+
         // SoluM API Mode: use solumMappingConfig.fields
         if (!settingsController.settings.solumMappingConfig?.fields) return [];
 
@@ -184,7 +182,7 @@ export function SpacesManagementView() {
         // 0. In SFTP mode, always filter out conference rooms (IDs starting with C/c)
         if (workingMode === 'SFTP') {
             result = result.filter(space => {
-                const id = space.id.trim();
+                const id = (space.externalId || space.id).trim();
                 return !id.startsWith('C') && !id.startsWith('c');
             });
         }
@@ -193,7 +191,7 @@ export function SpacesManagementView() {
         if (query) {
             result = result.filter((space) => {
                 return (
-                    space.id.toLowerCase().includes(query) ||
+                    (space.externalId || space.id).toLowerCase().includes(query) ||
                     Object.values(space.data).some((value) =>
                         value.toLowerCase().includes(query)
                     )
@@ -208,8 +206,8 @@ export function SpacesManagementView() {
                 let bValue: any = '';
 
                 if (sortConfig.key === 'id') {
-                    aValue = a.id;
-                    bValue = b.id;
+                    aValue = a.externalId || a.id;
+                    bValue = b.externalId || b.id;
                 } else {
                     aValue = a.data[sortConfig.key] || '';
                     bValue = b.data[sortConfig.key] || '';
@@ -379,7 +377,7 @@ export function SpacesManagementView() {
                                         {/* Row 1: ID + Actions */}
                                         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
                                             <Typography variant="subtitle2" fontWeight={600}>
-                                                {space.id}
+                                                {space.externalId || space.id}
                                             </Typography>
                                             <Stack direction="row" gap={0.5}>
                                                 <Tooltip title={t('common.edit')}>
@@ -489,7 +487,7 @@ export function SpacesManagementView() {
                                     >
                                         <TableCell align="center">
                                             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                {space.id}
+                                                {space.externalId || space.id}
                                             </Typography>
                                         </TableCell>
                                         {visibleFields.map(field => (
