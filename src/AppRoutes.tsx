@@ -2,8 +2,12 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { lazy, Suspense, type ReactNode, useEffect } from 'react';
 import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
 import { logger } from '@shared/infrastructure/services/logger';
+import { ProtectedRoute } from '@features/auth/presentation/ProtectedRoute';
 
 // Lazy load all page components for code splitting
+const LoginPage = lazy(() =>
+    import('@features/auth/presentation/LoginPage').then(m => ({ default: m.LoginPage }))
+);
 const DashboardPage = lazy(() =>
     import('@features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))
 );
@@ -56,12 +60,17 @@ export function AppRoutes() {
 
     return (
         <Routes>
-            <Route path="/" element={<SuspenseRoute><DashboardPage /></SuspenseRoute>} />
-            <Route path="/spaces" element={<SuspenseRoute><SpacesPage /></SuspenseRoute>} />
-            <Route path="/conference" element={<SuspenseRoute><ConferencePage /></SuspenseRoute>} />
-            <Route path="/sync" element={<SuspenseRoute><SyncPage /></SuspenseRoute>} />
-            <Route path="/people" element={<SuspenseRoute><PeopleManagerView /></SuspenseRoute>} />
+            {/* Public Routes */}
+            <Route path="/login" element={<SuspenseRoute><LoginPage /></SuspenseRoute>} />
+
+            {/* Protected Routes */}
+            <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/spaces" element={<ProtectedRoute><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/conference" element={<ProtectedRoute><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/sync" element={<ProtectedRoute><SuspenseRoute><SyncPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/people" element={<ProtectedRoute><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );
 }
+

@@ -28,13 +28,13 @@ const generateTokens = (userId: string, organizationId: string, role: string) =>
     const accessToken = jwt.sign(
         { sub: userId, org: organizationId, role },
         config.jwt.accessSecret,
-        { expiresIn: config.jwt.accessExpiresIn }
+        { expiresIn: config.jwt.accessExpiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     const refreshToken = jwt.sign(
         { sub: userId, jti: uuidv4() },
         config.jwt.refreshSecret,
-        { expiresIn: config.jwt.refreshExpiresIn }
+        { expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     return { accessToken, refreshToken };
