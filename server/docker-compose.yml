@@ -34,21 +34,21 @@ services:
       - electisspace-network
 
   # ======================
-  # PostgreSQL Database
+  # PostgreSQL Database (Production)
   # ======================
   db:
     image: postgres:16-alpine
-    container_name: electisspace-db
+    container_name: electisspace-db-prod
     environment:
       - POSTGRES_USER=electis
-      - POSTGRES_PASSWORD=electis_secret
-      - POSTGRES_DB=electisspace
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-electis_secret}
+      - POSTGRES_DB=electisspace_prod
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U electis -d electisspace" ]
+      test: [ "CMD-SHELL", "pg_isready -U electis -d electisspace_prod" ]
       interval: 10s
       timeout: 5s
       retries: 5
