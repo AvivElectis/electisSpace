@@ -11,38 +11,64 @@ Node.js backend server for electisSpace ESL management system.
 
 ## Quick Start
 
-### Development (Local)
+### Development Setup
 
 ```bash
 # Install dependencies
 npm install
 
-# Copy environment file
-cp .env.example .env
-# Edit .env with your settings
+# Start development database and Redis
+npm run dev:docker
+
+# Copy development environment file
+cp .env.development .env.development.local
+# Edit .env.development.local with your settings if needed
 
 # Generate Prisma client
 npm run db:generate
 
 # Run database migrations
-npm run db:push
+npm run db:migrate
 
-# Start development server
+# Start development server (with hot reload)
 npm run dev
 ```
 
-### Development (Docker)
+### Production Setup
 
 ```bash
-# Start all services
-docker-compose up -d
+# Copy and configure production environment
+cp .env.production .env.production.local
+# IMPORTANT: Edit .env.production.local with real secrets!
 
-# View logs
-docker-compose logs -f server
+# Start production containers
+npm run prod:docker
 
-# Stop services
-docker-compose down
+# Run database migrations
+npm run db:migrate:deploy
 ```
+
+## Environment Configuration
+
+The server supports environment-specific configuration files:
+
+| File | Purpose | Git Tracked |
+|------|---------|-------------|
+| `.env.development` | Development defaults | No |
+| `.env.production` | Production template | No |
+| `.env.local` | Local overrides (highest priority) | No |
+| `.env.example` | Example template | Yes |
+
+**Loading Priority**: `.env` → `.env.{NODE_ENV}` → `.env.local`
+
+### Development vs Production
+
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| Database | `electisspace_dev` on port 5433 | `electisspace_prod` on port 5432 |
+| Redis | Port 6380 | Port 6379 |
+| Logging | `debug` level | `info` level |
+| Rate Limiting | Relaxed (1000 req/min) | Strict (100 req/min) |
 
 ## Available Scripts
 
@@ -51,10 +77,22 @@ docker-compose down
 | `npm run dev` | Start development server with hot reload |
 | `npm run build` | Build TypeScript for production |
 | `npm start` | Start production server |
+| **Docker (Development)** | |
+| `npm run dev:docker` | Start dev DB and Redis containers |
+| `npm run dev:docker:down` | Stop dev containers |
+| `npm run dev:docker:logs` | View dev container logs |
+| **Docker (Production)** | |
+| `npm run prod:docker` | Start production containers |
+| `npm run prod:docker:down` | Stop production containers |
+| `npm run prod:docker:logs` | View production logs |
+| **Database** | |
 | `npm run db:generate` | Generate Prisma client |
 | `npm run db:push` | Push schema changes to database |
-| `npm run db:migrate` | Run database migrations |
+| `npm run db:migrate` | Run migrations (development) |
+| `npm run db:migrate:deploy` | Run migrations (production) |
 | `npm run db:studio` | Open Prisma Studio GUI |
+| `npm run db:seed` | Seed database with test data |
+| **Testing** | |
 | `npm run test` | Run tests |
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Check TypeScript types |

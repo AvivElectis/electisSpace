@@ -1,8 +1,48 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import { z } from 'zod';
 
+/**
+ * Load environment-specific configuration files.
+ * Priority: .env.{NODE_ENV} > .env.local > .env
+ */
+const loadEnvironmentFiles = () => {
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    const rootDir = path.resolve(__dirname, '../..');
+
+    // Environment-specific file (e.g., .env.development, .env.production)
+    const envFile = path.join(rootDir, `.env.${nodeEnv}`);
+
+    // Local overrides (never committed)
+    const envLocalFile = path.join(rootDir, '.env.local');
+
+    // Base .env file
+    const baseEnvFile = path.join(rootDir, '.env');
+
+    // Load in order of priority (later files override earlier ones)
+    // 1. Base .env (lowest priority)
+    if (fs.existsSync(baseEnvFile)) {
+        dotenv.config({ path: baseEnvFile });
+    }
+
+    // 2. Environment-specific file
+    if (fs.existsSync(envFile)) {
+        dotenv.config({ path: envFile, override: true });
+        console.log(`📁 Loaded environment config: .env.${nodeEnv}`);
+    } else {
+        console.log(`⚠️ No .env.${nodeEnv} file found, using defaults`);
+    }
+
+    // 3. Local overrides (highest priority)
+    if (fs.existsSync(envLocalFile)) {
+        dotenv.config({ path: envLocalFile, override: true });
+        console.log('📁 Loaded local overrides: .env.local');
+    }
+};
+
 // Load environment variables
-dotenv.config();
+loadEnvironmentFiles();
 
 // Environment schema validation
 const envSchema = z.object({
