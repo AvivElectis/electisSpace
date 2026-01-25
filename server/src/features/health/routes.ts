@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { prisma, getRedisClient } from '../../config/index.js';
+import { solumService } from '../../shared/infrastructure/services/solumService.js';
+import { env } from '../../config/env.js';
 
 const router = Router();
 
@@ -16,7 +18,7 @@ router.get('/ready', async (_req, res) => {
     const checks: Record<string, 'ok' | 'error'> = {
         database: 'error',
         redis: 'error',
-        solum: 'ok', // TODO: Implement actual SoluM health check
+        solum: 'error',
     };
 
     try {
@@ -36,12 +38,47 @@ router.get('/ready', async (_req, res) => {
         checks.redis = 'error';
     }
 
+    try {
+        // Check SoluM
+        // Use default env config for health check
+        const isSolumReachable = await solumService.checkHealth({
+            baseUrl: env.SOLUM_DEFAULT_API_URL || 'https://eu.common.solumesl.com',
+            companyName: 'HEALTH_CHECK',
+            cluster: env.SOLUM_DEFAULT_CLUSTER,
+        });
+        checks.solum = isSolumReachable ? 'ok' : 'error';
+    } catch {
+        checks.solum = 'error';
+    }
+
     const allOk = Object.values(checks).every((c) => c === 'ok');
 
     res.status(allOk ? 200 : 503).json({
         status: allOk ? 'ok' : 'degraded',
         checks,
     });
+});
+
+// AIMS specific probe
+router.get('/aims', async (_req, res) => {
+    try {
+        const isAlive = await solumService.checkHealth({
+            baseUrl: env.SOLUM_DEFAULT_API_URL || 'https://eu.common.solumesl.com',
+            companyName: 'HEALTH_CHECK',
+            cluster: env.SOLUM_DEFAULT_CLUSTER,
+        });
+
+        res.status(isAlive ? 200 : 503).json({
+            status: isAlive ? 'ok' : 'error',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'error',
+            timestamp: new Date().toISOString(),
+            error: (error as Error).message
+        });
+    }
 });
 
 // Detailed health metrics
@@ -51,7 +88,7 @@ router.get('/detailed', async (_req, res) => {
     const checks: Record<string, unknown> = {
         database: { status: 'error' },
         redis: { status: 'error' },
-        solum: { status: 'ok', lastPing: new Date().toISOString() },
+        solum: { status: 'error' },
     };
 
     try {
@@ -81,6 +118,21 @@ router.get('/detailed', async (_req, res) => {
         checks.redis = { status: 'error', error: (err as Error).message };
     }
 
+    try {
+        const start = Date.now();
+        const isAlive = await solumService.checkHealth({
+            baseUrl: env.SOLUM_DEFAULT_API_URL || 'https://eu.common.solumesl.com',
+            companyName: 'HEALTH_CHECK',
+            cluster: env.SOLUM_DEFAULT_CLUSTER,
+        });
+        checks.solum = {
+            status: isAlive ? 'ok' : 'error',
+            latencyMs: Date.now() - start,
+        };
+    } catch (err) {
+        checks.solum = { status: 'error', error: (err as Error).message };
+    }
+
     const allOk = Object.values(checks).every(
         (c) => (c as { status: string }).status === 'ok'
     );
@@ -88,7 +140,7 @@ router.get('/detailed', async (_req, res) => {
     res.status(allOk ? 200 : 503).json({
         status: allOk ? 'ok' : 'degraded',
         uptime: process.uptime(),
-        version: process.env.npm_package_version || '1.0.0',
+        version: "1.0.0", // process.env.npm_package_version is flaky in some envs
         memory: {
             heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
             heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
