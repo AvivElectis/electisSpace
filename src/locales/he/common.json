@@ -8,6 +8,7 @@
         "spaces": "חללים",
         "people": "אנשים",
         "conference": "חדרי ישיבות",
+        "labels": "תגיות",
         "sync": "סינכרון"
     },
     "common": {
@@ -313,6 +314,9 @@
         "schemaFetchedError": "שליפת הסכמה נכשלה: {{error}}",
         "connectionSuccess": "החיבור הצליח!",
         "connectionError": "החיבור נכשל: {{error}}",
+        "initialSyncComplete": "הסינכרון הראשוני הושלם - הנתונים נטענו בהצלחה!",
+        "initialSyncError": "הסינכרון הראשוני נכשל: {{error}}",
+        "fetchingInitialData": "מביא נתונים מהשרת...",
         "fetchedSchema": "סכמה שנשלפה:",
         "articleFormatSchema": "סכמת פורמט מוצר",
         "fetchingSchema": "מביא סכמה...",
@@ -446,7 +450,10 @@
             "addUser": "הוסף משתמש",
             "editUser": "ערוך משתמש",
             "deleteConfirmTitle": "מחק משתמש",
-            "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק את המשתמש {{email}}?"
+            "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק את המשתמש {{email}}?",
+            "store": "חנות",
+            "features": "יכולות",
+            "editFeaturesHint": "לעריכת תפקיד ויכולות, השתמש בניהול חנויות"
         }
     },
     "errors": {
@@ -856,7 +863,12 @@
     "roles": {
         "admin": "מנהל",
         "manager": "מנהל",
-        "viewer": "צופה"
+        "viewer": "צופה",
+        "store_admin": "מנהל חנות",
+        "store_manager": "מנהל חנות",
+        "store_employee": "עובד חנות",
+        "store_viewer": "צופה חנות",
+        "platform_admin": "מנהל מערכת"
     },
     "validation": {
         "required": "{{field}} הוא שדה חובה",
@@ -866,5 +878,61 @@
     "errors": {
         "required": "שדה חובה",
         "idExists": "המזהה כבר קיים"
+    },
+    "labels": {
+        "title": "ניהול תגיות",
+        "notConfigured": "SOLUM API לא מוגדר. אנא הגדר את הגדרות SOLUM תחילה.",
+        "linkNew": "קשר תגית",
+        "search": "חפש תגיות או מוצרים...",
+        "filterLinkedOnly": "הצג מקושרים בלבד",
+        "totalCount": "{{count}} תגיות",
+        "noLabels": "לא נמצאו תגיות",
+        "notLinked": "לא מקושר",
+        "table": {
+            "labelCode": "קוד תגית",
+            "articleId": "מזהה מוצר",
+            "articleName": "שם מוצר",
+            "signal": "עוצמת אות",
+            "battery": "סוללה",
+            "status": "סטטוס",
+            "actions": "פעולות"
+        },
+        "link": {
+            "title": "קשר תגית למוצר",
+            "labelCode": "קוד תגית",
+            "labelCodeHelp": "הזן קוד תגית או סרוק ברקוד",
+            "articleId": "מזהה מוצר",
+            "articleIdHelp": "הזן מזהה מוצר או סרוק ברקוד",
+            "templateName": "שם תבנית (אופציונלי)",
+            "templateNameHelp": "השאר ריק לשימוש בתבנית ברירת מחדל",
+            "linkButton": "קשר תגית",
+            "button": "קשר",
+            "labelRequired": "קוד תגית הוא שדה חובה",
+            "articleRequired": "מזהה מוצר הוא שדה חובה",
+            "error": "שגיאה בקישור התגית"
+        },
+        "unlink": {
+            "confirmTitle": "בטל קישור תגית",
+            "confirmMessage": "האם אתה בטוח שברצונך לבטל את קישור התגית מהמוצר?",
+            "confirm": "בטל קישור",
+            "button": "בטל קישור"
+        },
+        "scanner": {
+            "title": "סרוק ברקוד",
+            "externalScanner": "סורק",
+            "camera": "מצלמה",
+            "manual": "ידני",
+            "scannerInstructions": "הפנה את סורק הברקוד לקוד. שדה הקלט למטה יקלוט את הסריקה.",
+            "readyToScan": "מוכן לסריקה...",
+            "placeholder": "סרוק או הקלד קוד...",
+            "cameraError": "הגישה למצלמה נדחתה או לא זמינה",
+            "enterCodeFromCamera": "הזן את הקוד שאתה רואה:",
+            "capture": "צלם",
+            "cameraHint": "מקם את הברקוד באזור הירוק",
+            "manualInstructions": "הזן את הקוד ידנית",
+            "scan": "סרוק",
+            "scanLabel": "סרוק קוד תגית",
+            "scanArticle": "סרוק מזהה מוצר"
+        }
     }
 }

@@ -9,10 +9,19 @@ import { UpdateNotification } from './features/update/presentation/UpdateNotific
 import { CustomTitleBar } from './shared/presentation/components/CustomTitleBar';
 import { ErrorBoundary } from './shared/presentation/components/ErrorBoundary';
 import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
+import { useAuthWatchdog } from './features/auth/application/useAuthWatchdog';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useEffect } from 'react';
 import { logger } from './shared/infrastructure/services/logger';
 
+
+/**
+ * Auth Watchdog Wrapper - Must be inside HashRouter
+ */
+function AuthWatchdogWrapper({ children }: { children: React.ReactNode }) {
+  useAuthWatchdog();
+  return <>{children}</>;
+}
 
 /**
  * Main App Component with Theme, Layout, and Global Notifications
@@ -52,11 +61,13 @@ function App() {
         <CssBaseline />
         <CustomTitleBar />
         <HashRouter>
-          <MainLayout>
-            <AppRoutes />
-          </MainLayout>
-          <NotificationContainer />
-          <UpdateNotification />
+          <AuthWatchdogWrapper>
+            <MainLayout>
+              <AppRoutes />
+            </MainLayout>
+            <NotificationContainer />
+            <UpdateNotification />
+          </AuthWatchdogWrapper>
         </HashRouter>
       </ThemeProvider>
     </ErrorBoundary>

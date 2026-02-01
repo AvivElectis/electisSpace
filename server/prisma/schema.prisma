@@ -147,6 +147,10 @@ model UserStore {
   storeId   String    @map("store_id")
   role      StoreRole @default(STORE_VIEWER)
   
+  // Feature permissions (JSON array of enabled features)
+  // Available features: "spaces", "conference", "people", "dashboard"
+  features  Json      @default("[\"dashboard\"]")
+  
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
