@@ -2,7 +2,20 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config, prisma } from '../../config/index.js';
 import { unauthorized, forbidden } from './errorHandler.js';
-import type { Role } from '@prisma/client';
+import { GlobalRole, StoreRole } from '@prisma/client';
+
+// Store access info
+interface StoreAccess {
+    id: string;
+    role: StoreRole;
+    companyId: string;
+}
+
+// Company access info  
+interface CompanyAccess {
+    id: string;
+    role: string;
+}
 
 // Extend Express Request type
 declare global {
@@ -11,8 +24,9 @@ declare global {
             user?: {
                 id: string;
                 email: string;
-                organizationId: string;
-                role: Role;
+                globalRole: GlobalRole | null;
+                stores: StoreAccess[];
+                companies: CompanyAccess[];
             };
         }
     }
@@ -21,8 +35,9 @@ declare global {
 // JWT payload interface
 interface JwtPayload {
     sub: string;
-    org: string;
-    role: Role;
+    globalRole: GlobalRole | null;
+    stores: StoreAccess[];
+    companies: CompanyAccess[];
     iat: number;
     exp: number;
 }
@@ -45,15 +60,31 @@ export const authenticate = async (
         // Verify token
         const payload = jwt.verify(token, config.jwt.accessSecret) as JwtPayload;
 
-        // Get user from database
+        // Get user from database with stores and companies
         const user = await prisma.user.findUnique({
             where: { id: payload.sub },
             select: {
                 id: true,
                 email: true,
-                organizationId: true,
-                role: true,
+                globalRole: true,
                 isActive: true,
+                userStores: {
+                    select: {
+                        storeId: true,
+                        role: true,
+                        store: {
+                            select: {
+                                companyId: true,
+                            }
+                        }
+                    }
+                },
+                userCompanies: {
+                    select: {
+                        companyId: true,
+                        role: true,
+                    }
+                }
             },
         });
 
@@ -61,12 +92,20 @@ export const authenticate = async (
             throw unauthorized('User not found or inactive');
         }
 
-        // Attach user to request
+        // Attach user to request with stores and companies
         req.user = {
             id: user.id,
             email: user.email,
-            organizationId: user.organizationId,
-            role: user.role,
+            globalRole: user.globalRole,
+            stores: user.userStores.map(us => ({
+                id: us.storeId,
+                role: us.role,
+                companyId: us.store.companyId,
+            })),
+            companies: user.userCompanies.map(uc => ({
+                id: uc.companyId,
+                role: uc.role,
+            })),
         };
 
         next();
@@ -75,15 +114,23 @@ export const authenticate = async (
     }
 };
 
-// Role-based authorization middleware
-export const authorize = (...allowedRoles: Role[]) => {
+// Role-based authorization middleware (for backward compatibility)
+export const authorize = (...allowedRoles: string[]) => {
     return (req: Request, _res: Response, next: NextFunction): void => {
         if (!req.user) {
             next(unauthorized('Authentication required'));
             return;
         }
 
-        if (!allowedRoles.includes(req.user.role)) {
+        // Platform admin has all access
+        if (req.user.globalRole === GlobalRole.PLATFORM_ADMIN) {
+            next();
+            return;
+        }
+
+        // Check if user has any of the allowed store roles
+        const hasRole = req.user.stores.some(s => allowedRoles.includes(s.role));
+        if (!hasRole) {
             next(forbidden('Insufficient permissions'));
             return;
         }
@@ -96,8 +143,8 @@ export const authorize = (...allowedRoles: Role[]) => {
 type Resource = 'spaces' | 'people' | 'conference' | 'settings' | 'users' | 'audit' | 'sync';
 type Action = 'create' | 'read' | 'update' | 'delete' | 'import' | 'assign' | 'toggle' | 'trigger' | 'view';
 
-const ROLE_PERMISSIONS: Record<Role, Partial<Record<Resource, Action[]>>> = {
-    ADMIN: {
+const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[]>>> = {
+    STORE_ADMIN: {
         spaces: ['create', 'read', 'update', 'delete'],
         people: ['create', 'read', 'update', 'delete', 'import', 'assign'],
         conference: ['create', 'read', 'update', 'delete', 'toggle'],
@@ -106,14 +153,20 @@ const ROLE_PERMISSIONS: Record<Role, Partial<Record<Resource, Action[]>>> = {
         audit: ['read'],
         sync: ['trigger', 'view'],
     },
-    MANAGER: {
+    STORE_MANAGER: {
         spaces: ['create', 'read', 'update', 'delete'],
         people: ['create', 'read', 'update', 'delete', 'import', 'assign'],
         conference: ['create', 'read', 'update', 'delete', 'toggle'],
         settings: ['read'],
         sync: ['trigger', 'view'],
     },
-    VIEWER: {
+    STORE_EMPLOYEE: {
+        spaces: ['read', 'update'],
+        people: ['read', 'update'],
+        conference: ['read', 'update'],
+        sync: ['view'],
+    },
+    STORE_VIEWER: {
         spaces: ['read'],
         people: ['read'],
         conference: ['read'],
@@ -128,10 +181,20 @@ export const requirePermission = (resource: Resource, action: Action) => {
             return;
         }
 
-        const permissions = ROLE_PERMISSIONS[req.user.role];
-        const resourcePermissions = permissions[resource] || [];
+        // Platform admin has all permissions
+        if (req.user.globalRole === GlobalRole.PLATFORM_ADMIN) {
+            next();
+            return;
+        }
 
-        if (!resourcePermissions.includes(action)) {
+        // Check if any store role has the required permission
+        const hasPermission = req.user.stores.some(s => {
+            const permissions = STORE_ROLE_PERMISSIONS[s.role];
+            const resourcePermissions = permissions[resource] || [];
+            return resourcePermissions.includes(action);
+        });
+
+        if (!hasPermission) {
             next(forbidden(`Permission denied: ${action} on ${resource}`));
             return;
         }
@@ -139,3 +202,4 @@ export const requirePermission = (resource: Resource, action: Action) => {
         next();
     };
 };
+

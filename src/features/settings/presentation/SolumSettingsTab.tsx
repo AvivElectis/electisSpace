@@ -1,7 +1,8 @@
 import { Box, Stack, Divider, Typography, Tabs, Tab, Alert } from '@mui/material';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
+import { useSyncContext } from '@features/sync/application/SyncContext';
 import { SolumFieldMappingTable } from './SolumFieldMappingTable';
 import { SolumMappingSelectors } from './SolumMappingSelectors';
 import { SolumGlobalFieldsEditor } from './SolumGlobalFieldsEditor';
@@ -29,7 +30,8 @@ interface SolumSettingsTabProps {
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
-    const { articleFormat } = useConfigurationController();
+    const { articleFormat, fetchArticleFormat } = useConfigurationController();
+    const { sync } = useSyncContext();
     const [subTab, setSubTab] = useState(0);
 
     // Extract field keys from article format (ONLY articleData, not articleBasicInfo)
@@ -41,6 +43,18 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     // Input locking for credentials: disable when connected
     const isCredentialsLocked = settings.solumConfig?.isConnected || false;
     const isMappingLocked = !settings.solumConfig?.isConnected;
+
+    // Callback for initial sync after successful connection
+    // Fetches schema first (if not already fetched) to populate field mappings, then syncs
+    const handleConnectionEstablished = useCallback(async () => {
+        // Fetch article format schema to get field mappings
+        // This populates solumMappingConfig.fields which is needed for displaying columns
+        if (!settings.solumMappingConfig?.fields || Object.keys(settings.solumMappingConfig.fields).length === 0) {
+            await fetchArticleFormat();
+        }
+        // Now sync the data
+        await sync();
+    }, [sync, fetchArticleFormat, settings.solumMappingConfig?.fields]);
 
     // Handlers for nested component updates
     const handleSolumConfigChange = (config: Partial<SolumConfig>) => {
@@ -107,6 +121,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                         isConnected={settings.solumConfig?.isConnected || false}
                         isLocked={isCredentialsLocked}
                         onConfigChange={handleSolumConfigChange}
+                        onConnected={handleConnectionEstablished}
                     />
 
                     <Divider />

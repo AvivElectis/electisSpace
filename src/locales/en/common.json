@@ -8,6 +8,7 @@
         "spaces": "Spaces",
         "people": "People",
         "conference": "Conference Rooms",
+        "labels": "Labels",
         "sync": "Synchronization"
     },
     "common": {
@@ -303,6 +304,9 @@
         "schemaFetchedError": "Failed to fetch schema: {{error}}",
         "connectionSuccess": "Connection successful!",
         "connectionError": "Connection failed: {{error}}",
+        "initialSyncComplete": "Initial sync complete - data fetched successfully!",
+        "initialSyncError": "Initial sync failed: {{error}}",
+        "fetchingInitialData": "Fetching data from server...",
         "fetchedSchema": "Fetched Schema:",
         "articleFormatSchema": "Article Format Schema",
         "fetchingSchema": "Fetching Schema...",
@@ -435,7 +439,10 @@
             "addUser": "Add User",
             "editUser": "Edit User",
             "deleteConfirmTitle": "Delete User",
-            "deleteConfirmMessage": "Are you sure you want to delete user {{email}}?"
+            "deleteConfirmMessage": "Are you sure you want to delete user {{email}}?",
+            "store": "Store",
+            "features": "Features",
+            "editFeaturesHint": "To edit role and features, use the store management section"
         }
     },
     "errors": {
@@ -841,7 +848,12 @@
     "roles": {
         "admin": "Admin",
         "manager": "Manager",
-        "viewer": "Viewer"
+        "viewer": "Viewer",
+        "store_admin": "Store Admin",
+        "store_manager": "Store Manager",
+        "store_employee": "Store Employee",
+        "store_viewer": "Store Viewer",
+        "platform_admin": "Platform Admin"
     },
     "validation": {
         "required": "{{field}} is required",
@@ -851,5 +863,61 @@
     "errors": {
         "required": "This field is required",
         "idExists": "This ID already exists"
+    },
+    "labels": {
+        "title": "Labels Management",
+        "notConfigured": "SOLUM API is not configured. Please configure your SOLUM settings first.",
+        "linkNew": "Link Label",
+        "search": "Search labels or articles...",
+        "filterLinkedOnly": "Show linked only",
+        "totalCount": "{{count}} labels",
+        "noLabels": "No labels found",
+        "notLinked": "Not linked",
+        "table": {
+            "labelCode": "Label Code",
+            "articleId": "Article ID",
+            "articleName": "Article Name",
+            "signal": "Signal",
+            "battery": "Battery",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "link": {
+            "title": "Link Label to Article",
+            "labelCode": "Label Code",
+            "labelCodeHelp": "Enter label code or scan barcode",
+            "articleId": "Article ID (Product)",
+            "articleIdHelp": "Enter article/product ID or scan barcode",
+            "templateName": "Template Name (Optional)",
+            "templateNameHelp": "Leave empty to use default template",
+            "linkButton": "Link Label",
+            "button": "Link",
+            "labelRequired": "Label code is required",
+            "articleRequired": "Article ID is required",
+            "error": "Failed to link label"
+        },
+        "unlink": {
+            "confirmTitle": "Unlink Label",
+            "confirmMessage": "Are you sure you want to unlink this label from its article?",
+            "confirm": "Unlink",
+            "button": "Unlink"
+        },
+        "scanner": {
+            "title": "Scan Barcode",
+            "externalScanner": "Scanner",
+            "camera": "Camera",
+            "manual": "Manual",
+            "scannerInstructions": "Point your barcode scanner at the code. The input field below will capture the scan.",
+            "readyToScan": "Ready to scan...",
+            "placeholder": "Scan or type code...",
+            "cameraError": "Camera access denied or not available",
+            "enterCodeFromCamera": "Enter the code you see:",
+            "capture": "Capture",
+            "cameraHint": "Position the barcode in the green area",
+            "manualInstructions": "Enter the code manually",
+            "scan": "Scan",
+            "scanLabel": "Scan Label Code",
+            "scanArticle": "Scan Article ID"
+        }
     }
 }
