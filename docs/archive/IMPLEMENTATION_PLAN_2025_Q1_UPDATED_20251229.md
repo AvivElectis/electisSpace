@@ -1329,7 +1329,7 @@ Application needed performance optimizations for large datasets (1000+ spaces/ro
 **Current State:**
 - ✅ Settings password protection exists
 - ✅ Lock/unlock functionality working
-- ✅ Admin password override implemented (`Kkkvd24nr!!#`)
+- ✅ Admin password override implemented
 - ✅ Lock button working properly
 - ✅ Hebrew translations complete (17 new keys added)
 - ✅ Button layout reorganized (side-by-side placement)
