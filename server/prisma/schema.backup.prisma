@@ -1,0 +1,313 @@
+// Prisma Schema for electisSpace Server
+// PostgreSQL Database with Multi-tenant Support
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ======================
+// Organizations (Multi-tenant)
+// ======================
+model Organization {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  code      String   @unique @db.VarChar(20)
+  
+  // Encrypted SoluM configuration
+  solumConfig Json?
+  
+  // Organization settings
+  settings   Json     @default("{}")
+  
+  // Timestamps
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  users           User[]
+  spaces          Space[]
+  people          Person[]
+  conferenceRooms ConferenceRoom[]
+  peopleLists     PeopleList[]
+  auditLogs       AuditLog[]
+  syncQueue       SyncQueueItem[]
+
+  @@map("organizations")
+}
+
+// ======================
+// Users
+// ======================
+model User {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  email          String   @unique @db.VarChar(255)
+  passwordHash   String   @map("password_hash") @db.VarChar(255)
+  firstName      String?  @map("first_name") @db.VarChar(100)
+  lastName       String?  @map("last_name") @db.VarChar(100)
+  role           Role     @default(VIEWER)
+  isActive       Boolean  @default(true) @map("is_active")
+  lastLogin      DateTime? @map("last_login")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+  createdSpaces  Space[]  @relation("SpaceCreatedBy")
+  updatedSpaces  Space[]  @relation("SpaceUpdatedBy")
+  createdLists   PeopleList[]
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+// ======================
+// Refresh Tokens
+// ======================
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// ======================
+// Spaces (Rooms/Desks/Chairs)
+// ======================
+model Space {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  externalId     String   @map("external_id") @db.VarChar(50)
+  labelCode      String?  @map("label_code") @db.VarChar(50)
+  templateName   String?  @map("template_name") @db.VarChar(100)
+  
+  // Dynamic data fields
+  data           Json     @default("{}")
+  
+  // Sync status
+  syncStatus     SyncStatus @default(PENDING) @map("sync_status")
+  lastSyncedAt   DateTime?  @map("last_synced_at")
+  
+  // Audit
+  createdById    String?  @map("created_by")
+  updatedById    String?  @map("updated_by")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy      User?    @relation("SpaceCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?    @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
+  assignedPeople Person[]
+  listMemberships PeopleListMembership[]
+
+  @@unique([organizationId, externalId])
+  @@index([organizationId])
+  @@map("spaces")
+}
+
+// ======================
+// People
+// ======================
+model Person {
+  id              String   @id @default(uuid())
+  organizationId  String   @map("organization_id")
+  externalId      String?  @map("external_id") @db.VarChar(50)
+  virtualSpaceId  String?  @map("virtual_space_id") @db.VarChar(50)
+  assignedSpaceId String?  @map("assigned_space_id")
+  
+  // Dynamic data fields
+  data            Json     @default("{}")
+  
+  // Sync status
+  syncStatus      SyncStatus @default(PENDING) @map("sync_status")
+  lastSyncedAt    DateTime?  @map("last_synced_at")
+  
+  // Timestamps
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedSpace   Space?   @relation(fields: [assignedSpaceId], references: [id])
+  listMemberships PeopleListMembership[]
+
+  @@index([organizationId])
+  @@index([assignedSpaceId])
+  @@map("people")
+}
+
+// ======================
+// Conference Rooms
+// ======================
+model ConferenceRoom {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  externalId     String   @map("external_id") @db.VarChar(50)
+  roomName       String   @map("room_name") @db.VarChar(100)
+  labelCode      String?  @map("label_code") @db.VarChar(50)
+  
+  // Meeting status
+  hasMeeting     Boolean  @default(false) @map("has_meeting")
+  meetingName    String?  @map("meeting_name") @db.VarChar(255)
+  startTime      String?  @map("start_time") @db.VarChar(10)
+  endTime        String?  @map("end_time") @db.VarChar(10)
+  participants   String[] @default([])
+  
+  // Sync status
+  syncStatus     SyncStatus @default(PENDING) @map("sync_status")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, externalId])
+  @@index([organizationId])
+  @@map("conference_rooms")
+}
+
+// ======================
+// People Lists
+// ======================
+model PeopleList {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  name           String   @db.VarChar(100)
+  storageName    String   @map("storage_name") @db.VarChar(100)
+  createdById    String?  @map("created_by")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy      User?    @relation(fields: [createdById], references: [id])
+  memberships    PeopleListMembership[]
+
+  @@unique([organizationId, storageName])
+  @@map("people_lists")
+}
+
+// ======================
+// People List Memberships (Many-to-Many)
+// ======================
+model PeopleListMembership {
+  id        String   @id @default(uuid())
+  personId  String   @map("person_id")
+  listId    String   @map("list_id")
+  spaceId   String?  @map("space_id")
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  person    Person     @relation(fields: [personId], references: [id], onDelete: Cascade)
+  list      PeopleList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  space     Space?     @relation(fields: [spaceId], references: [id])
+
+  @@unique([personId, listId])
+  @@map("people_list_memberships")
+}
+
+// ======================
+// Audit Logs
+// ======================
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?  @map("organization_id")
+  userId         String?  @map("user_id")
+  action         String   @db.VarChar(50)
+  entityType     String   @map("entity_type") @db.VarChar(50)
+  entityId       String?  @map("entity_id")
+  oldData        Json?    @map("old_data")
+  newData        Json?    @map("new_data")
+  ipAddress      String?  @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ======================
+// Sync Queue
+// ======================
+model SyncQueueItem {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  entityType     String   @map("entity_type") @db.VarChar(50)
+  entityId       String   @map("entity_id")
+  action         String   @db.VarChar(20)
+  payload        Json
+  attempts       Int      @default(0)
+  maxAttempts    Int      @default(5) @map("max_attempts")
+  status         QueueStatus @default(PENDING)
+  errorMessage   String?  @map("error_message")
+  scheduledAt    DateTime @default(now()) @map("scheduled_at")
+  processedAt    DateTime? @map("processed_at")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@map("sync_queue")
+}
+
+// ======================
+// Enums
+// ======================
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SYNCED
+  ERROR
+}
+
+enum QueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}

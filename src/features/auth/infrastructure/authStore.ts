@@ -13,9 +13,12 @@ interface AuthState {
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
+    pendingEmail: string | null; // Email pending 2FA verification
 
     // Actions
     login: (credentials: AuthCredentials) => Promise<boolean>;
+    verify2FA: (code: string) => Promise<boolean>;
+    resendCode: () => Promise<void>;
     logout: () => Promise<void>;
     setUser: (user: User | null) => void;
     setError: (error: string | null) => void;
@@ -32,28 +35,73 @@ export const useAuthStore = create<AuthState>()(
                 isAuthenticated: false,
                 isLoading: false,
                 error: null,
+                pendingEmail: null,
 
                 // Actions
                 login: async (credentials: AuthCredentials): Promise<boolean> => {
                     set({ isLoading: true, error: null }, false, 'login/start');
                     try {
                         const response = await authService.login(credentials);
+                        // Step 1 complete - code sent to email
+                        set({
+                            pendingEmail: response.email,
+                            isLoading: false,
+                            error: null,
+                        }, false, 'login/codeSent');
+                        return true; // Indicate to show 2FA screen
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Login failed';
+                        set({
+                            pendingEmail: null,
+                            isLoading: false,
+                            error: message,
+                        }, false, 'login/error');
+                        return false;
+                    }
+                },
+
+                verify2FA: async (code: string): Promise<boolean> => {
+                    const email = get().pendingEmail;
+                    if (!email) {
+                        set({ error: 'No pending verification' });
+                        return false;
+                    }
+
+                    set({ isLoading: true, error: null }, false, 'verify2FA/start');
+                    try {
+                        const response = await authService.verify2FA({ email, code });
                         set({
                             user: response.user,
                             isAuthenticated: true,
                             isLoading: false,
                             error: null,
-                        }, false, 'login/success');
+                            pendingEmail: null,
+                        }, false, 'verify2FA/success');
                         return true;
                     } catch (error) {
-                        const message = error instanceof Error ? error.message : 'Login failed';
+                        const message = error instanceof Error ? error.message : 'Verification failed';
                         set({
-                            user: null,
-                            isAuthenticated: false,
                             isLoading: false,
                             error: message,
-                        }, false, 'login/error');
+                        }, false, 'verify2FA/error');
                         return false;
+                    }
+                },
+
+                resendCode: async (): Promise<void> => {
+                    const email = get().pendingEmail;
+                    if (!email) return;
+
+                    set({ isLoading: true, error: null }, false, 'resendCode/start');
+                    try {
+                        await authService.resendCode(email);
+                        set({ isLoading: false }, false, 'resendCode/success');
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to resend code';
+                        set({
+                            isLoading: false,
+                            error: message,
+                        }, false, 'resendCode/error');
                     }
                 },
 
@@ -67,6 +115,7 @@ export const useAuthStore = create<AuthState>()(
                             isAuthenticated: false,
                             isLoading: false,
                             error: null,
+                            pendingEmail: null,
                         }, false, 'logout/complete');
                     }
                 },

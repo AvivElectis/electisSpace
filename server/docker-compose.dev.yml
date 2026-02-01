@@ -20,6 +20,7 @@ services:
       - ../.env
     environment:
       - NODE_ENV=development
+      - PORT=3001
       - DATABASE_URL=postgresql://postgres:postgres_dev@db-dev:5432/electisspace_dev
       - REDIS_URL=redis://redis-dev:6379
       # Ensure these secrets are set for dev if not in .env

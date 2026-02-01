@@ -54,14 +54,26 @@
         "selected": "Selected",
         "saving": "Saving...",
         "actions": "Actions",
-        "errorDetails": "Error Details"
+        "errorDetails": "Error Details",
+        "noData": "No data available",
+        "status": {
+            "title": "Status",
+            "active": "Active",
+            "inactive": "Inactive"
+        }
     },
     "login": {
         "email": "Email Address",
         "password": "Password",
         "subtitle": "Sign in to access your dashboard",
         "signIn": "Sign In",
-        "signingIn": "Signing in..."
+        "signingIn": "Signing in...",
+        "verificationCode": "Verification Code",
+        "codeSent": "A verification code has been sent to {{email}}",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "resendCode": "Resend Code",
+        "back": "Back"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -417,6 +429,13 @@
             "description": "Transform space management into a people allocation system. When enabled, the Spaces section becomes a People allocation system for uploading CSV lists and assigning spaces. Automatically adds the _LIST_MEMBERSHIPS_ field to article format.",
             "totalSpaces": "Total Available Spaces",
             "totalSpacesHelp": "The total number of spaces available for allocation"
+        },
+        "users": {
+            "title": "Users",
+            "addUser": "Add User",
+            "editUser": "Edit User",
+            "deleteConfirmTitle": "Delete User",
+            "deleteConfirmMessage": "Are you sure you want to delete user {{email}}?"
         }
     },
     "errors": {
@@ -808,5 +827,29 @@
                 "content": "Protect your settings with a password:\n• Set Password: Create a password to lock the settings dialog.\n• Auto-Lock Timer: Settings lock automatically after a period of inactivity.\n• Unlock: Enter your password to access locked settings.\n• Password Reset: If forgotten, clear browser data to reset (loses all settings).\nUse this to prevent unauthorized changes to critical configuration."
             }
         }
+    },
+    "auth": {
+        "email": "Email",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "name": "Name",
+        "password": "Password",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "role": "Role",
+        "logout": "Logout"
+    },
+    "roles": {
+        "admin": "Admin",
+        "manager": "Manager",
+        "viewer": "Viewer"
+    },
+    "validation": {
+        "required": "{{field}} is required",
+        "invalidInput": "Invalid input",
+        "invalidSpaceId": "Invalid space ID"
+    },
+    "errors": {
+        "required": "This field is required",
+        "idExists": "This ID already exists"
     }
 }
