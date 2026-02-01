@@ -10,6 +10,7 @@ export interface Store {
     name: string;
     storeNumber: string;
     role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    features: string[]; // Available features: 'dashboard', 'spaces', 'conference', 'people'
     companyId: string;
     companyName: string;
 }
@@ -107,6 +108,14 @@ export const authService = {
         const { accessToken, refreshToken: newRefreshToken } = response.data;
         tokenManager.setTokens(accessToken, newRefreshToken);
         return { accessToken, refreshToken: newRefreshToken };
+    },
+
+    /**
+     * Get current user info (validates session)
+     */
+    me: async (): Promise<{ user: User }> => {
+        const response = await api.get<{ user: User }>('/auth/me');
+        return response.data;
     },
 
     /**

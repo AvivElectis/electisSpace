@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, requirePermission, badRequest } from '../../shared/middleware/index.js';
 import { solumService, SolumConfig } from '../../shared/infrastructure/services/solumService.js';
 import { getSolumConfig } from '../../shared/utils/solumConfig.js';
 import { decrypt } from '../../shared/utils/encryption.js';
@@ -12,34 +12,50 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
+// Helper to get store IDs user has access to
+const getUserStoreIds = (req: { user?: { stores?: { id: string }[] } }): string[] => {
+    return req.user?.stores?.map(s => s.id) || [];
+};
+
 // GET /sync/status - Get current sync status
 router.get('/status', requirePermission('sync', 'view'), async (req, res, next) => {
     try {
-        const orgId = req.user!.organizationId;
+        const storeIds = getUserStoreIds(req);
+        const { storeId: queryStoreId } = req.query;
+        
+        // Validate store ID if provided
+        let targetStoreIds = storeIds;
+        if (queryStoreId && typeof queryStoreId === 'string') {
+            if (!storeIds.includes(queryStoreId)) {
+                throw badRequest('Access denied to this store');
+            }
+            targetStoreIds = [queryStoreId];
+        }
 
-        // Get queue stats
+        // Get queue stats across stores
         const [pending, failed] = await Promise.all([
             prisma.syncQueueItem.count({
-                where: { organizationId: orgId, status: 'PENDING' },
+                where: { storeId: { in: targetStoreIds }, status: 'PENDING' },
             }),
             prisma.syncQueueItem.count({
-                where: { organizationId: orgId, status: 'FAILED' },
+                where: { storeId: { in: targetStoreIds }, status: 'FAILED' },
             }),
         ]);
 
         // Get last successful sync
         const lastSync = await prisma.syncQueueItem.findFirst({
-            where: { organizationId: orgId, status: 'COMPLETED' },
+            where: { storeId: { in: targetStoreIds }, status: 'COMPLETED' },
             orderBy: { processedAt: 'desc' },
             select: { processedAt: true },
         });
 
-        // Check actual SoluM connection
+        // Check actual SoluM connection (use first store if multiple)
         let solumConnected = false;
-        const config = await getSolumConfig(orgId);
-
-        if (config) {
-            solumConnected = await solumService.checkHealth(config);
+        if (targetStoreIds.length > 0) {
+            const config = await getSolumConfig(targetStoreIds[0]);
+            if (config) {
+                solumConnected = await solumService.checkHealth(config);
+            }
         }
 
         res.json({
@@ -58,14 +74,20 @@ router.get('/status', requirePermission('sync', 'view'), async (req, res, next) 
 router.post('/trigger', requirePermission('sync', 'trigger'), async (req, res, next) => {
     try {
         const schema = z.object({
+            storeId: z.string().uuid(),
             type: z.enum(['full', 'push', 'pull']).default('full'),
             entities: z.array(z.enum(['spaces', 'people', 'conference'])).optional(),
         });
 
-        const { type } = schema.parse(req.body);
-        const orgId = req.user!.organizationId;
+        const { type, storeId } = schema.parse(req.body);
+        const storeIds = getUserStoreIds(req);
+        
+        // Validate access to store
+        if (!storeIds.includes(storeId)) {
+            throw badRequest('Access denied to this store');
+        }
 
-        const config = await getSolumConfig(orgId);
+        const config = await getSolumConfig(storeId);
         if (!config || !config.storeNumber) {
             res.status(400).json({ error: 'SoluM configuration missing or incomplete' });
             return;
@@ -74,7 +96,7 @@ router.post('/trigger', requirePermission('sync', 'trigger'), async (req, res, n
         // Create a sync record
         const job = await prisma.syncQueueItem.create({
             data: {
-                organizationId: orgId,
+                storeId,
                 entityType: 'ALL',
                 entityId: 'global',
                 action: 'SYNC_FULL',
@@ -163,11 +185,27 @@ router.get('/jobs/:id', requirePermission('sync', 'view'), async (req, res, next
 router.get('/queue', requirePermission('sync', 'view'), async (req, res, next) => {
     try {
         const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+        const { storeId: queryStoreId } = req.query;
+        const storeIds = getUserStoreIds(req);
+        
+        // Determine store filter
+        let storeFilter: { storeId?: string | { in: string[] } } = {};
+        if (queryStoreId && typeof queryStoreId === 'string') {
+            if (!storeIds.includes(queryStoreId)) {
+                throw badRequest('Access denied to this store');
+            }
+            storeFilter = { storeId: queryStoreId };
+        } else {
+            storeFilter = { storeId: { in: storeIds } };
+        }
 
         const items = await prisma.syncQueueItem.findMany({
             where: {
-                organizationId: req.user!.organizationId,
+                ...storeFilter,
                 ...(status && { status: status as any }),
+            },
+            include: {
+                store: { select: { name: true, storeNumber: true } }
             },
             orderBy: { scheduledAt: 'desc' },
             take: 50,
@@ -182,10 +220,12 @@ router.get('/queue', requirePermission('sync', 'view'), async (req, res, next) =
 // POST /sync/queue/:id/retry - Retry failed sync item
 router.post('/queue/:id/retry', requirePermission('sync', 'trigger'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        
         const item = await prisma.syncQueueItem.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
                 status: 'FAILED',
             },
         });

@@ -277,6 +277,7 @@ router.post('/verify-2fa', async (req, res, next) => {
             name: us.store.name,
             storeNumber: us.store.storeNumber,
             role: us.role,
+            features: us.features as string[] || ['dashboard'],
             companyId: us.store.companyId,
             companyName: us.store.company.name,
         }));
@@ -439,6 +440,66 @@ router.post('/refresh', async (req, res, next) => {
             accessToken,
             refreshToken: newRefreshToken,
             expiresIn: 3600,
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// GET /auth/me - Get current user info (validates session)
+router.get('/me', authenticate, async (req, res, next) => {
+    try {
+        const userId = req.user!.id;
+
+        // Get user with stores and companies
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                userStores: {
+                    include: {
+                        store: {
+                            include: { company: true }
+                        }
+                    }
+                },
+                userCompanies: {
+                    include: { company: true }
+                }
+            }
+        });
+
+        if (!user || !user.isActive) {
+            throw unauthorized('User not found or inactive');
+        }
+
+        // Build response with user stores and companies
+        const stores = user.userStores.map(us => ({
+            id: us.storeId,
+            name: us.store.name,
+            storeNumber: us.store.storeNumber,
+            role: us.role,
+            features: us.features as string[] || ['dashboard'],
+            companyId: us.store.companyId,
+            companyName: us.store.company.name,
+        }));
+
+        const companies = user.userCompanies.map(uc => ({
+            id: uc.companyId,
+            name: uc.company.name,
+            aimsCompanyCode: uc.company.aimsCompanyCode,
+            role: uc.role,
+        }));
+
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                globalRole: user.globalRole,
+                stores,
+                companies,
+            },
         });
     } catch (error) {
         next(error);

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSettingsStore } from '../infrastructure/settingsStore';
 import { validatePassword, validateLogoFile, validateSettings } from '../domain/validation';
 import {
@@ -57,6 +57,7 @@ export function useSettingsController() {
         settings,
         passwordHash,
         isLocked,
+        activeStoreId,
         setSettings,
         updateSettings: updateInStore,
         setPasswordHash,
@@ -64,7 +65,31 @@ export function useSettingsController() {
         updateLogo,
         deleteLogo,
         resetSettings,
+        saveSettingsToServer,
     } = useSettingsStore();
+
+    // Debounced save to server
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const debouncedSaveToServer = useCallback(() => {
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        // Set new timeout - save after 2 seconds of no changes
+        saveTimeoutRef.current = setTimeout(() => {
+            saveSettingsToServer();
+        }, 2000);
+    }, [saveSettingsToServer]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
 
     /**
      * Check if password protection is enabled
@@ -185,9 +210,15 @@ export function useSettingsController() {
             }
 
             updateInStore(updates);
+            
+            // Trigger debounced save to server if connected to a store
+            if (activeStoreId) {
+                debouncedSaveToServer();
+            }
+            
             logger.info('SettingsController', 'Settings updated successfully');
         },
-        [settings, updateInStore]
+        [settings, updateInStore, activeStoreId, debouncedSaveToServer]
     );
 
     /**

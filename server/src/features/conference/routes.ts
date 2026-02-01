@@ -1,15 +1,21 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
-import { authenticate, requirePermission, notFound, conflict } from '../../shared/middleware/index.js';
+import { authenticate, requirePermission, notFound, conflict, badRequest } from '../../shared/middleware/index.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
 
+// Helper to get store IDs user has access to
+const getUserStoreIds = (req: { user?: { stores?: { id: string }[] } }): string[] => {
+    return req.user?.stores?.map(s => s.id) || [];
+};
+
 // Validation schemas
 const createRoomSchema = z.object({
+    storeId: z.string().uuid(),
     externalId: z.string().max(50),
     roomName: z.string().max(100),
     labelCode: z.string().max(50).optional(),
@@ -27,12 +33,33 @@ const toggleSchema = z.object({
     participants: z.array(z.string()).optional(),
 });
 
-// GET /conference - List all conference rooms
+// GET /conference - List all conference rooms for user's stores
 router.get('/', requirePermission('conference', 'read'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        const { storeId } = req.query;
+        
+        // Build where clause
+        const where: { storeId?: string | { in: string[] } } = {};
+        if (storeId && typeof storeId === 'string') {
+            // Filter by specific store (must be one user has access to)
+            if (!storeIds.includes(storeId)) {
+                throw badRequest('Access denied to this store');
+            }
+            where.storeId = storeId;
+        } else {
+            // Get rooms from all user's stores
+            where.storeId = { in: storeIds };
+        }
+        
         const rooms = await prisma.conferenceRoom.findMany({
-            where: { organizationId: req.user!.organizationId },
+            where,
             orderBy: { externalId: 'asc' },
+            include: {
+                store: {
+                    select: { name: true, storeNumber: true }
+                }
+            }
         });
 
         // Calculate stats
@@ -52,11 +79,18 @@ router.get('/', requirePermission('conference', 'read'), async (req, res, next) 
 // GET /conference/:id - Get room details
 router.get('/:id', requirePermission('conference', 'read'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        
         const room = await prisma.conferenceRoom.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
+            include: {
+                store: {
+                    select: { name: true, storeNumber: true }
+                }
+            }
         });
 
         if (!room) {
@@ -73,11 +107,17 @@ router.get('/:id', requirePermission('conference', 'read'), async (req, res, nex
 router.post('/', requirePermission('conference', 'create'), async (req, res, next) => {
     try {
         const data = createRoomSchema.parse(req.body);
+        const storeIds = getUserStoreIds(req);
+        
+        // Check user has access to the store
+        if (!storeIds.includes(data.storeId)) {
+            throw badRequest('Access denied to this store');
+        }
 
-        // Check external ID unique
+        // Check external ID unique within store
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
-                organizationId: req.user!.organizationId,
+                storeId: data.storeId,
                 externalId: data.externalId,
             },
         });
@@ -88,8 +128,10 @@ router.post('/', requirePermission('conference', 'create'), async (req, res, nex
 
         const room = await prisma.conferenceRoom.create({
             data: {
-                ...data,
-                organizationId: req.user!.organizationId,
+                storeId: data.storeId,
+                externalId: data.externalId,
+                roomName: data.roomName,
+                labelCode: data.labelCode,
                 syncStatus: 'PENDING',
             },
         });
@@ -106,11 +148,12 @@ router.post('/', requirePermission('conference', 'create'), async (req, res, nex
 router.patch('/:id', requirePermission('conference', 'update'), async (req, res, next) => {
     try {
         const data = updateRoomSchema.parse(req.body);
+        const storeIds = getUserStoreIds(req);
 
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 
@@ -137,10 +180,12 @@ router.patch('/:id', requirePermission('conference', 'update'), async (req, res,
 // DELETE /conference/:id - Delete room
 router.delete('/:id', requirePermission('conference', 'delete'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 
@@ -164,11 +209,12 @@ router.delete('/:id', requirePermission('conference', 'delete'), async (req, res
 router.post('/:id/toggle', requirePermission('conference', 'toggle'), async (req, res, next) => {
     try {
         const meetingData = toggleSchema.parse(req.body);
+        const storeIds = getUserStoreIds(req);
 
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 
@@ -203,10 +249,12 @@ router.post('/:id/toggle', requirePermission('conference', 'toggle'), async (req
 // POST /conference/:id/flip-page - Manually flip ESL page
 router.post('/:id/flip-page', requirePermission('conference', 'toggle'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        
         const existing = await prisma.conferenceRoom.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 

@@ -3,12 +3,16 @@ import { persist, devtools } from 'zustand/middleware';
 import type { SettingsData, LogoConfig } from '../domain/types';
 import type { WorkingMode } from '@shared/domain/types';
 import { createDefaultSettings } from '../domain/businessRules';
+import { settingsService } from '@shared/infrastructure/services/settingsService';
+import { logger } from '@shared/infrastructure/services/logger';
 
 interface SettingsStore {
     // State
     settings: SettingsData;
     passwordHash: string | null;
     isLocked: boolean;
+    activeStoreId: string | null;
+    isSyncing: boolean;
 
     // Actions
     setSettings: (settings: SettingsData) => void;
@@ -23,16 +27,23 @@ interface SettingsStore {
     // Cleanup actions
     clearModeCredentials: (mode: WorkingMode) => void;
     clearFieldMappings: () => void;
+
+    // Server sync actions
+    setActiveStoreId: (storeId: string | null) => void;
+    fetchSettingsFromServer: (storeId: string) => Promise<void>;
+    saveSettingsToServer: () => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
     devtools(
         persist(
-            (set) => ({
+            (set, get) => ({
                 // Initial state
                 settings: createDefaultSettings(),
                 passwordHash: null,
                 isLocked: false,
+                activeStoreId: null,
+                isSyncing: false,
 
                 // Actions
                 setSettings: (settings) => set({ settings }, false, 'setSettings'),
@@ -109,13 +120,63 @@ export const useSettingsStore = create<SettingsStore>()(
                             } : undefined
                         }
                     }), false, 'clearFieldMappings'),
+
+                // Server sync actions
+                setActiveStoreId: (storeId) => set({ activeStoreId: storeId }, false, 'setActiveStoreId'),
+
+                fetchSettingsFromServer: async (storeId: string) => {
+                    set({ isSyncing: true }, false, 'fetchSettings/start');
+                    try {
+                        const response = await settingsService.getStoreSettings(storeId);
+                        const serverSettings = response.settings as Partial<SettingsData>;
+                        
+                        // Merge server settings with defaults (server takes priority)
+                        if (serverSettings && Object.keys(serverSettings).length > 0) {
+                            set((state) => ({
+                                settings: {
+                                    ...state.settings,
+                                    ...serverSettings,
+                                },
+                                activeStoreId: storeId,
+                                isSyncing: false,
+                            }), false, 'fetchSettings/success');
+                            logger.info('SettingsStore', 'Settings loaded from server', { storeId });
+                        } else {
+                            set({ activeStoreId: storeId, isSyncing: false }, false, 'fetchSettings/empty');
+                            logger.info('SettingsStore', 'No server settings found, using local', { storeId });
+                        }
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to fetch settings from server', { error });
+                        set({ isSyncing: false }, false, 'fetchSettings/error');
+                    }
+                },
+
+                saveSettingsToServer: async () => {
+                    const { activeStoreId, settings } = get();
+                    if (!activeStoreId) {
+                        logger.warn('SettingsStore', 'No active store ID, skipping server save');
+                        return;
+                    }
+
+                    set({ isSyncing: true }, false, 'saveSettings/start');
+                    try {
+                        await settingsService.updateStoreSettings(activeStoreId, settings);
+                        set({ isSyncing: false }, false, 'saveSettings/success');
+                        logger.info('SettingsStore', 'Settings saved to server', { storeId: activeStoreId });
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to save settings to server', { error });
+                        set({ isSyncing: false }, false, 'saveSettings/error');
+                        // Settings remain in local state even if server save fails
+                    }
+                },
             }),
             {
                 name: 'settings-store',
                 partialize: (state) => ({
                     settings: state.settings,
                     passwordHash: state.passwordHash,
-                    // Don't persist isLocked - always start unlocked
+                    activeStoreId: state.activeStoreId,
+                    // Don't persist isLocked or isSyncing
                 }),
             }
         ),

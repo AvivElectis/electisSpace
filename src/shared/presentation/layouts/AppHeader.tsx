@@ -171,7 +171,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                     </Tooltip>
                     <LanguageSwitcher />
 
-                    {user?.role === 'ADMIN' && (
+                    {user?.globalRole === 'PLATFORM_ADMIN' && (
                         <IconButton
                             color={iconColor}
                             onClick={onSettingsClick}

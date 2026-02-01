@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
-import { authenticate, requirePermission, notFound, conflict } from '../../shared/middleware/index.js';
+import { authenticate, requirePermission, notFound, conflict, badRequest } from '../../shared/middleware/index.js';
 import type { Prisma } from '@prisma/client';
 
 const router = Router();
@@ -9,8 +9,14 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
+// Helper to get store IDs user has access to
+const getUserStoreIds = (req: { user?: { stores?: { id: string }[] } }): string[] => {
+    return req.user?.stores?.map(s => s.id) || [];
+};
+
 // Validation schemas
 const createSpaceSchema = z.object({
+    storeId: z.string().uuid(),
     externalId: z.string().max(50),
     labelCode: z.string().max(50).optional(),
     templateName: z.string().max(100).optional(),
@@ -23,7 +29,7 @@ const updateSpaceSchema = z.object({
     data: z.record(z.unknown()).optional(),
 });
 
-// GET /spaces - List all spaces
+// GET /spaces - List all spaces for user's stores
 router.get('/', requirePermission('spaces', 'read'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
@@ -31,9 +37,22 @@ router.get('/', requirePermission('spaces', 'read'), async (req, res, next) => {
         const search = req.query.search as string;
         const hasLabel = req.query.hasLabel as string;
         const syncStatus = req.query.syncStatus as string;
+        const { storeId: queryStoreId } = req.query;
+        const storeIds = getUserStoreIds(req);
+        
+        // Determine store filter
+        let storeFilter: { storeId?: string | { in: string[] } } = {};
+        if (queryStoreId && typeof queryStoreId === 'string') {
+            if (!storeIds.includes(queryStoreId)) {
+                throw badRequest('Access denied to this store');
+            }
+            storeFilter = { storeId: queryStoreId };
+        } else {
+            storeFilter = { storeId: { in: storeIds } };
+        }
 
         const where = {
-            organizationId: req.user!.organizationId,
+            ...storeFilter,
             ...(search && {
                 OR: [
                     { externalId: { contains: search, mode: 'insensitive' as const } },
@@ -42,11 +61,14 @@ router.get('/', requirePermission('spaces', 'read'), async (req, res, next) => {
             ...(hasLabel === 'true' && { labelCode: { not: null } }),
             ...(hasLabel === 'false' && { labelCode: null }),
             ...(syncStatus && { syncStatus: syncStatus as any }),
-        };
+        } as Prisma.SpaceWhereInput;
 
         const [spaces, total] = await Promise.all([
             prisma.space.findMany({
                 where,
+                include: {
+                    store: { select: { name: true, storeNumber: true } }
+                },
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
@@ -71,10 +93,12 @@ router.get('/', requirePermission('spaces', 'read'), async (req, res, next) => {
 // GET /spaces/:id - Get space details
 router.get('/:id', requirePermission('spaces', 'read'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        
         const space = await prisma.space.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
             include: {
                 assignedPeople: {
@@ -84,6 +108,7 @@ router.get('/:id', requirePermission('spaces', 'read'), async (req, res, next) =
                         data: true,
                     },
                 },
+                store: { select: { name: true, storeNumber: true } }
             },
         });
 
@@ -101,11 +126,17 @@ router.get('/:id', requirePermission('spaces', 'read'), async (req, res, next) =
 router.post('/', requirePermission('spaces', 'create'), async (req, res, next) => {
     try {
         const data = createSpaceSchema.parse(req.body);
+        const storeIds = getUserStoreIds(req);
+        
+        // Check user has access to the store
+        if (!storeIds.includes(data.storeId)) {
+            throw badRequest('Access denied to this store');
+        }
 
-        // Check external ID unique
+        // Check external ID unique within store
         const existing = await prisma.space.findFirst({
             where: {
-                organizationId: req.user!.organizationId,
+                storeId: data.storeId,
                 externalId: data.externalId,
             },
         });
@@ -117,11 +148,11 @@ router.post('/', requirePermission('spaces', 'create'), async (req, res, next) =
         // Create space
         const space = await prisma.space.create({
             data: {
+                storeId: data.storeId,
                 externalId: data.externalId,
                 labelCode: data.labelCode,
                 templateName: data.templateName,
                 data: data.data as Prisma.InputJsonValue,
-                organizationId: req.user!.organizationId,
                 createdById: req.user!.id,
                 updatedById: req.user!.id,
                 syncStatus: 'PENDING',
@@ -140,12 +171,13 @@ router.post('/', requirePermission('spaces', 'create'), async (req, res, next) =
 router.patch('/:id', requirePermission('spaces', 'update'), async (req, res, next) => {
     try {
         const data = updateSpaceSchema.parse(req.body);
+        const storeIds = getUserStoreIds(req);
 
         // Find space
         const existing = await prisma.space.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 
@@ -181,10 +213,12 @@ router.patch('/:id', requirePermission('spaces', 'update'), async (req, res, nex
 // DELETE /spaces/:id - Delete space
 router.delete('/:id', requirePermission('spaces', 'delete'), async (req, res, next) => {
     try {
+        const storeIds = getUserStoreIds(req);
+        
         const existing = await prisma.space.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 
@@ -208,11 +242,12 @@ router.delete('/:id', requirePermission('spaces', 'delete'), async (req, res, ne
 router.post('/:id/assign-label', requirePermission('spaces', 'update'), async (req, res, next) => {
     try {
         const { labelCode } = z.object({ labelCode: z.string() }).parse(req.body);
+        const storeIds = getUserStoreIds(req);
 
         const existing = await prisma.space.findFirst({
             where: {
                 id: req.params.id as string,
-                organizationId: req.user!.organizationId,
+                storeId: { in: storeIds },
             },
         });
 
@@ -220,10 +255,10 @@ router.post('/:id/assign-label', requirePermission('spaces', 'update'), async (r
             throw notFound('Space');
         }
 
-        // Check if label is already assigned elsewhere
+        // Check if label is already assigned elsewhere within the same store
         const labelInUse = await prisma.space.findFirst({
             where: {
-                organizationId: req.user!.organizationId,
+                storeId: existing.storeId,
                 labelCode,
                 id: { not: req.params.id as string },
             },

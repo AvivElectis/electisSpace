@@ -45,18 +45,36 @@ export function useConfigurationController() {
             // console.log('[DEBUG fetchArticleFormat] schema.mappingInfo:', schema.mappingInfo);
             // console.log('[DEBUG fetchArticleFormat] Current solumMappingConfig:', settings.solumMappingConfig);
 
-            // Clear existing mapping config when fetching new schema
-            // This ensures users reconfigure field mappings after schema changes
-            // settingsController.updateSettings({ solumMappingConfig: undefined }); // This line refers to settingsController which is not defined in this scope. Assuming it should be `updateSettings`
-            updateSettings({ solumMappingConfig: undefined });
-
+            // Build default fields mapping from schema fields
+            // All fields are visible by default with their key as the friendly name
+            const defaultFields: { [key: string]: { friendlyNameEn: string; friendlyNameHe: string; visible: boolean } } = {};
+            const allFields = schema.articleData || [];
+            
+            allFields.forEach(fieldKey => {
+                // Use existing mapping if available, otherwise create default
+                const existingMapping = settings.solumMappingConfig?.fields?.[fieldKey];
+                defaultFields[fieldKey] = existingMapping || {
+                    friendlyNameEn: fieldKey,
+                    friendlyNameHe: fieldKey,
+                    visible: true,
+                };
+            });
 
             // Persist schema and extract mappingInfo to solumMappingConfig
             const updatedMappingConfig = {
-                ...(settings.solumMappingConfig || {}),
                 mappingInfo: schema.mappingInfo,
                 // Automatically sync uniqueIdField with articleId from mappingInfo if it exists
-                uniqueIdField: schema.mappingInfo?.articleId || settings.solumMappingConfig?.uniqueIdField || schema.articleData?.[0] || 'articleId'
+                uniqueIdField: schema.mappingInfo?.articleId || settings.solumMappingConfig?.uniqueIdField || schema.articleData?.[0] || 'articleId',
+                // Populate fields with defaults
+                fields: defaultFields,
+                // Preserve conference mapping if exists
+                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                    meetingName: '',
+                    meetingTime: '',
+                    participants: '',
+                },
+                // Preserve global field assignments if exists
+                globalFieldAssignments: settings.solumMappingConfig?.globalFieldAssignments,
             };
 
             updateSettings({
@@ -71,7 +89,7 @@ export function useConfigurationController() {
             showError(`Failed to fetch schema: ${errorMessage}`);
             throw error;
         }
-    }, [settings.solumConfig, updateSettings, showSuccess, showError]);
+    }, [settings.solumConfig, settings.solumMappingConfig, updateSettings, showSuccess, showError]);
 
     /**
      * Save article format schema to SoluM API

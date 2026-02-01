@@ -6,6 +6,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import SyncIcon from '@mui/icons-material/Sync';
+import LabelIcon from '@mui/icons-material/Label';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
@@ -127,6 +128,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             dynamicLabel: true
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
+        { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" /> },
         { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
     ];
 

@@ -1,4 +1,4 @@
-import { Box, TextField, Stack, Typography, Button, Alert } from '@mui/material';
+import { Box, TextField, Stack, Typography, Button, Alert, Dialog, DialogContent, CircularProgress } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@shared/infrastructure/store/rootStore';
@@ -10,6 +10,8 @@ interface SolumCredentialsSectionProps {
     isConnected: boolean;
     isLocked: boolean;
     onConfigChange: (config: Partial<SolumConfig>) => void;
+    /** Optional callback to trigger initial sync after successful connection */
+    onConnected?: () => Promise<void>;
 }
 
 /**
@@ -20,11 +22,13 @@ export function SolumCredentialsSection({
     isConnected,
     isLocked,
     onConfigChange,
+    onConnected,
 }: SolumCredentialsSectionProps) {
     const { t } = useTranslation();
     const { showSuccess, showError } = useNotifications();
     const { connectToSolum, disconnectFromSolum } = useSettingsController();
     const [connecting, setConnecting] = useState(false);
+    const [syncing, setSyncing] = useState(false);
 
     const updateConfig = (updates: Partial<SolumConfig>) => {
         onConfigChange({
@@ -45,6 +49,23 @@ export function SolumCredentialsSection({
         try {
             await connectToSolum();
             showSuccess(t('settings.connectionSuccess'));
+            
+            // Trigger initial sync if callback provided
+            if (onConnected) {
+                setSyncing(true);
+                try {
+                    await onConnected();
+                    showSuccess(t('settings.initialSyncComplete'));
+                } catch (syncError) {
+                    showError(
+                        t('settings.initialSyncError', {
+                            error: syncError instanceof Error ? syncError.message : String(syncError),
+                        })
+                    );
+                } finally {
+                    setSyncing(false);
+                }
+            }
         } catch (error) {
             showError(
                 t('settings.connectionError', {
@@ -126,13 +147,32 @@ export function SolumCredentialsSection({
                     <Button
                         variant="contained"
                         onClick={handleConnect}
-                        disabled={connecting}
+                        disabled={connecting || syncing}
                         sx={{ width: 'fit-content' }}
                     >
                         {connecting ? t('settings.connecting') : t('settings.connect')}
                     </Button>
                 )}
             </Stack>
+
+            {/* Initial Sync Loading Dialog */}
+            <Dialog
+                open={syncing}
+                PaperProps={{
+                    sx: {
+                        p: 3,
+                        textAlign: 'center',
+                        minWidth: 280,
+                    }
+                }}
+            >
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <CircularProgress size={48} />
+                    <Typography variant="body1" color="text.secondary">
+                        {t('settings.fetchingInitialData')}
+                    </Typography>
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 }

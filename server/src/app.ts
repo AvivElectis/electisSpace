@@ -18,6 +18,7 @@ import peopleRoutes from './features/people/routes.js';
 import conferenceRoutes from './features/conference/routes.js';
 import healthRoutes from './features/health/routes.js';
 import syncRoutes from './features/sync/routes.js';
+import settingsRoutes from './features/settings/routes.js';
 
 // Create Express app
 const app = express();
@@ -84,6 +85,7 @@ apiRouter.use('/spaces', spaceRoutes);
 apiRouter.use('/people', peopleRoutes);
 apiRouter.use('/conference', conferenceRoutes);
 apiRouter.use('/sync', syncRoutes);
+apiRouter.use('/settings', settingsRoutes);
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
 

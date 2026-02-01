@@ -84,7 +84,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
-    const isAdmin = user?.role === 'ADMIN';
+    // Check if user is platform admin or has store admin role
+    const isAdmin = user?.globalRole === 'PLATFORM_ADMIN' || 
+        user?.stores?.some(s => s.role === 'STORE_ADMIN');
 
     // Define Tabs Configuration
     const tabs = [
