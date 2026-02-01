@@ -159,7 +159,7 @@ export function UsersSettingsTab() {
                                         </TableCell>
                                         <TableCell>
                                             <Chip
-                                                label={user.isActive ? 'Active' : 'Inactive'}
+                                                label={user.isActive ? t('common.status.active') : t('common.status.inactive')}
                                                 color={user.isActive ? 'success' : 'default'}
                                                 variant="outlined"
                                                 size="small"

@@ -5,17 +5,36 @@
 import api, { tokenManager } from './apiClient';
 
 // Types
+export interface Store {
+    id: string;
+    name: string;
+    storeNumber: string;
+    role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    companyId: string;
+    companyName: string;
+}
+
+export interface Company {
+    id: string;
+    name: string;
+    aimsCompanyCode: string;
+    role: 'COMPANY_ADMIN' | 'VIEWER';
+}
+
 export interface User {
     id: string;
     email: string;
     firstName: string | null;
     lastName: string | null;
-    role: 'ADMIN' | 'MANAGER' | 'VIEWER';
-    organization: {
-        id: string;
-        name: string;
-        code: string;
-    };
+    globalRole: 'PLATFORM_ADMIN' | null;
+    stores: Store[];
+    companies: Company[];
+}
+
+export interface LoginStepOneResponse {
+    message: string;
+    email: string;
+    requiresVerification: true;
 }
 
 export interface LoginResponse {
@@ -30,16 +49,36 @@ export interface AuthCredentials {
     password: string;
 }
 
+export interface Verify2FACredentials {
+    email: string;
+    code: string;
+}
+
 // Auth service
 export const authService = {
     /**
-     * Login with email and password
+     * Login Step 1: Verify credentials and request 2FA code
      */
-    login: async (credentials: AuthCredentials): Promise<LoginResponse> => {
-        const response = await api.post<LoginResponse>('/auth/login', credentials);
+    login: async (credentials: AuthCredentials): Promise<LoginStepOneResponse> => {
+        const response = await api.post<LoginStepOneResponse>('/auth/login', credentials);
+        return response.data;
+    },
+
+    /**
+     * Login Step 2: Verify 2FA code and get tokens
+     */
+    verify2FA: async (credentials: Verify2FACredentials): Promise<LoginResponse> => {
+        const response = await api.post<LoginResponse>('/auth/verify-2fa', credentials);
         const { accessToken, refreshToken } = response.data;
         tokenManager.setTokens(accessToken, refreshToken);
         return response.data;
+    },
+
+    /**
+     * Resend 2FA verification code
+     */
+    resendCode: async (email: string): Promise<void> => {
+        await api.post('/auth/resend-code', { email });
     },
 
     /**
@@ -75,6 +114,28 @@ export const authService = {
      */
     changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
         await api.post('/auth/change-password', { currentPassword, newPassword });
+    },
+
+    /**
+     * Request password reset code
+     */
+    forgotPassword: async (email: string): Promise<void> => {
+        await api.post('/auth/forgot-password', { email });
+    },
+
+    /**
+     * Reset password with code
+     */
+    resetPassword: async (email: string, code: string, newPassword: string): Promise<void> => {
+        await api.post('/auth/reset-password', { email, code, newPassword });
+    },
+
+    /**
+     * Admin reset user password (requires PLATFORM_ADMIN)
+     */
+    adminResetPassword: async (userId: string, resetType: 'temporary' | 'fixed', newPassword?: string): Promise<{ temporaryPassword?: string }> => {
+        const response = await api.post('/auth/admin/reset-password', { userId, resetType, newPassword });
+        return response.data;
     },
 
     /**
