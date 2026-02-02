@@ -16,8 +16,12 @@ datasource db {
 // ======================
 model Company {
   id              String   @id @default(uuid())
+  
+  // Company Identity
   name            String   @db.VarChar(100)
-  aimsCompanyCode String   @unique @map("aims_company_code") @db.VarChar(50)
+  code            String   @unique @db.VarChar(20)  // 3+ capital letters, AIMS unique identifier
+  location        String?  @db.VarChar(255)
+  description     String?  @db.Text
   
   // AIMS API Configuration (encrypted in application layer)
   aimsBaseUrl     String?  @map("aims_base_url") @db.VarChar(255)
@@ -46,12 +50,16 @@ model Company {
 model Store {
   id          String   @id @default(uuid())
   companyId   String   @map("company_id")
+  
+  // Store Identity
   name        String   @db.VarChar(100)
-  storeNumber String   @map("store_number") @db.VarChar(50)
+  code        String   @db.VarChar(10)  // Numeric string: "01", "002", "200"
   
   // Store-specific settings
   settings    Json     @default("{}")
   timezone    String   @default("UTC") @db.VarChar(50)
+  syncEnabled Boolean  @default(true) @map("sync_enabled")
+  lastAimsSyncAt DateTime? @map("last_aims_sync_at")
   isActive    Boolean  @default(true) @map("is_active")
   
   // Timestamps
@@ -68,7 +76,7 @@ model Store {
   auditLogs       AuditLog[]
   syncQueue       SyncQueueItem[]
   
-  @@unique([companyId, storeNumber])
+  @@unique([companyId, code])
   @@index([companyId])
   @@map("stores")
 }
@@ -85,6 +93,10 @@ model User {
   
   // Global role (for platform-wide admins only)
   globalRole   GlobalRole? @map("global_role")
+  
+  // Active context (last selected company/store)
+  activeCompanyId String? @map("active_company_id")
+  activeStoreId   String? @map("active_store_id")
   
   isActive     Boolean     @default(true) @map("is_active")
   lastLogin    DateTime?   @map("last_login")
@@ -114,10 +126,11 @@ enum GlobalRole {
 // User-Company Access (Many-to-Many)
 // ======================
 model UserCompany {
-  id        String      @id @default(uuid())
-  userId    String      @map("user_id")
-  companyId String      @map("company_id")
-  role      CompanyRole @default(VIEWER)
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  companyId       String      @map("company_id")
+  role            CompanyRole @default(VIEWER)
+  allStoresAccess Boolean     @default(false) @map("all_stores_access")  // If true, user has access to ALL stores in company
   
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
