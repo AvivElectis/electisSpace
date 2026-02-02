@@ -8,8 +8,16 @@ import { logger } from '@shared/infrastructure/services/logger';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 
 /**
- * Sync Controller Hook
- * Main orchestration for sync operations using SoluM API
+ * @deprecated This hook is deprecated. Use useBackendSyncController instead.
+ * 
+ * The legacy useSyncController makes direct AIMS API calls from the frontend.
+ * The new useBackendSyncController routes all sync operations through the backend,
+ * which handles AIMS communication via the SyncQueue.
+ * 
+ * Migration: Replace useSyncController with useBackendSyncController
+ * 
+ * Legacy Sync Controller Hook
+ * Main orchestration for sync operations using SoluM API (DEPRECATED)
  */
 
 interface UseSyncControllerProps {

@@ -102,7 +102,7 @@ export function DashboardConferenceCard({
                     </Grid>
 
                     <Button
-                        variant="contained"
+                        variant="outlined"
                         startIcon={<AddIcon />}
                         onClick={onAddRoom}
                         sx={{ mt: 2, width: 'fit-content' }}

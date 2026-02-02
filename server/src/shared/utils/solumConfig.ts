@@ -20,7 +20,7 @@ export async function getSolumConfig(storeId: string): Promise<SolumConfig | nul
 
     if (!store) return null;
 
-    // Build SoluM config from company AIMS settings and store number
+    // Build SoluM config from company AIMS settings and store code
     const company = store.company;
     if (!company.aimsBaseUrl || !company.aimsUsername) {
         return null;
@@ -30,7 +30,7 @@ export async function getSolumConfig(storeId: string): Promise<SolumConfig | nul
     const config: SolumConfig = {
         baseUrl: company.aimsBaseUrl,
         companyName: company.name,
-        storeNumber: store.storeNumber,
+        storeCode: store.code,
         username: company.aimsUsername,
         password: company.aimsPasswordEnc || '', // Will be decrypted in service
         cluster: company.aimsCluster || undefined,

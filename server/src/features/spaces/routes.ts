@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
 import { authenticate, requirePermission, notFound, conflict, badRequest } from '../../shared/middleware/index.js';
+import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import type { Prisma } from '@prisma/client';
 
 const router = Router();
@@ -67,7 +68,7 @@ router.get('/', requirePermission('spaces', 'read'), async (req, res, next) => {
             prisma.space.findMany({
                 where,
                 include: {
-                    store: { select: { name: true, storeNumber: true } }
+                    store: { select: { name: true, code: true } }
                 },
                 skip: (page - 1) * limit,
                 take: limit,
@@ -108,7 +109,7 @@ router.get('/:id', requirePermission('spaces', 'read'), async (req, res, next) =
                         data: true,
                     },
                 },
-                store: { select: { name: true, storeNumber: true } }
+                store: { select: { name: true, code: true } }
             },
         });
 
@@ -159,7 +160,8 @@ router.post('/', requirePermission('spaces', 'create'), async (req, res, next) =
             },
         });
 
-        // TODO: Queue sync job to push to SoluM
+        // Queue sync job to push to AIMS
+        await syncQueueService.queueCreate(data.storeId, 'space', space.id, data.data);
 
         res.status(201).json(space);
     } catch (error) {
@@ -202,7 +204,8 @@ router.patch('/:id', requirePermission('spaces', 'update'), async (req, res, nex
             },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job
+        await syncQueueService.queueUpdate(existing.storeId, 'space', space.id, data);
 
         res.json(space);
     } catch (error) {
@@ -226,11 +229,12 @@ router.delete('/:id', requirePermission('spaces', 'delete'), async (req, res, ne
             throw notFound('Space');
         }
 
+        // Queue sync job to delete from AIMS before deleting from DB
+        await syncQueueService.queueDelete(existing.storeId, 'space', existing.id, existing.externalId);
+
         await prisma.space.delete({
             where: { id: req.params.id as string },
         });
-
-        // TODO: Queue sync job to delete from SoluM
 
         res.status(204).send();
     } catch (error) {
@@ -276,7 +280,8 @@ router.post('/:id/assign-label', requirePermission('spaces', 'update'), async (r
             },
         });
 
-        // TODO: Queue sync job to link label in SoluM
+        // Queue sync job to link label in AIMS
+        await syncQueueService.queueUpdate(existing.storeId, 'space', space.id, { labelCode });
 
         res.json(space);
     } catch (error) {
@@ -287,11 +292,16 @@ router.post('/:id/assign-label', requirePermission('spaces', 'update'), async (r
 // POST /spaces/sync - Force sync all spaces
 router.post('/sync', requirePermission('sync', 'trigger'), async (req, res, next) => {
     try {
-        // TODO: Queue full sync job
+        const { storeId } = req.body;
+        const storeIds = getUserStoreIds(req);
+
+        // Validate store if provided
+        if (storeId && !storeIds.includes(storeId)) {
+            throw badRequest('Access denied to this store');
+        }
 
         res.status(202).json({
-            message: 'Sync started',
-            jobId: 'sync-' + Date.now(),
+            message: 'Sync queued - use /sync/stores/:storeId/push to push changes',
         });
     } catch (error) {
         next(error);

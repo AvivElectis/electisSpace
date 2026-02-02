@@ -30,6 +30,10 @@ interface AuthState {
     pendingEmail: string | null; // Email pending 2FA verification
     lastValidation: number | null; // Timestamp of last session validation
 
+    // Derived context (from user)
+    activeCompanyId: string | null;
+    activeStoreId: string | null;
+
     // Actions
     login: (credentials: AuthCredentials) => Promise<boolean>;
     verify2FA: (code: string) => Promise<boolean>;
@@ -40,6 +44,11 @@ interface AuthState {
     checkAuth: () => void;
     clearError: () => void;
     validateSession: () => Promise<boolean>;
+    
+    // Context switching
+    setActiveCompany: (companyId: string | null) => Promise<void>;
+    setActiveStore: (storeId: string | null) => Promise<void>;
+    setActiveContext: (companyId: string | null, storeId: string | null) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -53,6 +62,8 @@ export const useAuthStore = create<AuthState>()(
                 error: null,
                 pendingEmail: null,
                 lastValidation: null,
+                activeCompanyId: null,
+                activeStoreId: null,
 
                 // Actions
                 login: async (credentials: AuthCredentials): Promise<boolean> => {
@@ -87,18 +98,25 @@ export const useAuthStore = create<AuthState>()(
                     set({ isLoading: true, error: null }, false, 'verify2FA/start');
                     try {
                         const response = await authService.verify2FA({ email, code });
+                        const { user } = response;
+                        
+                        // Set active context from user or default to first company/store
+                        const activeCompanyId = user.activeCompanyId || user.companies?.[0]?.id || null;
+                        const activeStoreId = user.activeStoreId || user.stores?.[0]?.id || null;
+                        
                         set({
-                            user: response.user,
+                            user,
                             isAuthenticated: true,
                             isLoading: false,
                             error: null,
                             pendingEmail: null,
+                            activeCompanyId,
+                            activeStoreId,
                         }, false, 'verify2FA/success');
 
-                        // Fetch settings from server for the first store the user has access to
-                        if (response.user.stores && response.user.stores.length > 0) {
-                            const firstStore = response.user.stores[0];
-                            useSettingsStore.getState().fetchSettingsFromServer(firstStore.id);
+                        // Fetch settings from server for the active store
+                        if (activeStoreId) {
+                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId);
                         }
 
                         return true;
@@ -140,11 +158,22 @@ export const useAuthStore = create<AuthState>()(
                             isLoading: false,
                             error: null,
                             pendingEmail: null,
+                            activeCompanyId: null,
+                            activeStoreId: null,
                         }, false, 'logout/complete');
                     }
                 },
 
-                setUser: (user) => set({ user, isAuthenticated: !!user }, false, 'setUser'),
+                setUser: (user) => {
+                    const activeCompanyId = user?.activeCompanyId || user?.companies?.[0]?.id || null;
+                    const activeStoreId = user?.activeStoreId || user?.stores?.[0]?.id || null;
+                    set({ 
+                        user, 
+                        isAuthenticated: !!user,
+                        activeCompanyId,
+                        activeStoreId,
+                    }, false, 'setUser');
+                },
 
                 setError: (error) => set({ error }, false, 'setError'),
 
@@ -172,6 +201,8 @@ export const useAuthStore = create<AuthState>()(
                             isAuthenticated: false,
                             user: null,
                             lastValidation: Date.now(),
+                            activeCompanyId: null,
+                            activeStoreId: null,
                         }, false, 'validateSession/noToken');
                         return false;
                     }
@@ -179,10 +210,16 @@ export const useAuthStore = create<AuthState>()(
                     try {
                         // Call the /me endpoint to validate the session
                         const response = await authService.me();
+                        const { user } = response;
+                        const activeCompanyId = user.activeCompanyId || user.companies?.[0]?.id || null;
+                        const activeStoreId = user.activeStoreId || user.stores?.[0]?.id || null;
+                        
                         set({
-                            user: response.user,
+                            user,
                             isAuthenticated: true,
                             lastValidation: Date.now(),
+                            activeCompanyId,
+                            activeStoreId,
                         }, false, 'validateSession/success');
                         return true;
                     } catch {
@@ -191,8 +228,65 @@ export const useAuthStore = create<AuthState>()(
                             isAuthenticated: false,
                             user: null,
                             lastValidation: Date.now(),
+                            activeCompanyId: null,
+                            activeStoreId: null,
                         }, false, 'validateSession/failed');
                         return false;
+                    }
+                },
+
+                // Context switching actions
+                setActiveCompany: async (companyId: string | null): Promise<void> => {
+                    try {
+                        const response = await authService.updateContext(companyId, null);
+                        const { user } = response;
+                        set({
+                            user,
+                            activeCompanyId: companyId,
+                            activeStoreId: null, // Reset store when company changes
+                        }, false, 'setActiveCompany');
+                    } catch (error) {
+                        const message = getErrorMessage(error, 'Failed to switch company');
+                        set({ error: message }, false, 'setActiveCompany/error');
+                    }
+                },
+
+                setActiveStore: async (storeId: string | null): Promise<void> => {
+                    try {
+                        const response = await authService.updateContext(undefined, storeId);
+                        const { user } = response;
+                        set({
+                            user,
+                            activeStoreId: storeId,
+                        }, false, 'setActiveStore');
+
+                        // Fetch settings for the new store
+                        if (storeId) {
+                            useSettingsStore.getState().fetchSettingsFromServer(storeId);
+                        }
+                    } catch (error) {
+                        const message = getErrorMessage(error, 'Failed to switch store');
+                        set({ error: message }, false, 'setActiveStore/error');
+                    }
+                },
+
+                setActiveContext: async (companyId: string | null, storeId: string | null): Promise<void> => {
+                    try {
+                        const response = await authService.updateContext(companyId, storeId);
+                        const { user } = response;
+                        set({
+                            user,
+                            activeCompanyId: companyId,
+                            activeStoreId: storeId,
+                        }, false, 'setActiveContext');
+
+                        // Fetch settings for the new store
+                        if (storeId) {
+                            useSettingsStore.getState().fetchSettingsFromServer(storeId);
+                        }
+                    } catch (error) {
+                        const message = getErrorMessage(error, 'Failed to switch context');
+                        set({ error: message }, false, 'setActiveContext/error');
                     }
                 },
             }),
@@ -200,6 +294,8 @@ export const useAuthStore = create<AuthState>()(
                 name: 'auth-store',
                 partialize: (state) => ({
                     user: state.user,
+                    activeCompanyId: state.activeCompanyId,
+                    activeStoreId: state.activeStoreId,
                     // Don't persist isAuthenticated - derive from token presence
                 }),
             }

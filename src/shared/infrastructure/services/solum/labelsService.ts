@@ -390,3 +390,84 @@ export async function getLabelDetail(
  * @deprecated Use linkLabel instead
  */
 export const assignLabel = linkLabel;
+
+/**
+ * Label image from AIMS API
+ */
+export interface AimsLabelImage {
+    index: number;
+    state: 'SUCCESS' | 'PROCESSING' | 'TIMEOUT';
+    content: string;
+    processUpdateTime: string;
+    statusUpdateTime: string;
+    batchId: string;
+    txSequence: string;
+}
+
+/**
+ * Label images detail response from AIMS API
+ */
+export interface AimsLabelImagesDetail {
+    labelCode: string;
+    isDualSidedLabel?: boolean;
+    width: number;
+    height: number;
+    activePage: number;
+    previousImage: AimsLabelImage[];
+    currentImage: AimsLabelImage[];
+    responseCode: string;
+    responseMessage: string;
+    latestBatchInfo?: {
+        txSequence: string;
+        type: string;
+        batchEventTime: string;
+    };
+}
+
+/**
+ * Get label images detail from SoluM API
+ * Returns current and previous images displayed on the label
+ * @param config - SoluM configuration
+ * @param storeId - Store number
+ * @param token - Access token
+ * @param labelCode - Label code (e.g., "0B9B5A3271DC")
+ * @returns Label images detail
+ */
+export async function getLabelImages(
+    config: SolumConfig,
+    storeId: string,
+    token: string,
+    labelCode: string
+): Promise<AimsLabelImagesDetail | null> {
+    logger.info('SolumLabelsService', 'Fetching label images', { labelCode });
+
+    const url = buildUrl(config, `/common/api/v2/common/labels/detail?company=${config.companyName}&store=${storeId}&label=${labelCode}`);
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response.status === 204) {
+        logger.info('SolumLabelsService', 'No images found for label', { labelCode });
+        return null;
+    }
+
+    if (!response.ok) {
+        const error = await response.text();
+        logger.error('SolumLabelsService', 'Fetch label images failed', { status: response.status, error });
+        throw new Error(`Fetch label images failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    logger.info('SolumLabelsService', 'Label images fetched', { 
+        labelCode, 
+        currentImages: data.currentImage?.length || 0,
+        previousImages: data.previousImage?.length || 0 
+    });
+    
+    return data as AimsLabelImagesDetail;
+}

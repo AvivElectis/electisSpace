@@ -14,21 +14,36 @@ import {
     TablePagination,
     CircularProgress,
     Stack,
-    Tooltip
+    Tooltip,
+    TextField,
+    InputAdornment,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { useState, useEffect, useCallback } from 'react';
+import SearchIcon from '@mui/icons-material/Search';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { userService, type User, type CreateUserDto, type UpdateUserDto, type UpdateUserStoreDto } from '@shared/infrastructure/services/userService';
-import { UserDialog } from './UserDialog';
+import { companyService, type Company } from '@shared/infrastructure/services/companyService';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
+
+// Lazy load dialogs
+const EnhancedUserDialog = lazy(() => import('./EnhancedUserDialog').then(m => ({ default: m.EnhancedUserDialog })));
+const ElevateUserDialog = lazy(() => import('./ElevateUserDialog').then(m => ({ default: m.ElevateUserDialog })));
+
 
 export function UsersSettingsTab() {
     const { t } = useTranslation();
     const { user: currentUser } = useAuthStore();
+    const { isPlatformAdmin } = useAuthContext();
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // State
@@ -37,19 +52,42 @@ export function UsersSettingsTab() {
     const [page, setPage] = useState(0);
     const [limit, setLimit] = useState(10);
     const [total, setTotal] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Companies filter (for platform admin)
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [selectedCompanyFilter, setSelectedCompanyFilter] = useState('');
 
     // Dialog State
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [elevateDialogOpen, setElevateDialogOpen] = useState(false);
+    const [userToElevate, setUserToElevate] = useState<User | null>(null);
+
+    // Fetch Companies for filter (platform admin only)
+    useEffect(() => {
+        if (isPlatformAdmin) {
+            companyService.getAll({ limit: 100 }).then(response => {
+                setCompanies(response.data);
+            }).catch(err => console.error('Failed to fetch companies:', err));
+        }
+    }, [isPlatformAdmin]);
 
     // Fetch Users
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await userService.getAll({
+            const params: any = {
                 page: page + 1, // API is 1-indexed
                 limit,
-            });
+            };
+            if (searchQuery) {
+                params.search = searchQuery;
+            }
+            if (selectedCompanyFilter) {
+                params.companyId = selectedCompanyFilter;
+            }
+            const response = await userService.getAll(params);
             setUsers(response.data);
             setTotal(response.pagination.total);
         } catch (error) {
@@ -57,11 +95,19 @@ export function UsersSettingsTab() {
         } finally {
             setLoading(false);
         }
-    }, [page, limit]);
+    }, [page, limit, searchQuery, selectedCompanyFilter]);
 
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
+
+    // Search debounce
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setPage(0);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
 
     // Handlers
     const handleAdd = () => {
@@ -92,34 +138,21 @@ export function UsersSettingsTab() {
         }
     };
 
-    const handleSave = async (data: CreateUserDto | UpdateUserDto) => {
-        try {
-            if (selectedUser) {
-                console.log('Updating user:', selectedUser.id, data);
-                await userService.update(selectedUser.id, data as UpdateUserDto);
-                console.log('User updated successfully');
-            } else {
-                console.log('Creating user:', data);
-                await userService.create(data as CreateUserDto);
-                console.log('User created successfully');
-            }
-            await fetchUsers();
-        } catch (error) {
-            console.error('Error saving user:', error);
-            throw error; // Re-throw to let UserDialog handle it
-        }
+    const handleElevate = (user: User) => {
+        setUserToElevate(user);
+        setElevateDialogOpen(true);
     };
 
-    const handleUpdateStoreAccess = async (userId: string, storeId: string, data: UpdateUserStoreDto) => {
-        try {
-            console.log('Updating store access:', userId, storeId, data);
-            await userService.updateStoreAccess(userId, storeId, data);
-            console.log('Store access updated successfully');
-            await fetchUsers();
-        } catch (error) {
-            console.error('Error updating store access:', error);
-            throw error; // Re-throw to let UserDialog handle it
-        }
+    const handleElevateSuccess = () => {
+        setElevateDialogOpen(false);
+        setUserToElevate(null);
+        fetchUsers();
+    };
+
+    const handleDialogSave = () => {
+        setDialogOpen(false);
+        setSelectedUser(null);
+        fetchUsers();
     };
 
     // Role color helper
@@ -147,16 +180,66 @@ export function UsersSettingsTab() {
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            {/* Header */}
+            <Stack 
+                direction={{ xs: 'column', sm: 'row' }} 
+                justifyContent="space-between" 
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+                spacing={2}
+            >
                 <Typography variant="h6">{t('settings.users.title')}</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
-                    {t('settings.users.addUser')}
-                </Button>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    {/* Search */}
+                    <TextField
+                        size="small"
+                        placeholder={t('settings.users.searchPlaceholder', 'Search users...')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon fontSize="small" />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ minWidth: 200 }}
+                    />
+
+                    {/* Company Filter (Platform Admin only) */}
+                    {isPlatformAdmin && companies.length > 0 && (
+                        <FormControl size="small" sx={{ minWidth: 150 }}>
+                            <InputLabel>{t('settings.users.companyFilter', 'Company')}</InputLabel>
+                            <Select
+                                value={selectedCompanyFilter}
+                                label={t('settings.users.companyFilter', 'Company')}
+                                onChange={(e) => {
+                                    setSelectedCompanyFilter(e.target.value);
+                                    setPage(0);
+                                }}
+                            >
+                                <MenuItem value="">
+                                    <em>{t('common.all', 'All')}</em>
+                                </MenuItem>
+                                {companies.map(company => (
+                                    <MenuItem key={company.id} value={company.id}>
+                                        {company.code} - {company.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    {/* Add Button */}
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+                        {t('settings.users.addUser')}
+                    </Button>
+                </Stack>
             </Stack>
 
             <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <TableContainer sx={{ flex: 1 }}>
-                    <Table stickyHeader>
+                    <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
                                 <TableCell>{t('auth.email')}</TableCell>
@@ -177,7 +260,9 @@ export function UsersSettingsTab() {
                             ) : users.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                                        {t('common.noData')}
+                                        {searchQuery 
+                                            ? t('settings.users.noSearchResults', 'No users match your search')
+                                            : t('common.noData')}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -188,11 +273,19 @@ export function UsersSettingsTab() {
                                     const userFeatures = user.globalRole === 'PLATFORM_ADMIN' 
                                         ? ['dashboard', 'spaces', 'conference', 'people'] // Platform admins have all features
                                         : (firstStore?.features || ['dashboard']);
+                                    const canElevate = isPlatformAdmin && 
+                                        user.globalRole !== 'PLATFORM_ADMIN' && 
+                                        user.id !== currentUser?.id;
                                     
                                     return (
                                         <TableRow key={user.id} hover>
                                             <TableCell>{user.email}</TableCell>
-                                            <TableCell>{user.firstName} {user.lastName}</TableCell>
+                                            <TableCell>
+                                                {user.firstName || user.lastName 
+                                                    ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                                                    : <Typography variant="body2" color="text.secondary">—</Typography>
+                                                }
+                                            </TableCell>
                                             <TableCell>
                                                 <Chip
                                                     label={t(`roles.${userRole.toLowerCase()}`)}
@@ -220,10 +313,22 @@ export function UsersSettingsTab() {
                                                 />
                                             </TableCell>
                                             <TableCell align="right">
-                                                <Stack direction="row" justifyContent="flex-end">
+                                                <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
+                                                    {/* Elevate Button (Platform Admin only) */}
+                                                    {canElevate && (
+                                                        <Tooltip title={t('settings.users.elevate', 'Elevate to Platform Admin')}>
+                                                            <IconButton 
+                                                                onClick={() => handleElevate(user)} 
+                                                                size="small" 
+                                                                color="warning"
+                                                            >
+                                                                <AdminPanelSettingsIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
                                                     <Tooltip title={t('common.edit')}>
                                                         <IconButton onClick={() => handleEdit(user)} size="small" color="primary">
-                                                            <EditIcon />
+                                                            <EditIcon fontSize="small" />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title={t('common.delete')}>
@@ -234,7 +339,7 @@ export function UsersSettingsTab() {
                                                                 color="error"
                                                                 disabled={user.id === currentUser?.id} // Cannot delete self
                                                             >
-                                                                <DeleteIcon />
+                                                                <DeleteIcon fontSize="small" />
                                                             </IconButton>
                                                         </span>
                                                     </Tooltip>
@@ -257,16 +362,37 @@ export function UsersSettingsTab() {
                         setLimit(parseInt(e.target.value, 10));
                         setPage(0);
                     }}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
                 />
             </Paper>
 
-            <UserDialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                onSave={handleSave}
-                onUpdateStoreAccess={handleUpdateStoreAccess}
-                user={selectedUser}
-            />
+            {/* User Dialog */}
+            <Suspense fallback={null}>
+                {dialogOpen && (
+                    <EnhancedUserDialog
+                        open={dialogOpen}
+                        onClose={() => setDialogOpen(false)}
+                        onSave={handleDialogSave}
+                        user={selectedUser as any}
+                    />
+                )}
+            </Suspense>
+
+            {/* Elevate Dialog */}
+            <Suspense fallback={null}>
+                {elevateDialogOpen && userToElevate && (
+                    <ElevateUserDialog
+                        open={elevateDialogOpen}
+                        onClose={() => {
+                            setElevateDialogOpen(false);
+                            setUserToElevate(null);
+                        }}
+                        onSuccess={handleElevateSuccess}
+                        user={userToElevate}
+                    />
+                )}
+            </Suspense>
+
             <ConfirmDialog />
         </Box>
     );

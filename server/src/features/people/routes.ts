@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
 import { authenticate, requirePermission, notFound, badRequest } from '../../shared/middleware/index.js';
+import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import type { Prisma } from '@prisma/client';
 
 const router = Router();
@@ -70,7 +71,7 @@ router.get('/', requirePermission('people', 'read'), async (req, res, next) => {
                         select: { id: true, externalId: true, labelCode: true },
                     },
                     store: {
-                        select: { name: true, storeNumber: true }
+                        select: { name: true, code: true }
                     }
                 },
                 skip: (page - 1) * limit,
@@ -110,7 +111,7 @@ router.get('/:id', requirePermission('people', 'read'), async (req, res, next) =
                     include: { list: true },
                 },
                 store: {
-                    select: { name: true, storeNumber: true }
+                    select: { name: true, code: true }
                 }
             },
         });
@@ -152,7 +153,8 @@ router.post('/', requirePermission('people', 'create'), async (req, res, next) =
             },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job
+        await syncQueueService.queueCreate(data.storeId, 'person', person.id, data.data);
 
         res.status(201).json(person);
     } catch (error) {
@@ -189,7 +191,8 @@ router.patch('/:id', requirePermission('people', 'update'), async (req, res, nex
             },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job
+        await syncQueueService.queueUpdate(existing.storeId, 'person', person.id, data);
 
         res.json(person);
     } catch (error) {
@@ -213,11 +216,17 @@ router.delete('/:id', requirePermission('people', 'delete'), async (req, res, ne
             throw notFound('Person');
         }
 
+        // Queue sync job to clear from AIMS before deleting
+        await syncQueueService.queueDelete(
+            existing.storeId, 
+            'person', 
+            existing.id, 
+            existing.externalId || existing.virtualSpaceId || undefined
+        );
+
         await prisma.person.delete({
             where: { id: req.params.id as string },
         });
-
-        // TODO: Queue sync job to clear from SoluM
 
         res.status(204).send();
     } catch (error) {
@@ -335,7 +344,7 @@ router.get('/lists', requirePermission('people', 'read'), async (req, res, next)
             where: storeFilter,
             include: {
                 _count: { select: { memberships: true } },
-                store: { select: { name: true, storeNumber: true } }
+                store: { select: { name: true, code: true } }
             },
             orderBy: { name: 'asc' },
         });

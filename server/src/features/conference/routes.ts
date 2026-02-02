@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/index.js';
 import { authenticate, requirePermission, notFound, conflict, badRequest } from '../../shared/middleware/index.js';
+import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 
 const router = Router();
 
@@ -57,7 +58,7 @@ router.get('/', requirePermission('conference', 'read'), async (req, res, next) 
             orderBy: { externalId: 'asc' },
             include: {
                 store: {
-                    select: { name: true, storeNumber: true }
+                    select: { name: true, code: true }
                 }
             }
         });
@@ -88,7 +89,7 @@ router.get('/:id', requirePermission('conference', 'read'), async (req, res, nex
             },
             include: {
                 store: {
-                    select: { name: true, storeNumber: true }
+                    select: { name: true, code: true }
                 }
             }
         });
@@ -136,7 +137,8 @@ router.post('/', requirePermission('conference', 'create'), async (req, res, nex
             },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job
+        await syncQueueService.queueCreate(data.storeId, 'conference', room.id);
 
         res.status(201).json(room);
     } catch (error) {
@@ -169,7 +171,8 @@ router.patch('/:id', requirePermission('conference', 'update'), async (req, res,
             },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job
+        await syncQueueService.queueUpdate(existing.storeId, 'conference', room.id, data);
 
         res.json(room);
     } catch (error) {
@@ -193,11 +196,12 @@ router.delete('/:id', requirePermission('conference', 'delete'), async (req, res
             throw notFound('Conference room');
         }
 
+        // Queue sync job to delete from AIMS
+        await syncQueueService.queueDelete(existing.storeId, 'conference', existing.id, existing.externalId);
+
         await prisma.conferenceRoom.delete({
             where: { id: req.params.id as string },
         });
-
-        // TODO: Queue sync job
 
         res.status(204).send();
     } catch (error) {
@@ -238,7 +242,8 @@ router.post('/:id/toggle', requirePermission('conference', 'toggle'), async (req
             },
         });
 
-        // TODO: Queue sync job to update SoluM and flip ESL page
+        // Queue sync job to update AIMS and flip ESL page
+        await syncQueueService.queueUpdate(existing.storeId, 'conference', room.id, { hasMeeting: newHasMeeting });
 
         res.json(room);
     } catch (error) {
@@ -266,7 +271,8 @@ router.post('/:id/flip-page', requirePermission('conference', 'toggle'), async (
             throw notFound('No label assigned to this room');
         }
 
-        // TODO: Queue job to flip ESL page in SoluM
+        // Queue job to flip ESL page in AIMS (triggers page change via article update)
+        await syncQueueService.queueUpdate(existing.storeId, 'conference', existing.id, { flipPage: true });
 
         res.json({
             message: 'Page flip requested',

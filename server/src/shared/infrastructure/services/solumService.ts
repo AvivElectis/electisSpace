@@ -5,7 +5,7 @@ export interface SolumConfig {
     baseUrl: string;
     companyName: string;
     cluster?: string;
-    storeNumber?: string;
+    storeCode?: string;
     username?: string;
     password?: string;
 }
@@ -107,9 +107,9 @@ export class SolumService {
      * Fetch articles
      */
     async fetchArticles(config: SolumConfig, token: string, page = 0, size = 100): Promise<any[]> {
-        if (!config.storeNumber) throw new Error('Store number required');
+        if (!config.storeCode) throw new Error('Store code required');
 
-        const url = this.buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${config.storeNumber}&page=${page}&size=${size}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
 
         try {
             const response = await this.client.get(url, {
@@ -135,9 +135,9 @@ export class SolumService {
      * Push articles (Create/Update)
      */
     async pushArticles(config: SolumConfig, token: string, articles: any[]): Promise<void> {
-        if (!config.storeNumber) throw new Error('Store number required');
+        if (!config.storeCode) throw new Error('Store code required');
 
-        const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeNumber}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}`);
 
         try {
             await this.client.post(url, articles, {
@@ -152,9 +152,9 @@ export class SolumService {
      * Delete articles
      */
     async deleteArticles(config: SolumConfig, token: string, articleIds: string[]): Promise<void> {
-        if (!config.storeNumber) throw new Error('Store number required');
+        if (!config.storeCode) throw new Error('Store code required');
 
-        const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeNumber}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}`);
 
         try {
             await this.client.delete(url, {

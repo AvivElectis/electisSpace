@@ -275,7 +275,7 @@ router.post('/verify-2fa', async (req, res, next) => {
         const stores = user.userStores.map(us => ({
             id: us.storeId,
             name: us.store.name,
-            storeNumber: us.store.storeNumber,
+            code: us.store.code,
             role: us.role,
             features: us.features as string[] || ['dashboard'],
             companyId: us.store.companyId,
@@ -285,7 +285,7 @@ router.post('/verify-2fa', async (req, res, next) => {
         const companies = user.userCompanies.map(uc => ({
             id: uc.companyId,
             name: uc.company.name,
-            aimsCompanyCode: uc.company.aimsCompanyCode,
+            code: uc.company.code,
             role: uc.role,
         }));
 
@@ -476,7 +476,7 @@ router.get('/me', authenticate, async (req, res, next) => {
         const stores = user.userStores.map(us => ({
             id: us.storeId,
             name: us.store.name,
-            storeNumber: us.store.storeNumber,
+            code: us.store.code,
             role: us.role,
             features: us.features as string[] || ['dashboard'],
             companyId: us.store.companyId,
@@ -486,7 +486,7 @@ router.get('/me', authenticate, async (req, res, next) => {
         const companies = user.userCompanies.map(uc => ({
             id: uc.companyId,
             name: uc.company.name,
-            aimsCompanyCode: uc.company.aimsCompanyCode,
+            code: uc.company.code,
             role: uc.role,
         }));
 
