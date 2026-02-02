@@ -13,6 +13,8 @@ import { notFoundHandler } from './shared/middleware/notFoundHandler.js';
 // Import routes
 import authRoutes from './features/auth/routes.js';
 import userRoutes from './features/users/routes.js';
+import companyRoutes from './features/companies/routes.js';
+import storeRoutes from './features/stores/routes.js';
 import spaceRoutes from './features/spaces/routes.js';
 import peopleRoutes from './features/people/routes.js';
 import conferenceRoutes from './features/conference/routes.js';
@@ -81,6 +83,8 @@ const apiRouter = express.Router();
 
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/companies', companyRoutes);
+apiRouter.use('/', storeRoutes); // Store routes mounted at root for /companies/:companyId/stores and /stores/:id
 apiRouter.use('/spaces', spaceRoutes);
 apiRouter.use('/people', peopleRoutes);
 apiRouter.use('/conference', conferenceRoutes);

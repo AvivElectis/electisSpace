@@ -1,6 +1,7 @@
-import { Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Grid, Button, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense, useCallback } from 'react';
+import LinkIcon from '@mui/icons-material/Link';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -10,10 +11,12 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { linkLabel } from '@shared/infrastructure/services/solum/labelsService';
 
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('@features/space/presentation/SpaceDialog').then(m => ({ default: m.SpaceDialog })));
 const ConferenceRoomDialog = lazy(() => import('@features/conference/presentation/ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
+const LinkLabelDialog = lazy(() => import('@features/labels/presentation/LinkLabelDialog').then(m => ({ default: m.LinkLabelDialog })));
 
 // Extracted components
 import {
@@ -90,6 +93,7 @@ export function DashboardPage() {
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
     const [conferenceDialogOpen, setConferenceDialogOpen] = useState(false);
+    const [linkLabelDialogOpen, setLinkLabelDialogOpen] = useState(false);
 
     // Handlers
     const handleAddSpace = async (spaceData: Partial<Space>) => {
@@ -99,6 +103,21 @@ export function DashboardPage() {
     const handleAddConferenceRoom = async (roomData: Partial<ConferenceRoom>) => {
         await conferenceController.addConferenceRoom(roomData);
     };
+
+    // Link label handler
+    const handleLinkLabel = useCallback(async (labelCode: string, articleId: string, templateName?: string) => {
+        const solumConfig = settingsController.settings.solumConfig;
+        if (!solumConfig?.tokens?.accessToken || !solumConfig.storeNumber) return;
+        
+        await linkLabel(
+            solumConfig,
+            solumConfig.storeNumber,
+            solumConfig.tokens.accessToken,
+            labelCode,
+            articleId,
+            templateName
+        );
+    }, [settingsController.settings.solumConfig]);
 
     // Extract space type for icons
     const spaceTypeIcon = settingsController.settings.spaceType.split('.').pop()?.toLowerCase() || 'chair';
@@ -112,15 +131,26 @@ export function DashboardPage() {
 
     return (
         <Box>
-            {/* Header */}
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                    {t('dashboard.title')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    {t('dashboard.overview', 'Welcome to your space management dashboard')}
-                </Typography>
-            </Box>
+            {/* Header with Quick Action */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
+                <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
+                        {t('dashboard.title')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {t('dashboard.overview', 'Welcome to your space management dashboard')}
+                    </Typography>
+                </Box>
+                <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<LinkIcon />}
+                    onClick={() => setLinkLabelDialogOpen(true)}
+                    sx={{ minWidth: 160 }}
+                >
+                    {t('dashboard.linkLabel', 'Link Label')}
+                </Button>
+            </Stack>
 
             <Grid container spacing={3}>
                 {/* Spaces Area - Only show when People Manager mode is OFF */}
@@ -197,6 +227,14 @@ export function DashboardPage() {
                         onClose={() => setConferenceDialogOpen(false)}
                         onSave={handleAddConferenceRoom}
                         existingIds={conferenceController.conferenceRooms.map((r) => r.id)}
+                    />
+                )}
+
+                {linkLabelDialogOpen && (
+                    <LinkLabelDialog
+                        open={linkLabelDialogOpen}
+                        onClose={() => setLinkLabelDialogOpen(false)}
+                        onLink={handleLinkLabel}
                     />
                 )}
             </Suspense>

@@ -8,7 +8,7 @@ import api, { tokenManager } from './apiClient';
 export interface Store {
     id: string;
     name: string;
-    storeNumber: string;
+    code: string;
     role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
     features: string[]; // Available features: 'dashboard', 'spaces', 'conference', 'people'
     companyId: string;
@@ -18,8 +18,9 @@ export interface Store {
 export interface Company {
     id: string;
     name: string;
-    aimsCompanyCode: string;
+    code: string;
     role: 'COMPANY_ADMIN' | 'VIEWER';
+    allStoresAccess: boolean;
 }
 
 export interface User {
@@ -28,6 +29,8 @@ export interface User {
     firstName: string | null;
     lastName: string | null;
     globalRole: 'PLATFORM_ADMIN' | null;
+    activeCompanyId: string | null;
+    activeStoreId: string | null;
     stores: Store[];
     companies: Company[];
 }
@@ -144,6 +147,17 @@ export const authService = {
      */
     adminResetPassword: async (userId: string, resetType: 'temporary' | 'fixed', newPassword?: string): Promise<{ temporaryPassword?: string }> => {
         const response = await api.post('/auth/admin/reset-password', { userId, resetType, newPassword });
+        return response.data;
+    },
+
+    /**
+     * Update user's active company/store context
+     */
+    updateContext: async (activeCompanyId?: string | null, activeStoreId?: string | null): Promise<{ user: User }> => {
+        const response = await api.patch<{ user: User }>('/users/me/context', {
+            activeCompanyId,
+            activeStoreId,
+        });
         return response.data;
     },
 

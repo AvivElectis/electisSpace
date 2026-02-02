@@ -3,7 +3,12 @@ import { logger } from '../logger';
 import { buildUrl } from './authService';
 
 /**
- * SoluM Articles Service
+ * @deprecated This service is deprecated. Use the backend sync API instead.
+ * 
+ * Direct AIMS calls from the frontend are being replaced by backend-routed
+ * operations via the syncApi service. The backend handles all AIMS communication.
+ * 
+ * SoluM Articles Service (DEPRECATED)
  * Handles article CRUD operations
  */
 

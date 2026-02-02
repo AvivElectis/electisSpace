@@ -103,7 +103,7 @@ export function DashboardSpacesCard({
                     </Grid>
 
                     <Button
-                        variant="contained"
+                        variant="outlined"
                         startIcon={<AddIcon />}
                         onClick={onAddSpace}
                         sx={{ mt: 2, width: 'fit-content' }}

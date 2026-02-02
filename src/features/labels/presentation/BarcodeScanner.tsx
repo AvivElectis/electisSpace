@@ -209,17 +209,18 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                         exclusive
                         onChange={handleInputTypeChange}
                         aria-label="scan input type"
+                        dir="ltr"
                     >
-                        <ToggleButton value="scanner" aria-label="external scanner">
-                            <ScannerIcon sx={{ mr: 1 }} />
+                        <ToggleButton value="scanner" aria-label="external scanner" sx={{ gap: 1 }}>
+                            <ScannerIcon />
                             {t('labels.scanner.externalScanner', 'Scanner')}
                         </ToggleButton>
-                        <ToggleButton value="camera" aria-label="camera">
-                            <CameraIcon sx={{ mr: 1 }} />
+                        <ToggleButton value="camera" aria-label="camera" sx={{ gap: 1 }}>
+                            <CameraIcon />
                             {t('labels.scanner.camera', 'Camera')}
                         </ToggleButton>
-                        <ToggleButton value="manual" aria-label="manual input">
-                            <KeyboardIcon sx={{ mr: 1 }} />
+                        <ToggleButton value="manual" aria-label="manual input" sx={{ gap: 1 }}>
+                            <KeyboardIcon />
                             {t('labels.scanner.manual', 'Manual')}
                         </ToggleButton>
                     </ToggleButtonGroup>
@@ -363,8 +364,8 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                 )}
             </DialogContent>
 
-            <DialogActions>
-                <Button onClick={onClose}>
+            <DialogActions sx={{ flexDirection: 'row', gap: 1 }}>
+                <Button onClick={onClose} variant="outlined">
                     {t('common.cancel', 'Cancel')}
                 </Button>
                 {inputType === 'manual' && (

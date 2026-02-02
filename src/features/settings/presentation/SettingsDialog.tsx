@@ -29,6 +29,7 @@ const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m =>
 const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default: m.LogsViewerTab })));
 const UnlockDialog = lazy(() => import('./UnlockDialog').then(m => ({ default: m.UnlockDialog })));
 const UsersSettingsTab = lazy(() => import('./UsersSettingsTab').then(m => ({ default: m.UsersSettingsTab })));
+const CompaniesTab = lazy(() => import('./CompaniesTab').then(m => ({ default: m.CompaniesTab })));
 
 // Tab loading fallback
 function TabLoadingFallback() {
@@ -84,25 +85,39 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Check if user is platform admin or has store admin role
-    const isAdmin = user?.globalRole === 'PLATFORM_ADMIN' || 
+    const isPlatformAdmin = user?.globalRole === 'PLATFORM_ADMIN';
+    const isAdmin = isPlatformAdmin || 
         user?.stores?.some(s => s.role === 'STORE_ADMIN');
 
-    // Define Tabs Configuration
-    const tabs = [
+    // Define Tabs Configuration - Build array immutably to avoid React reconciliation issues
+    const baseTabs = [
         { label: t('settings.appSettings'), panel: <AppSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.solumSettings'), panel: <SolumSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.logoSettings'), panel: <LogoSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.securitySettings'), panel: <SecuritySettingsTab isPasswordProtected={settingsController.isPasswordProtected} isLocked={settingsController.isLocked} settings={settingsController.settings} onSetPassword={(password) => settingsController.setPassword(password)} onLock={() => settingsController.lock()} onUnlock={(password) => settingsController.unlock(password)} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
-        { label: t('settings.logViewer'), panel: <LogsViewerTab />, noPadding: isMobile },
     ];
 
-    // Add Users Tab for Admins
+    // Build tabs array immutably - add admin tabs before LogViewer
+    const adminTabs = [];
     if (isAdmin) {
-        tabs.splice(5, 0, { // Insert before LogViewer
+        adminTabs.push({
             label: t('settings.users.title'),
             panel: <UsersSettingsTab />
         });
     }
+    if (isPlatformAdmin) {
+        adminTabs.push({
+            label: t('settings.companies.title'),
+            panel: <CompaniesTab />
+        });
+    }
+
+    // Final tabs array: baseTabs + adminTabs + logViewer
+    const tabs = [
+        ...baseTabs,
+        ...adminTabs,
+        { label: t('settings.logViewer'), panel: <LogsViewerTab />, noPadding: isMobile },
+    ];
 
     // Enable auto-lock functionality
     useAutoLock();

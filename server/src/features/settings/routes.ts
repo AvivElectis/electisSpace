@@ -40,7 +40,7 @@ router.get('/store/:storeId', async (req, res, next) => {
         res.json({
             storeId: userStore.store.id,
             storeName: userStore.store.name,
-            storeNumber: userStore.store.storeNumber,
+            storeCode: userStore.store.code,
             settings: userStore.store.settings || {},
         });
     } catch (error) {
@@ -122,7 +122,7 @@ router.get('/company/:companyId', async (req, res, next) => {
         res.json({
             companyId: userCompany.company.id,
             companyName: userCompany.company.name,
-            aimsCompanyCode: userCompany.company.aimsCompanyCode,
+            companyCode: userCompany.company.code,
             settings: userCompany.company.settings || {},
         });
     } catch (error) {

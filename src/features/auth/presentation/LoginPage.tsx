@@ -74,12 +74,10 @@ export function LoginPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                //background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.primary.dark} 100%)`,
                 p: 2,
-                pt: { xs: 2, sm: 0 },
-                mt: { xs: 0, sm: -10, md: -20 },
                 position: 'relative',
                 overflow: 'hidden',
+                bgcolor: 'background.default',
                 '&::before': {
                     content: '""',
                     position: 'absolute',

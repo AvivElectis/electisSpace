@@ -99,7 +99,6 @@ export function SolumApiConfigSection({
                         value={solumConfig.syncInterval || 60}
                         onChange={(e) => updateConfig({ syncInterval: Math.max(60, Number(e.target.value)) })}
                         helperText={t('settings.syncIntervalHelp')}
-                        disabled={isLocked}
                         slotProps={{
                             input: { inputProps: { min: 60 } }
                         }}
