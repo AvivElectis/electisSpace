@@ -67,18 +67,23 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
 
     return (
         <AppBar
-            position="static"
+            position="fixed"
             color="default"
             elevation={0}
             sx={{
+                top: 0,
+                left: 0,
+                right: 0,
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 backgroundColor: 'background.paper',
+                zIndex: (theme) => theme.zIndex.appBar,
             }}
         >
+            {/* Main toolbar with logos and buttons */}
             <Toolbar sx={{
                 justifyContent: 'space-between',
-                minHeight: { xs: 56, sm: 64 },
+                minHeight: { xs: 48, sm: 64 },
                 px: { xs: .5, sm: 3 },
             }}>
                 {/* Mobile Menu Button (left side on mobile) */}
@@ -106,25 +111,24 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                     }}
                 />
 
-                {/* Centered App Title (Dynamic from Settings) */}
+                {/* Centered App Title - DESKTOP ONLY */}
                 <Box
                     sx={{
                         flex: 1,
-                        display: 'flex',
+                        display: { xs: 'none', sm: 'flex' },
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
                         textAlign: 'center',
                         px: 2,
                     }}
-
                 >
                     <Typography
                         variant="h1"
                         sx={{
                             fontWeight: 700,
                             color: 'text.primary',
-                            fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.25rem' },
+                            fontSize: { sm: '1.75rem', md: '2.25rem' },
                         }}
                     >
                         {settings.appName}
@@ -135,14 +139,12 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                             sx={{
                                 fontWeight: 700,
                                 color: 'text.secondary',
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                display: { xs: 'none', sm: 'block' },
+                                fontSize: { sm: '0.875rem' },
                             }}
                         >
                             {settings.appSubtitle}
                         </Typography>
                     )}
-
                 </Box>
 
                 {/* Right Logo + Language Switcher + Manual + Settings + User Menu */}
@@ -246,7 +248,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                                                 fontSize: '0.65rem'
                                             }}
                                         >
-                                            {user.role}
+                                            {user.globalRole || user.stores?.[0]?.role || 'User'}
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -262,6 +264,43 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                     )}
                 </Box>
             </Toolbar>
+
+            {/* Mobile App Title - Second row on small screens */}
+            <Box
+                sx={{
+                    display: { xs: 'flex', sm: 'none' },
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pb: 1,
+                    px: 2,
+                }}
+            >
+                <Typography
+                    variant="h1"
+                    sx={{
+                        fontWeight: 700,
+                        color: 'text.primary',
+                        fontSize: '1.25rem',
+                        textAlign: 'center',
+                    }}
+                >
+                    {settings.appName}
+                </Typography>
+                {settings.appSubtitle && (
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 700,
+                            color: 'text.secondary',
+                            fontSize: '0.75rem',
+                            textAlign: 'center',
+                        }}
+                    >
+                        {settings.appSubtitle}
+                    </Typography>
+                )}
+            </Box>
         </AppBar>
     );
 }
