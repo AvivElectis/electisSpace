@@ -48,8 +48,8 @@ export function DashboardAppInfoCard({
     };
 
     return (
-        <Card data-testid="app-info-card">
-            <CardContent>
+        <Card sx={{ borderRadius: 4, border: '1px solid', borderColor: 'divider', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }} data-testid="app-info-card">
+            <CardContent sx={{ p: 3 }}>
                 <Stack direction="row" gap={1} alignItems="center" sx={{ mb: 3 }}>
                     <SettingsIcon color="action" />
                     <Typography variant="h6" fontWeight={600}>

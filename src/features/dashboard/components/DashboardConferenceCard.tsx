@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography, Stack, Button, Grid } from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, Button, Grid, alpha } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -29,20 +29,33 @@ export function DashboardConferenceCard({
     const navigate = useNavigate();
 
     return (
-        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="conference-card">
-            <CardContent>
+        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible', borderRadius: 4, border: '1px solid', borderColor: 'divider', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }} data-testid="conference-card">
+            <CardContent sx={{ p: 3 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                    <Stack direction="row" gap={1} alignItems="center">
-                        <GroupsIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography variant="h6" fontWeight={600} sx={{ px: 1 }}>
-                            {t('conference.title')}
-                        </Typography>
+                    <Stack direction="row" gap={1.5} alignItems="center">
+                        <Box sx={{ 
+                            color: 'primary.main', 
+                            display: 'flex', 
+                            p: 1, 
+                            borderRadius: 2, 
+                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                            '& svg': { fontSize: 24 } 
+                        }}>
+                            <GroupsIcon color="inherit" fontSize="inherit" />
+                        </Box>
+                        <Stack>
+                            <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+                                {t('conference.title')}
+                            </Typography>
+                        </Stack>
                     </Stack>
                     <Button
                         variant="text"
                         size="small"
+                        color="inherit"
                         endIcon={<ArrowForwardIcon />}
                         onClick={() => navigate('/conference')}
+                        sx={{ opacity: 0.7, '&:hover': { opacity: 1, bgcolor: 'transparent' } }}
                     >
                         {t('dashboard.toRooms', 'To Rooms')}
                     </Button>
@@ -102,10 +115,10 @@ export function DashboardConferenceCard({
                     </Grid>
 
                     <Button
-                        variant="contained"
+                        variant="outlined"
                         startIcon={<AddIcon />}
                         onClick={onAddRoom}
-                        sx={{ mt: 2, width: 'fit-content' }}
+                        sx={{ mt: 2, width: 'fit-content', borderRadius: 2, textTransform: 'none', fontWeight: 600, borderWidth: '1.5px', '&:hover': { borderWidth: '1.5px' } }}
                     >
                         {t('conference.addRoom')}
                     </Button>

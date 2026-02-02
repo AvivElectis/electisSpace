@@ -1,6 +1,8 @@
-import { Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Grid, Button, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useState, useMemo, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import LabelIcon from '@mui/icons-material/Label';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -32,6 +34,7 @@ import type { Space, ConferenceRoom } from '@shared/domain/types';
  */
 export function DashboardPage() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
     const { syncState } = useSyncContext();
@@ -111,18 +114,43 @@ export function DashboardPage() {
     }
 
     return (
-        <Box>
+        <Box sx={{ pb: 4 }}>
             {/* Header */}
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
-                    {t('dashboard.title')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    {t('dashboard.overview', 'Welcome to your space management dashboard')}
-                </Typography>
-            </Box>
+            <Stack 
+                direction={{ xs: 'column', sm: 'row' }} 
+                justifyContent="space-between" 
+                alignItems={{ xs: 'flex-start', sm: 'center' }} 
+                gap={2}
+                sx={{ mb: 5, mt: 2 }}
+            >
+                <Box>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em', color: 'text.primary' }}>
+                        {t('dashboard.title')}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, fontSize: '1.1rem' }}>
+                        {t('dashboard.overview', 'Welcome to your space management dashboard')}
+                    </Typography>
+                </Box>
+                <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<LabelIcon />}
+                    onClick={() => navigate('/labels')}
+                    sx={{ 
+                        px: 3, 
+                        py: 1.2, 
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        boxShadow: 4
+                    }}
+                >
+                    {t('labels.assign', 'Assign Label')}
+                </Button>
+            </Stack>
 
-            <Grid container spacing={3}>
+            <Grid container spacing={4}>
                 {/* Spaces Area - Only show when People Manager mode is OFF */}
                 {!isPeopleManagerMode && (
                     <Grid size={{ xs: 12, md: 6 }}>
