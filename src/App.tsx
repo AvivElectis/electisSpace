@@ -8,6 +8,7 @@ import { NotificationContainer } from './shared/presentation/components/Notifica
 import { UpdateNotification } from './features/update/presentation/UpdateNotification';
 import { CustomTitleBar } from './shared/presentation/components/CustomTitleBar';
 import { ErrorBoundary } from './shared/presentation/components/ErrorBoundary';
+import { StoreHydrationGuard } from './shared/presentation/components/StoreHydrationGuard';
 import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
 import { useAuthWatchdog } from './features/auth/application/useAuthWatchdog';
 import { useTranslation } from 'react-i18next';
@@ -62,9 +63,11 @@ function App() {
         <CustomTitleBar />
         <HashRouter>
           <AuthWatchdogWrapper>
-            <MainLayout>
-              <AppRoutes />
-            </MainLayout>
+            <StoreHydrationGuard>
+              <MainLayout>
+                <AppRoutes />
+              </MainLayout>
+            </StoreHydrationGuard>
             <NotificationContainer />
             <UpdateNotification />
           </AuthWatchdogWrapper>

@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Button, Stack } from '@mui/material';
+import { Box, Typography, Grid, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -138,22 +138,7 @@ export function DashboardPage() {
                     onClick={() => navigate('/labels')}
                     sx={{ 
                         px: 4, 
-                        py: 1.5, 
-                        borderRadius: 3,
-                        textTransform: 'none',
-                        fontSize: '1.1rem',
-                        fontWeight: 700,
-                        background: 'linear-gradient(to right, #007AFF, #5856D6)',
-                        boxShadow: '0 8px 24px rgba(0, 122, 255, 0.35)',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': {
-                            transform: 'translateY(-3px) scale(1.02)',
-                            boxShadow: '0 12px 28px rgba(0, 122, 255, 0.45)',
-                            background: 'linear-gradient(to right, #0051D5, #3634A3)'
-                        },
-                        '&:active': {
-                            transform: 'translateY(-1px)'
-                        }
+                        py: 1.5,
                     }}
                 >
                     {t('dashboard.assignLabel')}

@@ -3,6 +3,39 @@
  */
 
 /**
+ * Label image information from AIMS
+ */
+export interface LabelImage {
+    index: number;
+    state: 'SUCCESS' | 'PROCESSING' | 'TIMEOUT';
+    content: string; // URL to the image
+    processUpdateTime: string;
+    statusUpdateTime: string;
+    batchId: string;
+    txSequence: string;
+}
+
+/**
+ * Label images detail response from AIMS
+ */
+export interface LabelImagesDetail {
+    labelCode: string;
+    isDualSidedLabel?: boolean;
+    width: number;
+    height: number;
+    activePage: number;
+    previousImage: LabelImage[];
+    currentImage: LabelImage[];
+    responseCode: string;
+    responseMessage: string;
+    latestBatchInfo?: {
+        txSequence: string;
+        type: string;
+        batchEventTime: string;
+    };
+}
+
+/**
  * Label information from AIMS
  */
 export interface Label {

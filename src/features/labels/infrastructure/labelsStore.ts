@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { SolumConfig } from '@shared/domain/types';
-import type { LabelArticleLink, ScannerState, ScanInputType } from '../domain/types';
-import { linkLabel, unlinkLabel, getAllLabels, type AimsLabel } from '@shared/infrastructure/services/solum/labelsService';
+import type { LabelArticleLink, ScannerState, ScanInputType, LabelImagesDetail } from '../domain/types';
+import { linkLabel, unlinkLabel, getAllLabels, getLabelImages, type AimsLabel, type AimsLabelImagesDetail } from '@shared/infrastructure/services/solum/labelsService';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface LabelsState {
@@ -9,6 +9,11 @@ interface LabelsState {
     labels: LabelArticleLink[];
     isLoading: boolean;
     error: string | null;
+    
+    // Label images
+    selectedLabelImages: LabelImagesDetail | null;
+    isLoadingImages: boolean;
+    imagesError: string | null;
     
     // Filters
     searchQuery: string;
@@ -19,6 +24,8 @@ interface LabelsState {
     
     // Actions
     fetchLabels: (config: SolumConfig, storeId: string, token: string) => Promise<void>;
+    fetchLabelImages: (config: SolumConfig, storeId: string, token: string, labelCode: string) => Promise<LabelImagesDetail | null>;
+    clearLabelImages: () => void;
     linkLabelToArticle: (config: SolumConfig, storeId: string, token: string, labelCode: string, articleId: string, templateName?: string) => Promise<void>;
     unlinkLabelFromArticle: (config: SolumConfig, storeId: string, token: string, labelCode: string) => Promise<void>;
     setSearchQuery: (query: string) => void;
@@ -66,6 +73,9 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
     labels: [],
     isLoading: false,
     error: null,
+    selectedLabelImages: null,
+    isLoadingImages: false,
+    imagesError: null,
     searchQuery: '',
     filterLinkedOnly: false,
     scanner: {
@@ -88,6 +98,46 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
             logger.error('LabelsStore', 'Failed to fetch labels', { error: error.message });
             set({ error: error.message, isLoading: false });
         }
+    },
+    
+    // Fetch label images from AIMS
+    fetchLabelImages: async (config, storeId, token, labelCode) => {
+        set({ isLoadingImages: true, imagesError: null });
+        
+        try {
+            logger.info('LabelsStore', 'Fetching label images', { labelCode });
+            const imagesData = await getLabelImages(config, storeId, token, labelCode);
+            
+            if (imagesData) {
+                const labelImages: LabelImagesDetail = {
+                    labelCode: imagesData.labelCode,
+                    isDualSidedLabel: imagesData.isDualSidedLabel,
+                    width: imagesData.width,
+                    height: imagesData.height,
+                    activePage: imagesData.activePage,
+                    previousImage: imagesData.previousImage || [],
+                    currentImage: imagesData.currentImage || [],
+                    responseCode: imagesData.responseCode,
+                    responseMessage: imagesData.responseMessage,
+                    latestBatchInfo: imagesData.latestBatchInfo,
+                };
+                set({ selectedLabelImages: labelImages, isLoadingImages: false });
+                logger.info('LabelsStore', 'Label images fetched', { labelCode });
+                return labelImages;
+            } else {
+                set({ selectedLabelImages: null, isLoadingImages: false });
+                return null;
+            }
+        } catch (error: any) {
+            logger.error('LabelsStore', 'Failed to fetch label images', { error: error.message });
+            set({ imagesError: error.message, isLoadingImages: false });
+            return null;
+        }
+    },
+    
+    // Clear selected label images
+    clearLabelImages: () => {
+        set({ selectedLabelImages: null, imagesError: null });
     },
     
     // Link a label to an article

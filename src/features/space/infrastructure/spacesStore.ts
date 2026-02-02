@@ -85,10 +85,17 @@ export const useSpacesStore = create<SpacesStore>()(
                 fetchSpaces: async () => {
                     set({ isLoading: true, error: null }, false, 'fetchSpaces/start');
                     try {
-                        const { spaces } = await spacesApi.getAll();
-                        set({ spaces, isLoading: false }, false, 'fetchSpaces/success');
+                        const { spaces: newSpaces } = await spacesApi.getAll();
+                        // Only update if we got valid data
+                        if (Array.isArray(newSpaces)) {
+                            set({ spaces: newSpaces, isLoading: false }, false, 'fetchSpaces/success');
+                        } else {
+                            // Keep existing data if response is invalid
+                            set({ isLoading: false }, false, 'fetchSpaces/invalidResponse');
+                        }
                     } catch (error) {
                         const message = error instanceof Error ? error.message : 'Failed to fetch spaces';
+                        // Keep existing data on error - don't clear spaces
                         set({ error: message, isLoading: false }, false, 'fetchSpaces/error');
                     }
                 },

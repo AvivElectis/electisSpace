@@ -12,6 +12,8 @@ import {
     CircularProgress,
     ToggleButton,
     ToggleButtonGroup,
+    Stack,
+    TextField,
 } from '@mui/material';
 import {
     CameraAlt as CameraIcon,
@@ -39,7 +41,8 @@ interface BarcodeScannerProps {
  * 3. External barcode scanner (USB/Bluetooth)
  */
 export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: BarcodeScannerProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.language === 'he';
     const [inputType, setInputType] = useState<ScanInputType>('scanner');
     const [value, setValue] = useState('');
     const [cameraError, setCameraError] = useState<string | null>(null);
@@ -190,86 +193,96 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <DialogTitle sx={{ pb: 1 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
                     <Typography variant="h6">
                         {title || t('labels.scanner.title', 'Scan Barcode')}
                     </Typography>
                     <IconButton onClick={onClose} size="small">
                         <CloseIcon />
                     </IconButton>
-                </Box>
+                </Stack>
             </DialogTitle>
 
             <DialogContent>
                 {/* Input type selector */}
-                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <Stack alignItems="center" sx={{ mb: 3 }}>
                     <ToggleButtonGroup
                         value={inputType}
                         exclusive
                         onChange={handleInputTypeChange}
                         aria-label="scan input type"
+                        size="small"
+                        sx={{ 
+                            display: 'flex', 
+                            flexDirection: isRtl ? 'row-reverse' : 'row', 
+                            justifyContent: 'center',
+                            '.MuiToggleButton-root': { p:2, gap: 1 },
+                         }}
                     >
                         <ToggleButton value="scanner" aria-label="external scanner">
-                            <ScannerIcon sx={{ mr: 1 }} />
+                            <ScannerIcon sx={{ me: 1 }} />
                             {t('labels.scanner.externalScanner', 'Scanner')}
                         </ToggleButton>
                         <ToggleButton value="camera" aria-label="camera">
-                            <CameraIcon sx={{ mr: 1 }} />
+                            <CameraIcon sx={{ me: 1 }} />
                             {t('labels.scanner.camera', 'Camera')}
                         </ToggleButton>
                         <ToggleButton value="manual" aria-label="manual input">
-                            <KeyboardIcon sx={{ mr: 1 }} />
+                            <KeyboardIcon sx={{ me: 1 }} />
                             {t('labels.scanner.manual', 'Manual')}
                         </ToggleButton>
                     </ToggleButtonGroup>
-                </Box>
+                </Stack>
 
                 {/* Scanner mode - hidden input for scanner device */}
                 {inputType === 'scanner' && (
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Alert severity="info" sx={{ mb: 2 }}>
+                    <Stack alignItems="center" spacing={2}>
+                        <Alert severity="info" sx={{ width: '100%' }}>
                             {t('labels.scanner.scannerInstructions', 'Point your barcode scanner at the code. The input field below will capture the scan.')}
                         </Alert>
                         <Box
                             sx={{
                                 p: 4,
+                                width: '100%',
                                 border: '2px dashed',
                                 borderColor: 'primary.main',
                                 borderRadius: 2,
                                 bgcolor: 'action.hover',
+                                textAlign: 'center',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
                             }}
                         >
                             <ScannerIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
                             <Typography variant="body1" gutterBottom>
                                 {t('labels.scanner.readyToScan', 'Ready to scan...')}
                             </Typography>
-                            <input
-                                ref={scannerInputRef}
+                            <TextField
+                                inputRef={scannerInputRef}
                                 value={value}
                                 onChange={handleScannerInput}
                                 onKeyDown={handleScannerKeyDown}
                                 placeholder={placeholder || t('labels.scanner.placeholder', 'Scan or type code...')}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    fontSize: '18px',
-                                    textAlign: 'center',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    marginTop: '16px',
-                                }}
+                                fullWidth
                                 autoFocus
+                                sx={{ mt: 2 }}
+                                slotProps={{
+                                    input: {
+                                        sx: { textAlign: 'center', fontSize: '1.1rem' }
+                                    }
+                                }}
                             />
                         </Box>
-                    </Box>
+                    </Stack>
                 )}
 
                 {/* Camera mode */}
                 {inputType === 'camera' && (
-                    <Box sx={{ textAlign: 'center' }}>
+                    <Stack alignItems="center" spacing={2}>
                         {cameraError ? (
-                            <Alert severity="error">{cameraError}</Alert>
+                            <Alert severity="error" sx={{ width: '100%' }}>{cameraError}</Alert>
                         ) : (
                             <>
                                 <Box
@@ -277,7 +290,6 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                                         position: 'relative',
                                         width: '100%',
                                         maxWidth: 400,
-                                        mx: 'auto',
                                         aspectRatio: '4/3',
                                         bgcolor: 'black',
                                         borderRadius: 2,
@@ -325,45 +337,42 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                                     variant="contained"
                                     onClick={handleCameraCapture}
                                     disabled={!isCameraReady}
-                                    sx={{ mt: 2 }}
                                 >
                                     {t('labels.scanner.capture', 'Capture')}
                                 </Button>
-                                <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+                                <Typography variant="caption" color="text.secondary">
                                     {t('labels.scanner.cameraHint', 'Position the barcode in the green area')}
                                 </Typography>
                             </>
                         )}
-                    </Box>
+                    </Stack>
                 )}
 
                 {/* Manual mode */}
                 {inputType === 'manual' && (
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                    <Stack alignItems="center" spacing={2}>
+                        <Typography variant="body2" color="text.secondary">
                             {t('labels.scanner.manualInstructions', 'Enter the code manually')}
                         </Typography>
-                        <input
-                            ref={inputRef}
+                        <TextField
+                            inputRef={inputRef}
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
                             placeholder={placeholder || t('labels.scanner.placeholder', 'Enter code...')}
-                            style={{
-                                width: '100%',
-                                padding: '16px',
-                                fontSize: '20px',
-                                textAlign: 'center',
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                            }}
+                            fullWidth
                             autoFocus
+                            slotProps={{
+                                input: {
+                                    sx: { textAlign: 'center', fontSize: '1.25rem' }
+                                }
+                            }}
                         />
-                    </Box>
+                    </Stack>
                 )}
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
                 <Button onClick={onClose}>
                     {t('common.cancel', 'Cancel')}
                 </Button>

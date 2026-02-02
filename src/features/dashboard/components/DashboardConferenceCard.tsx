@@ -118,7 +118,7 @@ export function DashboardConferenceCard({
                         variant="outlined"
                         startIcon={<AddIcon />}
                         onClick={onAddRoom}
-                        sx={{ mt: 2, width: 'fit-content', borderRadius: 2, textTransform: 'none', fontWeight: 600, borderWidth: '1.5px', '&:hover': { borderWidth: '1.5px' } }}
+                        sx={{ mt: 2, width: 'fit-content' }}
                     >
                         {t('conference.addRoom')}
                     </Button>

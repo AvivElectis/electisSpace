@@ -1,4 +1,5 @@
 import {
+    Alert,
     Box,
     Paper,
     Table,
@@ -43,21 +44,31 @@ export function UsersSettingsTab() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     // Fetch Users
+    const [fetchError, setFetchError] = useState<string | null>(null);
+    
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
+            setFetchError(null);
             const response = await userService.getAll({
                 page: page + 1, // API is 1-indexed
                 limit,
             });
             setUsers(response.data);
             setTotal(response.pagination.total);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch users:', error);
+            // Check if it's an auth error that will be handled by the global handler
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                setFetchError(t('common.errors.unauthorized', 'You do not have permission to view users'));
+            } else {
+                setFetchError(error?.message || t('common.errors.fetchFailed', 'Failed to load users'));
+            }
         } finally {
             setLoading(false);
         }
-    }, [page, limit]);
+    }, [page, limit, t]);
 
     useEffect(() => {
         fetchUsers();
@@ -172,6 +183,14 @@ export function UsersSettingsTab() {
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                                         <CircularProgress size={24} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : fetchError ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                                        <Alert severity="error" sx={{ justifyContent: 'center' }}>
+                                            {fetchError}
+                                        </Alert>
                                     </TableCell>
                                 </TableRow>
                             ) : users.length === 0 ? (

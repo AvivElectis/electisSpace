@@ -887,6 +887,7 @@
             "signal": "עוצמת אות",
             "battery": "סוללה",
             "status": "סטטוס",
+            "images": "תמונות",
             "actions": "פעולות"
         },
         "link": {
@@ -902,6 +903,10 @@
             "labelRequired": "קוד תגית הוא שדה חובה",
             "articleRequired": "מזהה מוצר הוא שדה חובה",
             "error": "שגיאה בקישור התגית"
+        },
+        "images": {
+            "view": "צפה בתמונות",
+            "loadError": "שגיאה בטעינת התמונה"
         },
         "unlink": {
             "confirmTitle": "בטל קישור תגית",

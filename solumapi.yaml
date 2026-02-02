@@ -2197,6 +2197,43 @@ paths:
           schema:
             $ref: '#/components/responses/InternalServerError'
 
+#################### GET LABEL IMAGES ####################
+
+  /common/api/v2/common/labels/detail: 
+
+    get:
+      tags:
+        - Label Info
+      summary: Get Label Images
+      security:
+        - bearerAuth: []      
+      description: Get label images including previous and current images displayed on the label. Returns image URLs for each page of the label.
+      parameters:
+        - $ref: '#/components/parameters/company'
+        - $ref: '#/components/parameters/store'
+        - $ref: '#/components/parameters/labelCode'
+      responses:
+        200:
+          description: Success
+          type: object
+          schema:
+            $ref: '#/components/responses/GetLabelImages'
+        204:
+          description: No Content
+        401:
+          description: Unauthorized
+          type: object
+          schema:
+            $ref: '#/components/responses/Unauthorized'
+        403:
+          description: License Error
+        405:
+          description: Parameter is invalid
+        500:
+          description: Failed to process request operation
+          schema:
+            $ref: '#/components/responses/InternalServerError'
+
 #################### GATEWAY ####################
 #################### GATEWAY ####################
   /common/api/v2/common/gateway: 
@@ -5998,6 +6035,131 @@ components:
             - LABEL_CODE_CHECKSUM_IS_NOT_VALID
             - LABEL_CODE_LENGTH_IS_NOT_VALID
           example: "LABEL_CODE_CHECKSUM_IS_NOT_VALID"
+
+    GetLabelImages:
+      type: object
+      description: Label images response including current and previous images
+      properties:
+        labelCode: 
+          type: string 
+          description: Label code
+          example: "04507B0AC391"
+        isDualSidedLabel:
+          type: boolean
+          description: Whether the label is dual-sided
+          example: false
+        width:
+          type: integer
+          description: Label width in pixels
+          example: 296
+        height:
+          type: integer
+          description: Label height in pixels
+          example: 160
+        activePage: 
+          type: integer 
+          description: Currently active page number
+          example: 1
+        previousImage:
+          type: array
+          description: Previous images displayed on the label
+          items:
+            type: object
+            properties:
+              index: 
+                type: integer 
+                description: Page index
+                example: 1
+              state: 
+                type: string 
+                description: Image state
+                enum:
+                  - SUCCESS
+                  - PROCESSING
+                  - TIMEOUT
+                example: "SUCCESS"
+              content: 
+                type: string 
+                description: URL to the image
+                example: "https://segdemostorage.blob.core.windows.net/nik-1111-dashboard/036F1AE7B298.png"
+              processUpdateTime: 
+                type: string 
+                description: Time when the image was processed
+                example: "2021-04-29 08:49:49.864173"
+              statusUpdateTime: 
+                type: string 
+                description: Time when the status was updated
+                example: "2021-04-29 08:49:49.864173"
+              batchId: 
+                type: string 
+                description: Batch ID for the update
+                example: "5d90a943-a460-414b-8bb4-32b8aedba241"
+              txSequence: 
+                type: string 
+                description: Transaction sequence
+                example: "1791CD1EB26000A98"
+        currentImage:
+          type: array
+          description: Current images displayed on the label
+          items:
+            type: object
+            properties:
+              index: 
+                type: integer 
+                description: Page index
+                example: 1
+              state: 
+                type: string 
+                description: Image state
+                enum:
+                  - SUCCESS
+                  - PROCESSING
+                  - TIMEOUT
+                example: "SUCCESS"
+              content: 
+                type: string 
+                description: URL to the image
+                example: "https://segdemostorage.blob.core.windows.net/nik-1111-dashboard/036F1AE7B298.png"
+              processUpdateTime: 
+                type: string 
+                description: Time when the image was processed
+                example: "2021-04-29 08:49:49.864173"
+              statusUpdateTime: 
+                type: string 
+                description: Time when the status was updated
+                example: "2021-04-29 08:49:49.864173"
+              batchId: 
+                type: string 
+                description: Batch ID for the update
+                example: "5d90a943-a460-414b-8bb4-32b8aedba241"
+              txSequence: 
+                type: string 
+                description: Transaction sequence
+                example: "1791CD1EB26000A98"
+        responseCode: 
+          type: string 
+          description: 
+          example: "200"
+        responseMessage: 
+          type: string 
+          description: 
+          example: "SUCCESS"
+        latestBatchInfo:
+          type: object
+          description: Latest batch information
+          properties:
+            txSequence:
+              type: string
+              description: Transaction sequence
+              example: ""
+            type:
+              type: string
+              description: Batch type
+              example: ""
+            batchEventTime:
+              type: string
+              description: Batch event time
+              example: ""
 
 #################### GATEWAY ####################
 

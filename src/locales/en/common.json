@@ -872,6 +872,7 @@
             "signal": "Signal",
             "battery": "Battery",
             "status": "Status",
+            "images": "Images",
             "actions": "Actions"
         },
         "link": {
@@ -887,6 +888,10 @@
             "labelRequired": "Label code is required",
             "articleRequired": "Article ID is required",
             "error": "Failed to link label"
+        },
+        "images": {
+            "view": "View Images",
+            "loadError": "Failed to load image"
         },
         "unlink": {
             "confirmTitle": "Unlink Label",

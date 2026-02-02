@@ -101,11 +101,26 @@ export function SpacesManagementView() {
     const [saveListOpen, setSaveListOpen] = useState(false);
 
     // Fetch spaces from Server DB on mount (Source of Truth for Cloud Persistence)
+    // Only fetch if not already loaded to prevent overwriting local state on error
     useEffect(() => {
-        logger.info('SpacesManagementView', 'Fetching spaces from Server DB');
-        spaceController.fetchSpaces?.().catch(err => {
-            logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
-        });
+        const fetchData = async () => {
+            // If we already have spaces from hydration, log and optionally refresh
+            const currentSpaces = spaceController.spaces;
+            if (currentSpaces.length > 0) {
+                logger.info('SpacesManagementView', 'Spaces already loaded from store', { count: currentSpaces.length });
+            }
+            
+            // Always try to fetch fresh data from server
+            try {
+                logger.info('SpacesManagementView', 'Fetching spaces from Server DB');
+                await spaceController.fetchSpaces?.();
+            } catch (err) {
+                logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
+                // Don't clear existing data on fetch failure - keep hydrated state
+            }
+        };
+        
+        fetchData();
     }, []);
 
     // Get visible fields from mapping config for dynamic table columns
