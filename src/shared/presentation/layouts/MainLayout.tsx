@@ -109,11 +109,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     }, [setSpaces, setPeople, extractListsFromPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
 
     /**
-     * Conference rooms update handler for SFTP mode
+     * Conference rooms update handler
      */
     const handleConferenceUpdate = useCallback((conferenceRooms: any[]) => {
         setConferenceRooms(conferenceRooms);
-        logger.info('MainLayout', 'Synced conference rooms from SFTP', { 
+        logger.info('MainLayout', 'Synced conference rooms', { 
             count: conferenceRooms.length 
         });
     }, [setConferenceRooms]);
@@ -133,20 +133,16 @@ export function MainLayout({ children }: MainLayoutProps) {
     ];
 
     // Initialize global sync controller
-    // Determine connection status based on working mode
-    const isConnected = settings.workingMode === 'SFTP' 
-        ? settings.sftpCredentials?.isConnected || false
-        : settings.solumConfig?.isConnected || false;
+    // Connection status based on SoluM config
+    const isConnected = settings.solumConfig?.isConnected || false;
         
     const syncController = useSyncController({
-        sftpCredentials: settings.sftpCredentials,
         solumConfig: settings.solumConfig,
         csvConfig: settings.csvConfig,
-        sftpCsvConfig: settings.sftpCsvConfig as any,  // Enhanced CSV config for SFTP mode
         autoSyncEnabled: settings.autoSyncEnabled,
-        autoSyncInterval: settings.autoSyncInterval,  // Pass interval from settings
-        onSpaceUpdate: handleSpaceUpdate,  // Use combined handler for People Mode support
-        onConferenceUpdate: handleConferenceUpdate,  // Conference rooms update for SFTP mode
+        autoSyncInterval: settings.autoSyncInterval,
+        onSpaceUpdate: handleSpaceUpdate,
+        onConferenceUpdate: handleConferenceUpdate,
         solumMappingConfig: settings.solumMappingConfig,
         isConnected,
     });
@@ -156,8 +152,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { getLabel } = useSpaceTypeLabels();
 
     const { sync } = syncController;
-
-    // SFTP mode is now enabled - no force migration needed
 
     // Prefetch all routes when app is idle for instant navigation
     useEffect(() => {
@@ -327,7 +321,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                                     isConnected ? 'connected' : 'disconnected'
                         }
                         lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
-                        workingMode={settings.workingMode === 'SFTP' ? 'SFTP' : 'SoluM'}
                         errorMessage={syncState.lastError}
                         onSyncClick={() => sync().catch(() => {/* console.error */ })}
                     />

@@ -40,21 +40,14 @@ export interface SettingsData {
     appSubtitle: string;
     spaceType: 'office' | 'room' | 'chair' | 'person-tag';
 
-    // Working mode
+    // Working mode (SoluM API only)
     workingMode: import('@shared/domain/types').WorkingMode;
-
-    // MODE SEPARATION: Each mode has its own configuration
-    // SFTP Mode: CSV structure configuration (uses EnhancedCSVConfig from csvService)
-    sftpCsvConfig?: EnhancedCSVConfig;
 
     // SoluM Mode: Article format schema
     solumArticleFormat?: ArticleFormat;
 
     // Legacy CSV Config (deprecated, keeping for migration)
     csvConfig: import('@shared/domain/types').CSVConfig;
-
-    // SFTP Configuration (encrypted)
-    sftpCredentials?: import('@shared/domain/types').SFTPCredentials;
 
     // SoluM Configuration (encrypted)
     solumConfig?: import('@shared/domain/types').SolumConfig;

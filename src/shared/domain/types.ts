@@ -2,7 +2,7 @@
  * Shared domain types used across multiple features
  */
 
-export type WorkingMode = 'SFTP' | 'SOLUM_API';
+export type WorkingMode = 'SOLUM_API';
 
 export type Platform = 'electron' | 'android' | 'web';
 
@@ -107,18 +107,6 @@ export interface SolumTokens {
     accessToken: string;
     refreshToken: string;
     expiresAt: number;  // Unix timestamp
-}
-
-/**
- * SFTP configuration
- */
-export interface SFTPCredentials {
-    username: string;
-    password: string;
-    host: string;
-    port?: number;  // SFTP port (default: 22)
-    remoteFilename: string;
-    isConnected?: boolean;  // SFTP connection status
 }
 
 /**

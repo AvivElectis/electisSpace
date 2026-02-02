@@ -26,7 +26,7 @@ describe('Root Store', () => {
                 appName: 'Test App',
                 appSubtitle: 'Test Subtitle',
                 spaceType: 'office',
-                workingMode: 'SFTP',
+                workingMode: 'SOLUM_API',
                 csvConfig: {
                     delimiter: ';',
                     columns: [],
@@ -47,7 +47,7 @@ describe('Root Store', () => {
         });
 
         useSyncStore.setState({
-            workingMode: 'SFTP',
+            workingMode: 'SOLUM_API',
             syncState: {
                 isConnected: true,
                 status: 'idle',
@@ -114,7 +114,7 @@ describe('Root Store', () => {
         it('should return workingMode from sync store', () => {
             const { result } = renderHook(() => useRootStore());
 
-            expect(result.current.workingMode).toBe('SFTP');
+            expect(result.current.workingMode).toBe('SOLUM_API');
         });
 
         it('should return isConnected from sync state', () => {
