@@ -107,7 +107,8 @@
         "managePeople": "Manage People",
         "totalLabels": "Total Labels",
         "assignedLabels": "Assigned Labels",
-        "savedLists": "{{count}} Saved Lists"
+        "savedLists": "{{count}} Saved Lists",
+        "assignLabel": "Assign Label"
     },
     "spaces": {
         "title": "Spaces",

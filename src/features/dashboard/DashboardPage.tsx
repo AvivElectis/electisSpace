@@ -117,7 +117,15 @@ export function DashboardPage() {
         <Box sx={{ pb: 4 }}>
             {/* Header */}
             <Box sx={{ mb: 5, mt: 2 }}>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em', background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', width: 'fit-content' }}>
+                <Typography 
+                    variant="h3" 
+                    sx={{ 
+                        fontWeight: 800, 
+                        mb: 1, 
+                        letterSpacing: '-0.02em', 
+                        color: 'primary.main'
+                    }}
+                >
                     {t('dashboard.title')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, fontSize: '1.1rem', mb: 3 }}>
@@ -135,20 +143,20 @@ export function DashboardPage() {
                         textTransform: 'none',
                         fontSize: '1.1rem',
                         fontWeight: 700,
-                        background: 'linear-gradient(135deg, #007AFF 0%, #5856D6 100%)',
+                        background: 'linear-gradient(to right, #007AFF, #5856D6)',
                         boxShadow: '0 8px 24px rgba(0, 122, 255, 0.35)',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         '&:hover': {
                             transform: 'translateY(-3px) scale(1.02)',
                             boxShadow: '0 12px 28px rgba(0, 122, 255, 0.45)',
-                            background: 'linear-gradient(135deg, #0051D5 0%, #3634A3 100%)'
+                            background: 'linear-gradient(to right, #0051D5, #3634A3)'
                         },
                         '&:active': {
                             transform: 'translateY(-1px)'
                         }
                     }}
                 >
-                    {t('labels.assign')}
+                    {t('dashboard.assignLabel')}
                 </Button>
             </Box>
 
