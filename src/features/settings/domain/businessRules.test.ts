@@ -32,7 +32,7 @@ describe('Settings Business Rules', () => {
         appName: 'Test App',
         appSubtitle: 'Test Subtitle',
         spaceType: 'office',
-        workingMode: 'SFTP',
+        workingMode: 'SOLUM_API',
         csvConfig: {
             delimiter: ';',
             columns: [],
@@ -69,9 +69,9 @@ describe('Settings Business Rules', () => {
             expect(defaults.spaceType).toBe('office');
         });
 
-        it('should default to SFTP working mode', () => {
+        it('should default to SOLUM_API working mode', () => {
             const defaults = createDefaultSettings();
-            expect(defaults.workingMode).toBe('SFTP');
+            expect(defaults.workingMode).toBe('SOLUM_API');
         });
 
         it('should create empty CSV config', () => {

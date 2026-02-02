@@ -23,7 +23,6 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 // Lazy load all tabs - they have heavy dependencies
 const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
-const SFTPSettingsTab = lazy(() => import('./SFTPSettingsTab').then(m => ({ default: m.SFTPSettingsTab })));
 const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
 const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
 const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
@@ -91,7 +90,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     // Define Tabs Configuration
     const tabs = [
         { label: t('settings.appSettings'), panel: <AppSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
-        { label: t('settings.sftpSettings'), panel: <SFTPSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} onHasUnsavedChanges={setHasUnsavedChanges} />, hidden: true }, // Keep hidden
         { label: t('settings.solumSettings'), panel: <SolumSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.logoSettings'), panel: <LogoSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.securitySettings'), panel: <SecuritySettingsTab isPasswordProtected={settingsController.isPasswordProtected} isLocked={settingsController.isLocked} settings={settingsController.settings} onSetPassword={(password) => settingsController.setPassword(password)} onLock={() => settingsController.lock()} onUnlock={(password) => settingsController.unlock(password)} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },

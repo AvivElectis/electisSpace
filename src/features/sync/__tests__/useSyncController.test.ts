@@ -14,20 +14,7 @@ import { useSyncController } from '../application/useSyncController';
 import { useSyncStore } from '../infrastructure/syncStore';
 import type { CSVConfig } from '@shared/domain/types';
 
-// Mock the adapters
-vi.mock('../infrastructure/SFTPSyncAdapter', () => ({
-    SFTPSyncAdapter: vi.fn().mockImplementation(() => ({
-        connect: vi.fn().mockResolvedValue(undefined),
-        disconnect: vi.fn().mockResolvedValue(undefined),
-        download: vi.fn().mockResolvedValue([]),
-        upload: vi.fn().mockResolvedValue(undefined),
-        safeUpload: vi.fn().mockResolvedValue(undefined),
-        sync: vi.fn().mockResolvedValue(undefined),
-        getStatus: vi.fn().mockReturnValue({ status: 'connected', isConnected: true }),
-        downloadWithConference: vi.fn().mockResolvedValue({ spaces: [], conferenceRooms: [] }),
-    })),
-}));
-
+// Mock the SoluM adapter
 vi.mock('../infrastructure/SolumSyncAdapter', () => ({
     SolumSyncAdapter: vi.fn().mockImplementation(() => ({
         connect: vi.fn().mockResolvedValue(undefined),
@@ -68,64 +55,11 @@ describe('useSyncController', () => {
 
         // Reset sync store
         useSyncStore.setState({
-            workingMode: 'SFTP',
+            workingMode: 'SOLUM_API',
             syncState: { status: 'idle', isConnected: false },
             autoSyncEnabled: false,
             autoSyncInterval: 300,
             solumTokens: null,
-        });
-    });
-
-    describe('SFTP Mode', () => {
-        const defaultProps = {
-            sftpCredentials: {
-                host: 'sftp.example.com',
-                username: 'testuser',
-                password: 'testpass',
-                remoteFilename: 'spaces.csv',
-            },
-            csvConfig: mockCsvConfig,
-            autoSyncEnabled: false,
-            onSpaceUpdate: mockOnSpaceUpdate,
-            onConferenceUpdate: mockOnConferenceUpdate,
-        };
-
-        it('should initialize with correct state', () => {
-            const { result } = renderHook(() => useSyncController(defaultProps));
-
-            expect(result.current.workingMode).toBe('SFTP');
-            expect(result.current.syncState).toBeDefined();
-            expect(result.current.autoSyncEnabled).toBe(false);
-        });
-
-        it('should have connect function', () => {
-            const { result } = renderHook(() => useSyncController(defaultProps));
-
-            expect(typeof result.current.connect).toBe('function');
-        });
-
-        it('should have disconnect function', () => {
-            const { result } = renderHook(() => useSyncController(defaultProps));
-
-            expect(typeof result.current.disconnect).toBe('function');
-        });
-
-        it('should have sync function', () => {
-            const { result } = renderHook(() => useSyncController(defaultProps));
-
-            expect(typeof result.current.sync).toBe('function');
-        });
-
-        it('should have upload function', () => {
-            const { result } = renderHook(() => useSyncController(defaultProps));
-
-            expect(typeof result.current.upload).toBe('function');
-        });
-
-        it('should have safeUpload function', () => {
-            const { result } = renderHook(() => useSyncController(defaultProps));
-
-            expect(typeof result.current.safeUpload).toBe('function');
         });
     });
 
@@ -163,6 +97,7 @@ describe('useSyncController', () => {
             csvConfig: mockCsvConfig,
             autoSyncEnabled: false,
             onSpaceUpdate: mockOnSpaceUpdate,
+            onConferenceUpdate: mockOnConferenceUpdate,
             isConnected: true,
         };
 
@@ -181,26 +116,17 @@ describe('useSyncController', () => {
             expect(result.current.upload).toBeDefined();
             expect(result.current.safeUpload).toBeDefined();
         });
+
+        it('should have correct state structure', () => {
+            const { result } = renderHook(() => useSyncController(solumProps));
+
+            expect(result.current.workingMode).toBeDefined();
+            expect(result.current.syncState).toBeDefined();
+            expect(result.current.autoSyncEnabled).toBeDefined();
+        });
     });
 
     describe('Error Handling', () => {
-        it('should throw error when SFTP credentials missing', () => {
-            const propsWithoutCredentials = {
-                csvConfig: mockCsvConfig,
-                autoSyncEnabled: false,
-                onSpaceUpdate: mockOnSpaceUpdate,
-            };
-
-            const { result } = renderHook(() => useSyncController(propsWithoutCredentials));
-
-            // Calling connect without credentials should throw
-            expect(async () => {
-                await act(async () => {
-                    await result.current.connect();
-                });
-            }).rejects.toThrow('SFTP credentials not configured');
-        });
-
         it('should throw error when SoluM config missing', () => {
             useSyncStore.setState({ workingMode: 'SOLUM_API' });
 
@@ -224,17 +150,30 @@ describe('useSyncController', () => {
     describe('Auto-Sync', () => {
         it('should reflect autoSyncEnabled from props', () => {
             const props = {
-                sftpCredentials: {
-                    host: 'sftp.example.com',
-                    username: 'testuser',
-                    password: 'testpass',
-                    remoteFilename: 'spaces.csv',
+                solumConfig: {
+                    companyName: 'testcompany',
+                    username: 'user',
+                    password: 'pass',
+                    storeNumber: '001',
+                    cluster: 'common' as const,
+                    baseUrl: 'https://eu.common.solumesl.com',
+                    syncInterval: 60,
+                    isConnected: true,
                 },
                 csvConfig: mockCsvConfig,
                 autoSyncEnabled: true,
                 autoSyncInterval: 60,
                 onSpaceUpdate: mockOnSpaceUpdate,
             };
+
+            useSyncStore.setState({
+                workingMode: 'SOLUM_API',
+                solumTokens: {
+                    accessToken: 'test-token',
+                    refreshToken: 'test-refresh',
+                    expiresAt: Date.now() + 3600000,
+                },
+            });
 
             const { result } = renderHook(() => useSyncController(props));
 

@@ -36,27 +36,6 @@ describe('useSolumSync Hook', () => {
     });
 
     describe('syncFromAims', () => {
-        it('should return empty array when not in SOLUM_API mode', async () => {
-            vi.mocked(useSettingsStore).mockReturnValue({
-                settings: {
-                    workingMode: 'SFTP',
-                },
-            } as any);
-
-            const { result } = renderHook(() => useSolumSync());
-
-            let articles: any[];
-            await act(async () => {
-                articles = await result.current.syncFromAims();
-            });
-
-            expect(articles!).toEqual([]);
-            expect(logger.warn).toHaveBeenCalledWith(
-                'SolumSync',
-                'Not in SOLUM_API mode, skipping sync'
-            );
-        });
-
         it('should return empty array when missing solumConfig', async () => {
             vi.mocked(useSettingsStore).mockReturnValue({
                 settings: {
@@ -169,7 +148,7 @@ describe('useSolumSync Hook', () => {
     describe('hook return value', () => {
         it('should return syncFromAims function', () => {
             vi.mocked(useSettingsStore).mockReturnValue({
-                settings: { workingMode: 'SFTP' },
+                settings: { workingMode: 'SOLUM_API' },
             } as any);
 
             const { result } = renderHook(() => useSolumSync());

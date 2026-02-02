@@ -23,13 +23,6 @@ export function exportSettings(
 
     // CRITICAL SECURITY: ALWAYS remove passwords from credentials
     // Even if includeCredentials is true, we sanitize passwords
-    if (sanitized.sftpCredentials) {
-        sanitized.sftpCredentials = {
-            ...sanitized.sftpCredentials,
-            password: '', // Always clear SFTP password
-        };
-    }
-
     if (sanitized.solumConfig) {
         sanitized.solumConfig = {
             ...sanitized.solumConfig,
@@ -43,7 +36,6 @@ export function exportSettings(
 
     // Optionally exclude entire credential objects
     if (!options.includeCredentials) {
-        sanitized.sftpCredentials = undefined;
         sanitized.solumConfig = undefined;
     }
 
@@ -99,8 +91,8 @@ export function generateImportPreview(
 
     return {
         appName: settings.appName,
-        workingMode: settings.workingMode === 'SOLUM_API' ? 'SoluM API' : 'SFTP',
-        hasCredentials: !!(settings.sftpCredentials || settings.solumConfig?.password),
+        workingMode: 'SoluM API',
+        hasCredentials: !!settings.solumConfig?.password,
         hasLogos: !!(settings.logos?.logo1 || settings.logos?.logo2),
         timestamp: exported.timestamp,
     };

@@ -112,20 +112,30 @@ export const mockSettings: SettingsData = {
     appName: 'electisSpace',
     appSubtitle: 'Test Subtitle',
     spaceType: 'room',
-    workingMode: 'SFTP',
+    workingMode: 'SOLUM_API',
     csvConfig: mockCsvConfig,
-    sftpCredentials: {
-        host: 'sftp.example.com',
+    solumConfig: {
+        companyName: 'testcompany',
         username: 'testuser',
         password: 'testpass',
-        remoteFilename: 'spaces.csv',
+        storeNumber: '001',
+        cluster: 'common',
+        baseUrl: 'https://eu.common.solumesl.com',
+        syncInterval: 300,
+        isConnected: true,
+        tokens: {
+            accessToken: 'mock-access-token',
+            refreshToken: 'mock-refresh-token',
+            expiresAt: Date.now() + 10800000,
+        },
+        lastConnected: Date.now(),
     },
     logos: {},
     autoSyncEnabled: false,
     autoSyncInterval: 300,
 };
 
-// Mock SoluM Settings
+// Mock SoluM Settings (same as mockSettings for backward compatibility)
 export const mockSolumSettings: SettingsData = {
     appName: 'electisSpace',
     appSubtitle: 'Test Subtitle',

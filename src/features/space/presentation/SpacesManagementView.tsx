@@ -75,19 +75,15 @@ export function SpacesManagementView() {
     // Get SoluM access token if available
     const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
 
-    // Get sync context for triggering sync after SFTP operations
+    // Get sync context for triggering sync after operations
     const { sync } = useSyncContext();
 
     const spaceController = useSpaceController({
-        onSync: sync,  // Trigger sync after add/edit/delete in SFTP mode
+        onSync: sync,
         csvConfig: settingsController.settings.csvConfig,
         solumConfig: settingsController.settings.solumConfig,
         solumToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
-        // SFTP mode props
-        workingMode: settingsController.settings.workingMode,
-        sftpCredentials: settingsController.settings.sftpCredentials,
-        sftpCsvConfig: settingsController.settings.sftpCsvConfig,
     });
 
     const { getLabel } = useSpaceTypeLabels();
@@ -106,47 +102,14 @@ export function SpacesManagementView() {
 
     // Fetch spaces from Server DB on mount (Source of Truth for Cloud Persistence)
     useEffect(() => {
-        if (settingsController.settings.workingMode !== 'SFTP') {
-            logger.info('SpacesManagementView', 'Fetching spaces from Server DB');
-            spaceController.fetchSpaces?.().catch(err => {
-                logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
-            });
-
-            // Also fetch from SoluM if configured, to keep client updated with latest physical status?
-            // "Cloud Persistence" implies Server DB is master. 
-            // If we fetch from SoluM, we might overwrite Server DB changes locally?
-            // Let's stick to Server DB. If user wants to Sync, they use Sync Page.
-        }
-    }, [settingsController.settings.workingMode]);
+        logger.info('SpacesManagementView', 'Fetching spaces from Server DB');
+        spaceController.fetchSpaces?.().catch(err => {
+            logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
+        });
+    }, []);
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
-        const workingMode = settingsController.settings.workingMode;
-
-        // SFTP Mode: use sftpCsvConfig.columns
-        if (workingMode === 'SFTP') {
-            const columns = settingsController.settings.sftpCsvConfig?.columns;
-            if (!columns || columns.length === 0) return [];
-
-            const idColumn = settingsController.settings.sftpCsvConfig?.idColumn;
-            const globalFields = Object.keys(settingsController.settings.sftpCsvConfig?.globalFieldAssignments || {});
-
-            return columns
-                .filter(col => {
-                    // Exclude ID column (shown separately as first column)
-                    if (col.fieldName === idColumn) return false;
-                    // Exclude global fields (they are not in the CSV data)
-                    if (globalFields.includes(col.fieldName)) return false;
-                    // Only include fields marked as visible (required field maps to visible)
-                    return col.required !== false;
-                })
-                .map(col => ({
-                    key: col.fieldName,
-                    labelEn: col.friendlyName,
-                    labelHe: col.friendlyNameHe || col.friendlyName,
-                }));
-        }
-
         // SoluM API Mode: use solumMappingConfig.fields
         if (!settingsController.settings.solumMappingConfig?.fields) return [];
 
@@ -162,7 +125,7 @@ export function SpacesManagementView() {
                 labelEn: config.friendlyNameEn,
                 labelHe: config.friendlyNameHe
             }));
-    }, [settingsController.settings.solumMappingConfig, settingsController.settings.sftpCsvConfig, settingsController.settings.workingMode]);
+    }, [settingsController.settings.solumMappingConfig]);
 
     // Handle sort request
     const handleSort = (key: string) => {
@@ -176,16 +139,7 @@ export function SpacesManagementView() {
     // Filter AND Sort spaces
     const filteredAndSortedSpaces = useMemo(() => {
         const query = debouncedSearchQuery.toLowerCase();
-        const workingMode = settingsController.settings.workingMode;
         let result = spaceController.spaces;
-
-        // 0. In SFTP mode, always filter out conference rooms (IDs starting with C/c)
-        if (workingMode === 'SFTP') {
-            result = result.filter(space => {
-                const id = (space.externalId || space.id).trim();
-                return !id.startsWith('C') && !id.startsWith('c');
-            });
-        }
 
         // 1. Filter by search query
         if (query) {

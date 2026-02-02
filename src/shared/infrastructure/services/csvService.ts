@@ -8,7 +8,7 @@ import { logger } from './logger';
  */
 
 /**
- * Enhanced CSV column mapping for SFTP mode
+ * Enhanced CSV column mapping
  */
 export interface CSVColumnMapping {
     fieldName: string;       // Field name in app (e.g., 'id', 'name', 'rank')
@@ -19,10 +19,10 @@ export interface CSVColumnMapping {
 }
 
 /**
- * Enhanced CSV configuration for SFTP mode
+ * Enhanced CSV configuration
  */
 /**
- * Conference field mapping for SFTP mode
+ * Conference field mapping
  */
 export interface ConferenceFieldMapping {
     roomName?: string;       // Field name for conference room name
@@ -44,13 +44,13 @@ export interface EnhancedCSVConfig {
 }
 
 /**
- * Parse CSV content using enhanced configuration (for SFTP mode)
+ * Parse CSV content using enhanced configuration
  * @param content - Raw CSV string
  * @param config - Enhanced CSV configuration
- * @returns Array of parsed spaces
+ * @returns Array of parsed spaces and conference rooms
  */
 export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { spaces: Space[]; conferenceRooms: ConferenceRoom[] } {
-    // In SFTP mode, conference detection is ALWAYS enabled - we detect by ID prefix 'C'
+    // Conference detection is enabled - detect by ID prefix 'C'
     const isConferenceDetectionEnabled = true;
 
     logger.info('CSVService', 'Parsing CSV (enhanced)', { 
@@ -117,7 +117,7 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
         const id = data[config.idColumn] || `row-${i + 1}`;
 
         // Check if this is a conference room (ID starts with conference prefix 'C' or 'c')
-        // In SFTP mode, conference rooms are ALWAYS detected by ID prefix
+        // Conference rooms are detected by ID prefix
         const isConferenceRoom = isConferenceDetectionEnabled && 
             (id.startsWith(conferencePrefix) || id.startsWith(conferencePrefix.toLowerCase()));
 
@@ -129,7 +129,7 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
             const endTimeField = confMap?.endTime || 'endTime';
             const participantsField = confMap?.participants || 'participants';
             
-            // Get room name from configured field in settings (dynamic mapping from SFTP settings)
+            // Get room name from configured field in settings
             const roomNameField = confMap?.roomName;
             const roomName = roomNameField ? (data[roomNameField] || '') : '';
             
@@ -140,7 +140,7 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
                 dataKeys: Object.keys(data),
             });
             
-            // In SFTP mode, hasMeeting is ONLY true if meeting name is present
+            // hasMeeting is ONLY true if meeting name is present
             const meetingName = data[meetingNameField] || '';
             
             // Strip the 'C' or 'c' prefix from conference room ID
@@ -186,7 +186,7 @@ export function parseCSVEnhanced(content: string, config: EnhancedCSVConfig): { 
 }
 
 /**
- * Generate CSV string using enhanced configuration (for SFTP mode)
+ * Generate CSV string using enhanced configuration
  * @param spaces - Array of spaces
  * @param conferenceRooms - Optional array of conference rooms
  * @param config - Enhanced CSV configuration
@@ -318,7 +318,7 @@ export function validateCSVConfigEnhanced(config: EnhancedCSVConfig): { valid: b
 }
 
 /**
- * Create default enhanced CSV config for SFTP mode
+ * Create default enhanced CSV config
  */
 export function createDefaultEnhancedCSVConfig(): EnhancedCSVConfig {
     return {

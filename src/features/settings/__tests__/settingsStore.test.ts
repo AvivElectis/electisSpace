@@ -24,7 +24,7 @@ describe('SettingsStore', () => {
 
             expect(settings).toBeDefined();
             expect(settings.appName).toBe('electis Space');
-            expect(settings.workingMode).toBe('SFTP');
+            expect(settings.workingMode).toBe('SOLUM_API');
         });
 
         it('should have no password hash initially', () => {
@@ -63,7 +63,7 @@ describe('SettingsStore', () => {
             const { settings } = useSettingsStore.getState();
             expect(settings.appName).toBe('Partial Update');
             // Other settings should remain unchanged
-            expect(settings.workingMode).toBe('SFTP');
+            expect(settings.workingMode).toBe('SOLUM_API');
         });
 
         it('should update space type', () => {
@@ -73,15 +73,6 @@ describe('SettingsStore', () => {
 
             const { settings } = useSettingsStore.getState();
             expect(settings.spaceType).toBe('office');
-        });
-
-        it('should update working mode', () => {
-            const { updateSettings } = useSettingsStore.getState();
-
-            updateSettings({ workingMode: 'SFTP' });
-
-            const { settings } = useSettingsStore.getState();
-            expect(settings.workingMode).toBe('SFTP');
         });
     });
 
@@ -169,7 +160,7 @@ describe('SettingsStore', () => {
             const { updateSettings, setPasswordHash, setLocked, resetSettings } = useSettingsStore.getState();
 
             // Make various changes
-            updateSettings({ appName: 'Modified App', workingMode: 'SFTP' });
+            updateSettings({ appName: 'Modified App' });
             setPasswordHash('some-hash');
             setLocked(true);
 
@@ -178,33 +169,13 @@ describe('SettingsStore', () => {
 
             const { settings, passwordHash, isLocked } = useSettingsStore.getState();
             expect(settings.appName).toBe('electis Space');
-            expect(settings.workingMode).toBe('SFTP');
+            expect(settings.workingMode).toBe('SOLUM_API');
             expect(passwordHash).toBeNull();
             expect(isLocked).toBe(false);
         });
     });
 
     describe('Credential Cleanup', () => {
-        it('should clear SFTP credentials', () => {
-            const { updateSettings, clearModeCredentials } = useSettingsStore.getState();
-
-            // Set SFTP credentials
-            updateSettings({
-                sftpCredentials: {
-                    host: 'sftp.example.com',
-                    username: 'user',
-                    password: 'pass',
-                    remoteFilename: 'file.csv',
-                },
-            });
-
-            // Clear SFTP mode credentials
-            clearModeCredentials('SFTP');
-
-            const { settings } = useSettingsStore.getState();
-            expect(settings.sftpCredentials).toBeUndefined();
-        });
-
         it('should clear SOLUM_API credentials', () => {
             const { updateSettings, clearModeCredentials } = useSettingsStore.getState();
 

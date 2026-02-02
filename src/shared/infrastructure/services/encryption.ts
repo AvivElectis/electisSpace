@@ -1,18 +1,18 @@
 /**
  * Encryption Service
- * AES-256-CBC encryption for SFTP credentials
+ * AES-256-CBC encryption for sensitive credentials
  * 
- * Used to encrypt sensitive data before sending to SFTP API
+ * Used to encrypt sensitive data for storage and API communication
  */
 
 import CryptoJS from 'crypto-js';
 import { logger } from './logger';
 
 /**
- * Encryption key for SFTP API communication
+ * Encryption key for API communication
  * This key is used to encrypt credentials before sending to the server
  */
-const ENCRYPTION_KEY = import.meta.env.VITE_SFTP_ENCRYPTION_KEY || '';
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || '';
 
 const IV_LENGTH = 16;
 
@@ -25,7 +25,7 @@ const IV_LENGTH = 16;
 export function encrypt(text: string): string {
     if (!ENCRYPTION_KEY) {
         logger.error('Encryption', 'Encryption key not configured');
-        throw new Error('Encryption key not configured. Set VITE_SFTP_ENCRYPTION_KEY in .env');
+        throw new Error('Encryption key not configured. Set VITE_ENCRYPTION_KEY in .env');
     }
 
     try {
@@ -61,7 +61,7 @@ export function encrypt(text: string): string {
 export function decrypt(text: string): string {
     if (!ENCRYPTION_KEY) {
         logger.error('Encryption', 'Encryption key not configured');
-        throw new Error('Encryption key not configured. Set VITE_SFTP_ENCRYPTION_KEY in .env');
+        throw new Error('Encryption key not configured. Set VITE_ENCRYPTION_KEY in .env');
     }
 
     try {

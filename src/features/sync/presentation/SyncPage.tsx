@@ -120,10 +120,7 @@ export function SyncPage() {
                                 {t('sync.workingMode')}
                             </Typography>
                             <Typography variant="body1">
-                                {settingsController.settings.workingMode === 'SFTP'
-                                    ? t('sync.sftpMode')
-                                    : t('sync.solumMode')
-                                }
+                                {t('sync.solumMode')}
                             </Typography>
                         </Box>
                         <Box>

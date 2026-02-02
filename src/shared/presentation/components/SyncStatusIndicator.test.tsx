@@ -25,8 +25,6 @@ vi.mock('react-i18next', () => ({
                 'sync.now': 'Sync Now',
                 'sync.lastSync': 'Last sync',
                 'sync.mode': 'Mode',
-                'sync.workingMode': 'Working Mode',
-                'sync.sftpMode': 'SFTP Mode',
                 'sync.solumMode': 'SoluM Mode',
             };
             return translations[key] || key;
@@ -122,22 +120,6 @@ describe('SyncStatusIndicator Component', () => {
             });
         });
 
-        it('should show working mode in popover', async () => {
-            render(
-                <SyncStatusIndicator
-                    status="connected"
-                    workingMode="SoluM"
-                />
-            );
-
-            fireEvent.click(screen.getByText('Connected'));
-
-            await waitFor(() => {
-                // Multiple elements show the mode (badge + popover)
-                expect(screen.getAllByText('SoluM Mode').length).toBeGreaterThanOrEqual(1);
-            });
-        });
-
         it('should show error message in popover when status is error', async () => {
             render(
                 <SyncStatusIndicator
@@ -200,35 +182,6 @@ describe('SyncStatusIndicator Component', () => {
             });
 
             expect(screen.queryByRole('button', { name: /sync/i })).not.toBeInTheDocument();
-        });
-    });
-
-    describe('working mode defaults', () => {
-        it('should default to SFTP mode', async () => {
-            render(<SyncStatusIndicator status="connected" />);
-
-            fireEvent.click(screen.getByText('Connected'));
-
-            await waitFor(() => {
-                // Multiple elements show the mode (badge + popover)
-                expect(screen.getAllByText('SFTP Mode').length).toBeGreaterThanOrEqual(1);
-            });
-        });
-
-        it('should show SoluM mode when specified', async () => {
-            render(
-                <SyncStatusIndicator
-                    status="connected"
-                    workingMode="SoluM"
-                />
-            );
-
-            fireEvent.click(screen.getByText('Connected'));
-
-            await waitFor(() => {
-                // Multiple elements show the mode (badge + popover)
-                expect(screen.getAllByText('SoluM Mode').length).toBeGreaterThanOrEqual(1);
-            });
         });
     });
 
