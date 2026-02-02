@@ -11,6 +11,9 @@
         "labels": "תגיות",
         "sync": "סינכרון"
     },
+    "labels": {
+        "assign": "שיוך תגית"
+    },
     "common": {
         "save": "שמור",
         "cancel": "ביטול",

@@ -116,39 +116,36 @@ export function DashboardPage() {
     return (
         <Box sx={{ pb: 4 }}>
             {/* Header */}
-            <Stack 
-                direction={{ xs: 'column', sm: 'row' }} 
-                justifyContent="space-between" 
-                alignItems={{ xs: 'flex-start', sm: 'center' }} 
-                gap={2}
-                sx={{ mb: 5, mt: 2 }}
-            >
-                <Box>
-                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em', color: 'text.primary' }}>
-                        {t('dashboard.title')}
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, fontSize: '1.1rem' }}>
-                        {t('dashboard.overview', 'Welcome to your space management dashboard')}
-                    </Typography>
-                </Box>
+            <Box sx={{ mb: 5, mt: 2 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em', background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', width: 'fit-content' }}>
+                    {t('dashboard.title')}
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, fontSize: '1.1rem', mb: 3 }}>
+                    {t('dashboard.overview', 'Welcome to your space management dashboard')}
+                </Typography>
                 <Button
                     variant="contained"
                     size="large"
                     startIcon={<LabelIcon />}
                     onClick={() => navigate('/labels')}
                     sx={{ 
-                        px: 3, 
-                        py: 1.2, 
-                        borderRadius: 2,
+                        px: 4, 
+                        py: 1.5, 
+                        borderRadius: 3,
                         textTransform: 'none',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        boxShadow: 4
+                        fontSize: '1.05rem',
+                        fontWeight: 700,
+                        boxShadow: '0 8px 16px rgba(33, 150, 243, 0.24)',
+                        transition: 'transform 0.2s',
+                        '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 12px 20px rgba(33, 150, 243, 0.32)'
+                        }
                     }}
                 >
                     {t('labels.assign', 'Assign Label')}
                 </Button>
-            </Stack>
+            </Box>
 
             <Grid container spacing={4}>
                 {/* Spaces Area - Only show when People Manager mode is OFF */}

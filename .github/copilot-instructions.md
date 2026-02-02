@@ -13,13 +13,14 @@ The project follows a **Feature-Sliced Design** implementation combined with **C
   - `infrastructure/` - Data access, API calls, Zustand stores (e.g., `settingsStore`).under the header
   - `presentation/` - React components and UI logic.
 - `src/shared/` - Shared code following the same layers (`application`, `domain`, `infrastructure`, `presentation`).
-- `server/` - Node.js/Express backend with Prisma & PostgreSQL.
+- `server/` - Node.js/Express backend with Prisma & PostgreSQL. Supports Multi-Company/Multi-Store architecture (`Company` -> `Store` -> `User`).
 - `electron/` - Electron main and preload scripts.
 - `android/` - Capacitor Android native shell.
 
 ### Key Patterns
 - **Controllers**: Use "Controller" hooks (e.g., `useSpaceController`) to bridge UI and logic. Do not put heavy business logic directly in UI components.
 - **State Management**: Use **Zustand** for global state, located in `infrastructure/*Store.ts`.
+- **Database**: Prisma with Multi-Company/Multi-Store schema.
 - **Imports**: Use path aliases `@features/*` and `@shared/*`.
   - Example: `import { useSpaceController } from '@features/space/application/useSpaceController';`
 

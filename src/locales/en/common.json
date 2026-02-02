@@ -11,6 +11,9 @@
         "labels": "Labels",
         "sync": "Synchronization"
     },
+    "labels": {
+        "assign": "Assign Label"
+    },
     "common": {
         "save": "Save",
         "cancel": "Cancel",
