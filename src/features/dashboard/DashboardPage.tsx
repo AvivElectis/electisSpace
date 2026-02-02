@@ -133,17 +133,22 @@ export function DashboardPage() {
                         py: 1.5, 
                         borderRadius: 3,
                         textTransform: 'none',
-                        fontSize: '1.05rem',
+                        fontSize: '1.1rem',
                         fontWeight: 700,
-                        boxShadow: '0 8px 16px rgba(33, 150, 243, 0.24)',
-                        transition: 'transform 0.2s',
+                        background: 'linear-gradient(135deg, #007AFF 0%, #5856D6 100%)',
+                        boxShadow: '0 8px 24px rgba(0, 122, 255, 0.35)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         '&:hover': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 12px 20px rgba(33, 150, 243, 0.32)'
+                            transform: 'translateY(-3px) scale(1.02)',
+                            boxShadow: '0 12px 28px rgba(0, 122, 255, 0.45)',
+                            background: 'linear-gradient(135deg, #0051D5 0%, #3634A3 100%)'
+                        },
+                        '&:active': {
+                            transform: 'translateY(-1px)'
                         }
                     }}
                 >
-                    {t('labels.assign', 'Assign Label')}
+                    {t('labels.assign')}
                 </Button>
             </Box>
 
