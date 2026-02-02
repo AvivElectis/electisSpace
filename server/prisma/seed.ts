@@ -19,7 +19,8 @@ async function main() {
   const company = await prisma.company.create({
     data: {
       name: 'AIMS Test Company',
-      aimsCompanyCode: 'TEST001',
+      code: 'TEST',
+      location: 'Test Location',
       aimsBaseUrl: 'https://api.aims.test',
       aimsCluster: 'test-cluster',
       aimsUsername: 'test_api_user',
@@ -32,14 +33,14 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created company: ${company.name} (${company.aimsCompanyCode})`);
+  console.log(`✅ Created company: ${company.name} (${company.code})`);
 
   // Create multiple stores
   const mainStore = await prisma.store.create({
     data: {
       companyId: company.id,
       name: 'Main Store',
-      storeNumber: '001',
+      code: '001',
       timezone: 'Asia/Jerusalem',
       settings: {
         language: 'he',
@@ -53,7 +54,7 @@ async function main() {
     data: {
       companyId: company.id,
       name: 'Second Store',
-      storeNumber: '002',
+      code: '002',
       timezone: 'Asia/Jerusalem',
       settings: {
         language: 'he',

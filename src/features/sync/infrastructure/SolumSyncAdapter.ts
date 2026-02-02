@@ -5,7 +5,13 @@ import { logger } from '../../../shared/infrastructure/services/logger';
 import * as solumService from '../../../shared/infrastructure/services/solumService';
 
 /**
- * SoluM API Sync Adapter
+ * @deprecated This adapter is deprecated. Use useBackendSyncController instead.
+ * 
+ * The SolumSyncAdapter makes direct AIMS API calls from the frontend.
+ * This is being replaced by the backend sync infrastructure which handles
+ * all AIMS communication through the SyncQueue.
+ * 
+ * SoluM API Sync Adapter (DEPRECATED)
  * Implements sync via SoluM ESL API with article/label management
  */
 export class SolumSyncAdapter implements SyncAdapter {

@@ -9,7 +9,6 @@ import {
     Box,
     Typography,
     IconButton,
-    InputAdornment,
     Alert,
     Autocomplete,
     CircularProgress,
@@ -174,85 +173,96 @@ export function LinkLabelDialog({
                             </Alert>
                         )}
 
-                        {/* Label Code Input */}
-                        <TextField
-                            label={t('labels.link.labelCode', 'Label Code')}
-                            value={labelCode}
-                            onChange={(e) => setLabelCode(e.target.value)}
-                            placeholder="e.g., 03704160B297"
-                            fullWidth
-                            required
-                            disabled={isSubmitting}
-                            InputProps={{
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            onClick={handleScanLabel}
-                                            edge="end"
-                                            title={t('labels.scanner.scan', 'Scan')}
-                                            disabled={isSubmitting}
-                                        >
-                                            <ScanIcon />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            }}
-                            helperText={t('labels.link.labelCodeHelp', 'Enter label code or scan barcode')}
-                        />
+                        {/* Label Code Input with separate scan button */}
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                            <TextField
+                                label={t('labels.link.labelCode', 'Label Code')}
+                                value={labelCode}
+                                onChange={(e) => setLabelCode(e.target.value)}
+                                placeholder="e.g., 03704160B297"
+                                fullWidth
+                                required
+                                disabled={isSubmitting}
+                                helperText={t('labels.link.labelCodeHelp', 'Enter label code or scan barcode')}
+                            />
+                            <IconButton
+                                onClick={handleScanLabel}
+                                disabled={isSubmitting}
+                                color="primary"
+                                sx={{ 
+                                    mt: 1,
+                                    border: '1px solid',
+                                    borderColor: 'primary.main',
+                                    borderRadius: 1,
+                                    '&:hover': { bgcolor: 'primary.main', color: 'white' },
+                                }}
+                                title={t('labels.scanner.scan', 'Scan')}
+                            >
+                                <ScanIcon />
+                            </IconButton>
+                        </Box>
 
-                        {/* Article ID Input with Autocomplete */}
-                        <Autocomplete
-                            freeSolo
-                            options={articles}
-                            getOptionLabel={(option) => {
-                                if (typeof option === 'string') return option;
-                                return option.name ? `${option.id} - ${option.name}` : option.id;
-                            }}
-                            inputValue={articleId}
-                            onInputChange={(_, value) => setArticleId(value)}
-                            loading={loadingArticles}
-                            disabled={isSubmitting}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label={t('labels.link.articleId', 'Article ID (Product)')}
-                                    placeholder="e.g., SPACE-001"
-                                    required
-                                    InputProps={{
-                                        ...params.InputProps,
-                                        endAdornment: (
-                                            <>
-                                                {loadingArticles && <CircularProgress size={20} />}
-                                                {params.InputProps.endAdornment}
-                                                <InputAdornment position="end">
-                                                    <IconButton
-                                                        onClick={handleScanArticle}
-                                                        edge="end"
-                                                        title={t('labels.scanner.scan', 'Scan')}
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        <ScanIcon />
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            </>
-                                        ),
-                                    }}
-                                    helperText={t('labels.link.articleIdHelp', 'Enter article/product ID or scan barcode')}
-                                />
-                            )}
-                            renderOption={(props, option) => (
-                                <li {...props} key={option.id}>
-                                    <Box>
-                                        <Typography variant="body1">{option.id}</Typography>
-                                        {option.name && (
-                                            <Typography variant="caption" color="text.secondary">
-                                                {option.name}
-                                            </Typography>
-                                        )}
-                                    </Box>
-                                </li>
-                            )}
-                        />
+                        {/* Article ID Input with Autocomplete and separate scan button */}
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                            <Autocomplete
+                                freeSolo
+                                fullWidth
+                                options={articles}
+                                getOptionLabel={(option) => {
+                                    if (typeof option === 'string') return option;
+                                    return option.name ? `${option.id} - ${option.name}` : option.id;
+                                }}
+                                inputValue={articleId}
+                                onInputChange={(_, value) => setArticleId(value)}
+                                loading={loadingArticles}
+                                disabled={isSubmitting}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label={t('labels.link.articleId', 'Article ID (Product)')}
+                                        placeholder="e.g., SPACE-001"
+                                        required
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            endAdornment: (
+                                                <>
+                                                    {loadingArticles && <CircularProgress size={20} />}
+                                                    {params.InputProps.endAdornment}
+                                                </>
+                                            ),
+                                        }}
+                                        helperText={t('labels.link.articleIdHelp', 'Enter article/product ID or scan barcode')}
+                                    />
+                                )}
+                                renderOption={(props, option) => (
+                                    <li {...props} key={option.id}>
+                                        <Box>
+                                            <Typography variant="body1">{option.id}</Typography>
+                                            {option.name && (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {option.name}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    </li>
+                                )}
+                            />
+                            <IconButton
+                                onClick={handleScanArticle}
+                                disabled={isSubmitting}
+                                color="primary"
+                                sx={{ 
+                                    mt: 1,
+                                    border: '1px solid',
+                                    borderColor: 'primary.main',
+                                    borderRadius: 1,
+                                    '&:hover': { bgcolor: 'primary.main', color: 'white' },
+                                }}
+                                title={t('labels.scanner.scan', 'Scan')}
+                            >
+                                <ScanIcon />
+                            </IconButton>
+                        </Box>
 
                         {/* Template Name (Optional) */}
                         <TextField

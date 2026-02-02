@@ -88,6 +88,7 @@
         "conferenceRooms": "Conference Rooms",
         "lastSync": "Last Sync",
         "quickActions": "Quick Actions",
+        "linkLabel": "Link Label",
         "addSpace": "Add Space",
         "addRoom": "Add Room",
         "syncNow": "Sync Now",
@@ -431,6 +432,23 @@
             "store": "Store",
             "features": "Features",
             "editFeaturesHint": "To edit role and features, use the store management section"
+        },
+        "companies": {
+            "title": "Companies",
+            "addCompany": "Add Company",
+            "editCompany": "Edit Company",
+            "deleteCompany": "Delete Company",
+            "deleteConfirmTitle": "Delete Company",
+            "deleteConfirmMessage": "Are you sure you want to delete company {{name}}? All associated stores and users will be affected.",
+            "companyName": "Company Name",
+            "companyCode": "Company Code",
+            "stores": "Stores",
+            "storesCount": "{{count}} stores",
+            "aimsConfigured": "AIMS Configured",
+            "aimsNotConfigured": "AIMS Not Configured",
+            "noCompanies": "No companies found",
+            "searchPlaceholder": "Search companies...",
+            "manageStores": "Manage Stores"
         }
     },
     "errors": {
@@ -862,6 +880,10 @@
         "noLabels": "No labels found",
         "notLinked": "Not linked",
         "table": {
+            "image": "Image",
+            "images": "Images",
+            "previewImage": "Label image preview",
+            "clickToEnlarge": "Click to enlarge",
             "labelCode": "Label Code",
             "articleId": "Article ID",
             "articleName": "Article Name",
@@ -869,6 +891,18 @@
             "battery": "Battery",
             "status": "Status",
             "actions": "Actions"
+        },
+        "images": {
+            "view": "View Images",
+            "title": "Label Images",
+            "noImages": "No images available",
+            "noData": "No image data available for this label",
+            "loadError": "Failed to load label images",
+            "page": "Page",
+            "activePage": "Active Page",
+            "current": "Current Images",
+            "previous": "Previous Images",
+            "dualSided": "Dual-Sided"
         },
         "link": {
             "title": "Link Label to Article",

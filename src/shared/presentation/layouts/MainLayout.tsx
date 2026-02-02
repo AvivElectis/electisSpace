@@ -61,7 +61,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [manualOpen, setManualOpen] = useState(false);
@@ -177,6 +177,9 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
+    // Check if we're on the login page - don't show layout chrome
+    const isLoginPage = location.pathname === '/login';
+
     // Use transition for non-blocking navigation - UI updates instantly
     const [isPending, startTransition] = useTransition();
 
@@ -196,6 +199,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     const handleMenuClick = () => {
         setMobileMenuOpen(!mobileMenuOpen);
     };
+
+    // For login page, render children directly without layout chrome
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
 
     return (
         <SyncProvider value={syncController}>
@@ -273,7 +281,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         bgcolor: 'transparent',
                         borderColor: 'divider',
                         px: { xs: 2, sm: 3, md: 4 },
-                        py: 0,
+                        py: 1,
                     }}>
                         <Tabs
                             value={currentTab}

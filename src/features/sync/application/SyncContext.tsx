@@ -1,7 +1,9 @@
 import { createContext, useContext } from 'react';
 import type { useSyncController } from './useSyncController';
+import type { useBackendSyncController } from './useBackendSyncController';
 
-type SyncControllerReturn = ReturnType<typeof useSyncController>;
+// Union type supporting both legacy and new controller
+type SyncControllerReturn = ReturnType<typeof useSyncController> | ReturnType<typeof useBackendSyncController>;
 
 const SyncContext = createContext<SyncControllerReturn | null>(null);
 

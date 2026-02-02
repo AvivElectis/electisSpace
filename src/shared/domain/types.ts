@@ -50,6 +50,23 @@ export interface ConferenceRoom {
 }
 
 /**
+ * Person entity (for People Manager mode)
+ */
+export interface Person {
+    id: string;
+    externalId?: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    department?: string;
+    labelCode?: string;
+    listIds?: string[];
+    data: Record<string, string>;
+    assignedLabels?: string[];
+    syncStatus?: 'PENDING' | 'SYNCED' | 'ERROR';
+}
+
+/**
  * CSV column configuration
  */
 export interface CSVColumn {

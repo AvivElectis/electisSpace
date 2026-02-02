@@ -3,7 +3,13 @@ import { logger } from '../logger';
 import axios from 'axios';
 
 /**
- * SoluM Authentication Service
+ * @deprecated This service is deprecated. Use the backend sync API instead.
+ * 
+ * Direct AIMS authentication from the frontend is being replaced by 
+ * backend-managed AIMS connections. The backend stores AIMS credentials
+ * per company and handles token refresh automatically.
+ * 
+ * SoluM Authentication Service (DEPRECATED)
  * Handles login, token refresh, and token management
  */
 

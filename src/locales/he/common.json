@@ -91,6 +91,7 @@
         "conferenceRooms": "חדרי ישיבות",
         "lastSync": "סינכרון אחרון",
         "quickActions": "פעולות מהירות",
+        "linkLabel": "קשר תגית",
         "addSpace": "הוסף חלל",
         "addRoom": "הוסף חדר",
         "syncNow": "סנכרן כעת",
@@ -442,6 +443,23 @@
             "store": "חנות",
             "features": "יכולות",
             "editFeaturesHint": "לעריכת תפקיד ויכולות, השתמש בניהול חנויות"
+        },
+        "companies": {
+            "title": "חברות",
+            "addCompany": "הוסף חברה",
+            "editCompany": "ערוך חברה",
+            "deleteCompany": "מחק חברה",
+            "deleteConfirmTitle": "מחק חברה",
+            "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק את החברה {{name}}? כל החנויות והמשתמשים המשויכים יושפעו.",
+            "companyName": "שם חברה",
+            "companyCode": "קוד חברה",
+            "stores": "חנויות",
+            "storesCount": "{{count}} חנויות",
+            "aimsConfigured": "AIMS מוגדר",
+            "aimsNotConfigured": "AIMS לא מוגדר",
+            "noCompanies": "לא נמצאו חברות",
+            "searchPlaceholder": "חפש חברות...",
+            "manageStores": "נהל חנויות"
         }
     },
     "errors": {
@@ -877,6 +895,10 @@
         "noLabels": "לא נמצאו תגיות",
         "notLinked": "לא מקושר",
         "table": {
+            "image": "תמונה",
+            "images": "תמונות",
+            "previewImage": "תצוגה מקדימה של תמונת התגית",
+            "clickToEnlarge": "לחץ להגדלה",
             "labelCode": "קוד תגית",
             "articleId": "מזהה מוצר",
             "articleName": "שם מוצר",
@@ -884,6 +906,18 @@
             "battery": "סוללה",
             "status": "סטטוס",
             "actions": "פעולות"
+        },
+        "images": {
+            "view": "צפה בתמונות",
+            "title": "תמונות התגית",
+            "noImages": "אין תמונות זמינות",
+            "noData": "אין נתוני תמונה זמינים לתגית זו",
+            "loadError": "טעינת תמונות התגית נכשלה",
+            "page": "עמוד",
+            "activePage": "עמוד פעיל",
+            "current": "תמונות נוכחיות",
+            "previous": "תמונות קודמות",
+            "dualSided": "דו-צדדי"
         },
         "link": {
             "title": "קשר תגית למוצר",
