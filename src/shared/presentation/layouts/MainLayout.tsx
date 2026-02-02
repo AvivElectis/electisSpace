@@ -1,4 +1,5 @@
-import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +68,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { syncState, setWorkingMode } = useSyncStore();
     
     // Determine drawer direction based on current language (more reliable than theme.direction)
-    const isRtl = i18n.language === 'he';
     const settings = useSettingsStore(state => state.settings);
     const setSpaces = useSpacesStore(state => state.setSpaces);
     const setPeople = usePeopleStore(state => state.setPeople);
@@ -213,17 +213,38 @@ export function MainLayout({ children }: MainLayoutProps) {
                     settingsOpen={settingsOpen}
                 />
 
+                {/* Spacer for fixed header (taller on mobile due to 2-row layout) */}
+                <Box sx={{ height: { xs: 100, sm: 64 } }} />
+
                 {/* Navigation - Tabs for desktop, Drawer for mobile */}
                 {isMobile ? (
                     <Drawer
-                        anchor={isRtl ? 'right' : 'left'}
+                        anchor="top"
                         open={mobileMenuOpen}
                         onClose={() => setMobileMenuOpen(false)}
                         slotProps={{
-                            transition: { direction: isRtl ? 'left' : 'right' }
+                            paper: {
+                                sx: {
+                                    top: { xs: 0, sm: 64 }, // Below fixed header
+                                    borderRadius: '0px 0px 16px 16px',
+                                }
+                            }
                         }}
-
                     >
+                            {/* Close button at top */}
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-start', p: 2, pb: 0 }}>
+                                <IconButton
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    sx={{ 
+                                        boxShadow: 1,
+                                        scale: 1.5,
+                                        bgcolor: 'background.paper',
+                                        '&:hover': { bgcolor: 'action.hover' }
+                                    }}
+                                >
+                                    <CloseIcon />
+                                </IconButton>
+                            </Box>
                             <List>
                                 {navTabs.map(tab => (
                                     <ListItem key={tab.value} disablePadding sx={{py: 2}}>
@@ -312,8 +333,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </Container>
                 </Box>
 
-                {/* Sync Status Indicator - Fixed at bottom left (End in RTL) */}
-                <Box sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, left: { xs: 16, sm: 24 }, zIndex: 1200 }}>
+                {/* Sync Status Indicator - Fixed at bottom end (RTL-aware) */}
+                <Box sx={{ 
+                    position: 'fixed', 
+                    bottom: { xs: 16, sm: 24 }, 
+                    insetInlineEnd: { xs: 16, sm: 24 },
+                    zIndex: (theme) => theme.zIndex.fab,
+                }}>
                     <SyncStatusIndicator
                         status={
                             syncState.status === 'syncing' ? 'syncing' :
