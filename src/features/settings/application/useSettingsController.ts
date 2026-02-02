@@ -15,6 +15,8 @@ import { logger } from '@shared/infrastructure/services/logger';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
+import { useNotificationStore } from '@shared/infrastructure/store/notificationStore';
+import i18n from '@i18n/index';
 
 /**
  * Admin password for emergency access to settings
@@ -399,6 +401,13 @@ export function useSettingsController() {
                 lastConnected: undefined,
                 lastRefreshed: undefined,
             },
+        });
+
+        // Show notification to user
+        useNotificationStore.getState().addNotification({
+            message: i18n.t('settings.disconnectedNotification', 'Disconnected from SOLUM API. All synced data has been cleared.'),
+            type: 'info',
+            duration: 6000,
         });
 
         logger.info('Settings', 'Disconnected from SoluM API');

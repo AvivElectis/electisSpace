@@ -159,14 +159,22 @@ router.get('/', async (req, res, next) => {
         const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
         const search = req.query.search as string;
         const storeId = req.query.storeId as string;
+        const companyId = req.query.companyId as string;
 
         // Get stores the current user can manage
         let managedStoreIds: string[] = [];
         
         if (req.user?.globalRole === GlobalRole.PLATFORM_ADMIN) {
-            // Platform admins see all users, optionally filtered by store
+            // Platform admins see all users, optionally filtered by store or company
             if (storeId) {
                 managedStoreIds = [storeId];
+            } else if (companyId) {
+                // Filter by all stores of the specified company
+                const companyStores = await prisma.store.findMany({
+                    where: { companyId },
+                    select: { id: true }
+                });
+                managedStoreIds = companyStores.map(s => s.id);
             }
         } else {
             // Regular users only see users in stores where they are admin
