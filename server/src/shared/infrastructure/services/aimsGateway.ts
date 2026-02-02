@@ -277,6 +277,135 @@ export class AIMSGateway {
             return false;
         }
     }
+
+    // ============== Label Operations ==============
+
+    /**
+     * Fetch all labels for a store
+     */
+    async fetchLabels(storeId: string): Promise<any[]> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        
+        try {
+            return await solumService.fetchAllLabels(config, token);
+        } catch (error: any) {
+            // If authentication error, invalidate cache and retry once
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.fetchAllLabels(config, newToken);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Fetch unassigned labels for a store
+     */
+    async fetchUnassignedLabels(storeId: string): Promise<any[]> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        
+        try {
+            return await solumService.fetchUnassignedLabels(config, token);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.fetchUnassignedLabels(config, newToken);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Fetch label images/details
+     */
+    async fetchLabelImages(storeId: string, labelCode: string): Promise<{ displayImageList?: any[] }> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        
+        try {
+            return await solumService.fetchLabelImages(config, token, labelCode);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.fetchLabelImages(config, newToken, labelCode);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Link label to article
+     */
+    async linkLabel(storeId: string, labelCode: string, articleId: string, templateName?: string): Promise<any> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        
+        try {
+            return await solumService.linkLabel(config, token, labelCode, articleId, templateName);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.linkLabel(config, newToken, labelCode, articleId, templateName);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Unlink label from article
+     */
+    async unlinkLabel(storeId: string, labelCode: string): Promise<any> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        
+        try {
+            return await solumService.unlinkLabel(config, token, labelCode);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.unlinkLabel(config, newToken, labelCode);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Blink a label for identification
+     */
+    async blinkLabel(storeId: string, labelCode: string): Promise<any> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        
+        try {
+            return await solumService.blinkLabel(config, token, labelCode);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.blinkLabel(config, newToken, labelCode);
+                }
+            }
+            throw error;
+        }
+    }
 }
 
 // Singleton instance

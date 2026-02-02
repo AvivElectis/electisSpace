@@ -69,7 +69,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
             console.error('Failed to elevate user:', err);
             setError(
                 err.response?.data?.message || 
-                t('settings.users.elevateError', 'Failed to elevate user')
+                t('settings.users.elevateError')
             );
         } finally {
             setSubmitting(false);
@@ -88,10 +88,13 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
             maxWidth="sm"
             fullWidth
             TransitionProps={{ onEnter: handleEnter }}
+            PaperProps={{
+                sx: { maxHeight: '90vh' }
+            }}
         >
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <AdminPanelSettingsIcon color="warning" />
-                {t('settings.users.elevateTitle', 'Elevate to Platform Admin')}
+                {t('settings.users.elevateTitle')}
             </DialogTitle>
 
             <DialogContent>
@@ -103,8 +106,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
 
                 {/* Warning */}
                 <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
-                    {t('settings.users.elevateWarning', 
-                        'You are about to grant PLATFORM_ADMIN privileges to this user. This action cannot be easily undone.')}
+                    {t('settings.users.elevateWarning')}
                 </Alert>
 
                 {/* User Info */}
@@ -115,7 +117,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                     mb: 3
                 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        {t('settings.users.userToElevate', 'User to elevate')}
+                        {t('settings.users.userToElevate')}
                     </Typography>
                     <Typography variant="h6">
                         {displayName}
@@ -127,7 +129,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
 
                 {/* Privileges List */}
                 <Typography variant="subtitle2" gutterBottom>
-                    {t('settings.users.platformAdminPrivileges', 'Platform Admin privileges include:')}
+                    {t('settings.users.platformAdminPrivileges')}
                 </Typography>
 
                 <List dense>
@@ -136,8 +138,8 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                             <BusinessIcon color="primary" />
                         </ListItemIcon>
                         <ListItemText 
-                            primary={t('settings.users.privilege.companies', 'Create and manage all companies')}
-                            secondary={t('settings.users.privilege.companiesDesc', 'Full control over company settings and AIMS configuration')}
+                            primary={t('settings.users.privilege.companies')}
+                            secondary={t('settings.users.privilege.companiesDesc')}
                         />
                     </ListItem>
                     <ListItem>
@@ -145,8 +147,8 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                             <GroupIcon color="primary" />
                         </ListItemIcon>
                         <ListItemText 
-                            primary={t('settings.users.privilege.users', 'Manage all users across all companies')}
-                            secondary={t('settings.users.privilege.usersDesc', 'Assign users to any company or store, change roles')}
+                            primary={t('settings.users.privilege.users')}
+                            secondary={t('settings.users.privilege.usersDesc')}
                         />
                     </ListItem>
                     <ListItem>
@@ -154,8 +156,8 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                             <SecurityIcon color="primary" />
                         </ListItemIcon>
                         <ListItemText 
-                            primary={t('settings.users.privilege.elevate', 'Elevate other users to Platform Admin')}
-                            secondary={t('settings.users.privilege.elevateDesc', 'Grant highest-level access to other users')}
+                            primary={t('settings.users.privilege.elevate')}
+                            secondary={t('settings.users.privilege.elevateDesc')}
                         />
                     </ListItem>
                 </List>
@@ -172,17 +174,16 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                         }
                         label={
                             <Typography variant="body2">
-                                {t('settings.users.elevateConfirm', 
-                                    'I understand and want to grant Platform Admin privileges to this user')}
+                                {t('settings.users.elevateConfirm')}
                             </Typography>
                         }
                     />
                 </Box>
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={submitting}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
@@ -191,7 +192,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                     disabled={submitting || !confirmed}
                     startIcon={submitting ? <CircularProgress size={16} /> : <AdminPanelSettingsIcon />}
                 >
-                    {t('settings.users.elevateButton', 'Elevate User')}
+                    {t('settings.users.elevateButton')}
                 </Button>
             </DialogActions>
         </Dialog>

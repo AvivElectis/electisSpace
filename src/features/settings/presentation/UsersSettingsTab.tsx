@@ -189,11 +189,11 @@ export function UsersSettingsTab() {
             >
                 <Typography variant="h6">{t('settings.users.title')}</Typography>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                     {/* Search */}
                     <TextField
                         size="small"
-                        placeholder={t('settings.users.searchPlaceholder', 'Search users...')}
+                        placeholder={t('settings.users.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         InputProps={{
@@ -203,23 +203,23 @@ export function UsersSettingsTab() {
                                 </InputAdornment>
                             ),
                         }}
-                        sx={{ minWidth: 200 }}
+                        sx={{ minWidth: { xs: '100%', sm: 200 } }}
                     />
 
                     {/* Company Filter (Platform Admin only) */}
                     {isPlatformAdmin && companies.length > 0 && (
-                        <FormControl size="small" sx={{ minWidth: 150 }}>
-                            <InputLabel>{t('settings.users.companyFilter', 'Company')}</InputLabel>
+                        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
+                            <InputLabel>{t('settings.users.companyFilter')}</InputLabel>
                             <Select
                                 value={selectedCompanyFilter}
-                                label={t('settings.users.companyFilter', 'Company')}
+                                label={t('settings.users.companyFilter')}
                                 onChange={(e) => {
                                     setSelectedCompanyFilter(e.target.value);
                                     setPage(0);
                                 }}
                             >
                                 <MenuItem value="">
-                                    <em>{t('common.all', 'All')}</em>
+                                    <em>{t('common.all')}</em>
                                 </MenuItem>
                                 {companies.map(company => (
                                     <MenuItem key={company.id} value={company.id}>
@@ -231,23 +231,23 @@ export function UsersSettingsTab() {
                     )}
 
                     {/* Add Button */}
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd} sx={{ whiteSpace: 'nowrap' }}>
                         {t('settings.users.addUser')}
                     </Button>
                 </Stack>
             </Stack>
 
-            <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <TableContainer sx={{ flex: 1 }}>
                     <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell>{t('auth.email')}</TableCell>
-                                <TableCell>{t('auth.name')}</TableCell>
-                                <TableCell>{t('auth.role')}</TableCell>
-                                <TableCell>{t('settings.users.features')}</TableCell>
-                                <TableCell>{t('common.status.title')}</TableCell>
-                                <TableCell align="right">{t('common.actions')}</TableCell>
+                                <TableCell sx={{ minWidth: 150 }}>{t('auth.email')}</TableCell>
+                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', sm: 'table-cell' } }}>{t('auth.name')}</TableCell>
+                                <TableCell sx={{ minWidth: 100 }}>{t('auth.role')}</TableCell>
+                                <TableCell sx={{ minWidth: 80, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.users.features')}</TableCell>
+                                <TableCell sx={{ minWidth: 80 }}>{t('common.status.title')}</TableCell>
+                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -261,7 +261,7 @@ export function UsersSettingsTab() {
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
                                         {searchQuery 
-                                            ? t('settings.users.noSearchResults', 'No users match your search')
+                                            ? t('settings.users.noSearchResults')
                                             : t('common.noData')}
                                     </TableCell>
                                 </TableRow>
@@ -279,10 +279,14 @@ export function UsersSettingsTab() {
                                     
                                     return (
                                         <TableRow key={user.id} hover>
-                                            <TableCell>{user.email}</TableCell>
                                             <TableCell>
+                                                <Typography variant="body2" noWrap sx={{ maxWidth: { xs: 120, sm: 180 } }}>
+                                                    {user.email}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                                                 {user.firstName || user.lastName 
-                                                    ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                                                    ? <Typography variant="body2" noWrap>{`${user.firstName || ''} ${user.lastName || ''}`.trim()}</Typography>
                                                     : <Typography variant="body2" color="text.secondary">—</Typography>
                                                 }
                                             </TableCell>
@@ -293,7 +297,7 @@ export function UsersSettingsTab() {
                                                     size="small"
                                                 />
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                                 <Stack direction="row" spacing={0.5} flexWrap="wrap">
                                                     {userFeatures.map(feature => (
                                                         <Tooltip key={feature} title={t(`navigation.${feature}`)}>
@@ -316,7 +320,7 @@ export function UsersSettingsTab() {
                                                 <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
                                                     {/* Elevate Button (Platform Admin only) */}
                                                     {canElevate && (
-                                                        <Tooltip title={t('settings.users.elevate', 'Elevate to Platform Admin')}>
+                                                        <Tooltip title={t('settings.users.elevate')}>
                                                             <IconButton 
                                                                 onClick={() => handleElevate(user)} 
                                                                 size="small" 
@@ -363,6 +367,17 @@ export function UsersSettingsTab() {
                         setPage(0);
                     }}
                     rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage={t('common.rowsPerPage')}
+                    sx={{
+                        '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                            margin: 0,
+                        },
+                        '.MuiTablePagination-toolbar': {
+                            flexWrap: 'wrap',
+                            justifyContent: 'center',
+                            gap: 1,
+                        },
+                    }}
                 />
             </Paper>
 

@@ -165,6 +165,176 @@ export class SolumService {
             throw new Error(`Delete articles failed: ${error.message}`);
         }
     }
+
+    // ============== Label Operations ==============
+
+    /**
+     * Fetch labels from AIMS
+     */
+    async fetchLabels(config: SolumConfig, token: string, page = 0, size = 100): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+
+        try {
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.data) return [];
+            if (response.status === 204) return [];
+
+            const data = response.data;
+            return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
+        } catch (error: any) {
+            if (error.response?.status === 204) return [];
+            throw new Error(`Fetch labels failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Fetch all labels with pagination
+     */
+    async fetchAllLabels(config: SolumConfig, token: string): Promise<any[]> {
+        const allLabels: any[] = [];
+        let page = 0;
+        const size = 100;
+        let hasMore = true;
+
+        while (hasMore) {
+            const labels = await this.fetchLabels(config, token, page, size);
+            if (labels.length === 0) {
+                hasMore = false;
+            } else {
+                allLabels.push(...labels);
+                page++;
+                // Safety limit
+                if (page > 100) break;
+            }
+        }
+
+        return allLabels;
+    }
+
+    /**
+     * Fetch unassigned labels
+     */
+    async fetchUnassignedLabels(config: SolumConfig, token: string): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/unassigned?company=${config.companyName}&store=${config.storeCode}`);
+
+        try {
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.data) return [];
+            const data = response.data;
+            return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
+        } catch (error: any) {
+            throw new Error(`Fetch unassigned labels failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Fetch label images
+     */
+    async fetchLabelImages(config: SolumConfig, token: string, labelCode: string): Promise<{ displayImageList?: any[] }> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/detail?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}`);
+
+        try {
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            return response.data || {};
+        } catch (error: any) {
+            throw new Error(`Fetch label images failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Link label to article
+     */
+    async linkLabel(config: SolumConfig, token: string, labelCode: string, articleId: string, templateName?: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/link?company=${config.companyName}&store=${config.storeCode}`);
+
+        const body: any = {
+            labelCode,
+            articleId,
+        };
+        if (templateName) {
+            body.templateName = templateName;
+        }
+
+        try {
+            const response = await this.client.post(url, body, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Link label failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Unlink label from article
+     */
+    async unlinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/unlink?company=${config.companyName}&store=${config.storeCode}`);
+
+        try {
+            const response = await this.client.post(url, { labelCode }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Unlink label failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Change label page/template
+     */
+    async changeLabelPage(config: SolumConfig, token: string, labelCode: string, page: number): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/changePage?company=${config.companyName}&store=${config.storeCode}`);
+
+        try {
+            const response = await this.client.post(url, { labelCode, page }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Change label page failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Blink/flash a label for identification
+     */
+    async blinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/blink?company=${config.companyName}&store=${config.storeCode}`);
+
+        try {
+            const response = await this.client.post(url, { labelCode }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Blink label failed: ${error.message}`);
+        }
+    }
 }
 
 export const solumService = new SolumService();
