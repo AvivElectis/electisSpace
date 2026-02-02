@@ -64,6 +64,7 @@ export function DashboardSpacesCard({
                         size="small"
                         endIcon={<ArrowForwardIcon />}
                         onClick={() => navigate('/spaces')}
+                        sx={{ fontSize: '0.95rem' }}
                     >
                         {t('dashboard.toSpaceType', { type: spaceTypeLabel })}
                     </Button>
