@@ -43,6 +43,7 @@ export function DashboardConferenceCard({
                         size="small"
                         endIcon={<ArrowForwardIcon />}
                         onClick={() => navigate('/conference')}
+                        sx={{ fontSize: '0.95rem' }}
                     >
                         {t('dashboard.toRooms', 'To Rooms')}
                     </Button>
