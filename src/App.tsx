@@ -10,6 +10,7 @@ import { CustomTitleBar } from './shared/presentation/components/CustomTitleBar'
 import { ErrorBoundary } from './shared/presentation/components/ErrorBoundary';
 import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
 import { useAuthWatchdog } from './features/auth/application/useAuthWatchdog';
+import { useSessionRestore } from './features/auth/application/useSessionRestore';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useEffect } from 'react';
 import { logger } from './shared/infrastructure/services/logger';
@@ -17,8 +18,10 @@ import { logger } from './shared/infrastructure/services/logger';
 
 /**
  * Auth Watchdog Wrapper - Must be inside HashRouter
+ * Also handles session restoration on app startup
  */
 function AuthWatchdogWrapper({ children }: { children: React.ReactNode }) {
+  useSessionRestore(); // Restore session on app startup
   useAuthWatchdog();
   return <>{children}</>;
 }

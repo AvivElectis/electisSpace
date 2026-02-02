@@ -7,13 +7,12 @@ import {
 } from '@mui/material';
 import { Image as ImageIcon, BrokenImage as BrokenImageIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import type { SolumConfig } from '@shared/domain/types';
-import { getLabelImages } from '@shared/infrastructure/services/solum/labelsService';
+import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface LabelImagePreviewProps {
     labelCode: string;
-    solumConfig: SolumConfig;
+    storeId: string;
     onClick?: () => void;
     size?: number;
 }
@@ -21,10 +20,11 @@ interface LabelImagePreviewProps {
 /**
  * Lazy-loaded label image preview component
  * Uses IntersectionObserver to only load images when visible in viewport
+ * Uses server API for image fetching
  */
 export function LabelImagePreview({
     labelCode,
-    solumConfig,
+    storeId,
     onClick,
     size = 56,
 }: LabelImagePreviewProps) {
@@ -59,9 +59,9 @@ export function LabelImagePreview({
         return () => observer.disconnect();
     }, []);
 
-    // Fetch image when visible
+    // Fetch image when visible via server API
     const fetchImage = useCallback(async () => {
-        if (!solumConfig?.tokens?.accessToken || !solumConfig.storeNumber) {
+        if (!storeId) {
             return;
         }
 
@@ -69,24 +69,15 @@ export function LabelImagePreview({
         setHasError(false);
 
         try {
-            const response = await getLabelImages(
-                solumConfig,
-                solumConfig.storeNumber,
-                solumConfig.tokens.accessToken,
-                labelCode
-            );
+            const response = await labelsApi.getImages(storeId, labelCode);
 
-            // Get the first current image
-            if (response && response.currentImage && response.currentImage.length > 0) {
-                const firstImage = response.currentImage[0];
-                if (firstImage?.content) {
-                    setImageUrl(firstImage.content);
-                }
-            } else if (response && response.previousImage && response.previousImage.length > 0) {
-                // Fallback to previous image
-                const firstImage = response.previousImage[0];
-                if (firstImage?.content) {
-                    setImageUrl(firstImage.content);
+            // Get the first image
+            if (response.data && response.data.length > 0) {
+                const firstImage = response.data[0];
+                if (firstImage?.base64) {
+                    setImageUrl(firstImage.base64);
+                } else if (firstImage?.imageUrl) {
+                    setImageUrl(firstImage.imageUrl);
                 }
             }
         } catch (error: any) {
@@ -95,7 +86,7 @@ export function LabelImagePreview({
         } finally {
             setIsLoading(false);
         }
-    }, [labelCode, solumConfig]);
+    }, [labelCode, storeId]);
 
     // Trigger fetch when visible
     useEffect(() => {

@@ -19,8 +19,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BarcodeScanner } from './BarcodeScanner';
-import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { fetchArticles } from '@shared/infrastructure/services/solum/articlesService';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface LinkLabelDialogProps {
@@ -49,7 +49,7 @@ export function LinkLabelDialog({
     initialArticleId = '',
 }: LinkLabelDialogProps) {
     const { t } = useTranslation();
-    const solumConfig = useSettingsStore((state) => state.settings.solumConfig);
+    const { activeStoreId } = useAuthStore();
     
     const [labelCode, setLabelCode] = useState(initialLabelCode);
     const [articleId, setArticleId] = useState(initialArticleId);
@@ -75,24 +75,18 @@ export function LinkLabelDialog({
         }
     }, [open, initialLabelCode, initialArticleId]);
 
-    // Fetch articles for autocomplete
+    // Fetch articles for autocomplete via server API
     useEffect(() => {
         const loadArticles = async () => {
-            if (!open || !solumConfig?.tokens?.accessToken || !solumConfig.storeNumber) {
+            if (!open || !activeStoreId) {
                 return;
             }
 
             setLoadingArticles(true);
             try {
-                const result = await fetchArticles(
-                    solumConfig,
-                    solumConfig.storeNumber,
-                    solumConfig.tokens.accessToken,
-                    0,
-                    100
-                );
+                const result = await labelsApi.getArticles(activeStoreId);
                 // Transform to Article format
-                const articleList: Article[] = result.map((a: any) => ({
+                const articleList: Article[] = result.data.map((a: any) => ({
                     id: a.articleId || a.id,
                     name: a.articleName || a.name || a.data?.NFC_URL || '',
                     ...a,
@@ -106,7 +100,7 @@ export function LinkLabelDialog({
         };
 
         loadArticles();
-    }, [open, solumConfig]);
+    }, [open, activeStoreId]);
 
     const handleScanLabel = () => {
         setScanTarget('label');

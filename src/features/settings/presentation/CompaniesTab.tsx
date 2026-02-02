@@ -191,11 +191,11 @@ export function CompaniesTab() {
                     {t('settings.companies.title', 'Companies')}
                 </Typography>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                     {/* Search */}
                     <TextField
                         size="small"
-                        placeholder={t('settings.companies.searchPlaceholder', 'Search companies...')}
+                        placeholder={t('settings.companies.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         InputProps={{
@@ -205,7 +205,7 @@ export function CompaniesTab() {
                                 </InputAdornment>
                             ),
                         }}
-                        sx={{ minWidth: 200 }}
+                        sx={{ minWidth: { xs: '100%', sm: 200 } }}
                     />
 
                     {/* Add Button */}
@@ -213,8 +213,9 @@ export function CompaniesTab() {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={handleAdd}
+                        sx={{ whiteSpace: 'nowrap' }}
                     >
-                        {t('settings.companies.addCompany', 'Add Company')}
+                        {t('settings.companies.addCompany')}
                     </Button>
                 </Stack>
             </Stack>
@@ -228,18 +229,18 @@ export function CompaniesTab() {
 
             {/* Companies Table */}
             <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-                <TableContainer sx={{ maxHeight: 500 }}>
+                <TableContainer sx={{ maxHeight: { xs: 400, md: 500 } }}>
                     <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell>{t('settings.companies.code', 'Code')}</TableCell>
-                                <TableCell>{t('settings.companies.name', 'Name')}</TableCell>
-                                <TableCell>{t('settings.companies.location', 'Location')}</TableCell>
-                                <TableCell align="center">{t('settings.companies.stores', 'Stores')}</TableCell>
-                                <TableCell align="center">{t('settings.companies.aimsStatus', 'AIMS')}</TableCell>
-                                <TableCell align="center">{t('settings.companies.status', 'Status')}</TableCell>
-                                <TableCell>{t('settings.companies.created', 'Created')}</TableCell>
-                                <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
+                                <TableCell sx={{ minWidth: 80 }}>{t('settings.companies.code')}</TableCell>
+                                <TableCell sx={{ minWidth: 120 }}>{t('settings.companies.name')}</TableCell>
+                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.companies.location')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 80 }}>{t('settings.companies.stores')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 60, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.companies.aimsStatus')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 80 }}>{t('settings.companies.status')}</TableCell>
+                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.companies.created')}</TableCell>
+                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -254,8 +255,8 @@ export function CompaniesTab() {
                                     <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                                         <Typography color="text.secondary">
                                             {searchQuery
-                                                ? t('settings.companies.noSearchResults', 'No companies match your search')
-                                                : t('settings.companies.noCompanies', 'No companies yet. Create your first company!')}
+                                                ? t('settings.companies.noSearchResults')
+                                                : t('settings.companies.noCompanies')}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
@@ -271,17 +272,17 @@ export function CompaniesTab() {
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant="body2" fontWeight="medium">
+                                            <Typography variant="body2" fontWeight="medium" noWrap>
                                                 {company.name}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
+                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                                            <Typography variant="body2" color="text.secondary" noWrap>
                                                 {company.location || '—'}
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="center">
-                                            <Tooltip title={t('settings.companies.manageStores', 'Manage Stores')}>
+                                            <Tooltip title={t('settings.companies.manageStores')}>
                                                 <Chip
                                                     icon={<StoreIcon fontSize="small" />}
                                                     label={company._count?.stores || 0}
@@ -291,11 +292,11 @@ export function CompaniesTab() {
                                                 />
                                             </Tooltip>
                                         </TableCell>
-                                        <TableCell align="center">
+                                        <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                                             <Tooltip
                                                 title={company.aimsConfigured
-                                                    ? t('settings.companies.aimsConfigured', 'AIMS configured')
-                                                    : t('settings.companies.aimsNotConfigured', 'AIMS not configured')}
+                                                    ? t('settings.companies.aimsConfigured')
+                                                    : t('settings.companies.aimsNotConfigured')}
                                             >
                                                 {company.aimsConfigured ? (
                                                     <CloudIcon color="success" fontSize="small" />
@@ -307,21 +308,21 @@ export function CompaniesTab() {
                                         <TableCell align="center">
                                             <Chip
                                                 label={company.isActive
-                                                    ? t('common.active', 'Active')
-                                                    : t('common.inactive', 'Inactive')}
+                                                    ? t('common.active')
+                                                    : t('common.inactive')}
                                                 size="small"
                                                 color={company.isActive ? 'success' : 'default'}
                                                 variant={company.isActive ? 'filled' : 'outlined'}
                                             />
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                                             <Typography variant="body2" color="text.secondary">
                                                 {formatDate(company.createdAt)}
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="right">
                                             <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                                                <Tooltip title={t('settings.companies.manageStores', 'Manage Stores')}>
+                                                <Tooltip title={t('settings.companies.manageStores')}>
                                                     <IconButton
                                                         size="small"
                                                         onClick={() => handleManageStores(company)}
@@ -329,7 +330,7 @@ export function CompaniesTab() {
                                                         <StoreIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title={t('common.edit', 'Edit')}>
+                                                <Tooltip title={t('common.edit')}>
                                                     <IconButton
                                                         size="small"
                                                         onClick={() => handleEdit(company)}
@@ -337,7 +338,7 @@ export function CompaniesTab() {
                                                         <EditIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title={t('common.delete', 'Delete')}>
+                                                <Tooltip title={t('common.delete')}>
                                                     <IconButton
                                                         size="small"
                                                         color="error"
@@ -367,7 +368,17 @@ export function CompaniesTab() {
                         setPage(0);
                     }}
                     rowsPerPageOptions={[5, 10, 25, 50]}
-                    labelRowsPerPage={t('common.rowsPerPage', 'Rows per page')}
+                    labelRowsPerPage={t('common.rowsPerPage')}
+                    sx={{
+                        '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                            margin: 0,
+                        },
+                        '.MuiTablePagination-toolbar': {
+                            flexWrap: 'wrap',
+                            justifyContent: 'center',
+                            gap: 1,
+                        },
+                    }}
                 />
             </Paper>
 

@@ -23,6 +23,7 @@ import healthRoutes from './features/health/routes.js';
 import syncRoutes from './features/sync/routes.js';
 import settingsRoutes from './features/settings/routes.js';
 import adminRoutes from './features/admin/routes.js';
+import labelsRoutes from './features/labels/routes.js';
 
 // Create Express app
 const app = express();
@@ -101,6 +102,7 @@ apiRouter.use('/conference', conferenceRoutes);
 apiRouter.use('/sync', syncRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/admin', adminRoutes);
+apiRouter.use('/labels', labelsRoutes);
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
 

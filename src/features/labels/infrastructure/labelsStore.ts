@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import type { SolumConfig } from '@shared/domain/types';
 import type { LabelArticleLink, ScannerState, ScanInputType, LabelImagesDetail } from '../domain/types';
-import { linkLabel, unlinkLabel, getAllLabels, getLabelImages, type AimsLabel } from '@shared/infrastructure/services/solum/labelsService';
+import { labelsApi, type AIMSLabel } from '@shared/infrastructure/services/labelsApi';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface LabelsState {
@@ -22,12 +21,18 @@ interface LabelsState {
     // Scanner
     scanner: ScannerState;
     
+    // AIMS status
+    aimsConfigured: boolean;
+    aimsConnected: boolean;
+    
     // Actions
-    fetchLabels: (config: SolumConfig, storeId: string, token: string) => Promise<void>;
-    fetchLabelImages: (config: SolumConfig, storeId: string, token: string, labelCode: string) => Promise<LabelImagesDetail | null>;
+    fetchLabels: (storeId: string) => Promise<void>;
+    fetchLabelImages: (storeId: string, labelCode: string) => Promise<LabelImagesDetail | null>;
     clearLabelImages: () => void;
-    linkLabelToArticle: (config: SolumConfig, storeId: string, token: string, labelCode: string, articleId: string, templateName?: string) => Promise<void>;
-    unlinkLabelFromArticle: (config: SolumConfig, storeId: string, token: string, labelCode: string) => Promise<void>;
+    linkLabelToArticle: (storeId: string, labelCode: string, articleId: string, templateName?: string) => Promise<void>;
+    unlinkLabelFromArticle: (storeId: string, labelCode: string) => Promise<void>;
+    blinkLabel: (storeId: string, labelCode: string) => Promise<void>;
+    checkAimsStatus: (storeId: string) => Promise<void>;
     setSearchQuery: (query: string) => void;
     setFilterLinkedOnly: (linked: boolean) => void;
     setScannerState: (state: Partial<ScannerState>) => void;
@@ -37,7 +42,7 @@ interface LabelsState {
 /**
  * Transform AIMS labels to our display format
  */
-function transformLabels(aimsLabels: AimsLabel[]): LabelArticleLink[] {
+function transformLabels(aimsLabels: AIMSLabel[]): LabelArticleLink[] {
     const links: LabelArticleLink[] = [];
     
     for (const label of aimsLabels) {
@@ -48,7 +53,7 @@ function transformLabels(aimsLabels: AimsLabel[]): LabelArticleLink[] {
                     labelCode: label.labelCode,
                     articleId: article.articleId,
                     articleName: article.articleName,
-                    signal: label.signal,
+                    signal: label.signalQuality,
                     battery: label.battery,
                     status: label.status,
                 });
@@ -57,8 +62,9 @@ function transformLabels(aimsLabels: AimsLabel[]): LabelArticleLink[] {
             // Label without articles (unlinked)
             links.push({
                 labelCode: label.labelCode,
-                articleId: '',
-                signal: label.signal,
+                articleId: label.articleId || '',
+                articleName: label.articleName,
+                signal: label.signalQuality,
                 battery: label.battery,
                 status: label.status,
             });
@@ -82,44 +88,61 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
         isScanning: false,
         inputType: 'manual' as ScanInputType,
     },
+    aimsConfigured: false,
+    aimsConnected: false,
     
-    // Fetch all labels from AIMS
-    fetchLabels: async (config, storeId, token) => {
-        set({ isLoading: true, error: null });
-        
+    // Check AIMS configuration status
+    checkAimsStatus: async (storeId) => {
         try {
-            logger.info('LabelsStore', 'Fetching labels from AIMS');
-            const aimsLabels = await getAllLabels(config, storeId, token);
-            const links = transformLabels(aimsLabels);
-            
-            set({ labels: links, isLoading: false });
-            logger.info('LabelsStore', 'Labels fetched', { count: links.length });
+            const status = await labelsApi.getStatus(storeId);
+            set({ 
+                aimsConfigured: status.configured, 
+                aimsConnected: status.connected 
+            });
         } catch (error: any) {
-            logger.error('LabelsStore', 'Failed to fetch labels', { error: error.message });
-            set({ error: error.message, isLoading: false });
+            logger.error('LabelsStore', 'Failed to check AIMS status', { error: error.message });
+            set({ aimsConfigured: false, aimsConnected: false });
         }
     },
     
-    // Fetch label images from AIMS
-    fetchLabelImages: async (config, storeId, token, labelCode) => {
+    // Fetch all labels via server API
+    fetchLabels: async (storeId) => {
+        set({ isLoading: true, error: null });
+        
+        try {
+            logger.info('LabelsStore', 'Fetching labels via server', { storeId });
+            const response = await labelsApi.list(storeId);
+            const links = transformLabels(response.data);
+            
+            set({ labels: links, isLoading: false, aimsConfigured: true, aimsConnected: true });
+            logger.info('LabelsStore', 'Labels fetched', { count: links.length });
+        } catch (error: any) {
+            logger.error('LabelsStore', 'Failed to fetch labels', { error: error.message });
+            const errorMsg = error.response?.data?.error?.message || error.message;
+            set({ error: errorMsg, isLoading: false });
+        }
+    },
+    
+    // Fetch label images via server API
+    fetchLabelImages: async (storeId, labelCode) => {
         set({ isLoadingImages: true, imagesError: null });
         
         try {
-            logger.info('LabelsStore', 'Fetching label images', { labelCode });
-            const imagesData = await getLabelImages(config, storeId, token, labelCode);
+            logger.info('LabelsStore', 'Fetching label images', { storeId, labelCode });
+            const response = await labelsApi.getImages(storeId, labelCode);
             
-            if (imagesData) {
+            if (response.data) {
                 const labelImages: LabelImagesDetail = {
-                    labelCode: imagesData.labelCode,
-                    isDualSidedLabel: imagesData.isDualSidedLabel,
-                    width: imagesData.width,
-                    height: imagesData.height,
-                    activePage: imagesData.activePage,
-                    previousImage: imagesData.previousImage || [],
-                    currentImage: imagesData.currentImage || [],
-                    responseCode: imagesData.responseCode,
-                    responseMessage: imagesData.responseMessage,
-                    latestBatchInfo: imagesData.latestBatchInfo,
+                    labelCode: response.data.labelCode,
+                    isDualSidedLabel: response.data.isDualSidedLabel ?? false,
+                    width: response.data.width ?? 0,
+                    height: response.data.height ?? 0,
+                    activePage: response.data.activePage ?? 0,
+                    previousImage: response.data.previousImage || [],
+                    currentImage: response.data.currentImage || [],
+                    responseCode: response.data.responseCode,
+                    responseMessage: response.data.responseMessage,
+                    latestBatchInfo: response.data.latestBatchInfo,
                 };
                 set({ selectedLabelImages: labelImages, isLoadingImages: false });
                 logger.info('LabelsStore', 'Label images fetched', { labelCode });
@@ -130,7 +153,8 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
             }
         } catch (error: any) {
             logger.error('LabelsStore', 'Failed to fetch label images', { error: error.message });
-            set({ imagesError: error.message, isLoadingImages: false });
+            const errorMsg = error.response?.data?.error?.message || error.message;
+            set({ imagesError: errorMsg, isLoadingImages: false });
             return null;
         }
     },
@@ -140,38 +164,52 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
         set({ selectedLabelImages: null, imagesError: null });
     },
     
-    // Link a label to an article
-    linkLabelToArticle: async (config, storeId, token, labelCode, articleId, templateName) => {
+    // Link a label to an article via server API
+    linkLabelToArticle: async (storeId, labelCode, articleId, templateName) => {
         set({ isLoading: true, error: null });
         
         try {
-            logger.info('LabelsStore', 'Linking label to article', { labelCode, articleId });
-            await linkLabel(config, storeId, token, labelCode, articleId, templateName);
+            logger.info('LabelsStore', 'Linking label to article', { storeId, labelCode, articleId });
+            await labelsApi.link(storeId, labelCode, articleId, templateName);
             
             // Refresh labels list
-            await get().fetchLabels(config, storeId, token);
+            await get().fetchLabels(storeId);
             logger.info('LabelsStore', 'Label linked successfully');
         } catch (error: any) {
             logger.error('LabelsStore', 'Failed to link label', { error: error.message });
-            set({ error: error.message, isLoading: false });
+            const errorMsg = error.response?.data?.error?.message || error.message;
+            set({ error: errorMsg, isLoading: false });
             throw error;
         }
     },
     
-    // Unlink a label from its article
-    unlinkLabelFromArticle: async (config, storeId, token, labelCode) => {
+    // Unlink a label from its article via server API
+    unlinkLabelFromArticle: async (storeId, labelCode) => {
         set({ isLoading: true, error: null });
         
         try {
-            logger.info('LabelsStore', 'Unlinking label', { labelCode });
-            await unlinkLabel(config, storeId, token, labelCode);
+            logger.info('LabelsStore', 'Unlinking label', { storeId, labelCode });
+            await labelsApi.unlink(storeId, labelCode);
             
             // Refresh labels list
-            await get().fetchLabels(config, storeId, token);
+            await get().fetchLabels(storeId);
             logger.info('LabelsStore', 'Label unlinked successfully');
         } catch (error: any) {
             logger.error('LabelsStore', 'Failed to unlink label', { error: error.message });
-            set({ error: error.message, isLoading: false });
+            const errorMsg = error.response?.data?.error?.message || error.message;
+            set({ error: errorMsg, isLoading: false });
+            throw error;
+        }
+    },
+    
+    // Blink a label for identification via server API
+    blinkLabel: async (storeId, labelCode) => {
+        try {
+            logger.info('LabelsStore', 'Blinking label', { storeId, labelCode });
+            await labelsApi.blink(storeId, labelCode);
+            logger.info('LabelsStore', 'Label blink sent successfully');
+        } catch (error: any) {
+            logger.error('LabelsStore', 'Failed to blink label', { error: error.message });
             throw error;
         }
     },

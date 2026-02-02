@@ -137,7 +137,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
         const isValidFormat = /^[A-Z]{3,}$/.test(code);
         if (!isValidFormat) {
             setCodeValid(false);
-            setCodeError(t('settings.companies.codeInvalidFormat', 'Code must be 3+ uppercase letters'));
+            setCodeError(t('settings.companies.codeInvalidFormat'));
             return;
         }
 
@@ -146,9 +146,9 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
             try {
                 const result = await companyService.validateCode(code);
                 setCodeValid(result.available);
-                setCodeError(result.available ? null : t('settings.companies.codeExists', 'This code is already in use'));
+                setCodeError(result.available ? null : t('settings.companies.codeExists'));
             } catch {
-                setCodeError(t('settings.companies.codeValidationError', 'Failed to validate code'));
+                setCodeError(t('settings.companies.codeValidationError'));
             } finally {
                 setCodeValidating(false);
             }
@@ -229,7 +229,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
             onSave();
         } catch (err: any) {
             console.error('Failed to save company:', err);
-            setError(err.response?.data?.message || t('settings.companies.saveError', 'Failed to save company'));
+            setError(err.response?.data?.message || t('settings.companies.saveError'));
         } finally {
             setSubmitting(false);
         }
@@ -241,11 +241,14 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
             onClose={submitting ? undefined : onClose}
             maxWidth="sm"
             fullWidth
+            PaperProps={{
+                sx: { maxHeight: '90vh' }
+            }}
         >
             <DialogTitle>
                 {isEdit 
-                    ? t('settings.companies.editTitle', 'Edit Company')
-                    : t('settings.companies.createTitle', 'Create Company')}
+                    ? t('settings.companies.editTitle')
+                    : t('settings.companies.createTitle')}
             </DialogTitle>
 
             <DialogContent dividers>
@@ -260,16 +263,19 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                     value={activeTab}
                     onChange={(_, newValue) => setActiveTab(newValue)}
                     sx={{ borderBottom: 1, borderColor: 'divider' }}
+                    variant="fullWidth"
                 >
                     <Tab 
                         icon={<BusinessIcon fontSize="small" />} 
                         iconPosition="start"
-                        label={t('settings.companies.basicInfo', 'Basic Info')}
+                        label={t('settings.companies.basicInfo')}
+                        sx={{ minHeight: 48 }}
                     />
                     <Tab 
                         icon={<CloudIcon fontSize="small" />} 
                         iconPosition="start"
-                        label={t('settings.companies.aimsConfig', 'AIMS Config')}
+                        label={t('settings.companies.aimsConfig')}
+                        sx={{ minHeight: 48 }}
                     />
                 </Tabs>
 
@@ -278,7 +284,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {/* Code (only editable on create) */}
                         <TextField
-                            label={t('settings.companies.codeLabel', 'Company Code')}
+                            label={t('settings.companies.codeLabel')}
                             value={code}
                             onChange={(e) => handleCodeChange(e.target.value)}
                             disabled={isEdit}
@@ -286,7 +292,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                             error={!!codeError}
                             helperText={
                                 codeError ||
-                                t('settings.companies.codeHelp', '3+ uppercase letters (e.g., EMC, ACME)')
+                                t('settings.companies.codeHelp')
                             }
                             InputProps={{
                                 endAdornment: code.length >= 3 && (
@@ -309,7 +315,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
 
                         {/* Name */}
                         <TextField
-                            label={t('settings.companies.nameLabel', 'Company Name')}
+                            label={t('settings.companies.nameLabel')}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
@@ -318,21 +324,21 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
 
                         {/* Location */}
                         <TextField
-                            label={t('settings.companies.locationLabel', 'Location')}
+                            label={t('settings.companies.locationLabel')}
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            placeholder={t('settings.companies.locationPlaceholder', 'City, Country')}
+                            placeholder={t('settings.companies.locationPlaceholder')}
                             inputProps={{ maxLength: 255 }}
                         />
 
                         {/* Description */}
                         <TextField
-                            label={t('settings.companies.descriptionLabel', 'Description')}
+                            label={t('settings.companies.descriptionLabel')}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             multiline
                             rows={3}
-                            placeholder={t('settings.companies.descriptionPlaceholder', 'Brief description of the company...')}
+                            placeholder={t('settings.companies.descriptionPlaceholder')}
                         />
 
                         {/* Active Status (only in edit mode) */}
@@ -344,7 +350,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                         onChange={(e) => setIsActive(e.target.checked)}
                                     />
                                 }
-                                label={t('settings.companies.activeLabel', 'Company is active')}
+                                label={t('settings.companies.activeLabel')}
                             />
                         )}
                     </Box>
@@ -354,31 +360,30 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 <TabPanel value={activeTab} index={1}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Alert severity="info" sx={{ mb: 1 }}>
-                            {t('settings.companies.aimsConfigInfo', 
-                                'Configure AIMS API credentials to enable label synchronization with SoluM ESL cloud.')}
+                            {t('settings.companies.aimsConfigInfo')}
                         </Alert>
 
                         {/* Base URL */}
                         <TextField
-                            label={t('settings.companies.aimsBaseUrl', 'AIMS Base URL')}
+                            label={t('settings.companies.aimsBaseUrl')}
                             value={aimsBaseUrl}
                             onChange={(e) => handleAimsFieldChange(setAimsBaseUrl)(e.target.value)}
                             placeholder="https://api.solumesl.com"
-                            helperText={t('settings.companies.aimsBaseUrlHelp', 'The base URL for AIMS API')}
+                            helperText={t('settings.companies.aimsBaseUrlHelp')}
                         />
 
                         {/* Cluster */}
                         <TextField
-                            label={t('settings.companies.aimsCluster', 'AIMS Cluster')}
+                            label={t('settings.companies.aimsCluster')}
                             value={aimsCluster}
                             onChange={(e) => handleAimsFieldChange(setAimsCluster)(e.target.value)}
                             placeholder="cluster1"
-                            helperText={t('settings.companies.aimsClusterHelp', 'The cluster identifier for your AIMS instance')}
+                            helperText={t('settings.companies.aimsClusterHelp')}
                         />
 
                         {/* Username */}
                         <TextField
-                            label={t('settings.companies.aimsUsername', 'AIMS Username')}
+                            label={t('settings.companies.aimsUsername')}
                             value={aimsUsername}
                             onChange={(e) => handleAimsFieldChange(setAimsUsername)(e.target.value)}
                             placeholder="admin@company.com"
@@ -386,12 +391,12 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
 
                         {/* Password */}
                         <TextField
-                            label={t('settings.companies.aimsPassword', 'AIMS Password')}
+                            label={t('settings.companies.aimsPassword')}
                             type={showPassword ? 'text' : 'password'}
                             value={aimsPassword}
                             onChange={(e) => handleAimsFieldChange(setAimsPassword)(e.target.value)}
                             placeholder={isEdit 
-                                ? t('settings.companies.aimsPasswordPlaceholder', 'Leave blank to keep current password')
+                                ? t('settings.companies.aimsPasswordPlaceholder')
                                 : undefined}
                             InputProps={{
                                 endAdornment: (
@@ -422,14 +427,14 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                     <>
                                         <CheckCircleIcon color="success" fontSize="small" />
                                         <Typography variant="body2" color="success.main">
-                                            {t('settings.companies.aimsConfigured', 'AIMS is configured')}
+                                            {t('settings.companies.aimsConfigured')}
                                         </Typography>
                                     </>
                                 ) : (
                                     <>
                                         <ErrorIcon color="warning" fontSize="small" />
                                         <Typography variant="body2" color="warning.main">
-                                            {t('settings.companies.aimsNotConfigured', 'AIMS is not configured')}
+                                            {t('settings.companies.aimsNotConfigured')}
                                         </Typography>
                                     </>
                                 )}
@@ -439,9 +444,9 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 </TabPanel>
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={submitting}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
@@ -449,7 +454,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                     disabled={submitting || !isValid()}
                     startIcon={submitting ? <CircularProgress size={16} /> : null}
                 >
-                    {isEdit ? t('common.save', 'Save') : t('common.create', 'Create')}
+                    {isEdit ? t('common.save') : t('common.create')}
                 </Button>
             </DialogActions>
         </Dialog>
