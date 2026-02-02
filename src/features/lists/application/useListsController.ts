@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { useListsStore } from '../infrastructure/listsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { logger } from '@shared/infrastructure/services/logger';
 
@@ -9,7 +10,7 @@ export function useListsController() {
     // Stores
     const listsStore = useListsStore();
     const spacesStore = useSpacesStore();
-    // const settings = useSettingsStore(state => state.settings); // Not needed anymore for sync init
+    const workingMode = useSettingsStore(state => state.settings.workingMode);
 
     // Sync Controller
     // Use global context to avoid duplicate adapters and state conflicts
@@ -59,7 +60,7 @@ export function useListsController() {
         // This ensures mapped fields from the list are merged into existing server data
         // without erasing unmapped fields.
         try {
-            if (syncController.workingMode === 'SOLUM_API') {
+            if (workingMode === 'SOLUM_API') {
                 await syncController.safeUpload(list.spaces);
             }
             // For SFTP, safeUpload is an alias to upload (full replace)

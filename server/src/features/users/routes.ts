@@ -88,7 +88,7 @@ const assignUserToStoreSchema = z.object({
     features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
 });
 
-// User elevation schema
+// User elevation schema - PLATFORM_ADMIN or null (regular user), COMPANY_ADMIN is handled via UserCompany
 const elevateUserSchema = z.object({
     globalRole: z.enum(['USER', 'COMPANY_ADMIN', 'PLATFORM_ADMIN']),
     companyId: z.string().uuid().optional(), // Required for COMPANY_ADMIN
@@ -133,7 +133,7 @@ const isCompanyAdmin = async (req: any, companyId: string): Promise<boolean> => 
         }
     });
     
-    return userCompany?.isCompanyAdmin === true;
+    return userCompany?.role === 'COMPANY_ADMIN';
 };
 
 // Helper: Check if current user can manage a company
@@ -454,7 +454,7 @@ router.post('/', async (req, res, next) => {
                         create: {
                             companyId,
                             allStoresAccess: data.allStoresAccess,
-                            isCompanyAdmin: false, // Default, can be elevated later
+                            role: 'VIEWER', // Default, can be elevated later
                         },
                     },
                     userStores: data.allStoresAccess ? undefined : {
@@ -478,7 +478,7 @@ router.post('/', async (req, res, next) => {
                         select: {
                             companyId: true,
                             allStoresAccess: true,
-                            isCompanyAdmin: true,
+                            role: true,
                             company: {
                                 select: {
                                     id: true,
@@ -515,7 +515,7 @@ router.post('/', async (req, res, next) => {
                 code: uc.company.code,
                 name: uc.company.name,
                 allStoresAccess: uc.allStoresAccess,
-                isCompanyAdmin: uc.isCompanyAdmin,
+                isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
             })),
             stores: result.userStores.map(us => ({
                 id: us.storeId,
@@ -813,7 +813,7 @@ router.post('/:id/elevate', async (req, res, next) => {
         const userId = req.params.id;
 
         // Prevent self-demotion
-        if (userId === req.user!.id && data.globalRole === GlobalRole.USER) {
+        if (userId === req.user!.id && data.globalRole === 'USER') {
             throw badRequest('Cannot demote yourself');
         }
 
@@ -827,7 +827,7 @@ router.post('/:id/elevate', async (req, res, next) => {
         }
 
         // If elevating to COMPANY_ADMIN, verify company exists
-        if (data.globalRole === GlobalRole.COMPANY_ADMIN && data.companyId) {
+        if (data.globalRole === 'COMPANY_ADMIN' && data.companyId) {
             const company = await prisma.company.findUnique({
                 where: { id: data.companyId },
             });
@@ -835,15 +835,12 @@ router.post('/:id/elevate', async (req, res, next) => {
                 throw notFound('Company');
             }
 
-            // Update user globalRole and set company admin
+            // Update user and set company admin role via UserCompany
             const updated = await prisma.$transaction(async (tx) => {
-                // Update user global role
-                await tx.user.update({
-                    where: { id: userId },
-                    data: { globalRole: data.globalRole },
-                });
+                // For COMPANY_ADMIN, don't set globalRole - it's handled via UserCompany.role
+                // Note: globalRole is only for PLATFORM_ADMIN or null
 
-                // Upsert UserCompany with isCompanyAdmin = true
+                // Upsert UserCompany with role = COMPANY_ADMIN
                 await tx.userCompany.upsert({
                     where: {
                         userId_companyId: { userId, companyId: data.companyId! },
@@ -851,11 +848,11 @@ router.post('/:id/elevate', async (req, res, next) => {
                     create: {
                         userId,
                         companyId: data.companyId!,
-                        isCompanyAdmin: true,
+                        role: 'COMPANY_ADMIN',
                         allStoresAccess: true, // Company admins have access to all stores
                     },
                     update: {
-                        isCompanyAdmin: true,
+                        role: 'COMPANY_ADMIN',
                         allStoresAccess: true,
                     },
                 });
@@ -870,7 +867,7 @@ router.post('/:id/elevate', async (req, res, next) => {
                             where: { companyId: data.companyId! },
                             select: {
                                 companyId: true,
-                                isCompanyAdmin: true,
+                                role: true,
                                 allStoresAccess: true,
                                 company: {
                                     select: { name: true, code: true },
@@ -892,10 +889,13 @@ router.post('/:id/elevate', async (req, res, next) => {
                 } : null,
             });
         } else {
-            // Just update globalRole (for USER or PLATFORM_ADMIN)
+            // For USER: set globalRole to null (remove admin status)
+            // For PLATFORM_ADMIN: set globalRole to PLATFORM_ADMIN
+            const newGlobalRole = data.globalRole === 'PLATFORM_ADMIN' ? 'PLATFORM_ADMIN' : null;
+            
             const updated = await prisma.user.update({
                 where: { id: userId },
-                data: { globalRole: data.globalRole },
+                data: { globalRole: newGlobalRole },
                 select: {
                     id: true,
                     email: true,
@@ -925,7 +925,7 @@ router.get('/:id/companies', async (req, res, next) => {
                     select: {
                         companyId: true,
                         allStoresAccess: true,
-                        isCompanyAdmin: true,
+                        role: true,
                         company: {
                             select: {
                                 id: true,
@@ -951,7 +951,7 @@ router.get('/:id/companies', async (req, res, next) => {
                 name: uc.company.name,
                 location: uc.company.location,
                 allStoresAccess: uc.allStoresAccess,
-                isCompanyAdmin: uc.isCompanyAdmin,
+                isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
             })),
         });
     } catch (error) {
@@ -1022,7 +1022,7 @@ router.post('/:id/companies', async (req, res, next) => {
                     userId,
                     companyId,
                     allStoresAccess: data.allStoresAccess,
-                    isCompanyAdmin: data.isCompanyAdmin,
+                    role: data.isCompanyAdmin ? 'COMPANY_ADMIN' : 'VIEWER',
                 },
                 include: {
                     company: {
@@ -1045,7 +1045,7 @@ router.post('/:id/companies', async (req, res, next) => {
             name: result.company.name,
             location: result.company.location,
             allStoresAccess: result.allStoresAccess,
-            isCompanyAdmin: result.isCompanyAdmin,
+            isCompanyAdmin: result.role === 'COMPANY_ADMIN',
         });
     } catch (error) {
         next(error);
@@ -1081,7 +1081,7 @@ router.patch('/:id/companies/:companyId', async (req, res, next) => {
             where: { userId_companyId: { userId, companyId } },
             data: {
                 ...(allStoresAccess !== undefined && { allStoresAccess }),
-                ...(makeCompanyAdmin !== undefined && { isCompanyAdmin: makeCompanyAdmin }),
+                ...(makeCompanyAdmin !== undefined && { role: makeCompanyAdmin ? 'COMPANY_ADMIN' : 'VIEWER' }),
             },
             include: {
                 company: {
@@ -1098,7 +1098,7 @@ router.patch('/:id/companies/:companyId', async (req, res, next) => {
             code: updated.company.code,
             name: updated.company.name,
             allStoresAccess: updated.allStoresAccess,
-            isCompanyAdmin: updated.isCompanyAdmin,
+            isCompanyAdmin: updated.role === 'COMPANY_ADMIN',
         });
     } catch (error) {
         next(error);
@@ -1119,7 +1119,7 @@ router.delete('/:id/companies/:companyId', async (req, res, next) => {
         // Prevent self-removal if you're the only company admin
         if (userId === req.user!.id) {
             const adminCount = await prisma.userCompany.count({
-                where: { companyId, isCompanyAdmin: true },
+                where: { companyId, role: 'COMPANY_ADMIN' },
             });
             
             if (adminCount <= 1) {
@@ -1189,7 +1189,7 @@ router.get('/me/context', async (req, res, next) => {
                     select: {
                         companyId: true,
                         allStoresAccess: true,
-                        isCompanyAdmin: true,
+                        role: true,
                         company: {
                             select: {
                                 id: true,
@@ -1231,7 +1231,7 @@ router.get('/me/context', async (req, res, next) => {
                     code: uc.company.code,
                     name: uc.company.name,
                     allStoresAccess: uc.allStoresAccess,
-                    isCompanyAdmin: uc.isCompanyAdmin,
+                    isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
                 };
             }
         }
@@ -1259,7 +1259,7 @@ router.get('/me/context', async (req, res, next) => {
                 code: uc.company.code,
                 name: uc.company.name,
                 allStoresAccess: uc.allStoresAccess,
-                isCompanyAdmin: uc.isCompanyAdmin,
+                isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
             })),
             availableStores: user.userStores.map(us => ({
                 id: us.storeId,
