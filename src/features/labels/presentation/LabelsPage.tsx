@@ -200,11 +200,12 @@ export function LabelsPage() {
                         variant="contained"
                         color="primary"
                         size="large"
-                        startIcon={<AddIcon />}
+                        startIcon={<AddIcon  />}    
                         onClick={() => handleOpenLinkDialog()}
                         sx={{ 
-                            fontWeight: 'bold',
-                            px: 3,
+                            fontSize: '1.5rem',
+                            py: 1,
+                            px: 4,
                         }}
                     >
                         {t('labels.linkNew', 'Link Label')}
@@ -262,16 +263,16 @@ export function LabelsPage() {
             {/* Labels Table */}
             <Paper>
                 <TableContainer>
-                    <Table>
+                    <Table sx={{ tableLayout: 'auto', width: 'auto', minWidth: '100%' }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell>{t('labels.table.labelCode', 'Label Code')}</TableCell>
-                                <TableCell>{t('labels.table.articleId', 'Article ID')}</TableCell>
-                                <TableCell>{t('labels.table.articleName', 'Article Name')}</TableCell>
-                                <TableCell>{t('labels.table.signal', 'Signal')}</TableCell>
-                                <TableCell>{t('labels.table.battery', 'Battery')}</TableCell>
-                                <TableCell>{t('labels.table.status', 'Status')}</TableCell>
-                                <TableCell align="right">{t('labels.table.actions', 'Actions')}</TableCell>
+                                <TableCell sx={{ width: 'auto', whiteSpace: 'nowrap', textAlign: 'start' }}>{t('labels.table.labelCode', 'Label Code')}</TableCell>
+                                <TableCell sx={{ width: 'auto', whiteSpace: 'nowrap', textAlign: 'start' }}>{t('labels.table.articleId', 'Article ID')}</TableCell>
+                                <TableCell sx={{ textAlign: 'start' }}>{t('labels.table.articleName', 'Article Name')}</TableCell>
+                                <TableCell sx={{ width: 'auto', whiteSpace: 'nowrap', textAlign: 'start' }}>{t('labels.table.signal', 'Signal')}</TableCell>
+                                <TableCell sx={{ width: 'auto', whiteSpace: 'nowrap', textAlign: 'start' }}>{t('labels.table.battery', 'Battery')}</TableCell>
+                                <TableCell sx={{ width: 'auto', whiteSpace: 'nowrap', textAlign: 'start' }}>{t('labels.table.status', 'Status')}</TableCell>
+                                <TableCell sx={{ width: 'auto', whiteSpace: 'nowrap', textAlign: 'start' }}>{t('labels.table.actions', 'Actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -292,19 +293,20 @@ export function LabelsPage() {
                             ) : (
                                 paginatedLabels.map((label, index) => (
                                     <TableRow key={`${label.labelCode}-${label.articleId}-${index}`} hover>
-                                        <TableCell>
+                                        <TableCell sx={{ textAlign: 'start' }}>
                                             <Typography variant="body2" fontFamily="monospace">
                                                 {label.labelCode}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ textAlign: 'start' }}>
                                             {label.articleId ? (
                                                 <Chip
                                                     label={label.articleId}
                                                     size="small"
                                                     icon={<LinkIcon />}
-                                                    color="primary"
                                                     variant="outlined"
+                                                    sx={{ p: 2 }}
+
                                                 />
                                             ) : (
                                                 <Typography variant="body2" color="text.secondary">
@@ -312,42 +314,44 @@ export function LabelsPage() {
                                                 </Typography>
                                             )}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ textAlign: 'start' }}>
                                             {label.articleName || '-'}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ textAlign: 'start' }}>
                                             {label.signal ? (
                                                 <Chip
                                                     icon={<SignalIcon />}
                                                     label={label.signal}
                                                     size="small"
                                                     color={getSignalColor(label.signal) as any}
+                                                    sx={{ p: 2}}
                                                 />
                                             ) : (
                                                 <Typography variant="body2" color="text.secondary">-</Typography>
                                             )}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ textAlign: 'start' }}>
                                             {label.battery ? (
                                                 <Chip
                                                     icon={<BatteryIcon />}
                                                     label={label.battery}
                                                     size="small"
                                                     color={getBatteryColor(label.battery) as any}
+                                                    sx={{ p: 2}}
                                                 />
                                             ) : (
                                                 <Typography variant="body2" color="text.secondary">-</Typography>
                                             )}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ textAlign: 'start' }}>
                                             {label.status ? (
                                                 <Chip label={label.status} size="small" />
                                             ) : (
                                                 <Typography variant="body2" color="text.secondary">-</Typography>
                                             )}
                                         </TableCell>
-                                        <TableCell align="right">
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, justifyContent: 'flex-end' }}>
+                                        <TableCell sx={{ textAlign: 'start' }}>
+                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
                                                 {label.articleId ? (
                                                     <Tooltip title={t('labels.unlink.button', 'Unlink')}>
                                                         <IconButton
