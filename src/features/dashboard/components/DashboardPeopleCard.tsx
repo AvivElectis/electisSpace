@@ -51,6 +51,7 @@ export function DashboardPeopleCard({
                         size="small"
                         endIcon={<ArrowForwardIcon />}
                         onClick={() => navigate('/people')}
+                        sx={{ fontSize: '0.95rem' }}
                     >
                         {t('dashboard.toPeople')}
                     </Button>
@@ -112,7 +113,7 @@ export function DashboardPeopleCard({
                     </Grid>
 
                     <Button
-                        variant="contained"
+                        variant="outlined"
                         startIcon={<PeopleIcon />}
                         onClick={() => navigate('/people')}
                         sx={{ mt: 2, width: 'fit-content' }}
