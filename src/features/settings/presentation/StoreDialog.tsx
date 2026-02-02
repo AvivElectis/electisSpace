@@ -118,7 +118,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
         const isValidFormat = /^\d{1,10}$/.test(code);
         if (!isValidFormat) {
             setCodeValid(false);
-            setCodeError(t('settings.stores.codeInvalidFormat', 'Code must be 1-10 digits (e.g., 01, 002, 200)'));
+            setCodeError(t('settings.stores.codeInvalidFormat'));
             return;
         }
 
@@ -127,9 +127,9 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
             try {
                 const result = await companyService.validateStoreCode(companyId, code);
                 setCodeValid(result.available);
-                setCodeError(result.available ? null : t('settings.stores.codeExists', 'This code is already in use'));
+                setCodeError(result.available ? null : t('settings.stores.codeExists'));
             } catch {
-                setCodeError(t('settings.stores.codeValidationError', 'Failed to validate code'));
+                setCodeError(t('settings.stores.codeValidationError'));
             } finally {
                 setCodeValidating(false);
             }
@@ -181,7 +181,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
             onSave();
         } catch (err: any) {
             console.error('Failed to save store:', err);
-            setError(err.response?.data?.message || t('settings.stores.saveError', 'Failed to save store'));
+            setError(err.response?.data?.message || t('settings.stores.saveError'));
         } finally {
             setSubmitting(false);
         }
@@ -193,11 +193,14 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
             onClose={submitting ? undefined : onClose}
             maxWidth="xs"
             fullWidth
+            PaperProps={{
+                sx: { maxHeight: '90vh' }
+            }}
         >
             <DialogTitle>
                 {isEdit 
-                    ? t('settings.stores.editTitle', 'Edit Store')
-                    : t('settings.stores.createTitle', 'Create Store')}
+                    ? t('settings.stores.editTitle')
+                    : t('settings.stores.createTitle')}
             </DialogTitle>
 
             <DialogContent dividers>
@@ -210,7 +213,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {/* Code (only editable on create) */}
                     <TextField
-                        label={t('settings.stores.codeLabel', 'Store Code')}
+                        label={t('settings.stores.codeLabel')}
                         value={code}
                         onChange={(e) => handleCodeChange(e.target.value)}
                         disabled={isEdit}
@@ -218,7 +221,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                         error={!!codeError}
                         helperText={
                             codeError ||
-                            t('settings.stores.codeHelp', 'Numeric code (e.g., 01, 002, 200)')
+                            t('settings.stores.codeHelp')
                         }
                         InputProps={{
                             endAdornment: code && (
@@ -241,12 +244,12 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
 
                     {/* Name */}
                     <TextField
-                        label={t('settings.stores.nameLabel', 'Store Name')}
+                        label={t('settings.stores.nameLabel')}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
                         inputProps={{ maxLength: 100 }}
-                        placeholder={t('settings.stores.namePlaceholder', 'e.g., Main Building, North Wing')}
+                        placeholder={t('settings.stores.namePlaceholder')}
                     />
 
                     {/* Timezone */}
@@ -257,8 +260,8 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                         renderInput={(params) => (
                             <TextField
                                 {...params}
-                                label={t('settings.stores.timezoneLabel', 'Timezone')}
-                                helperText={t('settings.stores.timezoneHelp', 'Used for scheduling and timestamps')}
+                                label={t('settings.stores.timezoneLabel')}
+                                helperText={t('settings.stores.timezoneHelp')}
                             />
                         )}
                         freeSolo
@@ -273,7 +276,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                 onChange={(e) => setSyncEnabled(e.target.checked)}
                             />
                         }
-                        label={t('settings.stores.syncEnabledLabel', 'Enable AIMS sync for this store')}
+                        label={t('settings.stores.syncEnabledLabel')}
                     />
 
                     {/* Active Status (only in edit mode) */}
@@ -285,15 +288,15 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                     onChange={(e) => setIsActive(e.target.checked)}
                                 />
                             }
-                            label={t('settings.stores.activeLabel', 'Store is active')}
+                            label={t('settings.stores.activeLabel')}
                         />
                     )}
                 </Box>
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={submitting}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
@@ -301,7 +304,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     disabled={submitting || !isValid()}
                     startIcon={submitting ? <CircularProgress size={16} /> : null}
                 >
-                    {isEdit ? t('common.save', 'Save') : t('common.create', 'Create')}
+                    {isEdit ? t('common.save') : t('common.create')}
                 </Button>
             </DialogActions>
         </Dialog>

@@ -292,7 +292,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
             console.error('Failed to save user:', err);
             setError(
                 err.response?.data?.message ||
-                t('settings.users.saveError', 'Failed to save user')
+                t('settings.users.saveError')
             );
         } finally {
             setSubmitting(false);
@@ -306,7 +306,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <TextField
-                            label={t('auth.email', 'Email')}
+                            label={t('auth.email')}
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -316,15 +316,19 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                             autoFocus={!isEdit}
                         />
 
-                        <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            gap: 2 
+                        }}>
                             <TextField
-                                label={t('auth.firstName', 'First Name')}
+                                label={t('auth.firstName')}
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
                                 fullWidth
                             />
                             <TextField
-                                label={t('auth.lastName', 'Last Name')}
+                                label={t('auth.lastName')}
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
                                 fullWidth
@@ -333,13 +337,13 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
 
                         {!isEdit && (
                             <TextField
-                                label={t('auth.password', 'Password')}
+                                label={t('auth.password')}
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 fullWidth
-                                helperText={t('auth.passwordMinLength', 'Minimum 8 characters')}
+                                helperText={t('auth.passwordMinLength')}
                             />
                         )}
 
@@ -351,7 +355,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                                         onChange={(e) => setIsActive(e.target.checked)}
                                     />
                                 }
-                                label={t('common.status.active', 'Active')}
+                                label={t('common.status.active')}
                             />
                         )}
                     </Box>
@@ -376,22 +380,22 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
 
                         {/* Company Role */}
                         <FormControl fullWidth>
-                            <InputLabel>{t('settings.users.companyRole', 'Company Role')}</InputLabel>
+                            <InputLabel>{t('settings.users.companyRole')}</InputLabel>
                             <Select
                                 value={companyRole}
-                                label={t('settings.users.companyRole', 'Company Role')}
+                                label={t('settings.users.companyRole')}
                                 onChange={(e) => setCompanyRole(e.target.value as CompanyRole)}
                             >
                                 {COMPANY_ROLES.map(role => (
                                     <MenuItem key={role} value={role}>
                                         <Box>
                                             <Typography variant="body1">
-                                                {t(`roles.${role.toLowerCase()}`, role)}
+                                                {t(`roles.${role.toLowerCase()}`)}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary">
                                                 {role === 'COMPANY_ADMIN' 
-                                                    ? t('settings.users.companyAdminDesc', 'Can manage stores and users in this company')
-                                                    : t('settings.users.viewerDesc', 'View-only access to company data')
+                                                    ? t('settings.users.companyAdminDesc')
+                                                    : t('settings.users.viewerDesc')
                                                 }
                                             </Typography>
                                         </Box>
@@ -427,9 +431,12 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                 onClose={submitting ? undefined : onClose}
                 maxWidth="sm"
                 fullWidth
+                PaperProps={{
+                    sx: { maxHeight: '90vh' }
+                }}
             >
                 <DialogTitle>
-                    {t('settings.users.editUser', 'Edit User')}
+                    {t('settings.users.editUser')}
                 </DialogTitle>
 
                 <DialogContent dividers>
@@ -443,7 +450,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                         {/* Basic Info */}
                         <Box>
                             <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.basicInfo', 'Basic Information')}
+                                {t('settings.users.basicInfo')}
                             </Typography>
                             {renderStepContent(0)}
                         </Box>
@@ -453,7 +460,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                         {/* Company */}
                         <Box>
                             <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.companyAssignment', 'Company Assignment')}
+                                {t('settings.users.companyAssignment')}
                             </Typography>
                             {renderStepContent(1)}
                         </Box>
@@ -463,16 +470,16 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                         {/* Stores */}
                         <Box>
                             <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.storeAssignments', 'Store Assignments')}
+                                {t('settings.users.storeAssignments')}
                             </Typography>
                             {renderStepContent(2)}
                         </Box>
                     </Box>
                 </DialogContent>
 
-                <DialogActions>
+                <DialogActions sx={{ px: 3, py: 2 }}>
                     <Button onClick={onClose} disabled={submitting}>
-                        {t('common.cancel', 'Cancel')}
+                        {t('common.cancel')}
                     </Button>
                     <Button
                         variant="contained"
@@ -480,7 +487,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                         disabled={submitting}
                         startIcon={submitting ? <CircularProgress size={16} /> : null}
                     >
-                        {t('common.save', 'Save')}
+                        {t('common.save')}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -494,9 +501,12 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
             onClose={submitting ? undefined : onClose}
             maxWidth="sm"
             fullWidth
+            PaperProps={{
+                sx: { maxHeight: '90vh' }
+            }}
         >
             <DialogTitle>
-                {t('settings.users.addUser', 'Create User')}
+                {t('settings.users.addUser')}
             </DialogTitle>
 
             <DialogContent dividers>
@@ -507,11 +517,20 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                 )}
 
                 {/* Stepper */}
-                <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+                <Stepper 
+                    activeStep={activeStep} 
+                    sx={{ 
+                        mb: 3,
+                        '& .MuiStepLabel-label': {
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                        }
+                    }}
+                    alternativeLabel
+                >
                     {STEPS.map((step) => (
                         <Step key={step}>
                             <StepLabel>
-                                {t(`settings.users.steps.${step}`, step)}
+                                {t(`settings.users.steps.${step}`)}
                             </StepLabel>
                         </Step>
                     ))}
@@ -521,14 +540,14 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                 {renderStepContent(activeStep)}
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}>
                 <Button onClick={onClose} disabled={submitting}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel')}
                 </Button>
                 
                 {activeStep > 0 && (
                     <Button onClick={handleBack} disabled={submitting}>
-                        {t('common.back', 'Back')}
+                        {t('common.back')}
                     </Button>
                 )}
 
@@ -538,7 +557,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                         onClick={handleNext}
                         disabled={!isStepValid(activeStep)}
                     >
-                        {t('common.next', 'Next')}
+                        {t('common.next')}
                     </Button>
                 ) : (
                     <Button
@@ -547,7 +566,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                         disabled={submitting || !isStepValid(activeStep)}
                         startIcon={submitting ? <CircularProgress size={16} /> : null}
                     >
-                        {t('common.create', 'Create')}
+                        {t('common.create')}
                     </Button>
                 )}
             </DialogActions>

@@ -140,8 +140,8 @@ export const authorize = (...allowedRoles: string[]) => {
 };
 
 // Permission-based authorization
-type Resource = 'spaces' | 'people' | 'conference' | 'settings' | 'users' | 'audit' | 'sync';
-type Action = 'create' | 'read' | 'update' | 'delete' | 'import' | 'assign' | 'toggle' | 'trigger' | 'view';
+type Resource = 'spaces' | 'people' | 'conference' | 'settings' | 'users' | 'audit' | 'sync' | 'labels';
+type Action = 'create' | 'read' | 'update' | 'delete' | 'import' | 'assign' | 'toggle' | 'trigger' | 'view' | 'manage';
 
 const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[]>>> = {
     STORE_ADMIN: {
@@ -152,6 +152,7 @@ const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[
         users: ['create', 'read', 'update', 'delete'],
         audit: ['read'],
         sync: ['trigger', 'view'],
+        labels: ['view', 'manage'],
     },
     STORE_MANAGER: {
         spaces: ['create', 'read', 'update', 'delete'],
@@ -159,18 +160,21 @@ const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[
         conference: ['create', 'read', 'update', 'delete', 'toggle'],
         settings: ['read'],
         sync: ['trigger', 'view'],
+        labels: ['view', 'manage'],
     },
     STORE_EMPLOYEE: {
         spaces: ['read', 'update'],
         people: ['read', 'update'],
         conference: ['read', 'update'],
         sync: ['view'],
+        labels: ['view'],
     },
     STORE_VIEWER: {
         spaces: ['read'],
         people: ['read'],
         conference: ['read'],
         sync: ['view'],
+        labels: ['view'],
     },
 };
 

@@ -11,7 +11,8 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { linkLabel } from '@shared/infrastructure/services/solum/labelsService';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('@features/space/presentation/SpaceDialog').then(m => ({ default: m.SpaceDialog })));
@@ -38,6 +39,7 @@ export function DashboardPage() {
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
     const { syncState } = useSyncContext();
+    const { activeStoreId } = useAuthStore();
 
     // Controllers
     const spaceController = useSpaceController({
@@ -104,20 +106,12 @@ export function DashboardPage() {
         await conferenceController.addConferenceRoom(roomData);
     };
 
-    // Link label handler
+    // Link label handler - uses server API with company credentials
     const handleLinkLabel = useCallback(async (labelCode: string, articleId: string, templateName?: string) => {
-        const solumConfig = settingsController.settings.solumConfig;
-        if (!solumConfig?.tokens?.accessToken || !solumConfig.storeNumber) return;
+        if (!activeStoreId) return;
         
-        await linkLabel(
-            solumConfig,
-            solumConfig.storeNumber,
-            solumConfig.tokens.accessToken,
-            labelCode,
-            articleId,
-            templateName
-        );
-    }, [settingsController.settings.solumConfig]);
+        await labelsApi.link(activeStoreId, labelCode, articleId, templateName);
+    }, [activeStoreId]);
 
     // Extract space type for icons
     const spaceTypeIcon = settingsController.settings.spaceType.split('.').pop()?.toLowerCase() || 'chair';
@@ -132,7 +126,7 @@ export function DashboardPage() {
     return (
         <Box>
             {/* Header with Quick Action */}
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
+            <Stack direction={{ xs: 'column', sm: 'column' }}  justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }}  gap={2} sx={{ mb: 4 }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
                         {t('dashboard.title')}

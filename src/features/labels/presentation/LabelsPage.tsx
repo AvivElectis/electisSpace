@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useLabelsStore } from '../infrastructure/labelsStore';
-import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { LinkLabelDialog } from './LinkLabelDialog';
 import { LabelImagesDialog } from './LabelImagesDialog';
 import { LabelImagePreview } from './LabelImagePreview';
@@ -48,13 +48,14 @@ import { logger } from '@shared/infrastructure/services/logger';
 /**
  * Labels Management Page
  * Shows all labels and their linked articles from AIMS
+ * Uses server-side AIMS credentials via the labels API
  */
 export function LabelsPage() {
     const { t, i18n } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isRtl = i18n.language === 'he';
-    const solumConfig = useSettingsStore((state) => state.settings.solumConfig);
+    const { activeStoreId } = useAuthStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     
     const {
@@ -66,11 +67,14 @@ export function LabelsPage() {
         selectedLabelImages,
         isLoadingImages,
         imagesError,
+        aimsConfigured,
+        aimsConnected,
         fetchLabels,
         fetchLabelImages,
         clearLabelImages,
         linkLabelToArticle,
         unlinkLabelFromArticle,
+        checkAimsStatus,
         setSearchQuery,
         setFilterLinkedOnly,
         clearError,
@@ -88,14 +92,8 @@ export function LabelsPage() {
     const [imagesDialogOpen, setImagesDialogOpen] = useState(false);
     const [imagesLabelCode, setImagesLabelCode] = useState('');
 
-    // Check if SOLUM is configured
-    const isSolumConfigured = useMemo(() => {
-        return !!(
-            solumConfig?.tokens?.accessToken &&
-            solumConfig.storeNumber &&
-            solumConfig.companyName
-        );
-    }, [solumConfig]);
+    // Check if AIMS is configured (via server)
+    const isSolumConfigured = !!activeStoreId && (aimsConfigured || !error);
 
     // Filtered labels
     const filteredLabels = useMemo(() => {
@@ -126,16 +124,17 @@ export function LabelsPage() {
         return filteredLabels.slice(start, start + rowsPerPage);
     }, [filteredLabels, page, rowsPerPage]);
 
-    // Fetch labels on mount
+    // Check AIMS status and fetch labels on mount
     useEffect(() => {
-        if (isSolumConfigured && solumConfig) {
-            fetchLabels(solumConfig, solumConfig.storeNumber!, solumConfig.tokens!.accessToken);
+        if (activeStoreId) {
+            checkAimsStatus(activeStoreId);
+            fetchLabels(activeStoreId);
         }
-    }, [isSolumConfigured]);
+    }, [activeStoreId]);
 
     const handleRefresh = () => {
-        if (isSolumConfigured && solumConfig) {
-            fetchLabels(solumConfig, solumConfig.storeNumber!, solumConfig.tokens!.accessToken);
+        if (activeStoreId) {
+            fetchLabels(activeStoreId);
         }
     };
 
@@ -147,13 +146,8 @@ export function LabelsPage() {
     const handleOpenImagesDialog = async (labelCode: string) => {
         setImagesLabelCode(labelCode);
         setImagesDialogOpen(true);
-        if (solumConfig) {
-            await fetchLabelImages(
-                solumConfig,
-                solumConfig.storeNumber!,
-                solumConfig.tokens!.accessToken,
-                labelCode
-            );
+        if (activeStoreId) {
+            await fetchLabelImages(activeStoreId, labelCode);
         }
     };
 
@@ -164,15 +158,8 @@ export function LabelsPage() {
     };
 
     const handleLink = async (labelCode: string, articleId: string, templateName?: string) => {
-        if (!solumConfig) return;
-        await linkLabelToArticle(
-            solumConfig,
-            solumConfig.storeNumber!,
-            solumConfig.tokens!.accessToken,
-            labelCode,
-            articleId,
-            templateName
-        );
+        if (!activeStoreId) return;
+        await linkLabelToArticle(activeStoreId, labelCode, articleId, templateName);
     };
 
     const handleUnlink = async (labelCode: string) => {
@@ -182,14 +169,9 @@ export function LabelsPage() {
 
         });
 
-        if (confirmed && solumConfig) {
+        if (confirmed && activeStoreId) {
             try {
-                await unlinkLabelFromArticle(
-                    solumConfig,
-                    solumConfig.storeNumber!,
-                    solumConfig.tokens!.accessToken,
-                    labelCode
-                );
+                await unlinkLabelFromArticle(activeStoreId, labelCode);
             } catch (err: any) {
                 logger.error('LabelsPage', 'Failed to unlink label', { error: err.message });
             }
@@ -216,11 +198,22 @@ export function LabelsPage() {
     };
 
     // Not configured view
-    if (!isSolumConfigured) {
+    if (!activeStoreId) {
         return (
             <Box sx={{ p: { xs: 1, md: 3 } }}>
                 <Alert severity="warning">
-                    {t('labels.notConfigured', 'SOLUM API is not configured. Please configure your SOLUM settings first.')}
+                    {t('labels.noStore', 'No store selected. Please select a store to view labels.')}
+                </Alert>
+            </Box>
+        );
+    }
+
+    // AIMS not configured on server
+    if (!isSolumConfigured && error) {
+        return (
+            <Box sx={{ p: { xs: 1, md: 3 } }}>
+                <Alert severity="warning">
+                    {t('labels.notConfigured', 'SOLUM API is not configured. Please configure AIMS credentials in Company Settings.')}
                 </Alert>
             </Box>
         );
@@ -545,7 +538,7 @@ export function LabelsPage() {
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left', py: 0.5, px: 1 }}>
                                                 <LabelImagePreview
                                                     labelCode={label.labelCode}
-                                                    solumConfig={solumConfig!}
+                                                    storeId={activeStoreId!}
                                                     onClick={() => handleOpenImagesDialog(label.labelCode)}
                                                 />
                                             </TableCell>

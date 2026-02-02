@@ -71,7 +71,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
             setStores(response.data);
         } catch (err) {
             console.error('Failed to fetch stores:', err);
-            setError(t('settings.stores.fetchError', 'Failed to load stores'));
+            setError(t('settings.stores.fetchError'));
         } finally {
             setLoading(false);
         }
@@ -101,13 +101,13 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
             (store._count?.conferenceRooms || 0);
 
         const confirmMessage = entityCount > 0
-            ? t('settings.stores.deleteConfirmWithData', `Are you sure you want to delete "${store.name}"? This will also delete ${entityCount} items (spaces, people, conference rooms).`)
-            : t('settings.stores.deleteConfirm', `Are you sure you want to delete "${store.name}"?`);
+            ? t('settings.stores.deleteConfirmWithData', { name: store.name, count: entityCount })
+            : t('settings.stores.deleteConfirm', { name: store.name });
 
         const confirmed = await confirm({
-            title: t('settings.stores.deleteTitle', 'Delete Store'),
+            title: t('settings.stores.deleteTitle'),
             message: confirmMessage,
-            confirmLabel: t('common.delete', 'Delete'),
+            confirmLabel: t('common.delete'),
             severity: 'error'
         });
 
@@ -117,7 +117,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                 fetchStores();
             } catch (err) {
                 console.error('Failed to delete store:', err);
-                setError(t('settings.stores.deleteError', 'Failed to delete store'));
+                setError(t('settings.stores.deleteError'));
             }
         }
     };
@@ -151,11 +151,19 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
             onClose={onClose}
             maxWidth="md"
             fullWidth
+            PaperProps={{
+                sx: { maxHeight: '90vh' }
+            }}
         >
-            <DialogTitle>
-                <Stack direction="row" alignItems="center" spacing={1}>
+            <DialogTitle sx={{ pb: 1 }}>
+                <Stack 
+                    direction={{ xs: 'column', sm: 'row' }} 
+                    alignItems={{ xs: 'flex-start', sm: 'center' }} 
+                    spacing={1}
+                    flexWrap="wrap"
+                >
                     <Typography variant="h6">
-                        {t('settings.stores.dialogTitle', 'Manage Stores')}
+                        {t('settings.stores.dialogTitle')}
                     </Typography>
                     <Chip label={company.code} size="small" variant="outlined" />
                     <Typography variant="body2" color="text.secondary">
@@ -174,36 +182,46 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
 
                 {/* Header with Add Button */}
                 <Stack 
-                    direction="row" 
+                    direction={{ xs: 'column', sm: 'row' }}
                     justifyContent="space-between" 
-                    alignItems="center"
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    spacing={1}
                     sx={{ mb: 2 }}
                 >
                     <Typography variant="subtitle2" color="text.secondary">
-                        {t('settings.stores.count', '{{count}} store(s)', { count: stores.length })}
+                        {t('settings.stores.count', { count: stores.length })}
                     </Typography>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={handleAdd}
                         size="small"
+                        sx={{ whiteSpace: 'nowrap' }}
                     >
-                        {t('settings.stores.addStore', 'Add Store')}
+                        {t('settings.stores.addStore')}
                     </Button>
                 </Stack>
 
                 {/* Stores Table */}
-                <TableContainer>
-                    <Table size="small">
+                <TableContainer sx={{ maxHeight: { xs: 300, sm: 400 } }}>
+                    <Table size="small" stickyHeader>
                         <TableHead>
                             <TableRow>
-                                <TableCell>{t('settings.stores.code', 'Code')}</TableCell>
-                                <TableCell>{t('settings.stores.name', 'Name')}</TableCell>
-                                <TableCell>{t('settings.stores.timezone', 'Timezone')}</TableCell>
-                                <TableCell align="center">{t('settings.stores.syncStatus', 'Sync')}</TableCell>
-                                <TableCell align="center">{t('settings.stores.entities', 'Entities')}</TableCell>
-                                <TableCell>{t('settings.stores.lastSync', 'Last Sync')}</TableCell>
-                                <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
+                                <TableCell sx={{ minWidth: 80 }}>{t('settings.stores.code')}</TableCell>
+                                <TableCell sx={{ minWidth: 120 }}>{t('settings.stores.name')}</TableCell>
+                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.stores.timezone')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 60 }}>{t('settings.stores.syncStatus')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 150, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.stores.entities')}</TableCell>
+                                <TableCell sx={{ minWidth: 150, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.stores.lastSync')}</TableCell>
+                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
+                            </TableRow>
+                        </TableHead>
+                                <TableCell sx={{ minWidth: 120 }}>{t('settings.stores.name')}</TableCell>
+                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.stores.timezone')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 60 }}>{t('settings.stores.syncStatus')}</TableCell>
+                                <TableCell align="center" sx={{ minWidth: 150, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.stores.entities')}</TableCell>
+                                <TableCell sx={{ minWidth: 150, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.stores.lastSync')}</TableCell>
+                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -217,7 +235,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                         <Typography color="text.secondary">
-                                            {t('settings.stores.noStores', 'No stores yet. Create your first store!')}
+                                            {t('settings.stores.noStores')}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
@@ -233,20 +251,20 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant="body2" fontWeight="medium">
+                                            <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: { xs: 100, sm: 150 } }}>
                                                 {store.name}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
+                                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                                            <Typography variant="body2" color="text.secondary" noWrap>
                                                 {store.timezone}
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="center">
                                             <Tooltip
                                                 title={store.syncEnabled
-                                                    ? t('settings.stores.syncEnabled', 'Sync enabled')
-                                                    : t('settings.stores.syncDisabled', 'Sync disabled')}
+                                                    ? t('settings.stores.syncEnabled')
+                                                    : t('settings.stores.syncDisabled')}
                                             >
                                                 {store.syncEnabled ? (
                                                     <SyncIcon color="success" fontSize="small" />
@@ -255,27 +273,28 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                                 )}
                                             </Tooltip>
                                         </TableCell>
-                                        <TableCell align="center">
+                                        <TableCell align="center" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                             <Stack 
                                                 direction="row" 
                                                 spacing={0.5} 
                                                 justifyContent="center"
+                                                flexWrap="wrap"
                                             >
-                                                <Tooltip title={t('settings.stores.spaces', 'Spaces')}>
+                                                <Tooltip title={t('settings.stores.spaces')}>
                                                     <Chip 
                                                         label={`🏷️ ${store._count?.spaces || 0}`} 
                                                         size="small" 
                                                         variant="outlined"
                                                     />
                                                 </Tooltip>
-                                                <Tooltip title={t('settings.stores.people', 'People')}>
+                                                <Tooltip title={t('settings.stores.people')}>
                                                     <Chip 
                                                         label={`👥 ${store._count?.people || 0}`} 
                                                         size="small" 
                                                         variant="outlined"
                                                     />
                                                 </Tooltip>
-                                                <Tooltip title={t('settings.stores.conferenceRooms', 'Conference')}>
+                                                <Tooltip title={t('settings.stores.conferenceRooms')}>
                                                     <Chip 
                                                         label={`🎤 ${store._count?.conferenceRooms || 0}`} 
                                                         size="small" 
@@ -284,17 +303,17 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                                 </Tooltip>
                                             </Stack>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                                             <Stack direction="row" alignItems="center" spacing={0.5}>
                                                 <AccessTimeIcon fontSize="small" color="action" />
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" color="text.secondary" noWrap>
                                                     {formatDate(store.lastAimsSyncAt)}
                                                 </Typography>
                                             </Stack>
                                         </TableCell>
                                         <TableCell align="right">
                                             <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                                                <Tooltip title={t('common.edit', 'Edit')}>
+                                                <Tooltip title={t('common.edit')}>
                                                     <IconButton
                                                         size="small"
                                                         onClick={() => handleEdit(store)}
@@ -302,7 +321,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                                         <EditIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title={t('common.delete', 'Delete')}>
+                                                <Tooltip title={t('common.delete')}>
                                                     <IconButton
                                                         size="small"
                                                         color="error"
@@ -321,9 +340,9 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                 </TableContainer>
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose}>
-                    {t('common.close', 'Close')}
+                    {t('common.close')}
                 </Button>
             </DialogActions>
 

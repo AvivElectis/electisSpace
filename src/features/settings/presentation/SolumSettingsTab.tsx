@@ -3,6 +3,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import { useSyncContext } from '@features/sync/application/SyncContext';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { SolumFieldMappingTable } from './SolumFieldMappingTable';
 import { SolumMappingSelectors } from './SolumMappingSelectors';
 import { SolumGlobalFieldsEditor } from './SolumGlobalFieldsEditor';
@@ -10,7 +11,6 @@ import { SolumGlobalFieldsEditor } from './SolumGlobalFieldsEditor';
 // Extracted components
 import {
     SolumApiConfigSection,
-    SolumCredentialsSection,
     SolumSyncSettingsSection,
     SolumPeopleManagerSection,
     SolumSchemaEditorSection,
@@ -26,12 +26,14 @@ interface SolumSettingsTabProps {
 
 /**
  * SoluM Settings Tab
- * SoluM API configuration - Refactored to use extracted sub-components
+ * SoluM API configuration - Refactored to use server-based AIMS credentials
+ * Credentials are now managed in Company Settings, not here
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
     const { articleFormat, fetchArticleFormat } = useConfigurationController();
     const { sync } = useSyncContext();
+    const { activeStoreId } = useAuthStore();
     const [subTab, setSubTab] = useState(0);
 
     // Extract field keys from article format (ONLY articleData, not articleBasicInfo)
@@ -40,9 +42,10 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
         return articleFormat.articleData || [];
     }, [articleFormat]);
 
-    // Input locking for credentials: disable when connected
-    const isCredentialsLocked = settings.solumConfig?.isConnected || false;
-    const isMappingLocked = !settings.solumConfig?.isConnected;
+    // Connection status is now server-managed
+    // The solumConfig.isConnected is set by autoConnectToSolum in authStore after login
+    const isConnected = settings.solumConfig?.isConnected || false;
+    const isMappingLocked = !isConnected;
 
     // Callback for initial sync after successful connection
     // Fetches schema first (if not already fetched) to populate field mappings, then syncs
@@ -101,27 +104,28 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 }}
             >
                 <Tab label={t('settings.connectionTab')} />
-                <Tab label={t('settings.fieldMappingTab')} disabled={!settings.solumConfig?.isConnected} />
+                <Tab label={t('settings.fieldMappingTab')} disabled={!isConnected} />
             </Tabs>
             {/* Connection Tab */}
             {subTab === 0 && (
                 <Stack gap={2}>
+                    {/* Connection Status Alert */}
+                    {isConnected ? (
+                        <Alert severity="success">
+                            {t('settings.connectedToSolumServer', 'Connected to AIMS via server. Credentials are managed in Company Settings.')}
+                        </Alert>
+                    ) : (
+                        <Alert severity="info">
+                            {t('settings.notConnectedToSolum', 'Not connected to AIMS. Please configure AIMS credentials in Company Settings and re-login.')}
+                        </Alert>
+                    )}
+
                     <SolumApiConfigSection
                         solumConfig={settings.solumConfig || {}}
                         autoSyncEnabled={settings.autoSyncEnabled}
-                        isLocked={isCredentialsLocked}
+                        isLocked={false}
                         onConfigChange={handleSolumConfigChange}
                         onAutoSyncChange={(enabled) => onUpdate({ autoSyncEnabled: enabled })}
-                    />
-
-                    <Divider />
-
-                    <SolumCredentialsSection
-                        solumConfig={settings.solumConfig || {}}
-                        isConnected={settings.solumConfig?.isConnected || false}
-                        isLocked={isCredentialsLocked}
-                        onConfigChange={handleSolumConfigChange}
-                        onConnected={handleConnectionEstablished}
                     />
 
                     <Divider />

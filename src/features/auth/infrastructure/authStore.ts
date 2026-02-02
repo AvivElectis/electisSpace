@@ -85,6 +85,7 @@ interface AuthState {
     error: string | null;
     pendingEmail: string | null; // Email pending 2FA verification
     lastValidation: number | null; // Timestamp of last session validation
+    isInitialized: boolean; // Whether session restore has been attempted
 
     // Derived context (from user)
     activeCompanyId: string | null;
@@ -100,6 +101,7 @@ interface AuthState {
     checkAuth: () => void;
     clearError: () => void;
     validateSession: () => Promise<boolean>;
+    setInitialized: (initialized: boolean) => void;
     
     // Context switching
     setActiveCompany: (companyId: string | null) => Promise<void>;
@@ -120,6 +122,7 @@ export const useAuthStore = create<AuthState>()(
                 lastValidation: null,
                 activeCompanyId: null,
                 activeStoreId: null,
+                isInitialized: false,
 
                 // Actions
                 login: async (credentials: AuthCredentials): Promise<boolean> => {
@@ -295,6 +298,10 @@ export const useAuthStore = create<AuthState>()(
                         }, false, 'validateSession/failed');
                         return false;
                     }
+                },
+
+                setInitialized: (initialized: boolean) => {
+                    set({ isInitialized: initialized }, false, 'setInitialized');
                 },
 
                 // Context switching actions
