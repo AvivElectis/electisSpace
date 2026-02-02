@@ -15,17 +15,8 @@ export function FeatureTestDemo() {
     const settingsController = useSettingsController();
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
-        // SFTP mode props
-        workingMode: settingsController.settings.workingMode,
-        sftpCredentials: settingsController.settings.sftpCredentials,
-        sftpCsvConfig: settingsController.settings.sftpCsvConfig,
     });
     const conferenceController = useConferenceController({
-        // SFTP mode props
-        
-        workingMode: settingsController.settings.workingMode,
-        sftpCredentials: settingsController.settings.sftpCredentials,
-        sftpCsvConfig: settingsController.settings.sftpCsvConfig,
     });
     const syncController = useSyncController({
         csvConfig: settingsController.settings.csvConfig,

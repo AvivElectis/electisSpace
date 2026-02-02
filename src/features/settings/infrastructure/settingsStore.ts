@@ -97,10 +97,6 @@ export const useSettingsStore = create<SettingsStore>()(
                     set((state) => ({
                         settings: {
                             ...state.settings,
-                            ...(mode === 'SFTP' ? { 
-                                sftpCredentials: undefined,
-                                sftpCsvConfig: undefined 
-                            } : {}),
                             ...(mode === 'SOLUM_API' ? {
                                 solumConfig: undefined,
                                 solumMappingConfig: undefined,
@@ -114,10 +110,6 @@ export const useSettingsStore = create<SettingsStore>()(
                         settings: {
                             ...state.settings,
                             solumMappingConfig: undefined,
-                            sftpCsvConfig: state.settings.sftpCsvConfig ? {
-                                ...state.settings.sftpCsvConfig,
-                                mapping: {} as import('@features/configuration/domain/types').FieldMapping
-                            } : undefined
                         }
                     }), false, 'clearFieldMappings'),
 

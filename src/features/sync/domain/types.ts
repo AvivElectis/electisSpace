@@ -4,7 +4,7 @@ import type { Space } from '@shared/domain/types';
  * Sync Feature Domain Types
  */
 
-export type SyncMode = 'SFTP' | 'SOLUM_API';
+export type SyncMode = 'SOLUM_API';
 
 export type SyncStatus =
     | 'idle'
@@ -25,7 +25,7 @@ export interface SyncState {
 
 /**
  * Unified sync adapter interface
- * All sync implementations (SFTP, SoluM) must implement this interface
+ * SoluM implementations must implement this interface
  */
 export interface SyncAdapter {
     /**

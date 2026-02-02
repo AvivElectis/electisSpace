@@ -3,22 +3,20 @@
  * 
  * Application layer controller for managing:
  * - SoluM Article Format (SoluM mode)
- * - CSV Structure (SFTP mode)
  */
 
 import { useCallback } from 'react';
 import { useNotifications } from '@shared/infrastructure/store/rootStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { SolumSchemaAdapter } from '../infrastructure/solumSchemaAdapter';
-import { validateArticleFormat, validateCSVStructure } from '../domain/validation';
-import type { ArticleFormat, CSVColumn } from '../domain/types';
+import { validateArticleFormat } from '../domain/validation';
+import type { ArticleFormat } from '../domain/types';
 
 /**
  * Configuration management controller hook
  * 
  * Provides operations for fetching, validating, and saving:
  * - SoluM Article Format schemas
- * - SFTP CSV structure configurations
  */
 export function useConfigurationController() {
     const { showSuccess, showError } = useNotifications();
@@ -132,87 +130,6 @@ export function useConfigurationController() {
     }, [settings.solumConfig, updateSettings, showSuccess, showError]);
 
     // ==========================================
-    // CSV Structure Operations (SFTP Mode)
-    // ==========================================
-
-    /**
-     * Save CSV structure configuration
-     * Validates and updates sftpCsvConfig
-     */
-    const saveCSVStructure = useCallback((columns: CSVColumn[]) => {
-        // Get current ID column from settings
-        const idColumn = settings.sftpCsvConfig?.idColumn;
-
-        // Validate structure
-        const validation = validateCSVStructure(columns, idColumn);
-        if (!validation.valid) {
-            showError(`Validation failed: ${validation.errors.join(', ')}`);
-            return false;
-        }
-
-        // Update SFTP CSV config
-        updateSettings({
-            sftpCsvConfig: {
-                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
-                delimiter: settings.sftpCsvConfig?.delimiter || ',',
-                columns: columns.map((col) => ({
-                    fieldName: col.aimsValue,
-                    csvColumn: col.index,
-                    friendlyName: col.headerEn || col.aimsValue,
-                    friendlyNameHe: col.headerHe || col.headerEn || col.aimsValue,
-                    required: col.visible ?? true,
-                })),
-                idColumn: idColumn || 'id',
-                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
-                conferenceMapping: settings.sftpCsvConfig?.conferenceMapping,
-                globalFieldAssignments: settings.sftpCsvConfig?.globalFieldAssignments,
-            }
-        });
-
-        showSuccess('CSV structure saved successfully');
-        return true;
-    }, [settings.sftpCsvConfig, updateSettings, showSuccess, showError]);
-
-    /**
-     * Update CSV delimiter
-     */
-    const updateCSVDelimiter = useCallback((delimiter: string) => {
-        if (!delimiter || delimiter.length === 0) {
-            showError('Delimiter cannot be empty');
-            return false;
-        }
-
-        updateSettings({
-            sftpCsvConfig: {
-                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
-                delimiter: delimiter as ',' | ';' | '\t',
-                columns: settings.sftpCsvConfig?.columns || [],
-                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
-                conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled ?? true,  // Default to true
-            }
-        });
-
-        showSuccess('Delimiter updated');
-        return true;
-    }, [settings.sftpCsvConfig, updateSettings, showSuccess, showError]);
-
-    /**
-     * Toggle conference enabled in CSV config
-     */
-    const toggleConferenceEnabled = useCallback((enabled: boolean) => {
-        updateSettings({
-            sftpCsvConfig: {
-                hasHeader: settings.sftpCsvConfig?.hasHeader ?? true,
-                delimiter: settings.sftpCsvConfig?.delimiter || ',',
-                columns: settings.sftpCsvConfig?.columns || [],
-                idColumn: settings.sftpCsvConfig?.idColumn || 'id',
-                conferenceEnabled: enabled,
-            }
-        });
-
-        showSuccess(enabled ? 'Conference mode enabled' : 'Conference mode disabled');
-    }, [settings.sftpCsvConfig, updateSettings, showSuccess]);
-
     // ==========================================
     // Return API
     // ==========================================
@@ -222,13 +139,5 @@ export function useConfigurationController() {
         articleFormat: settings.solumArticleFormat || null,
         fetchArticleFormat,
         saveArticleFormat,
-
-        // CSV Structure
-        csvColumns: settings.sftpCsvConfig?.columns || [],
-        csvDelimiter: settings.sftpCsvConfig?.delimiter || ',',
-        conferenceEnabled: settings.sftpCsvConfig?.conferenceEnabled || false,
-        saveCSVStructure,
-        updateCSVDelimiter,
-        toggleConferenceEnabled,
     };
 }

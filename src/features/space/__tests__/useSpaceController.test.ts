@@ -3,7 +3,7 @@
  * 
  * Tests for the space controller hook including:
  * - Space CRUD operations (add, update, delete)
- * - SFTP and SoluM mode handling
+ * - SoluM mode handling
  * - Validation
  * - Spaces list management
  * - Fetch from AIMS
@@ -15,17 +15,6 @@ import { useSpaceController } from '../application/useSpaceController';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import type { CSVConfig } from '@shared/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
-
-// Mock the SFTP adapter
-vi.mock('../../sync/infrastructure/SFTPSyncAdapter', () => ({
-    SFTPSyncAdapter: vi.fn().mockImplementation(() => ({
-        connect: vi.fn().mockResolvedValue(undefined),
-        disconnect: vi.fn().mockResolvedValue(undefined),
-        download: vi.fn().mockResolvedValue([]),
-        upload: vi.fn().mockResolvedValue(undefined),
-        downloadWithConference: vi.fn().mockResolvedValue({ spaces: [], conferenceRooms: [] }),
-    })),
-}));
 
 // Mock the SoluM adapter
 vi.mock('../../sync/infrastructure/SolumSyncAdapter', () => ({
@@ -420,28 +409,6 @@ describe('useSpaceController', () => {
             });
 
             expect(result.current.spacesLists).toHaveLength(0);
-        });
-    });
-
-    describe('SFTP Mode', () => {
-        const sftpCredentials = {
-            host: 'sftp.example.com',
-            port: 22,
-            username: 'testuser',
-            password: 'testpass',
-            remoteFilename: 'spaces.csv',
-        };
-
-        it('should initialize in SFTP mode', () => {
-            const { result } = renderHook(() =>
-                useSpaceController({
-                    csvConfig: mockCsvConfig,
-                    workingMode: 'SFTP',
-                    sftpCredentials,
-                })
-            );
-
-            expect(result.current.spaces).toEqual([]);
         });
     });
 

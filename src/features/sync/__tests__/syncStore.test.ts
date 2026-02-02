@@ -48,19 +48,10 @@ describe('SyncStore', () => {
     });
 
     describe('Working Mode', () => {
-        it('should switch to SFTP mode', () => {
+        it('should remain SOLUM_API mode (only mode available)', () => {
             const { setWorkingMode } = useSyncStore.getState();
 
-            setWorkingMode('SFTP');
-
-            const { workingMode } = useSyncStore.getState();
-            expect(workingMode).toBe('SFTP');
-        });
-
-        it('should switch to SOLUM_API mode', () => {
-            const store = useSyncStore.getState();
-            store.setWorkingMode('SFTP');
-            store.setWorkingMode('SOLUM_API');
+            setWorkingMode('SOLUM_API');
 
             const { workingMode } = useSyncStore.getState();
             expect(workingMode).toBe('SOLUM_API');

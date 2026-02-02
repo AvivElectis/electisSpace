@@ -12,7 +12,6 @@ export type ConnectionStatus = 'connected' | 'disconnected' | 'syncing' | 'error
 interface SyncStatusIndicatorProps {
     status: ConnectionStatus;
     lastSyncTime?: string;
-    workingMode?: 'SFTP' | 'SoluM';
     errorMessage?: string;
     onSyncClick?: () => void;
 }
@@ -26,7 +25,6 @@ interface SyncStatusIndicatorProps {
 export function SyncStatusIndicator({
     status,
     lastSyncTime,
-    workingMode = 'SFTP',
     errorMessage,
     onSyncClick,
 }: SyncStatusIndicatorProps) {
@@ -133,7 +131,7 @@ export function SyncStatusIndicator({
                         {config.label}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.1, mt: 0.3 }}>
-                        {workingMode} Mode
+                        SoluM API
                     </Typography>
                 </Box>
             </Paper>
@@ -189,26 +187,6 @@ export function SyncStatusIndicator({
 
                 <Box sx={{ p: 2.5 }}>
                     <Stack gap={2.5}>
-                        {/* Working Mode Detail */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('sync.workingMode')}
-                            </Typography>
-                            <Paper 
-                                variant="outlined" 
-                                sx={{ 
-                                    px: 1, 
-                                    py: 0.5, 
-                                    borderRadius: 1, 
-                                    bgcolor: 'action.hover',
-                                    typography: 'caption',
-                                    fontWeight: 600
-                                }}
-                            >
-                                {workingMode === 'SFTP' ? t('sync.sftpMode') : t('sync.solumMode')}
-                            </Paper>
-                        </Box>
-
                         {/* Last Sync Time */}
                         {lastSyncTime && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -1,22 +1,20 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
-import type { Space, CSVConfig, SolumConfig, SFTPCredentials, WorkingMode } from '@shared/domain/types';
+import type { Space, CSVConfig, SolumConfig } from '@shared/domain/types';
 import type { SpacesList } from '../domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import * as solumService from '@shared/infrastructure/services/solumService';
 import { SolumSyncAdapter } from '../../sync/infrastructure/SolumSyncAdapter';
-import { SFTPSyncAdapter } from '../../sync/infrastructure/SFTPSyncAdapter';
-import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
 
 /**
  * Space Controller Hook
  * Main orchestration for space CRUD operations
- * Supports both SFTP and Server/SoluM API modes
+ * Supports SoluM API mode
  */
 
 interface UseSpaceControllerProps {
@@ -25,10 +23,6 @@ interface UseSpaceControllerProps {
     solumConfig?: SolumConfig;
     solumToken?: string;
     solumMappingConfig?: SolumMappingConfig;
-    // SFTP mode props
-    workingMode?: WorkingMode;
-    sftpCredentials?: SFTPCredentials;
-    sftpCsvConfig?: EnhancedCSVConfig;
 }
 
 export function useSpaceController({
@@ -37,9 +31,6 @@ export function useSpaceController({
     solumConfig,
     solumToken,
     solumMappingConfig,
-    workingMode = 'SOLUM_API',
-    sftpCredentials,
-    sftpCsvConfig,
 }: UseSpaceControllerProps) {
     const {
         spaces,
@@ -59,48 +50,6 @@ export function useSpaceController({
 
     // Loading state for fetch operations
     const [isFetching, setIsFetching] = useState(false);
-
-    // SFTP adapter ref for reuse
-    const sftpAdapterRef = useRef<SFTPSyncAdapter | null>(null);
-
-    /**
-     * Get or create SFTP adapter
-     */
-    const getSFTPAdapter = useCallback((): SFTPSyncAdapter | null => {
-        if (!sftpCredentials) return null;
-
-        if (!sftpAdapterRef.current) {
-            sftpAdapterRef.current = new SFTPSyncAdapter(sftpCredentials, sftpCsvConfig);
-        }
-        return sftpAdapterRef.current;
-    }, [sftpCredentials, sftpCsvConfig]);
-
-    /**
-     * Upload spaces to SFTP
-     */
-    const uploadToSFTP = useCallback(async (): Promise<void> => {
-        const adapter = getSFTPAdapter();
-        if (!adapter) {
-            throw new Error('SFTP credentials not configured');
-        }
-
-        const currentSpaces = useSpacesStore.getState().spaces;
-        const conferenceRooms = useConferenceStore.getState().conferenceRooms;
-
-        logger.info('SpaceController', 'Uploading spaces to SFTP', {
-            spacesCount: currentSpaces.length,
-            conferenceCount: conferenceRooms.length,
-        });
-
-        try {
-            await adapter.connect();
-            await adapter.upload(currentSpaces, conferenceRooms);
-            logger.info('SpaceController', 'Spaces uploaded to SFTP successfully');
-        } catch (error) {
-            logger.error('SpaceController', 'Failed to upload to SFTP', { error });
-            throw error;
-        }
-    }, [getSFTPAdapter]);
 
     /**
      * Add new space
@@ -220,7 +169,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space added successfully', { id: space.id });
         },
-        [spaces, csvConfig, createInStore, onSync, solumConfig, solumMappingConfig, solumToken, workingMode, uploadToSFTP]
+        [spaces, csvConfig, createInStore, onSync, solumConfig, solumMappingConfig, solumToken]
     );
 
     /**
@@ -259,50 +208,38 @@ export function useSpaceController({
                 logger.info('SpaceController', 'Space updated in Server DB', { id });
 
                 // ---------------------------------------------------------
-                // Secondary Actions
+                // Secondary Actions: SoluM Mode
                 // ---------------------------------------------------------
-                if (workingMode === 'SFTP') {
-                    // SFTP Mode: Upload to SFTP server
-                    try {
-                        await uploadToSFTP();
-                        logger.info('SpaceController', 'Updates uploaded to SFTP', { id });
-                    } catch (error) {
-                        logger.error('SpaceController', 'Failed to upload to SFTP (Persisted on Server OK)', { error });
-                        throw error;
-                    }
-                } else {
-                    // Server/SoluM Mode
-                    if (solumConfig && solumMappingConfig && solumToken) {
-                        const space = updatedSpace as Space;
-                        const data: Record<string, any> = {};
-                        Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                            if (fieldConfig.visible) {
-                                const value = space.data[fieldKey] || (space as any)[fieldKey];
-                                if (value) data[fieldKey] = value;
-                            }
-                        });
-                        const aimsArticle: any = {
-                            data,
-                            articleId: space.id,
-                            articleName: space.id
-                        };
-                        // Apply mappings omitted for brevity...
+                if (solumConfig && solumMappingConfig && solumToken) {
+                    const space = updatedSpace as Space;
+                    const data: Record<string, any> = {};
+                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
+                        if (fieldConfig.visible) {
+                            const value = space.data[fieldKey] || (space as any)[fieldKey];
+                            if (value) data[fieldKey] = value;
+                        }
+                    });
+                    const aimsArticle: any = {
+                        data,
+                        articleId: space.id,
+                        articleName: space.id
+                    };
+                    // Apply mappings omitted for brevity...
 
-                        await solumService.pushArticles(
-                            solumConfig,
-                            solumConfig.storeNumber,
-                            solumToken,
-                            [aimsArticle]
-                        );
-                        logger.info('SpaceController', 'Article update pushed to AIMS');
-                    }
+                    await solumService.pushArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        solumToken,
+                        [aimsArticle]
+                    );
+                    logger.info('SpaceController', 'Article update pushed to AIMS');
                 }
             } catch (error) {
                 logger.error("SpaceController", "Failed to update space", { error });
                 throw error;
             }
         },
-        [spaces, csvConfig, updateInStore, solumConfig, solumToken, solumMappingConfig, workingMode, uploadToSFTP]
+        [spaces, csvConfig, updateInStore, solumConfig, solumToken, solumMappingConfig]
     );
 
     /**
@@ -328,32 +265,19 @@ export function useSpaceController({
                 logger.info('SpaceController', 'Space deleted from Server DB', { id });
 
                 // ---------------------------------------------------------
-                // Secondary Actions
+                // Secondary Actions: SoluM Mode
                 // ---------------------------------------------------------
-                if (workingMode === 'SFTP') {
-                    // SFTP Mode: Upload to SFTP server (which effectively removes it from the CSV if upload sends all)
+                if (solumConfig && solumToken) {
                     try {
-                        await uploadToSFTP();
-                        logger.info('SpaceController', 'Deletion synced to SFTP', { id });
-                    } catch (error) {
-                        logger.error('SpaceController', 'Failed to upload deletion to SFTP', { error });
-                        // No rollback possible/easy for server deletion.
-                        throw error;
-                    }
-                } else {
-                    // Server/SoluM Mode
-                    if (solumConfig && solumToken) {
-                        try {
-                            await solumService.deleteArticles(
-                                solumConfig,
-                                solumConfig.storeNumber,
-                                solumToken,
-                                [existingSpace.id]
-                            );
-                            logger.info('SpaceController', 'Article deleted from AIMS');
-                        } catch (e) {
-                            logger.warn("SpaceController", "Failed to delete from AIMS (Server delete succeeded)", { error: e });
-                        }
+                        await solumService.deleteArticles(
+                            solumConfig,
+                            solumConfig.storeNumber,
+                            solumToken,
+                            [existingSpace.id]
+                        );
+                        logger.info('SpaceController', 'Article deleted from AIMS');
+                    } catch (e) {
+                        logger.warn("SpaceController", "Failed to delete from AIMS (Server delete succeeded)", { error: e });
                     }
                 }
             } catch (error) {
@@ -361,7 +285,7 @@ export function useSpaceController({
                 throw error;
             }
         },
-        [spaces, deleteInStore, workingMode, solumConfig, solumToken, uploadToSFTP]
+        [spaces, deleteInStore, solumConfig, solumToken]
     );
 
     // Helpers
