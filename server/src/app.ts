@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { notFoundHandler } from './shared/middleware/notFoundHandler.js';
+import { requestIdMiddleware } from './shared/middleware/requestId.js';
 
 // Import routes
 import authRoutes from './features/auth/routes.js';
@@ -21,9 +22,15 @@ import conferenceRoutes from './features/conference/routes.js';
 import healthRoutes from './features/health/routes.js';
 import syncRoutes from './features/sync/routes.js';
 import settingsRoutes from './features/settings/routes.js';
+import adminRoutes from './features/admin/routes.js';
 
 // Create Express app
 const app = express();
+
+// ======================
+// Request ID (for log correlation)
+// ======================
+app.use(requestIdMiddleware);
 
 // ======================
 // Security Middleware
@@ -48,9 +55,12 @@ app.use(compression());
 // Logging
 // ======================
 if (config.isDev) {
-    app.use(morgan('dev'));
+    // Include request ID in dev logs
+    morgan.token('request-id', (req: express.Request) => req.requestId || '-');
+    app.use(morgan(':method :url :status :response-time ms - :request-id'));
 } else {
-    app.use(morgan('combined'));
+    morgan.token('request-id', (req: express.Request) => req.requestId || '-');
+    app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :request-id'));
 }
 
 // ======================
@@ -90,6 +100,7 @@ apiRouter.use('/people', peopleRoutes);
 apiRouter.use('/conference', conferenceRoutes);
 apiRouter.use('/sync', syncRoutes);
 apiRouter.use('/settings', settingsRoutes);
+apiRouter.use('/admin', adminRoutes);
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
 
