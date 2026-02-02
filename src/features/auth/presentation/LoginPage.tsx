@@ -2,7 +2,7 @@
  * Login Page Component
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     Box,
     Card,
@@ -34,6 +34,28 @@ export function LoginPage() {
     const [verificationCode, setVerificationCode] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
+    const autoSubmitRef = useRef(false);
+
+    // Auto-submit OTP when 6 digits are entered
+    useEffect(() => {
+        if (verificationCode.length === 6 && showVerification && !isLoading && !autoSubmitRef.current) {
+            autoSubmitRef.current = true;
+            clearError();
+            verify2FA(verificationCode).then((success) => {
+                if (success) {
+                    navigate('/');
+                }
+                autoSubmitRef.current = false;
+            });
+        }
+    }, [verificationCode, showVerification, isLoading, verify2FA, clearError, navigate]);
+
+    // Reset autoSubmitRef when verification code changes to less than 6
+    useEffect(() => {
+        if (verificationCode.length < 6) {
+            autoSubmitRef.current = false;
+        }
+    }, [verificationCode]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

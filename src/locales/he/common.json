@@ -317,6 +317,7 @@
         "connecting": "מתחבר...",
         "connectedToSolum": "מחובר ל-SoluM API",
         "disconnected": "מנותק מ-SoluM API",
+        "disconnectedNotification": "התנתקת מ-SOLUM API. כל הנתונים המסונכרנים נמחקו.",
         "fetchesConfig": "מביא את תצורת פורמט המוצר הנוכחית מ-SoluM API",
         "clickFetchSchemaToStart": "לחץ על 'הבא סכמת מוצר' כדי לטעון את התצורה",
         "editorReadOnly": "עורך זה במצב קריאה בלבד",
