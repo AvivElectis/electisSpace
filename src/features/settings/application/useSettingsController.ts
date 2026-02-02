@@ -16,7 +16,7 @@ import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { useNotificationStore } from '@shared/infrastructure/store/notificationStore';
-import i18n from '@i18n/index';
+import i18n from '../../../i18n/config';
 
 /**
  * Admin password for emergency access to settings
