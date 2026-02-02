@@ -3,12 +3,84 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import rateLimit from 'express-rate-limit';
 import { CodeType } from '@prisma/client';
 import { prisma, config } from '../../config/index.js';
 import { badRequest, unauthorized, authenticate, authorize } from '../../shared/middleware/index.js';
 import { EmailService } from '../../shared/services/email.service.js';
 
 const router = Router();
+
+// ======================
+// Rate Limiters for Auth Routes
+// ======================
+
+/**
+ * Auth rate limiter - Login/2FA attempts
+ * 5 attempts per 15 minutes per IP
+ */
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts
+    message: {
+        error: {
+            code: 'AUTH_RATE_LIMITED',
+            message: 'Too many authentication attempts. Please try again in 15 minutes.',
+        },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        // Rate limit by IP + email combination for more targeted limiting
+        const email = req.body?.email?.toLowerCase() || '';
+        const ip = req.ip || req.socket.remoteAddress || 'unknown';
+        return `${ip}:${email}`;
+    },
+});
+
+/**
+ * 2FA code rate limiter
+ * 3 attempts per 5 minutes per email
+ */
+const twoFALimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 3, // 3 attempts
+    message: {
+        error: {
+            code: 'TWOFA_RATE_LIMITED',
+            message: 'Too many verification attempts. Please try again in 5 minutes.',
+        },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        const email = req.body?.email?.toLowerCase() || '';
+        const ip = req.ip || req.socket.remoteAddress || 'unknown';
+        return `2fa:${ip}:${email}`;
+    },
+});
+
+/**
+ * Password reset rate limiter
+ * 3 requests per hour per email
+ */
+const passwordResetLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // 3 attempts
+    message: {
+        error: {
+            code: 'RESET_RATE_LIMITED',
+            message: 'Too many password reset requests. Please try again later.',
+        },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        const email = req.body?.email?.toLowerCase() || '';
+        const ip = req.ip || req.socket.remoteAddress || 'unknown';
+        return `reset:${ip}:${email}`;
+    },
+});
 
 // Validation schemas
 const loginSchema = z.object({
@@ -122,9 +194,8 @@ const generateTokens = async (userId: string) => {
 };
 
 // POST /auth/login - Step 1: Verify credentials and send 2FA code
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLimiter, async (req, res, next) => {
     try {
-        console.log('Login attempt:', req.body);
         const { email, password } = loginSchema.parse(req.body);
 
         // Find user
@@ -133,18 +204,17 @@ router.post('/login', async (req, res, next) => {
         });
 
         if (!user) {
-            console.log('User not found:', email);
+            // Security: Don't reveal if user exists or not
             throw unauthorized('Invalid credentials');
         }
 
         if (!user.isActive) {
-            console.log('User inactive:', email);
+            // Security: Same message for consistency
             throw unauthorized('Invalid credentials');
         }
 
         // Verify password
         const isValid = await bcrypt.compare(password, user.passwordHash);
-        console.log('Password valid:', isValid);
 
         if (!isValid) {
             throw unauthorized('Invalid credentials');
@@ -195,7 +265,7 @@ router.post('/login', async (req, res, next) => {
 });
 
 // POST /auth/verify-2fa - Step 2: Verify code and issue tokens
-router.post('/verify-2fa', async (req, res, next) => {
+router.post('/verify-2fa', twoFALimiter, async (req, res, next) => {
     try {
         const { email, code } = verify2FASchema.parse(req.body);
 
@@ -220,51 +290,56 @@ router.post('/verify-2fa', async (req, res, next) => {
             throw unauthorized('Invalid credentials');
         }
 
-        // Find valid verification code
-        const verificationCode = await prisma.verificationCode.findFirst({
-            where: {
-                userId: user.id,
-                code,
-                type: CodeType.LOGIN_2FA,
-                used: false,
-                expiresAt: { gt: new Date() },
-            },
-        });
+        // Use transaction to ensure atomic code verification and token creation
+        const result = await prisma.$transaction(async (tx) => {
+            // Find and claim verification code atomically
+            const verificationCode = await tx.verificationCode.findFirst({
+                where: {
+                    userId: user.id,
+                    code,
+                    type: CodeType.LOGIN_2FA,
+                    used: false,
+                    expiresAt: { gt: new Date() },
+                },
+            });
 
-        if (!verificationCode) {
-            throw unauthorized('Invalid or expired verification code');
-        }
+            if (!verificationCode) {
+                throw unauthorized('Invalid or expired verification code');
+            }
 
-        // Mark code as used
-        await prisma.verificationCode.update({
-            where: { id: verificationCode.id },
-            data: { used: true },
-        });
+            // Mark code as used immediately within transaction
+            await tx.verificationCode.update({
+                where: { id: verificationCode.id },
+                data: { used: true },
+            });
 
-        // Generate tokens
-        const { accessToken, refreshToken } = await generateTokens(user.id);
+            // Generate tokens
+            const { accessToken, refreshToken } = await generateTokens(user.id);
 
-        // Store refresh token hash
-        const tokenHash = await bcrypt.hash(refreshToken, 10);
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+            // Store refresh token hash
+            const tokenHash = await bcrypt.hash(refreshToken, 10);
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-        await prisma.refreshToken.create({
-            data: {
-                userId: user.id,
-                tokenHash,
-                expiresAt,
-            },
-        });
+            await tx.refreshToken.create({
+                data: {
+                    userId: user.id,
+                    tokenHash,
+                    expiresAt,
+                },
+            });
 
-        // Update last login
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() },
+            // Update last login
+            await tx.user.update({
+                where: { id: user.id },
+                data: { lastLogin: new Date() },
+            });
+
+            return { accessToken, refreshToken };
         });
 
         // Set refresh token as HttpOnly cookie
-        res.cookie('refreshToken', refreshToken, {
+        res.cookie('refreshToken', result.refreshToken, {
             httpOnly: true,
             secure: config.isProd,
             sameSite: 'strict',
@@ -290,8 +365,8 @@ router.post('/verify-2fa', async (req, res, next) => {
         }));
 
         res.json({
-            accessToken,
-            refreshToken,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
             expiresIn: 3600, // 1 hour in seconds
             user: {
                 id: user.id,
@@ -309,7 +384,7 @@ router.post('/verify-2fa', async (req, res, next) => {
 });
 
 // POST /auth/resend-code - Resend 2FA code
-router.post('/resend-code', async (req, res, next) => {
+router.post('/resend-code', twoFALimiter, async (req, res, next) => {
     try {
         const { email } = resendCodeSchema.parse(req.body);
 
@@ -507,7 +582,7 @@ router.get('/me', authenticate, async (req, res, next) => {
 });
 
 // POST /auth/forgot-password - Request password reset code
-router.post('/forgot-password', async (req, res, next) => {
+router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => {
     try {
         const { email } = forgotPasswordSchema.parse(req.body);
 
@@ -562,7 +637,7 @@ router.post('/forgot-password', async (req, res, next) => {
 });
 
 // POST /auth/reset-password - Reset password with code
-router.post('/reset-password', async (req, res, next) => {
+router.post('/reset-password', passwordResetLimiter, async (req, res, next) => {
     try {
         const { email, code, newPassword } = resetPasswordSchema.parse(req.body);
 

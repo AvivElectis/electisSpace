@@ -83,11 +83,13 @@ export const authService = {
 
     /**
      * Login Step 2: Verify 2FA code and get tokens
+     * Note: The refresh token is set as httpOnly cookie by the server
      */
     verify2FA: async (credentials: Verify2FACredentials): Promise<LoginResponse> => {
         const response = await api.post<LoginResponse>('/auth/verify-2fa', credentials);
-        const { accessToken, refreshToken } = response.data;
-        tokenManager.setTokens(accessToken, refreshToken);
+        const { accessToken } = response.data;
+        // Only store access token in memory - refresh token is in httpOnly cookie
+        tokenManager.setAccessToken(accessToken);
         return response.data;
     },
 
@@ -100,6 +102,7 @@ export const authService = {
 
     /**
      * Logout - revoke tokens
+     * Server will clear the httpOnly refresh token cookie
      */
     logout: async (): Promise<void> => {
         try {
@@ -113,17 +116,14 @@ export const authService = {
 
     /**
      * Refresh access token
+     * The refresh token is in httpOnly cookie, sent automatically
      */
-    refreshToken: async (): Promise<{ accessToken: string; refreshToken: string }> => {
-        const refreshToken = tokenManager.getRefreshToken();
-        if (!refreshToken) {
-            throw new Error('No refresh token available');
-        }
-
-        const response = await api.post('/auth/refresh', { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        tokenManager.setTokens(accessToken, newRefreshToken);
-        return { accessToken, refreshToken: newRefreshToken };
+    refreshToken: async (): Promise<{ accessToken: string }> => {
+        // Refresh token is in httpOnly cookie - sent automatically with credentials
+        const response = await api.post('/auth/refresh', {});
+        const { accessToken } = response.data;
+        tokenManager.setAccessToken(accessToken);
+        return { accessToken };
     },
 
     /**

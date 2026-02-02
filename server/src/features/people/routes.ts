@@ -283,7 +283,13 @@ router.post('/:id/assign', requirePermission('people', 'assign'), async (req, re
             include: { assignedSpace: true },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job to push assignment to AIMS
+        await syncQueueService.queueUpdate(
+            updated.storeId,
+            'person',
+            updated.id,
+            { assignedSpaceId: spaceId }
+        );
 
         res.json(updated);
     } catch (error) {
@@ -315,7 +321,13 @@ router.delete('/:id/unassign', requirePermission('people', 'assign'), async (req
             },
         });
 
-        // TODO: Queue sync job
+        // Queue sync job to push unassignment to AIMS
+        await syncQueueService.queueUpdate(
+            updated.storeId,
+            'person',
+            updated.id,
+            { assignedSpaceId: null }
+        );
 
         res.json(updated);
     } catch (error) {

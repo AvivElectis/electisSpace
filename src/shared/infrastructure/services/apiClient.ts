@@ -4,8 +4,12 @@
  * Features:
  * - Axios-based HTTP client
  * - JWT token auto-attachment
- * - Token refresh on 401 errors
+ * - Token refresh on 401 errors (uses httpOnly cookie)
  * - Typed responses
+ * 
+ * Security:
+ * - Access token stored in memory only (not localStorage)
+ * - Refresh token stored in httpOnly cookie (server-side)
  */
 
 import axios, { AxiosError } from 'axios';
@@ -14,32 +18,59 @@ import type { InternalAxiosRequestConfig } from 'axios';
 // API base URL from environment or default
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
-// Token storage keys
-const ACCESS_TOKEN_KEY = 'electis_access_token';
-const REFRESH_TOKEN_KEY = 'electis_refresh_token';
-
 // Create axios instance
 export const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
-    withCredentials: true,
+    withCredentials: true, // Required for httpOnly cookies
 });
 
-// Token management
+/**
+ * Token management
+ * 
+ * Security: Access token is stored in memory only (not localStorage)
+ * This protects against XSS attacks as memory is not accessible from JavaScript injection.
+ * 
+ * The refresh token is stored as an httpOnly cookie by the server,
+ * which is automatically sent with requests due to withCredentials: true.
+ */
+let accessTokenInMemory: string | null = null;
+
 export const tokenManager = {
-    getAccessToken: (): string | null => localStorage.getItem(ACCESS_TOKEN_KEY),
-    setAccessToken: (token: string): void => localStorage.setItem(ACCESS_TOKEN_KEY, token),
-    getRefreshToken: (): string | null => localStorage.getItem(REFRESH_TOKEN_KEY),
-    setRefreshToken: (token: string): void => localStorage.setItem(REFRESH_TOKEN_KEY, token),
-    clearTokens: (): void => {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
+    getAccessToken: (): string | null => accessTokenInMemory,
+    
+    setAccessToken: (token: string): void => {
+        accessTokenInMemory = token;
     },
-    setTokens: (accessToken: string, refreshToken: string): void => {
+    
+    // Refresh token is in httpOnly cookie, we don't store it client-side
+    // These methods exist for backward compatibility but the cookie handles it
+    getRefreshToken: (): string | null => {
+        // The actual refresh token is in the httpOnly cookie
+        // This returns null since we can't access it from JS (by design)
+        return null;
+    },
+    
+    setRefreshToken: (_token: string): void => {
+        // No-op: refresh token is managed via httpOnly cookie by the server
+        // The cookie is automatically included in requests due to withCredentials: true
+    },
+    
+    clearTokens: (): void => {
+        accessTokenInMemory = null;
+        // Refresh token cookie will be cleared by the logout endpoint
+    },
+    
+    setTokens: (accessToken: string, _refreshToken?: string): void => {
         tokenManager.setAccessToken(accessToken);
-        tokenManager.setRefreshToken(refreshToken);
+        // Refresh token is in httpOnly cookie, no client-side storage needed
+    },
+    
+    // Check if user has a valid session (access token in memory)
+    hasAccessToken: (): boolean => {
+        return !!accessTokenInMemory;
     },
 };
 
@@ -96,18 +127,16 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                const refreshToken = tokenManager.getRefreshToken();
-                if (!refreshToken) {
-                    throw new Error('No refresh token');
-                }
+                // Call refresh endpoint - refresh token is in httpOnly cookie
+                // The server will read it from the cookie automatically
+                const response = await axios.post(
+                    `${API_BASE_URL}/auth/refresh`,
+                    {}, // No body needed - cookie contains refresh token
+                    { withCredentials: true }
+                );
 
-                // Call refresh endpoint
-                const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
-                    refreshToken,
-                });
-
-                const { accessToken, refreshToken: newRefreshToken } = response.data;
-                tokenManager.setTokens(accessToken, newRefreshToken);
+                const { accessToken } = response.data;
+                tokenManager.setAccessToken(accessToken);
 
                 processQueue(null, accessToken);
 
