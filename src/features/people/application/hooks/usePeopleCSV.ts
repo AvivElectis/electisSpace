@@ -142,7 +142,7 @@ export function usePeopleCSV() {
             // Sync to AIMS if connected
             if (settings.solumConfig?.tokens?.accessToken && people.length > 0) {
                 const personIds = people.map(p => p.id);
-                peopleStore.updateSyncStatus(personIds, 'pending');
+                peopleStore.updateSyncStatusLocal(personIds, 'pending');
 
                 try {
                     const { pushArticles } = await import('@shared/infrastructure/services/solumService');
@@ -166,10 +166,10 @@ export function usePeopleCSV() {
                         );
                     }
 
-                    peopleStore.updateSyncStatus(personIds, 'synced');
+                    peopleStore.updateSyncStatusLocal(personIds, 'synced');
                     logger.info('PeopleCSV', 'CSV content synced to AIMS', { count: people.length });
                 } catch (syncError: any) {
-                    peopleStore.updateSyncStatus(personIds, 'error');
+                    peopleStore.updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleCSV', 'Failed to sync CSV content to AIMS', { error: syncError.message });
                 }
             }
@@ -209,7 +209,7 @@ export function usePeopleCSV() {
             // Sync to AIMS if connected
             if (settings.solumConfig?.tokens?.accessToken && people.length > 0) {
                 const personIds = people.map(p => p.id);
-                peopleStore.updateSyncStatus(personIds, 'pending');
+                peopleStore.updateSyncStatusLocal(personIds, 'pending');
 
                 try {
                     const { pushArticles } = await import('@shared/infrastructure/services/solumService');
@@ -233,10 +233,10 @@ export function usePeopleCSV() {
                         );
                     }
 
-                    peopleStore.updateSyncStatus(personIds, 'synced');
+                    peopleStore.updateSyncStatusLocal(personIds, 'synced');
                     logger.info('PeopleCSV', 'CSV people synced to AIMS', { count: people.length });
                 } catch (syncError: any) {
-                    peopleStore.updateSyncStatus(personIds, 'error');
+                    peopleStore.updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleCSV', 'Failed to sync CSV people to AIMS', { error: syncError.message });
                 }
             }

@@ -74,13 +74,13 @@ export function usePeopleAssignment() {
             }
 
             // Update local state - set both assignedSpaceId and virtualSpaceId to the physical space
-            peopleStore.assignSpace(personId, spaceId);
+            peopleStore.assignSpaceLocal(personId, spaceId);
             // Also update virtualSpaceId to the physical space (no longer in pool)
-            peopleStore.updatePerson(personId, { virtualSpaceId: spaceId });
+            peopleStore.updatePersonLocal(personId, { virtualSpaceId: spaceId });
 
             // Auto-post to AIMS (default behavior)
             if (postToAims && settings.solumConfig && settings.solumConfig.tokens) {
-                peopleStore.updateSyncStatus([personId], 'pending');
+                peopleStore.updateSyncStatusLocal([personId], 'pending');
                 
                 // DEBUG: Log person's listMemberships before posting
                 console.log('[DEBUG usePeopleAssignment] Posting to AIMS:', {
@@ -98,11 +98,11 @@ export function usePeopleAssignment() {
                         settings.solumConfig.tokens.accessToken,
                         settings.solumMappingConfig
                     );
-                    peopleStore.updateSyncStatus([personId], 'synced');
+                    peopleStore.updateSyncStatusLocal([personId], 'synced');
                     logger.info('PeopleAssignment', 'Assignment posted to AIMS', { personId });
                     return true;
                 } catch (aimsError: any) {
-                    peopleStore.updateSyncStatus([personId], 'error');
+                    peopleStore.updateSyncStatusLocal([personId], 'error');
                     logger.error('PeopleAssignment', 'Failed to post to AIMS', { error: aimsError.message });
                     return false;
                 }
@@ -128,12 +128,12 @@ export function usePeopleAssignment() {
 
             // Update local state
             assignments.forEach(({ personId, spaceId }) => {
-                peopleStore.assignSpace(personId, spaceId);
+                peopleStore.assignSpaceLocal(personId, spaceId);
             });
 
             // Auto-post to AIMS (default behavior)
             if (postToAims && settings.solumConfig && settings.solumConfig.tokens) {
-                peopleStore.updateSyncStatus(personIds, 'pending');
+                peopleStore.updateSyncStatusLocal(personIds, 'pending');
                 
                 try {
                     // Get updated people with assigned spaces
@@ -149,12 +149,12 @@ export function usePeopleAssignment() {
                             settings.solumConfig.tokens.accessToken,
                             settings.solumMappingConfig
                         );
-                        peopleStore.updateSyncStatus(personIds, 'synced');
+                        peopleStore.updateSyncStatusLocal(personIds, 'synced');
                         logger.info('PeopleAssignment', 'Bulk assignments posted to AIMS', { count: assignedPeople.length });
                         return { success: true, syncedCount: assignedPeople.length };
                     }
                 } catch (aimsError: any) {
-                    peopleStore.updateSyncStatus(personIds, 'error');
+                    peopleStore.updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleAssignment', 'Failed to post bulk to AIMS', { error: aimsError.message });
                     return { success: false, syncedCount: 0 };
                 }

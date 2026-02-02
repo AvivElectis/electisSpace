@@ -261,7 +261,7 @@ router.post('/queue/:id/retry', requirePermission('sync', 'trigger'), async (req
 // POST /sync/stores/:storeId/pull - Pull from AIMS → Save to DB
 router.post('/stores/:storeId/pull', requirePermission('sync', 'trigger'), async (req, res, next) => {
     try {
-        const { storeId } = req.params;
+        const storeId = req.params.storeId as string;
         const storeIds = getUserStoreIds(req);
         validateStoreAccess(storeId, storeIds);
 
@@ -366,7 +366,7 @@ router.post('/stores/:storeId/pull', requirePermission('sync', 'trigger'), async
 // POST /sync/stores/:storeId/push - Push DB changes → AIMS
 router.post('/stores/:storeId/push', requirePermission('sync', 'trigger'), async (req, res, next) => {
     try {
-        const { storeId } = req.params;
+        const storeId = req.params.storeId as string;
         const storeIds = getUserStoreIds(req);
         validateStoreAccess(storeId, storeIds);
 
@@ -416,7 +416,7 @@ router.post('/stores/:storeId/push', requirePermission('sync', 'trigger'), async
 // GET /sync/stores/:storeId/status - Get store-specific sync status
 router.get('/stores/:storeId/status', requirePermission('sync', 'view'), async (req, res, next) => {
     try {
-        const { storeId } = req.params;
+        const storeId = req.params.storeId as string;
         const storeIds = getUserStoreIds(req);
         validateStoreAccess(storeId, storeIds);
 
@@ -471,7 +471,8 @@ router.get('/stores/:storeId/status', requirePermission('sync', 'view'), async (
 // POST /sync/stores/:storeId/retry/:itemId - Retry specific failed item
 router.post('/stores/:storeId/retry/:itemId', requirePermission('sync', 'trigger'), async (req, res, next) => {
     try {
-        const { storeId, itemId } = req.params;
+        const storeId = req.params.storeId as string;
+        const itemId = req.params.itemId as string;
         const storeIds = getUserStoreIds(req);
         validateStoreAccess(storeId, storeIds);
 

@@ -7,6 +7,7 @@ import { persist, devtools } from 'zustand/middleware';
 import { authService, type User, type AuthCredentials } from '@shared/infrastructure/services/authService';
 import { tokenManager } from '@shared/infrastructure/services/apiClient';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { logger } from '@shared/infrastructure/services/logger';
 import { AxiosError } from 'axios';
 
 // Helper to extract error message from various error types
@@ -19,6 +20,61 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
         return error.message;
     }
     return fallback;
+};
+
+/**
+ * Auto-connect to SOLUM using server-side company credentials
+ * This function connects to SOLUM via the server (which has the company AIMS credentials)
+ * and updates the settings store with the SOLUM connection state
+ */
+const autoConnectToSolum = async (storeId: string): Promise<void> => {
+    try {
+        logger.info('AuthStore', 'Auto-connecting to SOLUM via server', { storeId });
+        
+        const response = await authService.solumConnect(storeId);
+        
+        if (response.connected) {
+            // Get current settings and update with SOLUM connection
+            const settingsStore = useSettingsStore.getState();
+            const currentSettings = settingsStore.settings;
+            
+            // Update settings with SOLUM config from server (without sensitive creds)
+            settingsStore.updateSettings({
+                solumConfig: {
+                    // Preserve existing solum config if present
+                    ...currentSettings.solumConfig,
+                    // Override with server-provided values
+                    companyName: response.config.companyCode,
+                    storeNumber: response.config.storeCode,
+                    baseUrl: response.config.baseUrl,
+                    cluster: response.config.cluster,
+                    syncInterval: currentSettings.solumConfig?.syncInterval || 300,
+                    // Mark as connected with server-provided token
+                    isConnected: true,
+                    lastConnected: Date.now(),
+                    tokens: {
+                        accessToken: response.tokens.accessToken,
+                        refreshToken: '', // Server handles refresh
+                        expiresAt: Date.now() + 3600000, // 1 hour (server handles expiry)
+                    },
+                    // Credentials are on server - use empty placeholders
+                    username: '***server-managed***',
+                    password: '***server-managed***',
+                },
+            });
+            
+            logger.info('AuthStore', 'Auto SOLUM connect successful', {
+                storeCode: response.config.storeCode,
+                companyCode: response.config.companyCode,
+            });
+        }
+    } catch (error: unknown) {
+        // Log but don't throw - this is a background operation
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        logger.warn('AuthStore', 'Auto SOLUM connect failed', { error: message });
+        // User can still manually connect via Settings if server-side credentials aren't configured
+        throw error;
+    }
 };
 
 interface AuthState {
@@ -117,6 +173,12 @@ export const useAuthStore = create<AuthState>()(
                         // Fetch settings from server for the active store
                         if (activeStoreId) {
                             useSettingsStore.getState().fetchSettingsFromServer(activeStoreId);
+                            
+                            // Auto-connect to SOLUM using server-side company credentials
+                            // This runs in background - don't block login for SOLUM connection
+                            autoConnectToSolum(activeStoreId).catch((error) => {
+                                logger.warn('AuthStore', 'Auto SOLUM connect failed (will use manual connect)', { error: error.message });
+                            });
                         }
 
                         return true;
@@ -260,9 +322,14 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId: storeId,
                         }, false, 'setActiveStore');
 
-                        // Fetch settings for the new store
+                        // Fetch settings for the new store and auto-connect to SOLUM
                         if (storeId) {
                             useSettingsStore.getState().fetchSettingsFromServer(storeId);
+                            
+                            // Auto-connect to SOLUM for the new store
+                            autoConnectToSolum(storeId).catch((error) => {
+                                logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error.message });
+                            });
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch store');
@@ -280,9 +347,14 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId: storeId,
                         }, false, 'setActiveContext');
 
-                        // Fetch settings for the new store
+                        // Fetch settings for the new store and auto-connect to SOLUM
                         if (storeId) {
                             useSettingsStore.getState().fetchSettingsFromServer(storeId);
+                            
+                            // Auto-connect to SOLUM for the new store
+                            autoConnectToSolum(storeId).catch((error) => {
+                                logger.warn('AuthStore', 'Auto SOLUM connect on context switch failed', { error: error.message });
+                            });
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch context');

@@ -81,7 +81,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const { updateSettings } = useSettingsStore();
     const { user } = useAuthStore(); // Get current user
     const [currentTab, setCurrentTab] = useState(0);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [hasUnsavedChanges] = useState(false); // Currently always false, can be wired up later
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Check if user is platform admin or has store admin role
@@ -89,8 +89,16 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const isAdmin = isPlatformAdmin || 
         user?.stores?.some(s => s.role === 'STORE_ADMIN');
 
+    // Define tab configuration type
+    interface TabConfig {
+        label: string;
+        panel: React.ReactElement;
+        noPadding?: boolean;
+        hidden?: boolean;
+    }
+
     // Define Tabs Configuration - Build array immutably to avoid React reconciliation issues
-    const baseTabs = [
+    const baseTabs: TabConfig[] = [
         { label: t('settings.appSettings'), panel: <AppSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.solumSettings'), panel: <SolumSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.logoSettings'), panel: <LogoSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
@@ -98,7 +106,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     ];
 
     // Build tabs array immutably - add admin tabs before LogViewer
-    const adminTabs = [];
+    const adminTabs: TabConfig[] = [];
     if (isAdmin) {
         adminTabs.push({
             label: t('settings.users.title'),
@@ -113,7 +121,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }
 
     // Final tabs array: baseTabs + adminTabs + logViewer
-    const tabs = [
+    const tabs: TabConfig[] = [
         ...baseTabs,
         ...adminTabs,
         { label: t('settings.logViewer'), panel: <LogsViewerTab />, noPadding: isMobile },

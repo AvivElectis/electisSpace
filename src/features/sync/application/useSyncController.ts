@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useSyncStore } from '../infrastructure/syncStore';
-import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { SolumSyncAdapter } from '../infrastructure/SolumSyncAdapter';
 import type { SyncAdapter } from '../domain/types';
 import type { Space, ConferenceRoom, SolumConfig, CSVConfig } from '@shared/domain/types';

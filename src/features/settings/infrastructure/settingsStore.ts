@@ -150,9 +150,27 @@ export const useSettingsStore = create<SettingsStore>()(
                         return;
                     }
 
+                    // Prepare settings for server - exclude sensitive data
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { solumConfig, ...otherSettings } = settings;
+                    
+                    // Build sanitized solumConfig without sensitive fields
+                    let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
+                    if (solumConfig) {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { username, password, tokens, ...safeConfig } = solumConfig;
+                        sanitizedSolumConfig = safeConfig;
+                    }
+
+                    // Cast to unknown first to bypass strict type checking for server payload
+                    const settingsForServer = {
+                        ...otherSettings,
+                        solumConfig: sanitizedSolumConfig,
+                    } as unknown as Partial<SettingsData>;
+
                     set({ isSyncing: true }, false, 'saveSettings/start');
                     try {
-                        await settingsService.updateStoreSettings(activeStoreId, settings);
+                        await settingsService.updateStoreSettings(activeStoreId, settingsForServer);
                         set({ isSyncing: false }, false, 'saveSettings/success');
                         logger.info('SettingsStore', 'Settings saved to server', { storeId: activeStoreId });
                     } catch (error) {

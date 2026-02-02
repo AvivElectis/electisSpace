@@ -74,7 +74,7 @@ describe('ConferenceStore', () => {
         it('should add a conference room', () => {
             const room = createMockRoom({ id: 'C001', data: { roomName: 'New Room' } });
 
-            useConferenceStore.getState().addConferenceRoom(room);
+            useConferenceStore.getState().addConferenceRoomLocal(room);
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms).toHaveLength(1);
@@ -83,17 +83,17 @@ describe('ConferenceStore', () => {
         });
 
         it('should add multiple rooms', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001' }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002' }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C003' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C003' }));
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms).toHaveLength(3);
         });
 
         it('should preserve existing rooms when adding new one', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001', data: { roomName: 'First' } }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002', data: { roomName: 'Second' } }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001', data: { roomName: 'First' } }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002', data: { roomName: 'Second' } }));
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].data.roomName).toBe('First');
@@ -103,20 +103,20 @@ describe('ConferenceStore', () => {
 
     describe('Update Conference Room', () => {
         it('should update a conference room by ID', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001', data: { roomName: 'Original' } }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001', data: { roomName: 'Original' } }));
 
-            useConferenceStore.getState().updateConferenceRoom('C001', { data: { roomName: 'Updated' } });
+            useConferenceStore.getState().updateConferenceRoomLocal('C001', { data: { roomName: 'Updated' } });
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].data.roomName).toBe('Updated');
         });
 
         it('should only update specified fields', () => {
-            useConferenceStore.getState().addConferenceRoom(
+            useConferenceStore.getState().addConferenceRoomLocal(
                 createMockRoom({ id: 'C001', data: { roomName: 'Original' }, hasMeeting: false })
             );
 
-            useConferenceStore.getState().updateConferenceRoom('C001', { hasMeeting: true });
+            useConferenceStore.getState().updateConferenceRoomLocal('C001', { hasMeeting: true });
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].data.roomName).toBe('Original'); // Unchanged
@@ -124,10 +124,10 @@ describe('ConferenceStore', () => {
         });
 
         it('should not affect other rooms', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001', data: { roomName: 'Room A' } }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002', data: { roomName: 'Room B' } }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001', data: { roomName: 'Room A' } }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002', data: { roomName: 'Room B' } }));
 
-            useConferenceStore.getState().updateConferenceRoom('C001', { data: { roomName: 'Updated A' } });
+            useConferenceStore.getState().updateConferenceRoomLocal('C001', { data: { roomName: 'Updated A' } });
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].data.roomName).toBe('Updated A');
@@ -135,10 +135,10 @@ describe('ConferenceStore', () => {
         });
 
         it('should handle updating non-existent room gracefully', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001' }));
 
             // Should not throw
-            useConferenceStore.getState().updateConferenceRoom('NON-EXISTENT', { data: { roomName: 'Test' } });
+            useConferenceStore.getState().updateConferenceRoomLocal('NON-EXISTENT', { data: { roomName: 'Test' } });
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms).toHaveLength(1);
@@ -148,10 +148,10 @@ describe('ConferenceStore', () => {
 
     describe('Delete Conference Room', () => {
         it('should delete a conference room by ID', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001' }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002' }));
 
-            useConferenceStore.getState().deleteConferenceRoom('C001');
+            useConferenceStore.getState().deleteConferenceRoomLocal('C001');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms).toHaveLength(1);
@@ -159,21 +159,21 @@ describe('ConferenceStore', () => {
         });
 
         it('should handle deleting non-existent room gracefully', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001' }));
 
             // Should not throw
-            useConferenceStore.getState().deleteConferenceRoom('NON-EXISTENT');
+            useConferenceStore.getState().deleteConferenceRoomLocal('NON-EXISTENT');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms).toHaveLength(1);
         });
 
         it('should delete all rooms when called for each', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001' }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002' }));
 
-            useConferenceStore.getState().deleteConferenceRoom('C001');
-            useConferenceStore.getState().deleteConferenceRoom('C002');
+            useConferenceStore.getState().deleteConferenceRoomLocal('C001');
+            useConferenceStore.getState().deleteConferenceRoomLocal('C002');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms).toHaveLength(0);
@@ -182,29 +182,29 @@ describe('ConferenceStore', () => {
 
     describe('Toggle Meeting', () => {
         it('should toggle meeting status from false to true', () => {
-            useConferenceStore.getState().addConferenceRoom(
+            useConferenceStore.getState().addConferenceRoomLocal(
                 createMockRoom({ id: 'C001', hasMeeting: false })
             );
 
-            useConferenceStore.getState().toggleMeeting('C001');
+            useConferenceStore.getState().toggleMeetingLocal('C001');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].hasMeeting).toBe(true);
         });
 
         it('should toggle meeting status from true to false', () => {
-            useConferenceStore.getState().addConferenceRoom(
+            useConferenceStore.getState().addConferenceRoomLocal(
                 createMockRoom({ id: 'C001', hasMeeting: true })
             );
 
-            useConferenceStore.getState().toggleMeeting('C001');
+            useConferenceStore.getState().toggleMeetingLocal('C001');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].hasMeeting).toBe(false);
         });
 
         it('should clear meeting data when toggling off', () => {
-            useConferenceStore.getState().addConferenceRoom(
+            useConferenceStore.getState().addConferenceRoomLocal(
                 createMockRoom({
                     id: 'C001',
                     hasMeeting: true,
@@ -215,7 +215,7 @@ describe('ConferenceStore', () => {
                 })
             );
 
-            useConferenceStore.getState().toggleMeeting('C001');
+            useConferenceStore.getState().toggleMeetingLocal('C001');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].hasMeeting).toBe(false);
@@ -226,7 +226,7 @@ describe('ConferenceStore', () => {
         });
 
         it('should not clear data when toggling on', () => {
-            useConferenceStore.getState().addConferenceRoom(
+            useConferenceStore.getState().addConferenceRoomLocal(
                 createMockRoom({
                     id: 'C001',
                     hasMeeting: false,
@@ -234,7 +234,7 @@ describe('ConferenceStore', () => {
                 })
             );
 
-            useConferenceStore.getState().toggleMeeting('C001');
+            useConferenceStore.getState().toggleMeetingLocal('C001');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].hasMeeting).toBe(true);
@@ -242,10 +242,10 @@ describe('ConferenceStore', () => {
         });
 
         it('should not affect other rooms', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001', hasMeeting: false }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002', hasMeeting: false }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001', hasMeeting: false }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002', hasMeeting: false }));
 
-            useConferenceStore.getState().toggleMeeting('C001');
+            useConferenceStore.getState().toggleMeetingLocal('C001');
 
             const { conferenceRooms } = useConferenceStore.getState();
             expect(conferenceRooms[0].hasMeeting).toBe(true);
@@ -255,9 +255,9 @@ describe('ConferenceStore', () => {
 
     describe('Clear All Data', () => {
         it('should clear all conference rooms', () => {
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C001' }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C002' }));
-            useConferenceStore.getState().addConferenceRoom(createMockRoom({ id: 'C003' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C001' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C002' }));
+            useConferenceStore.getState().addConferenceRoomLocal(createMockRoom({ id: 'C003' }));
 
             useConferenceStore.getState().clearAllData();
 

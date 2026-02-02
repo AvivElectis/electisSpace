@@ -51,15 +51,16 @@ export function ConferencePage() {
     // Get sync context for triggering sync after SFTP operations
     const { sync } = useSyncContext();
 
+    // Wrap sync to match expected void return type
+    const handleSync = useCallback(async () => {
+        await sync();
+    }, [sync]);
+
     const conferenceController = useConferenceController({
-        onSync: sync,  // Trigger sync after add/edit/delete in SFTP mode
+        onSync: settings.workingMode === 'SOLUM_API' ? handleSync : undefined,  // Trigger sync after add/edit/delete in SOLUM mode
         solumConfig: settings.solumConfig,
         solumToken,
         solumMappingConfig: settings.solumMappingConfig,
-        // SFTP mode props
-        workingMode: settings.workingMode,
-        sftpCredentials: settings.sftpCredentials,
-        sftpCsvConfig: settings.sftpCsvConfig,
     });
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance

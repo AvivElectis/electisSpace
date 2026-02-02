@@ -58,6 +58,19 @@ export interface Verify2FACredentials {
     code: string;
 }
 
+export interface SolumConnectResponse {
+    connected: boolean;
+    config: {
+        baseUrl: string;
+        cluster: 'common' | 'c1';
+        companyCode: string;
+        storeCode: string;
+    };
+    tokens: {
+        accessToken: string;
+    };
+}
+
 // Auth service
 export const authService = {
     /**
@@ -158,6 +171,15 @@ export const authService = {
             activeCompanyId,
             activeStoreId,
         });
+        return response.data;
+    },
+
+    /**
+     * Connect to SOLUM using company credentials
+     * Called after login to auto-connect to AIMS
+     */
+    solumConnect: async (storeId: string): Promise<SolumConnectResponse> => {
+        const response = await api.post<SolumConnectResponse>('/auth/solum-connect', { storeId });
         return response.data;
     },
 

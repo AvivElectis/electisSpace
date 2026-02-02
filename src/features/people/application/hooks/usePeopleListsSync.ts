@@ -132,10 +132,10 @@ export function usePeopleListsSync() {
                         settings.solumMappingConfig
                     );
 
-                    peopleStore.updateSyncStatus(personIds, 'synced');
+                    peopleStore.updateSyncStatusLocal(personIds, 'synced');
                     logger.info('PeopleLists', 'List assignments synced to AIMS', { count: personIds.length });
                 } catch (syncError: any) {
-                    peopleStore.updateSyncStatus(personIds, 'error');
+                    peopleStore.updateSyncStatusLocal(personIds, 'error');
                     logger.error('PeopleLists', 'Failed to sync list assignments to AIMS', { error: syncError.message });
                     return { success: false, applied: 0, error: syncError.message };
                 }
@@ -170,7 +170,7 @@ export function usePeopleListsSync() {
                     settings.solumMappingConfig
                 );
 
-                peopleStore.updateSyncStatus(personIds, 'synced');
+                peopleStore.updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleLists', 'List assignments synced to AIMS', { count: peopleToSync.length });
             } catch (postError: any) {
                 logger.error('PeopleLists', 'Failed to sync list assignments to AIMS', { error: postError.message });

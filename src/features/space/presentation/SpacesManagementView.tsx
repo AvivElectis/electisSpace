@@ -77,9 +77,14 @@ export function SpacesManagementView() {
 
     // Get sync context for triggering sync after operations
     const { sync } = useSyncContext();
+    
+    // Wrap sync to match expected void return type
+    const handleSync = useCallback(async () => {
+        await sync();
+    }, [sync]);
 
     const spaceController = useSpaceController({
-        onSync: sync,
+        onSync: handleSync,
         csvConfig: settingsController.settings.csvConfig,
         solumConfig: settingsController.settings.solumConfig,
         solumToken,

@@ -256,7 +256,7 @@ export function UserDialog({ open, onClose, onSave, onUpdateStoreAccess, user }:
                                     >
                                         {adminStores.map(store => (
                                             <MenuItem key={store.id} value={store.id}>
-                                                {store.name} ({store.storeNumber})
+                                                {store.name} ({store.code})
                                             </MenuItem>
                                         ))}
                                     </Select>
