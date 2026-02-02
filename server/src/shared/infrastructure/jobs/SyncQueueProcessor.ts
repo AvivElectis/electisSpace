@@ -100,23 +100,50 @@ export class SyncQueueProcessor {
         // Get pending items older than processing delay
         const cutoffTime = new Date(Date.now() - PROCESSING_DELAY_MS);
         
-        const items = await prisma.syncQueueItem.findMany({
-            where: {
-                status: QueueStatus.PENDING,
-                scheduledAt: { lte: cutoffTime },
-            },
-            orderBy: { scheduledAt: 'asc' },
-            take: BATCH_SIZE,
-            include: {
-                store: {
-                    select: {
-                        id: true,
-                        code: true,
-                        syncEnabled: true,
-                        companyId: true,
+        // Atomically claim items using a transaction
+        // This prevents multiple processors from claiming the same items
+        const items = await prisma.$transaction(async (tx) => {
+            // Find pending items
+            const pendingItems = await tx.syncQueueItem.findMany({
+                where: {
+                    status: QueueStatus.PENDING,
+                    scheduledAt: { lte: cutoffTime },
+                },
+                orderBy: { scheduledAt: 'asc' },
+                take: BATCH_SIZE,
+                select: { id: true },
+            });
+
+            if (pendingItems.length === 0) {
+                return [];
+            }
+
+            // Atomically update all to PROCESSING status
+            await tx.syncQueueItem.updateMany({
+                where: {
+                    id: { in: pendingItems.map(i => i.id) },
+                    status: QueueStatus.PENDING, // Double-check still pending
+                },
+                data: { status: QueueStatus.PROCESSING },
+            });
+
+            // Return full items with relations
+            return tx.syncQueueItem.findMany({
+                where: {
+                    id: { in: pendingItems.map(i => i.id) },
+                    status: QueueStatus.PROCESSING,
+                },
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            code: true,
+                            syncEnabled: true,
+                            companyId: true,
+                        },
                     },
                 },
-            },
+            });
         });
 
         if (items.length === 0) {
@@ -152,11 +179,7 @@ export class SyncQueueProcessor {
                 result.processed++;
                 
                 try {
-                    // Mark as processing
-                    await prisma.syncQueueItem.update({
-                        where: { id: item.id },
-                        data: { status: QueueStatus.PROCESSING },
-                    });
+                    // Item is already marked as PROCESSING in the transaction above
 
                     await this.processItem(item);
                     
