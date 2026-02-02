@@ -81,7 +81,7 @@ export function ConfirmDialog({ open, options, onConfirm, onCancel, sx }: Confir
                 </IconButton>
             </DialogTitle>
             <DialogContent>
-                <DialogContentText>{message}</DialogContentText>
+                <DialogContentText sx={{ whiteSpace: 'pre-line' }}>{message}</DialogContentText>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 0, mb: 2 }}>
                 {showCancel && (
