@@ -150,16 +150,16 @@ describe('Settings Validation', () => {
             const result = validateSettings({
                 appName: 'Valid',
                 autoSyncEnabled: false,
-                autoSyncInterval: 10,
+                autoSyncInterval: 5,
             });
             expect(result.valid).toBe(true);
         });
 
-        it('should pass for exactly 30 seconds interval', () => {
+        it('should pass for exactly 10 seconds interval (minimum)', () => {
             const result = validateSettings({
                 appName: 'Valid',
                 autoSyncEnabled: true,
-                autoSyncInterval: 30,
+                autoSyncInterval: 10,
             });
             expect(result.valid).toBe(true);
         });

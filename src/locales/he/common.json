@@ -246,6 +246,7 @@
         "autoSyncSettings": "הגדרות סינכרון אוטומטי",
         "enableAutoSync": "הפעל סינכרון אוטומטי",
         "autoSyncInterval": "מרווח סינכרון אוטומטי (שניות)",
+        "autoSyncIntervalHelp": "מינימום: {{min}} שניות, מקסימום: {{max}} שניות, ברירת מחדל: {{default}} שניות",
         "syncFrequency": "תדירות סינכרון אוטומטי (30-3600 שניות)",
         "connection": "חיבור",
         "csvStructure": "מבנה CSV",

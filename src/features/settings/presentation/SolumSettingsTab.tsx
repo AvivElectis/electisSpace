@@ -109,9 +109,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     <SolumApiConfigSection
                         solumConfig={settings.solumConfig || {}}
                         autoSyncEnabled={settings.autoSyncEnabled}
+                        autoSyncInterval={settings.autoSyncInterval}
                         isLocked={isCredentialsLocked}
                         onConfigChange={handleSolumConfigChange}
                         onAutoSyncChange={(enabled) => onUpdate({ autoSyncEnabled: enabled })}
+                        onAutoSyncIntervalChange={(interval) => onUpdate({ autoSyncInterval: interval })}
                     />
 
                     <Divider />

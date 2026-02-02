@@ -116,11 +116,15 @@ export function useSyncController({
             setAutoSyncEnabled(autoSyncEnabledProp);
         }
 
-        // Sync interval from solumConfig
-        if (solumConfig?.syncInterval && solumConfig.syncInterval !== autoSyncInterval) {
-            setAutoSyncInterval(solumConfig.syncInterval);
+        // Sync interval from settings prop (autoSyncIntervalProp)
+        if (autoSyncIntervalProp !== undefined && autoSyncIntervalProp !== autoSyncInterval) {
+            logger.info('SyncController', 'Syncing autoSyncInterval from settings', {
+                from: autoSyncInterval,
+                to: autoSyncIntervalProp
+            });
+            setAutoSyncInterval(autoSyncIntervalProp);
         }
-    }, [autoSyncEnabledProp, autoSyncEnabled, setAutoSyncEnabled, solumConfig, autoSyncInterval, setAutoSyncInterval, autoSyncIntervalProp]);
+    }, [autoSyncEnabledProp, autoSyncEnabled, setAutoSyncEnabled, autoSyncIntervalProp, autoSyncInterval, setAutoSyncInterval]);
 
     /**
      * Handle disconnect from settings

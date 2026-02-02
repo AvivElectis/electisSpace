@@ -107,12 +107,12 @@ export function validateSettings(settings: Partial<SettingsData>): ValidationRes
         errors.push(...nameValidation.errors);
     }
 
-    // Validate auto-sync interval
+    // Validate auto-sync interval (minimum 10 seconds)
     if (settings.autoSyncEnabled && settings.autoSyncInterval !== undefined) {
-        if (settings.autoSyncInterval < 30) {
+        if (settings.autoSyncInterval < 10) {
             errors.push({
                 field: 'autoSyncInterval',
-                message: 'Auto-sync interval must be at least 30 seconds',
+                message: 'Auto-sync interval must be at least 10 seconds',
             });
         }
     }

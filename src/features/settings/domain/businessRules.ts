@@ -96,7 +96,7 @@ export function createDefaultSettings(): SettingsData {
         },
         logos: {},
         autoSyncEnabled: false,
-        autoSyncInterval: 300,  // 5 minutes
+        autoSyncInterval: 30,  // 30 seconds (min: 10)
     };
 }
 

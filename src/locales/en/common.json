@@ -235,6 +235,7 @@
         "autoSyncSettings": "Auto-Sync Settings",
         "enableAutoSync": "Enable Auto-Sync",
         "autoSyncInterval": "Auto-Sync Interval (seconds)",
+        "autoSyncIntervalHelp": "Minimum: {{min}}s, Maximum: {{max}}s, Default: {{default}}s",
         "syncFrequency": "Frequency of automatic synchronization (30-3600 seconds)",
         "connection": "Connection",
         "csvStructure": "CSV Structure",

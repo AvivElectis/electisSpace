@@ -70,11 +70,11 @@ const envSchema = z.object({
     // Redis
     REDIS_URL: z.string().default('redis://localhost:6379'),
 
-    // JWT
+    // JWT (Persistent sessions - users stay logged in until explicit logout)
     JWT_ACCESS_SECRET: z.string().min(32),
     JWT_REFRESH_SECRET: z.string().min(32),
-    JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
-    JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+    JWT_ACCESS_EXPIRES_IN: z.string().default('7d'),      // 7 days for persistent auth
+    JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),    // 30 days
 
     // Encryption
     ENCRYPTION_KEY: z.string().min(32),
