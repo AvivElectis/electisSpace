@@ -16,22 +16,21 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "baseUrl": ".",
         "paths": {
             "@/*": [
-                "src/*"
+                "./src/*"
             ],
             "@config/*": [
-                "src/config/*"
+                "./src/config/*"
             ],
             "@features/*": [
-                "src/features/*"
+                "./src/features/*"
             ],
             "@shared/*": [
-                "src/shared/*"
+                "./src/shared/*"
             ],
             "@infrastructure/*": [
-                "src/infrastructure/*"
+                "./src/infrastructure/*"
             ]
         }
     },

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { SolumConfig } from '@shared/domain/types';
 import type { LabelArticleLink, ScannerState, ScanInputType, LabelImagesDetail } from '../domain/types';
-import { linkLabel, unlinkLabel, getAllLabels, getLabelImages, type AimsLabel, type AimsLabelImagesDetail } from '@shared/infrastructure/services/solum/labelsService';
+import { linkLabel, unlinkLabel, getAllLabels, getLabelImages, type AimsLabel } from '@shared/infrastructure/services/solum/labelsService';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface LabelsState {

@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useSpacesStore } from '../infrastructure/spacesStore';
-import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
 import type { Space, CSVConfig, SolumConfig } from '@shared/domain/types';

@@ -30,7 +30,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
-import { userService, type User, type CreateUserDto, type UpdateUserDto, type UpdateUserStoreDto } from '@shared/infrastructure/services/userService';
+import { userService, type User } from '@shared/infrastructure/services/userService';
 import { companyService, type Company } from '@shared/infrastructure/services/companyService';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';

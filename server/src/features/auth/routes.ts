@@ -771,4 +771,77 @@ router.post('/change-password', authenticate, async (req, res, next) => {
     }
 });
 
+// Schema for SOLUM connect
+const solumConnectSchema = z.object({
+    storeId: z.string().uuid(),
+});
+
+// POST /auth/solum-connect - Get SOLUM tokens using company credentials
+// This allows clients to auto-connect to SOLUM after login
+router.post('/solum-connect', authenticate, async (req, res, next) => {
+    try {
+        const { storeId } = solumConnectSchema.parse(req.body);
+
+        // Verify user has access to this store
+        const user = req.user!;
+        const hasAccess = user.stores.some(s => s.id === storeId) ||
+            user.globalRole === 'PLATFORM_ADMIN';
+
+        if (!hasAccess) {
+            throw unauthorized('You do not have access to this store');
+        }
+
+        // Import AIMS Gateway dynamically to avoid circular deps
+        const { aimsGateway } = await import('../../shared/infrastructure/services/aimsGateway.js');
+
+        // Get store config with company AIMS credentials
+        const storeConfig = await aimsGateway.getStoreConfig(storeId);
+        if (!storeConfig) {
+            return res.status(400).json({
+                error: 'AIMS not configured',
+                message: 'Company AIMS credentials are not configured for this store',
+            });
+        }
+
+        // Get token (uses cached if valid, or authenticates fresh)
+        const accessToken = await aimsGateway.getToken(storeConfig.companyId);
+
+        // Get store data from DB for additional config
+        const store = await prisma.store.findUnique({
+            where: { id: storeId },
+            include: {
+                company: {
+                    select: {
+                        code: true,
+                        aimsBaseUrl: true,
+                        aimsCluster: true,
+                    }
+                }
+            }
+        });
+
+        if (!store) {
+            throw badRequest('Store not found');
+        }
+
+        // Return SOLUM connection config (without sensitive credentials)
+        res.json({
+            connected: true,
+            config: {
+                baseUrl: store.company.aimsBaseUrl,
+                cluster: store.company.aimsCluster || 'common',
+                companyCode: store.company.code,
+                storeCode: store.code,
+            },
+            tokens: {
+                accessToken,
+                // Note: We return token from server cache - client uses it for API calls
+                // Refresh is handled server-side via aimsGateway
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 export default router;

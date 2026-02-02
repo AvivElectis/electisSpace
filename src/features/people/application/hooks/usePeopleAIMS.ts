@@ -29,7 +29,7 @@ export function usePeopleAIMS() {
                 throw new Error('No people found with the provided IDs');
             }
 
-            peopleStore.updateSyncStatus(personIds, 'pending');
+            peopleStore.updateSyncStatusLocal(personIds, 'pending');
 
             try {
                 await postBulkAssignments(
@@ -39,11 +39,11 @@ export function usePeopleAIMS() {
                     settings.solumMappingConfig
                 );
 
-                peopleStore.updateSyncStatus(personIds, 'synced');
+                peopleStore.updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleAIMS', 'Selected people posted to AIMS', { count: selectedPeople.length });
                 return { success: true, syncedCount: selectedPeople.length };
             } catch (aimsError: any) {
-                peopleStore.updateSyncStatus(personIds, 'error');
+                peopleStore.updateSyncStatusLocal(personIds, 'error');
                 throw aimsError;
             }
         } catch (error: any) {
@@ -71,7 +71,7 @@ export function usePeopleAIMS() {
             }
 
             const personIds = assignedPeople.map(p => p.id);
-            peopleStore.updateSyncStatus(personIds, 'pending');
+            peopleStore.updateSyncStatusLocal(personIds, 'pending');
 
             try {
                 await postBulkAssignments(
@@ -81,11 +81,11 @@ export function usePeopleAIMS() {
                     settings.solumMappingConfig
                 );
 
-                peopleStore.updateSyncStatus(personIds, 'synced');
+                peopleStore.updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleAIMS', 'All assignments posted to AIMS', { count: assignedPeople.length });
                 return { success: true, syncedCount: assignedPeople.length };
             } catch (aimsError: any) {
-                peopleStore.updateSyncStatus(personIds, 'error');
+                peopleStore.updateSyncStatusLocal(personIds, 'error');
                 throw aimsError;
             }
         } catch (error: any) {
@@ -125,7 +125,7 @@ export function usePeopleAIMS() {
             }
 
             // Clear all local assignments
-            peopleStore.unassignAllSpaces();
+            peopleStore.unassignAllSpacesLocal();
 
             logger.info('PeopleAIMS', 'All assignments canceled', { count: assignedPeople.length });
             return { success: true, clearedCount: assignedPeople.length };
