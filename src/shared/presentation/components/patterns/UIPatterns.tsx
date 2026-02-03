@@ -33,7 +33,7 @@ export function SectionHeader({
             direction="row"
             alignItems="flex-start"
             justifyContent="space-between"
-            spacing={2}
+            gap={2}
             sx={{ mb: 3 }}
         >
             <Box>
@@ -46,7 +46,7 @@ export function SectionHeader({
                     </Typography>
                 )}
             </Box>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" gap={1} alignItems="center">
                 {onRefresh && (
                     <IconButton
                         onClick={onRefresh}
@@ -182,7 +182,7 @@ export function InfoRow({ label, value, copyable, onCopy }: InfoRowProps) {
             <Typography variant="body2" color="text.secondary">
                 {label}
             </Typography>
-            <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack direction="row" alignItems="center" gap={1}>
                 <Typography variant="body2" fontWeight={500}>
                     {value}
                 </Typography>
@@ -240,7 +240,7 @@ export function ActionCard({
                 ...sx,
             }}
         >
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" gap={2} alignItems="center">
                 <Box
                     sx={{
                         display: 'flex',
@@ -285,7 +285,7 @@ export function LabeledDivider({ label }: LabeledDividerProps) {
         <Stack
             direction="row"
             alignItems="center"
-            spacing={2}
+            gap={2}
             sx={{ my: 3 }}
         >
             <Box sx={{ flex: 1, height: 1, backgroundColor: theme.palette.divider }} />
@@ -315,7 +315,7 @@ export function FloatingActions({ children, position = 'bottom-right' }: Floatin
     return (
         <Stack
             direction="row"
-            spacing={1}
+            gap={1}
             sx={{
                 position: 'fixed',
                 bottom: spacing.lg,

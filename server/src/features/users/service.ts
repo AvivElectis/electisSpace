@@ -58,6 +58,164 @@ export function canManageStore(user: UserContext, storeId: string): boolean {
 
 export const userService = {
     /**
+     * Get current user's full profile
+     */
+    async getMyProfile(userId: string) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                userCompanies: {
+                    include: {
+                        company: true,
+                    },
+                },
+                userStores: {
+                    include: {
+                        store: {
+                            include: {
+                                company: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!user) {
+            throw new Error('USER_NOT_FOUND');
+        }
+
+        return {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone,
+            globalRole: user.globalRole,
+            isActive: user.isActive,
+            lastLogin: user.lastLogin,
+            lastActivity: user.lastActivity,
+            loginCount: user.loginCount,
+            createdAt: user.createdAt,
+            companies: user.userCompanies.map(uc => ({
+                company: {
+                    id: uc.company.id,
+                    name: uc.company.name,
+                    code: uc.company.code,
+                },
+                role: uc.role,
+                allStoresAccess: uc.allStoresAccess,
+            })),
+            stores: user.userStores.map(us => ({
+                store: {
+                    id: us.store.id,
+                    name: us.store.name,
+                    code: us.store.code,
+                },
+                role: us.role,
+                features: us.features as string[],
+            })),
+        };
+    },
+
+    /**
+     * Update current user's profile
+     */
+    async updateMyProfile(userId: string, data: { firstName?: string | null; lastName?: string | null; phone?: string | null }) {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        
+        if (!user) {
+            throw new Error('USER_NOT_FOUND');
+        }
+
+        const updated = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                firstName: data.firstName !== undefined ? data.firstName : undefined,
+                lastName: data.lastName !== undefined ? data.lastName : undefined,
+                phone: data.phone !== undefined ? data.phone : undefined,
+                lastActivity: new Date(),
+            },
+            include: {
+                userCompanies: {
+                    include: {
+                        company: true,
+                    },
+                },
+                userStores: {
+                    include: {
+                        store: {
+                            include: {
+                                company: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return {
+            id: updated.id,
+            email: updated.email,
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            phone: updated.phone,
+            globalRole: updated.globalRole,
+            isActive: updated.isActive,
+            lastLogin: updated.lastLogin,
+            lastActivity: updated.lastActivity,
+            loginCount: updated.loginCount,
+            createdAt: updated.createdAt,
+            companies: updated.userCompanies.map(uc => ({
+                company: {
+                    id: uc.company.id,
+                    name: uc.company.name,
+                    code: uc.company.code,
+                },
+                role: uc.role,
+                allStoresAccess: uc.allStoresAccess,
+            })),
+            stores: updated.userStores.map(us => ({
+                store: {
+                    id: us.store.id,
+                    name: us.store.name,
+                    code: us.store.code,
+                },
+                role: us.role,
+                features: us.features as string[],
+            })),
+        };
+    },
+
+    /**
+     * Change current user's password
+     */
+    async changeMyPassword(userId: string, currentPassword: string, newPassword: string) {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        
+        if (!user) {
+            throw new Error('USER_NOT_FOUND');
+        }
+
+        const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+        
+        if (!isValidPassword) {
+            throw new Error('INVALID_PASSWORD');
+        }
+
+        const newPasswordHash = await bcrypt.hash(newPassword, 12);
+        
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                passwordHash: newPasswordHash,
+                passwordChangedAt: new Date(),
+                lastActivity: new Date(),
+            },
+        });
+    },
+
+    /**
      * List users with filtering and pagination
      */
     async list(params: UserListParams, user: UserContext): Promise<UserListResponse> {

@@ -161,9 +161,9 @@ export function PeopleTable({
                                         <Box sx={{ flex: 1 }} />
                                         {/* Assignment Status Chip */}
                                         {person.assignedSpaceId ? (
-                                            <Chip label={person.assignedSpaceId} size="small" color="success" />
+                                            <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ p: 1 }} />
                                         ) : (
-                                            <Chip label={t('people.unassigned')} size="small" variant="outlined" />
+                                            <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ p: 1 }} />
                                         )}
                                     </Stack>
 
@@ -197,6 +197,7 @@ export function PeopleTable({
                                                     size="small" 
                                                     variant="outlined"
                                                     color="info"
+                                                    sx={{ p: 1 }}
                                                 />
                                             )}
                                         </Stack>

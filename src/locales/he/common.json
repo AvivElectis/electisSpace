@@ -70,7 +70,11 @@
             "title": "סטטוס",
             "active": "פעיל",
             "inactive": "לא פעיל"
-        }
+        },
+        "firstName": "שם פרטי",
+        "lastName": "שם משפחה",
+        "phone": "טלפון",
+        "never": "אף פעם"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -486,6 +490,7 @@
             "title": "משתמשים",
             "addUser": "הוסף משתמש",
             "editUser": "ערוך משתמש",
+            "editProfile": "ערוך פרופיל",
             "deleteConfirmTitle": "מחק משתמש",
             "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק את המשתמש {{email}}?",
             "store": "חנות",
@@ -533,7 +538,34 @@
             "noStoresAssigned": "לא שויכו חנויות. הוסף גישה לחנות או הפעל 'גישה לכל החנויות'.",
             "noStoresInCompany": "לחברה זו אין חנויות. צור חנויות קודם.",
             "selectCompanyFirst": "יש לבחור חברה תחילה.",
-            "company": "חברה"
+            "company": "חברה",
+            "profileSaved": "הפרופיל נשמר בהצלחה",
+            "passwordChanged": "הסיסמה שונתה בהצלחה",
+            "passwordMismatch": "הסיסמאות לא תואמות",
+            "passwordTooShort": "הסיסמה חייבת להכיל לפחות 8 תווים",
+            "passwordRequirements": "לפחות 8 תווים",
+            "currentPassword": "סיסמה נוכחית",
+            "newPassword": "סיסמה חדשה",
+            "confirmPassword": "אשר סיסמה חדשה",
+            "changePassword": "שנה סיסמה",
+            "password": "סיסמה",
+            "resetPassword": "אפס סיסמה",
+            "leaveEmptyNoChange": "השאר ריק לשמירת הסיסמה הנוכחית",
+            "accountStats": "פעילות חשבון",
+            "loginCount": "מספר כניסות",
+            "lastLogin": "כניסה אחרונה",
+            "memberSince": "חבר מאז",
+            "assignments": "גישה לחברות וחנויות",
+            "roles": {
+                "platformAdmin": "מנהל מערכת",
+                "superUser": "משתמש על",
+                "companyAdmin": "מנהל חברה",
+                "viewer": "צופה",
+                "storeAdmin": "מנהל חנות",
+                "storeManager": "מנהל משמרת",
+                "storeEmployee": "עובד",
+                "storeViewer": "צופה בחנות"
+            }
         },
         "companies": {
             "title": "חברות",

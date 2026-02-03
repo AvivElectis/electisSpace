@@ -89,6 +89,7 @@ export function PeopleListPanel({
                             size="small"
                             color="info"
                             variant="filled"
+                            sx={{ p: 1 }}
                         />
                     )}
                     {pendingChanges && (
@@ -97,7 +98,7 @@ export function PeopleListPanel({
                             label={t('people.unsavedChanges')}
                             size="small"
                             color="warning"
-                            sx={{paddingInlineStart: 1}}
+                            sx={{ p: 1, paddingInlineStart: 1}}
                         />
                     )}
                 </Stack>

@@ -38,6 +38,72 @@ function getUserContext(req: Request): UserContext {
 
 export const userController = {
     /**
+     * GET /users/me
+     * Get current user's full profile
+     */
+    async getMyProfile(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user!.id;
+            const profile = await userService.getMyProfile(userId);
+            res.json(profile);
+        } catch (error: any) {
+            if (error.message === 'USER_NOT_FOUND') {
+                return next(notFound('User not found'));
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * PATCH /users/me
+     * Update current user's profile
+     */
+    async updateMyProfile(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user!.id;
+            const { firstName, lastName, phone } = req.body;
+            
+            const updated = await userService.updateMyProfile(userId, { firstName, lastName, phone });
+            res.json(updated);
+        } catch (error: any) {
+            if (error.message === 'USER_NOT_FOUND') {
+                return next(notFound('User not found'));
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * POST /users/me/change-password
+     * Change current user's password
+     */
+    async changeMyPassword(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user!.id;
+            const { currentPassword, newPassword } = req.body;
+            
+            if (!currentPassword || !newPassword) {
+                return next(badRequest('Current password and new password are required'));
+            }
+            
+            if (newPassword.length < 8) {
+                return next(badRequest('New password must be at least 8 characters'));
+            }
+            
+            await userService.changeMyPassword(userId, currentPassword, newPassword);
+            res.json({ message: 'Password changed successfully' });
+        } catch (error: any) {
+            if (error.message === 'USER_NOT_FOUND') {
+                return next(notFound('User not found'));
+            }
+            if (error.message === 'INVALID_PASSWORD') {
+                return next(badRequest('Current password is incorrect'));
+            }
+            next(error);
+        }
+    },
+
+    /**
      * GET /users
      * List users
      */

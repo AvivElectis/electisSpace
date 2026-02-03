@@ -4,6 +4,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore'; // Import Auth Store
 import { useTranslation } from 'react-i18next';
@@ -18,6 +19,7 @@ interface AppHeaderProps {
     onSettingsClick?: () => void;
     onMenuClick?: () => void;
     onManualClick?: () => void;
+    onEditProfile?: () => void;  // Callback to open user profile editor
     settingsOpen?: boolean;
 }
 
@@ -26,7 +28,7 @@ interface AppHeaderProps {
  * Displays logos, app title (centered), language switcher, settings icon, and user menu
  * Title and subtitle are configurable through app settings
  */
-export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, settingsOpen }: AppHeaderProps) {
+export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditProfile, settingsOpen }: AppHeaderProps) {
     // Get settings from store
     const settings = useSettingsStore((state) => state.settings);
     const isLocked = useSettingsStore((state) => state.isLocked);
@@ -253,6 +255,14 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, setting
                                     </Box>
                                 </Box>
                                 <Divider />
+                                {onEditProfile && (
+                                    <MenuItem onClick={() => { handleUserMenuClose(); onEditProfile(); }}>
+                                        <ListItemIcon>
+                                            <PersonIcon fontSize="small" />
+                                        </ListItemIcon>
+                                        {t('settings.users.editProfile')}
+                                    </MenuItem>
+                                )}
                                 <MenuItem onClick={handleLogout}>
                                     <ListItemIcon>
                                         <LogoutIcon fontSize="small" />

@@ -27,6 +27,7 @@ export function LoginPage() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const theme = useTheme();
+    const isRtl = theme.direction === 'rtl';
     const { login, verify2FA, resendCode, isLoading, error, clearError, pendingEmail } = useAuthStore();
 
     const [email, setEmail] = useState('');
@@ -227,7 +228,7 @@ export function LoginPage() {
                                 }}
                             />
 
-                            <Box sx={{ display: 'flex', gap: 1, mb: 4 }}>
+                            <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, mb: 4 }}>
                                 <TextField
                                     fullWidth
                                     label={t('login.password', 'Password')}

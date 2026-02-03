@@ -12,6 +12,7 @@ import {
     Alert,
     Autocomplete,
     CircularProgress,
+    useTheme,
 } from '@mui/material';
 import {
     QrCodeScanner as ScanIcon,
@@ -49,6 +50,8 @@ export function LinkLabelDialog({
     initialArticleId = '',
 }: LinkLabelDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isRtl = theme.direction === 'rtl';
     const { activeStoreId } = useAuthStore();
     
     const [labelCode, setLabelCode] = useState(initialLabelCode);
@@ -168,7 +171,7 @@ export function LinkLabelDialog({
                         )}
 
                         {/* Label Code Input with separate scan button */}
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                        <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
                             <TextField
                                 label={t('labels.link.labelCode', 'Label Code')}
                                 value={labelCode}
@@ -197,7 +200,7 @@ export function LinkLabelDialog({
                         </Box>
 
                         {/* Article ID Input with Autocomplete and separate scan button */}
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                        <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
                             <Autocomplete
                                 freeSolo
                                 fullWidth

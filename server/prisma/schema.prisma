@@ -90,6 +90,8 @@ model User {
   passwordHash String      @map("password_hash") @db.VarChar(255)
   firstName    String?     @map("first_name") @db.VarChar(100)
   lastName     String?     @map("last_name") @db.VarChar(100)
+  phone        String?     @db.VarChar(50)
+  avatarUrl    String?     @map("avatar_url") @db.VarChar(500)
   
   // Global role (for platform-wide admins only)
   globalRole   GlobalRole? @map("global_role")
@@ -98,8 +100,20 @@ model User {
   activeCompanyId String? @map("active_company_id")
   activeStoreId   String? @map("active_store_id")
   
+  // User status and activity tracking
   isActive     Boolean     @default(true) @map("is_active")
   lastLogin    DateTime?   @map("last_login")
+  lastActivity DateTime?   @map("last_activity")  // Last API activity
+  loginCount   Int         @default(0) @map("login_count")
+  failedLoginAttempts Int  @default(0) @map("failed_login_attempts")
+  lockedUntil  DateTime?   @map("locked_until")   // Account lock after failed attempts
+  
+  // Password management
+  passwordChangedAt DateTime? @map("password_changed_at")
+  passwordResetRequired Boolean @default(false) @map("password_reset_required")
+  
+  // User preferences (JSON)
+  preferences  Json        @default("{}")  // UI preferences, notifications, etc.
   
   // Timestamps
   createdAt    DateTime    @default(now()) @map("created_at")
@@ -147,8 +161,9 @@ model UserCompany {
 }
 
 enum CompanyRole {
-  COMPANY_ADMIN
-  VIEWER
+  SUPER_USER     // For PLATFORM_ADMIN - full access without restrictions
+  COMPANY_ADMIN  // Can manage company settings, users, stores
+  VIEWER         // Read-only access
 }
 
 // ======================
