@@ -53,6 +53,28 @@ vi.mock('@features/conference/infrastructure/conferenceStore', () => ({
     },
 }));
 
+// Mock spacesApi - This is crucial for server-based tests
+vi.mock('../infrastructure/spacesApi', () => ({
+    spacesApi: {
+        getAll: vi.fn().mockResolvedValue({ spaces: [] }),
+        create: vi.fn().mockImplementation((data) => Promise.resolve({
+            id: data.externalId || `space-${Date.now()}`,
+            externalId: data.externalId,
+            labelCode: data.labelCode,
+            data: data.data || {},
+            syncStatus: 'PENDING',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        })),
+        update: vi.fn().mockImplementation((id, updates) => Promise.resolve({
+            id,
+            ...updates,
+            updatedAt: new Date().toISOString(),
+        })),
+        delete: vi.fn().mockResolvedValue(undefined),
+    },
+}));
+
 // Helper to reset the spaces store
 const resetSpacesStore = () => {
     const store = useSpacesStore.getState();
