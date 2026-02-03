@@ -215,7 +215,7 @@ export function SyncQueuePanel({
                             size="small"
                             label={stats.pending}
                             color="primary"
-                            sx={{ height: 20, fontSize: '0.75rem' }}
+                            sx={{ p: 1, height: 20, fontSize: '0.75rem' }}
                         />
                     )}
                     {stats.failed > 0 && (
@@ -223,7 +223,7 @@ export function SyncQueuePanel({
                             size="small"
                             label={stats.failed}
                             color="error"
-                            sx={{ height: 20, fontSize: '0.75rem' }}
+                            sx={{ p: 1, height: 20, fontSize: '0.75rem' }}
                         />
                     )}
                 </Box>
@@ -293,7 +293,7 @@ export function SyncQueuePanel({
                                                     size="small"
                                                     label={getOperationLabel(item.operation)}
                                                     variant="outlined"
-                                                    sx={{ height: 18, fontSize: '0.65rem' }}
+                                                    sx={{ p: 1, height: 18, fontSize: '0.65rem' }}
                                                 />
                                             </Box>
                                         }

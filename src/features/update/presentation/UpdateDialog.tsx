@@ -80,6 +80,7 @@ export function UpdateDialog({
                         label={`v${updateInfo.version}`}
                         color="primary"
                         size="small"
+                        sx={{ p: 1 }}
                     />
                 </Box>
             </DialogTitle>

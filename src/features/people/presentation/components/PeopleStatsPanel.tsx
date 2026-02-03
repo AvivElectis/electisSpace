@@ -72,8 +72,8 @@ export function PeopleStatsPanel({
                     />
                 </Box>
                 <Stack direction="row" gap={1}>
-                    <Chip label={`${assignedCount} ${t('people.assigned')}`} color="success" size="small" />
-                    <Chip label={`${unassignedCount} ${t('people.unassigned')}`} color="default" size="small" />
+                    <Chip label={`${assignedCount} ${t('people.assigned')}`} color="success" size="small" sx={{ p: 1 }} />
+                    <Chip label={`${unassignedCount} ${t('people.unassigned')}`} color="default" size="small" sx={{ p: 1 }} />
                 </Stack>
             </Stack>
         </Paper>

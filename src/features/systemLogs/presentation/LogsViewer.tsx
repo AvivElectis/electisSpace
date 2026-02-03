@@ -48,7 +48,7 @@ const LogLevelChip: React.FC<{ level: LogLevel }> = ({ level }) => {
             label={level.toUpperCase()}
             color={colors[level]}
             size="small"
-            sx={{ fontWeight: 600, minWidth: 70 }}
+            sx={{ p: 1, fontWeight: 600, minWidth: 70 }}
         />
     );
 };
@@ -277,7 +277,7 @@ const DaySection: React.FC<{
                         size="small"
                         color="primary"
                         variant="outlined"
-                        sx={{ fontWeight: 600, bgcolor: 'primary.main', color: 'white', }}
+                        sx={{ p: 1, fontWeight: 600, bgcolor: 'primary.main', color: 'white', }}
                     />
                 </Stack>
             </AccordionSummary>

@@ -169,7 +169,7 @@ export function SpaceSelector({
                                 size="small"
                                 variant="outlined"
                                 color="warning"
-                                sx={{ ml: isRtl ? 0 : 1, mr: isRtl ? 1 : 0 }}
+                                sx={{ p: 1, ml: isRtl ? 0 : 1, mr: isRtl ? 1 : 0 }}
                             />
                         )}
                     </Box>

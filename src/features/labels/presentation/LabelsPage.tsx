@@ -231,7 +231,7 @@ export function LabelsPage() {
             }}
         >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                <Stack spacing={1.5}>
+                <Stack gap={1.5}>
                     {/* Label Code */}
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="body2" fontFamily="monospace" fontWeight={600}>

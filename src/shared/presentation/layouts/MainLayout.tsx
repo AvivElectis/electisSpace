@@ -32,6 +32,11 @@ const ManualDialog = lazy(() =>
     import('../../../features/manual/presentation/ManualDialog').then(m => ({ default: m.ManualDialog }))
 );
 
+// Lazy load EnhancedUserDialog for profile editing from header
+const EnhancedUserDialog = lazy(() =>
+    import('../../../features/settings/presentation/EnhancedUserDialog').then(m => ({ default: m.EnhancedUserDialog }))
+);
+
 interface MainLayoutProps {
     children: ReactNode;
 }
@@ -65,6 +70,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [manualOpen, setManualOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
     const { syncState, setWorkingMode } = useSyncStore();
     
     // Determine drawer direction based on current language (more reliable than theme.direction)
@@ -218,6 +224,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     onMenuClick={isMobile ? handleMenuClick : undefined}
                     onSettingsClick={() => setSettingsOpen(true)}
                     onManualClick={() => setManualOpen(true)}
+                    onEditProfile={() => setProfileOpen(true)}
                     settingsOpen={settingsOpen}
                 />
 
@@ -376,6 +383,18 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <ManualDialog
                             open={manualOpen}
                             onClose={() => setManualOpen(false)}
+                        />
+                    </Suspense>
+                )}
+
+                {/* Profile Dialog - Lazy loaded */}
+                {profileOpen && (
+                    <Suspense fallback={null}>
+                        <EnhancedUserDialog
+                            open={profileOpen}
+                            onClose={() => setProfileOpen(false)}
+                            onSave={() => setProfileOpen(false)}
+                            profileMode={true}
                         />
                     </Suspense>
                 )}

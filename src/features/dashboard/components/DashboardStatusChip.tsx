@@ -19,7 +19,7 @@ export function DashboardStatusChip({ label, color, icon, ...props }: DashboardS
             variant="filled"
             size="small"
             icon={icon}
-            sx={{ fontWeight: 500, ...props.sx }}
+            sx={{ p: 1, fontWeight: 500, ...props.sx }}
             {...props}
         />
     );

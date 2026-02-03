@@ -120,7 +120,7 @@ function PeopleTableRowComponent({
     // Memoized space assignment chip
     const spaceChipElement = useMemo(() => {
         if (person.assignedSpaceId) {
-            return <Chip label={person.assignedSpaceId} size="small" color="success" />;
+            return <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ p: 1 }} />;
         }
 
         if (person.virtualSpaceId?.startsWith('POOL-')) {
@@ -130,14 +130,14 @@ function PeopleTableRowComponent({
                         label={translations.unassigned}
                         size="small"
                         variant="outlined"
-                        sx={{ px: 1 }}
+                        sx={{ p: 1, px: 1 }}
                         icon={<SyncIcon fontSize="small" />}
                     />
                 </Tooltip>
             );
         }
 
-        return <Chip label={translations.unassigned} size="small" variant="outlined" sx={{ px: 1 }} />;
+        return <Chip label={translations.unassigned} size="small" variant="outlined" sx={{ p: 1, px: 1 }} />;
     }, [person.assignedSpaceId, person.virtualSpaceId, translations.unassigned]);
 
     // Memoized lists chip
@@ -160,7 +160,7 @@ function PeopleTableRowComponent({
                     label={displayNames[0]} 
                     size="small" 
                     variant="outlined"
-                    sx={{px: .5}}
+                    sx={{ p: 1, px: .5}}
                     icon={<ListAltIcon fontSize="small" />}
                 />
             );
@@ -174,7 +174,7 @@ function PeopleTableRowComponent({
                     size="small" 
                     variant="outlined"
                     color="info"
-                    sx={{px: .5}}
+                    sx={{ p: 1, px: .5}}
                     icon={<ListAltIcon fontSize="small" />}
                 />
             </Tooltip>

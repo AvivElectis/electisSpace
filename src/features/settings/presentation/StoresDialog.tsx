@@ -159,7 +159,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                 <Stack 
                     direction={{ xs: 'column', sm: 'row' }} 
                     alignItems={{ xs: 'flex-start', sm: 'center' }} 
-                    spacing={1}
+                    gap={1}
                     flexWrap="wrap"
                 >
                     <Typography variant="h6">
@@ -185,7 +185,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                     direction={{ xs: 'column', sm: 'row' }}
                     justifyContent="space-between" 
                     alignItems={{ xs: 'stretch', sm: 'center' }}
-                    spacing={1}
+                    gap={1}
                     sx={{ mb: 2 }}
                 >
                     <Typography variant="subtitle2" color="text.secondary">
@@ -276,7 +276,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                         <TableCell align="center" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                             <Stack 
                                                 direction="row" 
-                                                spacing={0.5} 
+                                                gap={0.5} 
                                                 justifyContent="center"
                                                 flexWrap="wrap"
                                             >
@@ -304,7 +304,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                             </Stack>
                                         </TableCell>
                                         <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                                            <Stack direction="row" alignItems="center" gap={0.5}>
                                                 <AccessTimeIcon fontSize="small" color="action" />
                                                 <Typography variant="body2" color="text.secondary" noWrap>
                                                     {formatDate(store.lastAimsSyncAt)}
@@ -312,7 +312,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                             </Stack>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                            <Stack direction="row" gap={0.5} justifyContent="flex-end">
                                                 <Tooltip title={t('common.edit')}>
                                                     <IconButton
                                                         size="small"

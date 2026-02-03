@@ -1,12 +1,13 @@
 /**
  * Enhanced User Dialog
  * 
- * @description Comprehensive dialog for creating and editing users with:
+ * @description Comprehensive dialog for creating, editing users, AND self-profile editing with:
  * - Company selection (with inline creation for PLATFORM_ADMIN)
  * - Store assignments with roles and features
  * - Multi-step flow for creating new users
+ * - Profile mode for users to edit their own profile (from header avatar)
  * 
- * This replaces the original UserDialog with full company/store support.
+ * This is the unified user edit dialog used both in Settings and for profile editing.
  */
 import {
     Dialog,
@@ -28,15 +29,30 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Avatar,
+    Chip,
+    InputAdornment,
+    IconButton,
+    Grid,
+    useTheme,
 } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import LoginIcon from '@mui/icons-material/Login';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { CompanySelector } from './CompanySelector';
 import { StoreAssignment, type StoreAssignmentData } from './StoreAssignment';
 import { companyService, type Company, type CreateCompanyDto } from '@shared/infrastructure/services/companyService';
 import api from '@shared/infrastructure/services/apiClient';
+import { formatDistanceToNow } from 'date-fns';
 
 // Company roles
 const COMPANY_ROLES = ['VIEWER', 'COMPANY_ADMIN'] as const;
@@ -48,8 +64,13 @@ interface UserData {
     email: string;
     firstName: string | null;
     lastName: string | null;
+    phone?: string | null;
     globalRole: 'PLATFORM_ADMIN' | null;
     isActive: boolean;
+    lastLogin?: string | null;
+    lastActivity?: string | null;
+    loginCount?: number;
+    createdAt?: string;
     companies?: Array<{
         company: { id: string; name: string; code: string };
         role: CompanyRole;
@@ -67,15 +88,23 @@ interface EnhancedUserDialogProps {
     onClose: () => void;
     onSave: () => void;
     user?: UserData | null; // If provided, edit mode
+    profileMode?: boolean; // If true, self-editing mode (from header avatar)
 }
 
 // Steps for create mode
 const STEPS = ['basicInfo', 'companyAssignment', 'storeAssignment'];
 
-export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUserDialogProps) {
+export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = false }: EnhancedUserDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isRtl = theme.direction === 'rtl';
     const { isPlatformAdmin, user: currentUser } = useAuthContext();
-    const isEdit = !!user;
+    const { setUser: setAuthUser } = useAuthStore();
+    const isEdit = !!user || profileMode;
+
+    // Profile data for self-editing mode
+    const [profileData, setProfileData] = useState<UserData | null>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
 
     // Stepper state (only for create mode)
     const [activeStep, setActiveStep] = useState(0);
@@ -83,13 +112,23 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
     // Form state
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     // Basic Info
     const [email, setEmail] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [isActive, setIsActive] = useState(true);
+
+    // Password change (profile mode)
+    const [showPasswordSection, setShowPasswordSection] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
 
     // Company Assignment
     const [selectedCompanyId, setSelectedCompanyId] = useState('');
@@ -101,14 +140,59 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
     // Store Assignments
     const [storeAssignments, setStoreAssignments] = useState<StoreAssignmentData[]>([]);
 
-    // Initialize form when dialog opens or user changes
+    // Fetch profile data in profile mode
     useEffect(() => {
-        if (open) {
+        if (open && profileMode) {
+            setProfileLoading(true);
+            setError(null);
+            api.get<UserData>('/users/me')
+                .then(response => {
+                    const data = response.data;
+                    setProfileData(data);
+                    setEmail(data.email);
+                    setFirstName(data.firstName || '');
+                    setLastName(data.lastName || '');
+                    setPhone(data.phone || '');
+                    setIsActive(data.isActive);
+                    
+                    // Get first company assignment
+                    const firstCompanyAssignment = data.companies?.[0];
+                    if (firstCompanyAssignment) {
+                        setSelectedCompanyId(firstCompanyAssignment.company.id);
+                        setCompanyRole(firstCompanyAssignment.role);
+                        setAllStoresAccess(firstCompanyAssignment.allStoresAccess);
+                    }
+                    
+                    // Get store assignments
+                    const userStoreAssignments: StoreAssignmentData[] = (data.stores || [])
+                        .filter(s => !firstCompanyAssignment || s.store.companyId === firstCompanyAssignment.company.id)
+                        .map(s => ({
+                            storeId: s.store.id,
+                            storeName: s.store.name,
+                            storeCode: s.store.code,
+                            role: s.role as any,
+                            features: s.features
+                        }));
+                    setStoreAssignments(userStoreAssignments);
+                })
+                .catch(err => {
+                    setError(err.response?.data?.error?.message || 'Failed to load profile');
+                })
+                .finally(() => {
+                    setProfileLoading(false);
+                });
+        }
+    }, [open, profileMode]);
+
+    // Initialize form when dialog opens or user changes (non-profile mode)
+    useEffect(() => {
+        if (open && !profileMode) {
             if (user) {
                 // Edit mode - populate from user data
                 setEmail(user.email);
                 setFirstName(user.firstName || '');
                 setLastName(user.lastName || '');
+                setPhone(user.phone || '');
                 setIsActive(user.isActive);
                 setPassword('');
 
@@ -136,6 +220,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                 setEmail('');
                 setFirstName('');
                 setLastName('');
+                setPhone('');
                 setPassword('');
                 setIsActive(true);
                 setSelectedCompanyId('');
@@ -147,8 +232,17 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
             }
             setActiveStep(0);
             setError(null);
+            setSuccess(null);
         }
-    }, [open, user]);
+        
+        // Reset password fields when dialog opens
+        if (open) {
+            setShowPasswordSection(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        }
+    }, [open, user, profileMode]);
 
     // Get accessible companies for non-platform admins
     const accessibleCompanyId = useMemo(() => {
@@ -202,12 +296,70 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
         setActiveStep(prev => prev - 1);
     };
 
+    // Handle password change (profile mode only)
+    const handleChangePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            setError(t('settings.users.passwordMismatch'));
+            return;
+        }
+        
+        if (newPassword.length < 8) {
+            setError(t('settings.users.passwordTooShort'));
+            return;
+        }
+        
+        setSubmitting(true);
+        setError(null);
+        setSuccess(null);
+        
+        try {
+            await api.post('/users/me/change-password', {
+                currentPassword,
+                newPassword,
+            });
+            
+            setSuccess(t('settings.users.passwordChanged'));
+            setShowPasswordSection(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err: any) {
+            setError(err.response?.data?.error?.message || 'Failed to change password');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     // Handle submit
     const handleSubmit = async () => {
         setSubmitting(true);
         setError(null);
+        setSuccess(null);
 
         try {
+            // Profile mode - self update via /users/me
+            if (profileMode) {
+                await api.patch('/users/me', {
+                    firstName: firstName.trim() || null,
+                    lastName: lastName.trim() || null,
+                    phone: phone.trim() || null,
+                });
+                
+                setSuccess(t('settings.users.profileSaved'));
+                
+                // Update auth store with new data
+                if (currentUser) {
+                    setAuthUser({
+                        ...currentUser,
+                        firstName: firstName.trim() || null,
+                        lastName: lastName.trim() || null,
+                    });
+                }
+                
+                onSave();
+                return;
+            }
+
             let companyId = selectedCompanyId;
 
             // Create new company if needed
@@ -335,6 +487,20 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                             />
                         </Box>
 
+                        <TextField
+                            label={t('common.phone')}
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            fullWidth
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <PhoneIcon fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+
                         {!isEdit && (
                             <TextField
                                 label={t('auth.password')}
@@ -347,7 +513,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                             />
                         )}
 
-                        {isEdit && (
+                        {isEdit && !profileMode && (
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -423,7 +589,312 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
         }
     };
 
-    // For edit mode, show simplified layout without stepper
+    // Helper functions for profile mode
+    const getInitials = () => {
+        if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+        if (email) return email.substring(0, 2).toUpperCase();
+        return '?';
+    };
+
+    const getRoleBadgeColor = () => {
+        const data = profileMode ? profileData : user;
+        if (data?.globalRole === 'PLATFORM_ADMIN') return 'error';
+        const companyRole = data?.companies?.[0]?.role;
+        if (companyRole === 'SUPER_USER') return 'warning';
+        if (companyRole === 'COMPANY_ADMIN') return 'primary';
+        return 'default';
+    };
+
+    const getRoleLabel = () => {
+        const data = profileMode ? profileData : user;
+        if (data?.globalRole === 'PLATFORM_ADMIN') return t('settings.users.roles.platformAdmin');
+        const companyRole = data?.companies?.[0]?.role;
+        if (companyRole === 'SUPER_USER') return t('settings.users.roles.superUser');
+        if (companyRole === 'COMPANY_ADMIN') return t('settings.users.roles.companyAdmin');
+        return t('settings.users.roles.viewer');
+    };
+
+    // Profile mode - self editing layout
+    if (profileMode) {
+        return (
+            <Dialog 
+                open={open} 
+                onClose={submitting ? undefined : onClose}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: { maxHeight: '90vh' }
+                }}
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <PersonIcon />
+                    {t('settings.users.editProfile')}
+                </DialogTitle>
+
+                <DialogContent dividers>
+                    {profileLoading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+                            {success && <Alert severity="success" onClose={() => setSuccess(null)}>{success}</Alert>}
+                            
+                            {/* Profile Header */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: '1.5rem' }}>
+                                    {getInitials()}
+                                </Avatar>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography variant="h6">
+                                        {firstName || lastName ? `${firstName} ${lastName}`.trim() : email}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                        <EmailIcon fontSize="small" color="action" />
+                                        <Typography variant="body2" color="text.secondary">
+                                            {email}
+                                        </Typography>
+                                    </Box>
+                                    <Chip
+                                        label={getRoleLabel()}
+                                        color={getRoleBadgeColor() as any}
+                                        size="small"
+                                        sx={{ mt: 1 }}
+                                    />
+                                </Box>
+                            </Box>
+
+                            <Divider />
+
+                            {/* Basic Info Section */}
+                            <Typography variant="subtitle2" color="text.secondary">
+                                {t('settings.users.basicInfo')}
+                            </Typography>
+                            
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
+                                    <TextField
+                                        label={t('common.firstName')}
+                                        fullWidth
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        size="small"
+                                    />
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 6 }}>
+                                    <TextField
+                                        label={t('common.lastName')}
+                                        fullWidth
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        size="small"
+                                    />
+                                </Grid>
+                                <Grid size={{ xs: 12 }}>
+                                    <TextField
+                                        label={t('common.phone')}
+                                        fullWidth
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        size="small"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <PhoneIcon fontSize="small" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            <Divider />
+
+                            {/* Account Stats Section */}
+                            <Typography variant="subtitle2" color="text.secondary">
+                                {t('settings.users.accountStats')}
+                            </Typography>
+                            
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 6 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <LoginIcon fontSize="small" color="action" />
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {t('settings.users.loginCount')}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {profileData?.loginCount || 0}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <AccessTimeIcon fontSize="small" color="action" />
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {t('settings.users.lastLogin')}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {profileData?.lastLogin
+                                                    ? formatDistanceToNow(new Date(profileData.lastLogin), { addSuffix: true })
+                                                    : t('common.never')
+                                                }
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <AccessTimeIcon fontSize="small" color="action" />
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {t('settings.users.memberSince')}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {profileData?.createdAt
+                                                    ? new Date(profileData.createdAt).toLocaleDateString()
+                                                    : '-'
+                                                }
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+
+                            <Divider />
+
+                            {/* Password Section */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    {t('settings.users.password')}
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    onClick={() => setShowPasswordSection(!showPasswordSection)}
+                                >
+                                    {showPasswordSection ? t('common.cancel') : t('settings.users.changePassword')}
+                                </Button>
+                            </Box>
+
+                            {showPasswordSection && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <TextField
+                                        label={t('settings.users.currentPassword')}
+                                        type={showCurrentPassword ? 'text' : 'password'}
+                                        fullWidth
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        size="small"
+                                        InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position={isRtl ? 'start' : 'end'}>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                    >
+                                                        {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                    <TextField
+                                        label={t('settings.users.newPassword')}
+                                        type={showNewPassword ? 'text' : 'password'}
+                                        fullWidth
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        size="small"
+                                        helperText={t('settings.users.passwordRequirements')}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position={isRtl ? 'start' : 'end'}>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                                    >
+                                                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                    <TextField
+                                        label={t('settings.users.confirmPassword')}
+                                        type="password"
+                                        fullWidth
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        size="small"
+                                        error={confirmPassword.length > 0 && newPassword !== confirmPassword}
+                                        helperText={
+                                            confirmPassword.length > 0 && newPassword !== confirmPassword
+                                                ? t('settings.users.passwordMismatch')
+                                                : ''
+                                        }
+                                    />
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        onClick={handleChangePassword}
+                                        disabled={submitting || !currentPassword || !newPassword || newPassword !== confirmPassword}
+                                    >
+                                        {submitting ? <CircularProgress size={20} /> : t('settings.users.changePassword')}
+                                    </Button>
+                                </Box>
+                            )}
+
+                            {/* Company & Store Assignments (Read Only) */}
+                            {((profileData?.companies?.length ?? 0) > 0 || (profileData?.stores?.length ?? 0) > 0) && (
+                                <>
+                                    <Divider />
+                                    <Typography variant="subtitle2" color="text.secondary">
+                                        {t('settings.users.assignments')}
+                                    </Typography>
+                                    
+                                    {profileData?.companies?.map((uc) => (
+                                        <Box key={uc.company.id} sx={{ pl: 1 }}>
+                                            <Typography variant="body2">
+                                                <strong>{uc.company.name}</strong> ({uc.company.code})
+                                                <Chip label={uc.role} size="small" sx={{ ml: 1 }} />
+                                            </Typography>
+                                        </Box>
+                                    ))}
+                                    
+                                    {profileData?.stores?.map((us) => (
+                                        <Box key={us.store.id} sx={{ pl: 2 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                └ {us.store.name} ({us.store.code}) - {us.role}
+                                            </Typography>
+                                        </Box>
+                                    ))}
+                                </>
+                            )}
+                        </Box>
+                    )}
+                </DialogContent>
+
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={onClose} disabled={submitting} color="inherit">
+                        {t('common.close')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={submitting || profileLoading}
+                        startIcon={submitting ? <CircularProgress size={16} /> : null}
+                    >
+                        {t('common.save')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        );
+    }
+
+    // For edit mode (admin editing user), show simplified layout without stepper
     if (isEdit) {
         return (
             <Dialog 
@@ -473,6 +944,36 @@ export function EnhancedUserDialog({ open, onClose, onSave, user }: EnhancedUser
                                 {t('settings.users.storeAssignments')}
                             </Typography>
                             {renderStepContent(2)}
+                        </Box>
+
+                        <Divider />
+
+                        {/* Admin Password Reset */}
+                        <Box>
+                            <Typography variant="subtitle2" gutterBottom color="primary">
+                                {t('settings.users.resetPassword')}
+                            </Typography>
+                            <TextField
+                                label={t('settings.users.newPassword')}
+                                type={showNewPassword ? 'text' : 'password'}
+                                fullWidth
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                size="small"
+                                helperText={newPassword ? t('settings.users.passwordRequirements') : t('settings.users.leaveEmptyNoChange')}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position={isRtl ? 'start' : 'end'}>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                            >
+                                                {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
                         </Box>
                     </Box>
                 </DialogContent>

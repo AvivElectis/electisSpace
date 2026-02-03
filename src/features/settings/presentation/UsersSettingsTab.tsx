@@ -185,11 +185,11 @@ export function UsersSettingsTab() {
                 direction={{ xs: 'column', sm: 'row' }} 
                 justifyContent="space-between" 
                 alignItems={{ xs: 'stretch', sm: 'center' }}
-                spacing={2}
+                gap={2}
             >
                 <Typography variant="h6">{t('settings.users.title')}</Typography>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                     {/* Search */}
                     <TextField
                         size="small"
@@ -295,10 +295,11 @@ export function UsersSettingsTab() {
                                                     label={t(`roles.${userRole.toLowerCase()}`)}
                                                     color={getRoleColor(userRole) as any}
                                                     size="small"
+                                                    sx={{ p: 1 }}
                                                 />
                                             </TableCell>
                                             <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                                                <Stack direction="row" gap={0.5} flexWrap="wrap">
                                                     {userFeatures.map(feature => (
                                                         <Tooltip key={feature} title={t(`navigation.${feature}`)}>
                                                             <span style={{ fontSize: '1.1rem' }}>
@@ -314,10 +315,11 @@ export function UsersSettingsTab() {
                                                     color={user.isActive ? 'success' : 'default'}
                                                     variant="outlined"
                                                     size="small"
+                                                    sx={{ p: 1 }}
                                                 />
                                             </TableCell>
                                             <TableCell align="right">
-                                                <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
+                                                <Stack direction="row" justifyContent="flex-end" gap={0.5}>
                                                     {/* Elevate Button (Platform Admin only) */}
                                                     {canElevate && (
                                                         <Tooltip title={t('settings.users.elevate')}>
