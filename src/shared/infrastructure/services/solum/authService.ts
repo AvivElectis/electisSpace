@@ -15,7 +15,8 @@ import axios from 'axios';
 
 /**
  * Build cluster-aware URL
- * Inserts '/c1' prefix when cluster is 'c1'
+ * Handles both legacy format (domain only) and new format (domain + /common or /c1/common)
+ * 
  * @param config - SoluM configuration
  * @param path - API path starting with '/common/api/v2/...'
  * @returns Full URL with cluster prefix if applicable
@@ -24,7 +25,11 @@ import axios from 'axios';
  * // C1 cluster: https://eu.common.solumesl.com/c1/common/api/v2/token
  */
 export function buildUrl(config: SolumConfig, path: string): string {
-    const { baseUrl, cluster } = config;
+    let { baseUrl, cluster } = config;
+    
+    // Normalize base URL - remove trailing /common or /c1/common if present
+    // The new format includes these, but we strip them to build URLs consistently
+    baseUrl = baseUrl.replace(/\/(c1\/)?common\/?$/, '');
 
     // Insert '/c1' before the path for c1 cluster
     const clusterPrefix = cluster === 'c1' ? '/c1' : '';
