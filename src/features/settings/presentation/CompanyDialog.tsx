@@ -21,7 +21,12 @@ import {
     Tabs,
     Tab,
     InputAdornment,
-    IconButton
+    IconButton,
+    Divider,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -29,6 +34,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import CloudIcon from '@mui/icons-material/Cloud';
 import BusinessIcon from '@mui/icons-material/Business';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -38,6 +44,7 @@ import {
     type UpdateCompanyDto,
     type UpdateAimsConfigDto
 } from '@shared/infrastructure/services/companyService';
+import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -89,9 +96,19 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
     const [showPassword, setShowPassword] = useState(false);
     const [aimsChanged, setAimsChanged] = useState(false);
 
+    // AIMS Connection Test
+    const [testingConnection, setTestingConnection] = useState(false);
+    const [connectionTestResult, setConnectionTestResult] = useState<{
+        success: boolean;
+        message: string;
+    } | null>(null);
+
     // Initialize form when dialog opens
     useEffect(() => {
         if (open) {
+            // Reset connection test result
+            setConnectionTestResult(null);
+            
             if (company) {
                 // Edit mode - populate from company
                 setName(company.name);
@@ -99,8 +116,15 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 setLocation(company.location || '');
                 setDescription(company.description || '');
                 setIsActive(company.isActive);
-                setAimsBaseUrl(company.aimsBaseUrl || '');
-                setAimsCluster(company.aimsCluster || '');
+                // For AIMS config, use existing values or set defaults
+                const cluster = company.aimsCluster || 'c1';
+                setAimsCluster(cluster);
+                // If company has a baseUrl, use it; otherwise derive from cluster
+                if (company.aimsBaseUrl) {
+                    setAimsBaseUrl(company.aimsBaseUrl);
+                } else {
+                    setAimsBaseUrl(cluster === 'common' ? 'https://eu.common.solumesl.com' : 'https://eu.c1.solumesl.com');
+                }
                 setAimsUsername(company.aimsUsername || '');
                 setAimsPassword(''); // Never show existing password
                 setCodeValid(true); // Existing code is always valid
@@ -111,8 +135,8 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 setLocation('');
                 setDescription('');
                 setIsActive(true);
-                setAimsBaseUrl('https://api.solumesl.com');
-                setAimsCluster('');
+                setAimsCluster('c1'); // Default to c1 cluster
+                setAimsBaseUrl('https://eu.c1.solumesl.com'); // Default c1 base URL
                 setAimsUsername('');
                 setAimsPassword('');
                 setCodeValid(null);
@@ -166,6 +190,30 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
     const handleAimsFieldChange = (setter: (value: string) => void) => (value: string) => {
         setter(value);
         setAimsChanged(true);
+        setConnectionTestResult(null); // Clear test result when config changes
+    };
+
+    // Test AIMS connection
+    const handleTestConnection = async () => {
+        if (!company?.id) return;
+        
+        setTestingConnection(true);
+        setConnectionTestResult(null);
+        
+        try {
+            const result = await fieldMappingService.testAimsConnection(company.id);
+            setConnectionTestResult({
+                success: result.success,
+                message: result.message,
+            });
+        } catch (err: any) {
+            setConnectionTestResult({
+                success: false,
+                message: err.response?.data?.message || t('settings.companies.connectionTestError'),
+            });
+        } finally {
+            setTestingConnection(false);
+        }
     };
 
     // Validate form
@@ -363,22 +411,33 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                             {t('settings.companies.aimsConfigInfo')}
                         </Alert>
 
-                        {/* Base URL */}
+                        {/* Cluster Selector */}
+                        <FormControl fullWidth>
+                            <InputLabel>{t('settings.companies.aimsCluster')}</InputLabel>
+                            <Select
+                                value={aimsCluster || 'c1'}
+                                label={t('settings.companies.aimsCluster')}
+                                onChange={(e) => {
+                                    const cluster = e.target.value;
+                                    handleAimsFieldChange(setAimsCluster)(cluster);
+                                    // Automatically set the base URL based on cluster
+                                    const baseUrl = cluster === 'common' 
+                                        ? 'https://eu.common.solumesl.com' 
+                                        : 'https://eu.c1.solumesl.com';
+                                    handleAimsFieldChange(setAimsBaseUrl)(baseUrl);
+                                }}
+                            >
+                                <MenuItem value="c1">C1 (eu.c1.solumesl.com)</MenuItem>
+                                <MenuItem value="common">Common (eu.common.solumesl.com)</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {/* Base URL (read-only, derived from cluster) */}
                         <TextField
                             label={t('settings.companies.aimsBaseUrl')}
                             value={aimsBaseUrl}
-                            onChange={(e) => handleAimsFieldChange(setAimsBaseUrl)(e.target.value)}
-                            placeholder="https://api.solumesl.com"
+                            disabled
                             helperText={t('settings.companies.aimsBaseUrlHelp')}
-                        />
-
-                        {/* Cluster */}
-                        <TextField
-                            label={t('settings.companies.aimsCluster')}
-                            value={aimsCluster}
-                            onChange={(e) => handleAimsFieldChange(setAimsCluster)(e.target.value)}
-                            placeholder="cluster1"
-                            helperText={t('settings.companies.aimsClusterHelp')}
                         />
 
                         {/* Username */}
@@ -389,56 +448,97 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                             placeholder="admin@company.com"
                         />
 
-                        {/* Password */}
-                        <TextField
-                            label={t('settings.companies.aimsPassword')}
-                            type={showPassword ? 'text' : 'password'}
-                            value={aimsPassword}
-                            onChange={(e) => handleAimsFieldChange(setAimsPassword)(e.target.value)}
-                            placeholder={isEdit 
-                                ? t('settings.companies.aimsPasswordPlaceholder')
-                                : undefined}
-                            InputProps={{
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            edge="end"
-                                        >
-                                            {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                )
-                            }}
-                        />
+                        {/* Password with separate visibility toggle for RTL support */}
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                            <TextField
+                                label={t('settings.companies.aimsPassword')}
+                                type={showPassword ? 'text' : 'password'}
+                                value={aimsPassword}
+                                onChange={(e) => handleAimsFieldChange(setAimsPassword)(e.target.value)}
+                                placeholder={isEdit 
+                                    ? t('settings.companies.aimsPasswordPlaceholder')
+                                    : undefined}
+                                sx={{ flex: 1 }}
+                            />
+                            <IconButton
+                                onClick={() => setShowPassword(!showPassword)}
+                                sx={{ 
+                                    mt: 1,
+                                    border: 1,
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    width: 40,
+                                    height: 40
+                                }}
+                            >
+                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                        </Box>
 
-                        {/* AIMS Status */}
+                        {/* AIMS Status and Test Connection */}
                         {isEdit && company && (
-                            <Box sx={{ 
-                                mt: 1, 
-                                p: 1.5, 
-                                bgcolor: 'action.hover', 
-                                borderRadius: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1
-                            }}>
-                                {company.aimsConfigured ? (
-                                    <>
-                                        <CheckCircleIcon color="success" fontSize="small" />
-                                        <Typography variant="body2" color="success.main">
-                                            {t('settings.companies.aimsConfigured')}
-                                        </Typography>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ErrorIcon color="warning" fontSize="small" />
-                                        <Typography variant="body2" color="warning.main">
-                                            {t('settings.companies.aimsNotConfigured')}
-                                        </Typography>
-                                    </>
+                            <>
+                                <Divider sx={{ my: 1 }} />
+                                
+                                {/* Configuration Status */}
+                                <Box sx={{ 
+                                    p: 1.5, 
+                                    bgcolor: 'action.hover', 
+                                    borderRadius: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        {company.aimsConfigured ? (
+                                            <>
+                                                <CheckCircleIcon color="success" fontSize="small" />
+                                                <Typography variant="body2" color="success.main">
+                                                    {t('settings.companies.aimsConfigured')}
+                                                </Typography>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ErrorIcon color="warning" fontSize="small" />
+                                                <Typography variant="body2" color="warning.main">
+                                                    {t('settings.companies.aimsNotConfigured')}
+                                                </Typography>
+                                            </>
+                                        )}
+                                    </Box>
+                                    
+                                    {/* Test Connection Button */}
+                                    {company.aimsConfigured && !aimsChanged && (
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={testingConnection ? <CircularProgress size={14} /> : <RefreshIcon />}
+                                            onClick={handleTestConnection}
+                                            disabled={testingConnection}
+                                        >
+                                            {t('settings.companies.testConnection')}
+                                        </Button>
+                                    )}
+                                </Box>
+
+                                {/* Connection Test Result */}
+                                {connectionTestResult && (
+                                    <Alert 
+                                        severity={connectionTestResult.success ? 'success' : 'error'}
+                                        sx={{ mt: 1 }}
+                                        onClose={() => setConnectionTestResult(null)}
+                                    >
+                                        {connectionTestResult.message}
+                                    </Alert>
                                 )}
-                            </Box>
+
+                                {/* Pending Changes Warning */}
+                                {aimsChanged && (
+                                    <Alert severity="info" sx={{ mt: 1 }}>
+                                        {t('settings.companies.aimsChangesPending')}
+                                    </Alert>
+                                )}
+                            </>
                         )}
                     </Box>
                 </TabPanel>

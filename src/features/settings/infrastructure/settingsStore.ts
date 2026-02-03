@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
-import type { SettingsData, LogoConfig } from '../domain/types';
+import type { SettingsData, LogoConfig, SolumMappingConfig } from '../domain/types';
 import type { WorkingMode } from '@shared/domain/types';
 import { createDefaultSettings } from '../domain/businessRules';
 import { settingsService } from '@shared/infrastructure/services/settingsService';
+import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface SettingsStore {
@@ -12,6 +13,7 @@ interface SettingsStore {
     passwordHash: string | null;
     isLocked: boolean;
     activeStoreId: string | null;
+    activeCompanyId: string | null;
     isSyncing: boolean;
 
     // Actions
@@ -30,8 +32,14 @@ interface SettingsStore {
 
     // Server sync actions
     setActiveStoreId: (storeId: string | null) => void;
-    fetchSettingsFromServer: (storeId: string) => Promise<void>;
+    setActiveCompanyId: (companyId: string | null) => void;
+    fetchSettingsFromServer: (storeId: string, companyId: string) => Promise<void>;
     saveSettingsToServer: () => Promise<void>;
+    
+    // Field mapping server sync (company-level)
+    fetchFieldMappingsFromServer: (companyId: string) => Promise<void>;
+    saveFieldMappingsToServer: (companyId?: string) => Promise<void>;
+    updateFieldMappings: (updates: Partial<SolumMappingConfig>) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -43,6 +51,7 @@ export const useSettingsStore = create<SettingsStore>()(
                 passwordHash: null,
                 isLocked: false,
                 activeStoreId: null,
+                activeCompanyId: null,
                 isSyncing: false,
 
                 // Actions
@@ -115,27 +124,47 @@ export const useSettingsStore = create<SettingsStore>()(
 
                 // Server sync actions
                 setActiveStoreId: (storeId) => set({ activeStoreId: storeId }, false, 'setActiveStoreId'),
+                
+                setActiveCompanyId: (companyId) => set({ activeCompanyId: companyId }, false, 'setActiveCompanyId'),
 
-                fetchSettingsFromServer: async (storeId: string) => {
+                fetchSettingsFromServer: async (storeId: string, companyId: string) => {
                     set({ isSyncing: true }, false, 'fetchSettings/start');
                     try {
-                        const response = await settingsService.getStoreSettings(storeId);
-                        const serverSettings = response.settings as Partial<SettingsData>;
+                        // Fetch store settings and company field mappings in parallel
+                        const [settingsResponse, fieldMappingsResponse] = await Promise.all([
+                            settingsService.getStoreSettings(storeId),
+                            fieldMappingService.getFieldMappings(companyId).catch(() => ({ fieldMappings: null })),
+                        ]);
+                        
+                        const serverSettings = settingsResponse.settings as Partial<SettingsData>;
                         
                         // Merge server settings with defaults (server takes priority)
+                        const updates: Partial<SettingsData> = {};
+                        
                         if (serverSettings && Object.keys(serverSettings).length > 0) {
+                            Object.assign(updates, serverSettings);
+                        }
+                        
+                        // Add field mappings from company-level endpoint if available
+                        if (fieldMappingsResponse.fieldMappings && Object.keys(fieldMappingsResponse.fieldMappings).length > 0) {
+                            updates.solumMappingConfig = fieldMappingsResponse.fieldMappings as SolumMappingConfig;
+                            logger.info('SettingsStore', 'Field mappings loaded from server (company-level)', { companyId });
+                        }
+                        
+                        if (Object.keys(updates).length > 0) {
                             set((state) => ({
                                 settings: {
                                     ...state.settings,
-                                    ...serverSettings,
+                                    ...updates,
                                 },
                                 activeStoreId: storeId,
+                                activeCompanyId: companyId,
                                 isSyncing: false,
                             }), false, 'fetchSettings/success');
-                            logger.info('SettingsStore', 'Settings loaded from server', { storeId });
+                            logger.info('SettingsStore', 'Settings loaded from server', { storeId, companyId });
                         } else {
-                            set({ activeStoreId: storeId, isSyncing: false }, false, 'fetchSettings/empty');
-                            logger.info('SettingsStore', 'No server settings found, using local', { storeId });
+                            set({ activeStoreId: storeId, activeCompanyId: companyId, isSyncing: false }, false, 'fetchSettings/empty');
+                            logger.info('SettingsStore', 'No server settings found, using local', { storeId, companyId });
                         }
                     } catch (error) {
                         logger.error('SettingsStore', 'Failed to fetch settings from server', { error });
@@ -150,9 +179,9 @@ export const useSettingsStore = create<SettingsStore>()(
                         return;
                     }
 
-                    // Prepare settings for server - exclude sensitive data
+                    // Prepare settings for server - exclude sensitive data and field mappings (handled separately)
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { solumConfig, ...otherSettings } = settings;
+                    const { solumConfig, solumMappingConfig, ...otherSettings } = settings;
                     
                     // Build sanitized solumConfig without sensitive fields
                     let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
@@ -166,6 +195,7 @@ export const useSettingsStore = create<SettingsStore>()(
                     const settingsForServer = {
                         ...otherSettings,
                         solumConfig: sanitizedSolumConfig,
+                        // Don't include solumMappingConfig - it's handled by dedicated endpoint
                     } as unknown as Partial<SettingsData>;
 
                     set({ isSyncing: true }, false, 'saveSettings/start');
@@ -179,6 +209,67 @@ export const useSettingsStore = create<SettingsStore>()(
                         // Settings remain in local state even if server save fails
                     }
                 },
+
+                // Field mapping server sync (company-level)
+                fetchFieldMappingsFromServer: async (companyId: string) => {
+                    set({ isSyncing: true }, false, 'fetchFieldMappings/start');
+                    try {
+                        const response = await fieldMappingService.getFieldMappings(companyId);
+                        if (response.fieldMappings && Object.keys(response.fieldMappings).length > 0) {
+                            set((state) => ({
+                                settings: {
+                                    ...state.settings,
+                                    solumMappingConfig: response.fieldMappings as SolumMappingConfig,
+                                },
+                                isSyncing: false,
+                            }), false, 'fetchFieldMappings/success');
+                            logger.info('SettingsStore', 'Field mappings loaded from server (company-level)', { companyId });
+                        } else {
+                            set({ isSyncing: false }, false, 'fetchFieldMappings/empty');
+                            logger.info('SettingsStore', 'No field mappings on server, using local', { companyId });
+                        }
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to fetch field mappings from server', { error });
+                        set({ isSyncing: false }, false, 'fetchFieldMappings/error');
+                    }
+                },
+
+                saveFieldMappingsToServer: async (companyId?: string) => {
+                    const { activeCompanyId, settings } = get();
+                    const targetCompanyId = companyId || activeCompanyId;
+                    
+                    if (!targetCompanyId) {
+                        logger.warn('SettingsStore', 'No company ID, skipping field mappings save');
+                        return;
+                    }
+
+                    const { solumMappingConfig } = settings;
+                    if (!solumMappingConfig) {
+                        logger.warn('SettingsStore', 'No field mappings to save');
+                        return;
+                    }
+
+                    set({ isSyncing: true }, false, 'saveFieldMappings/start');
+                    try {
+                        await fieldMappingService.updateFieldMappings(targetCompanyId, solumMappingConfig);
+                        set({ isSyncing: false }, false, 'saveFieldMappings/success');
+                        logger.info('SettingsStore', 'Field mappings saved to server (company-level)', { companyId: targetCompanyId });
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to save field mappings to server', { error });
+                        set({ isSyncing: false }, false, 'saveFieldMappings/error');
+                    }
+                },
+
+                updateFieldMappings: (updates: Partial<SolumMappingConfig>) => 
+                    set((state) => ({
+                        settings: {
+                            ...state.settings,
+                            solumMappingConfig: {
+                                ...state.settings.solumMappingConfig,
+                                ...updates,
+                            } as SolumMappingConfig,
+                        }
+                    }), false, 'updateFieldMappings'),
             }),
             {
                 name: 'settings-store',
@@ -186,6 +277,7 @@ export const useSettingsStore = create<SettingsStore>()(
                     settings: state.settings,
                     passwordHash: state.passwordHash,
                     activeStoreId: state.activeStoreId,
+                    activeCompanyId: state.activeCompanyId,
                     // Don't persist isLocked or isSyncing
                 }),
             }
