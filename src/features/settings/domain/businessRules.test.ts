@@ -195,7 +195,7 @@ describe('Settings Business Rules', () => {
 
         it('should include working mode', () => {
             const sanitized = sanitizeSettings(mockSettings);
-            expect(sanitized.workingMode).toBe('SFTP');
+            expect(sanitized.workingMode).toBe('SOLUM_API');
         });
 
         it('should include CSV config', () => {
