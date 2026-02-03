@@ -191,10 +191,20 @@ export function LoginPage() {
                     {error && (
                         <Alert
                             severity="error"
-                            sx={{ mb: 3, borderRadius: 2 }}
+                            sx={{ 
+                                mb: 3, 
+                                borderRadius: 2, 
+                                p: 1,
+                                '& .MuiAlert-action': {
+                                    position: 'absolute',
+                                    right: i18n.language === 'he' ? 'auto' : 8,
+                                    left: i18n.language === 'he' ? 8 : 'auto',
+                                },
+                                position: 'relative',
+                            }}
                             onClose={clearError}
                         >
-                            {error}
+                            {t(error, error)}
                         </Alert>
                     )}
 

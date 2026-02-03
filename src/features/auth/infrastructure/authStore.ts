@@ -10,16 +10,67 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { logger } from '@shared/infrastructure/services/logger';
 import { AxiosError } from 'axios';
 
-// Helper to extract error message from various error types
-const getErrorMessage = (error: unknown, fallback: string): string => {
+// Error code type for login errors
+type AuthErrorCode = 
+    | 'INVALID_CREDENTIALS'
+    | 'USER_NOT_FOUND'
+    | 'USER_INACTIVE'
+    | 'EMAIL_SERVICE_ERROR'
+    | 'INVALID_CODE'
+    | 'CODE_EXPIRED'
+    | 'NETWORK_ERROR'
+    | 'SERVER_ERROR'
+    | 'CONNECTION_REFUSED';
+
+// Helper to extract error code and message from various error types
+const getAuthError = (error: unknown): { code: AuthErrorCode; message: string } => {
     if (error instanceof AxiosError) {
-        // Server returned an error response
-        return error.response?.data?.message || error.message || fallback;
+        // Network error (no response from server)
+        if (!error.response) {
+            if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+                return { code: 'NETWORK_ERROR', message: 'network_error' };
+            }
+            if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
+                return { code: 'CONNECTION_REFUSED', message: 'connection_refused' };
+            }
+            return { code: 'SERVER_ERROR', message: 'server_error' };
+        }
+        
+        // Server returned an error response with error code
+        // Response format: { error: { code: 'ERROR_CODE', message: 'message' } }
+        const responseData = error.response?.data as { error?: { code?: string; message?: string } } | undefined;
+        const errorData = responseData?.error;
+        
+        if (errorData?.code) {
+            return { 
+                code: errorData.code as AuthErrorCode, 
+                message: errorData.code.toLowerCase() 
+            };
+        }
+        
+        // Fallback to message or status-based error
+        if (error.response?.status === 401) {
+            return { code: 'INVALID_CREDENTIALS', message: 'invalid_credentials' };
+        }
+        if (error.response?.status === 503) {
+            return { code: 'EMAIL_SERVICE_ERROR', message: 'email_service_error' };
+        }
+        if (error.response?.status >= 500) {
+            return { code: 'SERVER_ERROR', message: 'server_error' };
+        }
+        
+        return { code: 'SERVER_ERROR', message: responseData?.error?.message || 'server_error' };
     }
     if (error instanceof Error) {
-        return error.message;
+        return { code: 'SERVER_ERROR', message: error.message };
     }
-    return fallback;
+    return { code: 'SERVER_ERROR', message: 'server_error' };
+};
+
+// Legacy helper for backward compatibility
+const getErrorMessage = (error: unknown, fallback: string): string => {
+    const { message } = getAuthError(error);
+    return message || fallback;
 };
 
 /**
@@ -137,11 +188,15 @@ export const useAuthStore = create<AuthState>()(
                         }, false, 'login/codeSent');
                         return true; // Indicate to show 2FA screen
                     } catch (error) {
-                        const message = getErrorMessage(error, 'Login failed');
+                        //console.log('Login error:', error);
+                        //console.log('Error response data:', (error as any)?.response?.data);
+                        const { code } = getAuthError(error);
+                        //console.log('Extracted error code:', code);
+                        // Store the error code as the error - the UI will translate it
                         set({
                             pendingEmail: null,
                             isLoading: false,
-                            error: message,
+                            error: `error.${code.toLowerCase()}`,
                         }, false, 'login/error');
                         return false;
                     }
@@ -186,10 +241,10 @@ export const useAuthStore = create<AuthState>()(
 
                         return true;
                     } catch (error) {
-                        const message = getErrorMessage(error, 'Verification failed');
+                        const { code } = getAuthError(error);
                         set({
                             isLoading: false,
-                            error: message,
+                            error: `error.${code.toLowerCase()}`,
                         }, false, 'verify2FA/error');
                         return false;
                     }
@@ -204,10 +259,10 @@ export const useAuthStore = create<AuthState>()(
                         await authService.resendCode(email);
                         set({ isLoading: false }, false, 'resendCode/success');
                     } catch (error) {
-                        const message = getErrorMessage(error, 'Failed to resend code');
+                        const { code } = getAuthError(error);
                         set({
                             isLoading: false,
-                            error: message,
+                            error: `error.${code.toLowerCase()}`,
                         }, false, 'resendCode/error');
                     }
                 },

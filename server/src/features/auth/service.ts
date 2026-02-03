@@ -131,8 +131,12 @@ export const authService = {
     async login(email: string, password: string): Promise<LoginResponse> {
         const user = await authRepository.findUserByEmail(email);
 
-        if (!user || !user.isActive) {
-            throw new Error('INVALID_CREDENTIALS');
+        if (!user) {
+            throw new Error('USER_NOT_FOUND');
+        }
+
+        if (!user.isActive) {
+            throw new Error('USER_INACTIVE');
         }
 
         const isValid = await bcrypt.compare(password, user.passwordHash);

@@ -123,7 +123,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 if (company.aimsBaseUrl) {
                     setAimsBaseUrl(company.aimsBaseUrl);
                 } else {
-                    setAimsBaseUrl(cluster === 'common' ? 'https://eu.common.solumesl.com' : 'https://eu.c1.solumesl.com');
+                    setAimsBaseUrl(cluster === 'common' ? 'https://eu.common.solumesl.com/common' : 'https://eu.common.solumesl.com/c1/common');
                 }
                 setAimsUsername(company.aimsUsername || '');
                 setAimsPassword(''); // Never show existing password
@@ -136,7 +136,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 setDescription('');
                 setIsActive(true);
                 setAimsCluster('c1'); // Default to c1 cluster
-                setAimsBaseUrl('https://eu.c1.solumesl.com'); // Default c1 base URL
+                setAimsBaseUrl('https://eu.common.solumesl.com/c1/common'); // Default c1 base URL
                 setAimsUsername('');
                 setAimsPassword('');
                 setCodeValid(null);
@@ -421,14 +421,15 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                     const cluster = e.target.value;
                                     handleAimsFieldChange(setAimsCluster)(cluster);
                                     // Automatically set the base URL based on cluster
+                                    // Both clusters use same domain, buildUrl adds /c1 prefix for c1 cluster
                                     const baseUrl = cluster === 'common' 
-                                        ? 'https://eu.common.solumesl.com' 
-                                        : 'https://eu.c1.solumesl.com';
+                                        ? 'https://eu.common.solumesl.com/common' 
+                                        : 'https://eu.common.solumesl.com/c1/common';
                                     handleAimsFieldChange(setAimsBaseUrl)(baseUrl);
                                 }}
                             >
-                                <MenuItem value="c1">C1 (eu.c1.solumesl.com)</MenuItem>
-                                <MenuItem value="common">Common (eu.common.solumesl.com)</MenuItem>
+                                <MenuItem value="c1">C1 (eu.common.solumesl.com/c1/common)</MenuItem>
+                                <MenuItem value="common">Common (eu.common.solumesl.com/common)</MenuItem>
                             </Select>
                         </FormControl>
 
