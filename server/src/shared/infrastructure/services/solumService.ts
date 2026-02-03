@@ -34,11 +34,23 @@ export class SolumService {
 
     /**
      * Build cluster-aware URL
+     * Handles both legacy format (domain only) and new format (domain + /common or /c1/common)
+     * 
+     * New base URL format:
+     * - Common cluster: https://eu.common.solumesl.com/common
+     * - C1 cluster: https://eu.common.solumesl.com/c1/common
+     * 
+     * Legacy format (still supported):
+     * - https://eu.common.solumesl.com (cluster prefix added dynamically)
      */
     private buildUrl(config: SolumConfig, path: string): string {
-        const { baseUrl, cluster } = config;
+        let { baseUrl, cluster } = config;
+        
+        // Normalize base URL - remove trailing /common or /c1/common if present
+        // The new format includes these, but we strip them to build URLs consistently
+        baseUrl = baseUrl.replace(/\/(c1\/)?common\/?$/, '');
+        
         const clusterPrefix = cluster === 'c1' ? '/c1' : '';
-        // Handles generic cluster configuration logic
         return `${baseUrl}${clusterPrefix}${path}`;
     }
 

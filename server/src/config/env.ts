@@ -80,7 +80,7 @@ const envSchema = z.object({
     ENCRYPTION_KEY: z.string().min(32),
 
     // CORS
-    CORS_ORIGINS: z.string().default('http://localhost:5173'),
+    CORS_ORIGINS: z.string().default('https://localhost:3000'),
 
     // Rate Limiting
     RATE_LIMIT_WINDOW_MS: z.string().default('60000').transform(Number),

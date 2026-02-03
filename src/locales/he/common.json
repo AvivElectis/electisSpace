@@ -65,11 +65,20 @@
         "selected": "נבחר",
         "syncing": "מסנכרן...",
         "noData": "אין נתונים זמינים",
+        "remove": "הסר",
         "status": {
             "title": "סטטוס",
             "active": "פעיל",
             "inactive": "לא פעיל"
         }
+    },
+    "offline": {
+        "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
+        "pendingItems": "ממתינים",
+        "syncing": "מסנכרן...",
+        "online": "מקוון",
+        "chip": "לא מקוון",
+        "syncingChip": "מסנכרן..."
     },
     "login": {
         "email": "כתובת דוא״ל",
@@ -83,6 +92,19 @@
         "verifying": "מאמת...",
         "resendCode": "שלח קוד שוב",
         "back": "חזור"
+    },
+    "error": {
+        "invalid_credentials": "דוא״ל או סיסמה שגויים",
+        "user_not_found": "משתמש לא נמצא",
+        "user_inactive": "החשבון שלך אינו פעיל. אנא פנה למנהל המערכת.",
+        "email_service_error": "שליחת קוד האימות נכשלה. אנא נסה שוב מאוחר יותר.",
+        "invalid_code": "קוד אימות שגוי",
+        "code_expired": "קוד האימות פג תוקף. אנא בקש קוד חדש.",
+        "network_error": "שגיאת רשת. אנא בדוק את חיבור האינטרנט שלך.",
+        "connection_refused": "לא ניתן להתחבר לשרת. אנא נסה שוב מאוחר יותר.",
+        "server_error": "שגיאת שרת. אנא נסה שוב מאוחר יותר.",
+        "auth_rate_limited": "יותר מדי ניסיונות התחברות. אנא המתן רגע ונסה שוב.",
+        "unknown": "אירעה שגיאה בלתי צפויה"
     },
     "dashboard": {
         "title": "לוח בקרה",
@@ -218,7 +240,19 @@
         "systemOperational": "המערכת פועלת תקין",
         "checkConnection": "בדוק את החיבור",
         "processingData": "מעבד נתונים...",
-        "attentionRequired": "נדרשת תשומת לב"
+        "attentionRequired": "נדרשת תשומת לב",
+        "noStoreSelected": "בחר חנות כדי לצפות בתור הסינכרון",
+        "operation": {
+            "create": "יצירה",
+            "update": "עדכון",
+            "delete": "מחיקה"
+        },
+        "queueTitle": "תור סינכרון",
+        "refresh": "רענן",
+        "retryAllFailed": "נסה שוב את כל הכושלים",
+        "clearFailed": "נקה כושלים",
+        "queueEmpty": "תור הסינכרון ריק",
+        "retry": "נסה שוב"
     },
     "settings": {
         "title": "הגדרות",
@@ -490,11 +524,16 @@
             },
             "allStoresAccess": "גישה לכל החנויות",
             "allStoresAccessDesc": "הענק גישה לכל החנויות בחברה זו (כולל חנויות עתידיות)",
+            "allStoresAccessInfo": "למשתמש תהיה גישה לכל החנויות הנוכחיות והעתידיות בחברה זו.",
             "addStoreAccess": "הוסף גישה לחנות",
+            "addStore": "הוסף חנות",
             "selectStore": "בחר חנות",
             "storeRole": "תפקיד בחנות",
             "storeFeatures": "יכולות בחנות",
-            "noStoresAssigned": "לא שויכו חנויות. הוסף גישה לחנות או הפעל 'גישה לכל החנויות'."
+            "noStoresAssigned": "לא שויכו חנויות. הוסף גישה לחנות או הפעל 'גישה לכל החנויות'.",
+            "noStoresInCompany": "לחברה זו אין חנויות. צור חנויות קודם.",
+            "selectCompanyFirst": "יש לבחור חברה תחילה.",
+            "company": "חברה"
         },
         "companies": {
             "title": "חברות",
@@ -998,6 +1037,7 @@
         "admin": "מנהל",
         "manager": "מנהל",
         "viewer": "צופה",
+        "company_admin": "מנהל חברה",
         "store_admin": "מנהל חנות",
         "store_manager": "מנהל חנות",
         "store_employee": "עובד חנות",

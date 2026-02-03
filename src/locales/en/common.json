@@ -62,11 +62,20 @@
         "actions": "Actions",
         "errorDetails": "Error Details",
         "noData": "No data available",
+        "remove": "Remove",
         "status": {
             "title": "Status",
             "active": "Active",
             "inactive": "Inactive"
         }
+    },
+    "offline": {
+        "banner": "You are offline. Changes will be synced when you reconnect.",
+        "pendingItems": "pending",
+        "syncing": "Syncing...",
+        "online": "Online",
+        "chip": "Offline",
+        "syncingChip": "Syncing..."
     },
     "login": {
         "email": "Email Address",
@@ -80,6 +89,19 @@
         "verifying": "Verifying...",
         "resendCode": "Resend Code",
         "back": "Back"
+    },
+    "error": {
+        "invalid_credentials": "Invalid email or password",
+        "user_not_found": "User not found",
+        "user_inactive": "Your account is inactive. Please contact an administrator.",
+        "email_service_error": "Failed to send verification code. Please try again later.",
+        "invalid_code": "Invalid verification code",
+        "code_expired": "Verification code has expired. Please request a new one.",
+        "network_error": "Network error. Please check your internet connection.",
+        "connection_refused": "Cannot connect to server. Please try again later.",
+        "server_error": "Server error. Please try again later.",
+        "auth_rate_limited": "Too many login attempts. Please wait a moment and try again.",
+        "unknown": "An unexpected error occurred"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -207,7 +229,19 @@
         "systemOperational": "System is operational",
         "checkConnection": "Check your connection",
         "processingData": "Processing data...",
-        "attentionRequired": "Attention required"
+        "attentionRequired": "Attention required",
+        "noStoreSelected": "Select a store to view sync queue",
+        "operation": {
+            "create": "Create",
+            "update": "Update",
+            "delete": "Delete"
+        },
+        "queueTitle": "Sync Queue",
+        "refresh": "Refresh",
+        "retryAllFailed": "Retry All Failed",
+        "clearFailed": "Clear Failed",
+        "queueEmpty": "Sync queue is empty",
+        "retry": "Retry"
     },
     "settings": {
         "title": "Settings",
@@ -479,11 +513,16 @@
             },
             "allStoresAccess": "Access to all stores",
             "allStoresAccessDesc": "Grant access to all stores in this company (including future stores)",
+            "allStoresAccessInfo": "User will have access to all current and future stores in this company.",
             "addStoreAccess": "Add Store Access",
+            "addStore": "Add Store",
             "selectStore": "Select Store",
             "storeRole": "Store Role",
             "storeFeatures": "Store Features",
-            "noStoresAssigned": "No stores assigned. Add store access or enable 'All stores access'."
+            "noStoresAssigned": "No stores assigned. Add store access or enable 'All stores access'.",
+            "noStoresInCompany": "This company has no stores. Create stores first.",
+            "selectCompanyFirst": "Please select a company first.",
+            "company": "Company"
         },
         "companies": {
             "title": "Companies",
@@ -983,6 +1022,7 @@
         "admin": "Admin",
         "manager": "Manager",
         "viewer": "Viewer",
+        "company_admin": "Company Admin",
         "store_admin": "Store Admin",
         "store_manager": "Store Manager",
         "store_employee": "Store Employee",

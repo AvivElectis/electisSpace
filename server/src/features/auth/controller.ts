@@ -43,10 +43,36 @@ export const authController = {
             res.json(result);
         } catch (error: any) {
             if (error.message === 'INVALID_CREDENTIALS') {
-                return next(unauthorized('Invalid credentials'));
+                return res.status(401).json({
+                    error: {
+                        code: 'INVALID_CREDENTIALS',
+                        message: 'Invalid email or password'
+                    }
+                });
             }
-            if (error.message?.includes('Failed to send')) {
-                return next(badRequest('Failed to send verification code. Please try again.'));
+            if (error.message === 'USER_NOT_FOUND') {
+                return res.status(401).json({
+                    error: {
+                        code: 'USER_NOT_FOUND',
+                        message: 'User not found'
+                    }
+                });
+            }
+            if (error.message === 'USER_INACTIVE') {
+                return res.status(401).json({
+                    error: {
+                        code: 'USER_INACTIVE',
+                        message: 'User account is inactive'
+                    }
+                });
+            }
+            if (error.message?.includes('Failed to send') || error.message?.includes('ECONNREFUSED')) {
+                return res.status(503).json({
+                    error: {
+                        code: 'EMAIL_SERVICE_ERROR',
+                        message: 'Failed to send verification code. Please try again later.'
+                    }
+                });
             }
             next(error);
         }
@@ -78,8 +104,29 @@ export const authController = {
 
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'INVALID_CREDENTIALS' || error.message === 'INVALID_CODE') {
-                return next(unauthorized('Invalid or expired verification code'));
+            if (error.message === 'INVALID_CODE') {
+                return res.status(401).json({
+                    error: {
+                        code: 'INVALID_CODE',
+                        message: 'Invalid verification code'
+                    }
+                });
+            }
+            if (error.message === 'CODE_EXPIRED') {
+                return res.status(401).json({
+                    error: {
+                        code: 'CODE_EXPIRED',
+                        message: 'Verification code has expired'
+                    }
+                });
+            }
+            if (error.message === 'INVALID_CREDENTIALS') {
+                return res.status(401).json({
+                    error: {
+                        code: 'INVALID_CREDENTIALS',
+                        message: 'Invalid credentials'
+                    }
+                });
             }
             next(error);
         }
@@ -89,6 +136,7 @@ export const authController = {
      * POST /auth/resend-code
      * Resend 2FA verification code
      */
+
     async resendCode(req: Request, res: Response, next: NextFunction) {
         try {
             const validation = resendCodeSchema.safeParse(req.body);
