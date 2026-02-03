@@ -136,11 +136,11 @@ describe('Settings Validation', () => {
             expect(result.valid).toBe(false);
         });
 
-        it('should fail for auto-sync interval less than 30 seconds', () => {
+        it('should fail for auto-sync interval less than 10 seconds', () => {
             const result = validateSettings({
                 appName: 'Valid',
                 autoSyncEnabled: true,
-                autoSyncInterval: 20,
+                autoSyncInterval: 5,
             });
             expect(result.valid).toBe(false);
             expect(result.errors.some(e => e.field === 'autoSyncInterval')).toBe(true);
@@ -150,16 +150,16 @@ describe('Settings Validation', () => {
             const result = validateSettings({
                 appName: 'Valid',
                 autoSyncEnabled: false,
-                autoSyncInterval: 10,
+                autoSyncInterval: 5,
             });
             expect(result.valid).toBe(true);
         });
 
-        it('should pass for exactly 30 seconds interval', () => {
+        it('should pass for exactly 10 seconds interval', () => {
             const result = validateSettings({
                 appName: 'Valid',
                 autoSyncEnabled: true,
-                autoSyncInterval: 30,
+                autoSyncInterval: 10,
             });
             expect(result.valid).toBe(true);
         });

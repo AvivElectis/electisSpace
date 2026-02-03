@@ -1,4 +1,4 @@
-import { Box, Stack, Divider, Typography, Tabs, Tab, Alert } from '@mui/material';
+import { Box, Stack, Divider, Typography, Tabs, Tab, Alert, FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel } from '@mui/material';
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
@@ -10,14 +10,13 @@ import { SolumGlobalFieldsEditor } from './SolumGlobalFieldsEditor';
 
 // Extracted components
 import {
-    SolumApiConfigSection,
     SolumSyncSettingsSection,
     SolumPeopleManagerSection,
     SolumSchemaEditorSection,
 } from './solum';
 
 import type { SettingsData } from '../domain/types';
-import type { SolumConfig, CSVConfig } from '@shared/domain/types';
+import type { CSVConfig } from '@shared/domain/types';
 
 interface SolumSettingsTabProps {
     settings: SettingsData;
@@ -26,14 +25,14 @@ interface SolumSettingsTabProps {
 
 /**
  * SoluM Settings Tab
- * SoluM API configuration - Refactored to use server-based AIMS credentials
- * Credentials are now managed in Company Settings, not here
+ * SoluM API configuration - AIMS credentials and field mappings are managed in Company Settings
+ * This tab only contains: Auto-sync, Conference mode, People mode, and Field Mapping
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
     const { articleFormat, fetchArticleFormat } = useConfigurationController();
     const { sync } = useSyncContext();
-    const { activeStoreId } = useAuthStore();
+    const { activeCompanyId } = useAuthStore();
     const [subTab, setSubTab] = useState(0);
 
     // Extract field keys from article format (ONLY articleData, not articleBasicInfo)
@@ -45,7 +44,9 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     // Connection status is now server-managed
     // The solumConfig.isConnected is set by autoConnectToSolum in authStore after login
     const isConnected = settings.solumConfig?.isConnected || false;
-    const isMappingLocked = !isConnected;
+    
+    // All settings locked when not connected
+    const isLocked = !isConnected;
 
     // Callback for initial sync after successful connection
     // Fetches schema first (if not already fetched) to populate field mappings, then syncs
@@ -60,10 +61,6 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     }, [sync, fetchArticleFormat, settings.solumMappingConfig?.fields]);
 
     // Handlers for nested component updates
-    const handleSolumConfigChange = (config: Partial<SolumConfig>) => {
-        onUpdate({ solumConfig: config as SolumConfig });
-    };
-
     const handleCsvConfigChange = (config: CSVConfig) => {
         onUpdate({ csvConfig: config });
     };
@@ -81,9 +78,42 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
         });
     };
 
+    const handleAutoSyncChange = (enabled: boolean) => {
+        onUpdate({ autoSyncEnabled: enabled });
+    };
+
+    const handleAutoSyncIntervalChange = (interval: number) => {
+        onUpdate({ autoSyncInterval: interval });
+    };
+
+    // Auto-sync interval options: 10-60 seconds in 10s gaps, then minute gaps up to 5 minutes
+    const syncIntervalOptions = [
+        { value: 10, label: '10 ' + t('settings.seconds', 'seconds') },
+        { value: 20, label: '20 ' + t('settings.seconds', 'seconds') },
+        { value: 30, label: '30 ' + t('settings.seconds', 'seconds') },
+        { value: 40, label: '40 ' + t('settings.seconds', 'seconds') },
+        { value: 50, label: '50 ' + t('settings.seconds', 'seconds') },
+        { value: 60, label: '1 ' + t('settings.minute', 'minute') },
+        { value: 120, label: '2 ' + t('settings.minutes', 'minutes') },
+        { value: 180, label: '3 ' + t('settings.minutes', 'minutes') },
+        { value: 240, label: '4 ' + t('settings.minutes', 'minutes') },
+        { value: 300, label: '5 ' + t('settings.minutes', 'minutes') },
+    ];
+
     return (
         <Box sx={{ px: 2, maxWidth: 800, mx: 'auto' }}>
-            {/* Nested Tabs for Connection and Field Mapping */}
+            {/* Connection Status Alert - always visible */}
+            {isConnected ? (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                    {t('settings.connectedToSolumServer', 'Connected to AIMS via server. Credentials and field mappings are managed in Company Settings.')}
+                </Alert>
+            ) : (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    {t('settings.notConnectedToSolum', 'Not connected to AIMS. Please configure AIMS credentials in Company Settings and re-login. Settings are locked until connected.')}
+                </Alert>
+            )}
+
+            {/* Nested Tabs for Settings and Field Mapping */}
             <Tabs
                 value={subTab}
                 onChange={(_, newValue) => setSubTab(newValue)}
@@ -103,33 +133,64 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     indicator: { sx: { display: 'none' } }
                 }}
             >
-                <Tab label={t('settings.connectionTab')} />
-                <Tab label={t('settings.fieldMappingTab')} disabled={!isConnected} />
+                <Tab label={t('settings.connectionTab')} disabled={isLocked} />
+                <Tab label={t('settings.fieldMappingTab')} disabled={isLocked} />
             </Tabs>
-            {/* Connection Tab */}
-            {subTab === 0 && (
-                <Stack gap={2}>
-                    {/* Connection Status Alert */}
-                    {isConnected ? (
-                        <Alert severity="success">
-                            {t('settings.connectedToSolumServer', 'Connected to AIMS via server. Credentials are managed in Company Settings.')}
-                        </Alert>
-                    ) : (
-                        <Alert severity="info">
-                            {t('settings.notConnectedToSolum', 'Not connected to AIMS. Please configure AIMS credentials in Company Settings and re-login.')}
-                        </Alert>
-                    )}
 
-                    <SolumApiConfigSection
-                        solumConfig={settings.solumConfig || {}}
-                        autoSyncEnabled={settings.autoSyncEnabled}
-                        isLocked={false}
-                        onConfigChange={handleSolumConfigChange}
-                        onAutoSyncChange={(enabled) => onUpdate({ autoSyncEnabled: enabled })}
-                    />
+            {/* Locked overlay message when not connected */}
+            {isLocked && (
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <Typography variant="body1" color="text.secondary">
+                        {t('settings.solumSettingsLocked', 'SoluM settings are locked. Connect to AIMS to enable configuration.')}
+                    </Typography>
+                </Box>
+            )}
+
+            {/* Connection/Settings Tab - only show when connected */}
+            {!isLocked && subTab === 0 && (
+                <Stack gap={2} sx={{ mt: 2 }}>
+                    {/* Auto Sync Setting */}
+                    <Box>
+                        <Typography
+                            variant="subtitle2"
+                            color="text.secondary"
+                            sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}
+                        >
+                            {t('settings.syncSettings', 'Sync Settings')}
+                        </Typography>
+                        <Stack gap={2}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={settings.autoSyncEnabled || false}
+                                        onChange={(e) => handleAutoSyncChange(e.target.checked)}
+                                    />
+                                }
+                                label={t('settings.enableAutoSync')}
+                            />
+                            
+                            {settings.autoSyncEnabled && (
+                                <FormControl size="small" sx={{ minWidth: 200 }}>
+                                    <InputLabel>{t('settings.syncInterval', 'Sync Interval')}</InputLabel>
+                                    <Select
+                                        value={settings.autoSyncInterval || 10}
+                                        label={t('settings.syncInterval', 'Sync Interval')}
+                                        onChange={(e) => handleAutoSyncIntervalChange(Number(e.target.value))}
+                                    >
+                                        {syncIntervalOptions.map((option) => (
+                                            <MenuItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            )}
+                        </Stack>
+                    </Box>
 
                     <Divider />
 
+                    {/* Conference Mode */}
                     <SolumSyncSettingsSection
                         csvConfig={settings.csvConfig || {}}
                         onConfigChange={handleCsvConfigChange}
@@ -137,6 +198,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                     <Divider />
 
+                    {/* People Manager Mode */}
                     <SolumPeopleManagerSection
                         enabled={settings.peopleManagerEnabled || false}
                         config={settings.peopleManagerConfig || {}}
@@ -146,12 +208,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     />
                 </Stack>
             )}
-            {/* Field Mapping Tab */}
-            {subTab === 1 && (
-                <Stack gap={2}>
+
+            {/* Field Mapping Tab - only show when connected */}
+            {!isLocked && subTab === 1 && (
+                <Stack gap={2} sx={{ mt: 2 }}>
                     <SolumSchemaEditorSection
                         articleFormat={articleFormat}
-                        isConnected={settings.solumConfig?.isConnected || false}
+                        isConnected={isConnected}
                     />
 
                     {/* Data Mapping - shown only when article format exists */}
@@ -223,7 +286,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                             },
                                         })
                                     }
-                                    disabled={isMappingLocked}
+                                    disabled={false}
                                 />
 
                                 {/* Global Field Assignments */}
@@ -246,7 +309,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                                 },
                                             })
                                         }
-                                        disabled={isMappingLocked}
+                                        disabled={false}
                                     />
                                 </Box>
 
@@ -277,15 +340,9 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                                 },
                                             })
                                         }
-                                        disabled={isMappingLocked}
+                                        disabled={false}
                                     />
                                 </Box>
-
-                                {isMappingLocked && (
-                                    <Alert severity="info" sx={{ mt: 2 }}>
-                                        {t('settings.connectToEditMapping')}
-                                    </Alert>
-                                )}
                             </Box>
                         </>
                     )}

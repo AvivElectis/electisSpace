@@ -60,6 +60,7 @@ export function useSettingsController() {
         passwordHash,
         isLocked,
         activeStoreId,
+        activeCompanyId,
         setSettings,
         updateSettings: updateInStore,
         setPasswordHash,
@@ -68,10 +69,12 @@ export function useSettingsController() {
         deleteLogo,
         resetSettings,
         saveSettingsToServer,
+        saveFieldMappingsToServer,
     } = useSettingsStore();
 
     // Debounced save to server
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fieldMappingSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const debouncedSaveToServer = useCallback(() => {
         // Clear existing timeout
@@ -84,11 +87,26 @@ export function useSettingsController() {
         }, 2000);
     }, [saveSettingsToServer]);
 
-    // Cleanup timeout on unmount
+    // Debounced save field mappings to server (dedicated endpoint)
+    const debouncedSaveFieldMappingsToServer = useCallback(() => {
+        // Clear existing timeout
+        if (fieldMappingSaveTimeoutRef.current) {
+            clearTimeout(fieldMappingSaveTimeoutRef.current);
+        }
+        // Set new timeout - save after 2 seconds of no changes
+        fieldMappingSaveTimeoutRef.current = setTimeout(() => {
+            saveFieldMappingsToServer();
+        }, 2000);
+    }, [saveFieldMappingsToServer]);
+
+    // Cleanup timeouts on unmount
     useEffect(() => {
         return () => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
+            }
+            if (fieldMappingSaveTimeoutRef.current) {
+                clearTimeout(fieldMappingSaveTimeoutRef.current);
             }
         };
     }, []);
@@ -213,14 +231,17 @@ export function useSettingsController() {
 
             updateInStore(updates);
             
-            // Trigger debounced save to server if connected to a store
-            if (activeStoreId) {
+            // Trigger debounced save to server
+            // If field mappings were updated, save them via company-level endpoint
+            if ('solumMappingConfig' in updates && activeCompanyId) {
+                debouncedSaveFieldMappingsToServer();
+            } else if (activeStoreId) {
                 debouncedSaveToServer();
             }
             
             logger.info('SettingsController', 'Settings updated successfully');
         },
-        [settings, updateInStore, activeStoreId, debouncedSaveToServer]
+        [settings, updateInStore, activeStoreId, activeCompanyId, debouncedSaveToServer, debouncedSaveFieldMappingsToServer]
     );
 
     /**

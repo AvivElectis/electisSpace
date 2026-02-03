@@ -174,8 +174,8 @@ export const useAuthStore = create<AuthState>()(
                         }, false, 'verify2FA/success');
 
                         // Fetch settings from server for the active store
-                        if (activeStoreId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId);
+                        if (activeStoreId && activeCompanyId) {
+                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId);
                             
                             // Auto-connect to SOLUM using server-side company credentials
                             // This runs in background - don't block login for SOLUM connection
@@ -331,7 +331,10 @@ export const useAuthStore = create<AuthState>()(
 
                         // Fetch settings for the new store and auto-connect to SOLUM
                         if (storeId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(storeId);
+                            const currentCompanyId = get().activeCompanyId;
+                            if (currentCompanyId) {
+                                useSettingsStore.getState().fetchSettingsFromServer(storeId, currentCompanyId);
+                            }
                             
                             // Auto-connect to SOLUM for the new store
                             autoConnectToSolum(storeId).catch((error) => {
@@ -355,8 +358,8 @@ export const useAuthStore = create<AuthState>()(
                         }, false, 'setActiveContext');
 
                         // Fetch settings for the new store and auto-connect to SOLUM
-                        if (storeId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(storeId);
+                        if (storeId && companyId) {
+                            useSettingsStore.getState().fetchSettingsFromServer(storeId, companyId);
                             
                             // Auto-connect to SOLUM for the new store
                             autoConnectToSolum(storeId).catch((error) => {

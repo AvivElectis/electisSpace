@@ -129,11 +129,11 @@ describe('Settings Domain Validation', () => {
             expect(result.valid).toBe(false);
         });
 
-        it('should reject auto-sync interval less than 30 seconds', () => {
+        it('should reject auto-sync interval less than 10 seconds', () => {
             const result = validateSettings({
                 appName: 'Test App',
                 autoSyncEnabled: true,
-                autoSyncInterval: 10,
+                autoSyncInterval: 5,
             });
             expect(result.valid).toBe(false);
             expect(result.errors).toContainEqual(
@@ -141,11 +141,11 @@ describe('Settings Domain Validation', () => {
             );
         });
 
-        it('should accept auto-sync interval of 30 seconds', () => {
+        it('should accept auto-sync interval of 10 seconds', () => {
             const result = validateSettings({
                 appName: 'Test App',
                 autoSyncEnabled: true,
-                autoSyncInterval: 30,
+                autoSyncInterval: 10,
             });
             expect(result.valid).toBe(true);
         });
