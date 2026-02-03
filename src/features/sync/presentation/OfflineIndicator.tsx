@@ -105,6 +105,7 @@ export function OfflineIndicator({
                 color="warning"
                 size="small"
                 sx={{
+                    p: 1,
                     bgcolor: alpha(theme.palette.warning.main, 0.1),
                     color: theme.palette.warning.dark,
                 }}
@@ -124,6 +125,7 @@ export function OfflineIndicator({
                 color="info"
                 size="small"
                 sx={{
+                    p: 1,
                     bgcolor: alpha(theme.palette.info.main, 0.1),
                     color: theme.palette.info.dark,
                 }}

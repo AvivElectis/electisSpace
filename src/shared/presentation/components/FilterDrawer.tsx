@@ -75,7 +75,7 @@ export function FilterDrawer({ open, onClose, filters, onFilterChange, onApply, 
                             label={activeFilterCount}
                             size="small"
                             color="primary"
-                            sx={{ height: 20, minWidth: 20 }}
+                            sx={{ p: 1, height: 20, minWidth: 20 }}
                         />
                     )}
                 </Box>

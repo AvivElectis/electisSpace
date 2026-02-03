@@ -184,14 +184,14 @@ export function CompaniesTab() {
                 direction={{ xs: 'column', sm: 'row' }} 
                 justifyContent="space-between" 
                 alignItems={{ xs: 'stretch', sm: 'center' }}
-                spacing={2}
+                gap={2}
                 sx={{ mb: 2 }}
             >
                 <Typography variant="h6" component="h2">
                     {t('settings.companies.title', 'Companies')}
                 </Typography>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                     {/* Search */}
                     <TextField
                         size="small"
@@ -268,7 +268,7 @@ export function CompaniesTab() {
                                                 label={company.code} 
                                                 size="small" 
                                                 variant="outlined"
-                                                sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}
+                                                sx={{ p: 1, fontFamily: 'monospace', fontWeight: 'bold' }}
                                             />
                                         </TableCell>
                                         <TableCell>
@@ -288,7 +288,7 @@ export function CompaniesTab() {
                                                     label={company._count?.stores || 0}
                                                     size="small"
                                                     onClick={() => handleManageStores(company)}
-                                                    sx={{ cursor: 'pointer' }}
+                                                    sx={{ p: 1, cursor: 'pointer' }}
                                                 />
                                             </Tooltip>
                                         </TableCell>
@@ -313,6 +313,7 @@ export function CompaniesTab() {
                                                 size="small"
                                                 color={company.isActive ? 'success' : 'default'}
                                                 variant={company.isActive ? 'filled' : 'outlined'}
+                                                sx={{ p: 1 }}
                                             />
                                         </TableCell>
                                         <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
@@ -321,7 +322,7 @@ export function CompaniesTab() {
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                            <Stack direction="row" gap={0.5} justifyContent="flex-end">
                                                 <Tooltip title={t('settings.companies.manageStores')}>
                                                     <IconButton
                                                         size="small"

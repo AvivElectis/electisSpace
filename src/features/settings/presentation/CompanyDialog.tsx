@@ -26,7 +26,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    useTheme
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -69,6 +70,8 @@ interface CompanyDialogProps {
 
 export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isRtl = theme.direction === 'rtl';
     const isEdit = !!company;
 
     // State
@@ -450,7 +453,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                         />
 
                         {/* Password with separate visibility toggle for RTL support */}
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                        <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
                             <TextField
                                 label={t('settings.companies.aimsPassword')}
                                 type={showPassword ? 'text' : 'password'}

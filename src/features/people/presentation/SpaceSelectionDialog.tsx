@@ -178,6 +178,7 @@ export function SpaceSelectionDialog({
                                             size="small"
                                             color="default"
                                             sx={{ 
+                                                p: 1,
                                                 ml: isRtl ? 0 : 1,
                                                 mr: isRtl ? 1 : 0,
                                             }}
@@ -189,6 +190,7 @@ export function SpaceSelectionDialog({
                                             size="small"
                                             color="primary"
                                             sx={{ 
+                                                p: 1,
                                                 ml: isRtl ? 0 : 1,
                                                 mr: isRtl ? 1 : 0,
                                             }}

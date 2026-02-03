@@ -67,7 +67,11 @@
             "title": "Status",
             "active": "Active",
             "inactive": "Inactive"
-        }
+        },
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "phone": "Phone",
+        "never": "Never"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -475,6 +479,7 @@
             "title": "Users",
             "addUser": "Add User",
             "editUser": "Edit User",
+            "editProfile": "Edit Profile",
             "deleteConfirmTitle": "Delete User",
             "deleteConfirmMessage": "Are you sure you want to delete user {{email}}?",
             "store": "Store",
@@ -522,7 +527,34 @@
             "noStoresAssigned": "No stores assigned. Add store access or enable 'All stores access'.",
             "noStoresInCompany": "This company has no stores. Create stores first.",
             "selectCompanyFirst": "Please select a company first.",
-            "company": "Company"
+            "company": "Company",
+            "profileSaved": "Profile saved successfully",
+            "passwordChanged": "Password changed successfully",
+            "passwordMismatch": "Passwords do not match",
+            "passwordTooShort": "Password must be at least 8 characters",
+            "passwordRequirements": "At least 8 characters",
+            "currentPassword": "Current Password",
+            "newPassword": "New Password",
+            "confirmPassword": "Confirm New Password",
+            "changePassword": "Change Password",
+            "password": "Password",
+            "resetPassword": "Reset Password",
+            "leaveEmptyNoChange": "Leave empty to keep current password",
+            "accountStats": "Account Activity",
+            "loginCount": "Login Count",
+            "lastLogin": "Last Login",
+            "memberSince": "Member Since",
+            "assignments": "Company & Store Access",
+            "roles": {
+                "platformAdmin": "Platform Admin",
+                "superUser": "Super User",
+                "companyAdmin": "Company Admin",
+                "viewer": "Viewer",
+                "storeAdmin": "Store Admin",
+                "storeManager": "Store Manager",
+                "storeEmployee": "Store Employee",
+                "storeViewer": "Store Viewer"
+            }
         },
         "companies": {
             "title": "Companies",

@@ -13,8 +13,17 @@ const router = Router();
 router.use(authenticate);
 
 // ======================
-// User Context Routes
+// User Profile Routes (/me)
 // ======================
+
+// Get current user's full profile
+router.get('/me', userController.getMyProfile);
+
+// Update current user's profile
+router.patch('/me', userController.updateMyProfile);
+
+// Change current user's password
+router.post('/me/change-password', userController.changeMyPassword);
 
 // Get current user context (active company/store)
 router.get('/me/context', userController.getContext);
