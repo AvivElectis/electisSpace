@@ -186,10 +186,30 @@ export interface ApiError {
     details?: Record<string, unknown>;
 }
 
-// Health check
+// Health check (uses auth-protected API path)
 export const checkHealth = async (): Promise<{ status: string; timestamp: string }> => {
     const response = await axios.get(`${API_BASE_URL}/health`);
     return response.data;
+};
+
+/**
+ * Lightweight server health check (no auth required).
+ * Returns true if the server is reachable, false otherwise.
+ * Uses the /health endpoint which doesn't require authentication.
+ */
+export const checkServerHealth = async (): Promise<boolean> => {
+    try {
+        // The health endpoint is at /health (outside /api/v1), but we go through the proxy
+        // Try the proxied path first: /api/v1/../health → /health won't work via proxy
+        // So just try a HEAD request to the API base — any response (even 401) means server is up
+        const response = await axios.get(`${API_BASE_URL}/health`, { 
+            timeout: 5000,
+            validateStatus: () => true, // Accept any status code
+        });
+        return response.status < 500;
+    } catch {
+        return false;
+    }
 };
 
 export default api;

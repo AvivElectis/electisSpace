@@ -3,8 +3,46 @@ import { useSyncStore } from '../infrastructure/syncStore';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
 import { spacesApi } from '@shared/infrastructure/services/spacesApi';
 import { logger } from '@shared/infrastructure/services/logger';
+import { checkServerHealth } from '@shared/infrastructure/services/apiClient';
 import type { Space } from '@shared/domain/types';
 import type { SyncStatusResponse, PullSyncResult, PushSyncResult } from '@shared/infrastructure/services/syncApi';
+
+/**
+ * Check if an error is an authentication error (401/403)
+ */
+function isAuthError(error: unknown): boolean {
+    if (!error) return false;
+    const err = error as any;
+    return (
+        err?.response?.status === 401 ||
+        err?.response?.status === 403 ||
+        err?.message?.includes('401') ||
+        err?.message?.includes('Unauthorized') ||
+        err?.message?.includes('No token provided') ||
+        (err?.message?.includes('token') && err?.message?.includes('expired'))
+    );
+}
+
+/**
+ * Get a user-friendly error message from a sync error
+ */
+function getSyncErrorMessage(error: unknown): string {
+    if (isAuthError(error)) {
+        return 'Session expired – please log in again';
+    }
+    const err = error as any;
+    if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+        return 'Server unreachable';
+    }
+    if (err instanceof Error) {
+        // Don't expose raw axios messages to the user
+        if (err.message.startsWith('Request failed with status code')) {
+            return 'Sync operation failed';
+        }
+        return err.message;
+    }
+    return 'Sync operation failed';
+}
 
 /**
  * Backend Sync Controller Hook
@@ -46,6 +84,7 @@ export function useBackendSyncController({
     } = useSyncStore();
 
     const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
+    const [serverConnected, setServerConnected] = useState<boolean>(false);
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastStoreIdRef = useRef<string | null>(null);
 
@@ -74,6 +113,7 @@ export function useBackendSyncController({
 
     /**
      * Fetch current sync status from backend
+     * Properly handles auth errors and updates server/AIMS connection state
      */
     const refreshStatus = useCallback(async (): Promise<SyncStatusResponse | null> => {
         if (!storeId) {
@@ -83,14 +123,38 @@ export function useBackendSyncController({
         try {
             const status = await syncApi.getStatus(storeId);
             setSyncStatus(status);
+            setServerConnected(true);
             setSyncState({
                 status: status.status === 'syncing' ? 'syncing' : (status.aimsConnected ? 'connected' : 'idle'),
                 isConnected: status.aimsConnected,
                 lastSync: status.lastSync ? new Date(status.lastSync) : undefined,
+                // Clear any previous error when status check succeeds
+                lastError: undefined,
             });
             return status;
         } catch (error) {
             logger.error('BackendSyncController', 'Failed to get sync status', { error });
+
+            if (isAuthError(error)) {
+                // Auth error: server is reachable but session is invalid
+                // Check if the server is actually reachable via health endpoint
+                const serverReachable = await checkServerHealth();
+                setServerConnected(serverReachable);
+                setSyncState({
+                    status: 'disconnected',
+                    isConnected: false,
+                });
+            } else {
+                // Network or other error: server may be unreachable
+                const serverReachable = await checkServerHealth();
+                setServerConnected(serverReachable);
+                if (!serverReachable) {
+                    setSyncState({
+                        status: 'disconnected',
+                        isConnected: false,
+                    });
+                }
+            }
             return null;
         }
     }, [storeId, setSyncState]);
@@ -202,14 +266,25 @@ export function useBackendSyncController({
             onSyncComplete?.(result);
             return result;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Pull sync failed';
+            const errorMessage = getSyncErrorMessage(error);
             logger.endTimer('backend-sync-pull', 'BackendSyncController', 'Pull failed', { error: errorMessage });
             logger.error('BackendSyncController', 'Pull sync failed', { error });
-            setSyncState({
-                status: 'error',
-                lastError: errorMessage,
-                progress: 0,
-            });
+
+            if (isAuthError(error)) {
+                // Auth error: don't show as sync error, show as disconnected
+                setServerConnected(true); // server responded, just auth issue
+                setSyncState({
+                    status: 'disconnected',
+                    isConnected: false,
+                    progress: 0,
+                });
+            } else {
+                setSyncState({
+                    status: 'error',
+                    lastError: errorMessage,
+                    progress: 0,
+                });
+            }
             onError?.(error instanceof Error ? error : new Error(errorMessage));
             throw error;
         }
@@ -236,14 +311,24 @@ export function useBackendSyncController({
             onSyncComplete?.(result);
             return result;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Push sync failed';
+            const errorMessage = getSyncErrorMessage(error);
             logger.endTimer('backend-sync-push', 'BackendSyncController', 'Push failed', { error: errorMessage });
             logger.error('BackendSyncController', 'Push sync failed', { error });
-            setSyncState({
-                status: 'error',
-                lastError: errorMessage,
-                progress: 0,
-            });
+
+            if (isAuthError(error)) {
+                setServerConnected(true);
+                setSyncState({
+                    status: 'disconnected',
+                    isConnected: false,
+                    progress: 0,
+                });
+            } else {
+                setSyncState({
+                    status: 'error',
+                    lastError: errorMessage,
+                    progress: 0,
+                });
+            }
             onError?.(error instanceof Error ? error : new Error(errorMessage));
             throw error;
         }
@@ -279,14 +364,24 @@ export function useBackendSyncController({
             logger.endTimer('backend-sync-full', 'BackendSyncController', 'Full sync completed', { result });
             onSyncComplete?.(result.pull);
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Full sync failed';
+            const errorMessage = getSyncErrorMessage(error);
             logger.endTimer('backend-sync-full', 'BackendSyncController', 'Full sync failed', { error: errorMessage });
             logger.error('BackendSyncController', 'Full sync failed', { error });
-            setSyncState({
-                status: 'error',
-                lastError: errorMessage,
-                progress: 0,
-            });
+
+            if (isAuthError(error)) {
+                setServerConnected(true);
+                setSyncState({
+                    status: 'disconnected',
+                    isConnected: false,
+                    progress: 0,
+                });
+            } else {
+                setSyncState({
+                    status: 'error',
+                    lastError: errorMessage,
+                    progress: 0,
+                });
+            }
             onError?.(error instanceof Error ? error : new Error(errorMessage));
             throw error;
         }
@@ -377,6 +472,7 @@ export function useBackendSyncController({
         syncStatus,
         autoSyncEnabled,
         storeId,
+        serverConnected,
         
         // Legacy compatibility aliases
         sync: pull,          // sync() now means pull
