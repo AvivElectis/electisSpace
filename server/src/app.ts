@@ -103,6 +103,7 @@ apiRouter.use('/sync', syncRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/labels', labelsRoutes);
+apiRouter.use('/health', healthRoutes);  // Also mount health inside API for proxy access
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
 
