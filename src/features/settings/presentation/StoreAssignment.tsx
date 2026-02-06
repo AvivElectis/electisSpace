@@ -90,6 +90,9 @@ export function StoreAssignment({
 }: StoreAssignmentProps) {
     const { t } = useTranslation();
 
+    // DEBUG
+    console.log('[StoreAssignment] Render - companyId:', companyId, 'assignments:', assignments, 'allStoresAccess:', allStoresAccess);
+
     // State
     const [stores, setStores] = useState<CompanyStore[]>([]);
     const [loading, setLoading] = useState(false);
@@ -97,6 +100,7 @@ export function StoreAssignment({
 
     // Fetch stores when company changes
     const fetchStores = useCallback(async () => {
+        console.log('[StoreAssignment] fetchStores called - companyId:', companyId);
         if (!companyId) {
             setStores([]);
             return;
@@ -106,10 +110,13 @@ export function StoreAssignment({
             setLoading(true);
             setError(null);
             const response = await companyService.getStores(companyId, { limit: 100 });
-            setStores(response.data);
+            console.log('[StoreAssignment] fetchStores response:', response);
+            // API returns {stores: [...]} not {data: [...]}
+            setStores(response?.stores || []);
         } catch (err) {
-            console.error('Failed to fetch stores:', err);
+            console.error('[StoreAssignment] Failed to fetch stores:', err);
             setError(t('settings.stores.fetchError', 'Failed to load stores'));
+            setStores([]); // Ensure stores is empty array on error
         } finally {
             setLoading(false);
         }
@@ -119,14 +126,17 @@ export function StoreAssignment({
         fetchStores();
     }, [fetchStores]);
 
-    // Get stores not yet assigned
-    const availableStores = stores.filter(
-        store => !assignments.some(a => a.storeId === store.id)
+    // Guard against undefined arrays
+    const safeAssignments = assignments || [];
+    const safeStores = stores || [];
+    console.log('[StoreAssignment] safeAssignments:', safeAssignments, 'safeStores:', safeStores);
+    const availableStores = safeStores.filter(
+        store => !safeAssignments.some(a => a.storeId === store.id)
     );
 
     // Add a new store assignment
     const handleAddStore = (storeId: string) => {
-        const store = stores.find(s => s.id === storeId);
+        const store = safeStores.find(s => s.id === storeId);
         if (!store) return;
 
         const newAssignment: StoreAssignmentData = {
@@ -137,18 +147,18 @@ export function StoreAssignment({
             features: [...defaultFeatures]
         };
 
-        onAssignmentsChange([...assignments, newAssignment]);
+        onAssignmentsChange([...safeAssignments, newAssignment]);
     };
 
     // Remove a store assignment
     const handleRemoveStore = (storeId: string) => {
-        onAssignmentsChange(assignments.filter(a => a.storeId !== storeId));
+        onAssignmentsChange(safeAssignments.filter(a => a.storeId !== storeId));
     };
 
     // Update a store assignment's role
     const handleRoleChange = (storeId: string, role: StoreRole) => {
         onAssignmentsChange(
-            assignments.map(a => 
+            safeAssignments.map(a => 
                 a.storeId === storeId ? { ...a, role } : a
             )
         );
@@ -157,7 +167,7 @@ export function StoreAssignment({
     // Toggle a feature for a store assignment
     const handleFeatureToggle = (storeId: string, featureId: string) => {
         onAssignmentsChange(
-            assignments.map(a => {
+            safeAssignments.map(a => {
                 if (a.storeId !== storeId) return a;
                 
                 // Dashboard is always required
@@ -210,7 +220,7 @@ export function StoreAssignment({
         );
     }
 
-    if (stores.length === 0) {
+    if (safeStores.length === 0) {
         return (
             <Alert severity="warning">
                 {t('settings.users.noStoresInCompany', 'This company has no stores. Create stores first.')}

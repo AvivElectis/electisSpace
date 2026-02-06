@@ -24,6 +24,7 @@ interface VisibleField {
     key: string;
     labelEn: string;
     labelHe: string;
+    globalValue?: string; // If set, this value is used for all rows (globally assigned field)
 }
 
 // Pre-computed translations passed from parent
@@ -44,6 +45,7 @@ interface PeopleTableRowProps {
     index: number;
     person: Person;
     visibleFields: VisibleField[];
+    nameFieldKey?: string;
     isSelected: boolean;
     translations: PeopleTableTranslations;
     onSelect: (id: string, checked: boolean) => void;
@@ -61,6 +63,7 @@ function PeopleTableRowComponent({
     index,
     person,
     visibleFields,
+    nameFieldKey,
     isSelected,
     translations,
     onSelect,
@@ -199,9 +202,14 @@ function PeopleTableRowComponent({
             <TableCell padding="checkbox">
                 <Checkbox checked={isSelected} onChange={handleSelect} />
             </TableCell>
+            {nameFieldKey && (
+                <TableCell sx={{ textAlign: 'start' }}>
+                    <Typography variant="body2">{person.data[nameFieldKey] || '-'}</Typography>
+                </TableCell>
+            )}
             {visibleFields.map((field) => (
                 <TableCell key={field.key} sx={{ textAlign: 'start' }}>
-                    <Typography variant="body2">{person.data[field.key] || '-'}</Typography>
+                    <Typography variant="body2">{field.globalValue || person.data[field.key] || '-'}</Typography>
                 </TableCell>
             ))}
             <TableCell sx={{ textAlign: 'start' }}>{spaceChipElement}</TableCell>
@@ -250,6 +258,9 @@ function arePropsEqual(prevProps: PeopleTableRowProps, nextProps: PeopleTableRow
         prevProps.person.aimsSyncStatus === nextProps.person.aimsSyncStatus &&
         prevProps.person.listMemberships?.length === nextProps.person.listMemberships?.length &&
         prevProps.visibleFields.length === nextProps.visibleFields.length &&
+        prevProps.nameFieldKey === nextProps.nameFieldKey &&
+        // Compare name field data if present
+        (!prevProps.nameFieldKey || prevProps.person.data[prevProps.nameFieldKey] === nextProps.person.data[nextProps.nameFieldKey!]) &&
         // Compare data fields that are visible
         prevProps.visibleFields.every((field, i) => 
             field.key === nextProps.visibleFields[i]?.key &&

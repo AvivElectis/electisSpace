@@ -78,12 +78,12 @@ export interface UpdateCompanyDto {
     isActive?: boolean;
 }
 
-/** Update AIMS configuration DTO */
+/** Update AIMS configuration DTO - matches backend aimsConfigSchema */
 export interface UpdateAimsConfigDto {
-    aimsBaseUrl: string;
-    aimsCluster: string;
-    aimsUsername: string;
-    aimsPassword?: string; // Only sent when changing password
+    baseUrl: string;
+    cluster?: string;
+    username: string;
+    password?: string; // Only sent when changing password
 }
 
 /** Create store DTO */
@@ -118,15 +118,15 @@ export interface StoreQueryParams {
     isActive?: boolean;
 }
 
-/** Store list response */
+/** Store list response - actual API response structure */
 export interface StoreListResponse {
-    data: CompanyStore[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
+    company: {
+        id: string;
+        code: string;
+        name: string;
     };
+    stores: CompanyStore[];
+    allStoresAccess: boolean;
 }
 
 /** Code validation response */
@@ -181,6 +181,14 @@ export const companyService = {
      */
     updateAimsConfig: async (id: string, data: UpdateAimsConfigDto): Promise<Company> => {
         const response = await api.patch<Company>(`/companies/${id}/aims`, data);
+        return response.data;
+    },
+
+    /**
+     * Test AIMS connection for a company
+     */
+    testAimsConnection: async (id: string): Promise<{ connected: boolean; error?: string | null }> => {
+        const response = await api.post<{ connected: boolean; error?: string | null }>(`/companies/${id}/aims/test`);
         return response.data;
     },
 

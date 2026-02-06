@@ -113,24 +113,31 @@ export function SpacesManagementView() {
         });
     }, []);
 
+    // The articleName mapped field key (shown as dedicated "Name" column)
+    const nameFieldKey = settingsController.settings.solumMappingConfig?.mappingInfo?.articleName;
+
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
         // SoluM API Mode: use solumMappingConfig.fields
         if (!settingsController.settings.solumMappingConfig?.fields) return [];
 
         const idFieldKey = settingsController.settings.solumMappingConfig.mappingInfo?.articleId;
+        const globalAssignments = settingsController.settings.solumMappingConfig.globalFieldAssignments || {};
+        const globalFieldKeys = Object.keys(globalAssignments);
 
         return Object.entries(settingsController.settings.solumMappingConfig.fields)
             .filter(([fieldKey, config]) => {
                 if (idFieldKey && fieldKey === idFieldKey) return false;
-                return config.visible;
+                if (nameFieldKey && fieldKey === nameFieldKey) return false; // Exclude name field (dedicated column)
+                if (globalFieldKeys.includes(fieldKey)) return false; // Exclude global fields
+                return config.visible !== false; // undefined = visible by default
             })
             .map(([fieldKey, config]) => ({
                 key: fieldKey,
                 labelEn: config.friendlyNameEn,
                 labelHe: config.friendlyNameHe
             }));
-    }, [settingsController.settings.solumMappingConfig]);
+    }, [settingsController.settings.solumMappingConfig, nameFieldKey]);
 
     // Handle sort request
     const handleSort = (key: string) => {
@@ -333,11 +340,18 @@ export function SpacesManagementView() {
                             {filteredAndSortedSpaces.map((space, index) => (
                                 <Card key={`${space.id}-${index}`} variant="outlined">
                                     <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                        {/* Row 1: ID + Actions */}
+                                        {/* Row 1: ID + Name + Actions */}
                                         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
-                                            <Typography variant="subtitle2" fontWeight={600}>
-                                                {space.externalId || space.id}
-                                            </Typography>
+                                            <Stack direction="row" alignItems="center" gap={1}>
+                                                <Typography variant="subtitle2" fontWeight={600}>
+                                                    {space.externalId || space.id}
+                                                </Typography>
+                                                {nameFieldKey && space.data[nameFieldKey] && (
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {space.data[nameFieldKey]}
+                                                    </Typography>
+                                                )}
+                                            </Stack>
                                             <Stack direction="row" gap={0.5}>
                                                 <Tooltip title={t('common.edit')}>
                                                     <IconButton
@@ -389,6 +403,17 @@ export function SpacesManagementView() {
                                         {t('spaces.id')}
                                     </TableSortLabel>
                                 </TableCell>
+                                {nameFieldKey && (
+                                    <TableCell sx={{ fontWeight: 600 }} align="center">
+                                        <TableSortLabel
+                                            active={sortConfig?.key === nameFieldKey}
+                                            direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'}
+                                            onClick={() => handleSort(nameFieldKey)}
+                                        >
+                                            {t('spaces.name')}
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
                                 {visibleFields.map(field => (
                                     <TableCell key={field.key} sx={{ fontWeight: 600 }} align="center">
                                         <TableSortLabel
@@ -411,6 +436,11 @@ export function SpacesManagementView() {
                                         <TableCell align="center">
                                             <Skeleton variant="text" width="80%" />
                                         </TableCell>
+                                        {nameFieldKey && (
+                                            <TableCell align="center">
+                                                <Skeleton variant="text" width="70%" />
+                                            </TableCell>
+                                        )}
                                         {visibleFields.map(field => (
                                             <TableCell key={field.key} align="center">
                                                 <Skeleton variant="text" width="70%" />
@@ -426,7 +456,7 @@ export function SpacesManagementView() {
                                 )))
                             ) : filteredAndSortedSpaces.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={visibleFields.length + 2} align="center" sx={{ py: 4 }}>
+                                    <TableCell colSpan={visibleFields.length + (nameFieldKey ? 3 : 2)} align="center" sx={{ py: 4 }}>
                                         <Typography variant="body2" color="text.secondary">
                                             {searchQuery
                                                 ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
@@ -449,6 +479,13 @@ export function SpacesManagementView() {
                                                 {space.externalId || space.id}
                                             </Typography>
                                         </TableCell>
+                                        {nameFieldKey && (
+                                            <TableCell align="center">
+                                                <Typography variant="body2">
+                                                    {space.data[nameFieldKey] || '-'}
+                                                </Typography>
+                                            </TableCell>
+                                        )}
                                         {visibleFields.map(field => (
                                             <TableCell key={field.key} align="center">
                                                 <Typography variant="body2">

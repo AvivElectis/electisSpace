@@ -58,20 +58,26 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Safe stores array to prevent undefined errors
+    const safeStores = stores || [];
+
     // Dialog State
     const [storeDialogOpen, setStoreDialogOpen] = useState(false);
     const [selectedStore, setSelectedStore] = useState<CompanyStore | null>(null);
 
     // Fetch stores
     const fetchStores = useCallback(async () => {
+        console.log('[StoresDialog] fetchStores called for company:', company.id);
         try {
             setLoading(true);
             setError(null);
             const response = await companyService.getStores(company.id);
-            setStores(response.data);
+            console.log('[StoresDialog] fetchStores response:', response);
+            setStores(response?.stores || []);
         } catch (err) {
-            console.error('Failed to fetch stores:', err);
+            console.error('[StoresDialog] Failed to fetch stores:', err);
             setError(t('settings.stores.fetchError'));
+            setStores([]);
         } finally {
             setLoading(false);
         }
@@ -128,8 +134,10 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
     };
 
     const handleStoreSave = async () => {
+        console.log('[StoresDialog] handleStoreSave called');
         setStoreDialogOpen(false);
         setSelectedStore(null);
+        console.log('[StoresDialog] Calling fetchStores after save');
         fetchStores();
     };
 
@@ -189,7 +197,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                     sx={{ mb: 2 }}
                 >
                     <Typography variant="subtitle2" color="text.secondary">
-                        {t('settings.stores.count', { count: stores.length })}
+                        {t('settings.stores.count', { count: safeStores.length })}
                     </Typography>
                     <Button
                         variant="contained"
@@ -216,14 +224,6 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                 <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
                             </TableRow>
                         </TableHead>
-                                <TableCell sx={{ minWidth: 120 }}>{t('settings.stores.name')}</TableCell>
-                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.stores.timezone')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 60 }}>{t('settings.stores.syncStatus')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 150, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.stores.entities')}</TableCell>
-                                <TableCell sx={{ minWidth: 150, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.stores.lastSync')}</TableCell>
-                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
-                            </TableRow>
-                        </TableHead>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
@@ -231,7 +231,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                         <CircularProgress size={32} />
                                     </TableCell>
                                 </TableRow>
-                            ) : stores.length === 0 ? (
+                            ) : safeStores.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                         <Typography color="text.secondary">
@@ -240,7 +240,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                stores.map((store) => (
+                                safeStores.map((store) => (
                                     <TableRow key={store.id} hover>
                                         <TableCell>
                                             <Chip 
