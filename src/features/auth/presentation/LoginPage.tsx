@@ -221,7 +221,7 @@ export function LoginPage() {
                                 required
                                 autoComplete="email"
                                 autoFocus
-                                placeholder="aviv@electis.co.il"
+                                placeholder="email@address.com"
                                 sx={{ mb: 2.5 }}
                                 InputProps={{
                                     sx: { borderRadius: 2 }

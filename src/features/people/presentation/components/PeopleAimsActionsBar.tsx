@@ -1,6 +1,5 @@
 import { Stack, Button } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-import SendIcon from '@mui/icons-material/Send';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +8,6 @@ interface PeopleAimsActionsBarProps {
     assignedCount: number;
     isConnected: boolean;
     onSyncFromAims: () => void;
-    onSendAllToAims: () => void;
     onCancelAllAssignments: () => void;
 }
 
@@ -21,7 +19,6 @@ export function PeopleAimsActionsBar({
     assignedCount,
     isConnected,
     onSyncFromAims,
-    onSendAllToAims,
     onCancelAllAssignments,
 }: PeopleAimsActionsBarProps) {
     const { t } = useTranslation();
@@ -50,15 +47,6 @@ export function PeopleAimsActionsBar({
                 disabled={isSyncing || !isConnected}
             >
                 {isSyncing ? t('common.syncing') : t('people.syncFromAims')}
-            </Button>
-            <Button
-                variant="text"
-                color="success"
-                startIcon={<SendIcon />}
-                onClick={onSendAllToAims}
-                disabled={assignedCount === 0}
-            >
-                {t('people.sendAllToAims')}
             </Button>
             <Button
                 variant="text"

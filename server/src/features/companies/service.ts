@@ -8,6 +8,7 @@ import { GlobalRole, CompanyRole } from '@prisma/client';
 import { companyRepository } from './repository.js';
 import { encrypt } from '../../shared/utils/encryption.js';
 import { config } from '../../config/index.js';
+import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
 import type {
     CompanyListParams,
     CompanyListItem,
@@ -97,7 +98,7 @@ export const companyService = {
                 storeCount: c._count.stores,
                 userCount: c._count.userCompanies,
                 userRole: null, // Platform admin has implicit access
-                hasAimsConfig: !!(c.aimsBaseUrl && c.aimsUsername),
+                aimsConfigured: !!(c.aimsBaseUrl && c.aimsUsername),
                 createdAt: c.createdAt,
                 updatedAt: c.updatedAt,
             }));
@@ -127,7 +128,7 @@ export const companyService = {
                     userCount: uc.company._count.userCompanies,
                     userRole: uc.role,
                     allStoresAccess: uc.allStoresAccess,
-                    hasAimsConfig: !!(uc.company.aimsBaseUrl && uc.company.aimsUsername),
+                    aimsConfigured: !!(uc.company.aimsBaseUrl && uc.company.aimsUsername),
                     createdAt: uc.company.createdAt,
                     updatedAt: uc.company.updatedAt,
                 }));
@@ -174,7 +175,12 @@ export const companyService = {
                 isActive: company.isActive,
                 createdAt: company.createdAt,
                 updatedAt: company.updatedAt,
-                // Only show AIMS config to managers
+                // AIMS fields at company level for frontend compatibility
+                aimsBaseUrl: canManage ? company.aimsBaseUrl : null,
+                aimsCluster: canManage ? company.aimsCluster : null,
+                aimsUsername: canManage ? company.aimsUsername : null,
+                aimsConfigured: !!(company.aimsBaseUrl && company.aimsUsername && company.aimsPasswordEnc),
+                // Also include nested aimsConfig for backwards compatibility
                 aimsConfig: canManage ? {
                     baseUrl: company.aimsBaseUrl,
                     cluster: company.aimsCluster,
@@ -246,7 +252,7 @@ export const companyService = {
             storeCount: company._count.stores,
             userCount: company._count.userCompanies,
             userRole: null,
-            hasAimsConfig: !!(company.aimsBaseUrl && company.aimsUsername),
+            aimsConfigured: !!(company.aimsBaseUrl && company.aimsUsername),
             createdAt: company.createdAt,
             updatedAt: company.updatedAt,
         };
@@ -273,21 +279,65 @@ export const companyService = {
      * Update AIMS configuration
      */
     async updateAimsConfig(id: string, data: UpdateAimsConfigDto) {
-        const encryptedPassword = encrypt(data.password, config.encryptionKey);
-        
-        const company = await companyRepository.updateAimsConfig(id, {
+        const updateData: {
+            aimsBaseUrl: string;
+            aimsCluster?: string;
+            aimsUsername: string;
+            aimsPasswordEnc?: string;
+        } = {
             aimsBaseUrl: data.baseUrl,
             aimsCluster: data.cluster,
             aimsUsername: data.username,
-            aimsPasswordEnc: encryptedPassword,
-        });
+        };
+        
+        // Only update password if provided
+        if (data.password) {
+            updateData.aimsPasswordEnc = encrypt(data.password, config.encryptionKey);
+        }
+        
+        const company = await companyRepository.updateAimsConfig(id, updateData);
         
         return {
             baseUrl: company.aimsBaseUrl,
             cluster: company.aimsCluster,
             username: company.aimsUsername,
-            hasPassword: true,
+            hasPassword: !!company.aimsPasswordEnc,
         };
+    },
+
+    /**
+     * Test AIMS connection for a company
+     */
+    async testAimsConnection(id: string) {
+        console.log(`[Company Service] Testing AIMS connection for company ${id}`);
+        
+        // First check if company has AIMS config
+        const credentials = await aimsGateway.getCredentials(id);
+        if (!credentials) {
+            console.log(`[Company Service] No AIMS credentials found for company ${id}`);
+            return {
+                connected: false,
+                error: 'No AIMS configuration found. Please configure AIMS credentials first.',
+            };
+        }
+
+        console.log(`[Company Service] Found credentials - baseUrl: ${credentials.baseUrl}, username: ${credentials.username}`);
+
+        try {
+            const connected = await aimsGateway.checkCompanyHealth(id);
+            console.log(`[Company Service] AIMS health check result: ${connected}`);
+            
+            return {
+                connected,
+                error: connected ? null : 'Failed to connect to AIMS server. Please check your credentials.',
+            };
+        } catch (error: any) {
+            console.error(`[Company Service] AIMS connection test failed:`, error);
+            return {
+                connected: false,
+                error: error.message || 'Unknown error connecting to AIMS',
+            };
+        }
     },
 
     /**

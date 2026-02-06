@@ -305,6 +305,8 @@ export const settingsService = {
      * Test AIMS connection for a company
      */
     async testAimsConnection(companyId: string, user: SettingsUserContext): Promise<AimsTestResponse> {
+        console.log(`[AIMS Test] Testing connection for company ${companyId}`);
+        
         // Platform admin or company admin can test connection
         let company;
         if (isPlatformAdmin(user)) {
@@ -315,11 +317,19 @@ export const settingsService = {
         }
 
         if (!company) {
+            console.log(`[AIMS Test] Company not found or access denied: ${companyId}`);
             throw new Error('COMPANY_NOT_FOUND_OR_DENIED');
         }
 
+        console.log(`[AIMS Test] Company found: ${company.code}`);
+        console.log(`[AIMS Test] aimsBaseUrl: ${company.aimsBaseUrl}`);
+        console.log(`[AIMS Test] aimsUsername: ${company.aimsUsername}`);
+        console.log(`[AIMS Test] aimsPasswordEnc exists: ${!!company.aimsPasswordEnc}`);
+        console.log(`[AIMS Test] aimsCluster: ${company.aimsCluster}`);
+
         // Check if AIMS is configured
         if (!company.aimsBaseUrl || !company.aimsUsername || !company.aimsPasswordEnc) {
+            console.log(`[AIMS Test] AIMS credentials not fully configured`);
             return {
                 success: false,
                 message: 'AIMS credentials not configured',
@@ -333,10 +343,13 @@ export const settingsService = {
             const { config } = await import('../../config/index.js');
             const { solumService } = await import('../../shared/infrastructure/services/solumService.js');
 
+            console.log(`[AIMS Test] Decrypting password...`);
+            
             // Decrypt password
             let password: string;
             try {
                 password = decrypt(company.aimsPasswordEnc, config.encryptionKey);
+                console.log(`[AIMS Test] Password decrypted successfully, length: ${password.length}`);
             } catch (error) {
                 console.error('[AIMS Test] Failed to decrypt password:', error);
                 return {
@@ -355,8 +368,17 @@ export const settingsService = {
                 password,
             };
 
+            console.log(`[AIMS Test] Testing connection with config:`, {
+                baseUrl: solumConfig.baseUrl,
+                cluster: solumConfig.cluster,
+                companyName: solumConfig.companyName,
+                username: solumConfig.username,
+                passwordLength: solumConfig.password?.length,
+            });
+
             // Test health endpoint
             const isHealthy = await solumService.checkHealth(solumConfig);
+            console.log(`[AIMS Test] Health check result: ${isHealthy}`);
             
             if (isHealthy) {
                 return {

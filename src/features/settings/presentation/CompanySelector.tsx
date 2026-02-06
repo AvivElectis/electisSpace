@@ -78,6 +78,9 @@ export function CompanySelector({
     const [codeValidating, setCodeValidating] = useState(false);
     const [codeValid, setCodeValid] = useState<boolean | null>(null);
     const [codeError, setCodeError] = useState<string | null>(null);
+    
+    // Whether new company creation is confirmed
+    const [isConfirmed, setIsConfirmed] = useState(false);
 
     // Can user create companies?
     const canCreate = allowCreate && isPlatformAdmin;
@@ -154,11 +157,24 @@ export function CompanySelector({
     // Cancel creating new company
     const handleCancelCreate = () => {
         onCreateModeChange(false);
+        setIsConfirmed(false);
         onNewCompanyDataChange?.({ code: '', name: '' });
         // Select first company if available
         if (companies.length > 0) {
             onChange(companies[0].id, companies[0]);
         }
+    };
+
+    // Confirm new company creation
+    const handleConfirmCreate = () => {
+        if (isNewCompanyValid()) {
+            setIsConfirmed(true);
+        }
+    };
+
+    // Edit the confirmed company
+    const handleEditConfirmed = () => {
+        setIsConfirmed(false);
     };
 
     // Check if new company data is valid
@@ -240,6 +256,58 @@ export function CompanySelector({
 
             {/* New Company Form */}
             <Collapse in={isCreatingNew}>
+                {/* Show confirmed summary or form */}
+                {isConfirmed ? (
+                    <Box 
+                        sx={{ 
+                            p: 2, 
+                            border: 1, 
+                            borderColor: 'success.main',
+                            borderRadius: 1,
+                            bgcolor: 'background.paper',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CheckCircleIcon color="success" fontSize="small" />
+                            <Typography variant="subtitle2" color="success.main">
+                                {t('settings.companies.newCompanyConfirmed', 'New Company Confirmed')}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                    fontFamily: 'monospace', 
+                                    fontWeight: 'bold',
+                                    bgcolor: 'action.hover',
+                                    px: 1,
+                                    py: 0.25,
+                                    borderRadius: 0.5
+                                }}
+                            >
+                                {newCompanyData.code}
+                            </Typography>
+                            <Typography variant="body2">{newCompanyData.name}</Typography>
+                            {newCompanyData.location && (
+                                <Typography variant="caption" color="text.secondary">({newCompanyData.location})</Typography>
+                            )}
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                            {t('settings.companies.readyToCreate', 'New company will be created when you save the user.')}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            <Button size="small" variant="outlined" onClick={handleEditConfirmed}>
+                                {t('common.edit', 'Edit')}
+                            </Button>
+                            <Button size="small" color="error" variant="outlined" onClick={handleCancelCreate}>
+                                {t('common.cancel', 'Cancel')}
+                            </Button>
+                        </Box>
+                    </Box>
+                ) : (
                 <Box 
                     sx={{ 
                         p: 2, 
@@ -308,6 +376,14 @@ export function CompanySelector({
                         <Button size="small" onClick={handleCancelCreate}>
                             {t('common.cancel', 'Cancel')}
                         </Button>
+                        <Button 
+                            size="small" 
+                            variant="contained"
+                            disabled={!isNewCompanyValid()}
+                            onClick={handleConfirmCreate}
+                        >
+                            {t('common.confirm', 'Confirm')}
+                        </Button>
                     </Box>
 
                     {/* Validation Status */}
@@ -317,6 +393,7 @@ export function CompanySelector({
                         </Typography>
                     )}
                 </Box>
+                )}
             </Collapse>
         </Box>
     );

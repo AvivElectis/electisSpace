@@ -166,6 +166,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     syncEnabled,
                     isActive
                 };
+                console.log('[StoreDialog] Updating store:', store.id, updateData);
                 await companyService.updateStore(store.id, updateData);
             } else {
                 // Create store
@@ -175,12 +176,16 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     timezone,
                     syncEnabled
                 };
-                await companyService.createStore(companyId, createData);
+                console.log('[StoreDialog] Creating store for company:', companyId, createData);
+                const result = await companyService.createStore(companyId, createData);
+                console.log('[StoreDialog] Create result:', result);
             }
 
+            console.log('[StoreDialog] Calling onSave callback');
             onSave();
         } catch (err: any) {
-            console.error('Failed to save store:', err);
+            console.error('[StoreDialog] Failed to save store:', err);
+            console.error('[StoreDialog] Error response:', err.response?.data);
             setError(err.response?.data?.message || t('settings.stores.saveError'));
         } finally {
             setSubmitting(false);
