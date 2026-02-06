@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
 // Types definition (replicating needed parts from shared/domain/types)
 export interface SolumConfig {
@@ -16,9 +16,53 @@ export interface SolumTokens {
     expiresAt: number;
 }
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
+const MAX_RETRY_DELAY_MS = 10000; // 10 seconds
+
+/**
+ * Check if an error is retryable (transient failure)
+ */
+function isRetryableError(error: AxiosError): boolean {
+    // Network errors (no response)
+    if (!error.response) return true;
+
+    const status = error.response.status;
+
+    // Retry on server errors (5xx)
+    if (status >= 500 && status < 600) return true;
+
+    // Retry on 429 Too Many Requests
+    if (status === 429) return true;
+
+    // Retry on timeout
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return true;
+
+    return false;
+}
+
+/**
+ * Calculate exponential backoff delay
+ */
+function getRetryDelay(attempt: number): number {
+    const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+    // Add jitter (up to 25% random variation)
+    const jitter = delay * 0.25 * Math.random();
+    return Math.min(delay + jitter, MAX_RETRY_DELAY_MS);
+}
+
+/**
+ * Sleep for a given number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
  * SoluM Service for Server-Side Communication
  * Handles authentication and article management with AIMS
+ * Includes automatic retry with exponential backoff for transient failures
  */
 export class SolumService {
     private client: AxiosInstance;
@@ -30,6 +74,46 @@ export class SolumService {
                 'Content-Type': 'application/json',
             },
         });
+    }
+
+    /**
+     * Execute an HTTP request with automatic retry for transient failures
+     */
+    private async withRetry<T>(
+        operation: string,
+        fn: () => Promise<T>
+    ): Promise<T> {
+        let lastError: any;
+
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return await fn();
+            } catch (error: any) {
+                lastError = error;
+
+                // Don't retry auth errors (401/403) - those need token refresh, not retry
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    throw error;
+                }
+
+                // Don't retry on 4xx client errors (except 429)
+                if (error.response?.status >= 400 && error.response?.status < 500 && error.response?.status !== 429) {
+                    throw error;
+                }
+
+                // Check if this is a retryable error
+                if (attempt < MAX_RETRIES && isRetryableError(error)) {
+                    const delay = getRetryDelay(attempt);
+                    console.warn(`[SoluM] ${operation} failed (attempt ${attempt + 1}/${MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms:`, error.message);
+                    await sleep(delay);
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        throw lastError;
     }
 
     /**
@@ -123,24 +207,26 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
 
-        try {
-            const response = await this.client.get(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+        return this.withRetry('fetchArticles', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            // Handle empty response
-            if (!response.data) return [];
+                // Handle empty response
+                if (!response.data) return [];
 
-            // Handle 204 No Content
-            if (response.status === 204) return [];
+                // Handle 204 No Content
+                if (response.status === 204) return [];
 
-            const data = response.data;
-            return Array.isArray(data) ? data : (data.articleList || data.content || data.data || []);
-        } catch (error: any) {
-            // Handle 204 treated as error by some clients/axios (rare but possible if configuration is strict)
-            if (error.response?.status === 204) return [];
-            throw new Error(`Fetch articles failed: ${error.message}`);
-        }
+                const data = response.data;
+                return Array.isArray(data) ? data : (data.articleList || data.content || data.data || []);
+            } catch (error: any) {
+                // Handle 204 treated as error by some clients/axios
+                if (error.response?.status === 204) return [];
+                throw new Error(`Fetch articles failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -151,13 +237,15 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}`);
 
-        try {
-            await this.client.post(url, articles, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-        } catch (error: any) {
-            throw new Error(`Push articles failed: ${error.message}`);
-        }
+        return this.withRetry('pushArticles', async () => {
+            try {
+                await this.client.post(url, articles, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (error: any) {
+                throw new Error(`Push articles failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -168,14 +256,16 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}`);
 
-        try {
-            await this.client.delete(url, {
-                headers: { 'Authorization': `Bearer ${token}` },
-                data: { articleDeleteList: articleIds }
-            });
-        } catch (error: any) {
-            throw new Error(`Delete articles failed: ${error.message}`);
-        }
+        return this.withRetry('deleteArticles', async () => {
+            try {
+                await this.client.delete(url, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    data: { articleDeleteList: articleIds }
+                });
+            } catch (error: any) {
+                throw new Error(`Delete articles failed: ${error.message}`);
+            }
+        });
     }
 
     // ============== Label Operations ==============
@@ -188,20 +278,22 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
 
-        try {
-            const response = await this.client.get(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+        return this.withRetry('fetchLabels', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            if (!response.data) return [];
-            if (response.status === 204) return [];
+                if (!response.data) return [];
+                if (response.status === 204) return [];
 
-            const data = response.data;
-            return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
-        } catch (error: any) {
-            if (error.response?.status === 204) return [];
-            throw new Error(`Fetch labels failed: ${error.message}`);
-        }
+                const data = response.data;
+                return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
+            } catch (error: any) {
+                if (error.response?.status === 204) return [];
+                throw new Error(`Fetch labels failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -236,17 +328,19 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/unassigned?company=${config.companyName}&store=${config.storeCode}`);
 
-        try {
-            const response = await this.client.get(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+        return this.withRetry('fetchUnassignedLabels', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            if (!response.data) return [];
-            const data = response.data;
-            return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
-        } catch (error: any) {
-            throw new Error(`Fetch unassigned labels failed: ${error.message}`);
-        }
+                if (!response.data) return [];
+                const data = response.data;
+                return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
+            } catch (error: any) {
+                throw new Error(`Fetch unassigned labels failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -257,15 +351,17 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/detail?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}`);
 
-        try {
-            const response = await this.client.get(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+        return this.withRetry('fetchLabelImages', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            return response.data || {};
-        } catch (error: any) {
-            throw new Error(`Fetch label images failed: ${error.message}`);
-        }
+                return response.data || {};
+            } catch (error: any) {
+                throw new Error(`Fetch label images failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -284,14 +380,16 @@ export class SolumService {
             body.templateName = templateName;
         }
 
-        try {
-            const response = await this.client.post(url, body, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(`Link label failed: ${error.message}`);
-        }
+        return this.withRetry('linkLabel', async () => {
+            try {
+                const response = await this.client.post(url, body, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Link label failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -302,14 +400,16 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/unlink?company=${config.companyName}&store=${config.storeCode}`);
 
-        try {
-            const response = await this.client.post(url, { labelCode }, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(`Unlink label failed: ${error.message}`);
-        }
+        return this.withRetry('unlinkLabel', async () => {
+            try {
+                const response = await this.client.post(url, { labelCode }, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Unlink label failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -320,14 +420,16 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/changePage?company=${config.companyName}&store=${config.storeCode}`);
 
-        try {
-            const response = await this.client.post(url, { labelCode, page }, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(`Change label page failed: ${error.message}`);
-        }
+        return this.withRetry('changeLabelPage', async () => {
+            try {
+                const response = await this.client.post(url, { labelCode, page }, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Change label page failed: ${error.message}`);
+            }
+        });
     }
 
     /**
@@ -338,14 +440,16 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/blink?company=${config.companyName}&store=${config.storeCode}`);
 
-        try {
-            const response = await this.client.post(url, { labelCode }, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(`Blink label failed: ${error.message}`);
-        }
+        return this.withRetry('blinkLabel', async () => {
+            try {
+                const response = await this.client.post(url, { labelCode }, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Blink label failed: ${error.message}`);
+            }
+        });
     }
 }
 

@@ -13,11 +13,29 @@ const router = Router();
 router.use(authenticate);
 
 // ======================
-// General Sync Routes
+// General Sync Routes (body-based storeId — used by frontend syncApi)
 // ======================
 
 // Get sync status
 router.get('/status', requirePermission('sync', 'view'), syncController.getStatus);
+
+// Check AIMS connection health
+router.get('/health', requirePermission('sync', 'view'), syncController.checkHealth);
+
+// Connect to AIMS for a store
+router.post('/connect', requirePermission('sync', 'trigger'), syncController.connectToAims);
+
+// Disconnect from AIMS for a store
+router.post('/disconnect', requirePermission('sync', 'trigger'), syncController.disconnectFromAims);
+
+// Pull from AIMS (body-based storeId)
+router.post('/pull', requirePermission('sync', 'trigger'), syncController.pull);
+
+// Push to AIMS (body-based storeId)
+router.post('/push', requirePermission('sync', 'trigger'), syncController.push);
+
+// Full sync (pull + push, body-based storeId)
+router.post('/full', requirePermission('sync', 'trigger'), syncController.fullSync);
 
 // Trigger sync (legacy endpoint)
 router.post('/trigger', requirePermission('sync', 'trigger'), syncController.triggerSync);
@@ -32,7 +50,7 @@ router.get('/queue', requirePermission('sync', 'view'), syncController.listQueue
 router.post('/queue/:id/retry', requirePermission('sync', 'trigger'), syncController.retryItem);
 
 // ======================
-// Store-specific Sync Routes
+// Store-specific Sync Routes (param-based storeId)
 // ======================
 
 // Pull from AIMS

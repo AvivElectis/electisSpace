@@ -14,6 +14,8 @@ interface SyncStatusIndicatorProps {
     lastSyncTime?: string;
     errorMessage?: string;
     onSyncClick?: () => void;
+    serverConnected?: boolean;
+    aimsConnected?: boolean;
 }
 
 /**
@@ -27,6 +29,8 @@ export function SyncStatusIndicator({
     lastSyncTime,
     errorMessage,
     onSyncClick,
+    serverConnected,
+    aimsConnected,
 }: SyncStatusIndicatorProps) {
     const { t } = useTranslation();
     const theme = useTheme();
@@ -131,7 +135,7 @@ export function SyncStatusIndicator({
                         {config.label}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.1, mt: 0.3 }}>
-                        SoluM API
+                        {status === 'syncing' ? t('sync.syncing') : 'SoluM API'}
                     </Typography>
                 </Box>
             </Paper>
@@ -187,6 +191,49 @@ export function SyncStatusIndicator({
 
                 <Box sx={{ p: 2.5 }}>
                     <Stack gap={2.5}>
+                        {/* Connection Details */}
+                        {(serverConnected !== undefined || aimsConnected !== undefined) && (
+                            <Box>
+                                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
+                                    {t('sync.connectionDetails', 'Connection Details')}
+                                </Typography>
+                                <Stack gap={1}>
+                                    {serverConnected !== undefined && (
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {t('sync.serverConnection', 'Server')}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <Box sx={{ 
+                                                    width: 8, height: 8, borderRadius: '50%',
+                                                    bgcolor: serverConnected ? theme.palette.success.main : theme.palette.error.main 
+                                                }} />
+                                                <Typography variant="body2" fontWeight={500} color={serverConnected ? 'success.main' : 'error.main'}>
+                                                    {serverConnected ? t('sync.connected') : t('sync.disconnected')}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    )}
+                                    {aimsConnected !== undefined && (
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                AIMS
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <Box sx={{ 
+                                                    width: 8, height: 8, borderRadius: '50%',
+                                                    bgcolor: aimsConnected ? theme.palette.success.main : theme.palette.warning.main 
+                                                }} />
+                                                <Typography variant="body2" fontWeight={500} color={aimsConnected ? 'success.main' : 'warning.main'}>
+                                                    {aimsConnected ? t('sync.connected') : t('sync.disconnected')}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    )}
+                                </Stack>
+                            </Box>
+                        )}
+
                         {/* Last Sync Time */}
                         {lastSyncTime && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
