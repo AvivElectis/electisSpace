@@ -329,8 +329,18 @@ export function useBackendSyncController({
 
         autoSyncTimerRef.current = setInterval(() => {
             logger.info('BackendSyncController', 'Auto-sync triggered by timer');
-            syncRef.current().catch((error) => {
+            syncRef.current().catch((error: any) => {
                 logger.error('BackendSyncController', 'Auto-sync failed', { error });
+                // Stop auto-sync on auth errors to prevent 401 retry loops
+                const isAuthError = error?.response?.status === 401 || 
+                    error?.response?.status === 403 ||
+                    error?.message?.includes('401') ||
+                    error?.message?.includes('Unauthorized');
+                if (isAuthError && autoSyncTimerRef.current) {
+                    logger.warn('BackendSyncController', 'Auth error detected, stopping auto-sync timer');
+                    clearInterval(autoSyncTimerRef.current);
+                    autoSyncTimerRef.current = null;
+                }
             });
         }, autoSyncInterval * 1000);
 

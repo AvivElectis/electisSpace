@@ -55,8 +55,10 @@ export const syncErrorLogger = {
         return prisma.auditLog.findMany({
             where: {
                 storeId,
-                action: { startsWith: 'AIMS_SYNC_' },
-                action: { contains: 'FAILED' },
+                AND: [
+                    { action: { startsWith: 'AIMS_SYNC_' } },
+                    { action: { contains: 'FAILED' } },
+                ],
             },
             orderBy: { createdAt: 'desc' },
             take: limit,
@@ -72,8 +74,10 @@ export const syncErrorLogger = {
         return prisma.auditLog.count({
             where: {
                 storeId,
-                action: { contains: 'AIMS_SYNC_' },
-                action: { contains: 'FAILED' },
+                AND: [
+                    { action: { contains: 'AIMS_SYNC_' } },
+                    { action: { contains: 'FAILED' } },
+                ],
                 createdAt: { gte: since },
             },
         });

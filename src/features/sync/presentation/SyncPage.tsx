@@ -129,7 +129,7 @@ export function SyncPage() {
                             </Typography>
                             <Typography variant="body1">
                                 {settingsController.settings.autoSyncEnabled
-                                    ? `${t('sync.enabled')} (${t('sync.every')} ${settingsController.settings.solumConfig?.syncInterval || 60}s)`
+                                    ? `${t('sync.enabled')} (${t('sync.every')} ${settingsController.settings.autoSyncInterval || 300}s)`
                                     : t('sync.disabled')
                                 }
                             </Typography>

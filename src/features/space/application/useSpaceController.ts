@@ -9,6 +9,7 @@ import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import * as solumService from '@shared/infrastructure/services/solumService';
 import { SolumSyncAdapter } from '../../sync/infrastructure/SolumSyncAdapter';
+import { withAimsTokenRefresh, getValidAimsToken } from '@shared/infrastructure/services/aimsTokenManager';
 
 /**
  * Space Controller Hook
@@ -105,7 +106,7 @@ export function useSpaceController({
             logger.info('SpaceController', 'Space persisted to Server DB', { id: space.id });
 
             // 2. Push to SoluM AIMS
-            if (solumConfig && solumMappingConfig && solumToken) {
+            if (solumConfig && solumMappingConfig) {
                 logger.info('SpaceController', 'Pushing article to AIMS', { id: space.id });
 
                 const data: Record<string, any> = {};
@@ -144,16 +145,18 @@ export function useSpaceController({
                 if (mappingInfo?.store && data[mappingInfo.store]) aimsArticle.store = String(data[mappingInfo.store]);
                 if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
 
-                await solumService.pushArticles(
-                    solumConfig,
-                    solumConfig.storeNumber,
-                    solumToken,
-                    [aimsArticle]
-                );
+                await withAimsTokenRefresh(async (token) => {
+                    await solumService.pushArticles(
+                        solumConfig,
+                        solumConfig.storeNumber,
+                        token,
+                        [aimsArticle]
+                    );
+                });
                 logger.info('SpaceController', 'Article pushed to AIMS successfully');
             } else {
                 logger.warn('SpaceController', 'SoluM config missing, skipping push to AIMS', {
-                    hasConfig: !!solumConfig, hasMapping: !!solumMappingConfig, hasToken: !!solumToken
+                    hasConfig: !!solumConfig, hasMapping: !!solumMappingConfig
                 });
             }
 
@@ -168,7 +171,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space added successfully', { id: space.id });
         },
-        [spaces, csvConfig, createInStore, onSync, solumConfig, solumMappingConfig, solumToken]
+        [spaces, csvConfig, createInStore, onSync, solumConfig, solumMappingConfig]
     );
 
     /**
@@ -209,7 +212,7 @@ export function useSpaceController({
                 // ---------------------------------------------------------
                 // Secondary Actions: SoluM Mode
                 // ---------------------------------------------------------
-                if (solumConfig && solumMappingConfig && solumToken) {
+                if (solumConfig && solumMappingConfig) {
                     const space = updatedSpace as Space;
                     const data: Record<string, any> = {};
                     Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
@@ -225,12 +228,14 @@ export function useSpaceController({
                     };
                     // Apply mappings omitted for brevity...
 
-                    await solumService.pushArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        solumToken,
-                        [aimsArticle]
-                    );
+                    await withAimsTokenRefresh(async (token) => {
+                        await solumService.pushArticles(
+                            solumConfig,
+                            solumConfig.storeNumber,
+                            token,
+                            [aimsArticle]
+                        );
+                    });
                     logger.info('SpaceController', 'Article update pushed to AIMS');
                 }
             } catch (error) {
@@ -238,7 +243,7 @@ export function useSpaceController({
                 throw error;
             }
         },
-        [spaces, csvConfig, updateInStore, solumConfig, solumToken, solumMappingConfig]
+        [spaces, csvConfig, updateInStore, solumConfig, solumMappingConfig]
     );
 
     /**
@@ -266,12 +271,13 @@ export function useSpaceController({
                 // ---------------------------------------------------------
                 // Secondary Actions: SoluM Mode
                 // ---------------------------------------------------------
-                if (solumConfig && solumToken) {
+                if (solumConfig) {
                     try {
+                        const token = await getValidAimsToken();
                         await solumService.deleteArticles(
                             solumConfig,
                             solumConfig.storeNumber,
-                            solumToken,
+                            token,
                             [existingSpace.id]
                         );
                         logger.info('SpaceController', 'Article deleted from AIMS');
@@ -284,7 +290,7 @@ export function useSpaceController({
                 throw error;
             }
         },
-        [spaces, deleteInStore, solumConfig, solumToken]
+        [spaces, deleteInStore, solumConfig]
     );
 
     // Helpers
@@ -294,20 +300,15 @@ export function useSpaceController({
 
     const fetchFromSolum = useCallback(async () => {
         // Keep this for "Refresh from AIMS" button
-        if (!solumConfig || !solumToken || !solumMappingConfig) return;
+        if (!solumConfig || !solumMappingConfig) return;
         setIsFetching(true);
         try {
-            // If in Cloud Persistence mode, maybe we should fetch from Server DB instead?
-            // But "fetchFromSolum" explicitly says Solum.
-            // We'll let it fetch from Solum and update the Local store (Visual).
-            // But if we want to PERSIST what we fetched to Server DB?
-            // Typically "Sync" is Server->Client.
-            // This fetch updates Client Store.
+            const token = await getValidAimsToken();
             const adapter = new SolumSyncAdapter(
                 solumConfig,
                 csvConfig,
                 () => { },
-                { ...solumConfig.tokens!, accessToken: solumToken } as any,
+                { ...solumConfig.tokens!, accessToken: token } as any,
                 solumMappingConfig
             );
             const spaces = await adapter.download();
@@ -315,7 +316,7 @@ export function useSpaceController({
         } finally {
             setIsFetching(false);
         }
-    }, [solumConfig, solumToken, solumMappingConfig, csvConfig, importFromSync]);
+    }, [solumConfig, solumMappingConfig, csvConfig, importFromSync]);
 
     // List operations
     const saveSpacesList = useCallback((name: string, id?: string) => {

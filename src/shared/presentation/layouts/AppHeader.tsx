@@ -14,6 +14,7 @@ import { useState } from 'react'; // Import useState
 // import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 // import { SyncStatusIndicator } from '@shared/presentation/components/SyncStatusIndicator';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { CompanyStoreSelector } from '@features/auth/presentation/CompanyStoreSelector';
 
 interface AppHeaderProps {
     onSettingsClick?: () => void;
@@ -164,6 +165,13 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         }}
                     />
 
+                    {/* Company/Store Context Selector - hidden on xs, compact on sm */}
+                    {user && (
+                        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                            <CompanyStoreSelector compact />
+                        </Box>
+                    )}
+
                     <Tooltip title={t('manual.title')}>
                         <IconButton
                             color="default"
@@ -175,7 +183,9 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                     </Tooltip>
                     <LanguageSwitcher />
 
-                    {user?.globalRole === 'PLATFORM_ADMIN' && (
+                    {user && (user.globalRole === 'PLATFORM_ADMIN' || 
+                        user.companies?.some(c => c.role === 'COMPANY_ADMIN') ||
+                        user.stores?.some(s => s.role === 'STORE_ADMIN' || s.role === 'STORE_MANAGER')) && (
                         <IconButton
                             color={iconColor}
                             onClick={onSettingsClick}

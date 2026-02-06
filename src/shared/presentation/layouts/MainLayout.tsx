@@ -14,13 +14,15 @@ import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
-import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { convertSpacesToPeopleWithVirtualPool } from '@features/people/infrastructure/peopleService';
-import { useSyncController } from '@features/sync/application/useSyncController';
+import { useBackendSyncController } from '@features/sync/application/useBackendSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { logger } from '@shared/infrastructure/services/logger';
 import { prefetchRoute, prefetchAllRoutes } from '../utils/routePrefetch';
+import { StoreRequiredGuard } from '@features/auth/presentation/StoreRequiredGuard';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 // Lazy load SettingsDialog - not needed on initial render
 const SettingsDialog = lazy(() => 
@@ -45,7 +47,8 @@ interface NavTab {
     labelKey: string;
     value: string;
     icon: React.ReactElement;
-    dynamicLabel?: boolean;  // Whether to use dynamic label (for spaces/people toggle)
+    dynamicLabel?: boolean;
+    feature?: string;  // Feature key for permission filtering
 }
 
 /**
@@ -72,13 +75,19 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [manualOpen, setManualOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const { syncState, setWorkingMode } = useSyncStore();
+    const { canAccessFeature, isAuthenticated } = useAuthContext();
+    const isInitialized = useAuthStore(state => state.isInitialized);
     
     // Determine drawer direction based on current language (more reliable than theme.direction)
     const settings = useSettingsStore(state => state.settings);
+    const activeStoreId = useSettingsStore(state => state.activeStoreId);
+    
+    // Only allow sync when auth session is fully restored and valid
+    const authReady = isAuthenticated && isInitialized;
+    const effectiveStoreId = authReady ? activeStoreId : null;
     const setSpaces = useSpacesStore(state => state.setSpaces);
     const setPeople = usePeopleStore(state => state.setPeople);
     const extractListsFromPeople = usePeopleStore(state => state.extractListsFromPeople);
-    const setConferenceRooms = useConferenceStore(state => state.setConferenceRooms);
 
     // Sync settings.workingMode to syncStore.workingMode
     useEffect(() => {
@@ -114,43 +123,37 @@ export function MainLayout({ children }: MainLayoutProps) {
         }
     }, [setSpaces, setPeople, extractListsFromPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
 
-    /**
-     * Conference rooms update handler
-     */
-    const handleConferenceUpdate = useCallback((conferenceRooms: any[]) => {
-        setConferenceRooms(conferenceRooms);
-        logger.info('MainLayout', 'Synced conference rooms', { 
-            count: conferenceRooms.length 
-        });
-    }, [setConferenceRooms]);
-
     // Build navigation tabs dynamically
-    const navTabs: NavTab[] = [
-        { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" /> },
+    const allNavTabs: NavTab[] = [
+        { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" />, feature: 'dashboard' },
         { 
             labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces', 
             value: isPeopleManagerMode ? '/people' : '/spaces', 
             icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
-            dynamicLabel: true
+            dynamicLabel: true,
+            feature: isPeopleManagerMode ? 'people' : 'spaces',
         },
-        { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" /> },
-        { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" /> },
-        { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" /> },
+        { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
+        { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
+        { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" />, feature: 'sync' },
     ];
 
-    // Initialize global sync controller
-    // Connection status based on SoluM config
+    // Filter tabs by user permissions
+    const navTabs = allNavTabs.filter(tab => 
+        !tab.feature || canAccessFeature(tab.feature as any)
+    );
+
+    // Initialize backend sync controller (all AIMS communication goes through server)
     const isConnected = settings.solumConfig?.isConnected || false;
         
-    const syncController = useSyncController({
-        solumConfig: settings.solumConfig,
-        csvConfig: settings.csvConfig,
+    const syncController = useBackendSyncController({
+        storeId: effectiveStoreId,
         autoSyncEnabled: settings.autoSyncEnabled,
         autoSyncInterval: settings.autoSyncInterval,
         onSpaceUpdate: handleSpaceUpdate,
-        onConferenceUpdate: handleConferenceUpdate,
-        solumMappingConfig: settings.solumMappingConfig,
-        isConnected,
+        onError: (error) => {
+            logger.error('MainLayout', 'Backend sync error', { error: error.message });
+        },
     });
 
     // Get active list name for tab label
@@ -167,10 +170,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         return () => clearTimeout(idleTimeout);
     }, []);
 
-    // Auto-sync on app load when connected
+    // Auto-sync on app load when store is connected AND auth is ready
     useEffect(() => {
-        if (isConnected && sync) {
-            logger.info('MainLayout', 'Auto-syncing on app load (connected)');
+        if (activeStoreId && isConnected && authReady && sync) {
+            logger.info('MainLayout', 'Auto-syncing on app load (connected)', { storeId: activeStoreId });
             // Small delay to ensure stores are ready
             const syncTimeout = setTimeout(() => {
                 sync().catch((err) => {
@@ -344,7 +347,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                     }}
                 >
                     <Container maxWidth={false} sx={{ flex: 1, py: 3 }}>
-                        {children}
+                        <StoreRequiredGuard>
+                            {children}
+                        </StoreRequiredGuard>
                     </Container>
                 </Box>
 
@@ -359,11 +364,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                         status={
                             syncState.status === 'syncing' ? 'syncing' :
                                 syncState.status === 'error' ? 'error' :
-                                    isConnected ? 'connected' : 'disconnected'
+                                    (syncState.isConnected || isConnected) ? 'connected' : 'disconnected'
                         }
                         lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
                         errorMessage={syncState.lastError}
-                        onSyncClick={() => sync().catch(() => {/* console.error */ })}
+                        onSyncClick={() => sync().catch(() => {/* handled in controller */})}
+                        serverConnected={!!activeStoreId}
+                        aimsConnected={syncState.isConnected || isConnected}
                     />
                 </Box>
 

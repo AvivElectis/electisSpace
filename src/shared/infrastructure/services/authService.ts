@@ -184,6 +184,16 @@ export const authService = {
     },
 
     /**
+     * Refresh AIMS/SoluM token via server
+     * Server handles re-login with stored company credentials
+     * Returns a fresh access token for AIMS API calls
+     */
+    solumRefresh: async (storeId: string): Promise<{ accessToken: string; expiresAt: number }> => {
+        const response = await api.post<{ accessToken: string; expiresAt: number }>('/auth/solum-refresh', { storeId });
+        return response.data;
+    },
+
+    /**
      * Check if user is authenticated (has tokens)
      */
     isAuthenticated: (): boolean => {

@@ -106,6 +106,9 @@ router.post('/change-password', authenticate, authController.changePassword);
 // POST /auth/solum-connect - Get SOLUM connection config
 router.post('/solum-connect', authenticate, authController.solumConnect);
 
+// POST /auth/solum-refresh - Refresh AIMS token using server-side credentials
+router.post('/solum-refresh', authenticate, authController.solumRefresh);
+
 // ======================
 // Admin Routes
 // ======================

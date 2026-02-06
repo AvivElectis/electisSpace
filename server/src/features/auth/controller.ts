@@ -359,4 +359,54 @@ export const authController = {
             next(error);
         }
     },
+
+    /**
+     * POST /auth/solum-refresh
+     * Refresh AIMS/SoluM token for a store
+     * Uses server-side credential management to get a fresh token
+     * The server's aimsGateway handles token caching and re-login automatically
+     */
+    async solumRefresh(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = solumConnectSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const { storeId } = validation.data;
+
+            // Verify user access to this store
+            const hasAccess = req.user!.stores.some((s: any) => s.id === storeId) ||
+                req.user!.globalRole === 'PLATFORM_ADMIN';
+
+            if (!hasAccess) {
+                return next(unauthorized('You do not have access to this store'));
+            }
+
+            // Get fresh token via aimsGateway (handles caching + re-login if expired)
+            const { aimsGateway } = await import('../../shared/infrastructure/services/aimsGateway.js');
+
+            const storeConfig = await aimsGateway.getStoreConfig(storeId);
+            if (!storeConfig) {
+                return res.status(400).json({
+                    error: 'AIMS_NOT_CONFIGURED',
+                    message: 'Company AIMS credentials are not configured for this store',
+                });
+            }
+
+            // Invalidate cached token first to force a fresh login
+            aimsGateway.invalidateToken(storeConfig.companyId);
+
+            // Get fresh token
+            const accessToken = await aimsGateway.getToken(storeConfig.companyId);
+
+            res.json({
+                accessToken,
+                expiresAt: Date.now() + 3600000, // 1 hour
+            });
+        } catch (error: any) {
+            console.error('[Auth] AIMS token refresh failed:', error.message);
+            next(error);
+        }
+    },
 };
