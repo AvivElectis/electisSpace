@@ -75,6 +75,7 @@ export const peopleApi = {
      * Create a new person
      */
     create: async (data: {
+        storeId: string;
         externalId?: string;
         data?: Record<string, unknown>;
     }): Promise<Person> => {

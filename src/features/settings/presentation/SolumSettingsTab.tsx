@@ -1,12 +1,14 @@
-import { Box, Stack, Divider, Typography, Tabs, Tab, Alert, FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel } from '@mui/material';
+import { Box, Stack, Divider, Typography, Tabs, Tab, Alert, FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Button, CircularProgress } from '@mui/material';
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { SolumFieldMappingTable } from './SolumFieldMappingTable';
 import { SolumMappingSelectors } from './SolumMappingSelectors';
 import { SolumGlobalFieldsEditor } from './SolumGlobalFieldsEditor';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 // Extracted components
 import {
@@ -32,8 +34,10 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     const { t } = useTranslation();
     const { articleFormat, fetchArticleFormat } = useConfigurationController();
     const { sync } = useSyncContext();
-    const { activeCompanyId } = useAuthStore();
+    const { activeCompanyId, reconnectToSolum } = useAuthStore();
     const [subTab, setSubTab] = useState(0);
+    const [isReconnecting, setIsReconnecting] = useState(false);
+    const [reconnectError, setReconnectError] = useState<string | null>(null);
 
     // Extract field keys from article format (ONLY articleData, not articleBasicInfo)
     const articleFormatFields = useMemo(() => {
@@ -85,6 +89,50 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     const handleAutoSyncIntervalChange = (interval: number) => {
         onUpdate({ autoSyncInterval: interval });
     };
+
+    // Handle reconnect to SOLUM
+    const handleReconnect = useCallback(async () => {
+        setIsReconnecting(true);
+        setReconnectError(null);
+        try {
+            // Check if we have a store selected, if not try to auto-select one
+            let { activeStoreId, user, setActiveStore } = useAuthStore.getState();
+            
+            if (!activeStoreId && user?.stores && user.stores.length > 0) {
+                // Auto-select the first available store
+                const firstStoreId = user.stores[0].id;
+                await setActiveStore(firstStoreId);
+                // setActiveStore calls autoConnectToSolum internally
+                // Wait for settings to propagate
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                // The parent component will re-fetch settings on store change
+                // Check if connection is now established
+                const { settings: newSettings } = useSettingsStore.getState();
+                if (newSettings.solumConfig?.isConnected) {
+                    // Successfully connected after auto-selecting store
+                    return;
+                }
+                // Auto-connect attempt completed but not connected - show error
+                setReconnectError(t('settings.reconnectFailed', 'Failed to connect. Please check AIMS credentials in Company Settings.'));
+                return;
+            }
+            
+            if (!activeStoreId) {
+                // Still no store - user has no stores available
+                setReconnectError(t('settings.noStoreSelected', 'No store selected. Please select a store from the header menu.'));
+                return;
+            }
+            
+            const success = await reconnectToSolum();
+            if (!success) {
+                setReconnectError(t('settings.reconnectFailed', 'Failed to connect. Please check AIMS credentials in Company Settings.'));
+            }
+        } catch {
+            setReconnectError(t('settings.reconnectFailed', 'Failed to connect. Please check AIMS credentials in Company Settings.'));
+        } finally {
+            setIsReconnecting(false);
+        }
+    }, [reconnectToSolum, t]);
 
     // Auto-sync interval options: 10-60 seconds in 10s gaps, then minute gaps up to 5 minutes
     const syncIntervalOptions = [
@@ -140,9 +188,26 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
             {/* Locked overlay message when not connected */}
             {isLocked && (
                 <Box sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                         {t('settings.solumSettingsLocked', 'SoluM settings are locked. Connect to AIMS to enable configuration.')}
                     </Typography>
+                    
+                    <Button
+                        variant="contained"
+                        startIcon={isReconnecting ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+                        onClick={handleReconnect}
+                        disabled={isReconnecting}
+                    >
+                        {isReconnecting 
+                            ? t('settings.connecting', 'Connecting...') 
+                            : t('settings.retryConnection', 'Retry Connection')}
+                    </Button>
+                    
+                    {reconnectError && (
+                        <Alert severity="error" sx={{ mt: 2, mx: 'auto', maxWidth: 400 }}>
+                            {reconnectError}
+                        </Alert>
+                    )}
                 </Box>
             )}
 
@@ -325,7 +390,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                     <SolumFieldMappingTable
                                         articleFormatFields={articleFormatFields}
                                         mappings={settings.solumMappingConfig?.fields || {}}
-                                        excludeFields={Object.keys(settings.solumMappingConfig?.globalFieldAssignments || {})}
+                                        excludeFields={[
+                                            ...Object.keys(settings.solumMappingConfig?.globalFieldAssignments || {}),
+                                            ...(settings.solumMappingConfig?.mappingInfo?.articleId ? [settings.solumMappingConfig.mappingInfo.articleId] : []),
+                                            ...(settings.solumMappingConfig?.mappingInfo?.articleName ? [settings.solumMappingConfig.mappingInfo.articleName] : []),
+                                        ]}
                                         onChange={(mappings) =>
                                             onUpdate({
                                                 solumMappingConfig: {

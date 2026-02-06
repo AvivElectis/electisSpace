@@ -33,6 +33,7 @@ interface VisibleField {
     key: string;
     labelEn: string;
     labelHe: string;
+    globalValue?: string; // If set, this value is used for all rows (globally assigned field)
 }
 
 interface SortConfig {
@@ -43,6 +44,7 @@ interface SortConfig {
 interface PeopleTableProps {
     people: Person[];
     visibleFields: VisibleField[];
+    nameFieldKey?: string;
     selectedIds: Set<string>;
     sortConfig: SortConfig | null;
     searchQuery: string;
@@ -62,6 +64,7 @@ interface PeopleTableProps {
 export function PeopleTable({
     people,
     visibleFields,
+    nameFieldKey,
     selectedIds,
     sortConfig,
     searchQuery,
@@ -148,7 +151,7 @@ export function PeopleTable({
                                 }}
                             >
                                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                    {/* Row 1: Checkbox + Index + Assignment Status */}
+                                    {/* Row 1: Checkbox + Index + Name + Assignment Status */}
                                     <Stack direction="row" alignItems="center" gap={1} mb={1}>
                                         <Checkbox
                                             checked={selectedIds.has(person.id)}
@@ -158,6 +161,11 @@ export function PeopleTable({
                                         <Typography variant="caption" color="text.secondary" sx={{ minWidth: 24 }}>
                                             #{index + 1}
                                         </Typography>
+                                        {nameFieldKey && person.data[nameFieldKey] && (
+                                            <Typography variant="subtitle2" fontWeight={600} noWrap>
+                                                {person.data[nameFieldKey]}
+                                            </Typography>
+                                        )}
                                         <Box sx={{ flex: 1 }} />
                                         {/* Assignment Status Chip */}
                                         {person.assignedSpaceId ? (
@@ -181,7 +189,7 @@ export function PeopleTable({
                                                     {i18n.language === 'he' ? field.labelHe : field.labelEn}
                                                 </Typography>
                                                 <Typography variant="body2" noWrap>
-                                                    {person.data[field.key] || '-'}
+                                                    {field.globalValue || person.data[field.key] || '-'}
                                                 </Typography>
                                             </Box>
                                         ))}
@@ -251,6 +259,17 @@ export function PeopleTable({
                                 onChange={(e) => onSelectAll(e.target.checked)}
                             />
                         </TableCell>
+                        {nameFieldKey && (
+                            <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
+                                <TableSortLabel
+                                    active={sortConfig?.key === nameFieldKey}
+                                    direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'}
+                                    onClick={() => onSort(nameFieldKey)}
+                                >
+                                    {t('people.name')}
+                                </TableSortLabel>
+                            </TableCell>
+                        )}
                         {visibleFields.map((field) => (
                             <TableCell key={field.key} sx={{ fontWeight: 600, textAlign: 'start' }}>
                                 <TableSortLabel
@@ -279,7 +298,7 @@ export function PeopleTable({
                 <TableBody>
                     {people.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={visibleFields.length + 6} align="center" sx={{ py: 4 }}>
+                            <TableCell colSpan={visibleFields.length + (nameFieldKey ? 7 : 6)} align="center" sx={{ py: 4 }}>
                                 <Typography variant="body2" color="text.secondary">
                                     {searchQuery || assignmentFilter !== 'all'
                                         ? t('people.noResults')
@@ -294,6 +313,7 @@ export function PeopleTable({
                                 index={index + 1}
                                 person={person}
                                 visibleFields={visibleFields}
+                                nameFieldKey={nameFieldKey}
                                 isSelected={selectedIds.has(person.id)}
                                 translations={rowTranslations}
                                 onSelect={onSelectOne}

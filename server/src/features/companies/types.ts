@@ -41,8 +41,13 @@ export const updateCompanySchema = z.object({
     isActive: z.boolean().optional(),
 });
 
-/** Update AIMS config schema */
-export const updateAimsConfigSchema = aimsConfigSchema;
+/** Update AIMS config schema - password is optional (only updates if provided) */
+export const updateAimsConfigSchema = z.object({
+    baseUrl: z.string().url('Invalid AIMS base URL'),
+    cluster: z.string().optional(),
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(1, 'Password is required').optional(),
+});
 
 // ======================
 // Query Parameters
@@ -83,7 +88,7 @@ export interface UpdateAimsConfigDto {
     baseUrl: string;
     cluster?: string;
     username: string;
-    password: string;
+    password?: string; // Optional - only updates if provided
 }
 
 // ======================
@@ -101,7 +106,7 @@ export interface CompanyListItem {
     userCount: number;
     userRole: CompanyRole | null;
     allStoresAccess?: boolean;
-    hasAimsConfig: boolean;
+    aimsConfigured: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -125,6 +130,12 @@ export interface CompanyDetails {
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    // AIMS fields at top level for frontend compatibility
+    aimsBaseUrl: string | null;
+    aimsCluster: string | null;
+    aimsUsername: string | null;
+    aimsConfigured: boolean;
+    // Nested config for backwards compatibility
     aimsConfig?: {
         baseUrl: string | null;
         cluster: string | null;

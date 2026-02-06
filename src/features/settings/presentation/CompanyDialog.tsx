@@ -36,7 +36,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import CloudIcon from '@mui/icons-material/Cloud';
 import BusinessIcon from '@mui/icons-material/Business';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     companyService,
@@ -46,6 +46,7 @@ import {
     type UpdateAimsConfigDto
 } from '@shared/infrastructure/services/companyService';
 import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -105,12 +106,17 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
         success: boolean;
         message: string;
     } | null>(null);
+    
+    // Connected state - credentials locked when connected
+    const [isConnected, setIsConnected] = useState(false);
+    const healthCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Initialize form when dialog opens
     useEffect(() => {
         if (open) {
             // Reset connection test result
             setConnectionTestResult(null);
+            setIsConnected(false);
             
             if (company) {
                 // Edit mode - populate from company
@@ -131,6 +137,11 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 setAimsUsername(company.aimsUsername || '');
                 setAimsPassword(''); // Never show existing password
                 setCodeValid(true); // Existing code is always valid
+                
+                // If company has AIMS configured, check connection status
+                if (company.aimsConfigured) {
+                    checkConnectionStatus(company.id);
+                }
             } else {
                 // Create mode - reset form
                 setName('');
@@ -148,8 +159,65 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
             setError(null);
             setCodeError(null);
             setAimsChanged(false);
+        } else {
+            // Cleanup health check interval when dialog closes
+            if (healthCheckIntervalRef.current) {
+                clearInterval(healthCheckIntervalRef.current);
+                healthCheckIntervalRef.current = null;
+            }
         }
     }, [open, company]);
+    
+    // Check connection status silently
+    const checkConnectionStatus = async (companyId: string) => {
+        try {
+            const result = await fieldMappingService.testAimsConnection(companyId);
+            setIsConnected(result.success);
+            if (result.success) {
+                startHealthCheck(companyId);
+            }
+        } catch {
+            setIsConnected(false);
+        }
+    };
+    
+    // Start periodic health check
+    const startHealthCheck = (companyId: string) => {
+        // Clear existing interval
+        if (healthCheckIntervalRef.current) {
+            clearInterval(healthCheckIntervalRef.current);
+        }
+        
+        // Check every 30 seconds
+        healthCheckIntervalRef.current = setInterval(async () => {
+            try {
+                const result = await fieldMappingService.testAimsConnection(companyId);
+                if (!result.success) {
+                    setIsConnected(false);
+                    setConnectionTestResult({
+                        success: false,
+                        message: result.message,
+                    });
+                    // Stop health check on failure
+                    if (healthCheckIntervalRef.current) {
+                        clearInterval(healthCheckIntervalRef.current);
+                        healthCheckIntervalRef.current = null;
+                    }
+                }
+            } catch {
+                // Silently ignore health check errors unless it's a clear disconnect
+            }
+        }, 30000);
+    };
+    
+    // Cleanup health check on unmount
+    useEffect(() => {
+        return () => {
+            if (healthCheckIntervalRef.current) {
+                clearInterval(healthCheckIntervalRef.current);
+            }
+        };
+    }, []);
 
     // Code validation with debounce
     useEffect(() => {
@@ -204,18 +272,52 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
         setConnectionTestResult(null);
         
         try {
+            // If AIMS config was changed, save it first before testing
+            if (aimsChanged && aimsBaseUrl && aimsCluster && aimsUsername) {
+                const aimsData: UpdateAimsConfigDto = {
+                    baseUrl: aimsBaseUrl.trim(),
+                    cluster: aimsCluster.trim(),
+                    username: aimsUsername.trim()
+                };
+                if (aimsPassword) {
+                    aimsData.password = aimsPassword;
+                }
+                await companyService.updateAimsConfig(company.id, aimsData);
+                setAimsChanged(false);
+            }
+            
             const result = await fieldMappingService.testAimsConnection(company.id);
             setConnectionTestResult({
                 success: result.success,
                 message: result.message,
             });
+            
+            // Update connected state and start health check if successful
+            if (result.success) {
+                setIsConnected(true);
+                startHealthCheck(company.id);
+            } else {
+                setIsConnected(false);
+            }
         } catch (err: any) {
             setConnectionTestResult({
                 success: false,
                 message: err.response?.data?.message || t('settings.companies.connectionTestError'),
             });
+            setIsConnected(false);
         } finally {
             setTestingConnection(false);
+        }
+    };
+    
+    // Disconnect from AIMS (allows editing credentials)
+    const handleDisconnect = () => {
+        setIsConnected(false);
+        setConnectionTestResult(null);
+        // Stop health check
+        if (healthCheckIntervalRef.current) {
+            clearInterval(healthCheckIntervalRef.current);
+            healthCheckIntervalRef.current = null;
         }
     };
 
@@ -247,12 +349,12 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 // Update AIMS config if changed
                 if (aimsChanged && aimsBaseUrl && aimsCluster && aimsUsername) {
                     const aimsData: UpdateAimsConfigDto = {
-                        aimsBaseUrl: aimsBaseUrl.trim(),
-                        aimsCluster: aimsCluster.trim(),
-                        aimsUsername: aimsUsername.trim()
+                        baseUrl: aimsBaseUrl.trim(),
+                        cluster: aimsCluster.trim(),
+                        username: aimsUsername.trim()
                     };
                     if (aimsPassword) {
-                        aimsData.aimsPassword = aimsPassword;
+                        aimsData.password = aimsPassword;
                     }
                     await companyService.updateAimsConfig(company.id, aimsData);
                 }
@@ -269,10 +371,10 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 // Set AIMS config if provided
                 if (aimsBaseUrl && aimsCluster && aimsUsername && aimsPassword) {
                     await companyService.updateAimsConfig(newCompany.id, {
-                        aimsBaseUrl: aimsBaseUrl.trim(),
-                        aimsCluster: aimsCluster.trim(),
-                        aimsUsername: aimsUsername.trim(),
-                        aimsPassword: aimsPassword
+                        baseUrl: aimsBaseUrl.trim(),
+                        cluster: aimsCluster.trim(),
+                        username: aimsUsername.trim(),
+                        password: aimsPassword
                     });
                 }
             }
@@ -410,12 +512,19 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 {/* AIMS Config Tab */}
                 <TabPanel value={activeTab} index={1}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Alert severity="info" sx={{ mb: 1 }}>
-                            {t('settings.companies.aimsConfigInfo')}
-                        </Alert>
+                        {/* Connected status alert */}
+                        {isConnected ? (
+                            <Alert severity="success" sx={{ mb: 1 }}>
+                                {t('settings.companies.connectedToAims')}
+                            </Alert>
+                        ) : (
+                            <Alert severity="info" sx={{ mb: 1 }}>
+                                {t('settings.companies.aimsConfigInfo')}
+                            </Alert>
+                        )}
 
                         {/* Cluster Selector */}
-                        <FormControl fullWidth>
+                        <FormControl fullWidth disabled={isConnected}>
                             <InputLabel>{t('settings.companies.aimsCluster')}</InputLabel>
                             <Select
                                 value={aimsCluster || 'c1'}
@@ -450,6 +559,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                             value={aimsUsername}
                             onChange={(e) => handleAimsFieldChange(setAimsUsername)(e.target.value)}
                             placeholder="admin@company.com"
+                            disabled={isConnected}
                         />
 
                         {/* Password with separate visibility toggle for RTL support */}
@@ -463,9 +573,11 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                     ? t('settings.companies.aimsPasswordPlaceholder')
                                     : undefined}
                                 sx={{ flex: 1 }}
+                                disabled={isConnected}
                             />
                             <IconButton
                                 onClick={() => setShowPassword(!showPassword)}
+                                disabled={isConnected}
                                 sx={{ 
                                     mt: 1,
                                     border: 1,
@@ -492,12 +604,21 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
+                                    flexWrap: 'wrap',
+                                    gap: 1,
                                 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        {company.aimsConfigured ? (
+                                        {isConnected ? (
                                             <>
                                                 <CheckCircleIcon color="success" fontSize="small" />
                                                 <Typography variant="body2" color="success.main">
+                                                    {t('settings.companies.connectedToAims')}
+                                                </Typography>
+                                            </>
+                                        ) : company.aimsConfigured ? (
+                                            <>
+                                                <ErrorIcon color="warning" fontSize="small" />
+                                                <Typography variant="body2" color="warning.main">
                                                     {t('settings.companies.aimsConfigured')}
                                                 </Typography>
                                             </>
@@ -511,18 +632,34 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                         )}
                                     </Box>
                                     
-                                    {/* Test Connection Button */}
-                                    {company.aimsConfigured && !aimsChanged && (
-                                        <Button
-                                            size="small"
-                                            variant="outlined"
-                                            startIcon={testingConnection ? <CircularProgress size={14} /> : <RefreshIcon />}
-                                            onClick={handleTestConnection}
-                                            disabled={testingConnection}
-                                        >
-                                            {t('settings.companies.testConnection')}
-                                        </Button>
-                                    )}
+                                    {/* Action Buttons */}
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        {/* Disconnect Button - only when connected */}
+                                        {isConnected && (
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="warning"
+                                                startIcon={<LinkOffIcon />}
+                                                onClick={handleDisconnect}
+                                            >
+                                                {t('settings.companies.disconnect')}
+                                            </Button>
+                                        )}
+                                        
+                                        {/* Test Connection Button - when not connected and has credentials */}
+                                        {!isConnected && (company.aimsConfigured || (aimsBaseUrl && aimsCluster && aimsUsername)) && (
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                startIcon={testingConnection ? <CircularProgress size={14} /> : <RefreshIcon />}
+                                                onClick={handleTestConnection}
+                                                disabled={testingConnection}
+                                            >
+                                                {aimsChanged ? t('settings.companies.saveAndTest') : t('settings.companies.testConnection')}
+                                            </Button>
+                                        )}
+                                    </Box>
                                 </Box>
 
                                 {/* Connection Test Result */}
@@ -537,7 +674,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                                 )}
 
                                 {/* Pending Changes Warning */}
-                                {aimsChanged && (
+                                {aimsChanged && !isConnected && (
                                     <Alert severity="info" sx={{ mt: 1 }}>
                                         {t('settings.companies.aimsChangesPending')}
                                     </Alert>

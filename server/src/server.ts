@@ -1,11 +1,20 @@
 import app from './app.js';
 import { config, prisma, closeRedis } from './config/index.js';
+import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProcessor.js';
+import { aimsVerificationJob } from './shared/infrastructure/jobs/AimsVerificationJob.js';
 
 const startServer = async () => {
     try {
         // Test database connection
         await prisma.$connect();
         console.log('✅ Database connected');
+
+        // Start background jobs
+        syncQueueProcessor.start(10000); // Process sync queue every 10 seconds
+        console.log('✅ Sync Queue Processor started');
+        
+        aimsVerificationJob.start(5 * 60 * 1000); // Verify AIMS every 5 minutes
+        console.log('✅ AIMS Verification Job started');
 
         // Start HTTP server
         const server = app.listen(config.port, () => {
@@ -28,6 +37,13 @@ const startServer = async () => {
         // Graceful shutdown
         const shutdown = async (signal: string) => {
             console.log(`\n${signal} received. Shutting down gracefully...`);
+
+            // Stop background jobs first
+            syncQueueProcessor.stop();
+            console.log('Sync Queue Processor stopped');
+            
+            aimsVerificationJob.stop();
+            console.log('AIMS Verification Job stopped');
 
             server.close(async () => {
                 console.log('HTTP server closed');

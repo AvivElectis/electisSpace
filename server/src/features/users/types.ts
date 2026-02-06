@@ -10,7 +10,7 @@ import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
 // Constants
 // ======================
 
-export const AVAILABLE_FEATURES = ['dashboard', 'spaces', 'conference', 'people'] as const;
+export const AVAILABLE_FEATURES = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings'] as const;
 export type Feature = typeof AVAILABLE_FEATURES[number];
 
 const COMPANY_CODE_REGEX = /^[A-Z]{3,}$/;
@@ -57,6 +57,7 @@ export const createUserSchema = z.object({
     email: z.string().email('Invalid email address'),
     firstName: z.string().max(100).optional(),
     lastName: z.string().max(100).optional(),
+    phone: z.string().max(50).optional().nullable(),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     company: companyRefSchema,
     allStoresAccess: z.boolean().default(false),

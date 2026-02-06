@@ -52,7 +52,7 @@ export const adminService = {
                 name: c.name,
                 location: c.location,
                 isActive: c.isActive,
-                hasAimsConfig: !!(c.aimsBaseUrl && c.aimsUsername),
+                aimsConfigured: !!(c.aimsBaseUrl && c.aimsUsername),
                 storesCount: c._count.stores,
                 usersCount: c._count.userCompanies,
                 createdAt: c.createdAt,

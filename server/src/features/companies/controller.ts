@@ -188,6 +188,30 @@ export const companyController = {
     },
 
     /**
+     * POST /companies/:id/aims/test
+     * Test AIMS connection
+     */
+    async testAimsConnection(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+            const user = getUserContext(req);
+            
+            // Check management access
+            if (!canManageCompany(user, id)) {
+                throw forbidden('You do not have permission to test AIMS connection');
+            }
+            
+            const result = await companyService.testAimsConnection(id);
+            res.json(result);
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                return next(notFound('Company'));
+            }
+            next(error);
+        }
+    },
+
+    /**
      * DELETE /companies/:id
      * Delete a company (Platform Admin only)
      */

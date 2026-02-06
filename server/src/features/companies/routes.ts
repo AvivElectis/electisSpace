@@ -54,6 +54,12 @@ router.patch('/:id', companyController.update);
 router.patch('/:id/aims', companyController.updateAimsConfig);
 
 /**
+ * POST /companies/:id/aims/test
+ * Test AIMS connection
+ */
+router.post('/:id/aims/test', companyController.testAimsConnection);
+
+/**
  * DELETE /companies/:id
  * Delete a company (Platform Admin only)
  */

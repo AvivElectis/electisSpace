@@ -47,7 +47,7 @@ export interface CompanyListItem {
     name: string;
     location: string | null;
     isActive: boolean;
-    hasAimsConfig: boolean;
+    aimsConfigured: boolean;
     storesCount: number;
     usersCount: number;
     createdAt: Date;

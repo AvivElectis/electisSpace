@@ -1,11 +1,14 @@
 /**
- * Enhanced User Dialog
+ * Enhanced User Dialog - Unified
  * 
  * @description Comprehensive dialog for creating, editing users, AND self-profile editing with:
+ * - Beautiful profile header with avatar, name, role
+ * - Edit mode toggle - fields disabled until user clicks edit
  * - Company selection (with inline creation for PLATFORM_ADMIN)
  * - Store assignments with roles and features
  * - Multi-step flow for creating new users
- * - Profile mode for users to edit their own profile (from header avatar)
+ * - Account statistics display
+ * - Password management (change for self, reset for admin)
  * 
  * This is the unified user edit dialog used both in Settings and for profile editing.
  */
@@ -42,6 +45,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LoginIcon from '@mui/icons-material/Login';
+import EditIcon from '@mui/icons-material/Edit';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useState, useEffect, useMemo } from 'react';
@@ -106,6 +110,9 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
     const [profileData, setProfileData] = useState<UserData | null>(null);
     const [profileLoading, setProfileLoading] = useState(false);
 
+    // Edit mode toggle - fields disabled until user clicks edit
+    const [isEditing, setIsEditing] = useState(false);
+
     // Stepper state (only for create mode)
     const [activeStep, setActiveStep] = useState(0);
     
@@ -139,6 +146,10 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
 
     // Store Assignments
     const [storeAssignments, setStoreAssignments] = useState<StoreAssignmentData[]>([]);
+
+    // Helper: get the user data (from fetched user data, profile data, or user prop)
+    const [fetchedUserData, setFetchedUserData] = useState<UserData | null>(null);
+    const userData = profileMode ? profileData : (fetchedUserData || user);
 
     // Fetch profile data in profile mode
     useEffect(() => {
@@ -184,20 +195,43 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
         }
     }, [open, profileMode]);
 
+    // Fetch full user data in edit mode (to get companies)
+    useEffect(() => {
+        if (open && !profileMode && user?.id) {
+            setProfileLoading(true);
+            setError(null);
+            api.get<UserData>(`/users/${user.id}`)
+                .then(response => {
+                    setFetchedUserData(response.data);
+                })
+                .catch(err => {
+                    console.error('Failed to fetch user details:', err);
+                    // Fall back to the passed user prop
+                    setFetchedUserData(null);
+                })
+                .finally(() => {
+                    setProfileLoading(false);
+                });
+        } else if (!open) {
+            setFetchedUserData(null);
+        }
+    }, [open, profileMode, user?.id]);
+
     // Initialize form when dialog opens or user changes (non-profile mode)
     useEffect(() => {
         if (open && !profileMode) {
-            if (user) {
+            const userToUse = fetchedUserData || user;
+            if (userToUse) {
                 // Edit mode - populate from user data
-                setEmail(user.email);
-                setFirstName(user.firstName || '');
-                setLastName(user.lastName || '');
-                setPhone(user.phone || '');
-                setIsActive(user.isActive);
+                setEmail(userToUse.email);
+                setFirstName(userToUse.firstName || '');
+                setLastName(userToUse.lastName || '');
+                setPhone(userToUse.phone || '');
+                setIsActive(userToUse.isActive);
                 setPassword('');
 
                 // Get first company assignment (for now, we support one company per user in UI)
-                const firstCompanyAssignment = user.companies?.[0];
+                const firstCompanyAssignment = userToUse.companies?.[0];
                 if (firstCompanyAssignment) {
                     setSelectedCompanyId(firstCompanyAssignment.company.id);
                     setCompanyRole(firstCompanyAssignment.role);
@@ -205,7 +239,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                 }
 
                 // Get store assignments for this company
-                const userStoreAssignments: StoreAssignmentData[] = (user.stores || [])
+                const userStoreAssignments: StoreAssignmentData[] = (userToUse.stores || [])
                     .filter(s => !firstCompanyAssignment || s.store.companyId === firstCompanyAssignment.company.id)
                     .map(s => ({
                         storeId: s.store.id,
@@ -235,14 +269,15 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             setSuccess(null);
         }
         
-        // Reset password fields when dialog opens
+        // Reset password fields and edit mode when dialog opens
         if (open) {
+            setIsEditing(false); // Start in view mode
             setShowPasswordSection(false);
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         }
-    }, [open, user, profileMode]);
+    }, [open, user, fetchedUserData, profileMode]);
 
     // Get accessible companies for non-platform admins
     const accessibleCompanyId = useMemo(() => {
@@ -296,7 +331,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
         setActiveStep(prev => prev - 1);
     };
 
-    // Handle password change (profile mode only)
+    // Handle password change (profile mode only - requires current password)
     const handleChangePassword = async () => {
         if (newPassword !== confirmPassword) {
             setError(t('settings.users.passwordMismatch'));
@@ -356,14 +391,16 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                     });
                 }
                 
+                setIsEditing(false);
                 onSave();
                 return;
             }
 
             let companyId = selectedCompanyId;
 
-            // Create new company if needed
-            if (isCreatingCompany && !isEdit) {
+            // Create new company if needed - ONLY for EDIT mode
+            // For CREATE mode, the backend handles company creation via the {type: 'new'} format
+            if (isCreatingCompany && isEdit && user) {
                 const createCompanyDto: CreateCompanyDto = {
                     code: newCompanyData.code,
                     name: newCompanyData.name,
@@ -374,21 +411,54 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             }
 
             if (isEdit && user) {
+                // Validate password reset if entered
+                if (newPassword && newPassword !== confirmPassword) {
+                    setError(t('settings.users.passwordMismatch'));
+                    setSubmitting(false);
+                    return;
+                }
+
                 // Update existing user
-                await api.patch(`/users/${user.id}`, {
+                const updateData: Record<string, any> = {
                     firstName: firstName.trim() || null,
                     lastName: lastName.trim() || null,
                     isActive
-                });
+                };
 
-                // Update company assignment if changed
-                const existingCompanyAssignment = user.companies?.[0];
-                if (existingCompanyAssignment && companyId) {
-                    // Update company role
-                    await api.patch(`/users/${user.id}/companies/${companyId}`, {
-                        role: companyRole,
-                        allStoresAccess
-                    });
+                // Add password reset if provided
+                if (newPassword) {
+                    updateData.password = newPassword;
+                }
+
+                await api.patch(`/users/${user.id}`, updateData);
+
+                // Handle company assignment - use fetchedUserData which has companies
+                const userWithCompanies = fetchedUserData || user;
+                const existingCompanyAssignment = userWithCompanies.companies?.find(c => c.company.id === companyId);
+                const hasAnyCompanyAssignment = userWithCompanies.companies && userWithCompanies.companies.length > 0;
+                
+                if (companyId) {
+                    if (existingCompanyAssignment) {
+                        // Already assigned to this company - just update role
+                        await api.patch(`/users/${user.id}/companies/${companyId}`, {
+                            role: companyRole,
+                            allStoresAccess
+                        });
+                    } else if (hasAnyCompanyAssignment) {
+                        // Assigned to different company(ies) - add new assignment
+                        await api.post(`/users/${user.id}/companies`, {
+                            company: { type: 'existing', id: companyId },
+                            allStoresAccess,
+                            isCompanyAdmin: companyRole === 'COMPANY_ADMIN'
+                        });
+                    } else {
+                        // No existing company - assign to new one
+                        await api.post(`/users/${user.id}/companies`, {
+                            company: { type: 'existing', id: companyId },
+                            allStoresAccess,
+                            isCompanyAdmin: companyRole === 'COMPANY_ADMIN'
+                        });
+                    }
                 }
 
                 // Update store assignments
@@ -420,25 +490,45 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                     }
                 }
             } else {
-                // Create new user
-                const createUserData = {
+                // Create new user - format data for backend schema
+                const createUserData: Record<string, any> = {
                     email: email.trim(),
-                    firstName: firstName.trim() || null,
-                    lastName: lastName.trim() || null,
+                    firstName: firstName.trim() || undefined,
+                    lastName: lastName.trim() || undefined,
+                    phone: phone.trim() || undefined,
                     password,
-                    companyId,
-                    companyRole,
                     allStoresAccess,
-                    stores: allStoresAccess ? [] : storeAssignments.map(a => ({
-                        storeId: a.storeId,
+                };
+
+                // Format company - backend expects {type: 'existing', id} or {type: 'new', code, name}
+                if (isCreatingCompany) {
+                    createUserData.company = {
+                        type: 'new',
+                        code: newCompanyData.code,
+                        name: newCompanyData.name,
+                        location: newCompanyData.location || undefined,
+                    };
+                } else {
+                    createUserData.company = {
+                        type: 'existing',
+                        id: companyId,
+                    };
+                }
+
+                // Format stores - backend expects {type: 'existing', id, role, features}
+                if (!allStoresAccess && storeAssignments.length > 0) {
+                    createUserData.stores = storeAssignments.map(a => ({
+                        type: 'existing',
+                        id: a.storeId,
                         role: a.role,
                         features: a.features
-                    }))
-                };
+                    }));
+                }
 
                 await api.post('/users', createUserData);
             }
 
+            setIsEditing(false);
             onSave();
         } catch (err: any) {
             console.error('Failed to save user:', err);
@@ -451,145 +541,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
         }
     };
 
-    // Render step content
-    const renderStepContent = (step: number) => {
-        switch (step) {
-            case 0:
-                return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                            label={t('auth.email')}
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={isEdit}
-                            required
-                            fullWidth
-                            autoFocus={!isEdit}
-                        />
-
-                        <Box sx={{ 
-                            display: 'flex', 
-                            flexDirection: { xs: 'column', sm: 'row' },
-                            gap: 2 
-                        }}>
-                            <TextField
-                                label={t('auth.firstName')}
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                fullWidth
-                            />
-                            <TextField
-                                label={t('auth.lastName')}
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                fullWidth
-                            />
-                        </Box>
-
-                        <TextField
-                            label={t('common.phone')}
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            fullWidth
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <PhoneIcon fontSize="small" />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-
-                        {!isEdit && (
-                            <TextField
-                                label={t('auth.password')}
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                fullWidth
-                                helperText={t('auth.passwordMinLength')}
-                            />
-                        )}
-
-                        {isEdit && !profileMode && (
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={isActive}
-                                        onChange={(e) => setIsActive(e.target.checked)}
-                                    />
-                                }
-                                label={t('common.status.active')}
-                            />
-                        )}
-                    </Box>
-                );
-
-            case 1:
-                return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {/* Company Selector */}
-                        <CompanySelector
-                            value={selectedCompanyId}
-                            onChange={handleCompanyChange}
-                            isCreatingNew={isCreatingCompany}
-                            onCreateModeChange={setIsCreatingCompany}
-                            newCompanyData={newCompanyData}
-                            onNewCompanyDataChange={setNewCompanyData}
-                            allowCreate={isPlatformAdmin}
-                            disabled={!isPlatformAdmin && !!accessibleCompanyId}
-                        />
-
-                        <Divider sx={{ my: 1 }} />
-
-                        {/* Company Role */}
-                        <FormControl fullWidth>
-                            <InputLabel>{t('settings.users.companyRole')}</InputLabel>
-                            <Select
-                                value={companyRole}
-                                label={t('settings.users.companyRole')}
-                                onChange={(e) => setCompanyRole(e.target.value as CompanyRole)}
-                            >
-                                {COMPANY_ROLES.map(role => (
-                                    <MenuItem key={role} value={role}>
-                                        <Box>
-                                            <Typography variant="body1">
-                                                {t(`roles.${role.toLowerCase()}`)}
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {role === 'COMPANY_ADMIN' 
-                                                    ? t('settings.users.companyAdminDesc')
-                                                    : t('settings.users.viewerDesc')
-                                                }
-                                            </Typography>
-                                        </Box>
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Box>
-                );
-
-            case 2:
-                return (
-                    <StoreAssignment
-                        companyId={isCreatingCompany ? '' : selectedCompanyId}
-                        companyRole={companyRole}
-                        allStoresAccess={allStoresAccess}
-                        onAllStoresAccessChange={setAllStoresAccess}
-                        assignments={storeAssignments}
-                        onAssignmentsChange={setStoreAssignments}
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
-
-    // Helper functions for profile mode
+    // Helper functions
     const getInitials = () => {
         if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
         if (email) return email.substring(0, 2).toUpperCase();
@@ -597,25 +549,451 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
     };
 
     const getRoleBadgeColor = () => {
-        const data = profileMode ? profileData : user;
-        if (data?.globalRole === 'PLATFORM_ADMIN') return 'error';
-        const companyRole = data?.companies?.[0]?.role;
-        if (companyRole === 'SUPER_USER') return 'warning';
-        if (companyRole === 'COMPANY_ADMIN') return 'primary';
+        if (userData?.globalRole === 'PLATFORM_ADMIN') return 'error';
+        const role = userData?.companies?.[0]?.role;
+        if (role === 'COMPANY_ADMIN') return 'primary';
         return 'default';
     };
 
     const getRoleLabel = () => {
-        const data = profileMode ? profileData : user;
-        if (data?.globalRole === 'PLATFORM_ADMIN') return t('settings.users.roles.platformAdmin');
-        const companyRole = data?.companies?.[0]?.role;
-        if (companyRole === 'SUPER_USER') return t('settings.users.roles.superUser');
-        if (companyRole === 'COMPANY_ADMIN') return t('settings.users.roles.companyAdmin');
+        if (userData?.globalRole === 'PLATFORM_ADMIN') return t('settings.users.roles.platformAdmin');
+        const role = userData?.companies?.[0]?.role;
+        if (role === 'COMPANY_ADMIN') return t('settings.users.roles.companyAdmin');
         return t('settings.users.roles.viewer');
     };
 
-    // Profile mode - self editing layout
-    if (profileMode) {
+    // Render the profile header section
+    const renderProfileHeader = () => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: '1.5rem' }}>
+                {getInitials()}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+                <Typography variant="h6">
+                    {firstName || lastName ? `${firstName} ${lastName}`.trim() : email || t('settings.users.newUser')}
+                </Typography>
+                {email && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                        <EmailIcon fontSize="small" color="action" />
+                        <Typography variant="body2" color="text.secondary">
+                            {email}
+                        </Typography>
+                    </Box>
+                )}
+                {userData && (
+                    <Chip
+                        label={getRoleLabel()}
+                        color={getRoleBadgeColor() as any}
+                        size="small"
+                        sx={{ mt: 1 }}
+                    />
+                )}
+            </Box>
+            {/* Edit button for edit mode */}
+            {isEdit && !isEditing && (
+                <IconButton
+                    color="primary"
+                    onClick={() => setIsEditing(true)}
+                    sx={{ 
+                        border: 1, 
+                        borderColor: 'primary.main',
+                        '&:hover': { bgcolor: 'primary.light', color: 'primary.contrastText' }
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            )}
+        </Box>
+    );
+
+    // Render account statistics
+    const renderAccountStats = () => {
+        if (!userData) return null;
+        
+        return (
+            <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {t('settings.users.accountStats')}
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 6 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LoginIcon fontSize="small" color="action" />
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                    {t('settings.users.loginCount')}
+                                </Typography>
+                                <Typography variant="body2">
+                                    {userData?.loginCount || 0}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <AccessTimeIcon fontSize="small" color="action" />
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                    {t('settings.users.lastLogin')}
+                                </Typography>
+                                <Typography variant="body2">
+                                    {userData?.lastLogin
+                                        ? formatDistanceToNow(new Date(userData.lastLogin), { addSuffix: true })
+                                        : t('common.never')
+                                    }
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <AccessTimeIcon fontSize="small" color="action" />
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                    {t('settings.users.memberSince')}
+                                </Typography>
+                                <Typography variant="body2">
+                                    {userData?.createdAt
+                                        ? new Date(userData.createdAt).toLocaleDateString()
+                                        : '-'
+                                    }
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>
+        );
+    };
+
+    // Render basic info section
+    const renderBasicInfo = () => (
+        <Box>
+            <Typography variant="subtitle2" color="primary" gutterBottom>
+                {t('settings.users.basicInfo')}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Email - always disabled in edit mode, only editable in create mode */}
+                <TextField
+                    label={t('auth.email')}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isEdit}
+                    required={!isEdit}
+                    fullWidth
+                    size="small"
+                />
+
+                <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2 
+                }}>
+                    <TextField
+                        label={t('common.firstName')}
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        fullWidth
+                        size="small"
+                        disabled={isEdit && !isEditing}
+                    />
+                    <TextField
+                        label={t('common.lastName')}
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        fullWidth
+                        size="small"
+                        disabled={isEdit && !isEditing}
+                    />
+                </Box>
+
+                <TextField
+                    label={t('common.phone')}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    fullWidth
+                    size="small"
+                    disabled={isEdit && !isEditing}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <PhoneIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+
+                {/* Password only for create mode */}
+                {!isEdit && (
+                    <TextField
+                        label={t('auth.password')}
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        fullWidth
+                        size="small"
+                        helperText={t('auth.passwordMinLength')}
+                    />
+                )}
+
+                {/* Active toggle (admin editing other users only) */}
+                {isEdit && !profileMode && isEditing && (
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={isActive}
+                                onChange={(e) => setIsActive(e.target.checked)}
+                            />
+                        }
+                        label={t('common.status.active')}
+                    />
+                )}
+            </Box>
+        </Box>
+    );
+
+    // Render company assignment section
+    const renderCompanySection = () => (
+        <Box>
+            <Typography variant="subtitle2" color="primary" gutterBottom>
+                {t('settings.users.companyAssignment')}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Company Selector */}
+                <CompanySelector
+                    value={selectedCompanyId}
+                    onChange={handleCompanyChange}
+                    isCreatingNew={isCreatingCompany}
+                    onCreateModeChange={setIsCreatingCompany}
+                    newCompanyData={newCompanyData}
+                    onNewCompanyDataChange={setNewCompanyData}
+                    allowCreate={isPlatformAdmin}
+                    disabled={(isEdit && !isEditing) || (!isPlatformAdmin && !!accessibleCompanyId)}
+                />
+
+                <Divider sx={{ my: 1 }} />
+
+                {/* Company Role */}
+                <FormControl fullWidth size="small" disabled={isEdit && !isEditing}>
+                    <InputLabel>{t('settings.users.companyRole')}</InputLabel>
+                    <Select
+                        value={companyRole}
+                        label={t('settings.users.companyRole')}
+                        onChange={(e) => setCompanyRole(e.target.value as CompanyRole)}
+                    >
+                        {COMPANY_ROLES.map(role => (
+                            <MenuItem key={role} value={role}>
+                                <Box>
+                                    <Typography variant="body1">
+                                        {t(`roles.${role.toLowerCase()}`)}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {role === 'COMPANY_ADMIN' 
+                                            ? t('settings.users.companyAdminDesc')
+                                            : t('settings.users.viewerDesc')
+                                        }
+                                    </Typography>
+                                </Box>
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </Box>
+        </Box>
+    );
+
+    // Render store assignment section
+    const renderStoreSection = () => (
+        <Box>
+            <Typography variant="subtitle2" color="primary" gutterBottom>
+                {t('settings.users.storeAssignments')}
+            </Typography>
+            <StoreAssignment
+                companyId={isCreatingCompany ? '' : selectedCompanyId}
+                companyRole={companyRole}
+                allStoresAccess={allStoresAccess}
+                onAllStoresAccessChange={setAllStoresAccess}
+                assignments={storeAssignments}
+                onAssignmentsChange={setStoreAssignments}
+                disabled={isEdit && !isEditing}
+            />
+        </Box>
+    );
+
+    // Render password section
+    const renderPasswordSection = () => {
+        // Profile mode - requires current password
+        if (profileMode) {
+            return (
+                <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle2" color="primary">
+                            {t('settings.users.password')}
+                        </Typography>
+                        <Button
+                            size="small"
+                            onClick={() => setShowPasswordSection(!showPasswordSection)}
+                        >
+                            {showPasswordSection ? t('common.cancel') : t('settings.users.changePassword')}
+                        </Button>
+                    </Box>
+
+                    {showPasswordSection && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                            {/* Current Password */}
+                            <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
+                                <TextField
+                                    label={t('settings.users.currentPassword')}
+                                    type={showCurrentPassword ? 'text' : 'password'}
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                />
+                                <IconButton
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    sx={{ 
+                                        mt: 0.5,
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                        width: 40,
+                                        height: 40
+                                    }}
+                                >
+                                    {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </Box>
+                            {/* New Password */}
+                            <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
+                                <TextField
+                                    label={t('settings.users.newPassword')}
+                                    type={showNewPassword ? 'text' : 'password'}
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    size="small"
+                                    helperText={t('settings.users.passwordRequirements')}
+                                    sx={{ flex: 1 }}
+                                />
+                                <IconButton
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    sx={{ 
+                                        mt: 0.5,
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                        width: 40,
+                                        height: 40
+                                    }}
+                                >
+                                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </Box>
+                            {/* Confirm Password */}
+                            <TextField
+                                label={t('settings.users.confirmPassword')}
+                                type="password"
+                                fullWidth
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                size="small"
+                                error={confirmPassword.length > 0 && newPassword !== confirmPassword}
+                                helperText={
+                                    confirmPassword.length > 0 && newPassword !== confirmPassword
+                                        ? t('settings.users.passwordMismatch')
+                                        : ''
+                                }
+                            />
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                onClick={handleChangePassword}
+                                disabled={submitting || !currentPassword || !newPassword || newPassword !== confirmPassword}
+                            >
+                                {submitting ? <CircularProgress size={20} /> : t('settings.users.changePassword')}
+                            </Button>
+                        </Box>
+                    )}
+                </Box>
+            );
+        }
+
+        // Admin mode - reset password without current password
+        // Same UI as profile mode: button to expand, then inputs + submit
+        return (
+            <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="subtitle2" color="primary">
+                        {t('settings.users.resetPassword')}
+                    </Typography>
+                    <Button
+                        size="small"
+                        onClick={() => setShowPasswordSection(!showPasswordSection)}
+                    >
+                        {showPasswordSection ? t('common.cancel') : t('settings.users.resetPassword')}
+                    </Button>
+                </Box>
+
+                {showPasswordSection && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        {/* New Password */}
+                        <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
+                            <TextField
+                                label={t('settings.users.newPassword')}
+                                type={showNewPassword ? 'text' : 'password'}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                size="small"
+                                helperText={t('settings.users.passwordRequirements')}
+                                sx={{ flex: 1 }}
+                            />
+                            <IconButton
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                sx={{ 
+                                    mt: 0.5,
+                                    border: 1,
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    width: 40,
+                                    height: 40
+                                }}
+                            >
+                                {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                        </Box>
+                        {/* Confirm Password */}
+                        <TextField
+                            label={t('settings.users.confirmPassword')}
+                            type="password"
+                            fullWidth
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            size="small"
+                            error={confirmPassword.length > 0 && newPassword !== confirmPassword}
+                            helperText={
+                                confirmPassword.length > 0 && newPassword !== confirmPassword
+                                    ? t('settings.users.passwordMismatch')
+                                    : ''
+                            }
+                        />
+                        <Button
+                            variant="contained"
+                            color="warning"
+                            onClick={handleSubmit}
+                            disabled={submitting || !newPassword || newPassword !== confirmPassword}
+                        >
+                            {submitting ? <CircularProgress size={20} /> : t('settings.users.resetPassword')}
+                        </Button>
+                    </Box>
+                )}
+            </Box>
+        );
+    };
+
+    // Edit/Profile mode - unified layout
+    if (isEdit) {
         return (
             <Dialog 
                 open={open} 
@@ -628,7 +1006,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             >
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <PersonIcon />
-                    {t('settings.users.editProfile')}
+                    {profileMode ? t('settings.users.editProfile') : t('settings.users.editUser')}
                 </DialogTitle>
 
                 <DialogContent dividers>
@@ -641,355 +1019,57 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                             {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
                             {success && <Alert severity="success" onClose={() => setSuccess(null)}>{success}</Alert>}
                             
-                            {/* Profile Header */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: '1.5rem' }}>
-                                    {getInitials()}
-                                </Avatar>
-                                <Box sx={{ flex: 1 }}>
-                                    <Typography variant="h6">
-                                        {firstName || lastName ? `${firstName} ${lastName}`.trim() : email}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                        <EmailIcon fontSize="small" color="action" />
-                                        <Typography variant="body2" color="text.secondary">
-                                            {email}
-                                        </Typography>
-                                    </Box>
-                                    <Chip
-                                        label={getRoleLabel()}
-                                        color={getRoleBadgeColor() as any}
-                                        size="small"
-                                        sx={{ mt: 1 }}
-                                    />
-                                </Box>
-                            </Box>
+                            {/* Profile Header with Edit button */}
+                            {renderProfileHeader()}
 
                             <Divider />
 
                             {/* Basic Info Section */}
-                            <Typography variant="subtitle2" color="text.secondary">
-                                {t('settings.users.basicInfo')}
-                            </Typography>
-                            
-                            <Grid container spacing={2}>
-                                <Grid size={{ xs: 12, sm: 6 }}>
-                                    <TextField
-                                        label={t('common.firstName')}
-                                        fullWidth
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        size="small"
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 12, sm: 6 }}>
-                                    <TextField
-                                        label={t('common.lastName')}
-                                        fullWidth
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        size="small"
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 12 }}>
-                                    <TextField
-                                        label={t('common.phone')}
-                                        fullWidth
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        size="small"
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <PhoneIcon fontSize="small" />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                </Grid>
-                            </Grid>
+                            {renderBasicInfo()}
 
                             <Divider />
 
-                            {/* Account Stats Section */}
-                            <Typography variant="subtitle2" color="text.secondary">
-                                {t('settings.users.accountStats')}
-                            </Typography>
-                            
-                            <Grid container spacing={2}>
-                                <Grid size={{ xs: 6 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <LoginIcon fontSize="small" color="action" />
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {t('settings.users.loginCount')}
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {profileData?.loginCount || 0}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <AccessTimeIcon fontSize="small" color="action" />
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {t('settings.users.lastLogin')}
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {profileData?.lastLogin
-                                                    ? formatDistanceToNow(new Date(profileData.lastLogin), { addSuffix: true })
-                                                    : t('common.never')
-                                                }
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <AccessTimeIcon fontSize="small" color="action" />
-                                        <Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {t('settings.users.memberSince')}
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                {profileData?.createdAt
-                                                    ? new Date(profileData.createdAt).toLocaleDateString()
-                                                    : '-'
-                                                }
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Grid>
-                            </Grid>
+                            {/* Account Stats */}
+                            {renderAccountStats()}
+
+                            {/* Company Section - only for admin editing or if user has companies */}
+                            {(!profileMode || (userData?.companies && userData.companies.length > 0)) && (
+                                <>
+                                    <Divider />
+                                    {renderCompanySection()}
+                                </>
+                            )}
+
+                            {/* Store Section - only for admin editing or if user has stores */}
+                            {(!profileMode || (userData?.stores && userData.stores.length > 0)) && (
+                                <>
+                                    <Divider />
+                                    {renderStoreSection()}
+                                </>
+                            )}
 
                             <Divider />
 
                             {/* Password Section */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    {t('settings.users.password')}
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    onClick={() => setShowPasswordSection(!showPasswordSection)}
-                                >
-                                    {showPasswordSection ? t('common.cancel') : t('settings.users.changePassword')}
-                                </Button>
-                            </Box>
-
-                            {showPasswordSection && (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <TextField
-                                        label={t('settings.users.currentPassword')}
-                                        type={showCurrentPassword ? 'text' : 'password'}
-                                        fullWidth
-                                        value={currentPassword}
-                                        onChange={(e) => setCurrentPassword(e.target.value)}
-                                        size="small"
-                                        InputProps={{
-                                            endAdornment: (
-                                                <InputAdornment position={isRtl ? 'start' : 'end'}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                                    >
-                                                        {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                    <TextField
-                                        label={t('settings.users.newPassword')}
-                                        type={showNewPassword ? 'text' : 'password'}
-                                        fullWidth
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        size="small"
-                                        helperText={t('settings.users.passwordRequirements')}
-                                        InputProps={{
-                                            endAdornment: (
-                                                <InputAdornment position={isRtl ? 'start' : 'end'}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setShowNewPassword(!showNewPassword)}
-                                                    >
-                                                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                    <TextField
-                                        label={t('settings.users.confirmPassword')}
-                                        type="password"
-                                        fullWidth
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        size="small"
-                                        error={confirmPassword.length > 0 && newPassword !== confirmPassword}
-                                        helperText={
-                                            confirmPassword.length > 0 && newPassword !== confirmPassword
-                                                ? t('settings.users.passwordMismatch')
-                                                : ''
-                                        }
-                                    />
-                                    <Button
-                                        variant="contained"
-                                        color="warning"
-                                        onClick={handleChangePassword}
-                                        disabled={submitting || !currentPassword || !newPassword || newPassword !== confirmPassword}
-                                    >
-                                        {submitting ? <CircularProgress size={20} /> : t('settings.users.changePassword')}
-                                    </Button>
-                                </Box>
-                            )}
-
-                            {/* Company & Store Assignments (Read Only) */}
-                            {((profileData?.companies?.length ?? 0) > 0 || (profileData?.stores?.length ?? 0) > 0) && (
-                                <>
-                                    <Divider />
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        {t('settings.users.assignments')}
-                                    </Typography>
-                                    
-                                    {profileData?.companies?.map((uc) => (
-                                        <Box key={uc.company.id} sx={{ pl: 1 }}>
-                                            <Typography variant="body2">
-                                                <strong>{uc.company.name}</strong> ({uc.company.code})
-                                                <Chip label={uc.role} size="small" sx={{ ml: 1 }} />
-                                            </Typography>
-                                        </Box>
-                                    ))}
-                                    
-                                    {profileData?.stores?.map((us) => (
-                                        <Box key={us.store.id} sx={{ pl: 2 }}>
-                                            <Typography variant="caption" color="text.secondary">
-                                                └ {us.store.name} ({us.store.code}) - {us.role}
-                                            </Typography>
-                                        </Box>
-                                    ))}
-                                </>
-                            )}
+                            {renderPasswordSection()}
                         </Box>
                     )}
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, py: 2 }}>
                     <Button onClick={onClose} disabled={submitting} color="inherit">
-                        {t('common.close')}
+                        {isEditing ? t('common.cancel') : t('common.close')}
                     </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleSubmit}
-                        disabled={submitting || profileLoading}
-                        startIcon={submitting ? <CircularProgress size={16} /> : null}
-                    >
-                        {t('common.save')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        );
-    }
-
-    // For edit mode (admin editing user), show simplified layout without stepper
-    if (isEdit) {
-        return (
-            <Dialog 
-                open={open} 
-                onClose={submitting ? undefined : onClose}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{
-                    sx: { maxHeight: '90vh' }
-                }}
-            >
-                <DialogTitle>
-                    {t('settings.users.editUser')}
-                </DialogTitle>
-
-                <DialogContent dividers>
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-                            {error}
-                        </Alert>
+                    {isEditing && (
+                        <Button
+                            variant="contained"
+                            onClick={handleSubmit}
+                            disabled={submitting || profileLoading || (newPassword.length > 0 && newPassword !== confirmPassword)}
+                            startIcon={submitting ? <CircularProgress size={16} /> : null}
+                        >
+                            {t('common.save')}
+                        </Button>
                     )}
-
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        {/* Basic Info */}
-                        <Box>
-                            <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.basicInfo')}
-                            </Typography>
-                            {renderStepContent(0)}
-                        </Box>
-
-                        <Divider />
-
-                        {/* Company */}
-                        <Box>
-                            <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.companyAssignment')}
-                            </Typography>
-                            {renderStepContent(1)}
-                        </Box>
-
-                        <Divider />
-
-                        {/* Stores */}
-                        <Box>
-                            <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.storeAssignments')}
-                            </Typography>
-                            {renderStepContent(2)}
-                        </Box>
-
-                        <Divider />
-
-                        {/* Admin Password Reset */}
-                        <Box>
-                            <Typography variant="subtitle2" gutterBottom color="primary">
-                                {t('settings.users.resetPassword')}
-                            </Typography>
-                            <TextField
-                                label={t('settings.users.newPassword')}
-                                type={showNewPassword ? 'text' : 'password'}
-                                fullWidth
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                size="small"
-                                helperText={newPassword ? t('settings.users.passwordRequirements') : t('settings.users.leaveEmptyNoChange')}
-                                InputProps={{
-                                    endAdornment: (
-                                        <InputAdornment position={isRtl ? 'start' : 'end'}>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => setShowNewPassword(!showNewPassword)}
-                                            >
-                                                {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-                        </Box>
-                    </Box>
-                </DialogContent>
-
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={onClose} disabled={submitting}>
-                        {t('common.cancel')}
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        startIcon={submitting ? <CircularProgress size={16} /> : null}
-                    >
-                        {t('common.save')}
-                    </Button>
                 </DialogActions>
             </Dialog>
         );
@@ -1038,7 +1118,9 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                 </Stepper>
 
                 {/* Step Content */}
-                {renderStepContent(activeStep)}
+                {activeStep === 0 && renderBasicInfo()}
+                {activeStep === 1 && renderCompanySection()}
+                {activeStep === 2 && renderStoreSection()}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}>

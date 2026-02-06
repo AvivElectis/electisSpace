@@ -216,12 +216,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 </IconButton>
             </DialogTitle>
 
-            <Box>
+            <Box >
                 <Tabs
                     value={currentTab}
                     onChange={handleTabChange}
                     sx={{
                         borderBottom: 0,
+                        pb:1,
+                        //backgroundColor:'#00000000',
                         '& .MuiTab-root': {
                             border: '1px solid transparent',
                             borderRadius: 2,

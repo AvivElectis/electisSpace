@@ -44,7 +44,7 @@ export interface PeopleStore {
 
     // Actions - Server (for API mode)
     fetchPeople: () => Promise<void>;
-    createPerson: (data: { externalId?: string; data?: Record<string, unknown> }) => Promise<Person | null>;
+    createPerson: (data: { storeId: string; externalId?: string; data?: Record<string, unknown> }) => Promise<Person | null>;
     updatePerson: (id: string, updates: { data?: Record<string, unknown> }) => Promise<Person | null>;
     deletePerson: (id: string) => Promise<boolean>;
     assignSpace: (personId: string, spaceId: string) => Promise<Person | null>;

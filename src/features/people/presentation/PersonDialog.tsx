@@ -7,10 +7,7 @@ import {
     TextField,
     Stack,
     Typography,
-    FormControlLabel,
-    Checkbox,
     Divider,
-    Box,
 } from '@mui/material';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +54,6 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         data: {},
         assignedSpaceId: undefined,
     });
-    const [postToAims, setPostToAims] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
 
@@ -72,10 +68,11 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         const globalFieldKeys = Object.keys(globalFields);
 
         return Object.entries(settings.solumMappingConfig.fields)
-            .filter(([fieldKey]) => {
-                // Exclude ID field and global fields
+            .filter(([fieldKey, config]) => {
+                // Exclude ID field, global fields, and explicitly hidden fields
                 if (idFieldKey && fieldKey === idFieldKey) return false;
                 if (globalFieldKeys.includes(fieldKey)) return false;
+                if (config.visible === false) return false; // undefined = visible by default
                 return true;
             })
             .map(([fieldKey, config]) => ({
@@ -107,7 +104,6 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                     assignedSpaceId: undefined,
                 });
             }
-            setPostToAims(false);
             setErrors({});
         }
     }, [open, person, editableFields]);
@@ -224,24 +220,6 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                             helperText={errors.assignedSpaceId}
                             excludePersonId={person?.id}
                         />
-
-                        {/* Post to AIMS option */}
-                        {formData.assignedSpaceId && (
-                            <Box sx={{ bgcolor: 'action.hover', p: 1.5, borderRadius: 1 }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={postToAims}
-                                            onChange={(e) => setPostToAims(e.target.checked)}
-                                        />
-                                    }
-                                    label={t('people.postToAimsOnSave')}
-                                />
-                                <Typography variant="caption" color="text.secondary" display="block" sx={{ textAlign: isRtl ? 'right' : 'left' }}>
-                                    {t('people.postToAimsDescription')}
-                                </Typography>
-                            </Box>
-                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ flexDirection: isRtl ? 'row-reverse' : 'row' }}>

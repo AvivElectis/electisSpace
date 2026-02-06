@@ -302,15 +302,26 @@ export const userService = {
 
         return {
             ...user,
+            companies: user.userCompanies.map(uc => ({
+                company: {
+                    id: uc.company.id,
+                    name: uc.company.name,
+                    code: uc.company.code,
+                },
+                role: uc.role,
+                allStoresAccess: uc.allStoresAccess,
+            })),
             stores: user.userStores.map(us => ({
-                id: us.storeId,
-                name: us.store.name,
-                code: us.store.code,
+                store: {
+                    id: us.store.id,
+                    name: us.store.name,
+                    code: us.store.code,
+                    companyId: us.store.companyId,
+                },
                 role: us.role,
                 features: us.features as string[],
-                companyId: us.store.companyId,
-                companyName: us.store.company.name,
             })),
+            userCompanies: undefined,
             userStores: undefined,
         };
     },
@@ -400,6 +411,7 @@ export const userService = {
                     email: data.email,
                     firstName: data.firstName,
                     lastName: data.lastName,
+                    phone: data.phone,
                     passwordHash,
                     activeCompanyId: companyId,
                     userCompanies: {
@@ -422,6 +434,7 @@ export const userService = {
                     email: true,
                     firstName: true,
                     lastName: true,
+                    phone: true,
                     globalRole: true,
                     isActive: true,
                     createdAt: true,

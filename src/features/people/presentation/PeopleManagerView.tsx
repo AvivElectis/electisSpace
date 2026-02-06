@@ -88,25 +88,32 @@ export function PeopleManagerView() {
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
     const [spaceSelectDialogOpen, setSpaceSelectDialogOpen] = useState(false);
     const [spaceSelectPerson, setSpaceSelectPerson] = useState<Person | null>(null);
-    const [isSyncing, setIsSyncing] = useState(false);
+
+    // The articleName mapped field key (shown as dedicated "Name" column)
+    const nameFieldKey = settings.solumMappingConfig?.mappingInfo?.articleName;
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
         if (!settings.solumMappingConfig?.fields) return [];
 
         const idFieldKey = settings.solumMappingConfig.mappingInfo?.articleId;
+        const globalAssignments = settings.solumMappingConfig.globalFieldAssignments || {};
+        const globalFieldKeys = Object.keys(globalAssignments);
 
+        // Visible fields (excluding ID field, Name field, and global fields)
         return Object.entries(settings.solumMappingConfig.fields)
             .filter(([fieldKey, config]) => {
                 if (idFieldKey && fieldKey === idFieldKey) return false;
-                return config.visible;
+                if (nameFieldKey && fieldKey === nameFieldKey) return false; // Exclude name field (dedicated column)
+                if (globalFieldKeys.includes(fieldKey)) return false; // Skip global fields
+                return config.visible !== false; // undefined = visible by default
             })
             .map(([fieldKey, config]) => ({
                 key: fieldKey,
                 labelEn: config.friendlyNameEn,
                 labelHe: config.friendlyNameHe
             }));
-    }, [settings.solumMappingConfig]);
+    }, [settings.solumMappingConfig, nameFieldKey]);
 
     // Handle sort
     const handleSort = useCallback((key: string) => {
@@ -206,7 +213,7 @@ export function PeopleManagerView() {
 
     const handleSpaceSelected = useCallback(async (spaceId: string) => {
         if (!spaceSelectPerson) return;
-        await peopleController.assignSpaceToPerson(spaceSelectPerson.id, spaceId, true);
+        await peopleController.assignSpaceToPerson(spaceSelectPerson.id, spaceId);
         setSpaceSelectDialogOpen(false);
         setSpaceSelectPerson(null);
     }, [spaceSelectPerson, peopleController]);
@@ -277,40 +284,10 @@ export function PeopleManagerView() {
                 personId: p.id,
                 spaceId: String(availableIds[index])
             }));
-            await peopleController.bulkAssignSpaces(assignments, true);
+            await peopleController.bulkAssignSpaces(assignments);
             setSelectedIds(new Set());
         }
     }, [sortedPeople, selectedIds, availableSpaces, people, totalSpaces, confirm, t, tWithSpaceType, peopleController]);
-
-    const handleSendAllToAims = useCallback(async () => {
-        const assignedPeople = people.filter(p => p.assignedSpaceId);
-        if (assignedPeople.length === 0) {
-            await confirm({
-                title: t('people.noAssignments'),
-                message: t('people.noAssignmentsToSend'),
-                confirmLabel: t('common.close'),
-                severity: 'info',
-                showCancel: false
-            });
-            return;
-        }
-
-        const confirmed = await confirm({
-            title: t('people.sendAllToAims'),
-            message: t('people.sendAllToAimsConfirm', { count: assignedPeople.length }),
-            confirmLabel: t('common.confirm'),
-            cancelLabel: t('common.cancel'),
-        });
-
-        if (confirmed) {
-            try {
-                setIsSyncing(true);
-                await peopleController.postAllAssignmentsToAims();
-            } finally {
-                setIsSyncing(false);
-            }
-        }
-    }, [people, confirm, t, peopleController]);
 
     const handleCancelAllAssignments = useCallback(async () => {
         const assignedPeople = people.filter(p => p.assignedSpaceId);
@@ -344,10 +321,8 @@ export function PeopleManagerView() {
             <PeopleToolbar
                 activeListName={activeListName ?? null}
                 totalPeople={people.length}
-                isSendingToAims={isSyncing}
                 onAddPerson={handleAdd}
                 onUploadCSV={() => setCSVUploadOpen(true)}
-                onSendAllToAims={handleSendAllToAims}
             />
 
             {/* Space Allocation Panel */}
@@ -386,6 +361,7 @@ export function PeopleManagerView() {
             <PeopleTable
                 people={sortedPeople}
                 visibleFields={visibleFields}
+                nameFieldKey={nameFieldKey}
                 selectedIds={selectedIds}
                 sortConfig={sortConfig}
                 searchQuery={searchQuery}

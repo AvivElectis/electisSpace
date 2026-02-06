@@ -11,6 +11,7 @@ import {
     Typography,
     Box,
 } from '@mui/material';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SolumFieldMapping } from '../domain/types';
 
@@ -37,6 +38,40 @@ export function SolumFieldMappingTable({
 
     // Filter out globally assigned fields
     const visibleFields = articleFormatFields.filter(field => !excludeFields.includes(field));
+
+    // Calculate selection state for "select all" checkbox
+    const { allSelected, someSelected } = useMemo(() => {
+        if (visibleFields.length === 0) return { allSelected: false, someSelected: false };
+        
+        const visibleCount = visibleFields.filter(fieldKey => {
+            const mapping = mappings[fieldKey];
+            return mapping?.visible !== false; // Default is true if not set
+        }).length;
+        
+        return {
+            allSelected: visibleCount === visibleFields.length,
+            someSelected: visibleCount > 0 && visibleCount < visibleFields.length,
+        };
+    }, [visibleFields, mappings]);
+
+    const handleToggleAll = () => {
+        const newMappings = { ...mappings };
+        // If any are selected (some or all), uncheck all. Otherwise, check all.
+        const newVisibleState = !allSelected && !someSelected;
+        
+        visibleFields.forEach(fieldKey => {
+            if (!newMappings[fieldKey]) {
+                newMappings[fieldKey] = {
+                    friendlyNameEn: fieldKey,
+                    friendlyNameHe: fieldKey,
+                    visible: newVisibleState,
+                };
+            } else {
+                newMappings[fieldKey].visible = newVisibleState;
+            }
+        });
+        onChange(newMappings);
+    };
 
     const handleNameChange = (fieldKey: string, language: 'en' | 'he', value: string) => {
         const newMappings = { ...mappings };
@@ -87,7 +122,16 @@ export function SolumFieldMappingTable({
                         <TableCell sx={{ fontWeight: 600 }}>{t('settings.englishName')}</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>{t('settings.hebrewName')}</TableCell>
                         <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>
-                            {t('settings.visible')}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                                <Checkbox
+                                    checked={allSelected || someSelected}
+                                    onChange={handleToggleAll}
+                                    disabled={disabled}
+                                    size="small"
+                                    sx={{ p: 0 }}
+                                />
+                                {t('settings.visible')}
+                            </Box>
                         </TableCell>
                     </TableRow>
                 </TableHead>

@@ -118,6 +118,9 @@ const autoConnectToSolum = async (storeId: string): Promise<void> => {
                 storeCode: response.config.storeCode,
                 companyCode: response.config.companyCode,
             });
+        } else {
+            // Server returned connected: false - treat as error
+            throw new Error('AIMS connection failed');
         }
     } catch (error: unknown) {
         // Log but don't throw - this is a background operation
@@ -158,6 +161,9 @@ interface AuthState {
     setActiveCompany: (companyId: string | null) => Promise<void>;
     setActiveStore: (storeId: string | null) => Promise<void>;
     setActiveContext: (companyId: string | null, storeId: string | null) => Promise<void>;
+    
+    // SOLUM connection
+    reconnectToSolum: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -424,6 +430,22 @@ export const useAuthStore = create<AuthState>()(
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch context');
                         set({ error: message }, false, 'setActiveContext/error');
+                    }
+                },
+
+                reconnectToSolum: async (): Promise<boolean> => {
+                    const storeId = get().activeStoreId;
+                    if (!storeId) {
+                        logger.warn('AuthStore', 'Cannot reconnect to SOLUM - no active store');
+                        return false;
+                    }
+                    
+                    try {
+                        await autoConnectToSolum(storeId);
+                        return true;
+                    } catch (error) {
+                        logger.warn('AuthStore', 'Reconnect to SOLUM failed', { error: error instanceof Error ? error.message : 'Unknown' });
+                        return false;
                     }
                 },
             }),
