@@ -369,7 +369,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
                         errorMessage={syncState.lastError}
                         onSyncClick={() => sync().catch(() => {/* handled in controller */})}
-                        serverConnected={!!activeStoreId}
+                        serverConnected={syncController.serverConnected}
                         aimsConnected={syncState.isConnected || isConnected}
                     />
                 </Box>
