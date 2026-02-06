@@ -129,6 +129,9 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                     borderRadius: 2,
                     border: '1px solid',
                     borderColor: 'divider',
+                    '&::after': {
+                        display: 'none',
+                    },
                     '&:hover': {
                         borderColor: 'primary.main',
                         bgcolor: 'action.hover',
@@ -156,100 +159,96 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                 }}
             >
                 {/* Platform Admin Badge */}
-                {isPlatformAdmin && (
-                    <>
-                        <Box sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <AdminPanelSettingsIcon fontSize="small" color="primary" />
-                            <Typography variant="caption" color="primary">
-                                {t('selector.platformAdmin', 'Platform Administrator')}
-                            </Typography>
-                        </Box>
-                        <Divider />
-                    </>
-                )}
+                {isPlatformAdmin && [
+                    <Box key="admin-badge" sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AdminPanelSettingsIcon fontSize="small" color="primary" />
+                        <Typography variant="caption" color="primary">
+                            {t('selector.platformAdmin', 'Platform Administrator')}
+                        </Typography>
+                    </Box>,
+                    <Divider key="admin-divider" />,
+                ]}
 
                 {/* Companies Section */}
-                {companies.length > 1 && (
-                    <>
-                        <Typography
-                            variant="overline"
-                            sx={{ px: 2, py: 0.5, display: 'block', color: 'text.secondary' }}
+                {companies.length > 1 && [
+                    <Typography
+                        key="companies-header"
+                        variant="overline"
+                        sx={{ px: 2, py: 0.5, display: 'block', color: 'text.secondary' }}
+                    >
+                        {t('selector.companies', 'Companies')}
+                    </Typography>,
+                    ...companies.map((company) => (
+                        <MenuItem
+                            key={company.id}
+                            onClick={() => handleCompanySelect(company.id)}
+                            selected={company.id === activeCompany?.id}
                         >
-                            {t('selector.companies', 'Companies')}
-                        </Typography>
-                        {companies.map((company) => (
-                            <MenuItem
-                                key={company.id}
-                                onClick={() => handleCompanySelect(company.id)}
-                                selected={company.id === activeCompany?.id}
-                            >
-                                <ListItemIcon>
-                                    {company.id === activeCompany?.id ? (
-                                        <CheckIcon fontSize="small" color="primary" />
-                                    ) : (
-                                        <BusinessIcon fontSize="small" />
-                                    )}
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={company.name}
-                                    secondary={company.code}
-                                />
-                                {company.role === 'COMPANY_ADMIN' && (
-                                    <Chip
-                                        label={t('selector.admin', 'Admin')}
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                        sx={{ ml: 1 }}
-                                    />
+                            <ListItemIcon>
+                                {company.id === activeCompany?.id ? (
+                                    <CheckIcon fontSize="small" color="primary" />
+                                ) : (
+                                    <BusinessIcon fontSize="small" />
                                 )}
-                            </MenuItem>
-                        ))}
-                        <Divider sx={{ my: 1 }} />
-                    </>
-                )}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={company.name}
+                                secondary={company.code}
+                            />
+                            {company.role === 'COMPANY_ADMIN' && (
+                                <Chip
+                                    label={t('selector.admin', 'Admin')}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                    sx={{ ml: 1 }}
+                                />
+                            )}
+                        </MenuItem>
+                    )),
+                    <Divider key="companies-divider" sx={{ my: 1 }} />,
+                ]}
 
                 {/* Stores Section */}
-                {storesInActiveCompany.length > 0 && (
-                    <>
-                        <Typography
-                            variant="overline"
-                            sx={{ px: 2, py: 0.5, display: 'block', color: 'text.secondary' }}
+                {storesInActiveCompany.length > 0 && [
+                    <Typography
+                        key="stores-header"
+                        variant="overline"
+                        sx={{ px: 2, py: 0.5, display: 'block', color: 'text.secondary' }}
+                    >
+                        {activeCompany
+                            ? t('selector.storesIn', 'Stores in {{company}}', { company: activeCompany.name })
+                            : t('selector.stores', 'Stores')}
+                    </Typography>,
+                    ...storesInActiveCompany.map((store) => (
+                        <MenuItem
+                            key={store.id}
+                            onClick={() => handleStoreSelect(store.id)}
+                            selected={store.id === activeStore?.id}
                         >
-                            {activeCompany
-                                ? t('selector.storesIn', 'Stores in {{company}}', { company: activeCompany.name })
-                                : t('selector.stores', 'Stores')}
-                        </Typography>
-                        {storesInActiveCompany.map((store) => (
-                            <MenuItem
-                                key={store.id}
-                                onClick={() => handleStoreSelect(store.id)}
-                                selected={store.id === activeStore?.id}
-                            >
-                                <ListItemIcon>
-                                    {store.id === activeStore?.id ? (
-                                        <CheckIcon fontSize="small" color="primary" />
-                                    ) : (
-                                        <StoreIcon fontSize="small" />
-                                    )}
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={store.name}
-                                    secondary={`${t('selector.code', 'Code')}: ${store.code}`}
-                                />
-                                {store.role === 'STORE_ADMIN' && (
-                                    <Chip
-                                        label={t('selector.admin', 'Admin')}
-                                        size="small"
-                                        color="secondary"
-                                        variant="outlined"
-                                        sx={{ ml: 1 }}
-                                    />
+                            <ListItemIcon>
+                                {store.id === activeStore?.id ? (
+                                    <CheckIcon fontSize="small" color="primary" />
+                                ) : (
+                                    <StoreIcon fontSize="small" />
                                 )}
-                            </MenuItem>
-                        ))}
-                    </>
-                )}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={store.name}
+                                secondary={`${t('selector.code', 'Code')}: ${store.code}`}
+                            />
+                            {store.role === 'STORE_ADMIN' && (
+                                <Chip
+                                    label={t('selector.admin', 'Admin')}
+                                    size="small"
+                                    color="secondary"
+                                    variant="outlined"
+                                    sx={{ ml: 1 }}
+                                />
+                            )}
+                        </MenuItem>
+                    )),
+                ]}
 
                 {/* No stores message */}
                 {storesInActiveCompany.length === 0 && activeCompany && (
