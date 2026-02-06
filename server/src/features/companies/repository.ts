@@ -41,7 +41,7 @@ export interface AimsConfigData {
     aimsBaseUrl: string;
     aimsCluster?: string;
     aimsUsername: string;
-    aimsPasswordEnc: string;
+    aimsPasswordEnc?: string;
 }
 
 // ======================

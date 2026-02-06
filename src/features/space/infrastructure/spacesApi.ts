@@ -56,7 +56,8 @@ export const spacesApi = {
      * Get all spaces with optional pagination and filtering
      */
     getAll: async (params?: SpacesQueryParams): Promise<{ spaces: Space[]; total: number }> => {
-        const response = await api.get<PaginatedResponse<ServerSpace>>('/spaces', { params });
+        const queryParams = { limit: 10000, ...params };
+        const response = await api.get<PaginatedResponse<ServerSpace>>('/spaces', { params: queryParams });
         return {
             spaces: response.data.data.map(transformSpace),
             total: response.data.pagination.total,

@@ -319,9 +319,16 @@ export class SyncQueueProcessor {
                 });
                 if (!person) return null;
 
-                // Build article for person
+                // Only push people with assigned physical spaces to AIMS
+                // Unassigned people (pool-ID only) are stored server-side only
+                if (!person.assignedSpaceId) {
+                    console.log(`[SyncQueue] Skipping unassigned person ${entityId} - not pushed to AIMS`);
+                    return null;
+                }
+
+                // Build article for person - use assignedSpaceId as articleId
                 return {
-                    articleId: person.externalId || person.virtualSpaceId || person.id,
+                    articleId: person.assignedSpaceId,
                     articleName: (person.data as any)?.name || 'Person',
                     nfc: (person.data as any)?.nfcData || '',
                     ...this.extractCustomFields(person.data),

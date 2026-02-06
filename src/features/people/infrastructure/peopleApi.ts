@@ -56,7 +56,8 @@ export const peopleApi = {
      * Get all people with optional pagination and filtering
      */
     getAll: async (params?: PeopleQueryParams): Promise<{ people: Person[]; total: number }> => {
-        const response = await api.get<PaginatedResponse<ServerPerson>>('/people', { params });
+        const queryParams = { limit: 10000, ...params };
+        const response = await api.get<PaginatedResponse<ServerPerson>>('/people', { params: queryParams });
         return {
             people: response.data.data.map(transformPerson),
             total: response.data.pagination.total,

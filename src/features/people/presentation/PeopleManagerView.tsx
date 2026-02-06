@@ -1,6 +1,6 @@
 import { logger } from '@shared/infrastructure/services/logger';
 import { Box } from '@mui/material';
-import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { usePeopleController } from '../application/usePeopleController';
@@ -52,7 +52,15 @@ export function PeopleManagerView() {
 
     // Store state
     const people = usePeopleStore((state) => state.people);
+    const fetchPeople = usePeopleStore((state) => state.fetchPeople);
     const activeListName = usePeopleStore((state) => state.activeListName);
+
+    // Fetch people from server on mount
+    useEffect(() => {
+        fetchPeople().catch((err) => {
+            logger.warn('PeopleManagerView', 'Failed to fetch people from server', { error: err instanceof Error ? err.message : 'Unknown' });
+        });
+    }, [fetchPeople]);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
