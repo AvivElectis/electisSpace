@@ -21,9 +21,9 @@ export const updatePersonSchema = z.object({
     data: z.record(z.unknown()).optional(),
 });
 
-/** Schema for assigning person to space */
+/** Schema for assigning person to space (spaceId is a slot number, not a Space UUID) */
 export const assignSchema = z.object({
-    spaceId: z.string().uuid(),
+    spaceId: z.string().min(1, 'Space ID is required'),
 });
 
 // ======================
@@ -59,7 +59,6 @@ export interface PersonResponse {
     data: Record<string, any>;
     storeId: string;
     assignedSpaceId: string | null;
-    assignedSpace?: { id: string; externalId: string | null; labelCode: string | null } | null;
     store?: { name: string; code: string };
     syncStatus: string;
     lastSyncedAt: Date | null;

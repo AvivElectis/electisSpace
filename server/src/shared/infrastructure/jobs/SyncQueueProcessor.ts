@@ -232,7 +232,7 @@ export class SyncQueueProcessor {
                 break;
 
             case 'DELETE':
-                await this.deleteEntityFromAIMS(storeId, entityType, entityId);
+                await this.deleteEntityFromAIMS(storeId, entityType, entityId, payload);
                 break;
 
             case 'SYNC_FULL':
@@ -275,14 +275,22 @@ export class SyncQueueProcessor {
 
     /**
      * Delete entity from AIMS
+     * Uses payload.externalId when available (e.g. person's assignedSpaceId),
+     * otherwise falls back to looking up the entity's external ID from the DB.
      */
     private async deleteEntityFromAIMS(
         storeId: string,
         entityType: string,
-        entityId: string
+        entityId: string,
+        payload?: any
     ): Promise<void> {
-        // Get the external ID for the entity
-        const externalId = await this.getEntityExternalId(entityType, entityId);
+        // Prefer the explicit externalId from the queue payload
+        let externalId = payload?.externalId || null;
+        
+        // Fall back to DB lookup if no payload externalId
+        if (!externalId) {
+            externalId = await this.getEntityExternalId(entityType, entityId);
+        }
         
         if (!externalId) {
             // Entity might already be deleted, treat as success
@@ -346,16 +354,24 @@ export class SyncQueueProcessor {
                 });
                 if (!room) return null;
 
+                const articleId = `C${room.externalId}`;
+                const articleName = room.roomName || `Conference ${room.externalId}`;
+
                 // Build article for conference room - prefix with 'C' for AIMS
+                // Include ARTICLE_ID and ARTICLE_NAME so they appear in the AIMS data section
                 return {
-                    articleId: `C${room.externalId}`,
-                    articleName: room.roomName,
-                    nfc: '',
-                    data1: room.hasMeeting ? 'MEETING' : 'AVAILABLE',
-                    data2: room.meetingName || '',
-                    data3: room.startTime || '',
-                    data4: room.endTime || '',
-                    data5: room.participants?.join(', ') || '',
+                    articleId,
+                    articleName,
+                    nfcUrl: '',
+                    data: {
+                        ARTICLE_ID: articleId,
+                        ARTICLE_NAME: articleName,
+                        data1: room.hasMeeting ? 'MEETING' : 'AVAILABLE',
+                        data2: room.meetingName || '',
+                        data3: room.startTime || '',
+                        data4: room.endTime || '',
+                        data5: room.participants?.join(', ') || '',
+                    },
                 };
             }
 
@@ -412,9 +428,10 @@ export class SyncQueueProcessor {
             case 'person': {
                 const person = await prisma.person.findUnique({
                     where: { id: entityId },
-                    select: { externalId: true, virtualSpaceId: true },
+                    select: { externalId: true, virtualSpaceId: true, assignedSpaceId: true },
                 });
-                return person?.externalId || person?.virtualSpaceId || null;
+                // For people, the AIMS article ID is the assignedSpaceId (the slot number)
+                return person?.assignedSpaceId || person?.externalId || person?.virtualSpaceId || null;
             }
 
             case 'conference': {

@@ -38,7 +38,9 @@ export interface Space {
  * Conference room entity
  */
 export interface ConferenceRoom {
-    id: string;              // Format: C01, C02, etc.
+    id: string;              // Display/external ID (Format: C01, C02, 12, etc.)
+    serverId?: string;       // Server UUID (for API calls)
+    roomName?: string;       // Room name from server
     hasMeeting: boolean;
     meetingName: string;
     startTime: string;       // HH:mm format
