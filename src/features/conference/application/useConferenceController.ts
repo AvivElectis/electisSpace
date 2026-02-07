@@ -1,19 +1,25 @@
 import { useCallback, useState } from 'react';
 import { useConferenceStore } from '../infrastructure/conferenceStore';
 import { validateConferenceRoom, isConferenceRoomIdUnique } from '../domain/validation';
-import { generateConferenceRoomId, createEmptyConferenceRoom, toggleMeetingStatus } from '../domain/businessRules';
+import { generateConferenceRoomId, createEmptyConferenceRoom } from '../domain/businessRules';
 import type { ConferenceRoom, SolumConfig } from '@shared/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
 import { useConferenceAIMS } from './hooks/useConferenceAIMS';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 /**
  * Conference Controller Hook
- * Main orchestration for conference room CRUD operations
+ * Main orchestration for conference room CRUD operations.
+ * 
+ * ARCHITECTURE: All AIMS sync goes through the server.
+ * - CRUD operations call server API (which queues sync items)
+ * - After each operation, onSync() triggers push to process the queue
+ * - Direct AIMS access is only used for label page flipping and data fetching
  */
 
 interface UseConferenceControllerProps {
-    onSync?: () => Promise<void>;  // Callback to trigger sync after changes
+    onSync?: () => Promise<void>;  // Callback to trigger push after changes
     solumConfig?: SolumConfig;     // For SoluM label page flipping
     solumToken?: string;            // Current SoluM access token
     solumMappingConfig?: SolumMappingConfig; // SoluM field mappings
@@ -29,17 +35,16 @@ export function useConferenceController({
         conferenceRooms,
         setConferenceRooms,
         addConferenceRoomLocal: addToStore,
-        updateConferenceRoomLocal: updateInStore,
-        deleteConferenceRoomLocal: deleteFromStore,
+        createRoom: createRoomOnServer,
+        updateRoom: updateRoomOnServer,
+        deleteRoom: deleteRoomOnServer,
+        toggleMeeting: toggleMeetingOnServer,
     } = useConferenceStore();
 
-    // Use the extracted AIMS hook for all AIMS operations
+    // Use AIMS hook only for fetch and label page flip (direct AIMS access)
     const {
-        pushToAIMS,
-        deleteFromAIMS,
         fetchFromAIMS,
         flipLabelPage: flipLabelPageInternal,
-        isAIMSConfigured
     } = useConferenceAIMS({
         solumConfig,
         solumToken,
@@ -50,7 +55,21 @@ export function useConferenceController({
     const [isFetching, setIsFetching] = useState(false);
 
     /**
-     * Add new conference room
+     * Trigger push to process pending sync queue items
+     */
+    const triggerPush = useCallback(async () => {
+        if (onSync) {
+            try {
+                await onSync();
+            } catch (error) {
+                logger.warn('ConferenceController', 'Push after operation failed', { error });
+            }
+        }
+    }, [onSync]);
+
+    /**
+     * Add new conference room via server API
+     * Server creates room in DB and queues sync item for AIMS push
      */
     const addConferenceRoom = useCallback(
         async (roomData: Partial<ConferenceRoom>): Promise<void> => {
@@ -87,47 +106,34 @@ export function useConferenceController({
                 throw new Error('Conference room ID already exists');
             }
 
-            // Handle SoluM API mode
-            if (isAIMSConfigured) {
-                // SoluM API mode: Post to AIMS
-                try {
-                    await pushToAIMS(finalRoom);
-                } catch (error) {
-                    logger.error('ConferenceController', 'Failed to push article to AIMS', { error });
-                    throw new Error(`Failed to push to AIMS: ${error}`);
-                }
+            // Get active store ID
+            const activeStoreId = useAuthStore.getState().activeStoreId;
+            if (!activeStoreId) throw new Error('No active store selected');
 
-                // Add to store
-                addToStore(finalRoom);
+            // Create on server (which queues sync item for AIMS push)
+            const serverRoom = await createRoomOnServer({
+                storeId: activeStoreId,
+                externalId: finalRoom.id,
+                roomName: finalRoom.data?.roomName || finalRoom.id,
+                labelCode: finalRoom.labelCode,
+            });
 
-                // Refresh from AIMS to get the latest state
-                try {
-                    await fetchFromSolum();
-                    logger.info('ConferenceController', 'Refreshed from AIMS after add');
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Failed to refresh from AIMS after add', { error });
-                }
-            } else {
-                // Fallback: add to store directly (no external sync)
-                addToStore(finalRoom);
+            if (!serverRoom) {
+                throw new Error('Failed to create conference room on server');
             }
 
-            // Trigger sync
-            if (onSync) {
-                try {
-                    await onSync();
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Sync after add failed', { error });
-                }
-            }
+            logger.info('ConferenceController', 'Conference room created on server', { id: serverRoom.id });
+
+            // Trigger push to process sync queue → AIMS
+            await triggerPush();
 
             logger.info('ConferenceController', 'Conference room added', { id: finalRoom.id });
         },
-        [conferenceRooms, addToStore, onSync, isAIMSConfigured, pushToAIMS]
+        [conferenceRooms, createRoomOnServer, triggerPush]
     );
 
     /**
-     * Update existing conference room
+     * Update existing conference room via server API
      */
     const updateConferenceRoom = useCallback(
         async (id: string, updates: Partial<ConferenceRoom>): Promise<void> => {
@@ -152,48 +158,28 @@ export function useConferenceController({
                 throw new Error(`Validation failed: ${errorMsg}`);
             }
 
-            // Handle SoluM API mode
-            if (isAIMSConfigured) {
-                // SoluM API mode: Push to AIMS
-                try {
-                    await pushToAIMS(updatedRoom);
-                    logger.info('ConferenceController', 'Article updated in AIMS successfully', { id });
-                } catch (error) {
-                    logger.error('ConferenceController', 'Failed to update article in AIMS', { error });
-                    throw new Error(`Failed to update in AIMS: ${error}`);
-                }
+            // Update on server (which queues sync item)
+            const serverRoom = await updateRoomOnServer(id, {
+                roomName: updatedRoom.data?.roomName,
+                labelCode: updatedRoom.labelCode || null,
+            });
 
-                // Update in store
-                updateInStore(id, updatedRoom);
-
-                // Refresh from AIMS to get the latest state
-                try {
-                    await fetchFromSolum();
-                    logger.info('ConferenceController', 'Refreshed from AIMS after update');
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Failed to refresh from AIMS after update', { error });
-                }
-            } else {
-                // Fallback: update in store directly (no external sync)
-                updateInStore(id, updatedRoom);
+            if (!serverRoom) {
+                throw new Error('Failed to update conference room on server');
             }
 
-            // Trigger sync
-            if (onSync) {
-                try {
-                    await onSync();
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Sync after update failed', { error });
-                }
-            }
+            logger.info('ConferenceController', 'Conference room updated on server', { id });
+
+            // Trigger push to process sync queue → AIMS
+            await triggerPush();
 
             logger.info('ConferenceController', 'Conference room updated', { id });
         },
-        [conferenceRooms, updateInStore, onSync, isAIMSConfigured, pushToAIMS]
+        [conferenceRooms, updateRoomOnServer, triggerPush]
     );
 
     /**
-     * Delete conference room
+     * Delete conference room via server API
      */
     const deleteConferenceRoom = useCallback(
         async (id: string): Promise<void> => {
@@ -204,50 +190,32 @@ export function useConferenceController({
                 throw new Error('Conference room not found');
             }
 
-            // Handle SoluM API mode
-            if (isAIMSConfigured) {
-                // SoluM API mode: Delete from AIMS
-                try {
-                    await deleteFromAIMS(id);
-                } catch (error) {
-                    logger.error('ConferenceController', 'Failed to delete article from AIMS', { error });
-                    throw new Error(`Failed to delete from AIMS: ${error}`);
-                }
-
-                // Delete from store
-                deleteFromStore(id);
-
-                // Refresh from AIMS to get the latest state
-                try {
-                    await fetchFromSolum();
-                    logger.info('ConferenceController', 'Refreshed from AIMS after delete');
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Failed to refresh from AIMS after delete', { error });
-                }
-            } else {
-                // Fallback: delete from store directly (no external sync)
-                deleteFromStore(id);
+            // Delete on server (which queues sync item for AIMS delete)
+            const success = await deleteRoomOnServer(id);
+            if (!success) {
+                throw new Error('Failed to delete conference room on server');
             }
 
-            // Trigger sync
-            if (onSync) {
-                try {
-                    await onSync();
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Sync after delete failed', { error });
-                }
-            }
+            logger.info('ConferenceController', 'Conference room deleted on server', { id });
+
+            // Trigger push to process sync queue → AIMS
+            await triggerPush();
 
             logger.info('ConferenceController', 'Conference room deleted', { id });
         },
-        [conferenceRooms, deleteFromStore, onSync, isAIMSConfigured, deleteFromAIMS]
+        [conferenceRooms, deleteRoomOnServer, triggerPush]
     );
 
     /**
-     * Toggle meeting status (occupied/available)
+     * Toggle meeting status via server API
      */
     const toggleMeeting = useCallback(
-        async (id: string): Promise<void> => {
+        async (id: string, meetingData?: {
+            meetingName?: string;
+            startTime?: string;
+            endTime?: string;
+            participants?: string[];
+        }): Promise<void> => {
             logger.info('ConferenceController', 'Toggling meeting status', { id });
 
             const room = conferenceRooms.find(r => r.id === id);
@@ -255,27 +223,22 @@ export function useConferenceController({
                 throw new Error('Conference room not found');
             }
 
-            const updatedRoom = toggleMeetingStatus(room);
-            updateInStore(id, updatedRoom);
-
-            // Trigger sync
-            if (onSync) {
-                try {
-                    await onSync();
-                } catch (error) {
-                    logger.warn('ConferenceController', 'Sync after toggle failed', { error });
-                }
+            // Toggle on server (which queues sync item)
+            const updatedRoom = await toggleMeetingOnServer(id, meetingData);
+            if (!updatedRoom) {
+                throw new Error('Failed to toggle meeting on server');
             }
+
+            // Trigger push to process sync queue → AIMS
+            await triggerPush();
 
             logger.info('ConferenceController', 'Meeting status toggled', { id, hasMeeting: updatedRoom.hasMeeting });
         },
-        [conferenceRooms, updateInStore, onSync]
+        [conferenceRooms, toggleMeetingOnServer, triggerPush]
     );
 
     /**
-     * Flip label page (for SoluM simple conference mode)
-     * @param labelCode - Label code
-     * @param currentPage - Current page (0 or 1)
+     * Flip label page (direct AIMS operation for ESL labels)
      */
     const flipLabelPage = useCallback(
         async (labelCode: string, currentPage: number): Promise<void> => {

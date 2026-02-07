@@ -18,7 +18,7 @@ export const spacesController = {
         try {
             const user = getUserContext(req);
             const page = parseInt(req.query.page as string) || 1;
-            const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+            const limit = Math.min(parseInt(req.query.limit as string) || 50, 10000);
             const result = await spacesService.list({
                 page, limit,
                 search: req.query.search as string,

@@ -223,7 +223,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     sx={{
                         borderBottom: 0,
                         pb:1,
-                        //backgroundColor:'#00000000',
                         '& .MuiTab-root': {
                             border: '1px solid transparent',
                             borderRadius: 2,
@@ -236,7 +235,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     }}
                     TabIndicatorProps={{ sx: { display: 'none' } }}
                     variant="scrollable"
-                    scrollButtons="auto"
+                    scrollButtons
+                    allowScrollButtonsMobile
                 >
                     {tabs.map((tab, index) => (
                         <Tab

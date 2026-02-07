@@ -4,6 +4,7 @@
  */
 
 import api, { type PaginatedResponse } from '@shared/infrastructure/services/apiClient';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import type { Space } from '@shared/domain/types';
 
 // Server space type (matches server response)
@@ -26,6 +27,7 @@ interface ServerSpace {
 function transformSpace(serverSpace: ServerSpace): Space {
     // Convert data values to strings (client Space type expects Record<string, string>)
     const stringData: Record<string, string> = {};
+
     if (serverSpace.data) {
         for (const [key, value] of Object.entries(serverSpace.data)) {
             stringData[key] = value != null ? String(value) : '';
@@ -76,12 +78,18 @@ export const spacesApi = {
      * Create a new space
      */
     create: async (data: {
+        storeId?: string;
         externalId: string;
         labelCode?: string;
         templateName?: string;
         data?: Record<string, unknown>;
     }): Promise<Space> => {
-        const response = await api.post<ServerSpace>('/spaces', data);
+        // Auto-inject storeId from auth store if not provided
+        const payload = {
+            ...data,
+            storeId: data.storeId || useAuthStore.getState().activeStoreId,
+        };
+        const response = await api.post<ServerSpace>('/spaces', payload);
         return transformSpace(response.data);
     },
 
