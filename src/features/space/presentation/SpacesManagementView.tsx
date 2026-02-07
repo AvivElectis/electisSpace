@@ -72,22 +72,17 @@ export function SpacesManagementView() {
         }
     }, [activeListName, activeListId, lists]);
 
-    // Get SoluM access token if available
-    const solumToken = settingsController.settings.solumConfig?.tokens?.accessToken;
-
-    // Get sync context for triggering sync after operations
-    const { sync } = useSyncContext();
+    // Get sync context for triggering push after CRUD operations
+    const { push } = useSyncContext();
     
-    // Wrap sync to match expected void return type
+    // Push pending queue items to AIMS after each CRUD operation
     const handleSync = useCallback(async () => {
-        await sync();
-    }, [sync]);
+        await push();
+    }, [push]);
 
     const spaceController = useSpaceController({
         onSync: handleSync,
         csvConfig: settingsController.settings.csvConfig,
-        solumConfig: settingsController.settings.solumConfig,
-        solumToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
 

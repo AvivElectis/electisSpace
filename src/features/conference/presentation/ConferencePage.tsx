@@ -48,13 +48,13 @@ export function ConferencePage() {
     // Get SoluM access token if available
     const solumToken = settings.solumConfig?.tokens?.accessToken;
 
-    // Get sync context for triggering sync after SFTP operations
-    const { sync } = useSyncContext();
+    // Get sync context for triggering push after CRUD operations
+    const { push } = useSyncContext();
 
-    // Wrap sync to match expected void return type
+    // Push pending queue items to AIMS after each CRUD operation
     const handleSync = useCallback(async () => {
-        await sync();
-    }, [sync]);
+        await push();
+    }, [push]);
 
     const conferenceController = useConferenceController({
         onSync: settings.workingMode === 'SOLUM_API' ? handleSync : undefined,  // Trigger sync after add/edit/delete in SOLUM mode

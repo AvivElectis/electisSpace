@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { SolumFieldMappingTable } from './SolumFieldMappingTable';
 import { SolumMappingSelectors } from './SolumMappingSelectors';
@@ -35,6 +36,9 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     const { articleFormat, fetchArticleFormat } = useConfigurationController();
     const { sync } = useSyncContext();
     const { activeCompanyId, reconnectToSolum } = useAuthStore();
+    const { isCompanyAdmin, isPlatformAdmin } = useAuthContext();
+    const { saveCompanySettingsToServer } = useSettingsStore();
+    const canManageCompanySettings = isCompanyAdmin || isPlatformAdmin;
     const [subTab, setSubTab] = useState(0);
     const [isReconnecting, setIsReconnecting] = useState(false);
     const [reconnectError, setReconnectError] = useState<string | null>(null);
@@ -67,6 +71,8 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     // Handlers for nested component updates
     const handleCsvConfigChange = (config: CSVConfig) => {
         onUpdate({ csvConfig: config });
+        // Conference mode is company-level - save to company settings
+        saveCompanySettingsToServer({ csvConfig: config });
     };
 
     const handlePeopleManagerEnabledChange = (enabled: boolean) => {
@@ -182,7 +188,9 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 }}
             >
                 <Tab label={t('settings.connectionTab')} disabled={isLocked} />
-                <Tab label={t('settings.fieldMappingTab')} disabled={isLocked} />
+                {canManageCompanySettings && (
+                    <Tab label={t('settings.fieldMappingTab')} disabled={isLocked} />
+                )}
             </Tabs>
 
             {/* Locked overlay message when not connected */}
@@ -255,11 +263,13 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
                     <Divider />
 
-                    {/* Conference Mode */}
-                    <SolumSyncSettingsSection
-                        csvConfig={settings.csvConfig || {}}
-                        onConfigChange={handleCsvConfigChange}
-                    />
+                    {/* Conference Mode - Company admins only */}
+                    {canManageCompanySettings && (
+                        <SolumSyncSettingsSection
+                            csvConfig={settings.csvConfig || {}}
+                            onConfigChange={handleCsvConfigChange}
+                        />
+                    )}
 
                     <Divider />
 
@@ -274,8 +284,8 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                 </Stack>
             )}
 
-            {/* Field Mapping Tab - only show when connected */}
-            {!isLocked && subTab === 1 && (
+            {/* Field Mapping Tab - only show when connected and user is company admin */}
+            {!isLocked && canManageCompanySettings && subTab === 1 && (
                 <Stack gap={2} sx={{ mt: 2 }}>
                     <SolumSchemaEditorSection
                         articleFormat={articleFormat}

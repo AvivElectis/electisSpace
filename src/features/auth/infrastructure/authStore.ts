@@ -234,15 +234,14 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId,
                         }, false, 'verify2FA/success');
 
-                        // Fetch settings from server for the active store
+                        // Fetch settings from server, then auto-connect to SOLUM
+                        // Settings must load first so autoConnect doesn't get overwritten
                         if (activeStoreId && activeCompanyId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId);
-                            
-                            // Auto-connect to SOLUM using server-side company credentials
-                            // This runs in background - don't block login for SOLUM connection
-                            autoConnectToSolum(activeStoreId).catch((error) => {
-                                logger.warn('AuthStore', 'Auto SOLUM connect failed (will use manual connect)', { error: error.message });
-                            });
+                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId)
+                                .then(() => autoConnectToSolum(activeStoreId))
+                                .catch((error) => {
+                                    logger.warn('AuthStore', 'Auto SOLUM connect failed (will use manual connect)', { error: error instanceof Error ? error.message : String(error) });
+                                });
                         }
 
                         return true;
@@ -394,13 +393,17 @@ export const useAuthStore = create<AuthState>()(
                         if (storeId) {
                             const currentCompanyId = get().activeCompanyId;
                             if (currentCompanyId) {
-                                useSettingsStore.getState().fetchSettingsFromServer(storeId, currentCompanyId);
+                                // Settings must load first so autoConnect doesn't get overwritten
+                                useSettingsStore.getState().fetchSettingsFromServer(storeId, currentCompanyId)
+                                    .then(() => autoConnectToSolum(storeId))
+                                    .catch((error) => {
+                                        logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error instanceof Error ? error.message : String(error) });
+                                    });
+                            } else {
+                                autoConnectToSolum(storeId).catch((error) => {
+                                    logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error instanceof Error ? error.message : String(error) });
+                                });
                             }
-                            
-                            // Auto-connect to SOLUM for the new store
-                            autoConnectToSolum(storeId).catch((error) => {
-                                logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error.message });
-                            });
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch store');
@@ -418,14 +421,13 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId: storeId,
                         }, false, 'setActiveContext');
 
-                        // Fetch settings for the new store and auto-connect to SOLUM
+                        // Fetch settings first, then auto-connect to SOLUM
                         if (storeId && companyId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(storeId, companyId);
-                            
-                            // Auto-connect to SOLUM for the new store
-                            autoConnectToSolum(storeId).catch((error) => {
-                                logger.warn('AuthStore', 'Auto SOLUM connect on context switch failed', { error: error.message });
-                            });
+                            useSettingsStore.getState().fetchSettingsFromServer(storeId, companyId)
+                                .then(() => autoConnectToSolum(storeId))
+                                .catch((error) => {
+                                    logger.warn('AuthStore', 'Auto SOLUM connect on context switch failed', { error: error instanceof Error ? error.message : String(error) });
+                                });
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch context');

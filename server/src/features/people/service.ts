@@ -142,13 +142,16 @@ export const peopleService = {
             throw new Error('NOT_FOUND');
         }
 
-        // Queue sync job to clear from AIMS before deleting
-        await syncQueueService.queueDelete(
-            existing.storeId,
-            'person',
-            existing.id,
-            existing.externalId || existing.virtualSpaceId || undefined
-        );
+        // Queue sync job to clear person's article from AIMS
+        // For people, the AIMS article ID is the assignedSpaceId (not the person's externalId)
+        if (existing.assignedSpaceId) {
+            await syncQueueService.queueDelete(
+                existing.storeId,
+                'person',
+                existing.id,
+                existing.assignedSpaceId
+            );
+        }
 
         await peopleRepository.delete(id);
     },
@@ -173,6 +176,16 @@ export const peopleService = {
         const alreadyAssigned = await peopleRepository.isSpaceAssigned(spaceId, personId);
         if (alreadyAssigned) {
             throw new Error('SPACE_ALREADY_ASSIGNED');
+        }
+
+        // If person had a previous space, queue a delete to clear old article in AIMS
+        if (person.assignedSpaceId && person.assignedSpaceId !== spaceId) {
+            await syncQueueService.queueDelete(
+                person.storeId,
+                'person',
+                person.id,
+                person.assignedSpaceId  // Old space ID = old AIMS article ID
+            );
         }
 
         const updated = await peopleRepository.update(personId, {
@@ -202,18 +215,20 @@ export const peopleService = {
             throw new Error('NOT_FOUND');
         }
 
+        // Queue delete to clear the person's article from AIMS (using assignedSpaceId as article ID)
+        if (person.assignedSpaceId) {
+            await syncQueueService.queueDelete(
+                person.storeId,
+                'person',
+                person.id,
+                person.assignedSpaceId
+            );
+        }
+
         const updated = await peopleRepository.update(personId, {
             assignedSpaceId: null,
             syncStatus: 'PENDING',
         });
-
-        // Queue sync job to push unassignment to AIMS
-        await syncQueueService.queueUpdate(
-            updated.storeId,
-            'person',
-            updated.id,
-            { assignedSpaceId: null }
-        );
 
         return updated;
     },

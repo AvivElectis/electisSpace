@@ -285,41 +285,45 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                 </Box>
             </Toolbar>
 
-            {/* Mobile App Title - Second row on small screens */}
+            {/* Mobile App Title + Store Selector - Second row on small screens */}
             <Box
                 sx={{
                     display: { xs: 'flex', sm: 'none' },
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    justifyContent: 'space-between',
                     pb: 1,
                     px: 2,
+                    gap: 1,
                 }}
             >
-                <Typography
-                    variant="h1"
-                    sx={{
-                        fontWeight: 700,
-                        color: 'text.primary',
-                        fontSize: '1.25rem',
-                        textAlign: 'center',
-                    }}
-                >
-                    {settings.appName}
-                </Typography>
-                {settings.appSubtitle && (
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
-                        variant="caption"
+                        variant="h1"
                         sx={{
                             fontWeight: 700,
-                            color: 'text.secondary',
-                            fontSize: '0.75rem',
-                            textAlign: 'center',
+                            color: 'text.primary',
+                            fontSize: '1.25rem',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                         }}
                     >
-                        {settings.appSubtitle}
+                        {settings.appName}
                     </Typography>
-                )}
+                    {settings.appSubtitle && (
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                fontWeight: 700,
+                                color: 'text.secondary',
+                                fontSize: '0.75rem',
+                            }}
+                        >
+                            {settings.appSubtitle}
+                        </Typography>
+                    )}
+                </Box>
+                {user && <CompanyStoreSelector compact />}
             </Box>
         </AppBar>
     );

@@ -1,6 +1,6 @@
 import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition } from 'react';
+import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -13,8 +13,7 @@ import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
-import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
-import { convertSpacesToPeopleWithVirtualPool } from '@features/people/infrastructure/peopleService';
+
 import { useBackendSyncController } from '@features/sync/application/useBackendSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -86,8 +85,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     const authReady = isAuthenticated && isInitialized;
     const effectiveStoreId = authReady ? activeStoreId : null;
     const setSpaces = useSpacesStore(state => state.setSpaces);
-    const setPeople = usePeopleStore(state => state.setPeople);
-    const extractListsFromPeople = usePeopleStore(state => state.extractListsFromPeople);
 
     // Sync settings.workingMode to syncStore.workingMode
     useEffect(() => {
@@ -99,29 +96,24 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     /**
      * Combined space update handler
-     * When People Manager mode is enabled, also updates the people store
-     * This enables cross-device sync via AIMS metadata
+     * In People Manager mode, people data comes from the server DB (loaded by PeopleManagerView),
+     * NOT from AIMS articles. So we skip overwriting the people store here.
+     * AIMS sync only updates the spaces store.
      */
     const handleSpaceUpdate = useCallback((spaces: any[]) => {
         // Always update spaces store
         setSpaces(spaces);
         
-        // If People Manager mode is enabled, also update people store
+        // In People Manager mode, the server DB is source of truth for people.
+        // PeopleManagerView fetches people from server on mount.
+        // Do NOT overwrite people store with AIMS article data.
         if (settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API') {
-            try {
-                const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
-                setPeople(people);
-                // Extract list names from people's listMemberships to populate peopleLists
-                extractListsFromPeople();
-                logger.info('MainLayout', 'Synced spaces to people store', { 
-                    spacesCount: spaces.length, 
-                    peopleCount: people.length 
-                });
-            } catch (error: any) {
-                logger.error('MainLayout', 'Failed to convert spaces to people', { error: error.message });
-            }
+            logger.info('MainLayout', 'Spaces updated from AIMS (people managed by server)', { 
+                spacesCount: spaces.length 
+            });
+            return;
         }
-    }, [setSpaces, setPeople, extractListsFromPeople, settings.peopleManagerEnabled, settings.workingMode, settings.solumMappingConfig]);
+    }, [setSpaces, settings.peopleManagerEnabled, settings.workingMode]);
 
     // Build navigation tabs dynamically
     const allNavTabs: NavTab[] = [
@@ -144,8 +136,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
 
     // Initialize backend sync controller (all AIMS communication goes through server)
-    const isConnected = settings.solumConfig?.isConnected || false;
-        
     const syncController = useBackendSyncController({
         storeId: effectiveStoreId,
         autoSyncEnabled: settings.autoSyncEnabled,
@@ -170,11 +160,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         return () => clearTimeout(idleTimeout);
     }, []);
 
-    // Auto-sync on app load when store is connected AND auth is ready
+    // Auto-sync on app load when store is selected AND auth is ready
+    // Fires once when both conditions are first met
+    const hasSyncedOnLoad = useRef(false);
     useEffect(() => {
-        if (activeStoreId && isConnected && authReady && sync) {
-            logger.info('MainLayout', 'Auto-syncing on app load (connected)', { storeId: activeStoreId });
-            // Small delay to ensure stores are ready
+        if (activeStoreId && authReady && sync && !hasSyncedOnLoad.current) {
+            hasSyncedOnLoad.current = true;
+            logger.info('MainLayout', 'Auto-syncing on app load', { storeId: activeStoreId });
             const syncTimeout = setTimeout(() => {
                 sync().catch((err) => {
                     logger.warn('MainLayout', 'Initial sync failed', { error: err instanceof Error ? err.message : 'Unknown' });
@@ -182,7 +174,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             }, 500);
             return () => clearTimeout(syncTimeout);
         }
-    }, []); // Run only once on mount
+    }, [activeStoreId, authReady, sync]);
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
@@ -364,13 +356,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                         status={
                             syncState.status === 'syncing' ? 'syncing' :
                                 syncState.status === 'error' ? 'error' :
-                                    (syncState.isConnected || isConnected) ? 'connected' : 'disconnected'
+                                    syncState.isConnected ? 'connected' : 'disconnected'
                         }
                         lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
                         errorMessage={syncState.lastError}
                         onSyncClick={() => sync().catch(() => {/* handled in controller */})}
                         serverConnected={syncController.serverConnected}
-                        aimsConnected={syncState.isConnected || isConnected}
+                        aimsConnected={syncState.isConnected}
                     />
                 </Box>
 

@@ -261,6 +261,11 @@ export class SyncQueueProcessor {
         const article = await this.buildArticleFromEntity(entityType, entityId, payload);
         
         if (!article) {
+            // For person entities, null means unassigned - skip (nothing to push to AIMS)
+            if (entityType === 'person') {
+                console.log(`[SyncQueue] Person ${entityId} is not assigned to a space - skipping AIMS push`);
+                return;
+            }
             throw new Error(`Failed to build article for ${entityType}/${entityId}`);
         }
 
@@ -341,9 +346,9 @@ export class SyncQueueProcessor {
                 });
                 if (!room) return null;
 
-                // Build article for conference room
+                // Build article for conference room - prefix with 'C' for AIMS
                 return {
-                    articleId: room.externalId,
+                    articleId: `C${room.externalId}`,
                     articleName: room.roomName,
                     nfc: '',
                     data1: room.hasMeeting ? 'MEETING' : 'AVAILABLE',
@@ -417,7 +422,7 @@ export class SyncQueueProcessor {
                     where: { id: entityId },
                     select: { externalId: true },
                 });
-                return room?.externalId || null;
+                return room?.externalId ? `C${room.externalId}` : null;
             }
 
             default:

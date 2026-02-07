@@ -35,6 +35,7 @@ interface SettingsStore {
     setActiveCompanyId: (companyId: string | null) => void;
     fetchSettingsFromServer: (storeId: string, companyId: string) => Promise<void>;
     saveSettingsToServer: () => Promise<void>;
+    saveCompanySettingsToServer: (updates: Partial<SettingsData>) => Promise<void>;
     
     // Field mapping server sync (company-level)
     fetchFieldMappingsFromServer: (companyId: string) => Promise<void>;
@@ -130,19 +131,31 @@ export const useSettingsStore = create<SettingsStore>()(
                 fetchSettingsFromServer: async (storeId: string, companyId: string) => {
                     set({ isSyncing: true }, false, 'fetchSettings/start');
                     try {
-                        // Fetch store settings and company field mappings in parallel
-                        const [settingsResponse, fieldMappingsResponse] = await Promise.all([
+                        // Fetch store settings, company settings, and company field mappings in parallel
+                        const [settingsResponse, companySettingsResponse, fieldMappingsResponse] = await Promise.all([
                             settingsService.getStoreSettings(storeId),
+                            settingsService.getCompanySettings(companyId).catch(() => ({ settings: {} })),
                             fieldMappingService.getFieldMappings(companyId).catch(() => ({ fieldMappings: null })),
                         ]);
                         
                         const serverSettings = settingsResponse.settings as Partial<SettingsData>;
+                        const companySettings = companySettingsResponse.settings as Partial<SettingsData>;
                         
                         // Merge server settings with defaults (server takes priority)
                         const updates: Partial<SettingsData> = {};
                         
                         if (serverSettings && Object.keys(serverSettings).length > 0) {
                             Object.assign(updates, serverSettings);
+                        }
+                        
+                        // Merge company-level settings (conferenceEnabled from csvConfig)
+                        if (companySettings && Object.keys(companySettings).length > 0) {
+                            if (companySettings.csvConfig) {
+                                updates.csvConfig = {
+                                    ...(updates.csvConfig || {}),
+                                    ...companySettings.csvConfig,
+                                } as SettingsData['csvConfig'];
+                            }
                         }
                         
                         // Add field mappings from company-level endpoint if available
@@ -152,15 +165,32 @@ export const useSettingsStore = create<SettingsStore>()(
                         }
                         
                         if (Object.keys(updates).length > 0) {
-                            set((state) => ({
-                                settings: {
+                            set((state) => {
+                                // Deep-merge solumConfig to preserve runtime connection state
+                                // (tokens, isConnected, lastConnected, storeSummary) that are
+                                // set by autoConnectToSolum and NOT saved to the server
+                                const mergedSettings = {
                                     ...state.settings,
                                     ...updates,
-                                },
-                                activeStoreId: storeId,
-                                activeCompanyId: companyId,
-                                isSyncing: false,
-                            }), false, 'fetchSettings/success');
+                                };
+                                if (updates.solumConfig && state.settings.solumConfig) {
+                                    mergedSettings.solumConfig = {
+                                        ...state.settings.solumConfig,
+                                        ...updates.solumConfig,
+                                        // Always preserve runtime connection state from memory
+                                        tokens: state.settings.solumConfig.tokens || updates.solumConfig.tokens,
+                                        isConnected: state.settings.solumConfig.isConnected ?? updates.solumConfig.isConnected,
+                                        lastConnected: state.settings.solumConfig.lastConnected || updates.solumConfig.lastConnected,
+                                        storeSummary: state.settings.solumConfig.storeSummary || updates.solumConfig.storeSummary,
+                                    } as SettingsData['solumConfig'];
+                                }
+                                return {
+                                    settings: mergedSettings,
+                                    activeStoreId: storeId,
+                                    activeCompanyId: companyId,
+                                    isSyncing: false,
+                                };
+                            }, false, 'fetchSettings/success');
                             logger.info('SettingsStore', 'Settings loaded from server', { storeId, companyId });
                         } else {
                             set({ activeStoreId: storeId, activeCompanyId: companyId, isSyncing: false }, false, 'fetchSettings/empty');
@@ -207,6 +237,24 @@ export const useSettingsStore = create<SettingsStore>()(
                         logger.error('SettingsStore', 'Failed to save settings to server', { error });
                         set({ isSyncing: false }, false, 'saveSettings/error');
                         // Settings remain in local state even if server save fails
+                    }
+                },
+
+                saveCompanySettingsToServer: async (updates: Partial<SettingsData>) => {
+                    const { activeCompanyId } = get();
+                    if (!activeCompanyId) {
+                        logger.warn('SettingsStore', 'No active company ID, skipping company settings save');
+                        return;
+                    }
+
+                    set({ isSyncing: true }, false, 'saveCompanySettings/start');
+                    try {
+                        await settingsService.updateCompanySettings(activeCompanyId, updates);
+                        set({ isSyncing: false }, false, 'saveCompanySettings/success');
+                        logger.info('SettingsStore', 'Company settings saved to server', { companyId: activeCompanyId });
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to save company settings to server', { error });
+                        set({ isSyncing: false }, false, 'saveCompanySettings/error');
                     }
                 },
 

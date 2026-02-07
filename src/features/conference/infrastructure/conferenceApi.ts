@@ -83,9 +83,10 @@ export const conferenceApi = {
      * Create a new conference room
      */
     create: async (data: {
-        name: string;
+        storeId: string;
+        externalId: string;
+        roomName: string;
         labelCode?: string;
-        templateName?: string;
         data?: Record<string, unknown>;
     }): Promise<ConferenceRoom> => {
         const response = await api.post<ServerConferenceRoom>('/conference', data);
@@ -96,9 +97,8 @@ export const conferenceApi = {
      * Update an existing conference room
      */
     update: async (id: string, data: {
-        name?: string;
+        roomName?: string;
         labelCode?: string | null;
-        templateName?: string | null;
         data?: Record<string, unknown>;
     }): Promise<ConferenceRoom> => {
         const response = await api.patch<ServerConferenceRoom>(`/conference/${id}`, data);
