@@ -42,9 +42,6 @@ export const peopleRepository = {
             prisma.person.findMany({
                 where,
                 include: {
-                    assignedSpace: {
-                        select: { id: true, externalId: true, labelCode: true },
-                    },
                     store: {
                         select: { name: true, code: true }
                     }
@@ -69,7 +66,6 @@ export const peopleRepository = {
                 storeId: { in: storeIds },
             },
             include: {
-                assignedSpace: true,
                 listMemberships: {
                     include: { list: true },
                 },
@@ -126,16 +122,7 @@ export const peopleRepository = {
     }) {
         return prisma.person.update({
             where: { id },
-            data: {
-                ...data,
-                assignedSpace: data.assignedSpaceId !== undefined
-                    ? data.assignedSpaceId
-                        ? { connect: { id: data.assignedSpaceId } }
-                        : { disconnect: true }
-                    : undefined,
-                assignedSpaceId: undefined, // Remove raw field, use relation
-            },
-            include: { assignedSpace: true },
+            data,
         });
     },
 

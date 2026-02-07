@@ -144,7 +144,6 @@ export const peopleController = {
             res.json(result);
         } catch (error: any) {
             if (error.message === 'PERSON_NOT_FOUND') return next(notFound('Person'));
-            if (error.message === 'SPACE_NOT_FOUND') return next(notFound('Space'));
             if (error.message === 'SPACE_ALREADY_ASSIGNED') return next(badRequest('Space is already assigned to another person'));
             next(error);
         }
