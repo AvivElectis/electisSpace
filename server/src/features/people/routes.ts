@@ -53,6 +53,6 @@ router.delete('/:id', requirePermission('people', 'delete'), peopleController.de
 router.post('/:id/assign', requirePermission('people', 'assign'), peopleController.assignToSpace);
 
 // Unassign person from space
-router.delete('/:id/unassign', requirePermission('people', 'assign'), peopleController.unassignFromSpace);
+router.post('/:id/unassign', requirePermission('people', 'assign'), peopleController.unassignFromSpace);
 
 export default router;

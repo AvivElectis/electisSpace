@@ -276,7 +276,6 @@ model Space {
   store           Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdBy       User?                    @relation("SpaceCreatedBy", fields: [createdById], references: [id])
   updatedBy       User?                    @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
-  assignedPeople  Person[]
   listMemberships PeopleListMembership[]
   
   @@unique([storeId, externalId])
@@ -308,7 +307,6 @@ model Person {
   
   // Relations
   store           Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  assignedSpace   Space?                   @relation(fields: [assignedSpaceId], references: [id])
   listMemberships PeopleListMembership[]
   
   @@index([storeId])

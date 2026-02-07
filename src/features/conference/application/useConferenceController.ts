@@ -159,8 +159,10 @@ export function useConferenceController({
             }
 
             // Update on server (which queues sync item)
-            const serverRoom = await updateRoomOnServer(id, {
-                roomName: updatedRoom.data?.roomName,
+            // Use serverId for API call (server UUID), fall back to id for legacy rooms
+            const apiId = existingRoom.serverId || id;
+            const serverRoom = await updateRoomOnServer(apiId, {
+                roomName: updatedRoom.roomName || updatedRoom.data?.roomName,
                 labelCode: updatedRoom.labelCode || null,
             });
 
@@ -191,7 +193,9 @@ export function useConferenceController({
             }
 
             // Delete on server (which queues sync item for AIMS delete)
-            const success = await deleteRoomOnServer(id);
+            // Use serverId for API call (server UUID), fall back to id for legacy rooms
+            const apiId = existingRoom.serverId || id;
+            const success = await deleteRoomOnServer(apiId);
             if (!success) {
                 throw new Error('Failed to delete conference room on server');
             }
@@ -224,7 +228,9 @@ export function useConferenceController({
             }
 
             // Toggle on server (which queues sync item)
-            const updatedRoom = await toggleMeetingOnServer(id, meetingData);
+            // Use serverId for API call (server UUID), fall back to id for legacy rooms
+            const apiId = room.serverId || id;
+            const updatedRoom = await toggleMeetingOnServer(apiId, meetingData);
             if (!updatedRoom) {
                 throw new Error('Failed to toggle meeting on server');
             }

@@ -61,13 +61,13 @@ export const useConferenceStore = create<ConferenceStore>()(
 
                 deleteConferenceRoomLocal: (id) =>
                     set((state) => ({
-                        conferenceRooms: state.conferenceRooms.filter((r) => r.id !== id),
+                        conferenceRooms: state.conferenceRooms.filter((r) => r.id !== id && r.serverId !== id),
                     }), false, 'deleteConferenceRoomLocal'),
 
                 toggleMeetingLocal: (id) =>
                     set((state) => ({
                         conferenceRooms: state.conferenceRooms.map((r) =>
-                            r.id === id
+                            (r.id === id || r.serverId === id)
                                 ? {
                                     ...r,
                                     hasMeeting: !r.hasMeeting,
@@ -118,7 +118,10 @@ export const useConferenceStore = create<ConferenceStore>()(
                     try {
                         const room = await conferenceApi.update(id, updates);
                         set((state) => ({
-                            conferenceRooms: state.conferenceRooms.map((r) => r.id === id ? room : r),
+                            // Match by serverId OR id (for rooms returned from server)
+                            conferenceRooms: state.conferenceRooms.map((r) =>
+                                (r.serverId === id || r.id === room.id) ? room : r
+                            ),
                             isLoading: false,
                         }), false, 'updateRoom/success');
                         return room;
@@ -134,7 +137,7 @@ export const useConferenceStore = create<ConferenceStore>()(
                     try {
                         await conferenceApi.delete(id);
                         set((state) => ({
-                            conferenceRooms: state.conferenceRooms.filter((r) => r.id !== id),
+                            conferenceRooms: state.conferenceRooms.filter((r) => r.id !== id && r.serverId !== id),
                             isLoading: false,
                         }), false, 'deleteRoom/success');
                         return true;
@@ -150,7 +153,7 @@ export const useConferenceStore = create<ConferenceStore>()(
                     try {
                         const room = await conferenceApi.toggleMeeting(id, meetingData);
                         set((state) => ({
-                            conferenceRooms: state.conferenceRooms.map((r) => r.id === id ? room : r),
+                            conferenceRooms: state.conferenceRooms.map((r) => (r.id === id || r.serverId === id) ? room : r),
                             isLoading: false,
                         }), false, 'toggleMeeting/success');
                         return room;

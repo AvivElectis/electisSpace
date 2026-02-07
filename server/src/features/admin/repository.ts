@@ -278,11 +278,6 @@ export const adminRepository = {
         const [people, total] = await Promise.all([
             prisma.person.findMany({
                 where,
-                include: {
-                    assignedSpace: {
-                        select: { id: true, externalId: true, labelCode: true },
-                    },
-                },
                 skip,
                 take,
                 orderBy: { createdAt: 'desc' },

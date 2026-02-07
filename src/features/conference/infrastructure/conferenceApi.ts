@@ -6,23 +6,22 @@
 import api from '@shared/infrastructure/services/apiClient';
 import type { ConferenceRoom } from '@shared/domain/types';
 
-// Server conference room type (matches server response)
+// Server conference room type (matches actual Prisma ConferenceRoom response)
 interface ServerConferenceRoom {
-    id: string;
-    name: string;
+    id: string;              // Server UUID
+    storeId: string;
+    externalId: string;      // Display ID (e.g., "12", "C01")
+    roomName: string;
     labelCode: string | null;
-    templateName: string | null;
     hasMeeting: boolean;
     meetingName: string | null;
     startTime: string | null;
     endTime: string | null;
     participants: string[];
-    data: Record<string, unknown>;
     syncStatus: 'PENDING' | 'SYNCED' | 'ERROR';
-    syncError: string | null;
-    organizationId: string;
     createdAt: string;
     updatedAt: string;
+    store?: { name: string; code: string };
 }
 
 // Stats response
@@ -38,23 +37,19 @@ interface ConferenceStatsResponse {
 
 // Transform server conference room to client format
 function transformRoom(serverRoom: ServerConferenceRoom): ConferenceRoom {
-    // Convert data values to strings (client type expects Record<string, string>)
-    const stringData: Record<string, string> = {};
-    if (serverRoom.data) {
-        for (const [key, value] of Object.entries(serverRoom.data)) {
-            stringData[key] = value != null ? String(value) : '';
-        }
-    }
-
     return {
-        id: serverRoom.id,
+        id: serverRoom.externalId,          // Display ID (e.g., "12", "C01")
+        serverId: serverRoom.id,             // Server UUID for API calls
+        roomName: serverRoom.roomName,
         hasMeeting: serverRoom.hasMeeting,
         meetingName: serverRoom.meetingName || '',
         startTime: serverRoom.startTime || '',
         endTime: serverRoom.endTime || '',
         participants: serverRoom.participants || [],
         labelCode: serverRoom.labelCode || undefined,
-        data: stringData,
+        data: {
+            roomName: serverRoom.roomName,   // Keep in data for backward compat
+        },
     };
 }
 
