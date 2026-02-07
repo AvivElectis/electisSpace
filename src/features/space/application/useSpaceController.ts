@@ -3,33 +3,31 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import { validateSpace, isSpaceIdUnique } from '../domain/validation';
 import { mergeSpaceDefaults, generateSpaceId } from '../domain/businessRules';
-import type { Space, CSVConfig, SolumConfig } from '@shared/domain/types';
+import type { Space, CSVConfig } from '@shared/domain/types';
 import type { SpacesList } from '../domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { logger } from '@shared/infrastructure/services/logger';
-import * as solumService from '@shared/infrastructure/services/solumService';
-import { SolumSyncAdapter } from '../../sync/infrastructure/SolumSyncAdapter';
-import { withAimsTokenRefresh, getValidAimsToken } from '@shared/infrastructure/services/aimsTokenManager';
 
 /**
  * Space Controller Hook
- * Main orchestration for space CRUD operations
- * Supports SoluM API mode
+ * Main orchestration for space CRUD operations.
+ * 
+ * Architecture: Server-first.
+ * - All CRUD ops go to the server DB first.
+ * - Server queues AIMS sync items automatically (syncQueueService).
+ * - After each CRUD op, we trigger onSync() which pushes the queue to AIMS via the server.
+ * - NO direct AIMS calls from the client (except label assignment which is separate).
  */
 
 interface UseSpaceControllerProps {
     csvConfig: CSVConfig;
     onSync?: () => Promise<void>;  // Callback to trigger sync after changes
-    solumConfig?: SolumConfig;
-    solumToken?: string;
     solumMappingConfig?: SolumMappingConfig;
 }
 
 export function useSpaceController({
     csvConfig,
     onSync,
-    solumConfig,
-    solumToken,
     solumMappingConfig,
 }: UseSpaceControllerProps) {
     const {
@@ -53,9 +51,7 @@ export function useSpaceController({
 
     /**
      * Add new space
-     */
-    /**
-     * Add new space
+     * Creates in server DB (which queues AIMS sync), then triggers push.
      */
     const addSpace = useCallback(
         async (spaceData: Partial<Space>): Promise<void> => {
@@ -87,12 +83,7 @@ export function useSpaceController({
             // Merge with defaults
             const space = mergeSpaceDefaults(spaceData, csvConfig);
 
-            // ---------------------------------------------------------
-            // ENFORCED SERVER ARCHITECTURE (SoluM Mode Only)
-            // ---------------------------------------------------------
-
-            // 1. Create in Server DB
-            // We map local 'id' to 'externalId' for server creation
+            // Create in Server DB — server queues AIMS sync automatically
             const serverPayload = {
                 externalId: space.id,
                 labelCode: space.labelCode || undefined,
@@ -105,62 +96,7 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space persisted to Server DB', { id: space.id });
 
-            // 2. Push to SoluM AIMS
-            if (solumConfig && solumMappingConfig) {
-                logger.info('SpaceController', 'Pushing article to AIMS', { id: space.id });
-
-                const data: Record<string, any> = {};
-                const mappingInfo = solumMappingConfig.mappingInfo;
-
-                Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                    if (fieldConfig.visible) {
-                        let value: any = undefined;
-                        if (mappingInfo?.articleId === fieldKey) {
-                            value = space.id;
-                        } else if (space.data && space.data[fieldKey] !== undefined) {
-                            value = space.data[fieldKey];
-                        } else if ((space as any)[fieldKey] !== undefined) {
-                            value = (space as any)[fieldKey];
-                        }
-                        if (value !== undefined && value !== null && value !== '') {
-                            data[fieldKey] = value;
-                        }
-                    }
-                });
-
-                if (solumMappingConfig.globalFieldAssignments) {
-                    Object.assign(data, solumMappingConfig.globalFieldAssignments);
-                }
-
-                const aimsArticle: any = { data: data };
-                if (mappingInfo?.articleId && data[mappingInfo.articleId]) {
-                    aimsArticle.articleId = String(data[mappingInfo.articleId]);
-                } else {
-                    aimsArticle.articleId = space.id;
-                }
-
-                // ... other mappings ...
-                if (mappingInfo?.articleName && data[mappingInfo.articleName]) aimsArticle.articleName = String(data[mappingInfo.articleName]);
-                else aimsArticle.articleName = space.id;
-                if (mappingInfo?.store && data[mappingInfo.store]) aimsArticle.store = String(data[mappingInfo.store]);
-                if (mappingInfo?.nfcUrl && data[mappingInfo.nfcUrl]) aimsArticle.nfcUrl = String(data[mappingInfo.nfcUrl]);
-
-                await withAimsTokenRefresh(async (token) => {
-                    await solumService.pushArticles(
-                        solumConfig,
-                        solumConfig.storeNumber,
-                        token,
-                        [aimsArticle]
-                    );
-                });
-                logger.info('SpaceController', 'Article pushed to AIMS successfully');
-            } else {
-                logger.warn('SpaceController', 'SoluM config missing, skipping push to AIMS', {
-                    hasConfig: !!solumConfig, hasMapping: !!solumMappingConfig
-                });
-            }
-
-            // Trigger sync
+            // Trigger server-side push to AIMS
             if (onSync) {
                 try {
                     await onSync();
@@ -171,14 +107,12 @@ export function useSpaceController({
 
             logger.info('SpaceController', 'Space added successfully', { id: space.id });
         },
-        [spaces, csvConfig, createInStore, onSync, solumConfig, solumMappingConfig]
+        [spaces, csvConfig, createInStore, onSync, solumMappingConfig]
     );
 
     /**
      * Update existing space
-     */
-    /**
-     * Update existing space
+     * Updates in server DB (which queues AIMS sync), then triggers push.
      */
     const updateSpace = useCallback(
         async (id: string, updates: Partial<Space>): Promise<void> => {
@@ -200,57 +134,27 @@ export function useSpaceController({
                 throw new Error(`Validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
             }
 
-            // ---------------------------------------------------------
-            // SERVER FIRST ARCHITECTURE: Always update in Server DB
-            // ---------------------------------------------------------
-            try {
-                const saved = await updateInStore(id, updatedSpace);
-                if (!saved) throw new Error("Failed to update space on server");
+            // Update in Server DB — server queues AIMS sync automatically
+            const saved = await updateInStore(id, updatedSpace);
+            if (!saved) throw new Error("Failed to update space on server");
 
-                logger.info('SpaceController', 'Space updated in Server DB', { id });
+            logger.info('SpaceController', 'Space updated in Server DB', { id });
 
-                // ---------------------------------------------------------
-                // Secondary Actions: SoluM Mode
-                // ---------------------------------------------------------
-                if (solumConfig && solumMappingConfig) {
-                    const space = updatedSpace as Space;
-                    const data: Record<string, any> = {};
-                    Object.entries(solumMappingConfig.fields).forEach(([fieldKey, fieldConfig]) => {
-                        if (fieldConfig.visible) {
-                            const value = space.data[fieldKey] || (space as any)[fieldKey];
-                            if (value) data[fieldKey] = value;
-                        }
-                    });
-                    const aimsArticle: any = {
-                        data,
-                        articleId: space.id,
-                        articleName: space.id
-                    };
-                    // Apply mappings omitted for brevity...
-
-                    await withAimsTokenRefresh(async (token) => {
-                        await solumService.pushArticles(
-                            solumConfig,
-                            solumConfig.storeNumber,
-                            token,
-                            [aimsArticle]
-                        );
-                    });
-                    logger.info('SpaceController', 'Article update pushed to AIMS');
+            // Trigger server-side push to AIMS
+            if (onSync) {
+                try {
+                    await onSync();
+                } catch (error) {
+                    logger.warn('SpaceController', 'Sync after update failed', { error });
                 }
-            } catch (error) {
-                logger.error("SpaceController", "Failed to update space", { error });
-                throw error;
             }
         },
-        [spaces, csvConfig, updateInStore, solumConfig, solumMappingConfig]
+        [spaces, csvConfig, updateInStore, onSync]
     );
 
     /**
      * Delete space
-     */
-    /**
-     * Delete space
+     * Deletes from server DB (which queues AIMS sync), then triggers push.
      */
     const deleteSpace = useCallback(
         async (id: string): Promise<void> => {
@@ -259,38 +163,22 @@ export function useSpaceController({
             const existingSpace = spaces.find(s => s.id === id);
             if (!existingSpace) throw new Error('Space not found');
 
-            // ---------------------------------------------------------
-            // SERVER FIRST ARCHITECTURE: Always delete from Server DB
-            // ---------------------------------------------------------
-            try {
-                const success = await deleteInStore(id);
-                if (!success) throw new Error("Failed to delete space on server");
+            // Delete from Server DB — server queues AIMS delete automatically
+            const success = await deleteInStore(id);
+            if (!success) throw new Error("Failed to delete space on server");
 
-                logger.info('SpaceController', 'Space deleted from Server DB', { id });
+            logger.info('SpaceController', 'Space deleted from Server DB', { id });
 
-                // ---------------------------------------------------------
-                // Secondary Actions: SoluM Mode
-                // ---------------------------------------------------------
-                if (solumConfig) {
-                    try {
-                        const token = await getValidAimsToken();
-                        await solumService.deleteArticles(
-                            solumConfig,
-                            solumConfig.storeNumber,
-                            token,
-                            [existingSpace.id]
-                        );
-                        logger.info('SpaceController', 'Article deleted from AIMS');
-                    } catch (e) {
-                        logger.warn("SpaceController", "Failed to delete from AIMS (Server delete succeeded)", { error: e });
-                    }
+            // Trigger server-side push to AIMS (processes the DELETE queue item)
+            if (onSync) {
+                try {
+                    await onSync();
+                } catch (error) {
+                    logger.warn('SpaceController', 'Sync after delete failed', { error });
                 }
-            } catch (error) {
-                logger.error("SpaceController", "Failed to delete space", { error });
-                throw error;
             }
         },
-        [spaces, deleteInStore, solumConfig]
+        [spaces, deleteInStore, onSync]
     );
 
     // Helpers
@@ -299,24 +187,19 @@ export function useSpaceController({
     const getAllSpaces = useCallback(() => spaces, [spaces]);
 
     const fetchFromSolum = useCallback(async () => {
-        // Keep this for "Refresh from AIMS" button
-        if (!solumConfig || !solumMappingConfig) return;
+        // "Refresh from AIMS" — triggers a server-side pull then refreshes local store
         setIsFetching(true);
         try {
-            const token = await getValidAimsToken();
-            const adapter = new SolumSyncAdapter(
-                solumConfig,
-                csvConfig,
-                () => { },
-                { ...solumConfig.tokens!, accessToken: token } as any,
-                solumMappingConfig
-            );
-            const spaces = await adapter.download();
-            importFromSync(spaces);
+            if (onSync) {
+                await onSync();
+            }
+            // Re-fetch from server DB (which now has AIMS data from pull)
+            await fetchFromStore();
+            logger.info('SpaceController', 'Refreshed from AIMS via server');
         } finally {
             setIsFetching(false);
         }
-    }, [solumConfig, solumMappingConfig, csvConfig, importFromSync]);
+    }, [onSync, fetchFromStore]);
 
     // List operations
     const saveSpacesList = useCallback((name: string, id?: string) => {

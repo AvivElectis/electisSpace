@@ -108,8 +108,8 @@ export const conferenceService = {
             throw 'NOT_FOUND';
         }
 
-        // Queue sync job to delete from AIMS first
-        await syncQueueService.queueDelete(existing.storeId, 'conference', existing.id, existing.externalId);
+        // Queue sync job to delete from AIMS first (with 'C' prefix)
+        await syncQueueService.queueDelete(existing.storeId, 'conference', existing.id, `C${existing.externalId}`);
 
         await conferenceRepository.delete(roomId);
     },
