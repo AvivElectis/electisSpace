@@ -1077,7 +1077,27 @@
         "selectStore": "Select a Store",
         "selectStoreDescription": "Please choose a store to connect to. This determines which AIMS data you can access.",
         "noStoresAssigned": "No stores assigned to your account. Contact your administrator.",
-        "storeCode": "Code"
+        "storeCode": "Code",
+        "checkingConnection": "Checking connection...",
+        "checkingConnectionFailed": "Failed to check store connection.",
+        "chooseOtherStore": "Choose a different store",
+        "continueWithoutAims": "Continue without AIMS",
+        "aimsNotConfiguredTitle": "AIMS Not Configured",
+        "notConnectedToAims": "The store \"{{storeName}}\" ({{companyName}}) is not yet connected to AIMS. Please contact one of your administrators to set it up.",
+        "adminContacts": "Administrators you can contact:",
+        "noAdminsFound": "No administrators found. Please contact your organization.",
+        "aimsCredentials": {
+            "title": "Connect AIMS for {{companyName}}",
+            "description": "AIMS credentials are required to connect this store. Please enter the AIMS server details for your company.",
+            "baseUrl": "AIMS Base URL",
+            "cluster": "Cluster",
+            "username": "Username",
+            "password": "Password",
+            "fillAllFields": "Please fill in all fields.",
+            "connectionFailed": "Connection test failed. Please verify your credentials.",
+            "saveFailed": "Failed to save AIMS credentials.",
+            "connectAndSave": "Connect & Save"
+        }
     },
     "roles": {
         "admin": "Admin",

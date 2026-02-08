@@ -72,8 +72,22 @@ export function buildPersonArticle(
 }
 
 /**
+ * Conference mapping configuration from company settings.
+ * When provided, uses the company's configured AIMS field names.
+ */
+export interface ConferenceMappingConfig {
+    meetingName: string;   // AIMS field key for meeting name
+    meetingTime: string;   // AIMS field key for meeting time ("START - END" format)
+    participants: string;  // AIMS field key for participants (comma-separated)
+}
+
+/**
  * Build an AIMS article for a ConferenceRoom entity.
  * articleId = "C" + room.externalId
+ * 
+ * Uses the company's conferenceMapping (from settings.solumMappingConfig.conferenceMapping)
+ * to map meeting fields to the correct AIMS field names.
+ * Falls back to hardcoded data1-data5 if no mapping is provided.
  */
 export function buildConferenceArticle(
     room: {
@@ -86,18 +100,35 @@ export function buildConferenceArticle(
         participants: string[];
     },
     format: ArticleFormat | null,
+    conferenceMapping?: ConferenceMappingConfig | null,
 ): any {
     const articleId = `C${room.externalId}`;
     const articleName = room.roomName || `Conference ${room.externalId}`;
 
-    // Conference rooms store their state in specific data fields
-    const conferenceData: Record<string, any> = {
-        data1: room.hasMeeting ? 'MEETING' : 'AVAILABLE',
-        data2: room.meetingName || '',
-        data3: room.startTime || '',
-        data4: room.endTime || '',
-        data5: room.participants?.join(', ') || '',
-    };
+    const conferenceData: Record<string, any> = {};
+
+    if (conferenceMapping && conferenceMapping.meetingName && conferenceMapping.meetingTime && conferenceMapping.participants) {
+        // Use configured field names from company settings
+        if (room.meetingName) {
+            conferenceData[conferenceMapping.meetingName] = room.meetingName;
+        }
+        // Combine start and end time into "START - END" format
+        if (room.startTime && room.endTime) {
+            conferenceData[conferenceMapping.meetingTime] = `${room.startTime} - ${room.endTime}`;
+        } else if (room.startTime) {
+            conferenceData[conferenceMapping.meetingTime] = room.startTime;
+        }
+        if (room.participants?.length > 0) {
+            conferenceData[conferenceMapping.participants] = room.participants.join(', ');
+        }
+    } else {
+        // Fallback: hardcoded field names (legacy/unconfigured)
+        conferenceData['data1'] = room.hasMeeting ? 'MEETING' : 'AVAILABLE';
+        conferenceData['data2'] = room.meetingName || '';
+        conferenceData['data3'] = room.startTime || '';
+        conferenceData['data4'] = room.endTime || '';
+        conferenceData['data5'] = room.participants?.join(', ') || '';
+    }
 
     return buildArticle(articleId, articleName, '', conferenceData, format);
 }

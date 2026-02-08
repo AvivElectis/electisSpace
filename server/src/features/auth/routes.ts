@@ -109,6 +109,9 @@ router.post('/solum-connect', authenticate, authController.solumConnect);
 // POST /auth/solum-refresh - Refresh AIMS token using server-side credentials
 router.post('/solum-refresh', authenticate, authController.solumRefresh);
 
+// GET /auth/store-connection-info - Get AIMS status and admin contacts for a store
+router.get('/store-connection-info', authenticate, authController.storeConnectionInfo);
+
 // ======================
 // Admin Routes
 // ======================
