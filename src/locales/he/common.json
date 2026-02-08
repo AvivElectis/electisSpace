@@ -891,6 +891,8 @@
         "addPerson": "הוסף אדם",
         "editPerson": "ערוך אדם",
         "deletePerson": "מחק אדם",
+        "removeSelectedPeople": "הסר נבחרים",
+        "removeSelectedPeopleConfirm": "האם אתה בטוח שברצונך למחוק לצמיתות {{count}} אנשים שנבחרו? לא ניתן לבטל פעולה זו.",
         "id": "מזהה",
         "name": "שם",
         "assignedSpace": "{{spaceTypeSingular}} מוקצה",

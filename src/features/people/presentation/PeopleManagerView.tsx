@@ -87,31 +87,41 @@ export function PeopleManagerView() {
 
         // Always fetch fresh people from server first
         fetchPeople()
-            .then(() => {
+            .then(async () => {
                 if (activeListId) {
-                    // A list is active — re-apply its assignments from _LIST_MEMBERSHIPS_
-                    // (same logic as loadList uses: rebuild from memberships, NOT from stale snapshot)
-                    const store = usePeopleStore.getState();
-                    const list = store.peopleLists.find(l => l.id === activeListId);
-                    if (list) {
-                        const storageName = list.storageName || list.id.replace('aims-list-', '');
+                    // A list is active — re-apply its assignments from the DB snapshot
+                    try {
+                        const result = await peopleApi.lists.getById(activeListId);
+                        const listData = result.data;
+
+                        // Build assignment map from snapshot
+                        const snapshotAssignments = new Map<string, string | undefined>();
+                        if (listData.content && Array.isArray(listData.content)) {
+                            for (const item of listData.content) {
+                                snapshotAssignments.set(item.id, item.assignedSpaceId || undefined);
+                            }
+                        }
+
+                        const store = usePeopleStore.getState();
                         const updatedPeople = store.people.map(person => {
-                            const memberships = (person as any)._LIST_MEMBERSHIPS_ as Array<{ listName: string; spaceId?: string }> | undefined;
-                            const membership = memberships?.find((m: { listName: string }) => m.listName === storageName);
-                            if (membership) {
-                                return { ...person, assignedSpaceId: membership.spaceId || undefined };
+                            if (snapshotAssignments.has(person.id)) {
+                                return { ...person, assignedSpaceId: snapshotAssignments.get(person.id) };
                             }
                             return { ...person, assignedSpaceId: undefined };
                         });
                         store.setPeople(updatedPeople);
                         store.updateSpaceAllocation();
-                        logger.info('PeopleManagerView', 'Applied list overlay on mount', {
+                        logger.info('PeopleManagerView', 'Applied list overlay on mount from DB snapshot', {
                             listId: activeListId,
-                            name: list.name,
+                            name: listData.name,
+                            snapshotCount: snapshotAssignments.size,
                         });
-                    } else {
-                        // List not found locally — try fetching from DB
-                        logger.warn('PeopleManagerView', 'Active list not found in store, clearing', { activeListId });
+                    } catch (err) {
+                        // List may have been deleted — clear active list
+                        logger.warn('PeopleManagerView', 'Failed to fetch active list, clearing', {
+                            activeListId,
+                            error: err instanceof Error ? err.message : 'Unknown',
+                        });
                         usePeopleStore.getState().setActiveListId(undefined);
                         usePeopleStore.getState().setActiveListName(undefined);
                     }
@@ -359,6 +369,25 @@ export function PeopleManagerView() {
         }
     }, [sortedPeople, selectedIds, availableSpaces, people, totalSpaces, confirm, t, tWithSpaceType, peopleController]);
 
+    const handleRemoveSelectedPeople = useCallback(async () => {
+        if (selectedIds.size === 0) return;
+
+        const confirmed = await confirm({
+            title: t('people.removeSelectedPeople'),
+            message: t('people.removeSelectedPeopleConfirm', { count: selectedIds.size }),
+            confirmLabel: t('common.dialog.delete'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'error'
+        });
+
+        if (confirmed) {
+            for (const id of selectedIds) {
+                await peopleController.deletePerson(id);
+            }
+            setSelectedIds(new Set());
+        }
+    }, [selectedIds, confirm, t, peopleController]);
+
     const handleCancelAllAssignments = useCallback(async () => {
         const assignedPeople = people.filter(p => p.assignedSpaceId);
         if (assignedPeople.length === 0) {
@@ -424,6 +453,7 @@ export function PeopleManagerView() {
                 selectedCount={selectedIds.size}
                 onBulkAssign={handleBulkAssign}
                 onCancelAllAssignments={handleCancelAllAssignments}
+                onRemoveSelected={handleRemoveSelectedPeople}
                 assignedCount={assignedCount}
             />
 

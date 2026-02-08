@@ -242,6 +242,7 @@ export const usePeopleStore = create<PeopleStore>()(
                         set((state) => ({
                             people: state.people.map((p) => p.id === personId ? person : p),
                             isLoading: false,
+                            pendingChanges: state.activeListId ? true : state.pendingChanges,
                         }), false, 'assignSpace/success');
                         get().updateSpaceAllocation();
                         return person;
@@ -259,6 +260,7 @@ export const usePeopleStore = create<PeopleStore>()(
                         set((state) => ({
                             people: state.people.map((p) => p.id === personId ? person : p),
                             isLoading: false,
+                            pendingChanges: state.activeListId ? true : state.pendingChanges,
                         }), false, 'unassignSpace/success');
                         get().updateSpaceAllocation();
                         return person;

@@ -6,6 +6,7 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import { getValidAimsToken } from '@shared/infrastructure/services/aimsTokenManager';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
+import { peopleApi } from '@shared/infrastructure/services/peopleApi';
 import type { Person, PeopleList } from '../domain/types';
 import { getVirtualSpaceId, isPersonInList, removePersonFromList } from '../domain/types';
 import { getNextPoolId, isPoolId } from '../infrastructure/virtualPoolService';
@@ -340,63 +341,74 @@ export function usePeopleController() {
 
     /**
      * Load a saved list with AIMS synchronization
-     * Loads a list by setting it as active and restoring assignments from _LIST_MEMBERSHIPS_
+     * Fetches the list snapshot from DB, applies its assignments, and syncs differences to AIMS.
      * @param listId - ID of list to load
-     * @param _autoApply - Ignored (kept for API compatibility, always applies assignments)
+     * @param _autoApply - Ignored (kept for API compatibility)
      */
     const loadList = useCallback(async (listId: string, _autoApply?: boolean): Promise<void> => {
         try {
-            // Get the list to load
-            const listToLoad = getStoreState().peopleLists.find(l => l.id === listId);
-            if (!listToLoad) {
-                throw new Error('List not found');
-            }
+            logger.info('PeopleController', 'Loading list from DB', { listId });
 
-            const storageName = listToLoad.storageName || listToLoad.id.replace('aims-list-', '');
+            // 1. Fetch the full list (with content snapshot) from the server DB
+            const result = await peopleApi.lists.getById(listId);
+            const listData = result.data;
 
-            logger.info('PeopleController', 'Loading list', {
+            logger.info('PeopleController', 'List fetched', {
                 listId,
-                name: listToLoad.name,
-                storageName
+                name: listData.name,
+                snapshotCount: listData.content?.length ?? 0,
             });
 
             // Set active list metadata
             getStoreState().setActiveListId(listId);
-            getStoreState().setActiveListName(listToLoad.name);
+            getStoreState().setActiveListName(listData.name);
 
-            // Compute desired assignments from _LIST_MEMBERSHIPS_
+            // 2. Build assignment map from the list's snapshot: personId → assignedSpaceId
+            const snapshotAssignments = new Map<string, string | undefined>();
+            if (listData.content && Array.isArray(listData.content)) {
+                for (const item of listData.content) {
+                    snapshotAssignments.set(item.id, item.assignedSpaceId || undefined);
+                }
+            }
+
+            // 3. Compute diffs between current server state and desired (snapshot) state
             const currentPeople = getStoreState().people;
-            const toUnassign: string[] = [];   // person IDs to unassign via server
-            const toAssign: Array<{ personId: string; spaceId: string }> = []; // assignments to make via server
+            const toUnassign: string[] = [];
+            const toAssign: Array<{ personId: string; spaceId: string }> = [];
 
             const updatedPeople = currentPeople.map(person => {
-                const memberships = (person as any)._LIST_MEMBERSHIPS_ as Array<{ listName: string; spaceId?: string }> | undefined;
-                const membership = memberships?.find(m => m.listName === storageName);
-                const desiredSpaceId = membership?.spaceId || undefined;
                 const currentSpaceId = person.assignedSpaceId || undefined;
 
-                if (currentSpaceId && !desiredSpaceId) {
-                    // Was assigned, should be unassigned → queue server unassign
-                    toUnassign.push(person.id);
-                } else if (desiredSpaceId && desiredSpaceId !== currentSpaceId) {
-                    // Should be assigned to a (different) space → queue server assign
-                    toAssign.push({ personId: person.id, spaceId: desiredSpaceId });
-                }
+                if (snapshotAssignments.has(person.id)) {
+                    // Person is in the list — use the saved assignment
+                    const desiredSpaceId = snapshotAssignments.get(person.id);
 
-                return { ...person, assignedSpaceId: desiredSpaceId };
+                    if (currentSpaceId && !desiredSpaceId) {
+                        toUnassign.push(person.id);
+                    } else if (desiredSpaceId && desiredSpaceId !== currentSpaceId) {
+                        toAssign.push({ personId: person.id, spaceId: desiredSpaceId });
+                    }
+
+                    return { ...person, assignedSpaceId: desiredSpaceId };
+                } else {
+                    // Person NOT in the list — clear their assignment
+                    if (currentSpaceId) {
+                        toUnassign.push(person.id);
+                    }
+                    return { ...person, assignedSpaceId: undefined };
+                }
             });
 
-            // Update local state immediately for responsiveness
+            // 4. Update local state immediately for responsiveness
             getStoreState().setPeople(updatedPeople);
             getStoreState().updateSpaceAllocation();
 
-            // Sync changes to server + AIMS
+            // 5. Sync changes to server + AIMS
             logger.info('PeopleController', 'List load: syncing changes to server', {
                 toUnassign: toUnassign.length,
                 toAssign: toAssign.length,
             });
 
-            // Unassign people who were assigned but aren't in this list
             for (const personId of toUnassign) {
                 try {
                     await getStoreState().unassignSpace(personId);
@@ -405,7 +417,6 @@ export function usePeopleController() {
                 }
             }
 
-            // Assign people to their list-specified spaces
             for (const { personId, spaceId } of toAssign) {
                 try {
                     await getStoreState().assignSpace(personId, spaceId);
@@ -414,7 +425,7 @@ export function usePeopleController() {
                 }
             }
 
-            // Trigger push to process sync queue → AIMS
+            // 6. Trigger push to process sync queue → AIMS
             if (toUnassign.length > 0 || toAssign.length > 0) {
                 await triggerPush();
             }
@@ -423,7 +434,7 @@ export function usePeopleController() {
 
             logger.info('PeopleController', 'List loaded successfully', {
                 listId,
-                name: listToLoad.name,
+                name: listData.name,
                 unassigned: toUnassign.length,
                 assigned: toAssign.length,
             });
