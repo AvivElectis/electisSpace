@@ -12,8 +12,11 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useTranslation } from 'react-i18next';
-import { usePeopleLists } from '../application/hooks/usePeopleLists';
 import { LIST_NAME_MAX_LENGTH } from '../domain/types';
+import { usePeopleStore } from '../infrastructure/peopleStore';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { peopleApi } from '@shared/infrastructure/services/peopleApi';
+import { logger } from '@shared/infrastructure/services/logger';
 
 interface PeopleSaveListDialogProps {
     open: boolean;
@@ -22,71 +25,92 @@ interface PeopleSaveListDialogProps {
 
 /**
  * Save People List Dialog
- * Allows saving current people as a named list
- * Validates: max 20 chars, letters/numbers/spaces only
- * Auto-syncs to AIMS after saving for cross-device persistence
+ * Saves current people + assignments to DB for all users in the store.
+ * NO direct AIMS sync - server sync intervals will handle that.
  */
 export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProps) {
     const { t } = useTranslation();
-    const { savePeopleList, validateListName, saveListToAims } = usePeopleLists();
+    const peopleStore = usePeopleStore();
+    const activeStoreId = useAuthStore(state => state.activeStoreId);
     const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async () => {
-        // Validate the name
-        const validation = validateListName(name);
-        if (!validation.valid) {
-            setError(validation.error || t('validation.invalidInput'));
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            setError(t('validation.required'));
+            return;
+        }
+
+        if (trimmedName.length > LIST_NAME_MAX_LENGTH) {
+            setError(t('lists.nameTooLong', { max: LIST_NAME_MAX_LENGTH }));
+            return;
+        }
+
+        if (!activeStoreId) {
+            setError(t('common.noStoreSelected') || 'No store selected');
             return;
         }
 
         setIsSaving(true);
-        try {
-            // Step 1: Save list locally (updates _LIST_MEMBERSHIPS_ on all people)
-            const result = savePeopleList(name.trim());
-            if (!result.success) {
-                setError(result.error || t('common.unknownError'));
-                setIsSaving(false);
-                return;
-            }
+        setError(null);
 
-            // Step 2: Sync to AIMS for cross-device persistence
-            // Pass the updated people directly to avoid stale closure issue
-            const aimsResult = await saveListToAims(result.updatedPeople);
-            if (!aimsResult.success) {
-                // List saved locally but AIMS sync failed - show warning
-                setError(t('lists.savedLocallyAimsFailed', { error: aimsResult.error }) || 
-                    `List saved locally but AIMS sync failed: ${aimsResult.error}`);
-                setIsSaving(false);
-                return;
-            }
+        try {
+            // Build the content snapshot from current people
+            const content = peopleStore.people.map(p => ({
+                id: p.id,
+                virtualSpaceId: p.virtualSpaceId,
+                data: p.data,
+                assignedSpaceId: p.assignedSpaceId,
+                listMemberships: p.listMemberships,
+            }));
+
+            // Save to DB via API (shared between all users in the store)
+            const result = await peopleApi.lists.create({
+                storeId: activeStoreId,
+                name: trimmedName,
+                content,
+            });
+
+            // Set active list in local store
+            const savedList = result.data;
+            peopleStore.setActiveListId(savedList.id);
+            peopleStore.setActiveListName(savedList.name);
+            peopleStore.clearPendingChanges();
+
+            logger.info('PeopleSaveListDialog', 'List saved to DB', {
+                listId: savedList.id,
+                name: savedList.name,
+                peopleCount: content.length,
+            });
 
             setName('');
             setError(null);
-            setIsSaving(false);
             onClose();
-        } catch (err) {
-            console.error('[SaveListDialog] Error:', err);
-            setIsSaving(false);
-            if (err instanceof Error) {
+        } catch (err: any) {
+            console.error('[PeopleSaveListDialog] Error:', err);
+            if (err?.response?.status === 409) {
+                setError(t('lists.nameExists') || 'A list with this name already exists');
+            } else if (err?.response?.data?.error?.message) {
+                setError(err.response.data.error.message);
+            } else if (err instanceof Error) {
                 setError(err.message);
             } else {
                 setError(t('common.unknownError'));
             }
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleNameChange = (value: string) => {
         setName(value);
-        // Clear error when user types
-        if (error) {
-            setError(null);
-        }
+        if (error) setError(null);
     };
 
     const handleClose = () => {
-        if (isSaving) return; // Prevent closing while saving
+        if (isSaving) return;
         setName('');
         setError(null);
         onClose();

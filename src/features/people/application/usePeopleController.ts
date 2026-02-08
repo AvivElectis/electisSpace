@@ -364,40 +364,74 @@ export function usePeopleController() {
             getStoreState().setActiveListId(listId);
             getStoreState().setActiveListName(listToLoad.name);
 
-            // Restore people's assignments from their _LIST_MEMBERSHIPS_
-            const updatedPeople = getStoreState().people.map(person => {
-                // Check if person is a member of this list
+            // Compute desired assignments from _LIST_MEMBERSHIPS_
+            const currentPeople = getStoreState().people;
+            const toUnassign: string[] = [];   // person IDs to unassign via server
+            const toAssign: Array<{ personId: string; spaceId: string }> = []; // assignments to make via server
+
+            const updatedPeople = currentPeople.map(person => {
                 const memberships = (person as any)._LIST_MEMBERSHIPS_ as Array<{ listName: string; spaceId?: string }> | undefined;
                 const membership = memberships?.find(m => m.listName === storageName);
+                const desiredSpaceId = membership?.spaceId || undefined;
+                const currentSpaceId = person.assignedSpaceId || undefined;
 
-                if (membership) {
-                    // Person is in this list - restore their saved assignment
-                    return {
-                        ...person,
-                        assignedSpaceId: membership.spaceId || undefined
-                    };
+                if (currentSpaceId && !desiredSpaceId) {
+                    // Was assigned, should be unassigned → queue server unassign
+                    toUnassign.push(person.id);
+                } else if (desiredSpaceId && desiredSpaceId !== currentSpaceId) {
+                    // Should be assigned to a (different) space → queue server assign
+                    toAssign.push({ personId: person.id, spaceId: desiredSpaceId });
                 }
 
-                // Person not in this list - clear their assignment
-                return {
-                    ...person,
-                    assignedSpaceId: undefined
-                };
+                return { ...person, assignedSpaceId: desiredSpaceId };
             });
 
+            // Update local state immediately for responsiveness
             getStoreState().setPeople(updatedPeople);
             getStoreState().updateSpaceAllocation();
+
+            // Sync changes to server + AIMS
+            logger.info('PeopleController', 'List load: syncing changes to server', {
+                toUnassign: toUnassign.length,
+                toAssign: toAssign.length,
+            });
+
+            // Unassign people who were assigned but aren't in this list
+            for (const personId of toUnassign) {
+                try {
+                    await getStoreState().unassignSpace(personId);
+                } catch (err: any) {
+                    logger.warn('PeopleController', 'Failed to unassign during list load', { personId, error: err.message });
+                }
+            }
+
+            // Assign people to their list-specified spaces
+            for (const { personId, spaceId } of toAssign) {
+                try {
+                    await getStoreState().assignSpace(personId, spaceId);
+                } catch (err: any) {
+                    logger.warn('PeopleController', 'Failed to assign during list load', { personId, spaceId, error: err.message });
+                }
+            }
+
+            // Trigger push to process sync queue → AIMS
+            if (toUnassign.length > 0 || toAssign.length > 0) {
+                await triggerPush();
+            }
+
             getStoreState().clearPendingChanges();
 
             logger.info('PeopleController', 'List loaded successfully', {
                 listId,
-                name: listToLoad.name
+                name: listToLoad.name,
+                unassigned: toUnassign.length,
+                assigned: toAssign.length,
             });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to load people list', { error: error.message });
             throw error;
         }
-    }, []);
+    }, [triggerPush]);
 
     /**
      * Delete a list - removes list from store, clears _LIST_MEMBERSHIPS_ from people, and syncs to AIMS

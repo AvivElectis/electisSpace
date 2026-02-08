@@ -17,7 +17,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useTranslation } from 'react-i18next';
-import { usePeopleLists } from '../../application/hooks/usePeopleLists';
+import { usePeopleStore } from '../../infrastructure/peopleStore';
+import { peopleApi } from '@shared/infrastructure/services/peopleApi';
+import { logger } from '@shared/infrastructure/services/logger';
 
 interface PeopleListPanelProps {
     onManageLists: () => void;
@@ -25,48 +27,67 @@ interface PeopleListPanelProps {
 }
 
 /**
- * PeopleListPanel - List management panel for saving/loading people lists
- * Lists are derived from AIMS data (_LIST_NAME_ field on synced people).
- * Save as New creates a list by setting listName on all people (sync to AIMS to persist).
+ * PeopleListPanel - List management panel for saving/loading people lists.
+ * Lists are saved to DB (shared between all users in the store).
+ * Save Changes updates the DB with current table state.
  */
 export function PeopleListPanel({
     onManageLists,
     onSaveAsNew,
 }: PeopleListPanelProps) {
     const { t } = useTranslation();
-    const {
-        activeListId,
-        loadedListMetadata,
-        pendingChanges,
-        updateCurrentList,
-    } = usePeopleLists();
+    const activeListId = usePeopleStore(state => state.activeListId);
+    const activeListName = usePeopleStore(state => state.activeListName);
+    const pendingChanges = usePeopleStore(state => state.pendingChanges);
+    const people = usePeopleStore(state => state.people);
+    const clearPendingChanges = usePeopleStore(state => state.clearPendingChanges);
 
     const [expanded, setExpanded] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const loadedListMetadata = activeListId && activeListName ? {
+        name: activeListName,
+    } : undefined;
+
     /**
-     * Handle saving changes to current list
+     * Handle saving changes to current list - updates DB with current people state
      */
     const handleSaveChanges = useCallback(async () => {
+        if (!activeListId) return;
+
         setIsSaving(true);
         setError(null);
 
         try {
-            const result = updateCurrentList();
-            if (result.success) {
-                setSuccessMessage(t('people.listSaved'));
-                setTimeout(() => setSuccessMessage(null), 3000);
-            } else {
-                setError(result.error || t('people.saveListFailed'));
-            }
+            // Build updated content snapshot
+            const content = people.map(p => ({
+                id: p.id,
+                virtualSpaceId: p.virtualSpaceId,
+                data: p.data,
+                assignedSpaceId: p.assignedSpaceId,
+                listMemberships: p.listMemberships,
+            }));
+
+            // Update list in DB
+            await peopleApi.lists.update(activeListId, { content });
+            clearPendingChanges();
+
+            setSuccessMessage(t('people.listSaved'));
+            setTimeout(() => setSuccessMessage(null), 3000);
+
+            logger.info('PeopleListPanel', 'List changes saved to DB', {
+                listId: activeListId,
+                peopleCount: content.length,
+            });
         } catch (err: any) {
-            setError(err.message || t('people.saveListFailed'));
+            logger.error('PeopleListPanel', 'Failed to save list changes', { error: err?.message || err });
+            setError(err?.response?.data?.error?.message || err?.message || t('people.saveListFailed'));
         } finally {
             setIsSaving(false);
         }
-    }, [updateCurrentList, t]);
+    }, [activeListId, people, clearPendingChanges, t]);
 
     return (
         <Paper sx={{ mb: 2, overflow: 'hidden' }}>
@@ -170,7 +191,7 @@ export function PeopleListPanel({
 
                     {/* Note about lists */}
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        {t('people.listsFromAims')}
+                        {t('people.listsSharedInStore') || 'Lists are shared between all users in this store.'}
                     </Typography>
                 </Box>
             </Collapse>

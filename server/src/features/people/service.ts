@@ -174,13 +174,17 @@ export const peopleService = {
         }
 
         // If person had a previous space, queue a delete to clear old article in AIMS
+        console.log(`[PeopleService] assignToSpace: personId=${personId}, newSpaceId=${spaceId}, oldSpaceId=${person.assignedSpaceId ?? 'null'}`);
         if (person.assignedSpaceId && person.assignedSpaceId !== spaceId) {
+            console.log(`[PeopleService] Queuing DELETE for old space ${person.assignedSpaceId} before assigning to ${spaceId}`);
             await syncQueueService.queueDelete(
                 person.storeId,
                 'person',
                 person.id,
                 person.assignedSpaceId  // Old space ID = old AIMS article ID
             );
+        } else if (!person.assignedSpaceId) {
+            console.log(`[PeopleService] No previous space to delete (person was unassigned)`);
         }
 
         const updated = await peopleRepository.update(personId, {
@@ -211,13 +215,17 @@ export const peopleService = {
         }
 
         // Queue delete to clear the person's article from AIMS (using assignedSpaceId as article ID)
+        console.log(`[PeopleService] unassignFromSpace: personId=${personId}, currentSpaceId=${person.assignedSpaceId ?? 'null'}`);
         if (person.assignedSpaceId) {
+            console.log(`[PeopleService] Queuing DELETE for space ${person.assignedSpaceId} (unassign)`);
             await syncQueueService.queueDelete(
                 person.storeId,
                 'person',
                 person.id,
                 person.assignedSpaceId
             );
+        } else {
+            console.log(`[PeopleService] Person already has no space, skipping DELETE queue`);
         }
 
         const updated = await peopleRepository.update(personId, {

@@ -62,36 +62,48 @@ export interface BulkCreatePeopleDto {
 }
 
 // People List types
-export interface PeopleList {
+export interface PeopleListItem {
     id: string;
     storeId: string;
     name: string;
-    description?: string;
-    memberCount: number;
+    storageName: string;
+    itemCount: number;
     createdAt: string;
     updatedAt: string;
 }
 
-export interface PeopleListsResponse {
-    data: PeopleList[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
+export interface PeopleListFull extends PeopleListItem {
+    content: Array<{
+        id: string;
+        virtualSpaceId?: string;
+        data: Record<string, unknown>;
+        assignedSpaceId?: string | null;
+        listMemberships?: Array<{ listName: string; spaceId?: string }>;
+    }>;
 }
 
 export interface CreatePeopleListDto {
     storeId: string;
     name: string;
-    description?: string;
-    memberIds?: string[];
+    content?: Array<{
+        id: string;
+        virtualSpaceId?: string;
+        data: Record<string, unknown>;
+        assignedSpaceId?: string | null;
+        listMemberships?: Array<{ listName: string; spaceId?: string }>;
+    }>;
+    memberIds?: string[];  // Legacy, not used
 }
 
 export interface UpdatePeopleListDto {
     name?: string;
-    description?: string | null;
+    content?: Array<{
+        id: string;
+        virtualSpaceId?: string;
+        data: Record<string, unknown>;
+        assignedSpaceId?: string | null;
+        listMemberships?: Array<{ listName: string; spaceId?: string }>;
+    }>;
 }
 
 // API functions
@@ -172,38 +184,38 @@ export const peopleApi = {
         await api.delete(`/people/${personId}/lists/${listId}`);
     },
 
-    // People Lists
+    // People Lists - DB-backed, shared between all users in the store
     lists: {
         /**
-         * List all people lists
+         * List all people lists for a store (metadata only, no content)
          */
-        async list(storeId: string, page = 1, limit = 50): Promise<PeopleListsResponse> {
-            const response = await api.get<PeopleListsResponse>('/people-lists', {
-                params: { storeId, page, limit },
+        async list(storeId: string): Promise<{ data: PeopleListItem[] }> {
+            const response = await api.get('/people-lists', {
+                params: { storeId },
             });
             return response.data;
         },
 
         /**
-         * Get a single list with members
+         * Get a single list with full content
          */
-        async getById(id: string): Promise<{ data: PeopleList & { members: Person[] } }> {
+        async getById(id: string): Promise<{ data: PeopleListFull }> {
             const response = await api.get(`/people-lists/${id}`);
             return response.data;
         },
 
         /**
-         * Create a new people list
+         * Create a new people list (unique name per store)
          */
-        async create(data: CreatePeopleListDto): Promise<{ data: PeopleList }> {
+        async create(data: CreatePeopleListDto): Promise<{ data: PeopleListFull }> {
             const response = await api.post('/people-lists', data);
             return response.data;
         },
 
         /**
-         * Update a people list
+         * Update a people list (name and/or content)
          */
-        async update(id: string, data: UpdatePeopleListDto): Promise<{ data: PeopleList }> {
+        async update(id: string, data: UpdatePeopleListDto): Promise<{ data: PeopleListFull }> {
             const response = await api.patch(`/people-lists/${id}`, data);
             return response.data;
         },
@@ -213,20 +225,6 @@ export const peopleApi = {
          */
         async delete(id: string): Promise<void> {
             await api.delete(`/people-lists/${id}`);
-        },
-
-        /**
-         * Add members to a list
-         */
-        async addMembers(listId: string, personIds: string[]): Promise<void> {
-            await api.post(`/people-lists/${listId}/members`, { personIds });
-        },
-
-        /**
-         * Remove members from a list
-         */
-        async removeMembers(listId: string, personIds: string[]): Promise<void> {
-            await api.delete(`/people-lists/${listId}/members`, { data: { personIds } });
         },
     },
 };

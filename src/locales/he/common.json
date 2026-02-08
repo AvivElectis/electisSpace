@@ -876,7 +876,13 @@
         "loaded": "טעון",
         "loadList": "טען רשימה",
         "loadListConfirm": "לטעון רשימה זו? הקצאות השמורות ברשימה יוחלו.",
-        "savedLocallyAimsFailed": "הרשימה נשמרה מקומית אך הסנכרון ל-AIMS נכשל: {{error}}. נסה 'שלח הכל ל-AIMS' מאוחר יותר."
+        "loadListOverwriteWarning": "טעינת רשימה זו תדרוס את הטבלה הנוכחית עם הנתונים השמורים ברשימה. כל השינויים שלא נשמרו יאבדו. להמשיך?",
+        "nameExists": "רשימה עם שם זה כבר קיימת בחנות",
+        "fetchFailed": "נכשל לטעון רשימות מהשרת",
+        "savedLocallyAimsFailed": "הרשימה נשמרה מקומית אך הסנכרון ל-AIMS נכשל: {{error}}. נסה 'שלח הכל ל-AIMS' מאוחר יותר.",
+        "unsavedChangesTitle": "שינויים שלא נשמרו ברשימה",
+        "unsavedChangesMessage": "יש לך שינויים שלא נשמרו ברשימה הנוכחית. האם ברצונך לשמור אותם לפני היציאה?",
+        "discardChanges": "מחק שינויים"
     },
     "people": {
         "title": "מנהל אנשים",
@@ -964,6 +970,7 @@
         "assigningSpaceTo": "מקצה {{spaceTypeSingular}} ל: {{name}}",
         "listManagement": "ניהול רשימות",
         "listsFromAims": "הרשימות נגזרות מנתוני AIMS שסונכרנו. סנכרן מ-AIMS לטעינת רשימות, או שמור רשימה חדשה ושלח ל-AIMS.",
+        "listsSharedInStore": "רשימות משותפות לכל המשתמשים בחנות. שינויים יסונכרנו ל-AIMS אוטומטית דרך סנכרון השרת.",
         "unsavedChanges": "שינויים לא שמורים",
         "pendingAssignments": "{{count}} ממתינים",
         "assignmentsApplied": "{{count}} הקצאות הוחלו בהצלחה",

@@ -33,6 +33,10 @@ export interface SpacesStore {
     deleteSpacesList: (id: string) => void;
     loadSpacesList: (id: string) => void;
 
+    // Pending changes tracking (for list safety)
+    pendingChanges: boolean;
+    clearPendingChanges: () => void;
+
     // List Management Helpers
     setActiveListName: (name: string | undefined) => void;
     setActiveListId: (id: string | undefined) => void;
@@ -56,6 +60,7 @@ export const useSpacesStore = create<SpacesStore>()(
                 activeListId: undefined,
                 isLoading: false,
                 error: null,
+                pendingChanges: false,
 
                 // Local actions (for offline/CSV mode)
                 setSpaces: (spaces) => set({ spaces }, false, 'setSpaces'),
@@ -63,6 +68,7 @@ export const useSpacesStore = create<SpacesStore>()(
                 addSpaceLocal: (space) =>
                     set((state) => ({
                         spaces: [...state.spaces, space],
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'addSpaceLocal'),
 
                 updateSpaceLocal: (id, updates) =>
@@ -74,11 +80,13 @@ export const useSpacesStore = create<SpacesStore>()(
                                 data: updates.data ? { ...s.data, ...updates.data } : s.data
                             } : s
                         ),
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'updateSpaceLocal'),
 
                 deleteSpaceLocal: (id) =>
                     set((state) => ({
                         spaces: state.spaces.filter((s) => s.id !== id),
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'deleteSpaceLocal'),
 
                 // Server actions (for API mode)
@@ -175,6 +183,9 @@ export const useSpacesStore = create<SpacesStore>()(
                     }
                 },
 
+                // Pending changes
+                clearPendingChanges: () => set({ pendingChanges: false }, false, 'clearPendingChanges'),
+
                 // List Management Helpers
                 setActiveListName: (name) => set({ activeListName: name }, false, 'setActiveListName'),
                 setActiveListId: (id) => set({ activeListId: id }, false, 'setActiveListId'),
@@ -202,6 +213,7 @@ export const useSpacesStore = create<SpacesStore>()(
                     spacesLists: [],
                     activeListName: undefined,
                     activeListId: undefined,
+                    pendingChanges: false,
                     error: null,
                 }, false, 'clearAllData'),
             }),

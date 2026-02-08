@@ -72,6 +72,7 @@ model Store {
   people          Person[]
   conferenceRooms ConferenceRoom[]
   peopleLists     PeopleList[]
+  spacesLists     SpacesList[]
   auditLogs       AuditLog[]
   syncQueue       SyncQueueItem[]
   
@@ -127,6 +128,7 @@ model User {
   createdSpaces      Space[]        @relation("SpaceCreatedBy")
   updatedSpaces      Space[]        @relation("SpaceUpdatedBy")
   createdLists       PeopleList[]
+  createdSpacesLists SpacesList[]   @relation("SpacesListCreatedBy")
   
   @@map("users")
 }
@@ -354,6 +356,7 @@ model PeopleList {
   storeId     String   @map("store_id")
   name        String   @db.VarChar(100)
   storageName String   @map("storage_name") @db.VarChar(100)
+  content     Json     @default("[]")  // Snapshot: [{id, virtualSpaceId, data, assignedSpaceId}]
   createdById String?  @map("created_by")
   
   // Timestamps
@@ -366,6 +369,7 @@ model PeopleList {
   memberships PeopleListMembership[]
   
   @@unique([storeId, storageName])
+  @@unique([storeId, name])
   @@index([storeId])
   @@map("people_lists")
 }
@@ -391,6 +395,29 @@ model PeopleListMembership {
   @@index([personId])
   @@index([listId])
   @@map("people_list_memberships")
+}
+
+// ======================
+// Spaces Lists - Store-scoped
+// ======================
+model SpacesList {
+  id          String   @id @default(uuid())
+  storeId     String   @map("store_id")
+  name        String   @db.VarChar(100)
+  content     Json     @default("[]")  // Snapshot: [{id, externalId, data, labelCode, templateName}]
+  createdById String?  @map("created_by")
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  store       Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBy   User?  @relation("SpacesListCreatedBy", fields: [createdById], references: [id])
+  
+  @@unique([storeId, name])
+  @@index([storeId])
+  @@map("spaces_lists")
 }
 
 // ======================

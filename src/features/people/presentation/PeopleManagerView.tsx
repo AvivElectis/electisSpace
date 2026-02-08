@@ -9,6 +9,8 @@ import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
+import { peopleApi } from '@shared/infrastructure/services/peopleApi';
 
 // Lazy load dialogs - not needed on initial render
 const PersonDialog = lazy(() => import('./PersonDialog').then(m => ({ default: m.PersonDialog })));
@@ -54,12 +56,72 @@ export function PeopleManagerView() {
     const people = usePeopleStore((state) => state.people);
     const fetchPeople = usePeopleStore((state) => state.fetchPeople);
     const activeListName = usePeopleStore((state) => state.activeListName);
+    const activeListId = usePeopleStore((state) => state.activeListId);
+    const pendingChanges = usePeopleStore((state) => state.pendingChanges);
+    const clearPendingChanges = usePeopleStore((state) => state.clearPendingChanges);
 
-    // Fetch people from server on mount
+    // Unsaved list guard — prompts save/discard on navigation or browser close
+    const { UnsavedChangesDialog } = useUnsavedListGuard({
+        hasActiveList: !!activeListId,
+        hasPendingChanges: pendingChanges,
+        onSave: async () => {
+            if (!activeListId) return;
+            const content = people.map(p => ({
+                id: p.id,
+                virtualSpaceId: p.virtualSpaceId,
+                data: p.data,
+                assignedSpaceId: p.assignedSpaceId,
+                listMemberships: p.listMemberships,
+            }));
+            await peopleApi.lists.update(activeListId, { content });
+            clearPendingChanges();
+        },
+        onDiscard: () => {
+            clearPendingChanges();
+        },
+    });
+
+    // Fetch people from server on mount, then apply list overlay if a list is active
     useEffect(() => {
-        fetchPeople().catch((err) => {
-            logger.warn('PeopleManagerView', 'Failed to fetch people from server', { error: err instanceof Error ? err.message : 'Unknown' });
-        });
+        const activeListId = usePeopleStore.getState().activeListId;
+
+        // Always fetch fresh people from server first
+        fetchPeople()
+            .then(() => {
+                if (activeListId) {
+                    // A list is active — re-apply its assignments from _LIST_MEMBERSHIPS_
+                    // (same logic as loadList uses: rebuild from memberships, NOT from stale snapshot)
+                    const store = usePeopleStore.getState();
+                    const list = store.peopleLists.find(l => l.id === activeListId);
+                    if (list) {
+                        const storageName = list.storageName || list.id.replace('aims-list-', '');
+                        const updatedPeople = store.people.map(person => {
+                            const memberships = (person as any)._LIST_MEMBERSHIPS_ as Array<{ listName: string; spaceId?: string }> | undefined;
+                            const membership = memberships?.find((m: { listName: string }) => m.listName === storageName);
+                            if (membership) {
+                                return { ...person, assignedSpaceId: membership.spaceId || undefined };
+                            }
+                            return { ...person, assignedSpaceId: undefined };
+                        });
+                        store.setPeople(updatedPeople);
+                        store.updateSpaceAllocation();
+                        logger.info('PeopleManagerView', 'Applied list overlay on mount', {
+                            listId: activeListId,
+                            name: list.name,
+                        });
+                    } else {
+                        // List not found locally — try fetching from DB
+                        logger.warn('PeopleManagerView', 'Active list not found in store, clearing', { activeListId });
+                        usePeopleStore.getState().setActiveListId(undefined);
+                        usePeopleStore.getState().setActiveListName(undefined);
+                    }
+                }
+            })
+            .catch((err) => {
+                logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
+                    error: err instanceof Error ? err.message : 'Unknown',
+                });
+            });
     }, [fetchPeople]);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
@@ -430,6 +492,7 @@ export function PeopleManagerView() {
             </Suspense>
 
             <ConfirmDialog />
+            <UnsavedChangesDialog />
         </Box>
     );
 }
