@@ -147,19 +147,48 @@ export const useSettingsStore = create<SettingsStore>()(
                         const companySettings = companySettingsResponse.settings as Partial<SettingsData>;
                         
                         // Merge server settings with defaults (server takes priority)
+                        // Company settings are the primary source for company-wide settings
+                        // Store settings provide store-specific overrides  
                         const updates: Partial<SettingsData> = {};
                         
+                        // Start with store-level settings as base
                         if (serverSettings && Object.keys(serverSettings).length > 0) {
                             Object.assign(updates, serverSettings);
                         }
                         
-                        // Merge company-level settings (conferenceEnabled from csvConfig)
+                        // Overlay company-level settings (company settings take priority for shared settings)
+                        // Company-wide settings: logos, csvConfig, peopleManager, autoSync, etc.
                         if (companySettings && Object.keys(companySettings).length > 0) {
+                            // Company-wide settings override store-level
+                            if (companySettings.logos) {
+                                updates.logos = companySettings.logos;
+                            }
                             if (companySettings.csvConfig) {
                                 updates.csvConfig = {
                                     ...(updates.csvConfig || {}),
                                     ...companySettings.csvConfig,
                                 } as SettingsData['csvConfig'];
+                            }
+                            if (companySettings.peopleManagerEnabled !== undefined) {
+                                updates.peopleManagerEnabled = companySettings.peopleManagerEnabled;
+                            }
+                            if (companySettings.peopleManagerConfig) {
+                                updates.peopleManagerConfig = companySettings.peopleManagerConfig;
+                            }
+                            if (companySettings.autoSyncEnabled !== undefined) {
+                                updates.autoSyncEnabled = companySettings.autoSyncEnabled;
+                            }
+                            if (companySettings.autoSyncInterval !== undefined) {
+                                updates.autoSyncInterval = companySettings.autoSyncInterval;
+                            }
+                            if (companySettings.appName) {
+                                updates.appName = companySettings.appName;
+                            }
+                            if (companySettings.appSubtitle !== undefined) {
+                                updates.appSubtitle = companySettings.appSubtitle;
+                            }
+                            if (companySettings.spaceType) {
+                                updates.spaceType = companySettings.spaceType;
                             }
                         }
                         
@@ -179,20 +208,25 @@ export const useSettingsStore = create<SettingsStore>()(
                             set((state) => {
                                 // Deep-merge solumConfig to preserve runtime connection state
                                 // (tokens, isConnected, lastConnected, storeSummary) that are
-                                // set by autoConnectToSolum and NOT saved to the server
+                                // set by autoConnectToSolum and NEVER saved to the server
                                 const mergedSettings = {
                                     ...state.settings,
                                     ...updates,
                                 };
-                                if (updates.solumConfig && state.settings.solumConfig) {
+                                // Always preserve runtime SOLUM connection state from memory
+                                // These fields are set by autoConnectToSolum on each session
+                                // and must never be overwritten by server data
+                                const localSolumConfig = state.settings.solumConfig;
+                                if (localSolumConfig || updates.solumConfig) {
                                     mergedSettings.solumConfig = {
-                                        ...state.settings.solumConfig,
-                                        ...updates.solumConfig,
-                                        // Always preserve runtime connection state from memory
-                                        tokens: state.settings.solumConfig.tokens || updates.solumConfig.tokens,
-                                        isConnected: state.settings.solumConfig.isConnected ?? updates.solumConfig.isConnected,
-                                        lastConnected: state.settings.solumConfig.lastConnected || updates.solumConfig.lastConnected,
-                                        storeSummary: state.settings.solumConfig.storeSummary || updates.solumConfig.storeSummary,
+                                        ...(localSolumConfig || {}),
+                                        ...(updates.solumConfig || {}),
+                                        // ALWAYS keep runtime state from local memory
+                                        tokens: localSolumConfig?.tokens,
+                                        isConnected: localSolumConfig?.isConnected || false,
+                                        lastConnected: localSolumConfig?.lastConnected,
+                                        lastRefreshed: localSolumConfig?.lastRefreshed,
+                                        storeSummary: localSolumConfig?.storeSummary,
                                     } as SettingsData['solumConfig'];
                                 }
                                 return {
@@ -224,11 +258,13 @@ export const useSettingsStore = create<SettingsStore>()(
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const { solumConfig, solumMappingConfig, solumArticleFormat, ...otherSettings } = settings;
                     
-                    // Build sanitized solumConfig without sensitive fields
+                    // Build sanitized solumConfig without sensitive or runtime-only fields
                     let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
                     if (solumConfig) {
+                        // Strip credentials, tokens, and runtime connection state
+                        // These are set fresh by autoConnectToSolum on each session
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const { username, password, tokens, ...safeConfig } = solumConfig;
+                        const { username, password, tokens, isConnected, lastConnected, storeSummary, lastRefreshed, ...safeConfig } = solumConfig;
                         sanitizedSolumConfig = safeConfig;
                     }
 
@@ -241,9 +277,31 @@ export const useSettingsStore = create<SettingsStore>()(
 
                     set({ isSyncing: true }, false, 'saveSettings/start');
                     try {
-                        await settingsService.updateStoreSettings(activeStoreId, settingsForServer);
+                        // Company-wide settings to save at company level
+                        const { activeCompanyId } = get();
+                        const companyWideSettings: Partial<SettingsData> = {};
+                        if (otherSettings.logos) companyWideSettings.logos = otherSettings.logos;
+                        if (otherSettings.csvConfig) companyWideSettings.csvConfig = otherSettings.csvConfig;
+                        if (otherSettings.peopleManagerEnabled !== undefined) companyWideSettings.peopleManagerEnabled = otherSettings.peopleManagerEnabled;
+                        if (otherSettings.peopleManagerConfig) companyWideSettings.peopleManagerConfig = otherSettings.peopleManagerConfig;
+                        if (otherSettings.autoSyncEnabled !== undefined) companyWideSettings.autoSyncEnabled = otherSettings.autoSyncEnabled;
+                        if (otherSettings.autoSyncInterval !== undefined) companyWideSettings.autoSyncInterval = otherSettings.autoSyncInterval;
+                        if (otherSettings.appName) companyWideSettings.appName = otherSettings.appName;
+                        if (otherSettings.appSubtitle !== undefined) companyWideSettings.appSubtitle = otherSettings.appSubtitle;
+                        if (otherSettings.spaceType) companyWideSettings.spaceType = otherSettings.spaceType;
+
+                        // Save to both store (for backward compat) and company (for company-wide) in parallel
+                        const savePromises: Promise<unknown>[] = [
+                            settingsService.updateStoreSettings(activeStoreId, settingsForServer),
+                        ];
+                        if (activeCompanyId && Object.keys(companyWideSettings).length > 0) {
+                            savePromises.push(
+                                settingsService.updateCompanySettings(activeCompanyId, companyWideSettings)
+                            );
+                        }
+                        await Promise.all(savePromises);
                         set({ isSyncing: false }, false, 'saveSettings/success');
-                        logger.info('SettingsStore', 'Settings saved to server', { storeId: activeStoreId });
+                        logger.info('SettingsStore', 'Settings saved to server (store + company)', { storeId: activeStoreId, companyId: activeCompanyId });
                     } catch (error) {
                         logger.error('SettingsStore', 'Failed to save settings to server', { error });
                         set({ isSyncing: false }, false, 'saveSettings/error');
@@ -381,13 +439,24 @@ export const useSettingsStore = create<SettingsStore>()(
             }),
             {
                 name: 'settings-store',
-                partialize: (state) => ({
-                    settings: state.settings,
-                    passwordHash: state.passwordHash,
-                    activeStoreId: state.activeStoreId,
-                    activeCompanyId: state.activeCompanyId,
-                    // Don't persist isLocked or isSyncing
-                }),
+                partialize: (state) => {
+                    // Strip runtime SOLUM connection state from localStorage
+                    // These are re-established fresh by autoConnectToSolum on each session
+                    const { solumConfig, ...otherSettings } = state.settings;
+                    let cleanSolumConfig = solumConfig;
+                    if (solumConfig) {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { tokens, isConnected, lastConnected, lastRefreshed, storeSummary, ...persistableConfig } = solumConfig;
+                        cleanSolumConfig = persistableConfig as typeof solumConfig;
+                    }
+                    return {
+                        settings: { ...otherSettings, solumConfig: cleanSolumConfig },
+                        passwordHash: state.passwordHash,
+                        activeStoreId: state.activeStoreId,
+                        activeCompanyId: state.activeCompanyId,
+                        // Don't persist isLocked or isSyncing
+                    };
+                },
             }
         ),
         { name: 'SettingsStore' }

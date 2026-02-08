@@ -77,23 +77,29 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
     const handlePeopleManagerEnabledChange = (enabled: boolean) => {
         onUpdate({ peopleManagerEnabled: enabled });
+        // People manager mode is company-level
+        saveCompanySettingsToServer({ peopleManagerEnabled: enabled });
     };
 
     const handlePeopleManagerConfigChange = (config: Partial<{ totalSpaces: number }>) => {
-        // Ensure totalSpaces has a valid value
-        onUpdate({ 
-            peopleManagerConfig: { 
-                totalSpaces: config.totalSpaces ?? settings.peopleManagerConfig?.totalSpaces ?? 0 
-            } 
-        });
+        const updatedConfig = { 
+            totalSpaces: config.totalSpaces ?? settings.peopleManagerConfig?.totalSpaces ?? 0 
+        };
+        onUpdate({ peopleManagerConfig: updatedConfig });
+        // People manager config is company-level
+        saveCompanySettingsToServer({ peopleManagerConfig: updatedConfig });
     };
 
     const handleAutoSyncChange = (enabled: boolean) => {
         onUpdate({ autoSyncEnabled: enabled });
+        // Auto-sync is company-level
+        saveCompanySettingsToServer({ autoSyncEnabled: enabled });
     };
 
     const handleAutoSyncIntervalChange = (interval: number) => {
         onUpdate({ autoSyncInterval: interval });
+        // Auto-sync interval is company-level
+        saveCompanySettingsToServer({ autoSyncInterval: interval });
     };
 
     // Handle reconnect to SOLUM
