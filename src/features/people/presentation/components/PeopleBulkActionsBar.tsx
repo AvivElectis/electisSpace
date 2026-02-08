@@ -1,6 +1,7 @@
 import { Paper, Stack, Typography, Button, Box } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CancelIcon from '@mui/icons-material/Cancel';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -9,6 +10,7 @@ interface PeopleBulkActionsBarProps {
     selectedCount: number;
     onBulkAssign: () => void;
     onCancelAllAssignments: () => void;
+    onRemoveSelected: () => void;
     assignedCount: number;
 }
 
@@ -19,6 +21,7 @@ export function PeopleBulkActionsBar({
     selectedCount,
     onBulkAssign,
     onCancelAllAssignments,
+    onRemoveSelected,
     assignedCount,
 }: PeopleBulkActionsBarProps) {
     const { t } = useTranslation();
@@ -49,6 +52,9 @@ export function PeopleBulkActionsBar({
                         </Typography>
                         <Button size="small" startIcon={<AutoAwesomeIcon />} onClick={onBulkAssign}>
                             {tWithSpaceType('people.autoAssignSpaces')}
+                        </Button>
+                        <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={onRemoveSelected}>
+                            {t('people.removeSelectedPeople')}
                         </Button>
                     </Stack>
                 </Paper>

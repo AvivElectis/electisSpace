@@ -876,6 +876,8 @@
         "addPerson": "Add Person",
         "editPerson": "Edit Person",
         "deletePerson": "Delete Person",
+        "removeSelectedPeople": "Remove Selected",
+        "removeSelectedPeopleConfirm": "Are you sure you want to permanently delete {{count}} selected people? This action cannot be undone.",
         "id": "ID",
         "name": "Name",
         "assignedSpace": "Assigned {{spaceTypeSingular}}",
