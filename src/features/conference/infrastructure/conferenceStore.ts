@@ -18,8 +18,8 @@ interface ConferenceStore {
 
     // Server actions (for API mode)
     fetchRooms: () => Promise<void>;
-    createRoom: (data: { storeId: string; externalId: string; roomName: string; labelCode?: string }) => Promise<ConferenceRoom | null>;
-    updateRoom: (id: string, updates: { roomName?: string; labelCode?: string | null }) => Promise<ConferenceRoom | null>;
+    createRoom: (data: { storeId: string; externalId: string; roomName: string; labelCode?: string; hasMeeting?: boolean; meetingName?: string; startTime?: string; endTime?: string; participants?: string[] }) => Promise<ConferenceRoom | null>;
+    updateRoom: (id: string, updates: { roomName?: string; labelCode?: string | null; hasMeeting?: boolean; meetingName?: string | null; startTime?: string | null; endTime?: string | null; participants?: string[] }) => Promise<ConferenceRoom | null>;
     deleteRoom: (id: string) => Promise<boolean>;
     toggleMeeting: (id: string, meetingData?: {
         meetingName?: string;

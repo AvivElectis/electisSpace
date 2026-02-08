@@ -11,6 +11,8 @@ import type {
     CompanySettingsResponse,
     FieldMappingsResponse,
     FieldMappingConfigInput,
+    ArticleFormatInput,
+    ArticleFormatResponse,
     AimsConfigResponse,
     AimsTestResponse,
     UpdateSuccessResponse,
@@ -266,6 +268,140 @@ export const settingsService = {
             companyId: updatedCompany.id,
             fieldMappings,
             message: 'Field mappings updated successfully',
+        };
+    },
+
+    // ======================
+    // Article Format (Company-Level)
+    // ======================
+
+    /**
+     * Get article format for a company.
+     * Returns from DB if stored, otherwise fetches from AIMS, saves to DB, then returns.
+     */
+    async getArticleFormat(companyId: string, user: SettingsUserContext): Promise<ArticleFormatResponse> {
+        let company;
+        if (isPlatformAdmin(user)) {
+            company = await settingsRepository.getCompany(companyId);
+        } else {
+            const userCompany = await settingsRepository.getUserCompanyAccess(user.id, companyId);
+            company = userCompany?.company;
+        }
+
+        if (!company) {
+            throw new Error('COMPANY_NOT_FOUND_OR_DENIED');
+        }
+
+        const settings = (company.settings as Record<string, any>) || {};
+
+        // Return from DB if already stored
+        if (settings.solumArticleFormat) {
+            return {
+                companyId: company.id,
+                articleFormat: settings.solumArticleFormat,
+                source: 'db',
+            };
+        }
+
+        // Not in DB — try to fetch from AIMS live
+        if (!company.aimsBaseUrl || !company.aimsUsername || !company.aimsPasswordEnc) {
+            throw new Error('AIMS_NOT_CONFIGURED');
+        }
+
+        try {
+            const { AIMSGateway } = await import('../../shared/infrastructure/services/aimsGateway.js');
+            const gateway = new AIMSGateway();
+
+            // We need a store to fetch format (AIMS requires a company code)
+            const store = await settingsRepository.getFirstCompanyStore(companyId);
+            if (!store) {
+                throw new Error('NO_STORE_FOR_COMPANY');
+            }
+
+            const format = await gateway.fetchArticleFormat(store.id);
+
+            // Save to DB for future use
+            const updatedSettings = { ...settings, solumArticleFormat: format };
+            await settingsRepository.updateCompanySettings(companyId, updatedSettings);
+            console.log(`[Settings] Article format fetched from AIMS and saved to DB for company ${companyId}`);
+
+            return {
+                companyId: company.id,
+                articleFormat: format,
+                source: 'aims',
+            };
+        } catch (error: any) {
+            console.error(`[Settings] Failed to fetch article format from AIMS for company ${companyId}:`, error.message);
+            throw new Error('AIMS_FORMAT_FETCH_FAILED');
+        }
+    },
+
+    /**
+     * Update article format for a company.
+     * Saves to DB and pushes to AIMS.
+     */
+    async updateArticleFormat(
+        companyId: string,
+        articleFormat: ArticleFormatInput,
+        user: SettingsUserContext
+    ): Promise<UpdateSuccessResponse> {
+        let company;
+        let hasWriteAccess = false;
+
+        if (isPlatformAdmin(user)) {
+            company = await settingsRepository.getCompany(companyId);
+            hasWriteAccess = true;
+        } else {
+            const userCompany = await settingsRepository.getUserCompanyAccess(user.id, companyId);
+            company = userCompany?.company;
+            hasWriteAccess = userCompany?.role === 'COMPANY_ADMIN';
+        }
+
+        if (!company) {
+            throw new Error('COMPANY_NOT_FOUND_OR_DENIED');
+        }
+
+        if (!hasWriteAccess) {
+            throw new Error('FORBIDDEN');
+        }
+
+        // 1. Save to DB
+        const currentSettings = (company.settings as Record<string, any>) || {};
+        const updatedSettings = {
+            ...currentSettings,
+            solumArticleFormat: articleFormat,
+        };
+
+        const updatedCompany = await settingsRepository.updateCompanySettings(companyId, updatedSettings);
+        console.log(`[Settings] Article format saved to DB for company ${companyId}`);
+
+        // 2. Push to AIMS (best-effort — DB is the source of truth)
+        try {
+            if (company.aimsBaseUrl && company.aimsUsername && company.aimsPasswordEnc) {
+                const { AIMSGateway } = await import('../../shared/infrastructure/services/aimsGateway.js');
+                const gateway = new AIMSGateway();
+                gateway.invalidateFormatCache(companyId);
+
+                const store = await settingsRepository.getFirstCompanyStore(companyId);
+                if (store) {
+                    const storeConfig = await gateway.getStoreConfig(store.id);
+                    if (storeConfig) {
+                        const token = await gateway.getToken(companyId);
+                        const { solumService } = await import('../../shared/infrastructure/services/solumService.js');
+                        await solumService.saveArticleFormat(storeConfig.config, token, articleFormat);
+                        console.log(`[Settings] Article format pushed to AIMS for company ${companyId}`);
+                    }
+                }
+            }
+        } catch (error: any) {
+            console.error(`[Settings] Failed to push article format to AIMS (DB saved OK):`, error.message);
+            // Don't throw — DB is the source of truth
+        }
+
+        return {
+            companyId: updatedCompany.id,
+            articleFormat,
+            message: 'Article format updated successfully',
         };
     },
 

@@ -16,6 +16,22 @@ export interface SolumTokens {
     expiresAt: number;
 }
 
+export interface MappingInfo {
+    store: string;          // e.g., "STORE_ID"
+    articleId: string;      // e.g., "ARTICLE_ID"
+    articleName: string;    // e.g., "ITEM_NAME"
+    nfcUrl?: string;       // e.g., "NFC_URL"
+    [key: string]: string | undefined;
+}
+
+export interface ArticleFormat {
+    fileExtension: string;       // e.g., "csv"
+    delimeter: string;           // SoluM's spelling of delimiter
+    mappingInfo: MappingInfo;
+    articleBasicInfo: string[];  // e.g., ["store", "articleId", "articleName", "nfcUrl"]
+    articleData: string[];       // e.g., ["STORE_ID", "ARTICLE_ID", "ITEM_NAME", ...]
+}
+
 // Retry configuration
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
@@ -225,6 +241,43 @@ export class SolumService {
                 // Handle 204 treated as error by some clients/axios
                 if (error.response?.status === 204) return [];
                 throw new Error(`Fetch articles failed: ${error.message}`);
+            }
+        });
+    }
+
+    /**
+     * Fetch article format schema from AIMS
+     * Returns the company's article data schema including mappingInfo, articleData fields, etc.
+     */
+    async fetchArticleFormat(config: SolumConfig, token: string): Promise<ArticleFormat> {
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/upload/format?company=${config.companyName}`);
+
+        return this.withRetry('fetchArticleFormat', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data as ArticleFormat;
+            } catch (error: any) {
+                throw new Error(`Fetch article format failed: ${error.message}`);
+            }
+        });
+    }
+
+    /**
+     * Save/update article format to AIMS
+     * Endpoint: POST /common/api/v2/common/articles/upload/format?company=X
+     */
+    async saveArticleFormat(config: SolumConfig, token: string, format: ArticleFormat): Promise<void> {
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/upload/format?company=${config.companyName}`);
+
+        return this.withRetry('saveArticleFormat', async () => {
+            try {
+                await this.client.post(url, format, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (error: any) {
+                throw new Error(`Save article format failed: ${error.message}`);
             }
         });
     }

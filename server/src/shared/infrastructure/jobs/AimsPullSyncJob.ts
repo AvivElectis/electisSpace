@@ -18,6 +18,13 @@
 
 import { prisma } from '../../../config/index.js';
 import { aimsGateway } from '../services/aimsGateway.js';
+import {
+    buildSpaceArticle,
+    buildPersonArticle,
+    buildConferenceArticle,
+    articleNeedsUpdate,
+} from '../services/articleBuilder.js';
+import type { ArticleFormat } from '../services/solumService.js';
 
 // Default interval: 60 seconds
 const DEFAULT_INTERVAL_MS = 60 * 1000;
@@ -159,6 +166,14 @@ export class AimsSyncReconciliationJob {
             totalExpected: 0, totalInAims: 0,
         };
 
+        // 0. Fetch the company's article format from AIMS (cached per company)
+        let format: ArticleFormat | null = null;
+        try {
+            format = await aimsGateway.fetchArticleFormat(storeId);
+        } catch (error: any) {
+            console.warn(`[AimsReconcile] Could not fetch article format for ${storeName}: ${error.message}. Articles will be sent without format mapping.`);
+        }
+
         // 1. Build expected article map  { articleId → articlePayload }
         const expectedMap = new Map<string, any>();
 
@@ -167,8 +182,8 @@ export class AimsSyncReconciliationJob {
             where: { storeId },
         });
         for (const room of rooms) {
-            const articleId = `C${room.externalId}`;
-            expectedMap.set(articleId, this.buildConferenceArticle(room, articleId));
+            const article = buildConferenceArticle(room, format);
+            expectedMap.set(article.articleId, article);
         }
 
         if (isPeopleMode) {
@@ -178,10 +193,8 @@ export class AimsSyncReconciliationJob {
             });
             for (const person of people) {
                 if (!person.assignedSpaceId) continue;
-                expectedMap.set(
-                    person.assignedSpaceId,
-                    this.buildPersonArticle(person),
-                );
+                const article = buildPersonArticle(person as any, format);
+                if (article) expectedMap.set(person.assignedSpaceId, article);
             }
         } else {
             // Spaces mode → push all spaces (articleId = externalId)
@@ -189,10 +202,8 @@ export class AimsSyncReconciliationJob {
                 where: { storeId },
             });
             for (const space of spaces) {
-                expectedMap.set(
-                    space.externalId,
-                    this.buildSpaceArticle(space),
-                );
+                const article = buildSpaceArticle(space, format);
+                expectedMap.set(space.externalId, article);
             }
         }
 
@@ -220,12 +231,12 @@ export class AimsSyncReconciliationJob {
         const toDelete: string[] = []; // remove from AIMS
 
         // Articles that should exist
-        for (const [articleId, article] of expectedMap) {
-            const aimsArticle = aimsMap.get(articleId);
+        for (const [artId, article] of expectedMap) {
+            const aimsArticle = aimsMap.get(artId);
             if (!aimsArticle) {
                 // Missing → push
                 toPush.push(article);
-            } else if (this.articleNeedsUpdate(article, aimsArticle)) {
+            } else if (articleNeedsUpdate(article, aimsArticle)) {
                 // Changed → update (AIMS upserts on push)
                 toPush.push(article);
             } else {
@@ -240,7 +251,7 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // 4. Execute
+        // 4. Execute (pushArticles already handles batching in groups of 500)
         if (toPush.length > 0) {
             try {
                 await aimsGateway.pushArticles(storeId, toPush);
@@ -271,81 +282,6 @@ export class AimsSyncReconciliationJob {
         });
 
         return result;
-    }
-
-    // ───── article builders (mirrors SyncQueueProcessor.buildArticleFromEntity) ─────
-
-    private buildSpaceArticle(space: any): any {
-        const data = (space.data ?? {}) as Record<string, any>;
-        return {
-            articleId: space.externalId,
-            articleName: data.name || space.externalId,
-            nfc: data.nfcData || '',
-            ...this.extractCustomFields(data),
-        };
-    }
-
-    private buildPersonArticle(person: any): any {
-        const data = (person.data ?? {}) as Record<string, any>;
-        return {
-            articleId: person.assignedSpaceId,
-            articleName: data.name || 'Person',
-            nfc: data.nfcData || '',
-            ...this.extractCustomFields(data),
-        };
-    }
-
-    private buildConferenceArticle(room: any, articleId: string): any {
-        const articleName = room.roomName || `Conference ${room.externalId}`;
-        return {
-            articleId,
-            articleName,
-            nfcUrl: '',
-            data: {
-                ARTICLE_ID: articleId,
-                ARTICLE_NAME: articleName,
-                data1: room.hasMeeting ? 'MEETING' : 'AVAILABLE',
-                data2: room.meetingName || '',
-                data3: room.startTime || '',
-                data4: room.endTime || '',
-                data5: room.participants?.join(', ') || '',
-            },
-        };
-    }
-
-    private extractCustomFields(data: any): Record<string, string> {
-        const result: Record<string, string> = {};
-        if (!data || typeof data !== 'object') return result;
-
-        const fieldMappings: Record<string, string> = {
-            field1: 'data1', field2: 'data2', field3: 'data3', field4: 'data4', field5: 'data5',
-            data1: 'data1', data2: 'data2', data3: 'data3', data4: 'data4', data5: 'data5',
-        };
-        for (const [src, tgt] of Object.entries(fieldMappings)) {
-            if (data[src] !== undefined) result[tgt] = String(data[src]);
-        }
-        return result;
-    }
-
-    // ───── diff helper ─────
-
-    /**
-     * Compare expected article against what AIMS currently has.
-     * Returns true if the article needs to be re-pushed.
-     */
-    private articleNeedsUpdate(expected: any, aims: any): boolean {
-        // Compare core fields
-        if ((expected.articleName || '') !== (aims.articleName || aims.article_name || '')) return true;
-
-        // Compare data fields (data1–data5)
-        const eData = expected.data ?? expected;
-        const aData = aims.data ?? aims;
-        for (let i = 1; i <= 5; i++) {
-            const key = `data${i}`;
-            if ((eData[key] ?? '') !== (aData[key] ?? '')) return true;
-        }
-
-        return false;
     }
 
     // ───── manual triggers ─────

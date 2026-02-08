@@ -41,6 +41,10 @@ interface SettingsStore {
     fetchFieldMappingsFromServer: (companyId: string) => Promise<void>;
     saveFieldMappingsToServer: (companyId?: string) => Promise<void>;
     updateFieldMappings: (updates: Partial<SolumMappingConfig>) => void;
+
+    // Article format server sync (company-level)
+    fetchArticleFormatFromServer: (companyId: string) => Promise<void>;
+    saveArticleFormatToServer: (companyId?: string) => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -131,11 +135,12 @@ export const useSettingsStore = create<SettingsStore>()(
                 fetchSettingsFromServer: async (storeId: string, companyId: string) => {
                     set({ isSyncing: true }, false, 'fetchSettings/start');
                     try {
-                        // Fetch store settings, company settings, and company field mappings in parallel
-                        const [settingsResponse, companySettingsResponse, fieldMappingsResponse] = await Promise.all([
+                        // Fetch store settings, company settings, field mappings, and article format in parallel
+                        const [settingsResponse, companySettingsResponse, fieldMappingsResponse, articleFormatResponse] = await Promise.all([
                             settingsService.getStoreSettings(storeId),
                             settingsService.getCompanySettings(companyId).catch(() => ({ settings: {} })),
                             fieldMappingService.getFieldMappings(companyId).catch(() => ({ fieldMappings: null })),
+                            fieldMappingService.getArticleFormat(companyId).catch(() => ({ articleFormat: null })),
                         ]);
                         
                         const serverSettings = settingsResponse.settings as Partial<SettingsData>;
@@ -162,6 +167,12 @@ export const useSettingsStore = create<SettingsStore>()(
                         if (fieldMappingsResponse.fieldMappings && Object.keys(fieldMappingsResponse.fieldMappings).length > 0) {
                             updates.solumMappingConfig = fieldMappingsResponse.fieldMappings as SolumMappingConfig;
                             logger.info('SettingsStore', 'Field mappings loaded from server (company-level)', { companyId });
+                        }
+
+                        // Add article format from company-level endpoint if available
+                        if (articleFormatResponse.articleFormat) {
+                            updates.solumArticleFormat = articleFormatResponse.articleFormat as SettingsData['solumArticleFormat'];
+                            logger.info('SettingsStore', 'Article format loaded from server (company-level)', { companyId });
                         }
                         
                         if (Object.keys(updates).length > 0) {
@@ -209,9 +220,9 @@ export const useSettingsStore = create<SettingsStore>()(
                         return;
                     }
 
-                    // Prepare settings for server - exclude sensitive data and field mappings (handled separately)
+                    // Prepare settings for server - exclude sensitive data, field mappings, and article format (handled separately at company level)
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { solumConfig, solumMappingConfig, ...otherSettings } = settings;
+                    const { solumConfig, solumMappingConfig, solumArticleFormat, ...otherSettings } = settings;
                     
                     // Build sanitized solumConfig without sensitive fields
                     let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
@@ -305,6 +316,55 @@ export const useSettingsStore = create<SettingsStore>()(
                     } catch (error) {
                         logger.error('SettingsStore', 'Failed to save field mappings to server', { error });
                         set({ isSyncing: false }, false, 'saveFieldMappings/error');
+                    }
+                },
+
+                // Article format server sync (company-level)
+                fetchArticleFormatFromServer: async (companyId: string) => {
+                    set({ isSyncing: true }, false, 'fetchArticleFormat/start');
+                    try {
+                        const response = await fieldMappingService.getArticleFormat(companyId);
+                        if (response.articleFormat) {
+                            set((state) => ({
+                                settings: {
+                                    ...state.settings,
+                                    solumArticleFormat: response.articleFormat as SettingsData['solumArticleFormat'],
+                                },
+                                isSyncing: false,
+                            }), false, 'fetchArticleFormat/success');
+                            logger.info('SettingsStore', 'Article format loaded from server (company-level)', { companyId });
+                        } else {
+                            set({ isSyncing: false }, false, 'fetchArticleFormat/empty');
+                        }
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to fetch article format from server', { error });
+                        set({ isSyncing: false }, false, 'fetchArticleFormat/error');
+                    }
+                },
+
+                saveArticleFormatToServer: async (companyId?: string) => {
+                    const { activeCompanyId, settings } = get();
+                    const targetCompanyId = companyId || activeCompanyId;
+
+                    if (!targetCompanyId) {
+                        logger.warn('SettingsStore', 'No company ID, skipping article format save');
+                        return;
+                    }
+
+                    const { solumArticleFormat } = settings;
+                    if (!solumArticleFormat) {
+                        logger.warn('SettingsStore', 'No article format to save');
+                        return;
+                    }
+
+                    set({ isSyncing: true }, false, 'saveArticleFormat/start');
+                    try {
+                        await fieldMappingService.updateArticleFormat(targetCompanyId, solumArticleFormat);
+                        set({ isSyncing: false }, false, 'saveArticleFormat/success');
+                        logger.info('SettingsStore', 'Article format saved to server (company-level)', { companyId: targetCompanyId });
+                    } catch (error) {
+                        logger.error('SettingsStore', 'Failed to save article format to server', { error });
+                        set({ isSyncing: false }, false, 'saveArticleFormat/error');
                     }
                 },
 

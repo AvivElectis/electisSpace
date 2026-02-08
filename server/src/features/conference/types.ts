@@ -9,11 +9,21 @@ export const createRoomSchema = z.object({
     externalId: z.string().max(50),
     roomName: z.string().max(100),
     labelCode: z.string().max(50).optional(),
+    hasMeeting: z.boolean().optional(),
+    meetingName: z.string().max(255).optional(),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    participants: z.array(z.string()).optional(),
 });
 
 export const updateRoomSchema = z.object({
     roomName: z.string().max(100).optional(),
     labelCode: z.string().max(50).optional().nullable(),
+    hasMeeting: z.boolean().optional(),
+    meetingName: z.string().max(255).optional().nullable(),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+    participants: z.array(z.string()).optional(),
 });
 
 export const toggleMeetingSchema = z.object({

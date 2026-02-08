@@ -35,6 +35,7 @@ export function useConferenceController({
         conferenceRooms,
         setConferenceRooms,
         addConferenceRoomLocal: addToStore,
+        fetchRooms: fetchRoomsFromServer,
         createRoom: createRoomOnServer,
         updateRoom: updateRoomOnServer,
         deleteRoom: deleteRoomOnServer,
@@ -116,6 +117,11 @@ export function useConferenceController({
                 externalId: finalRoom.id,
                 roomName: finalRoom.data?.roomName || finalRoom.id,
                 labelCode: finalRoom.labelCode,
+                hasMeeting: finalRoom.hasMeeting,
+                meetingName: finalRoom.hasMeeting ? finalRoom.meetingName : undefined,
+                startTime: finalRoom.hasMeeting ? finalRoom.startTime : undefined,
+                endTime: finalRoom.hasMeeting ? finalRoom.endTime : undefined,
+                participants: finalRoom.hasMeeting ? finalRoom.participants : undefined,
             });
 
             if (!serverRoom) {
@@ -164,6 +170,11 @@ export function useConferenceController({
             const serverRoom = await updateRoomOnServer(apiId, {
                 roomName: updatedRoom.roomName || updatedRoom.data?.roomName,
                 labelCode: updatedRoom.labelCode || null,
+                hasMeeting: updatedRoom.hasMeeting,
+                meetingName: updatedRoom.hasMeeting ? (updatedRoom.meetingName || null) : null,
+                startTime: updatedRoom.hasMeeting ? (updatedRoom.startTime || null) : null,
+                endTime: updatedRoom.hasMeeting ? (updatedRoom.endTime || null) : null,
+                participants: updatedRoom.hasMeeting ? (updatedRoom.participants || []) : [],
             });
 
             if (!serverRoom) {
@@ -296,6 +307,26 @@ export function useConferenceController({
         [fetchFromAIMS, importFromSync]
     );
 
+    /**
+     * Fetch conference rooms from server API
+     * Returns rooms with serverId (server UUID) for correct API calls
+     */
+    const fetchRooms = useCallback(
+        async (): Promise<void> => {
+            logger.info('ConferenceController', 'Fetching conference rooms from server');
+            setIsFetching(true);
+            try {
+                await fetchRoomsFromServer();
+            } catch (error) {
+                logger.error('ConferenceController', 'Failed to fetch from server', { error });
+                throw error;
+            } finally {
+                setIsFetching(false);
+            }
+        },
+        [fetchRoomsFromServer]
+    );
+
 
     return {
         // Conference operations
@@ -306,6 +337,7 @@ export function useConferenceController({
         flipLabelPage,
         importFromSync,
         fetchFromSolum,
+        fetchRooms,
         getAllConferenceRooms,
         conferenceRooms,
         isFetching,

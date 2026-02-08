@@ -43,6 +43,16 @@ router.get('/company/:companyId/field-mappings', settingsController.getFieldMapp
 router.put('/company/:companyId/field-mappings', settingsController.updateFieldMappings);
 
 // ======================
+// Article Format (Company-Level)
+// ======================
+
+// Get article format (from DB, or fetches from AIMS if not stored)
+router.get('/company/:companyId/article-format', settingsController.getArticleFormat);
+
+// Update article format (saves to DB + pushes to AIMS)
+router.put('/company/:companyId/article-format', settingsController.updateArticleFormat);
+
+// ======================
 // AIMS Configuration
 // ======================
 

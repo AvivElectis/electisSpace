@@ -97,4 +97,14 @@ export const settingsRepository = {
             },
         });
     },
+
+    /**
+     * Get first active store for a company (used for AIMS operations that need a store context)
+     */
+    async getFirstCompanyStore(companyId: string) {
+        return prisma.store.findFirst({
+            where: { companyId, isActive: true },
+            select: { id: true },
+        });
+    },
 };

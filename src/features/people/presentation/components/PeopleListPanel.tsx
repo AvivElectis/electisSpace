@@ -132,7 +132,7 @@ export function PeopleListPanel({
 
                     {/* Actions */}
                     <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
+                        direction={{ xs: 'row', sm: 'row' }}
                         gap={1}
                         flexWrap="wrap"
                     >

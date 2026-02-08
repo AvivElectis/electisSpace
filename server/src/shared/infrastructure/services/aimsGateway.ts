@@ -11,7 +11,7 @@
 
 import { prisma } from '../../../config/index.js';
 import { config as appConfig } from '../../../config/index.js';
-import { solumService, type SolumConfig, type SolumTokens } from './solumService.js';
+import { solumService, type SolumConfig, type SolumTokens, type ArticleFormat } from './solumService.js';
 import { decrypt } from '../../utils/encryption.js';
 
 interface AIMSCredentials {
@@ -26,8 +26,20 @@ interface TokenCacheEntry {
     companyId: string;
 }
 
+interface FormatCacheEntry {
+    format: ArticleFormat;
+    fetchedAt: number;
+}
+
 // In-memory token cache (per company)
 const tokenCache = new Map<string, TokenCacheEntry>();
+
+// In-memory article format cache (per company) — refreshed every 30 minutes
+const formatCache = new Map<string, FormatCacheEntry>();
+const FORMAT_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+// AIMS enforces a maximum of 500 articles per POST request
+const AIMS_BATCH_SIZE = 500;
 
 // Token expiry buffer (5 minutes before actual expiry)
 const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000;
@@ -197,25 +209,45 @@ export class AIMSGateway {
     }
 
     /**
-     * Push articles to AIMS for a store
+     * Push articles to AIMS for a store (handles batching in groups of 500)
      */
     async pushArticles(storeId: string, articles: any[]): Promise<void> {
+        if (articles.length === 0) return;
+
         const { token, config } = await this.getTokenForStore(storeId);
-        
-        try {
-            await solumService.pushArticles(config, token, articles);
-        } catch (error: any) {
-            // If authentication error, invalidate cache and retry once
-            if (error.message?.includes('401') || error.message?.includes('403')) {
-                const storeConfig = await this.getStoreConfig(storeId);
-                if (storeConfig) {
-                    this.invalidateToken(storeConfig.companyId);
-                    const newToken = await this.getToken(storeConfig.companyId);
-                    await solumService.pushArticles(config, newToken, articles);
-                    return;
+
+        // Split into batches of AIMS_BATCH_SIZE
+        const batches: any[][] = [];
+        for (let i = 0; i < articles.length; i += AIMS_BATCH_SIZE) {
+            batches.push(articles.slice(i, i + AIMS_BATCH_SIZE));
+        }
+
+        if (batches.length > 1) {
+            console.log(`[AIMS Gateway] Pushing ${articles.length} articles in ${batches.length} batches of up to ${AIMS_BATCH_SIZE}`);
+        }
+
+        for (let idx = 0; idx < batches.length; idx++) {
+            const batch = batches[idx];
+            try {
+                await solumService.pushArticles(config, token, batch);
+            } catch (error: any) {
+                // If authentication error on first batch, retry with refreshed token
+                if (idx === 0 && (error.message?.includes('401') || error.message?.includes('403'))) {
+                    const storeConfig = await this.getStoreConfig(storeId);
+                    if (storeConfig) {
+                        this.invalidateToken(storeConfig.companyId);
+                        const newToken = await this.getToken(storeConfig.companyId);
+                        // Retry current batch
+                        await solumService.pushArticles(config, newToken, batch);
+                        // Continue remaining batches with new token
+                        for (let j = idx + 1; j < batches.length; j++) {
+                            await solumService.pushArticles(config, newToken, batches[j]);
+                        }
+                        return;
+                    }
                 }
+                throw error;
             }
-            throw error;
         }
     }
 
@@ -240,6 +272,85 @@ export class AIMSGateway {
             }
             throw error;
         }
+    }
+
+    /**
+     * Fetch the article format for a store's company.
+     * Priority: in-memory cache → DB (Company.settings.solumArticleFormat) → AIMS live fetch.
+     * On AIMS live fetch, saves to DB for future use.
+     */
+    async fetchArticleFormat(storeId: string): Promise<ArticleFormat> {
+        const storeConfig = await this.getStoreConfig(storeId);
+        if (!storeConfig) {
+            throw new Error(`No AIMS configuration for store ${storeId}`);
+        }
+
+        const { companyId } = storeConfig;
+
+        // 1. Check in-memory cache
+        const cached = formatCache.get(companyId);
+        if (cached && (Date.now() - cached.fetchedAt) < FORMAT_CACHE_TTL) {
+            return cached.format;
+        }
+
+        // 2. Check DB (Company.settings.solumArticleFormat)
+        try {
+            const company = await prisma.company.findUnique({
+                where: { id: companyId },
+                select: { settings: true },
+            });
+            const settings = (company?.settings as Record<string, any>) || {};
+            if (settings.solumArticleFormat) {
+                const format = settings.solumArticleFormat as ArticleFormat;
+                formatCache.set(companyId, { format, fetchedAt: Date.now() });
+                return format;
+            }
+        } catch (error) {
+            console.error(`[AIMS Gateway] Failed to read article format from DB for company ${companyId}:`, error);
+        }
+
+        // 3. Fetch from AIMS live
+        const token = await this.getToken(companyId);
+        try {
+            const format = await solumService.fetchArticleFormat(storeConfig.config, token);
+            formatCache.set(companyId, { format, fetchedAt: Date.now() });
+            console.log(`[AIMS Gateway] Cached article format for company ${companyId}: ${format.articleData?.length || 0} data fields`);
+
+            // Save to DB for future use (best-effort)
+            try {
+                const company = await prisma.company.findUnique({
+                    where: { id: companyId },
+                    select: { settings: true },
+                });
+                const existingSettings = (company?.settings as Record<string, any>) || {};
+                await prisma.company.update({
+                    where: { id: companyId },
+                    data: { settings: { ...existingSettings, solumArticleFormat: format } as any },
+                });
+                console.log(`[AIMS Gateway] Saved article format to DB for company ${companyId}`);
+            } catch (dbError) {
+                console.error(`[AIMS Gateway] Failed to save article format to DB:`, dbError);
+            }
+
+            return format;
+        } catch (error: any) {
+            // On auth error, retry once
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                this.invalidateToken(companyId);
+                const newToken = await this.getToken(companyId);
+                const format = await solumService.fetchArticleFormat(storeConfig.config, newToken);
+                formatCache.set(companyId, { format, fetchedAt: Date.now() });
+                return format;
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Invalidate the cached article format for a company
+     */
+    invalidateFormatCache(companyId: string): void {
+        formatCache.delete(companyId);
     }
 
     /**
