@@ -25,7 +25,7 @@ export function PeopleToolbar({
     return (
         <Stack
             direction={{ xs: 'column', sm: 'row' }}
-            justifyContent="space-between"
+            justifyContent="flex-start"
             alignItems={{ xs: 'stretch', sm: 'center' }}
             gap={2}
             sx={{ mb: 3 }}
@@ -55,7 +55,7 @@ export function PeopleToolbar({
                     {t('people.total')} - {totalPeople}
                 </Typography>
             </Box>
-            <Stack direction="row" gap={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+            <Stack direction="row-reverse" gap={2} sx={{ width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-end', sm: 'flex-start' } }}>
                 <Button
                     variant="text"
                     startIcon={<UploadFileIcon />}

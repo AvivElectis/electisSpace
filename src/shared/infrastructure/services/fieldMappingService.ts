@@ -8,6 +8,7 @@
 
 import { api } from './apiClient';
 import type { SolumMappingConfig, SolumFieldMapping } from '@features/settings/domain/types';
+import type { ArticleFormat } from '@features/configuration/domain/types';
 
 export interface FieldMappingResponse {
     companyId: string;
@@ -23,6 +24,12 @@ export interface AimsConfigResponse {
         username: string | null;
         hasPassword: boolean;
     };
+}
+
+export interface ArticleFormatResponse {
+    companyId: string;
+    articleFormat: ArticleFormat;
+    source: 'db' | 'aims';
 }
 
 export interface AimsTestResponse {
@@ -77,6 +84,27 @@ export const fieldMappingService = {
         };
         
         await this.updateFieldMappings(companyId, updated);
+    },
+
+    /**
+     * Get article format for a company (from DB, or fetches from AIMS if not stored)
+     */
+    async getArticleFormat(companyId: string): Promise<ArticleFormatResponse> {
+        const response = await api.get<ArticleFormatResponse>(
+            `/settings/company/${companyId}/article-format`
+        );
+        return response.data;
+    },
+
+    /**
+     * Update article format for a company (saves to DB + pushes to AIMS)
+     */
+    async updateArticleFormat(companyId: string, format: ArticleFormat): Promise<any> {
+        const response = await api.put(
+            `/settings/company/${companyId}/article-format`,
+            format
+        );
+        return response.data;
     },
 
     /**

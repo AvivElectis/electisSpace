@@ -69,11 +69,15 @@ export function ConferencePage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingRoom, setEditingRoom] = useState<ConferenceRoom | undefined>(undefined);
 
-    // Fetch conference rooms from AIMS on mount (SoluM mode)
+    // Fetch conference rooms from server on mount (SoluM mode)
+    // Server returns rooms with serverId (UUID) needed for correct PATCH/DELETE calls
     useEffect(() => {
-        if (settings.workingMode === 'SOLUM_API' && settings.solumConfig && solumToken && settings.solumMappingConfig) {
-            conferenceController.fetchFromSolum().catch(() => {
-                // console.error('Failed to fetch conference rooms from AIMS:', error);
+        if (settings.workingMode === 'SOLUM_API' && settings.solumConfig) {
+            conferenceController.fetchRooms().catch(() => {
+                // Fallback to AIMS fetch if server fetch fails
+                if (solumToken && settings.solumMappingConfig) {
+                    conferenceController.fetchFromSolum().catch(() => {});
+                }
             });
         }
         // Only run once on mount
@@ -162,9 +166,9 @@ export function ConferencePage() {
         <Box>
             {/* Header Section */}
             <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                justifyContent="space-between"
-                alignItems={{ xs: 'stretch', sm: 'center' }}
+                direction={{ xs: 'column', sm: 'column' }}
+                justifyContent="flex-start"
+                alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
                 gap={2}
                 sx={{ mb: 3 }}
             >
@@ -186,8 +190,8 @@ export function ConferencePage() {
                 </Button>
             </Stack>
             {/* Stats Cards */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid container gap={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
@@ -213,7 +217,7 @@ export function ConferencePage() {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
@@ -239,7 +243,7 @@ export function ConferencePage() {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
@@ -293,7 +297,7 @@ export function ConferencePage() {
             {conferenceController.isFetching ? (
                 <Grid container spacing={3}>
                     {Array.from({ length: 6 }).map((_, index) => (
-                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`skeleton-${index}`}>
+                        <Grid item xs={12} sm={6} lg={4} key={`skeleton-${index}`}>
                             <Card sx={{ height: 200 }}>
                                 <CardContent>
                                     <Stack gap={2}>

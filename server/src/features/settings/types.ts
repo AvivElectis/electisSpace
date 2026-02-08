@@ -40,12 +40,30 @@ export const fieldMappingConfigSchema = z.object({
     }).optional(),
 });
 
+/** Schema for AIMS article format mapping info */
+export const mappingInfoSchema = z.object({
+    store: z.string(),
+    articleId: z.string(),
+    articleName: z.string(),
+    nfcUrl: z.string().optional(),
+}).catchall(z.string().optional());
+
+/** Schema for AIMS article format */
+export const articleFormatSchema = z.object({
+    fileExtension: z.string(),
+    delimeter: z.string(),
+    mappingInfo: mappingInfoSchema,
+    articleBasicInfo: z.array(z.string()),
+    articleData: z.array(z.string()),
+});
+
 // ======================
 // DTOs
 // ======================
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 export type FieldMappingConfigInput = z.infer<typeof fieldMappingConfigSchema>;
+export type ArticleFormatInput = z.infer<typeof articleFormatSchema>;
 
 // ======================
 // Response Types
@@ -75,6 +93,18 @@ export interface FieldMappingsResponse {
     };
 }
 
+export interface ArticleFormatResponse {
+    companyId: string;
+    articleFormat: {
+        fileExtension: string;
+        delimeter: string;
+        mappingInfo: Record<string, any>;
+        articleBasicInfo: string[];
+        articleData: string[];
+    };
+    source: 'db' | 'aims';
+}
+
 export interface AimsConfigResponse {
     companyId: string;
     aimsConfig: {
@@ -97,6 +127,7 @@ export interface UpdateSuccessResponse {
     companyId?: string;
     settings?: Record<string, any>;
     fieldMappings?: FieldMappingConfigInput;
+    articleFormat?: ArticleFormatInput;
     message: string;
 }
 
