@@ -38,6 +38,7 @@ import { useSettingsController } from '@features/settings/application/useSetting
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import type { Space } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 
 // Lazy load dialogs - not needed on initial render
@@ -57,9 +58,25 @@ export function SpacesManagementView() {
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const activeListName = useSpacesStore((state) => state.activeListName);
     const activeListId = useSpacesStore((state) => state.activeListId);
+    const pendingChanges = useSpacesStore((state) => state.pendingChanges);
+    const clearPendingChanges = useSpacesStore((state) => state.clearPendingChanges);
 
     // Use Lists Controller for saving changes and recovering ID
     const { lists, saveListChanges } = useListsController();
+
+    // Unsaved list guard — prompts save/discard on navigation or browser close
+    const { UnsavedChangesDialog } = useUnsavedListGuard({
+        hasActiveList: !!activeListId,
+        hasPendingChanges: pendingChanges,
+        onSave: async () => {
+            if (!activeListId) return;
+            await saveListChanges(activeListId);
+            clearPendingChanges();
+        },
+        onDiscard: () => {
+            clearPendingChanges();
+        },
+    });
 
     // Auto-recover activeListId if name exists but ID is missing (fix for persistence mismatch)
     useEffect(() => {
@@ -551,6 +568,7 @@ export function SpacesManagementView() {
                         variant="outlined"
                         color="success"
                         startIcon={<SaveIcon />}
+                        disabled={!pendingChanges}
                         onClick={() => {
                             if (activeListId) {
                                 saveListChanges(activeListId);
@@ -578,6 +596,7 @@ export function SpacesManagementView() {
                 )}
             </Suspense>
             <ConfirmDialog />
+            <UnsavedChangesDialog />
             {/* Lists Dialogs - Lazy loaded */}
             <Suspense fallback={null}>
                 {listsManagerOpen && (

@@ -24,6 +24,8 @@ import syncRoutes from './features/sync/routes.js';
 import settingsRoutes from './features/settings/routes.js';
 import adminRoutes from './features/admin/routes.js';
 import labelsRoutes from './features/labels/routes.js';
+import peopleListsRoutes from './features/people-lists/routes.js';
+import spacesListsRoutes from './features/spaces-lists/routes.js';
 
 // Create Express app
 const app = express();
@@ -103,6 +105,8 @@ apiRouter.use('/sync', syncRoutes);
 apiRouter.use('/settings', settingsRoutes);
 apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/labels', labelsRoutes);
+apiRouter.use('/people-lists', peopleListsRoutes);
+apiRouter.use('/spaces-lists', spacesListsRoutes);
 apiRouter.use('/health', healthRoutes);  // Also mount health inside API for proxy access
 
 app.use(`/api/${config.apiVersion}`, apiRouter);

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -11,7 +12,9 @@ import {
     IconButton,
     Typography,
     Box,
-    Chip
+    Chip,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -24,22 +27,52 @@ interface ListsManagerDialogProps {
     onClose: () => void;
 }
 
+/**
+ * Spaces Lists Manager Dialog
+ * Lists are loaded from DB (shared between all users in the store).
+ * Loading a list OVERWRITES the current spaces table.
+ * NO AIMS sync - server sync intervals handle that.
+ */
 export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
     const { t } = useTranslation();
-    const { lists, activeListId, loadList, deleteList } = useListsController();
+    const { lists, activeListId, isLoading: controllerLoading, fetchLists, loadList, deleteList } = useListsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const [isOperationLoading, setIsOperationLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch lists from DB when dialog opens
+    useEffect(() => {
+        if (open) {
+            fetchLists();
+        }
+    }, [open, fetchLists]);
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
             onClose();
             return;
         }
+
+        // Prompt user that loading will overwrite the table
+        const isConfirmed = await confirm({
+            title: t('lists.loadList'),
+            message: t('lists.loadListOverwriteWarning') || 'Loading this list will overwrite the current table with the list data. All current unsaved changes will be lost. Continue?',
+            confirmLabel: t('common.confirm'),
+            cancelLabel: t('common.cancel'),
+            severity: 'warning',
+        });
+
+        if (!isConfirmed) return;
+
         try {
+            setIsOperationLoading(true);
+            setError(null);
             await loadList(id);
             onClose();
-        } catch (error) {
-            // console.error('Failed to load list', error);
-            // Show error notification
+        } catch (err: any) {
+            setError(err?.response?.data?.error?.message || err?.message || 'Failed to load list');
+        } finally {
+            setIsOperationLoading(false);
         }
     };
 
@@ -54,9 +87,19 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
         });
 
         if (isConfirmed) {
-            deleteList(id);
+            try {
+                setIsOperationLoading(true);
+                setError(null);
+                await deleteList(id);
+            } catch (err: any) {
+                setError(err?.response?.data?.error?.message || err?.message || 'Failed to delete list');
+            } finally {
+                setIsOperationLoading(false);
+            }
         }
     };
+
+    const isLoading = controllerLoading || isOperationLoading;
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -67,7 +110,17 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-                {lists.length === 0 ? (
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                        {error}
+                    </Alert>
+                )}
+
+                {isLoading && lists.length === 0 ? (
+                    <Box display="flex" justifyContent="center" py={4}>
+                        <CircularProgress />
+                    </Box>
+                ) : lists.length === 0 ? (
                     <Box textAlign="center" py={4}>
                         <Typography color="text.secondary">
                             {t('lists.noListsFound')}
@@ -101,7 +154,7 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
                                         borderColor: isActive ? 'primary.main' : 'transparent',
                                     }}
                                 >
-                                    <ListItemButton onClick={() => handleLoad(list.id)}>
+                                    <ListItemButton onClick={() => handleLoad(list.id)} disabled={isLoading}>
                                         <ListItemText
                                             primary={
                                                 <Box display="flex" alignItems="center" justifyContent="flex-start" gap={2}>
@@ -118,7 +171,7 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
                                                         />
                                                     )}
                                                     <Chip
-                                                        label={`${list.spaces.length} ${t('lists.spacesCount')}`}
+                                                        label={`${list.itemCount ?? 0} ${t('lists.spacesCount')}`}
                                                         size="medium"
                                                         color={isActive ? "primary" : "default"}
                                                         variant="outlined"
@@ -140,6 +193,12 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
                             );
                         })}
                     </List>
+                )}
+                {isLoading && lists.length > 0 && (
+                    <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+                        <CircularProgress size={24} sx={{ mr: 1 }} />
+                        <Typography color="text.secondary">{t('common.loading')}</Typography>
+                    </Box>
                 )}
             </DialogContent>
             <DialogActions>

@@ -8,7 +8,8 @@ import {
     TextField,
     Box,
     Alert,
-    Typography
+    Typography,
+    CircularProgress,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useTranslation } from 'react-i18next';
@@ -19,34 +20,57 @@ interface SaveListDialogProps {
     onClose: () => void;
 }
 
+/**
+ * Save Spaces List Dialog
+ * Saves current spaces to DB (shared between all users in the store).
+ * Unique name per store enforced by server.
+ * NO AIMS sync - server sync intervals handle that.
+ */
 export function SaveListDialog({ open, onClose }: SaveListDialogProps) {
     const { t } = useTranslation();
     const { saveCurrentSpacesAsList } = useListsController();
     const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name.trim()) {
             setError(t('validation.required'));
             return;
         }
 
+        setIsSaving(true);
+        setError(null);
+
         try {
-            saveCurrentSpacesAsList(name);
+            await saveCurrentSpacesAsList(name.trim());
             setName('');
             setError(null);
             onClose();
-        } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message); // Should map to translated strings in real app
+        } catch (err: any) {
+            if (err?.response?.status === 409) {
+                setError(t('lists.nameExists') || 'A list with this name already exists');
+            } else if (err?.response?.data?.error?.message) {
+                setError(err.response.data.error.message);
+            } else if (err instanceof Error) {
+                setError(err.message);
             } else {
                 setError(t('common.unknownError'));
             }
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    const handleClose = () => {
+        if (isSaving) return;
+        setName('');
+        setError(null);
+        onClose();
+    };
+
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>
                 <Box display="flex" alignItems="center" gap={1}>
                     <SaveIcon />
@@ -63,18 +87,27 @@ export function SaveListDialog({ open, onClose }: SaveListDialogProps) {
                         fullWidth
                         variant="outlined"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => { setName(e.target.value); if (error) setError(null); }}
                         error={!!error}
+                        disabled={isSaving}
+                        slotProps={{
+                            htmlInput: { maxLength: 100 }
+                        }}
                     />
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        {t('lists.saveListDescription')}
+                        {t('lists.saveListDescription') || 'Lists are shared between all users in this store.'}
                     </Typography>
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>{t('common.cancel')}</Button>
-                <Button onClick={handleSave} variant="contained" startIcon={<SaveIcon />}>
-                    {t('common.save')}
+                <Button onClick={handleClose} disabled={isSaving}>{t('common.cancel')}</Button>
+                <Button 
+                    onClick={handleSave} 
+                    variant="contained" 
+                    disabled={isSaving || !name.trim()}
+                    startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                >
+                    {isSaving ? t('common.saving') : t('common.save')}
                 </Button>
             </DialogActions>
         </Dialog>

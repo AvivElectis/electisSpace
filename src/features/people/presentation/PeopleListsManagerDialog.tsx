@@ -15,13 +15,16 @@ import {
     Box,
     Chip,
     CircularProgress,
+    Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
-import { usePeopleController } from '../application/usePeopleController';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { peopleApi, type PeopleListItem } from '@shared/infrastructure/services/peopleApi';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import type { Person } from '../domain/types';
 
 interface PeopleListsManagerDialogProps {
     open: boolean;
@@ -30,56 +33,92 @@ interface PeopleListsManagerDialogProps {
 
 /**
  * People Lists Manager Dialog
- * Displays saved people lists and allows loading/deleting them
- * Enhanced with option to load without auto-applying assignments
+ * Lists are loaded from DB (shared between all users in the store).
+ * Loading a list OVERWRITES the current table with the list's snapshot data.
+ * NO direct AIMS sync - server sync intervals handle that.
  */
 export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDialogProps) {
     const { t } = useTranslation();
-    const peopleLists = usePeopleStore((state) => state.peopleLists);
-    const people = usePeopleStore((state) => state.people);
+    const peopleStore = usePeopleStore();
+    const activeStoreId = useAuthStore(state => state.activeStoreId);
     const activeListId = usePeopleStore((state) => state.activeListId);
-    const extractListsFromPeople = usePeopleStore((state) => state.extractListsFromPeople);
-    const peopleController = usePeopleController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [isLoading, setIsLoading] = useState(false);
+    const [lists, setLists] = useState<PeopleListItem[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
-    // Helper to get people count for a list (from main people array's listMemberships)
-    const getPeopleCountForList = (storageName: string): number => {
-        return people.filter(p => 
-            p.listMemberships?.some(m => m.listName === storageName)
-        ).length;
-    };
-
-    // Extract lists from people's listMemberships when dialog opens (handles legacy data)
+    // Fetch lists from DB when dialog opens
     useEffect(() => {
-        if (open && peopleLists.length === 0) {
-            extractListsFromPeople();
+        if (open && activeStoreId) {
+            setIsLoading(true);
+            setError(null);
+            peopleApi.lists.list(activeStoreId)
+                .then((result) => {
+                    setLists(result.data);
+                })
+                .catch((err) => {
+                    logger.error('PeopleListsManagerDialog', 'Failed to fetch lists', { error: err.message });
+                    setError(t('lists.fetchFailed') || 'Failed to fetch lists');
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
         }
-    }, [open, peopleLists.length, extractListsFromPeople]);
+    }, [open, activeStoreId, t]);
 
     const handleLoad = async (id: string) => {
         if (id === activeListId) {
             onClose();
             return;
         }
-        
+
+        // Prompt user that loading will overwrite the table
         const isConfirmed = await confirm({
             title: t('lists.loadList'),
-            message: t('lists.loadListConfirm'),
+            message: t('lists.loadListOverwriteWarning') || 'Loading this list will overwrite the current table with the list data. All current unsaved changes will be lost. Continue?',
             confirmLabel: t('common.confirm'),
             cancelLabel: t('common.cancel'),
+            severity: 'warning',
         });
 
-        if (!isConfirmed) {
-            return;
-        }
+        if (!isConfirmed) return;
 
         try {
             setIsLoading(true);
-            await peopleController.loadList(id);
+            setError(null);
+
+            // Fetch full list content from DB
+            const result = await peopleApi.lists.getById(id);
+            const listData = result.data;
+
+            if (!listData.content || !Array.isArray(listData.content)) {
+                throw new Error('List content is empty or invalid');
+            }
+
+            // Overwrite the people table with the list's snapshot
+            const restoredPeople: Person[] = listData.content.map((item: any) => ({
+                id: item.id,
+                virtualSpaceId: item.virtualSpaceId,
+                data: item.data || {},
+                assignedSpaceId: item.assignedSpaceId || undefined,
+                listMemberships: item.listMemberships,
+            }));
+
+            peopleStore.setPeople(restoredPeople);
+            peopleStore.setActiveListId(listData.id);
+            peopleStore.setActiveListName(listData.name);
+            peopleStore.clearPendingChanges();
+
+            logger.info('PeopleListsManagerDialog', 'List loaded from DB', {
+                listId: listData.id,
+                name: listData.name,
+                peopleCount: restoredPeople.length,
+            });
+
             onClose();
-        } catch (error: any) {
-            logger.error('PeopleListsManagerDialog', 'Failed to load list', { error: error?.message || error });
+        } catch (err: any) {
+            logger.error('PeopleListsManagerDialog', 'Failed to load list', { error: err?.message || err });
+            setError(err?.message || t('common.unknownError'));
         } finally {
             setIsLoading(false);
         }
@@ -98,9 +137,20 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
         if (isConfirmed) {
             try {
                 setIsLoading(true);
-                await peopleController.deleteList(id);
-            } catch (error: any) {
-                logger.error('PeopleListsManagerDialog', 'Failed to delete list', { error: error?.message || error });
+                await peopleApi.lists.delete(id);
+                setLists(prev => prev.filter(l => l.id !== id));
+
+                // Clear active list if it was the deleted one
+                if (activeListId === id) {
+                    peopleStore.setActiveListId(undefined);
+                    peopleStore.setActiveListName(undefined);
+                    peopleStore.clearPendingChanges();
+                }
+
+                logger.info('PeopleListsManagerDialog', 'List deleted', { listId: id });
+            } catch (err: any) {
+                logger.error('PeopleListsManagerDialog', 'Failed to delete list', { error: err?.message || err });
+                setError(err?.message || 'Failed to delete list');
             } finally {
                 setIsLoading(false);
             }
@@ -116,7 +166,17 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-                {peopleLists.length === 0 ? (
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                        {error}
+                    </Alert>
+                )}
+
+                {isLoading && lists.length === 0 ? (
+                    <Box display="flex" justifyContent="center" py={4}>
+                        <CircularProgress />
+                    </Box>
+                ) : lists.length === 0 ? (
                     <Box textAlign="center" py={4}>
                         <Typography color="text.secondary">
                             {t('lists.noListsFound')}
@@ -124,7 +184,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                     </Box>
                 ) : (
                     <List>
-                        {peopleLists.map((list) => {
+                        {lists.map((list) => {
                             const isActive = list.id === activeListId;
                             return (
                                 <ListItem
@@ -150,7 +210,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                                         borderColor: isActive ? 'primary.main' : 'transparent',
                                     }}
                                 >
-                                    <ListItemButton 
+                                    <ListItemButton
                                         onClick={() => handleLoad(list.id)}
                                         disabled={isLoading}
                                     >
@@ -170,7 +230,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                                                         />
                                                     )}
                                                     <Chip
-                                                        label={`${getPeopleCountForList(list.storageName)} ${t('people.peopleCount')}`}
+                                                        label={`${list.itemCount ?? 0} ${t('people.peopleCount')}`}
                                                         size="medium"
                                                         color={isActive ? "primary" : "default"}
                                                         variant="outlined"
@@ -193,10 +253,10 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                         })}
                     </List>
                 )}
-                {isLoading && (
+                {isLoading && lists.length > 0 && (
                     <Box display="flex" justifyContent="center" alignItems="center" py={2}>
                         <CircularProgress size={24} sx={{ mr: 1 }} />
-                        <Typography color="text.secondary">{t('common.syncing')}</Typography>
+                        <Typography color="text.secondary">{t('common.loading')}</Typography>
                     </Box>
                 )}
             </DialogContent>
