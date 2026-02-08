@@ -861,7 +861,13 @@
         "loaded": "Loaded",
         "loadList": "Load List",
         "loadListConfirm": "Load this list? Saved assignments will be applied.",
-        "savedLocallyAimsFailed": "List saved locally but failed to sync to AIMS: {{error}}. Please try 'Send All to AIMS' later."
+        "loadListOverwriteWarning": "Loading this list will overwrite the current table with the saved list data. All current unsaved changes will be lost. Continue?",
+        "nameExists": "A list with this name already exists in this store",
+        "fetchFailed": "Failed to load lists from server",
+        "savedLocallyAimsFailed": "List saved locally but failed to sync to AIMS: {{error}}. Please try 'Send All to AIMS' later.",
+        "unsavedChangesTitle": "Unsaved List Changes",
+        "unsavedChangesMessage": "You have unsaved changes to the current list. Would you like to save them before leaving?",
+        "discardChanges": "Discard Changes"
     },
     "people": {
         "title": "People Manager",
@@ -957,6 +963,7 @@
         "loadedList": "Loaded: {{name}}",
         "listsStoredLocally": "Lists are stored locally in your browser. Use 'Send All to AIMS' to sync data to the server.",
         "listsFromAims": "Lists are derived from synced AIMS data. Sync from AIMS to load lists, or save a new list and send to AIMS.",
+        "listsSharedInStore": "Lists are shared across all users in this store. Changes will sync to AIMS automatically via server sync.",
         "fromAIMS": "From AIMS",
         "applyAssignments": "Apply Assignments",
         "applyAssignmentsTooltip": "Apply {{count}} pending list assignments to active assignments and sync to AIMS",

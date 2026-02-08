@@ -3,6 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { checkNavigationGuard } from '../navigationGuard';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
@@ -184,13 +185,17 @@ export function MainLayout({ children }: MainLayoutProps) {
     // Use transition for non-blocking navigation - UI updates instantly
     const [isPending, startTransition] = useTransition();
 
-    const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
+    const handleTabChange = async (_event: React.SyntheticEvent, newValue: string) => {
+        const canProceed = await checkNavigationGuard();
+        if (!canProceed) return;
         startTransition(() => {
             navigate(newValue);
         });
     };
 
-    const handleMobileNavClick = (value: string) => {
+    const handleMobileNavClick = async (value: string) => {
+        const canProceed = await checkNavigationGuard();
+        if (!canProceed) return;
         startTransition(() => {
             navigate(value);
         });

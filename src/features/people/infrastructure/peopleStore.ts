@@ -102,6 +102,7 @@ export const usePeopleStore = create<PeopleStore>()(
                 addPersonLocal: (person) =>
                     set((state) => ({
                         people: [...state.people, person],
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'addPersonLocal'),
 
                 updatePersonLocal: (id, updates) =>
@@ -113,11 +114,13 @@ export const usePeopleStore = create<PeopleStore>()(
                                 data: updates.data ? { ...p.data, ...updates.data } : p.data
                             } : p
                         ),
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'updatePersonLocal'),
 
                 deletePersonLocal: (id) => {
                     set((state) => ({
                         people: state.people.filter((p) => p.id !== id),
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'deletePersonLocal');
                     get().updateSpaceAllocation();
                 },
@@ -150,6 +153,7 @@ export const usePeopleStore = create<PeopleStore>()(
                             aimsSyncStatus: undefined,
                             lastSyncedAt: undefined,
                         })),
+                        pendingChanges: state.activeListId ? true : state.pendingChanges,
                     }), false, 'unassignAllSpacesLocal');
                     get().updateSpaceAllocation();
                 },
@@ -186,6 +190,7 @@ export const usePeopleStore = create<PeopleStore>()(
                         set((state) => ({
                             people: [...state.people, person],
                             isLoading: false,
+                            pendingChanges: state.activeListId ? true : state.pendingChanges,
                         }), false, 'createPerson/success');
                         return person;
                     } catch (error) {
@@ -202,6 +207,7 @@ export const usePeopleStore = create<PeopleStore>()(
                         set((state) => ({
                             people: state.people.map((p) => p.id === id ? person : p),
                             isLoading: false,
+                            pendingChanges: state.activeListId ? true : state.pendingChanges,
                         }), false, 'updatePerson/success');
                         return person;
                     } catch (error) {
@@ -218,6 +224,7 @@ export const usePeopleStore = create<PeopleStore>()(
                         set((state) => ({
                             people: state.people.filter((p) => p.id !== id),
                             isLoading: false,
+                            pendingChanges: state.activeListId ? true : state.pendingChanges,
                         }), false, 'deletePerson/success');
                         get().updateSpaceAllocation();
                         return true;
