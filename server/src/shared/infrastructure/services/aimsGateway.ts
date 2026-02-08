@@ -278,6 +278,26 @@ export class AIMSGateway {
         }
     }
 
+    /**
+     * Fetch stores from AIMS using raw credentials (not yet saved to DB).
+     * Used during company creation wizard to let the user pick stores.
+     */
+    async fetchStoresWithCredentials(credentials: AIMSCredentials, companyCode: string): Promise<any[]> {
+        const config: SolumConfig = {
+            baseUrl: credentials.baseUrl,
+            companyName: companyCode,
+            cluster: credentials.cluster,
+            username: credentials.username,
+            password: credentials.password,
+        };
+
+        // Login to get token
+        const tokens = await solumService.login(config);
+
+        // Fetch stores
+        return await solumService.fetchStores(config, tokens.accessToken);
+    }
+
     // ============== Label Operations ==============
 
     /**

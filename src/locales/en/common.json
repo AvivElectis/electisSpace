@@ -622,7 +622,20 @@
             "createNew": "Create New Company",
             "newCompanyConfirmed": "New Company Confirmed",
             "fillRequired": "Please fill in code and name to create a new company.",
-            "readyToCreate": "New company will be created when you save the user."
+            "readyToCreate": "New company will be created when you save the user.",
+            "wizardStepCredentials": "AIMS Credentials",
+            "wizardStepStores": "Select Store",
+            "wizardStep1Info": "Enter the company code and AIMS credentials. We'll connect to AIMS to fetch available stores.",
+            "wizardStep2Info": "Select a store from AIMS, then provide a friendly name and company details.",
+            "connectAndFetch": "Connect & Fetch Stores",
+            "noAimsStores": "No stores found in AIMS for this company code. Please verify the code and credentials.",
+            "selectStore": "Available Stores",
+            "storeCode": "Code",
+            "labels": "labels",
+            "gateways": "gateways",
+            "companyDetails": "Company Details",
+            "storeFriendlyName": "Store Display Name",
+            "storeFriendlyNameHelp": "A friendly name for this store in your app (defaults to AIMS store name)"
         },
         "stores": {
             "dialogTitle": "Manage Stores",
@@ -1060,7 +1073,11 @@
         "password": "Password",
         "passwordMinLength": "Password must be at least 6 characters",
         "role": "Role",
-        "logout": "Logout"
+        "logout": "Logout",
+        "selectStore": "Select a Store",
+        "selectStoreDescription": "Please choose a store to connect to. This determines which AIMS data you can access.",
+        "noStoresAssigned": "No stores assigned to your account. Contact your administrator.",
+        "storeCode": "Code"
     },
     "roles": {
         "admin": "Admin",

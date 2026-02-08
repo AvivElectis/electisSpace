@@ -341,6 +341,47 @@ export const companyService = {
     },
 
     /**
+     * Fetch AIMS stores using raw credentials (pre-save, for company creation wizard)
+     */
+    async fetchAimsStores(params: {
+        baseUrl: string;
+        cluster?: string;
+        username: string;
+        password: string;
+        companyCode: string;
+    }) {
+        const { baseUrl, cluster, username, password, companyCode } = params;
+        
+        try {
+            const stores = await aimsGateway.fetchStoresWithCredentials(
+                { baseUrl, cluster, username, password },
+                companyCode
+            );
+            
+            return {
+                success: true,
+                stores: stores.map((s: any) => ({
+                    code: s.store || s.storeCode || s.code,
+                    name: s.storeName || s.name || '',
+                    region: s.region || '',
+                    city: s.city || '',
+                    country: s.country || '',
+                    labelCount: s.labelCount || 0,
+                    gatewayCount: s.gatewayCount || 0,
+                    articleCount: s.articleCount || 0,
+                })),
+            };
+        } catch (error: any) {
+            console.error('[Company Service] Failed to fetch AIMS stores:', error);
+            return {
+                success: false,
+                stores: [],
+                error: error.message || 'Failed to connect to AIMS',
+            };
+        }
+    },
+
+    /**
      * Delete a company
      */
     async delete(id: string) {

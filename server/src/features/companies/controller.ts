@@ -11,6 +11,7 @@ import {
     createCompanySchema, 
     updateCompanySchema, 
     updateAimsConfigSchema,
+    fetchAimsStoresSchema,
 } from './types.js';
 import { notFound, conflict, badRequest, forbidden } from '../../shared/middleware/index.js';
 import type { UserContext } from './types.js';
@@ -206,6 +207,44 @@ export const companyController = {
         } catch (error: any) {
             if (error.code === 'P2025') {
                 return next(notFound('Company'));
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * POST /companies/aims/stores
+     * Fetch AIMS stores using raw credentials (for company creation wizard)
+     */
+    async fetchAimsStores(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = getUserContext(req);
+            
+            // Only platform admins can fetch AIMS stores (creating companies)
+            if (!isPlatformAdmin(user)) {
+                throw forbidden('Only platform administrators can fetch AIMS stores');
+            }
+            
+            // Validate input
+            const validation = fetchAimsStoresSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+            
+            const { baseUrl, cluster, username, password, companyCode } = validation.data;
+            
+            const result = await companyService.fetchAimsStores({
+                baseUrl,
+                cluster,
+                username,
+                password,
+                companyCode,
+            });
+            
+            res.json(result);
+        } catch (error: any) {
+            if (error.message?.includes('login failed') || error.message?.includes('401')) {
+                return next(badRequest('AIMS authentication failed. Please check your credentials.'));
             }
             next(error);
         }
