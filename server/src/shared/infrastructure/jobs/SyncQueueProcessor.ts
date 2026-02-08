@@ -11,6 +11,12 @@
 
 import { prisma } from '../../../config/index.js';
 import { aimsGateway } from '../services/aimsGateway.js';
+import {
+    buildSpaceArticle,
+    buildPersonArticle,
+    buildConferenceArticle,
+} from '../services/articleBuilder.js';
+import type { ArticleFormat } from '../services/solumService.js';
 import { QueueStatus, SyncStatus } from '@prisma/client';
 
 // Processing delay (items must be at least this old)
@@ -257,8 +263,16 @@ export class SyncQueueProcessor {
         entityId: string,
         payload: any
     ): Promise<void> {
+        // Fetch the company's article format (cached)
+        let format: ArticleFormat | null = null;
+        try {
+            format = await aimsGateway.fetchArticleFormat(storeId);
+        } catch (error: any) {
+            console.warn(`[SyncQueue] Could not fetch article format for store ${storeId}: ${error.message}`);
+        }
+
         // Build article data based on entity type
-        const article = await this.buildArticleFromEntity(entityType, entityId, payload);
+        const article = await this.buildArticleFromEntity(entityType, entityId, payload, format);
         
         if (!article) {
             // For person entities, null means unassigned - skip (nothing to push to AIMS)
@@ -269,7 +283,7 @@ export class SyncQueueProcessor {
             throw new Error(`Failed to build article for ${entityType}/${entityId}`);
         }
 
-        // Push to AIMS
+        // Push to AIMS (handles batching automatically)
         await aimsGateway.pushArticles(storeId, [article]);
     }
 
@@ -303,12 +317,13 @@ export class SyncQueueProcessor {
     }
 
     /**
-     * Build AIMS article from entity
+     * Build AIMS article from entity using the company's article format
      */
     private async buildArticleFromEntity(
         entityType: string,
         entityId: string,
-        payload: any
+        payload: any,
+        format: ArticleFormat | null,
     ): Promise<any | null> {
         switch (entityType) {
             case 'space': {
@@ -316,14 +331,7 @@ export class SyncQueueProcessor {
                     where: { id: entityId },
                 });
                 if (!space) return null;
-
-                // Build article for space/room
-                return {
-                    articleId: space.externalId,
-                    articleName: (space.data as any)?.name || space.externalId,
-                    nfc: (space.data as any)?.nfcData || '',
-                    ...this.extractCustomFields(space.data),
-                };
+                return buildSpaceArticle(space, format);
             }
 
             case 'person': {
@@ -332,20 +340,12 @@ export class SyncQueueProcessor {
                 });
                 if (!person) return null;
 
-                // Only push people with assigned physical spaces to AIMS
-                // Unassigned people (pool-ID only) are stored server-side only
                 if (!person.assignedSpaceId) {
                     console.log(`[SyncQueue] Skipping unassigned person ${entityId} - not pushed to AIMS`);
                     return null;
                 }
 
-                // Build article for person - use assignedSpaceId as articleId
-                return {
-                    articleId: person.assignedSpaceId,
-                    articleName: (person.data as any)?.name || 'Person',
-                    nfc: (person.data as any)?.nfcData || '',
-                    ...this.extractCustomFields(person.data),
-                };
+                return buildPersonArticle(person as any, format);
             }
 
             case 'conference': {
@@ -353,63 +353,13 @@ export class SyncQueueProcessor {
                     where: { id: entityId },
                 });
                 if (!room) return null;
-
-                const articleId = `C${room.externalId}`;
-                const articleName = room.roomName || `Conference ${room.externalId}`;
-
-                // Build article for conference room - prefix with 'C' for AIMS
-                // Include ARTICLE_ID and ARTICLE_NAME so they appear in the AIMS data section
-                return {
-                    articleId,
-                    articleName,
-                    nfcUrl: '',
-                    data: {
-                        ARTICLE_ID: articleId,
-                        ARTICLE_NAME: articleName,
-                        data1: room.hasMeeting ? 'MEETING' : 'AVAILABLE',
-                        data2: room.meetingName || '',
-                        data3: room.startTime || '',
-                        data4: room.endTime || '',
-                        data5: room.participants?.join(', ') || '',
-                    },
-                };
+                return buildConferenceArticle(room, format);
             }
 
             default:
                 console.warn(`[SyncQueue] Unknown entity type: ${entityType}`);
                 return null;
         }
-    }
-
-    /**
-     * Extract custom fields from entity data for AIMS article
-     */
-    private extractCustomFields(data: any): Record<string, string> {
-        const result: Record<string, string> = {};
-        
-        if (!data || typeof data !== 'object') return result;
-
-        // Map common fields to AIMS data fields
-        const fieldMappings: Record<string, string> = {
-            'field1': 'data1',
-            'field2': 'data2',
-            'field3': 'data3',
-            'field4': 'data4',
-            'field5': 'data5',
-            'data1': 'data1',
-            'data2': 'data2',
-            'data3': 'data3',
-            'data4': 'data4',
-            'data5': 'data5',
-        };
-
-        for (const [sourceKey, targetKey] of Object.entries(fieldMappings)) {
-            if (data[sourceKey] !== undefined) {
-                result[targetKey] = String(data[sourceKey]);
-            }
-        }
-
-        return result;
     }
 
     /**

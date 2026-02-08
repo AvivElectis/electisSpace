@@ -6,7 +6,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { notFound, badRequest, forbidden } from '../../shared/middleware/index.js';
 import { settingsService } from './service.js';
-import { updateSettingsSchema, fieldMappingConfigSchema } from './types.js';
+import { updateSettingsSchema, fieldMappingConfigSchema, articleFormatSchema } from './types.js';
 import type { SettingsUserContext } from './types.js';
 
 // ======================
@@ -157,6 +157,53 @@ export const settingsController = {
         } catch (error: any) {
             if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
             if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions to update field mappings'));
+            next(error);
+        }
+    },
+
+    // ======================
+    // Article Format (Company-Level)
+    // ======================
+
+    /**
+     * GET /settings/company/:companyId/article-format
+     * Get article format for a company (from DB, or fetches from AIMS if not stored)
+     */
+    async getArticleFormat(req: Request, res: Response, next: NextFunction) {
+        try {
+            const companyId = req.params.companyId as string;
+            const user = getUserContext(req);
+
+            const result = await settingsService.getArticleFormat(companyId, user);
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
+            if (error.message === 'AIMS_NOT_CONFIGURED') return next(badRequest('AIMS credentials not configured for this company'));
+            if (error.message === 'NO_STORE_FOR_COMPANY') return next(badRequest('No active store found for this company'));
+            if (error.message === 'AIMS_FORMAT_FETCH_FAILED') return next(badRequest('Failed to fetch article format from AIMS'));
+            next(error);
+        }
+    },
+
+    /**
+     * PUT /settings/company/:companyId/article-format
+     * Update article format for a company (saves to DB + pushes to AIMS)
+     */
+    async updateArticleFormat(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = articleFormatSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const companyId = req.params.companyId as string;
+            const user = getUserContext(req);
+
+            const result = await settingsService.updateArticleFormat(companyId, validation.data, user);
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions to update article format'));
             next(error);
         }
     },

@@ -82,6 +82,11 @@ export const conferenceApi = {
         externalId: string;
         roomName: string;
         labelCode?: string;
+        hasMeeting?: boolean;
+        meetingName?: string;
+        startTime?: string;
+        endTime?: string;
+        participants?: string[];
         data?: Record<string, unknown>;
     }): Promise<ConferenceRoom> => {
         const response = await api.post<ServerConferenceRoom>('/conference', data);
@@ -94,6 +99,11 @@ export const conferenceApi = {
     update: async (id: string, data: {
         roomName?: string;
         labelCode?: string | null;
+        hasMeeting?: boolean;
+        meetingName?: string | null;
+        startTime?: string | null;
+        endTime?: string | null;
+        participants?: string[];
         data?: Record<string, unknown>;
     }): Promise<ConferenceRoom> => {
         const response = await api.patch<ServerConferenceRoom>(`/conference/${id}`, data);

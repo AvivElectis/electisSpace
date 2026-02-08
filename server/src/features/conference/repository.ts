@@ -64,6 +64,11 @@ export const conferenceRepository = {
                 externalId: data.externalId,
                 roomName: data.roomName,
                 labelCode: data.labelCode,
+                hasMeeting: data.hasMeeting ?? false,
+                meetingName: data.hasMeeting ? (data.meetingName || null) : null,
+                startTime: data.hasMeeting ? (data.startTime || null) : null,
+                endTime: data.hasMeeting ? (data.endTime || null) : null,
+                participants: data.hasMeeting ? (data.participants || []) : [],
                 syncStatus: 'PENDING',
             },
         });
@@ -73,12 +78,20 @@ export const conferenceRepository = {
      * Update a conference room
      */
     async update(roomId: string, data: UpdateRoomDTO) {
+        // Build update payload, handling meeting fields explicitly
+        const updateData: Record<string, unknown> = { syncStatus: 'PENDING' };
+        if (data.roomName !== undefined) updateData.roomName = data.roomName;
+        if (data.labelCode !== undefined) updateData.labelCode = data.labelCode;
+        if (data.hasMeeting !== undefined) {
+            updateData.hasMeeting = data.hasMeeting;
+            updateData.meetingName = data.hasMeeting ? (data.meetingName || null) : null;
+            updateData.startTime = data.hasMeeting ? (data.startTime || null) : null;
+            updateData.endTime = data.hasMeeting ? (data.endTime || null) : null;
+            updateData.participants = data.hasMeeting ? (data.participants || []) : [];
+        }
         return prisma.conferenceRoom.update({
             where: { id: roomId },
-            data: {
-                ...data,
-                syncStatus: 'PENDING',
-            },
+            data: updateData,
         });
     },
 

@@ -70,11 +70,13 @@ export function useSettingsController() {
         resetSettings,
         saveSettingsToServer,
         saveFieldMappingsToServer,
+        saveArticleFormatToServer,
     } = useSettingsStore();
 
     // Debounced save to server
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fieldMappingSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const articleFormatSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const debouncedSaveToServer = useCallback(() => {
         // Clear existing timeout
@@ -99,6 +101,16 @@ export function useSettingsController() {
         }, 2000);
     }, [saveFieldMappingsToServer]);
 
+    // Debounced save article format to server (dedicated endpoint)
+    const debouncedSaveArticleFormatToServer = useCallback(() => {
+        if (articleFormatSaveTimeoutRef.current) {
+            clearTimeout(articleFormatSaveTimeoutRef.current);
+        }
+        articleFormatSaveTimeoutRef.current = setTimeout(() => {
+            saveArticleFormatToServer();
+        }, 2000);
+    }, [saveArticleFormatToServer]);
+
     // Cleanup timeouts on unmount
     useEffect(() => {
         return () => {
@@ -107,6 +119,9 @@ export function useSettingsController() {
             }
             if (fieldMappingSaveTimeoutRef.current) {
                 clearTimeout(fieldMappingSaveTimeoutRef.current);
+            }
+            if (articleFormatSaveTimeoutRef.current) {
+                clearTimeout(articleFormatSaveTimeoutRef.current);
             }
         };
     }, []);
@@ -235,13 +250,19 @@ export function useSettingsController() {
             // If field mappings were updated, save them via company-level endpoint
             if ('solumMappingConfig' in updates && activeCompanyId) {
                 debouncedSaveFieldMappingsToServer();
-            } else if (activeStoreId) {
+            }
+            // If article format was updated, save via company-level endpoint
+            if ('solumArticleFormat' in updates && activeCompanyId) {
+                debouncedSaveArticleFormatToServer();
+            }
+            // For other settings, save to store-level endpoint
+            if (!('solumMappingConfig' in updates) && !('solumArticleFormat' in updates) && activeStoreId) {
                 debouncedSaveToServer();
             }
             
             logger.info('SettingsController', 'Settings updated successfully');
         },
-        [settings, updateInStore, activeStoreId, activeCompanyId, debouncedSaveToServer, debouncedSaveFieldMappingsToServer]
+        [settings, updateInStore, activeStoreId, activeCompanyId, debouncedSaveToServer, debouncedSaveFieldMappingsToServer, debouncedSaveArticleFormatToServer]
     );
 
     /**

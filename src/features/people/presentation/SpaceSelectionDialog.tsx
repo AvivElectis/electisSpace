@@ -162,13 +162,13 @@ export function SpaceSelectionDialog({
                                         opacity: option.taken ? 0.5 : 1,
                                         borderRadius: 1,
                                         mb: 0.5,
+                                        gap: 1,
                                         flexDirection: isRtl ? 'row-reverse' : 'row',
                                     }}
                                 >
                                     <ListItemText
                                         primary={`${tWithSpaceType('people.space')} ${option.id}`}
-                                        sx={{
-                                            textDecoration: option.taken ? 'line-through' : 'none',
+                                        sx={{                                            textDecoration: option.taken ? 'line-through' : 'none',
                                             textAlign: isRtl ? 'right' : 'left',
                                         }}
                                     />
@@ -188,7 +188,7 @@ export function SpaceSelectionDialog({
                                         <Chip
                                             label={t('common.selected')}
                                             size="small"
-                                            color="primary"
+                                            color="info"
                                             sx={{ 
                                                 p: 1,
                                                 ml: isRtl ? 0 : 1,
