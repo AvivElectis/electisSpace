@@ -15,6 +15,7 @@ import {
     buildSpaceArticle,
     buildPersonArticle,
     buildConferenceArticle,
+    type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
 import { QueueStatus, SyncStatus } from '@prisma/client';
@@ -255,6 +256,30 @@ export class SyncQueueProcessor {
     }
 
     /**
+     * Fetch conference mapping config from company settings for a store
+     */
+    private async getConferenceMapping(storeId: string): Promise<ConferenceMappingConfig | null> {
+        try {
+            const store = await prisma.store.findUnique({
+                where: { id: storeId },
+                include: {
+                    company: {
+                        select: { settings: true },
+                    },
+                },
+            });
+            const settings = (store?.company?.settings as Record<string, any>) || {};
+            const mapping = settings.solumMappingConfig?.conferenceMapping;
+            if (mapping && mapping.meetingName && mapping.meetingTime && mapping.participants) {
+                return mapping as ConferenceMappingConfig;
+            }
+        } catch (error: any) {
+            console.warn(`[SyncQueue] Could not fetch conference mapping for store ${storeId}: ${error.message}`);
+        }
+        return null;
+    }
+
+    /**
      * Sync entity data to AIMS
      */
     private async syncEntityToAIMS(
@@ -272,7 +297,7 @@ export class SyncQueueProcessor {
         }
 
         // Build article data based on entity type
-        const article = await this.buildArticleFromEntity(entityType, entityId, payload, format);
+        const article = await this.buildArticleFromEntity(entityType, entityId, payload, format, storeId);
         
         if (!article) {
             // For person entities, null means unassigned - skip (nothing to push to AIMS)
@@ -324,6 +349,7 @@ export class SyncQueueProcessor {
         entityId: string,
         payload: any,
         format: ArticleFormat | null,
+        storeId?: string,
     ): Promise<any | null> {
         switch (entityType) {
             case 'space': {
@@ -353,7 +379,9 @@ export class SyncQueueProcessor {
                     where: { id: entityId },
                 });
                 if (!room) return null;
-                return buildConferenceArticle(room, format);
+                // Fetch the company's conference mapping from settings
+                const conferenceMapping = storeId ? await this.getConferenceMapping(storeId) : null;
+                return buildConferenceArticle(room, format, conferenceMapping);
             }
 
             default:

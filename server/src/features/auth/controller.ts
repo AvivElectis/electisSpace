@@ -4,7 +4,7 @@
  * @description HTTP request/response handling for authentication endpoints.
  */
 import type { Request, Response, NextFunction } from 'express';
-import { config } from '../../config/index.js';
+import { config, prisma } from '../../config/index.js';
 import { badRequest, unauthorized } from '../../shared/middleware/index.js';
 import { authService } from './service.js';
 import {
@@ -406,6 +406,129 @@ export const authController = {
             });
         } catch (error: any) {
             console.error('[Auth] AIMS token refresh failed:', error.message);
+            next(error);
+        }
+    },
+
+    /**
+     * GET /auth/store-connection-info?storeId=xxx
+     * Returns AIMS connection status and admin contact info for a store.
+     * Used during first-time user connection to determine the appropriate flow:
+     * - If AIMS is configured: auto-connect
+     * - If user is admin: prompt for credentials
+     * - If user is not admin: show admin contact info
+     */
+    async storeConnectionInfo(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { storeId } = req.query;
+            if (!storeId || typeof storeId !== 'string') {
+                return next(badRequest('storeId is required'));
+            }
+
+            // Verify user access
+            const hasAccess = req.user!.stores.some((s: any) => s.id === storeId) ||
+                req.user!.globalRole === 'PLATFORM_ADMIN';
+
+            if (!hasAccess) {
+                return next(unauthorized('You do not have access to this store'));
+            }
+
+            // Get store + company info
+            const store = await prisma.store.findUnique({
+                where: { id: storeId },
+                include: {
+                    company: {
+                        select: {
+                            id: true,
+                            name: true,
+                            code: true,
+                            aimsBaseUrl: true,
+                            aimsUsername: true,
+                            aimsPasswordEnc: true,
+                        },
+                    },
+                },
+            });
+
+            if (!store) {
+                return next(badRequest('Store not found'));
+            }
+
+            const aimsConfigured = !!(
+                store.company.aimsBaseUrl &&
+                store.company.aimsUsername &&
+                store.company.aimsPasswordEnc
+            );
+
+            // Determine if current user is an admin for this store or company
+            const userStoreAccess = req.user!.stores.find((s: any) => s.id === storeId);
+            const isPlatformAdmin = req.user!.globalRole === 'PLATFORM_ADMIN';
+            const isStoreAdmin = userStoreAccess?.role === 'STORE_ADMIN';
+
+            // Check if user is company admin
+            const userCompanyAccess = req.user!.companies?.find(
+                (c: any) => c.id === store.companyId
+            );
+            const isCompanyAdmin = userCompanyAccess?.role === 'COMPANY_ADMIN';
+            const isAdmin = isPlatformAdmin || isCompanyAdmin || isStoreAdmin;
+
+            // If not admin and AIMS not configured, find admin contacts
+            let adminContacts: Array<{ name: string; email: string; role: string }> = [];
+            if (!aimsConfigured && !isAdmin) {
+                // Find store admins for this store
+                const storeAdmins = await prisma.userStore.findMany({
+                    where: {
+                        storeId,
+                        role: 'STORE_ADMIN',
+                        user: { isActive: true },
+                    },
+                    include: {
+                        user: {
+                            select: { firstName: true, lastName: true, email: true },
+                        },
+                    },
+                });
+
+                if (storeAdmins.length > 0) {
+                    adminContacts = storeAdmins.map((sa) => ({
+                        name: [sa.user.firstName, sa.user.lastName].filter(Boolean).join(' ') || sa.user.email,
+                        email: sa.user.email,
+                        role: 'store_admin',
+                    }));
+                } else {
+                    // Fallback to company admins
+                    const companyAdmins = await prisma.userCompany.findMany({
+                        where: {
+                            companyId: store.companyId,
+                            role: 'COMPANY_ADMIN',
+                            user: { isActive: true },
+                        },
+                        include: {
+                            user: {
+                                select: { firstName: true, lastName: true, email: true },
+                            },
+                        },
+                    });
+
+                    adminContacts = companyAdmins.map((ca) => ({
+                        name: [ca.user.firstName, ca.user.lastName].filter(Boolean).join(' ') || ca.user.email,
+                        email: ca.user.email,
+                        role: 'company_admin',
+                    }));
+                }
+            }
+
+            res.json({
+                storeId,
+                storeName: store.name,
+                companyId: store.companyId,
+                companyName: store.company.name,
+                companyCode: store.company.code,
+                aimsConfigured,
+                isAdmin,
+                adminContacts,
+            });
+        } catch (error: any) {
             next(error);
         }
     },

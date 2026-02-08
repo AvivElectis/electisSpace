@@ -71,6 +71,17 @@ export interface SolumConnectResponse {
     };
 }
 
+export interface StoreConnectionInfo {
+    storeId: string;
+    storeName: string;
+    companyId: string;
+    companyName: string;
+    companyCode: string;
+    aimsConfigured: boolean;
+    isAdmin: boolean;
+    adminContacts: Array<{ name: string; email: string; role: string }>;
+}
+
 // Auth service
 export const authService = {
     /**
@@ -190,6 +201,17 @@ export const authService = {
      */
     solumRefresh: async (storeId: string): Promise<{ accessToken: string; expiresAt: number }> => {
         const response = await api.post<{ accessToken: string; expiresAt: number }>('/auth/solum-refresh', { storeId });
+        return response.data;
+    },
+
+    /**
+     * Get store connection info (AIMS status + admin contacts)
+     * Used to determine the connection flow for first-time users
+     */
+    getStoreConnectionInfo: async (storeId: string): Promise<StoreConnectionInfo> => {
+        const response = await api.get<StoreConnectionInfo>('/auth/store-connection-info', {
+            params: { storeId },
+        });
         return response.data;
     },
 

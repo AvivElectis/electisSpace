@@ -1092,7 +1092,27 @@
         "selectStore": "בחירת חנות",
         "selectStoreDescription": "אנא בחר חנות להתחבר אליה. זה קובע לאילו נתוני AIMS תוכל לגשת.",
         "noStoresAssigned": "לא שויכו חנויות לחשבון שלך. פנה למנהל המערכת.",
-        "storeCode": "קוד"
+        "storeCode": "קוד",
+        "checkingConnection": "בודק חיבור...",
+        "checkingConnectionFailed": "בדיקת חיבור החנות נכשלה.",
+        "chooseOtherStore": "בחר חנות אחרת",
+        "continueWithoutAims": "המשך ללא AIMS",
+        "aimsNotConfiguredTitle": "AIMS לא מוגדר",
+        "notConnectedToAims": "החנות \"{{storeName}}\" ({{companyName}}) עדיין לא מחוברת ל-AIMS. אנא פנה לאחד מהמנהלים שלך כדי להגדיר זאת.",
+        "adminContacts": "מנהלים שאליהם ניתן לפנות:",
+        "noAdminsFound": "לא נמצאו מנהלים. אנא פנה לארגון שלך.",
+        "aimsCredentials": {
+            "title": "חיבור AIMS עבור {{companyName}}",
+            "description": "נדרשים פרטי התחברות ל-AIMS כדי לחבר חנות זו. אנא הזן את פרטי שרת ה-AIMS עבור החברה שלך.",
+            "baseUrl": "כתובת AIMS בסיסית",
+            "cluster": "אשכול",
+            "username": "שם משתמש",
+            "password": "סיסמה",
+            "fillAllFields": "אנא מלא את כל השדות.",
+            "connectionFailed": "בדיקת החיבור נכשלה. אנא אמת את פרטי ההתחברות.",
+            "saveFailed": "שמירת פרטי ההתחברות ל-AIMS נכשלה.",
+            "connectAndSave": "התחבר ושמור"
+        }
     },
     "roles": {
         "admin": "מנהל",
