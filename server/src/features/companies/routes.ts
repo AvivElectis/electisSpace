@@ -30,6 +30,12 @@ router.get('/', companyController.list);
 router.get('/validate-code/:code', companyController.validateCode);
 
 /**
+ * POST /companies/aims/stores
+ * Fetch AIMS stores using raw credentials (for company creation wizard)
+ */
+router.post('/aims/stores', companyController.fetchAimsStores);
+
+/**
  * GET /companies/:id
  * Get company details with stores and users
  */

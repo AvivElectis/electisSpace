@@ -1,7 +1,12 @@
 import app from './app.js';
 import { config, prisma, closeRedis } from './config/index.js';
 import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProcessor.js';
-import { aimsVerificationJob } from './shared/infrastructure/jobs/AimsVerificationJob.js';
+// NOTE: AimsVerificationJob disabled — the AimsSyncReconciliationJob (below)
+// already handles full DB→AIMS reconciliation every 60s, making verification
+// redundant. The old verification also had a lookup-key mismatch (used
+// externalId instead of assignedSpaceId) that caused infinite re-sync loops.
+// import { aimsVerificationJob } from './shared/infrastructure/jobs/AimsVerificationJob.js';
+import { aimsPullSyncJob } from './shared/infrastructure/jobs/AimsPullSyncJob.js';
 
 const startServer = async () => {
     try {
@@ -12,9 +17,9 @@ const startServer = async () => {
         // Start background jobs
         syncQueueProcessor.start(10000); // Process sync queue every 10 seconds
         console.log('✅ Sync Queue Processor started');
-        
-        aimsVerificationJob.start(5 * 60 * 1000); // Verify AIMS every 5 minutes
-        console.log('✅ AIMS Verification Job started');
+
+        aimsPullSyncJob.start(60 * 1000); // Reconcile DB→AIMS every 60 seconds
+        console.log('✅ AIMS Reconciliation Job started');
 
         // Start HTTP server
         const server = app.listen(config.port, () => {
@@ -41,9 +46,9 @@ const startServer = async () => {
             // Stop background jobs first
             syncQueueProcessor.stop();
             console.log('Sync Queue Processor stopped');
-            
-            aimsVerificationJob.stop();
-            console.log('AIMS Verification Job stopped');
+
+            aimsPullSyncJob.stop();
+            console.log('AIMS Reconciliation Job stopped');
 
             server.close(async () => {
                 console.log('HTTP server closed');
