@@ -59,7 +59,10 @@ export function UnlockDialog({ open, onClose, onUnlock }: UnlockDialogProps) {
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={(_event, reason) => {
+                if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+                onClose();
+            }}
             maxWidth="xs"
             fullWidth
             PaperProps={{

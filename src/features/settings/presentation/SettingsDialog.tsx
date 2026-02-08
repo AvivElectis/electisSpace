@@ -188,7 +188,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     return (
         <Dialog
             open={open}
-            onClose={handleClose}
+            onClose={(_event, reason) => {
+                // Only close via explicit button click, not backdrop/escape
+                if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+                handleClose();
+            }}
             maxWidth="md"
             fullWidth
             fullScreen={isMobile}

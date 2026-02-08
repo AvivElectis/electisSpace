@@ -68,6 +68,12 @@ export interface CreateCompanyDto {
     code: string; // 3+ uppercase letters, unique
     location?: string;
     description?: string;
+    aimsConfig?: {
+        baseUrl: string;
+        cluster?: string;
+        username: string;
+        password: string;
+    };
 }
 
 /** Update company DTO */
@@ -127,6 +133,34 @@ export interface StoreListResponse {
     };
     stores: CompanyStore[];
     allStoresAccess: boolean;
+}
+
+/** AIMS store fetched from AIMS API (pre-save) */
+export interface AimsStoreInfo {
+    code: string;
+    name: string;
+    region: string;
+    city: string;
+    country: string;
+    labelCount: number;
+    gatewayCount: number;
+    articleCount: number;
+}
+
+/** Fetch AIMS stores request */
+export interface FetchAimsStoresRequest {
+    baseUrl: string;
+    cluster?: string;
+    username: string;
+    password: string;
+    companyCode: string;
+}
+
+/** Fetch AIMS stores response */
+export interface FetchAimsStoresResponse {
+    success: boolean;
+    stores: AimsStoreInfo[];
+    error?: string;
 }
 
 /** Code validation response */
@@ -204,6 +238,14 @@ export const companyService = {
      */
     validateCode: async (code: string): Promise<CodeValidationResponse> => {
         const response = await api.get<CodeValidationResponse>(`/companies/validate-code/${code}`);
+        return response.data;
+    },
+
+    /**
+     * Fetch AIMS stores using raw credentials (for company creation wizard)
+     */
+    fetchAimsStores: async (data: FetchAimsStoresRequest): Promise<FetchAimsStoresResponse> => {
+        const response = await api.post<FetchAimsStoresResponse>('/companies/aims/stores', data);
         return response.data;
     },
 

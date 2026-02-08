@@ -49,6 +49,15 @@ export const updateAimsConfigSchema = z.object({
     password: z.string().min(1, 'Password is required').optional(),
 });
 
+/** Fetch AIMS stores - raw credentials for pre-save connection */
+export const fetchAimsStoresSchema = z.object({
+    baseUrl: z.string().url('Invalid AIMS base URL'),
+    cluster: z.string().optional(),
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(1, 'Password is required'),
+    companyCode: z.string().min(1, 'Company code is required'),
+});
+
 // ======================
 // Query Parameters
 // ======================

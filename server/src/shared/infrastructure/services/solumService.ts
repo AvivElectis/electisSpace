@@ -433,6 +433,31 @@ export class SolumService {
     }
 
     /**
+     * Fetch stores from AIMS for a company
+     * Uses GET /common/api/v2/common/store?company=XXX
+     */
+    async fetchStores(config: SolumConfig, token: string): Promise<any[]> {
+        const url = this.buildUrl(config, `/common/api/v2/common/store?company=${config.companyName}`);
+
+        return this.withRetry('fetchStores', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.data) return [];
+                if (response.status === 204) return [];
+
+                const data = response.data;
+                return Array.isArray(data) ? data : (data.stores || data.content || data.data || []);
+            } catch (error: any) {
+                if (error.response?.status === 204) return [];
+                throw new Error(`Fetch stores failed: ${error.message}`);
+            }
+        });
+    }
+
+    /**
      * Blink/flash a label for identification
      */
     async blinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<any> {

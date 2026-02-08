@@ -633,7 +633,20 @@
             "createNew": "צור חברה חדשה",
             "newCompanyConfirmed": "חברה חדשה אושרה",
             "fillRequired": "נא למלא קוד ושם ליצירת חברה חדשה.",
-            "readyToCreate": "החברה החדשה תיווצר בשמירת המשתמש."
+            "readyToCreate": "החברה החדשה תיווצר בשמירת המשתמש.",
+            "wizardStepCredentials": "פרטי התחברות AIMS",
+            "wizardStepStores": "בחירת חנות",
+            "wizardStep1Info": "הזן את קוד החברה ופרטי AIMS. נתחבר ל-AIMS כדי לשלוף את החנויות הזמינות.",
+            "wizardStep2Info": "בחר חנות מ-AIMS, ואז הוסף שם ידידותי ופרטי חברה.",
+            "connectAndFetch": "התחבר ושלוף חנויות",
+            "noAimsStores": "לא נמצאו חנויות ב-AIMS עבור קוד חברה זה. אנא ודא את הקוד והפרטים.",
+            "selectStore": "חנויות זמינות",
+            "storeCode": "קוד",
+            "labels": "תוויות",
+            "gateways": "שערים",
+            "companyDetails": "פרטי חברה",
+            "storeFriendlyName": "שם תצוגה לחנות",
+            "storeFriendlyNameHelp": "שם ידידותי לחנות באפליקציה (ברירת מחדל: שם החנות ב-AIMS)"
         },
         "stores": {
             "dialogTitle": "ניהול חנויות",
@@ -1075,7 +1088,11 @@
         "password": "סיסמה",
         "passwordMinLength": "הסיסמה חייבת להכיל לפחות 6 תווים",
         "role": "תפקיד",
-        "logout": "התנתק"
+        "logout": "התנתק",
+        "selectStore": "בחירת חנות",
+        "selectStoreDescription": "אנא בחר חנות להתחבר אליה. זה קובע לאילו נתוני AIMS תוכל לגשת.",
+        "noStoresAssigned": "לא שויכו חנויות לחשבון שלך. פנה למנהל המערכת.",
+        "storeCode": "קוד"
     },
     "roles": {
         "admin": "מנהל",
