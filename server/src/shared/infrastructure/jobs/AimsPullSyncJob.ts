@@ -23,6 +23,7 @@ import {
     buildPersonArticle,
     buildConferenceArticle,
     articleNeedsUpdate,
+    type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
 
@@ -181,8 +182,25 @@ export class AimsSyncReconciliationJob {
         const rooms = await prisma.conferenceRoom.findMany({
             where: { storeId },
         });
+
+        // Look up the company's conference mapping from settings
+        let conferenceMapping: ConferenceMappingConfig | null = null;
+        try {
+            const company = await prisma.company.findUnique({
+                where: { id: store.companyId },
+                select: { settings: true },
+            });
+            const companySettings = (company?.settings as Record<string, any>) || {};
+            const mapping = companySettings.solumMappingConfig?.conferenceMapping;
+            if (mapping && mapping.meetingName && mapping.meetingTime && mapping.participants) {
+                conferenceMapping = mapping as ConferenceMappingConfig;
+            }
+        } catch (error: any) {
+            console.warn(`[AimsReconcile] Could not fetch conference mapping for ${storeName}: ${error.message}`);
+        }
+
         for (const room of rooms) {
-            const article = buildConferenceArticle(room, format);
+            const article = buildConferenceArticle(room, format, conferenceMapping);
             expectedMap.set(article.articleId, article);
         }
 
