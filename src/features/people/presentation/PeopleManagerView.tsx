@@ -11,6 +11,7 @@ import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
+import { reconcileListPeopleWithServer } from '../infrastructure/reconcileListPeople';
 
 // Lazy load dialogs - not needed on initial render
 const PersonDialog = lazy(() => import('./PersonDialog').then(m => ({ default: m.PersonDialog })));
@@ -89,33 +90,45 @@ export function PeopleManagerView() {
         fetchPeople()
             .then(async () => {
                 if (activeListId) {
-                    // A list is active — re-apply its assignments from the DB snapshot
+                    // A list is active — restore people FROM the list snapshot
+                    // The snapshot is the authoritative state for a loaded list,
+                    // not the live server data (people may have been deleted)
                     try {
                         const result = await peopleApi.lists.getById(activeListId);
                         const listData = result.data;
 
-                        // Build assignment map from snapshot
-                        const snapshotAssignments = new Map<string, string | undefined>();
-                        if (listData.content && Array.isArray(listData.content)) {
-                            for (const item of listData.content) {
-                                snapshotAssignments.set(item.id, item.assignedSpaceId || undefined);
-                            }
-                        }
+                        if (listData.content && Array.isArray(listData.content) && listData.content.length > 0) {
+                            // Build snapshot people
+                            const snapshotPeople: Person[] = listData.content.map((item: any) => ({
+                                id: item.id,
+                                virtualSpaceId: item.virtualSpaceId,
+                                data: item.data || {},
+                                assignedSpaceId: item.assignedSpaceId || undefined,
+                                listMemberships: item.listMemberships,
+                            }));
 
-                        const store = usePeopleStore.getState();
-                        const updatedPeople = store.people.map(person => {
-                            if (snapshotAssignments.has(person.id)) {
-                                return { ...person, assignedSpaceId: snapshotAssignments.get(person.id) };
-                            }
-                            return { ...person, assignedSpaceId: undefined };
-                        });
-                        store.setPeople(updatedPeople);
-                        store.updateSpaceAllocation();
-                        logger.info('PeopleManagerView', 'Applied list overlay on mount from DB snapshot', {
-                            listId: activeListId,
-                            name: listData.name,
-                            snapshotCount: snapshotAssignments.size,
-                        });
+                            // Reconcile: re-create on server any people that exist
+                            // in the snapshot but not on the server anymore
+                            const store = usePeopleStore.getState();
+                            const serverPeopleIds = new Set(store.people.map(p => p.id));
+                            const reconciledPeople = await reconcileListPeopleWithServer(
+                                snapshotPeople,
+                                serverPeopleIds
+                            );
+
+                            store.setPeople(reconciledPeople);
+                            store.updateSpaceAllocation();
+                            logger.info('PeopleManagerView', 'Restored people from list snapshot on mount', {
+                                listId: activeListId,
+                                name: listData.name,
+                                snapshotCount: reconciledPeople.length,
+                            });
+                        } else {
+                            // Snapshot is empty — clear active list
+                            logger.warn('PeopleManagerView', 'List snapshot is empty, clearing active list', { activeListId });
+                            usePeopleStore.getState().setActiveListId(undefined);
+                            usePeopleStore.getState().setActiveListName(undefined);
+                        }
                     } catch (err) {
                         // List may have been deleted — clear active list
                         logger.warn('PeopleManagerView', 'Failed to fetch active list, clearing', {

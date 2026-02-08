@@ -740,10 +740,15 @@ export function usePeopleController() {
 
             // Delete on server (which queues sync item for AIMS cleanup)
             const success = await getStoreState().deletePerson(personId);
-            if (!success) logger.error("PeopleController", "Failed to delete person on server");
+            if (!success) {
+                // Server returned an error (e.g. 404 if person was already deleted).
+                // Still remove from local state so the UI reflects the deletion.
+                logger.warn('PeopleController', 'Server delete failed (person may already be deleted), removing locally', { personId });
+                getStoreState().deletePersonLocal(personId);
+            }
 
             // Trigger push if person was assigned (to clear AIMS article)
-            if (spaceToClean) {
+            if (spaceToClean && success) {
                 await triggerPush();
             }
 
