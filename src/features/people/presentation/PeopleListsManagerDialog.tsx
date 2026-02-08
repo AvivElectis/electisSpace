@@ -24,6 +24,7 @@ import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { peopleApi, type PeopleListItem } from '@shared/infrastructure/services/peopleApi';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { reconcileListPeopleWithServer } from '../infrastructure/reconcileListPeople';
 import type { Person } from '../domain/types';
 
 interface PeopleListsManagerDialogProps {
@@ -96,7 +97,8 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             }
 
             // Overwrite the people table with the list's snapshot
-            const restoredPeople: Person[] = listData.content.map((item: any) => ({
+            // Reconcile with server: re-create any people that no longer exist
+            const snapshotPeople: Person[] = listData.content.map((item: any) => ({
                 id: item.id,
                 virtualSpaceId: item.virtualSpaceId,
                 data: item.data || {},
@@ -104,7 +106,16 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                 listMemberships: item.listMemberships,
             }));
 
-            peopleStore.setPeople(restoredPeople);
+            // Get current server people IDs for reconciliation
+            const currentServerPeopleIds = new Set(
+                peopleStore.people.map(p => p.id)
+            );
+            const reconciledPeople = await reconcileListPeopleWithServer(
+                snapshotPeople,
+                currentServerPeopleIds
+            );
+
+            peopleStore.setPeople(reconciledPeople);
             peopleStore.setActiveListId(listData.id);
             peopleStore.setActiveListName(listData.name);
             peopleStore.clearPendingChanges();
@@ -112,7 +123,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             logger.info('PeopleListsManagerDialog', 'List loaded from DB', {
                 listId: listData.id,
                 name: listData.name,
-                peopleCount: restoredPeople.length,
+                peopleCount: reconciledPeople.length,
             });
 
             onClose();
