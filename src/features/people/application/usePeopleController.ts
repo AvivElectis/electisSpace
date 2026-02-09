@@ -116,12 +116,7 @@ export function usePeopleController() {
             const serverPerson = await getStoreState().createPerson({
                 storeId: activeStoreId,
                 externalId: personData.id,
-                data: {
-                    ...personData.data,
-                    virtualSpaceId: personData.virtualSpaceId,
-                    assignedSpaceId: personData.assignedSpaceId,
-                    aimsSyncStatus: personData.assignedSpaceId ? 'pending' : undefined
-                }
+                data: personData.data,
             });
 
             if (!serverPerson) throw new Error("Failed to create person on server");

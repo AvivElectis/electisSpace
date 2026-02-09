@@ -38,6 +38,9 @@ router.patch('/me/context', userController.updateContext);
 // Get available features list
 router.get('/features', userController.getFeatures);
 
+// Check if email is already registered
+router.get('/check-email', userController.checkEmail);
+
 // ======================
 // User Management Routes
 // ======================

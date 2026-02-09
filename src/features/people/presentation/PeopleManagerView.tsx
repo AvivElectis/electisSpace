@@ -105,6 +105,16 @@ export function PeopleManagerView() {
                 severity: 'info',
             });
         },
+        onListUpdated: (event) => {
+            setSseAlert({
+                message: t('lists.listUpdatedByOther', {
+                    defaultValue: '{{user}} updated list "{{listName}}"',
+                    user: event.updatedByName || 'Another user',
+                    listName: event.listName || 'Unknown',
+                }),
+                severity: 'info',
+            });
+        },
         onPeopleChanged: (_event) => {
             // People are automatically refetched by the hook — no extra action needed
         },
@@ -164,8 +174,18 @@ export function PeopleManagerView() {
         if (!nameFieldKey) return undefined;
         const fieldConfig = settings.solumMappingConfig?.fields?.[nameFieldKey];
         if (!fieldConfig) return undefined;
-        return i18n.language === 'he' ? fieldConfig.friendlyNameHe : fieldConfig.friendlyNameEn;
-    }, [nameFieldKey, settings.solumMappingConfig, i18n.language]);
+
+        // Use friendly names if they exist and are not just the field key itself
+        // (default config sets friendly names to field key, which is not user-friendly)
+        const labelHe = (fieldConfig.friendlyNameHe && fieldConfig.friendlyNameHe !== nameFieldKey)
+            ? fieldConfig.friendlyNameHe
+            : t('people.name');
+        const labelEn = (fieldConfig.friendlyNameEn && fieldConfig.friendlyNameEn !== nameFieldKey)
+            ? fieldConfig.friendlyNameEn
+            : t('people.name');
+
+        return i18n.language === 'he' ? labelHe : labelEn;
+    }, [nameFieldKey, settings.solumMappingConfig, i18n.language, t]);
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
@@ -183,11 +203,22 @@ export function PeopleManagerView() {
                 if (globalFieldKeys.includes(fieldKey)) return false; // Skip global fields
                 return config.visible !== false; // undefined = visible by default
             })
-            .map(([fieldKey, config]) => ({
-                key: fieldKey,
-                labelEn: config.friendlyNameEn,
-                labelHe: config.friendlyNameHe
-            }));
+            .map(([fieldKey, config]) => {
+                // Use friendly names if they exist and are not just the field key itself
+                // (default config sets friendly names to field key, which is not user-friendly)
+                const labelEn = (config.friendlyNameEn && config.friendlyNameEn !== fieldKey)
+                    ? config.friendlyNameEn
+                    : fieldKey;
+                const labelHe = (config.friendlyNameHe && config.friendlyNameHe !== fieldKey)
+                    ? config.friendlyNameHe
+                    : fieldKey;
+
+                return {
+                    key: fieldKey,
+                    labelEn,
+                    labelHe,
+                };
+            });
     }, [settings.solumMappingConfig, nameFieldKey]);
 
     // Handle sort

@@ -77,11 +77,22 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                 if (config.visible === false) return false; // undefined = visible by default
                 return true;
             })
-            .map(([fieldKey, config]) => ({
-                key: fieldKey,
-                labelEn: config.friendlyNameEn,
-                labelHe: config.friendlyNameHe,
-            }));
+            .map(([fieldKey, config]) => {
+                // Use friendly names if they exist and are not just the field key itself
+                // (default config sets friendly names to field key, which is not user-friendly)
+                const labelEn = (config.friendlyNameEn && config.friendlyNameEn !== fieldKey)
+                    ? config.friendlyNameEn
+                    : fieldKey;
+                const labelHe = (config.friendlyNameHe && config.friendlyNameHe !== fieldKey)
+                    ? config.friendlyNameHe
+                    : fieldKey;
+
+                return {
+                    key: fieldKey,
+                    labelEn,
+                    labelHe,
+                };
+            });
     }, [settings.solumMappingConfig]);
 
     // Get the dedicated name field (articleName from mappingInfo)
@@ -89,10 +100,20 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         const nameFieldKey = settings.solumMappingConfig?.mappingInfo?.articleName;
         if (!nameFieldKey) return null;
         const fieldConfig = settings.solumMappingConfig?.fields?.[nameFieldKey];
+
+        // Use friendly names if they exist and are not just the field key itself
+        // (default config sets friendly names to field key, which is not user-friendly)
+        const labelEn = (fieldConfig?.friendlyNameEn && fieldConfig.friendlyNameEn !== nameFieldKey)
+            ? fieldConfig.friendlyNameEn
+            : t('people.name');
+        const labelHe = (fieldConfig?.friendlyNameHe && fieldConfig.friendlyNameHe !== nameFieldKey)
+            ? fieldConfig.friendlyNameHe
+            : t('people.name');
+
         return {
             key: nameFieldKey,
-            labelEn: fieldConfig?.friendlyNameEn || t('people.name'),
-            labelHe: fieldConfig?.friendlyNameHe || t('people.name'),
+            labelEn,
+            labelHe,
         };
     }, [settings.solumMappingConfig, t]);
 
@@ -151,6 +172,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         setSaving(true);
         try {
             // Merge global field assignments into data before saving
+            // This includes STORE_ID, NFC_URL, etc. from company settings
             const globalFields = settings.solumMappingConfig?.globalFieldAssignments || {};
             const dataWithGlobals = { ...formData.data, ...globalFields };
 

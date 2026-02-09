@@ -43,11 +43,28 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // Backend API proxy
+      // Backend API proxy - SSE requires special handling
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false, // Allow HTTP target
+        ws: true, // Enable WebSocket proxy (helps with long-lived connections)
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Disable buffering for SSE endpoints
+            if (req.url?.includes('/events')) {
+              proxyReq.setHeader('Connection', 'keep-alive');
+              proxyReq.setHeader('Cache-Control', 'no-cache');
+            }
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            // Don't buffer SSE responses
+            if (req.url?.includes('/events')) {
+              proxyRes.headers['connection'] = 'keep-alive';
+              proxyRes.headers['cache-control'] = 'no-cache';
+            }
+          });
+        },
       },
     },
   },

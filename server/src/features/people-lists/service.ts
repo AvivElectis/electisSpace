@@ -145,6 +145,14 @@ export const peopleListsService = {
         const storeId = list.storeId;
         const snapshotContent = Array.isArray(list.content) ? (list.content as any[]) : [];
 
+        // 0. Fetch company settings to get global field assignments (STORE_ID, NFC_URL, etc.)
+        const store = await prisma.store.findUnique({
+            where: { id: storeId },
+            include: { company: { select: { settings: true } } },
+        });
+        const companySettings = (store?.company?.settings as Record<string, any>) || {};
+        const globalFieldAssignments = companySettings.solumMappingConfig?.globalFieldAssignments || {};
+
         // 1. Get all current people in the store (to diff for AIMS sync)
         const currentPeople = await prisma.person.findMany({
             where: { storeId },
@@ -162,12 +170,25 @@ export const peopleListsService = {
             assignedSpaceId: string | null;
         }> = [];
 
+        // Internal fields that may be present in snapshot data from addPersonWithSync
+        // These are DB columns, not data fields — strip them to avoid polluting the JSON
+        const internalDataFields = ['aimsSyncStatus', 'virtualSpaceId', 'assignedSpaceId'];
+
         for (const item of snapshotContent) {
             const vsId = item.virtualSpaceId || `POOL-${String(newPeopleData.length + 1).padStart(4, '0')}`;
             const assignedSpaceId = item.assignedSpaceId || null;
+
+            // Strip internal fields from snapshot data before merging
+            const cleanData: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(item.data || {})) {
+                if (!internalDataFields.includes(key)) {
+                    cleanData[key] = value;
+                }
+            }
+
             newPeopleData.push({
                 virtualSpaceId: vsId,
-                data: item.data || {},
+                data: { ...cleanData, ...globalFieldAssignments },
                 assignedSpaceId,
             });
             if (assignedSpaceId) {
@@ -204,7 +225,7 @@ export const peopleListsService = {
                         virtualSpaceId: p.virtualSpaceId,
                         data: p.data as Prisma.InputJsonValue,
                         assignedSpaceId: p.assignedSpaceId,
-                        syncStatus: 'PENDING',
+                        syncStatus: 'SYNCED',
                     },
                 });
                 created.push(person);
@@ -219,10 +240,13 @@ export const peopleListsService = {
         }
 
         // 6. Queue AIMS sync: UPDATE for all newly assigned people
+        //    Use queue() directly instead of queueUpdate() to avoid setting
+        //    person syncStatus back to PENDING (they were just created as SYNCED).
+        //    The background processor will push to AIMS without affecting the visible status.
         for (const person of createdPeople) {
             if (person.assignedSpaceId) {
-                await syncQueueService.queueUpdate(storeId, 'person', person.id, {
-                    assignedSpaceId: person.assignedSpaceId,
+                await syncQueueService.queue(storeId, 'person', person.id, 'UPDATE', {
+                    payload: { changes: { assignedSpaceId: person.assignedSpaceId } },
                 });
             }
         }

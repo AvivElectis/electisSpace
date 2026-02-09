@@ -19,6 +19,10 @@ interface UseStoreEventsOptions {
     onListFreed?: (event: StoreEvent) => void;
     /** Called when people data changed by another user */
     onPeopleChanged?: (event: StoreEvent) => void;
+    /** Called when another user updates a list */
+    onListUpdated?: (event: StoreEvent) => void;
+    /** Called when conference data changed by another user */
+    onConferenceChanged?: (event: StoreEvent) => void;
 }
 
 export function useStoreEvents(options: UseStoreEventsOptions = {}) {
@@ -75,11 +79,35 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
                 usePeopleStore.getState().clearPendingChanges();
                 optionsRef.current.onListFreed?.(event);
                 break;
+
+            case 'list:updated':
+                logger.info('StoreEvents', 'List updated by another user', {
+                    listName: event.listName,
+                    updatedBy: event.updatedByName,
+                });
+                // Another user updated a list — refetch to get the latest content
+                fetchPeople().catch(err => {
+                    logger.warn('StoreEvents', 'Failed to refetch after list:updated', { error: err.message });
+                });
+                optionsRef.current.onListUpdated?.(event);
+                break;
+
+            case 'conference:changed':
+                logger.info('StoreEvents', 'Conference changed by another user', {
+                    action: event.action,
+                    roomId: event.roomId,
+                });
+                // Notify callback (component will refetch conference rooms)
+                optionsRef.current.onConferenceChanged?.(event);
+                break;
         }
     }, [fetchPeople]);
 
     useEffect(() => {
+        console.log('[useStoreEvents] Effect triggered, activeStoreId:', activeStoreId);
+
         if (!activeStoreId) {
+            console.log('[useStoreEvents] No activeStoreId, skipping connection');
             // Clean up any existing connection
             if (disconnectRef.current) {
                 disconnectRef.current();
@@ -90,6 +118,7 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
             return;
         }
 
+        console.log('[useStoreEvents] Initiating SSE connection for store:', activeStoreId);
         logger.info('StoreEvents', 'Connecting to SSE', { storeId: activeStoreId });
 
         const { getClientId, disconnect } = connectToStoreEvents(
