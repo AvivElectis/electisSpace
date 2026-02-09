@@ -13,11 +13,13 @@ import {
 } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import SaveIcon from '@mui/icons-material/Save';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
 import { logger } from '@shared/infrastructure/services/logger';
 
@@ -44,6 +46,7 @@ export function PeopleListPanel({
 
     const [expanded, setExpanded] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isFreeing, setIsFreeing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -88,6 +91,41 @@ export function PeopleListPanel({
             setIsSaving(false);
         }
     }, [activeListId, people, clearPendingChanges, t]);
+
+    /**
+     * Handle freeing (detaching) the loaded list.
+     * People remain in the current table but list tracking is cleared.
+     * Other users are notified via SSE.
+     */
+    const handleFreeList = useCallback(async () => {
+        if (!activeListId) return;
+
+        setIsFreeing(true);
+        setError(null);
+
+        try {
+            const storeId = useAuthStore.getState().activeStoreId;
+            if (storeId) {
+                // Notify server (broadcasts to other clients)
+                await peopleApi.lists.free(storeId);
+            }
+
+            // Clear local list tracking
+            usePeopleStore.getState().setActiveListId(undefined);
+            usePeopleStore.getState().setActiveListName(undefined);
+            clearPendingChanges();
+
+            setSuccessMessage(t('lists.listFreed', 'List detached. Working without a list now.'));
+            setTimeout(() => setSuccessMessage(null), 3000);
+
+            logger.info('PeopleListPanel', 'List freed', { listId: activeListId });
+        } catch (err: any) {
+            logger.error('PeopleListPanel', 'Failed to free list', { error: err?.message || err });
+            setError(err?.message || t('common.unknownError'));
+        } finally {
+            setIsFreeing(false);
+        }
+    }, [activeListId, clearPendingChanges, t]);
 
     return (
         <Paper sx={{ mb: 2, overflow: 'hidden' }}>
@@ -185,6 +223,19 @@ export function PeopleListPanel({
                                 disabled={!pendingChanges || isSaving}
                             >
                                 {t('lists.saveChanges')}
+                            </Button>
+                        )}
+
+                        {/* Free List (detach from loaded list) */}
+                        {activeListId && (
+                            <Button
+                                variant="text"
+                                color="warning"
+                                startIcon={isFreeing ? <CircularProgress size={16} /> : <LinkOffIcon />}
+                                onClick={handleFreeList}
+                                disabled={isFreeing}
+                            >
+                                {t('lists.freeList', 'Free List')}
                             </Button>
                         )}
                     </Stack>

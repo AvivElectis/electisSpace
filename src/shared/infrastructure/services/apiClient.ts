@@ -74,12 +74,19 @@ export const tokenManager = {
     },
 };
 
-// Request interceptor - attach JWT token
+import { getSseClientId } from './sseClientId';
+
+// Request interceptor - attach JWT token + SSE client ID
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = tokenManager.getAccessToken();
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        // Attach SSE client ID so server can exclude originator from broadcasts
+        const sseClientId = getSseClientId();
+        if (sseClientId && config.headers) {
+            config.headers['x-sse-client-id'] = sseClientId;
         }
         return config;
     },

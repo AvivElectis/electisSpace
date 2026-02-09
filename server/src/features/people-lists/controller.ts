@@ -118,4 +118,48 @@ export const peopleListsController = {
             next(error);
         }
     },
+
+    /**
+     * POST /people-lists/:id/load
+     * Load a list — atomically replaces all people in the store with the list snapshot
+     */
+    async load(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = (req as any).user as ListsUserContext;
+            const id = req.params.id as string;
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            const result = await peopleListsService.loadList(user, id, sseClientId);
+            res.json({ data: result });
+        } catch (error: any) {
+            if (error.message === 'NOT_FOUND') {
+                return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'People list not found' } });
+            }
+            if (error.message === 'FORBIDDEN') {
+                return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied' } });
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * POST /people-lists/free
+     * Free (unload) the current list — people remain, list tracking is cleared
+     */
+    async free(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = (req as any).user as ListsUserContext;
+            const storeId = req.body.storeId as string;
+            if (!storeId) {
+                return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'storeId is required' } });
+            }
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            const result = await peopleListsService.freeList(user, storeId, sseClientId);
+            res.json({ data: result });
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') {
+                return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied' } });
+            }
+            next(error);
+        }
+    },
 };

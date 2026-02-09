@@ -1,5 +1,5 @@
 import { logger } from '@shared/infrastructure/services/logger';
-import { Box } from '@mui/material';
+import { Box, Snackbar, Alert } from '@mui/material';
 import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
@@ -10,8 +10,8 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
+import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
-import { reconcileListPeopleWithServer } from '../infrastructure/reconcileListPeople';
 
 // Lazy load dialogs - not needed on initial render
 const PersonDialog = lazy(() => import('./PersonDialog').then(m => ({ default: m.PersonDialog })));
@@ -82,69 +82,79 @@ export function PeopleManagerView() {
         },
     });
 
-    // Fetch people from server on mount, then apply list overlay if a list is active
+    // SSE real-time sync — alert when other users load/free lists
+    const [sseAlert, setSseAlert] = useState<{ message: string; severity: 'info' | 'warning' } | null>(null);
+
+    useStoreEvents({
+        onListLoaded: (event) => {
+            setSseAlert({
+                message: t('lists.listLoadedByOther', {
+                    defaultValue: '{{user}} loaded list "{{listName}}"',
+                    user: event.loadedByName || 'Another user',
+                    listName: event.listName || 'Unknown',
+                }),
+                severity: 'info',
+            });
+        },
+        onListFreed: (event) => {
+            setSseAlert({
+                message: t('lists.listFreedByOther', {
+                    defaultValue: '{{user}} freed the list',
+                    user: event.freedByName || 'Another user',
+                }),
+                severity: 'info',
+            });
+        },
+        onPeopleChanged: (_event) => {
+            // People are automatically refetched by the hook — no extra action needed
+        },
+    });
+
+    // Fetch people from server on mount.
+    // If a list was active, re-load it from DB via server (atomic replace + AIMS sync).
+    // If no list, just fetch current people (server DB = current table).
     useEffect(() => {
         const activeListId = usePeopleStore.getState().activeListId;
 
-        // Always fetch fresh people from server first
-        fetchPeople()
-            .then(async () => {
-                if (activeListId) {
-                    // A list is active — restore people FROM the list snapshot
-                    // The snapshot is the authoritative state for a loaded list,
-                    // not the live server data (people may have been deleted)
-                    try {
-                        const result = await peopleApi.lists.getById(activeListId);
-                        const listData = result.data;
-
-                        if (listData.content && Array.isArray(listData.content) && listData.content.length > 0) {
-                            // Build snapshot people
-                            const snapshotPeople: Person[] = listData.content.map((item: any) => ({
-                                id: item.id,
-                                virtualSpaceId: item.virtualSpaceId,
-                                data: item.data || {},
-                                assignedSpaceId: item.assignedSpaceId || undefined,
-                                listMemberships: item.listMemberships,
-                            }));
-
-                            // Reconcile: re-create on server any people that exist
-                            // in the snapshot but not on the server anymore
-                            const store = usePeopleStore.getState();
-                            const serverPeopleIds = new Set(store.people.map(p => p.id));
-                            const reconciledPeople = await reconcileListPeopleWithServer(
-                                snapshotPeople,
-                                serverPeopleIds
-                            );
-
-                            store.setPeople(reconciledPeople);
-                            store.updateSpaceAllocation();
-                            logger.info('PeopleManagerView', 'Restored people from list snapshot on mount', {
-                                listId: activeListId,
-                                name: listData.name,
-                                snapshotCount: reconciledPeople.length,
-                            });
-                        } else {
-                            // Snapshot is empty — clear active list
-                            logger.warn('PeopleManagerView', 'List snapshot is empty, clearing active list', { activeListId });
-                            usePeopleStore.getState().setActiveListId(undefined);
-                            usePeopleStore.getState().setActiveListName(undefined);
-                        }
-                    } catch (err) {
-                        // List may have been deleted — clear active list
-                        logger.warn('PeopleManagerView', 'Failed to fetch active list, clearing', {
-                            activeListId,
-                            error: err instanceof Error ? err.message : 'Unknown',
+        if (activeListId) {
+            // A list was active — reload it via server endpoint
+            // This atomically replaces all people with the list snapshot
+            // and syncs AIMS with the restored state
+            peopleApi.lists.load(activeListId)
+                .then((result) => {
+                    const { list, people: _serverPeople } = result.data;
+                    // Now fetch the fresh people set from the server
+                    return fetchPeople().then(() => {
+                        const store = usePeopleStore.getState();
+                        store.setActiveListId(activeListId);
+                        store.setActiveListName(list.name);
+                        store.clearPendingChanges();
+                        store.updateSpaceAllocation();
+                        logger.info('PeopleManagerView', 'List restored on mount via server', {
+                            listId: activeListId,
+                            name: list.name,
+                            peopleCount: store.people.length,
                         });
-                        usePeopleStore.getState().setActiveListId(undefined);
-                        usePeopleStore.getState().setActiveListName(undefined);
-                    }
-                }
-            })
-            .catch((err) => {
+                    });
+                })
+                .catch((err) => {
+                    // List may have been deleted — clear and fetch current state
+                    logger.warn('PeopleManagerView', 'Failed to restore list on mount, fetching current people', {
+                        activeListId,
+                        error: err instanceof Error ? err.message : 'Unknown',
+                    });
+                    usePeopleStore.getState().setActiveListId(undefined);
+                    usePeopleStore.getState().setActiveListName(undefined);
+                    fetchPeople().catch(() => {});
+                });
+        } else {
+            // No list — just fetch current server people
+            fetchPeople().catch((err) => {
                 logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
                     error: err instanceof Error ? err.message : 'Unknown',
                 });
             });
+        }
     }, [fetchPeople]);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
@@ -536,6 +546,23 @@ export function PeopleManagerView() {
 
             <ConfirmDialog />
             <UnsavedChangesDialog />
+
+            {/* SSE alerts — list loaded/freed by other users */}
+            <Snackbar
+                open={!!sseAlert}
+                autoHideDuration={5000}
+                onClose={() => setSseAlert(null)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSseAlert(null)}
+                    severity={sseAlert?.severity || 'info'}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {sseAlert?.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

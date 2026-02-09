@@ -24,8 +24,6 @@ import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { peopleApi, type PeopleListItem } from '@shared/infrastructure/services/peopleApi';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
-import { reconcileListPeopleWithServer } from '../infrastructure/reconcileListPeople';
-import type { Person } from '../domain/types';
 
 interface PeopleListsManagerDialogProps {
     open: boolean;
@@ -88,42 +86,24 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
             setIsLoading(true);
             setError(null);
 
-            // Fetch full list content from DB
-            const result = await peopleApi.lists.getById(id);
-            const listData = result.data;
+            // Use server-side load: atomically replaces all people in the store
+            // with the list's snapshot and queues AIMS sync
+            const result = await peopleApi.lists.load(id);
+            const { list } = result.data;
 
-            if (!listData.content || !Array.isArray(listData.content)) {
-                throw new Error('List content is empty or invalid');
-            }
+            // Refetch fresh people from server (they were just replaced)
+            await peopleStore.fetchPeople();
 
-            // Overwrite the people table with the list's snapshot
-            // Reconcile with server: re-create any people that no longer exist
-            const snapshotPeople: Person[] = listData.content.map((item: any) => ({
-                id: item.id,
-                virtualSpaceId: item.virtualSpaceId,
-                data: item.data || {},
-                assignedSpaceId: item.assignedSpaceId || undefined,
-                listMemberships: item.listMemberships,
-            }));
-
-            // Get current server people IDs for reconciliation
-            const currentServerPeopleIds = new Set(
-                peopleStore.people.map(p => p.id)
-            );
-            const reconciledPeople = await reconcileListPeopleWithServer(
-                snapshotPeople,
-                currentServerPeopleIds
-            );
-
-            peopleStore.setPeople(reconciledPeople);
-            peopleStore.setActiveListId(listData.id);
-            peopleStore.setActiveListName(listData.name);
+            // Update list tracking
+            peopleStore.setActiveListId(id);
+            peopleStore.setActiveListName(list.name);
             peopleStore.clearPendingChanges();
+            peopleStore.updateSpaceAllocation();
 
-            logger.info('PeopleListsManagerDialog', 'List loaded from DB', {
-                listId: listData.id,
-                name: listData.name,
-                peopleCount: reconciledPeople.length,
+            logger.info('PeopleListsManagerDialog', 'List loaded via server', {
+                listId: id,
+                name: list.name,
+                peopleCount: peopleStore.people.length,
             });
 
             onClose();

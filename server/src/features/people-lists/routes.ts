@@ -25,4 +25,10 @@ router.patch('/:id', requirePermission('people', 'update'), peopleListsControlle
 // Delete a people list
 router.delete('/:id', requirePermission('people', 'delete'), peopleListsController.delete);
 
+// Load a list — atomically replaces all people in the store with list snapshot
+router.post('/:id/load', requirePermission('people', 'create'), peopleListsController.load);
+
+// Free (unload) current list — people remain, list tracking cleared
+router.post('/free', requirePermission('people', 'read'), peopleListsController.free);
+
 export default router;
