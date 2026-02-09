@@ -3,6 +3,7 @@ import { conferenceService } from './service.js';
 import { createRoomSchema, updateRoomSchema, toggleMeetingSchema } from './types.js';
 import type { ConferenceUserContext } from './types.js';
 import { notFound, badRequest, conflict } from '../../shared/middleware/index.js';
+import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 
 // ============================================================================
 // Helpers
@@ -74,6 +75,19 @@ export const conferenceController = {
             const userContext = getUserContext(req);
             const data = createRoomSchema.parse(req.body);
             const room = await conferenceService.create(userContext, data);
+
+            // Broadcast conference:changed event to all clients in this store
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore(data.storeId, {
+                type: 'conference:changed',
+                payload: {
+                    action: 'create',
+                    roomId: room.externalId,
+                    userName: req.user?.name || req.user?.email || 'Unknown',
+                },
+                excludeClientId: sseClientId,
+            });
+
             res.status(201).json(room);
         } catch (error) {
             next(mapServiceError(error));
@@ -88,6 +102,19 @@ export const conferenceController = {
             const userContext = getUserContext(req);
             const data = updateRoomSchema.parse(req.body);
             const room = await conferenceService.update(userContext, req.params.id as string, data);
+
+            // Broadcast conference:changed event to all clients in this store
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore(room.storeId, {
+                type: 'conference:changed',
+                payload: {
+                    action: 'update',
+                    roomId: room.externalId,
+                    userName: req.user?.name || req.user?.email || 'Unknown',
+                },
+                excludeClientId: sseClientId,
+            });
+
             res.json(room);
         } catch (error) {
             next(mapServiceError(error));
@@ -100,7 +127,27 @@ export const conferenceController = {
     async delete(req: Request, res: Response, next: NextFunction) {
         try {
             const userContext = getUserContext(req);
-            await conferenceService.delete(userContext, req.params.id as string);
+            const roomId = req.params.id as string;
+
+            // Get room details before deletion to access storeId and externalId
+            const room = await conferenceService.getById(userContext, roomId);
+            const storeId = room.storeId;
+            const externalId = room.externalId;
+
+            await conferenceService.delete(userContext, roomId);
+
+            // Broadcast conference:changed event to all clients in this store
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore(storeId, {
+                type: 'conference:changed',
+                payload: {
+                    action: 'delete',
+                    roomId: externalId,
+                    userName: req.user?.name || req.user?.email || 'Unknown',
+                },
+                excludeClientId: sseClientId,
+            });
+
             res.status(204).send();
         } catch (error) {
             next(mapServiceError(error));
@@ -115,6 +162,20 @@ export const conferenceController = {
             const userContext = getUserContext(req);
             const meetingData = toggleMeetingSchema.parse(req.body);
             const room = await conferenceService.toggleMeeting(userContext, req.params.id as string, meetingData);
+
+            // Broadcast conference:changed event to all clients in this store
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore(room.storeId, {
+                type: 'conference:changed',
+                payload: {
+                    action: 'toggle',
+                    roomId: room.externalId,
+                    hasMeeting: room.hasMeeting,
+                    userName: req.user?.name || req.user?.email || 'Unknown',
+                },
+                excludeClientId: sseClientId,
+            });
+
             res.json(room);
         } catch (error) {
             next(mapServiceError(error));

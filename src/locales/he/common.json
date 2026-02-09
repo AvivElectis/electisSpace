@@ -33,6 +33,7 @@
         "connecting": "מתחבר...",
         "exporting": "מייצא...",
         "importing": "מייבא...",
+        "checking": "בודק...",
         "yes": "כן",
         "no": "לא",
         "none": "ללא",
@@ -520,6 +521,7 @@
                 "elevateDesc": "הענקת גישה ברמה הגבוהה ביותר למשתמשים אחרים"
             },
             "saveError": "שמירת המשתמש נכשלה",
+            "emailAlreadyExists": "כתובת המייל הזו כבר רשומה במערכת. אנא השתמש בכתובת מייל אחרת.",
             "basicInfo": "פרטים בסיסיים",
             "companyAssignment": "שיוך לחברה",
             "storeAssignments": "שיוך לחנויות",

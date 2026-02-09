@@ -327,6 +327,14 @@ export const userService = {
     },
 
     /**
+     * Check if an email is already registered
+     */
+    async checkEmailExists(email: string): Promise<boolean> {
+        const existing = await userRepository.findByEmail(email);
+        return !!existing;
+    },
+
+    /**
      * Create user with company/store assignments
      */
     async create(data: CreateUserDto, currentUser: UserContext) {

@@ -33,6 +33,7 @@
         "connecting": "Connecting...",
         "exporting": "Exporting...",
         "importing": "Importing...",
+        "checking": "Checking...",
         "yes": "Yes",
         "no": "No",
         "none": "None",
@@ -509,6 +510,7 @@
                 "elevateDesc": "Grant highest-level access to other users"
             },
             "saveError": "Failed to save user",
+            "emailAlreadyExists": "This email address is already registered. Please use a different email.",
             "basicInfo": "Basic Information",
             "companyAssignment": "Company Assignment",
             "storeAssignments": "Store Assignments",

@@ -19,6 +19,7 @@ import {
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
 import { QueueStatus, SyncStatus } from '@prisma/client';
+import { sseManager } from '../sse/SseManager.js';
 
 // Processing delay (items must be at least this old)
 const PROCESSING_DELAY_MS = 5000;
@@ -214,6 +215,15 @@ export class SyncQueueProcessor {
                 where: { id: storeId },
                 data: { lastAimsSyncAt: new Date() },
             });
+
+            // Notify frontend clients that person sync statuses have changed
+            const hasPersonItems = storeItems.some(item => item.entityType === 'person');
+            if (hasPersonItems) {
+                sseManager.broadcastToStore(storeId, {
+                    type: 'people:changed',
+                    payload: { action: 'sync-completed' },
+                });
+            }
         }
 
         return result;

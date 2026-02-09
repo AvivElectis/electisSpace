@@ -20,12 +20,17 @@ interface ServerPerson {
     updatedAt: string;
 }
 
+// Internal fields that should NOT be in the data JSON (they are separate DB columns)
+const INTERNAL_DATA_FIELDS = new Set(['aimsSyncStatus', 'virtualSpaceId', 'assignedSpaceId']);
+
 // Transform server person to client person format
 function transformPerson(serverPerson: ServerPerson): Person {
     // Convert data values to strings (client Person type expects Record<string, string>)
+    // Strip internal fields that may have been accidentally stored in the data JSON
     const stringData: Record<string, string> = {};
     if (serverPerson.data) {
         for (const [key, value] of Object.entries(serverPerson.data)) {
+            if (INTERNAL_DATA_FIELDS.has(key)) continue;
             stringData[key] = value != null ? String(value) : '';
         }
     }

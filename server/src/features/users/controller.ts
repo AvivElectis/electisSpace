@@ -124,6 +124,23 @@ export const userController = {
     },
 
     /**
+     * GET /users/check-email?email=...
+     * Check if an email is already registered
+     */
+    async checkEmail(req: Request, res: Response, next: NextFunction) {
+        try {
+            const email = req.query.email as string;
+            if (!email) {
+                return next(badRequest('Email is required'));
+            }
+            const exists = await userService.checkEmailExists(email.trim().toLowerCase());
+            res.json({ exists });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    /**
      * GET /users/features
      * Get available features
      */

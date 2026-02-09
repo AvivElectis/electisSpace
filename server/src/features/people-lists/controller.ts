@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import { peopleListsService } from './service.js';
 import { createPeopleListSchema, updatePeopleListSchema } from './types.js';
 import type { ListsUserContext } from './types.js';
+import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 
 export const peopleListsController = {
     /**
@@ -80,6 +81,20 @@ export const peopleListsController = {
             const id = req.params.id as string;
             const input = updatePeopleListSchema.parse(req.body);
             const list = await peopleListsService.update(user, id, input);
+
+            // Broadcast list:updated event to all clients in this store
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore(list.storeId, {
+                type: 'list:updated',
+                payload: {
+                    listId: list.id,
+                    listName: list.name,
+                    updatedBy: user.id,
+                    updatedByName: (user as any).name || (user as any).email || 'Unknown',
+                },
+                excludeClientId: sseClientId,
+            });
+
             res.json({ data: list });
         } catch (error: any) {
             if (error.message === 'NOT_FOUND') {

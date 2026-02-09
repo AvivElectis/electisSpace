@@ -41,11 +41,22 @@ export function DynamicFieldDisplay({
             // Show only visible fields with friendly names
             return Object.entries(solumMappingConfig.fields)
                 .filter(([_, fieldConfig]) => fieldConfig.visible)
-                .map(([fieldKey, fieldConfig]) => ({
-                    key: fieldKey,
-                    label: currentLanguage === 'he' ? fieldConfig.friendlyNameHe : fieldConfig.friendlyNameEn,
-                    value: data[fieldKey] || ''
-                }))
+                .map(([fieldKey, fieldConfig]) => {
+                    // Use friendly names if they exist and are not just the field key itself
+                    // (default config sets friendly names to field key, which is not user-friendly)
+                    const labelHe = (fieldConfig.friendlyNameHe && fieldConfig.friendlyNameHe !== fieldKey)
+                        ? fieldConfig.friendlyNameHe
+                        : fieldKey;
+                    const labelEn = (fieldConfig.friendlyNameEn && fieldConfig.friendlyNameEn !== fieldKey)
+                        ? fieldConfig.friendlyNameEn
+                        : fieldKey;
+
+                    return {
+                        key: fieldKey,
+                        label: currentLanguage === 'he' ? labelHe : labelEn,
+                        value: data[fieldKey] || ''
+                    };
+                })
                 .filter((item) => item.value); // Only show fields with values
         }
 
