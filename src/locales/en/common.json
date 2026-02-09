@@ -867,7 +867,9 @@
         "savedLocallyAimsFailed": "List saved locally but failed to sync to AIMS: {{error}}. Please try 'Send All to AIMS' later.",
         "unsavedChangesTitle": "Unsaved List Changes",
         "unsavedChangesMessage": "You have unsaved changes to the current list. Would you like to save them before leaving?",
-        "discardChanges": "Discard Changes"
+        "discardChanges": "Discard Changes",
+        "freeList": "Free List",
+        "listFreed": "List detached. Working without a list now."
     },
     "people": {
         "title": "People Manager",

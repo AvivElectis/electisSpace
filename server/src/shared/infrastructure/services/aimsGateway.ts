@@ -34,6 +34,9 @@ interface FormatCacheEntry {
 // In-memory token cache (per company)
 const tokenCache = new Map<string, TokenCacheEntry>();
 
+// In-flight login promises (singleflight pattern to prevent concurrent duplicate logins)
+const inflightLogins = new Map<string, Promise<SolumTokens>>();
+
 // In-memory article format cache (per company) — refreshed every 30 minutes
 const formatCache = new Map<string, FormatCacheEntry>();
 const FORMAT_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
@@ -43,6 +46,39 @@ const AIMS_BATCH_SIZE = 500;
 
 // Token expiry buffer (5 minutes before actual expiry)
 const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000;
+
+// Retry config for login
+const LOGIN_MAX_RETRIES = 3;
+const LOGIN_BASE_DELAY = 1000;
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+/**
+ * Login with retry for transient failures (429, 5xx)
+ */
+async function loginWithRetry(config: SolumConfig): Promise<SolumTokens> {
+    let lastError: any;
+    for (let attempt = 0; attempt <= LOGIN_MAX_RETRIES; attempt++) {
+        try {
+            return await solumService.login(config);
+        } catch (error: any) {
+            lastError = error;
+            const msg = error.message || '';
+            const status = error.response?.status ?? error.status;
+            // Retryable: 429 or 5xx (check both numeric status and message text)
+            const is429 = status === 429 || msg.includes('429');
+            const is5xx = (status >= 500 && status < 600) || /\b5\d{2}\b/.test(msg);
+            if (attempt < LOGIN_MAX_RETRIES && (is429 || is5xx)) {
+                const delay = LOGIN_BASE_DELAY * Math.pow(2, attempt) * (0.8 + Math.random() * 0.4);
+                console.warn(`[AIMS Gateway] login failed (attempt ${attempt + 1}/${LOGIN_MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms: ${msg}`);
+                await sleep(delay);
+                continue;
+            }
+            throw error;
+        }
+    }
+    throw lastError;
+}
 
 /**
  * AIMS Gateway - handles all AIMS operations with proper credential management
@@ -143,13 +179,20 @@ export class AIMSGateway {
             return cached.tokens.accessToken;
         }
 
+        // Singleflight: if a login is already in-flight for this company, await it
+        const inflight = inflightLogins.get(companyId);
+        if (inflight) {
+            const tokens = await inflight;
+            return tokens.accessToken;
+        }
+
         // Get credentials
         const credentials = await this.getCredentials(companyId);
         if (!credentials) {
             throw new Error(`No AIMS credentials configured for company ${companyId}`);
         }
 
-        // Login to get new tokens
+        // Login to get new tokens (with singleflight dedup)
         const config: SolumConfig = {
             baseUrl: credentials.baseUrl,
             companyName: '', // Not needed for login
@@ -158,12 +201,19 @@ export class AIMSGateway {
             password: credentials.password,
         };
 
-        const tokens = await solumService.login(config);
+        const loginPromise = loginWithRetry(config);
+        inflightLogins.set(companyId, loginPromise);
 
-        // Cache tokens
-        tokenCache.set(companyId, { tokens, companyId });
+        try {
+            const tokens = await loginPromise;
 
-        return tokens.accessToken;
+            // Cache tokens
+            tokenCache.set(companyId, { tokens, companyId });
+
+            return tokens.accessToken;
+        } finally {
+            inflightLogins.delete(companyId);
+        }
     }
 
     /**
@@ -355,13 +405,17 @@ export class AIMSGateway {
 
     /**
      * Check AIMS connectivity for a store
+     * Uses getToken (with singleflight + cache) to avoid duplicate logins
      */
     async checkHealth(storeId: string): Promise<boolean> {
         try {
             const storeConfig = await this.getStoreConfig(storeId);
             if (!storeConfig) return false;
             
-            return await solumService.checkHealth(storeConfig.config);
+            // Use getToken which has singleflight dedup + token caching
+            // If we can get a valid token, AIMS is reachable
+            await this.getToken(storeConfig.companyId);
+            return true;
         } catch {
             return false;
         }
@@ -369,21 +423,12 @@ export class AIMSGateway {
 
     /**
      * Check AIMS connectivity for a company
+     * Uses getToken (with singleflight + cache) to avoid duplicate logins
      */
     async checkCompanyHealth(companyId: string): Promise<boolean> {
         try {
-            const credentials = await this.getCredentials(companyId);
-            if (!credentials) return false;
-
-            const config: SolumConfig = {
-                baseUrl: credentials.baseUrl,
-                companyName: '',
-                cluster: credentials.cluster,
-                username: credentials.username,
-                password: credentials.password,
-            };
-
-            return await solumService.checkHealth(config);
+            await this.getToken(companyId);
+            return true;
         } catch {
             return false;
         }

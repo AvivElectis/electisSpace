@@ -131,10 +131,17 @@ export function usePeopleController() {
                 hasSpace: !!personData.assignedSpaceId
             });
 
-            // Trigger push to process sync queue → AIMS
+            // If person has a space assignment, call assignSpace to set the DB column
+            // and queue the proper AIMS sync job (create does NOT set assignedSpaceId)
             if (personData.assignedSpaceId) {
-                await triggerPush();
-                getStoreState().updateSyncStatusLocal([serverPerson.id], 'synced');
+                const assigned = await getStoreState().assignSpace(serverPerson.id, personData.assignedSpaceId);
+                if (assigned) {
+                    logger.info('PeopleController', 'Space assigned after create', {
+                        personId: serverPerson.id,
+                        spaceId: personData.assignedSpaceId
+                    });
+                    return assigned;
+                }
             }
 
             return serverPerson;

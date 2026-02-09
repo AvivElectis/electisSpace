@@ -64,13 +64,15 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
         if (!settings.solumMappingConfig?.fields) return [];
 
         const idFieldKey = settings.solumMappingConfig.mappingInfo?.articleId;
+        const nameFieldKey = settings.solumMappingConfig.mappingInfo?.articleName;
         const globalFields = settings.solumMappingConfig.globalFieldAssignments || {};
         const globalFieldKeys = Object.keys(globalFields);
 
         return Object.entries(settings.solumMappingConfig.fields)
             .filter(([fieldKey, config]) => {
-                // Exclude ID field, global fields, and explicitly hidden fields
+                // Exclude ID field, name field (rendered separately), global fields, and explicitly hidden fields
                 if (idFieldKey && fieldKey === idFieldKey) return false;
+                if (nameFieldKey && fieldKey === nameFieldKey) return false;
                 if (globalFieldKeys.includes(fieldKey)) return false;
                 if (config.visible === false) return false; // undefined = visible by default
                 return true;
@@ -81,6 +83,18 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                 labelHe: config.friendlyNameHe,
             }));
     }, [settings.solumMappingConfig]);
+
+    // Get the dedicated name field (articleName from mappingInfo)
+    const nameField = useMemo(() => {
+        const nameFieldKey = settings.solumMappingConfig?.mappingInfo?.articleName;
+        if (!nameFieldKey) return null;
+        const fieldConfig = settings.solumMappingConfig?.fields?.[nameFieldKey];
+        return {
+            key: nameFieldKey,
+            labelEn: fieldConfig?.friendlyNameEn || t('people.name'),
+            labelHe: fieldConfig?.friendlyNameHe || t('people.name'),
+        };
+    }, [settings.solumMappingConfig, t]);
 
     // Initialize form when dialog opens
     useEffect(() => {
@@ -95,6 +109,10 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
             } else {
                 // Add mode - reset (ID will be auto-generated)
                 const emptyData: Record<string, string> = {};
+                // Include the dedicated name field
+                if (nameField) {
+                    emptyData[nameField.key] = '';
+                }
                 editableFields.forEach(field => {
                     emptyData[field.key] = '';
                 });
@@ -106,7 +124,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
             }
             setErrors({});
         }
-    }, [open, person, editableFields]);
+    }, [open, person, editableFields, nameField]);
 
     const validate = () => {
         const newErrors: Record<string, string> = {};
@@ -132,10 +150,14 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
 
         setSaving(true);
         try {
+            // Merge global field assignments into data before saving
+            const globalFields = settings.solumMappingConfig?.globalFieldAssignments || {};
+            const dataWithGlobals = { ...formData.data, ...globalFields };
+
             if (isEditMode) {
                 // Update existing person (now async with auto-sync)
                 await peopleController.updatePerson(person!.id, {
-                    data: formData.data,
+                    data: dataWithGlobals,
                     assignedSpaceId: formData.assignedSpaceId,
                 });
             } else {
@@ -143,7 +165,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                 // The controller will generate UUID and virtual pool ID
                 const newPerson: Person = {
                     id: '', // Will be replaced by controller with UUID
-                    data: formData.data,
+                    data: dataWithGlobals,
                     assignedSpaceId: formData.assignedSpaceId,
                 };
                 await peopleController.addPerson(newPerson);
@@ -187,6 +209,22 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                 </DialogTitle>
                 <DialogContent>
                     <Stack gap={2} sx={{ mt: 1 }}>
+                        {/* Dedicated Name Field (articleName mapped field) — first input */}
+                        {nameField && (
+                            <TextField
+                                label={i18n.language === 'he' ? nameField.labelHe : nameField.labelEn}
+                                value={formData.data[nameField.key] || ''}
+                                onChange={(e) => handleFieldChange(nameField.key, e.target.value)}
+                                fullWidth
+                                autoFocus
+                                slotProps={{
+                                    input: {
+                                        sx: { textAlign: isRtl ? 'right' : 'left' }
+                                    }
+                                }}
+                            />
+                        )}
+
                         {/* Dynamic Fields */}
                         {editableFields.map(field => (
                             <TextField

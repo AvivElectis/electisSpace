@@ -192,8 +192,9 @@ export class SolumService {
     async checkHealth(config: SolumConfig): Promise<boolean> {
         try {
             // If we have credentials, try to login as a health check
+            // Use withRetry to handle transient AIMS failures (timeouts, 502s, etc.)
             if (config.username && config.password) {
-                await this.login(config);
+                await this.withRetry('checkHealth', () => this.login(config));
                 return true;
             }
             // Otherwise, just check if the base URL is reachable (simple HEAD request)

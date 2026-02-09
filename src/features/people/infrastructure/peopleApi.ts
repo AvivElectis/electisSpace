@@ -46,6 +46,7 @@ interface PeopleQueryParams {
     page?: number;
     limit?: number;
     search?: string;
+    storeId?: string;
     assignedOnly?: boolean;
     unassignedOnly?: boolean;
 }

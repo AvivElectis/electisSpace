@@ -368,6 +368,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         onSyncClick={() => sync().catch(() => {/* handled in controller */})}
                         serverConnected={syncController.serverConnected}
                         aimsConnected={syncState.isConnected}
+                        syncStartedAt={syncState.syncStartedAt}
                     />
                 </Box>
 

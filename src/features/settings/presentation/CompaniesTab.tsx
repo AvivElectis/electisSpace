@@ -127,7 +127,7 @@ export function CompaniesTab() {
     };
 
     const handleDelete = async (company: Company) => {
-        const storeCount = company._count?.stores || 0;
+        const storeCount = company.storeCount ?? company._count?.stores ?? 0;
         const confirmMessage = storeCount > 0
             ? t('settings.companies.deleteConfirmWithStores', `Are you sure you want to delete "${company.name}"? This will also delete ${storeCount} store(s) and all their data.`)
             : t('settings.companies.deleteConfirm', `Are you sure you want to delete "${company.name}"?`);
@@ -285,7 +285,7 @@ export function CompaniesTab() {
                                             <Tooltip title={t('settings.companies.manageStores')}>
                                                 <Chip
                                                     icon={<StoreIcon fontSize="small" />}
-                                                    label={company._count?.stores || 0}
+                                                    label={company.storeCount ?? company._count?.stores ?? 0}
                                                     size="small"
                                                     onClick={() => handleManageStores(company)}
                                                     sx={{ p: 1, cursor: 'pointer' }}

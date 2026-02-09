@@ -882,7 +882,9 @@
         "savedLocallyAimsFailed": "הרשימה נשמרה מקומית אך הסנכרון ל-AIMS נכשל: {{error}}. נסה 'שלח הכל ל-AIMS' מאוחר יותר.",
         "unsavedChangesTitle": "שינויים שלא נשמרו ברשימה",
         "unsavedChangesMessage": "יש לך שינויים שלא נשמרו ברשימה הנוכחית. האם ברצונך לשמור אותם לפני היציאה?",
-        "discardChanges": "מחק שינויים"
+        "discardChanges": "מחק שינויים",
+        "freeList": "שחרר רשימה",
+        "listFreed": "הרשימה שוחררה. עובד כעת ללא רשימה."
     },
     "people": {
         "title": "מנהל אנשים",

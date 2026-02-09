@@ -102,9 +102,9 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
 
     const handleDelete = async (store: CompanyStore) => {
         const entityCount = 
-            (store._count?.spaces || 0) + 
-            (store._count?.people || 0) + 
-            (store._count?.conferenceRooms || 0);
+            (store.spaceCount ?? store._count?.spaces ?? 0) + 
+            (store.peopleCount ?? store._count?.people ?? 0) + 
+            (store.conferenceRoomCount ?? store._count?.conferenceRooms ?? 0);
 
         const confirmMessage = entityCount > 0
             ? t('settings.stores.deleteConfirmWithData', { name: store.name, count: entityCount })
@@ -282,21 +282,21 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                                             >
                                                 <Tooltip title={t('settings.stores.spaces')}>
                                                     <Chip 
-                                                        label={`🏷️ ${store._count?.spaces || 0}`} 
+                                                        label={`🏷️ ${store.spaceCount ?? store._count?.spaces ?? 0}`} 
                                                         size="small" 
                                                         variant="outlined"
                                                     />
                                                 </Tooltip>
                                                 <Tooltip title={t('settings.stores.people')}>
                                                     <Chip 
-                                                        label={`👥 ${store._count?.people || 0}`} 
+                                                        label={`👥 ${store.peopleCount ?? store._count?.people ?? 0}`} 
                                                         size="small" 
                                                         variant="outlined"
                                                     />
                                                 </Tooltip>
                                                 <Tooltip title={t('settings.stores.conferenceRooms')}>
                                                     <Chip 
-                                                        label={`🎤 ${store._count?.conferenceRooms || 0}`} 
+                                                        label={`🎤 ${store.conferenceRoomCount ?? store._count?.conferenceRooms ?? 0}`} 
                                                         size="small" 
                                                         variant="outlined"
                                                     />

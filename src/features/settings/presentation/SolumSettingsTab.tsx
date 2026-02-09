@@ -1,5 +1,5 @@
 import { Box, Stack, Divider, Typography, Tabs, Tab, Alert, FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Button, CircularProgress } from '@mui/material';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
 import { useSyncContext } from '@features/sync/application/SyncContext';
@@ -18,7 +18,7 @@ import {
     SolumSchemaEditorSection,
 } from './solum';
 
-import type { SettingsData } from '../domain/types';
+import type { SettingsData, SolumMappingConfig } from '../domain/types';
 import type { CSVConfig } from '@shared/domain/types';
 
 interface SolumSettingsTabProps {
@@ -37,7 +37,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
     const { sync } = useSyncContext();
     const { activeCompanyId, reconnectToSolum } = useAuthStore();
     const { isCompanyAdmin, isPlatformAdmin } = useAuthContext();
-    const { saveCompanySettingsToServer } = useSettingsStore();
+    const { saveCompanySettingsToServer, saveFieldMappingsToServer } = useSettingsStore();
     const canManageCompanySettings = isCompanyAdmin || isPlatformAdmin;
     const [subTab, setSubTab] = useState(0);
     const [isReconnecting, setIsReconnecting] = useState(false);
@@ -48,6 +48,24 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
         if (!articleFormat) return [];
         return articleFormat.articleData || [];
     }, [articleFormat]);
+
+    // Debounced auto-save for field mappings to server
+    const saveFieldMappingsDebounceRef = useRef<NodeJS.Timeout | null>(null);
+    const autoSaveFieldMappings = useCallback(() => {
+        if (saveFieldMappingsDebounceRef.current) {
+            clearTimeout(saveFieldMappingsDebounceRef.current);
+        }
+        saveFieldMappingsDebounceRef.current = setTimeout(() => {
+            saveFieldMappingsToServer();
+        }, 1000); // 1 second debounce
+    }, [saveFieldMappingsToServer]);
+
+    // Helper: update field mappings locally AND trigger debounced server save
+    const updateFieldMappings = useCallback((config: SolumMappingConfig) => {
+        onUpdate({ solumMappingConfig: config });
+        // Schedule debounced save (timeout will use latest store state)
+        autoSaveFieldMappings();
+    }, [onUpdate, autoSaveFieldMappings]);
 
     // Connection status is now server-managed
     // The solumConfig.isConnected is set by autoConnectToSolum in authStore after login
@@ -328,43 +346,37 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         }
                                     }
                                     onUniqueIdChange={(field) =>
-                                        onUpdate({
-                                            solumMappingConfig: {
-                                                ...settings.solumMappingConfig,
-                                                uniqueIdField: field,
-                                                fields: settings.solumMappingConfig?.fields || {},
-                                                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
-                                                    meetingName: '',
-                                                    meetingTime: '',
-                                                    participants: '',
-                                                },
+                                        updateFieldMappings({
+                                            ...settings.solumMappingConfig,
+                                            uniqueIdField: field,
+                                            fields: settings.solumMappingConfig?.fields || {},
+                                            conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                meetingName: '',
+                                                meetingTime: '',
+                                                participants: '',
                                             },
                                         })
                                     }
                                     onConferenceMappingChange={(mapping) =>
-                                        onUpdate({
-                                            solumMappingConfig: {
-                                                ...settings.solumMappingConfig,
-                                                uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
-                                                fields: settings.solumMappingConfig?.fields || {},
-                                                conferenceMapping: mapping,
-                                            },
+                                        updateFieldMappings({
+                                            ...settings.solumMappingConfig,
+                                            uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                            fields: settings.solumMappingConfig?.fields || {},
+                                            conferenceMapping: mapping,
                                         })
                                     }
                                     mappingInfo={settings.solumMappingConfig?.mappingInfo}
                                     onMappingInfoChange={(newMappingInfo) =>
-                                        onUpdate({
-                                            solumMappingConfig: {
-                                                ...settings.solumMappingConfig,
-                                                uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
-                                                fields: settings.solumMappingConfig?.fields || {},
-                                                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
-                                                    meetingName: '',
-                                                    meetingTime: '',
-                                                    participants: '',
-                                                },
-                                                mappingInfo: newMappingInfo,
+                                        updateFieldMappings({
+                                            ...settings.solumMappingConfig,
+                                            uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                            fields: settings.solumMappingConfig?.fields || {},
+                                            conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                meetingName: '',
+                                                meetingTime: '',
+                                                participants: '',
                                             },
+                                            mappingInfo: newMappingInfo,
                                         })
                                     }
                                     disabled={false}
@@ -376,18 +388,16 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         articleFormatFields={articleFormatFields}
                                         globalAssignments={settings.solumMappingConfig?.globalFieldAssignments || {}}
                                         onChange={(assignments) =>
-                                            onUpdate({
-                                                solumMappingConfig: {
-                                                    ...settings.solumMappingConfig,
-                                                    uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
-                                                    fields: settings.solumMappingConfig?.fields || {},
-                                                    conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
-                                                        meetingName: '',
-                                                        meetingTime: '',
-                                                        participants: '',
-                                                    },
-                                                    globalFieldAssignments: assignments,
+                                            updateFieldMappings({
+                                                ...settings.solumMappingConfig,
+                                                uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                                fields: settings.solumMappingConfig?.fields || {},
+                                                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                    meetingName: '',
+                                                    meetingTime: '',
+                                                    participants: '',
                                                 },
+                                                globalFieldAssignments: assignments,
                                             })
                                         }
                                         disabled={false}
@@ -412,17 +422,15 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                             ...(settings.solumMappingConfig?.mappingInfo?.articleName ? [settings.solumMappingConfig.mappingInfo.articleName] : []),
                                         ]}
                                         onChange={(mappings) =>
-                                            onUpdate({
-                                                solumMappingConfig: {
-                                                    ...settings.solumMappingConfig,
-                                                    uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
-                                                    conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
-                                                        meetingName: '',
-                                                        meetingTime: '',
-                                                        participants: '',
-                                                    },
-                                                    fields: mappings,
+                                            updateFieldMappings({
+                                                ...settings.solumMappingConfig,
+                                                uniqueIdField: settings.solumMappingConfig?.uniqueIdField || articleFormatFields[0],
+                                                conferenceMapping: settings.solumMappingConfig?.conferenceMapping || {
+                                                    meetingName: '',
+                                                    meetingTime: '',
+                                                    participants: '',
                                                 },
+                                                fields: mappings,
                                             })
                                         }
                                         disabled={false}

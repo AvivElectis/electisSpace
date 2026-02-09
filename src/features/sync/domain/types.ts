@@ -21,6 +21,7 @@ export interface SyncState {
     lastSync?: Date;
     lastError?: string;
     progress?: number;  // 0-100
+    syncStartedAt?: Date;  // When 'syncing' status began — used for elapsed time display
 }
 
 /**

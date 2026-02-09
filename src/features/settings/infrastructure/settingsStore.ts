@@ -192,16 +192,23 @@ export const useSettingsStore = create<SettingsStore>()(
                             }
                         }
                         
-                        // Add field mappings from company-level endpoint if available
-                        if (fieldMappingsResponse.fieldMappings && Object.keys(fieldMappingsResponse.fieldMappings).length > 0) {
-                            updates.solumMappingConfig = fieldMappingsResponse.fieldMappings as SolumMappingConfig;
-                            logger.info('SettingsStore', 'Field mappings loaded from server (company-level)', { companyId });
-                        }
-
                         // Add article format from company-level endpoint if available
+                        // (must be before field mappings so we can use mappingInfo as fallback)
                         if (articleFormatResponse.articleFormat) {
                             updates.solumArticleFormat = articleFormatResponse.articleFormat as SettingsData['solumArticleFormat'];
                             logger.info('SettingsStore', 'Article format loaded from server (company-level)', { companyId });
+                        }
+
+                        // Add field mappings from company-level endpoint if available
+                        if (fieldMappingsResponse.fieldMappings && Object.keys(fieldMappingsResponse.fieldMappings).length > 0) {
+                            const serverMappings = fieldMappingsResponse.fieldMappings as SolumMappingConfig;
+                            // If server field mappings are missing mappingInfo, extract it from the article format
+                            // This ensures auto-mapped fields (articleName, nfcUrl, etc.) survive refresh
+                            if (!serverMappings.mappingInfo && (articleFormatResponse.articleFormat as any)?.mappingInfo) {
+                                serverMappings.mappingInfo = (articleFormatResponse.articleFormat as any).mappingInfo;
+                            }
+                            updates.solumMappingConfig = serverMappings;
+                            logger.info('SettingsStore', 'Field mappings loaded from server (company-level)', { companyId });
                         }
                         
                         if (Object.keys(updates).length > 0) {
@@ -228,6 +235,19 @@ export const useSettingsStore = create<SettingsStore>()(
                                         lastRefreshed: localSolumConfig?.lastRefreshed,
                                         storeSummary: localSolumConfig?.storeSummary,
                                     } as SettingsData['solumConfig'];
+                                }
+
+                                // Deep-merge solumMappingConfig to preserve local mappingInfo
+                                // when server version doesn't have it (mappingInfo comes from
+                                // fetchArticleFormat and may not have been saved to server yet)
+                                const localMappingConfig = state.settings.solumMappingConfig;
+                                if (updates.solumMappingConfig && localMappingConfig) {
+                                    mergedSettings.solumMappingConfig = {
+                                        ...localMappingConfig,
+                                        ...updates.solumMappingConfig,
+                                        // Preserve local mappingInfo if server doesn't have it
+                                        mappingInfo: updates.solumMappingConfig.mappingInfo || localMappingConfig.mappingInfo,
+                                    } as SolumMappingConfig;
                                 }
                                 return {
                                     settings: mergedSettings,

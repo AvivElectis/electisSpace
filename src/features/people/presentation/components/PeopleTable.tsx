@@ -45,6 +45,7 @@ interface PeopleTableProps {
     people: Person[];
     visibleFields: VisibleField[];
     nameFieldKey?: string;
+    nameFieldLabel?: string;
     selectedIds: Set<string>;
     sortConfig: SortConfig | null;
     searchQuery: string;
@@ -65,6 +66,7 @@ export function PeopleTable({
     people,
     visibleFields,
     nameFieldKey,
+    nameFieldLabel,
     selectedIds,
     sortConfig,
     searchQuery,
@@ -266,7 +268,7 @@ export function PeopleTable({
                                     direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'}
                                     onClick={() => onSort(nameFieldKey)}
                                 >
-                                    {t('people.name')}
+                                    {nameFieldLabel || t('people.name')}
                                 </TableSortLabel>
                             </TableCell>
                         )}

@@ -4,6 +4,7 @@ import type { StateStorage } from 'zustand/middleware';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import type { Person, PeopleList, SpaceAllocation } from '../domain/types';
 import { peopleApi } from './peopleApi';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 // IndexedDB storage adapter for Zustand persist
 const indexedDBStorage: StateStorage = {
@@ -173,8 +174,16 @@ export const usePeopleStore = create<PeopleStore>()(
                 fetchPeople: async () => {
                     set({ isLoading: true, error: null }, false, 'fetchPeople/start');
                     try {
-                        const { people } = await peopleApi.getAll();
-                        set({ people, isLoading: false }, false, 'fetchPeople/success');
+                        const storeId = useAuthStore.getState().activeStoreId;
+                        const { people } = await peopleApi.getAll(storeId ? { storeId } : undefined);
+                        // Deduplicate by id as a safety net
+                        const seen = new Set<string>();
+                        const uniquePeople = people.filter(p => {
+                            if (seen.has(p.id)) return false;
+                            seen.add(p.id);
+                            return true;
+                        });
+                        set({ people: uniquePeople, isLoading: false }, false, 'fetchPeople/success');
                         get().updateSpaceAllocation();
                         get().extractListsFromPeople();
                     } catch (error) {
@@ -394,7 +403,6 @@ export const usePeopleStore = create<PeopleStore>()(
                 name: 'people-store',
                 storage: createJSONStorage(() => indexedDBStorage),
                 partialize: (state) => ({
-                    people: state.people,
                     peopleLists: state.peopleLists,
                     activeListName: state.activeListName,
                     activeListId: state.activeListId,

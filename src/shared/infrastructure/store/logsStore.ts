@@ -39,6 +39,27 @@ const MAX_QUEUE_SIZE = 100;
 const logQueue: LogEntry[] = [];
 let flushTimeout: any = null;
 
+/**
+ * Sanitize data for IndexedDB storage.
+ * Strips functions and circular references that can't be structuredClone'd.
+ */
+const sanitizeForStorage = (data: any): any => {
+    if (data === undefined || data === null) return data;
+    try {
+        return JSON.parse(JSON.stringify(data));
+    } catch {
+        // If JSON serialization fails (circular refs etc.), extract what we can
+        if (typeof data === 'object') {
+            try {
+                return { _sanitized: String(data) };
+            } catch {
+                return { _sanitized: '[unserializable]' };
+            }
+        }
+        return String(data);
+    }
+};
+
 // Helper: Get date string YYYY-MM-DD
 const getDateString = (timestamp: number): string => {
     return new Date(timestamp).toISOString().split('T')[0];
@@ -150,6 +171,7 @@ export const useLogsStore = create<LogsStore>()(
                     ...entry,
                     id: `${timestamp}-${Math.random().toString(36).substring(2, 11)}`,
                     timestamp,
+                    data: sanitizeForStorage(entry.data),
                 };
 
                 const dateKey = getDateString(timestamp);
