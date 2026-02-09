@@ -226,6 +226,22 @@ export const peopleApi = {
         async delete(id: string): Promise<void> {
             await api.delete(`/people-lists/${id}`);
         },
+
+        /**
+         * Load a list — atomically replaces all people in the store with list snapshot.
+         * Server handles full replacement + AIMS sync.
+         */
+        async load(listId: string): Promise<{ data: { list: { id: string; name: string; storageName: string }; people: unknown[] } }> {
+            const response = await api.post(`/people-lists/${listId}/load`);
+            return response.data;
+        },
+
+        /**
+         * Free (unload) the current list. People remain in DB; list tracking is cleared.
+         */
+        async free(storeId: string): Promise<void> {
+            await api.post('/people-lists/free', { storeId });
+        },
     },
 };
 

@@ -340,109 +340,40 @@ export function usePeopleController() {
     }, []);
 
     /**
-     * Load a saved list with AIMS synchronization
-     * Fetches the list snapshot from DB, applies its assignments, and syncs differences to AIMS.
+     * Load a saved list via server-side atomic replacement.
+     * The server replaces all people in the store with the list snapshot
+     * and queues AIMS sync for changes. We then refetch to stay in sync.
      * @param listId - ID of list to load
      * @param _autoApply - Ignored (kept for API compatibility)
      */
     const loadList = useCallback(async (listId: string, _autoApply?: boolean): Promise<void> => {
         try {
-            logger.info('PeopleController', 'Loading list from DB', { listId });
+            logger.info('PeopleController', 'Loading list via server', { listId });
 
-            // 1. Fetch the full list (with content snapshot) from the server DB
-            const result = await peopleApi.lists.getById(listId);
-            const listData = result.data;
+            // Server atomically replaces all people in the store
+            // and queues AIMS sync for removed/changed assignments
+            const result = await peopleApi.lists.load(listId);
+            const { list, people: _serverPeople } = result.data;
 
-            logger.info('PeopleController', 'List fetched', {
-                listId,
-                name: listData.name,
-                snapshotCount: listData.content?.length ?? 0,
-            });
+            // Refetch to get the fresh people set
+            await getStoreState().fetchPeople();
 
             // Set active list metadata
             getStoreState().setActiveListId(listId);
-            getStoreState().setActiveListName(listData.name);
-
-            // 2. Build assignment map from the list's snapshot: personId → assignedSpaceId
-            const snapshotAssignments = new Map<string, string | undefined>();
-            if (listData.content && Array.isArray(listData.content)) {
-                for (const item of listData.content) {
-                    snapshotAssignments.set(item.id, item.assignedSpaceId || undefined);
-                }
-            }
-
-            // 3. Compute diffs between current server state and desired (snapshot) state
-            const currentPeople = getStoreState().people;
-            const toUnassign: string[] = [];
-            const toAssign: Array<{ personId: string; spaceId: string }> = [];
-
-            const updatedPeople = currentPeople.map(person => {
-                const currentSpaceId = person.assignedSpaceId || undefined;
-
-                if (snapshotAssignments.has(person.id)) {
-                    // Person is in the list — use the saved assignment
-                    const desiredSpaceId = snapshotAssignments.get(person.id);
-
-                    if (currentSpaceId && !desiredSpaceId) {
-                        toUnassign.push(person.id);
-                    } else if (desiredSpaceId && desiredSpaceId !== currentSpaceId) {
-                        toAssign.push({ personId: person.id, spaceId: desiredSpaceId });
-                    }
-
-                    return { ...person, assignedSpaceId: desiredSpaceId };
-                } else {
-                    // Person NOT in the list — clear their assignment
-                    if (currentSpaceId) {
-                        toUnassign.push(person.id);
-                    }
-                    return { ...person, assignedSpaceId: undefined };
-                }
-            });
-
-            // 4. Update local state immediately for responsiveness
-            getStoreState().setPeople(updatedPeople);
+            getStoreState().setActiveListName(list.name);
+            getStoreState().clearPendingChanges();
             getStoreState().updateSpaceAllocation();
 
-            // 5. Sync changes to server + AIMS
-            logger.info('PeopleController', 'List load: syncing changes to server', {
-                toUnassign: toUnassign.length,
-                toAssign: toAssign.length,
-            });
-
-            for (const personId of toUnassign) {
-                try {
-                    await getStoreState().unassignSpace(personId);
-                } catch (err: any) {
-                    logger.warn('PeopleController', 'Failed to unassign during list load', { personId, error: err.message });
-                }
-            }
-
-            for (const { personId, spaceId } of toAssign) {
-                try {
-                    await getStoreState().assignSpace(personId, spaceId);
-                } catch (err: any) {
-                    logger.warn('PeopleController', 'Failed to assign during list load', { personId, spaceId, error: err.message });
-                }
-            }
-
-            // 6. Trigger push to process sync queue → AIMS
-            if (toUnassign.length > 0 || toAssign.length > 0) {
-                await triggerPush();
-            }
-
-            getStoreState().clearPendingChanges();
-
-            logger.info('PeopleController', 'List loaded successfully', {
+            logger.info('PeopleController', 'List loaded successfully via server', {
                 listId,
-                name: listData.name,
-                unassigned: toUnassign.length,
-                assigned: toAssign.length,
+                name: list.name,
+                peopleCount: getStoreState().people.length,
             });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to load people list', { error: error.message });
             throw error;
         }
-    }, [triggerPush]);
+    }, []);
 
     /**
      * Delete a list - removes list from store, clears _LIST_MEMBERSHIPS_ from people, and syncs to AIMS
