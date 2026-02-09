@@ -16,6 +16,8 @@ import {
     DialogActions,
     Grid,
     Skeleton,
+    Snackbar,
+    Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -33,6 +35,7 @@ import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 
 // Lazy load dialog - not needed on initial render
 const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
@@ -68,6 +71,34 @@ export function ConferencePage() {
     const [selectedRoom, setSelectedRoom] = useState<ConferenceRoom | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingRoom, setEditingRoom] = useState<ConferenceRoom | undefined>(undefined);
+    const [sseAlert, setSseAlert] = useState<{ message: string; severity: 'info' } | null>(null);
+
+    // SSE real-time sync — alert when other users modify conference rooms
+    useStoreEvents({
+        onConferenceChanged: (event) => {
+            console.log('[ConferencePage] SSE event received:', event);
+            const actionText = event.action === 'create' ? 'added' :
+                              event.action === 'update' ? 'updated' :
+                              event.action === 'delete' ? 'deleted' :
+                              event.action === 'toggle' ? (event.hasMeeting ? 'started a meeting in' : 'ended a meeting in') :
+                              'modified';
+
+            setSseAlert({
+                message: t('conference.roomChangedByOther', {
+                    defaultValue: '{{user}} {{action}} conference room {{roomId}}',
+                    user: event.userName || 'Another user',
+                    action: actionText,
+                    roomId: event.roomId || 'Unknown',
+                }),
+                severity: 'info',
+            });
+
+            // Refetch conference rooms to stay in sync
+            conferenceController.fetchRooms().catch(() => {
+                // Ignore errors, user already sees their view
+            });
+        },
+    });
 
     // Fetch conference rooms from server on mount (SoluM mode)
     // Server returns rooms with serverId (UUID) needed for correct PATCH/DELETE calls
@@ -191,7 +222,7 @@ export function ConferencePage() {
             </Stack>
             {/* Stats Cards */}
             <Grid container gap={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
@@ -217,7 +248,7 @@ export function ConferencePage() {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
@@ -243,7 +274,7 @@ export function ConferencePage() {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Card sx={cardsSetting}>
                         <CardContent>
                             <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
@@ -297,7 +328,7 @@ export function ConferencePage() {
             {conferenceController.isFetching ? (
                 <Grid container spacing={3}>
                     {Array.from({ length: 6 }).map((_, index) => (
-                        <Grid item xs={12} sm={6} lg={4} key={`skeleton-${index}`}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={`skeleton-${index}`}>
                             <Card sx={{ height: 200 }}>
                                 <CardContent>
                                     <Stack gap={2}>
@@ -527,6 +558,21 @@ export function ConferencePage() {
                     />
                 )}
             </Suspense>
+            {/* SSE Alert Snackbar */}
+            <Snackbar
+                open={!!sseAlert}
+                autoHideDuration={6000}
+                onClose={() => setSseAlert(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={() => setSseAlert(null)}
+                    severity={sseAlert?.severity || 'info'}
+                    sx={{ width: '100%' }}
+                >
+                    {sseAlert?.message}
+                </Alert>
+            </Snackbar>
             <ConfirmDialog />
         </Box>
     );

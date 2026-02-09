@@ -6,9 +6,11 @@
  * see the same current table state.
  * 
  * Events:
- *   people:changed  — people table was modified (create/delete/assign/unassign/load-list)
- *   list:loaded     — a user loaded a list (includes list name + who loaded it)
- *   list:freed      — a user freed the loaded list
+ *   people:changed     — people table was modified (create/delete/assign/unassign/load-list)
+ *   list:loaded        — a user loaded a list (includes list name + who loaded it)
+ *   list:freed         — a user freed the loaded list
+ *   list:updated       — a user updated a list's content
+ *   conference:changed — conference room was modified (create/update/delete/toggle)
  */
 import { Response } from 'express';
 
@@ -21,7 +23,7 @@ export interface SseClient {
 }
 
 export interface StoreEvent {
-    type: 'people:changed' | 'list:loaded' | 'list:freed';
+    type: 'people:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed';
     payload: Record<string, unknown>;
     /** If set, this client will NOT receive the event (originator) */
     excludeClientId?: string;

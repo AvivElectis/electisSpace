@@ -144,11 +144,22 @@ export function SpacesManagementView() {
                 if (globalFieldKeys.includes(fieldKey)) return false; // Exclude global fields
                 return config.visible !== false; // undefined = visible by default
             })
-            .map(([fieldKey, config]) => ({
-                key: fieldKey,
-                labelEn: config.friendlyNameEn,
-                labelHe: config.friendlyNameHe
-            }));
+            .map(([fieldKey, config]) => {
+                // Use friendly names if they exist and are not just the field key itself
+                // (default config sets friendly names to field key, which is not user-friendly)
+                const labelEn = (config.friendlyNameEn && config.friendlyNameEn !== fieldKey)
+                    ? config.friendlyNameEn
+                    : fieldKey;
+                const labelHe = (config.friendlyNameHe && config.friendlyNameHe !== fieldKey)
+                    ? config.friendlyNameHe
+                    : fieldKey;
+
+                return {
+                    key: fieldKey,
+                    labelEn,
+                    labelHe,
+                };
+            });
     }, [settingsController.settings.solumMappingConfig, nameFieldKey]);
 
     // Handle sort request

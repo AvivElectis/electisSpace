@@ -48,7 +48,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import EditIcon from '@mui/icons-material/Edit';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -123,11 +123,63 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
 
     // Basic Info
     const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState<string | null>(null);
+    const [checkingEmail, setCheckingEmail] = useState(false);
+    const emailCheckTimer = useRef<ReturnType<typeof setTimeout>>(null);
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [isActive, setIsActive] = useState(true);
+
+    // Debounced email uniqueness check (only in create mode)
+    const checkEmailExists = useCallback((emailToCheck: string) => {
+        if (emailCheckTimer.current) {
+            clearTimeout(emailCheckTimer.current);
+        }
+
+        const trimmed = emailToCheck.trim().toLowerCase();
+        if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+            setEmailError(null);
+            setCheckingEmail(false);
+            return;
+        }
+
+        setCheckingEmail(true);
+        emailCheckTimer.current = setTimeout(async () => {
+            try {
+                const response = await api.get<{ exists: boolean }>('/users/check-email', {
+                    params: { email: trimmed }
+                });
+                if (response.data.exists) {
+                    setEmailError(t('settings.users.emailAlreadyExists'));
+                } else {
+                    setEmailError(null);
+                }
+            } catch {
+                // Silently fail - backend create will catch it
+                setEmailError(null);
+            } finally {
+                setCheckingEmail(false);
+            }
+        }, 500);
+    }, [t]);
+
+    const handleEmailChange = useCallback((value: string) => {
+        setEmail(value);
+        if (!isEdit) {
+            checkEmailExists(value);
+        }
+    }, [isEdit, checkEmailExists]);
+
+    // Cleanup email check timer on unmount
+    useEffect(() => {
+        return () => {
+            if (emailCheckTimer.current) {
+                clearTimeout(emailCheckTimer.current);
+            }
+        };
+    }, []);
 
     // Password change (profile mode)
     const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -252,6 +304,8 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             } else {
                 // Create mode - reset form
                 setEmail('');
+                setEmailError(null);
+                setCheckingEmail(false);
                 setFirstName('');
                 setLastName('');
                 setPhone('');
@@ -307,6 +361,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             case 0: // Basic Info
                 if (!email.trim()) return false;
                 if (!isEdit && !password) return false;
+                if (emailError || checkingEmail) return false;
                 return true;
             case 1: // Company Assignment
                 if (isCreatingCompany) {
@@ -532,10 +587,21 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             onSave();
         } catch (err: any) {
             console.error('Failed to save user:', err);
-            setError(
-                err.response?.data?.message ||
-                t('settings.users.saveError')
-            );
+
+            // Handle specific error messages from backend
+            const errorMessage = err.response?.data?.message || err.response?.data?.error?.message;
+
+            // Check if it's a duplicate email error
+            if (errorMessage?.toLowerCase().includes('email already exists') ||
+                errorMessage?.toLowerCase().includes('email_exists')) {
+                setError(t('settings.users.emailAlreadyExists'));
+                // Go back to step 0 (Basic Info) where email field is
+                if (!isEdit) {
+                    setActiveStep(0);
+                }
+            } else {
+                setError(errorMessage || t('settings.users.saveError'));
+            }
         } finally {
             setSubmitting(false);
         }
@@ -678,11 +744,13 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                     label={t('auth.email')}
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => handleEmailChange(e.target.value)}
                     disabled={isEdit}
                     required={!isEdit}
                     fullWidth
                     size="small"
+                    error={!!emailError}
+                    helperText={emailError || (checkingEmail ? t('common.checking') : undefined)}
                 />
 
                 <Box sx={{ 
@@ -1098,13 +1166,20 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                 )}
 
                 {/* Stepper */}
-                <Stepper 
-                    activeStep={activeStep} 
-                    sx={{ 
+                <Stepper
+                    activeStep={activeStep}
+                    sx={{
                         mb: 3,
                         '& .MuiStepLabel-label': {
                             fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                        }
+                        },
+                        // Fix connector lines for RTL mode (swap left/right from LTR defaults)
+                        ...(isRtl && {
+                            '& .MuiStepConnector-root': {
+                                left: 'calc(50% + 20px)',
+                                right: 'calc(-50% + 20px)',
+                            },
+                        })
                     }}
                     alternativeLabel
                 >

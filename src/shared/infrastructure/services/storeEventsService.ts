@@ -8,13 +8,13 @@ import { tokenManager } from './apiClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
-export type StoreEventType = 'connected' | 'people:changed' | 'list:loaded' | 'list:freed';
+export type StoreEventType = 'connected' | 'people:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed';
 
 export interface StoreEvent {
     type: StoreEventType;
     timestamp: string;
-    // people:changed
-    action?: 'create' | 'delete' | 'assign' | 'unassign';
+    // people:changed, conference:changed
+    action?: 'create' | 'delete' | 'assign' | 'unassign' | 'update' | 'toggle';
     personId?: string;
     spaceId?: string;
     // list:loaded
@@ -26,6 +26,13 @@ export interface StoreEvent {
     // list:freed
     freedBy?: string;
     freedByName?: string;
+    // list:updated
+    updatedBy?: string;
+    updatedByName?: string;
+    // conference:changed
+    roomId?: string;
+    hasMeeting?: boolean;
+    userName?: string;
     // connected
     clientId?: string;
 }
@@ -50,22 +57,32 @@ export function connectToStoreEvents(
     const token = tokenManager.getAccessToken();
     const url = `${API_BASE_URL}/stores/${storeId}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
+    console.log('[StoreEventsService] Connecting to SSE:', { url: url.replace(/token=[^&]+/, 'token=***'), storeId });
+
     eventSource = new EventSource(url, { withCredentials: true });
 
     eventSource.onmessage = (e) => {
         try {
             const data: StoreEvent = JSON.parse(e.data);
+            console.log('[StoreEventsService] SSE message received:', data.type, data);
             if (data.type === 'connected') {
                 clientId = data.clientId || null;
+                console.log('[StoreEventsService] SSE connected, clientId:', clientId);
             }
             onEvent(data);
-        } catch {
+        } catch (err) {
+            console.error('[StoreEventsService] Failed to parse SSE message:', err);
             // Ignore malformed events
         }
     };
 
     eventSource.onerror = (e) => {
+        console.error('[StoreEventsService] SSE error:', e, 'readyState:', eventSource?.readyState);
         if (onError) onError(e);
+    };
+
+    eventSource.onopen = () => {
+        console.log('[StoreEventsService] SSE connection opened');
     };
 
     return {
