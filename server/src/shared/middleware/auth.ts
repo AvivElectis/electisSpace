@@ -50,12 +50,17 @@ export const authenticate = async (
 ): Promise<void> => {
     try {
         const authHeader = req.headers.authorization;
+        // Support token from query param (for SSE EventSource which can't set headers)
+        const queryToken = req.query.token as string | undefined;
 
-        if (!authHeader?.startsWith('Bearer ')) {
+        let token: string;
+        if (authHeader?.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        } else if (queryToken) {
+            token = queryToken;
+        } else {
             throw unauthorized('No token provided');
         }
-
-        const token = authHeader.substring(7);
 
         // Verify token
         const payload = jwt.verify(token, config.jwt.accessSecret) as JwtPayload;
