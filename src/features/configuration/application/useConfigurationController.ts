@@ -26,6 +26,7 @@ export function useConfigurationController() {
     const settings = useSettingsStore((state) => state.settings);
     const updateSettings = useSettingsStore((state) => state.updateSettings);
     const activeCompanyId = useSettingsStore((state) => state.activeCompanyId);
+    const saveFieldMappingsToServer = useSettingsStore((state) => state.saveFieldMappingsToServer);
 
     // ==========================================
     // SoluM Article Format Operations
@@ -79,6 +80,13 @@ export function useConfigurationController() {
                 solumMappingConfig: updatedMappingConfig as any
             });
 
+            // Save field mappings (with mappingInfo) to server so they persist across refreshes
+            // The article format is already saved by the server endpoint, but the derived
+            // mapping config (including mappingInfo) needs explicit saving
+            saveFieldMappingsToServer(activeCompanyId).catch((err) => {
+                console.warn('[ConfigController] Failed to save field mappings after schema fetch:', err);
+            });
+
             const sourceLabel = response.source === 'db' ? '(from server)' : '(fetched from AIMS)';
             showSuccess(`Article format loaded successfully ${sourceLabel}`);
             return schema;
@@ -87,7 +95,7 @@ export function useConfigurationController() {
             showError(`Failed to fetch schema: ${errorMessage}`);
             throw error;
         }
-    }, [activeCompanyId, settings.solumMappingConfig, updateSettings, showSuccess, showError]);
+    }, [activeCompanyId, settings.solumMappingConfig, updateSettings, saveFieldMappingsToServer, showSuccess, showError]);
 
     /**
      * Save article format via server API.

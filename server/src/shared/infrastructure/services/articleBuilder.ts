@@ -56,10 +56,13 @@ export function buildSpaceArticle(
 export function buildPersonArticle(
     person: { assignedSpaceId: string | null; data: any },
     format: ArticleFormat | null,
+    globalFieldAssignments?: Record<string, string>,
 ): any | null {
     if (!person.assignedSpaceId) return null;
 
-    const data = (person.data ?? {}) as Record<string, any>;
+    // Merge global field assignments into person data — global fields are company-wide
+    // constants (e.g., NFC_URL) that apply to every article
+    const data = { ...(person.data ?? {}), ...(globalFieldAssignments ?? {}) } as Record<string, any>;
     const mapping = format?.mappingInfo;
 
     const nameKey = mapping?.articleName;

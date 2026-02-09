@@ -3,7 +3,7 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 import SyncRoundedIcon from '@mui/icons-material/SyncRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +16,15 @@ interface SyncStatusIndicatorProps {
     onSyncClick?: () => void;
     serverConnected?: boolean;
     aimsConnected?: boolean;
+    syncStartedAt?: Date;
+}
+
+/** Format elapsed seconds into a human-readable string like "1m 23s" */
+function formatElapsed(seconds: number): string {
+    if (seconds < 60) return `${seconds}s`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
 }
 
 /**
@@ -31,10 +40,26 @@ export function SyncStatusIndicator({
     onSyncClick,
     serverConnected,
     aimsConnected,
+    syncStartedAt,
 }: SyncStatusIndicatorProps) {
     const { t } = useTranslation();
     const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+    // Live elapsed-time counter while syncing
+    useEffect(() => {
+        if (status !== 'syncing' || !syncStartedAt) {
+            setElapsedSeconds(0);
+            return;
+        }
+        // Compute initial elapsed
+        setElapsedSeconds(Math.floor((Date.now() - syncStartedAt.getTime()) / 1000));
+        const interval = setInterval(() => {
+            setElapsedSeconds(Math.floor((Date.now() - syncStartedAt.getTime()) / 1000));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [status, syncStartedAt]);
 
     const handleClick = (event: MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -72,7 +97,9 @@ export function SyncStatusIndicator({
                     bg: alpha(theme.palette.primary.main, 0.1),
                     borderColor: alpha(theme.palette.primary.main, 0.5),
                     icon: <CircularProgress size={16} color="inherit" />,
-                    label: t('sync.syncing'),
+                    label: elapsedSeconds >= 5
+                        ? `${t('sync.syncing')} (${formatElapsed(elapsedSeconds)})`
+                        : t('sync.syncing'),
                     description: t('sync.processingData'),
                 };
             case 'error':
@@ -135,7 +162,9 @@ export function SyncStatusIndicator({
                         {config.label}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.1, mt: 0.3 }}>
-                        {status === 'syncing' ? t('sync.syncing') : 'SoluM API'}
+                        {status === 'syncing'
+                            ? (elapsedSeconds >= 5 ? t('sync.processingData') : t('sync.syncing'))
+                            : 'SoluM API'}
                     </Typography>
                 </Box>
             </Paper>

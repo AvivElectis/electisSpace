@@ -12,6 +12,7 @@ import { useEffect, useCallback } from 'react';
 import { useAuthStore } from '../infrastructure/authStore';
 import { authService } from '../../../shared/infrastructure/services/authService';
 import { tokenManager } from '../../../shared/infrastructure/services/apiClient';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { logger } from '../../../shared/infrastructure/services/logger';
 
 export const useSessionRestore = () => {
@@ -45,6 +46,21 @@ export const useSessionRestore = () => {
                     try {
                         const { user: freshUser } = await authService.me();
                         setUser(freshUser);
+
+                        // After restore, fetch settings and auto-connect to SOLUM
+                        // (isConnected is stripped from persistence, so we re-establish it)
+                        const activeStoreId = freshUser.activeStoreId || freshUser.stores?.[0]?.id;
+                        const activeCompanyId = freshUser.activeCompanyId || freshUser.companies?.[0]?.id;
+                        if (activeStoreId && activeCompanyId) {
+                            const { reconnectToSolum } = useAuthStore.getState();
+                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId)
+                                .then(() => reconnectToSolum())
+                                .catch((err) => {
+                                    logger.warn('SessionRestore', 'Auto SOLUM connect after restore failed', {
+                                        error: err instanceof Error ? err.message : String(err),
+                                    });
+                                });
+                        }
                     } catch {
                         // Token refresh worked but /me failed - use existing user data
                         logger.warn('SessionRestore', 'Could not fetch fresh user data, using cached');
