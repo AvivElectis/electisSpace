@@ -256,6 +256,30 @@ export class SyncQueueProcessor {
     }
 
     /**
+     * Fetch global field assignments from company settings for a store
+     */
+    private async getGlobalFieldAssignments(storeId: string): Promise<Record<string, string> | undefined> {
+        try {
+            const store = await prisma.store.findUnique({
+                where: { id: storeId },
+                include: {
+                    company: {
+                        select: { settings: true },
+                    },
+                },
+            });
+            const settings = (store?.company?.settings as Record<string, any>) || {};
+            const globalFields = settings.solumMappingConfig?.globalFieldAssignments;
+            if (globalFields && Object.keys(globalFields).length > 0) {
+                return globalFields as Record<string, string>;
+            }
+        } catch (error: any) {
+            console.warn(`[SyncQueue] Could not fetch global field assignments for store ${storeId}: ${error.message}`);
+        }
+        return undefined;
+    }
+
+    /**
      * Fetch conference mapping config from company settings for a store
      */
     private async getConferenceMapping(storeId: string): Promise<ConferenceMappingConfig | null> {
@@ -371,7 +395,9 @@ export class SyncQueueProcessor {
                     return null;
                 }
 
-                return buildPersonArticle(person as any, format);
+                // Fetch global field assignments from company settings
+                const globalFields = storeId ? await this.getGlobalFieldAssignments(storeId) : undefined;
+                return buildPersonArticle(person as any, format, globalFields);
             }
 
             case 'conference': {

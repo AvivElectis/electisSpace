@@ -124,6 +124,11 @@ export function parsePeopleCSV(
             data[fieldKey] = row[j] || '';
         }
 
+        // Apply global field assignments (company-wide constants like NFC_URL)
+        if (globalFields) {
+            Object.assign(data, globalFields);
+        }
+
         // Generate stable UUID for cross-device sync
         const personId = uuidv4();
         // Assign virtual pool ID for AIMS sync

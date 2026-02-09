@@ -34,7 +34,7 @@ export const peopleController = {
         try {
             const user = getUserContext(req);
             const page = parseInt(req.query.page as string) || 1;
-            const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+            const limit = Math.min(parseInt(req.query.limit as string) || 50, 10000);
             const search = req.query.search as string | undefined;
             const assigned = req.query.assigned as string | undefined;
             const listId = req.query.listId as string | undefined;

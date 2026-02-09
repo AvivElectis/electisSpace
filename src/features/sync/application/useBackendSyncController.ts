@@ -125,7 +125,7 @@ export function useBackendSyncController({
             setSyncStatus(status);
             setServerConnected(true);
             setSyncState({
-                status: status.status === 'syncing' ? 'syncing' : (status.aimsConnected ? 'connected' : 'idle'),
+                status: status.aimsConnected ? 'connected' : 'idle',
                 isConnected: status.aimsConnected,
                 lastSync: status.lastSync ? new Date(status.lastSync) : undefined,
                 // Clear any previous error when status check succeeds
@@ -245,7 +245,7 @@ export function useBackendSyncController({
 
         logger.info('BackendSyncController', 'Starting pull sync', { storeId });
         logger.startTimer('backend-sync-pull');
-        setSyncState({ status: 'syncing', progress: 0 });
+        setSyncState({ status: 'syncing', progress: 0, syncStartedAt: new Date() });
 
         try {
             const result = await syncApi.pull(storeId);
@@ -260,6 +260,7 @@ export function useBackendSyncController({
             setSyncState({
                 status: 'connected',
                 lastSync: status?.lastSync ? new Date(status.lastSync) : new Date(),
+                syncStartedAt: undefined,
             });
 
             logger.endTimer('backend-sync-pull', 'BackendSyncController', 'Pull completed', { result });
@@ -300,13 +301,13 @@ export function useBackendSyncController({
 
         logger.info('BackendSyncController', 'Starting push sync', { storeId });
         logger.startTimer('backend-sync-push');
-        setSyncState({ status: 'syncing', progress: 0 });
+        setSyncState({ status: 'syncing', progress: 0, syncStartedAt: new Date() });
 
         try {
             const result = await syncApi.push(storeId);
             await refreshStatus();
 
-            setSyncState({ status: 'connected' });
+            setSyncState({ status: 'connected', syncStartedAt: undefined });
             logger.endTimer('backend-sync-push', 'BackendSyncController', 'Push completed', { result });
             onSyncComplete?.(result);
             return result;
@@ -344,7 +345,7 @@ export function useBackendSyncController({
 
         logger.info('BackendSyncController', 'Starting full sync', { storeId });
         logger.startTimer('backend-sync-full');
-        setSyncState({ status: 'syncing', progress: 0 });
+        setSyncState({ status: 'syncing', progress: 0, syncStartedAt: new Date() });
 
         try {
             const result = await syncApi.fullSync(storeId);
@@ -359,6 +360,7 @@ export function useBackendSyncController({
             setSyncState({
                 status: 'connected',
                 lastSync: new Date(),
+                syncStartedAt: undefined,
             });
 
             logger.endTimer('backend-sync-full', 'BackendSyncController', 'Full sync completed', { result });

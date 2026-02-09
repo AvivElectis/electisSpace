@@ -37,7 +37,7 @@ import type { Person, PeopleFilters } from '../domain/types';
  * Refactored to use extracted sub-components for better maintainability
  */
 export function PeopleManagerView() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const settings = useSettingsStore((state) => state.settings);
     const { getLabel } = useSpaceTypeLabels();
@@ -111,50 +111,14 @@ export function PeopleManagerView() {
     });
 
     // Fetch people from server on mount.
-    // If a list was active, re-load it from DB via server (atomic replace + AIMS sync).
-    // If no list, just fetch current people (server DB = current table).
+    // If a list was active, just fetch current people (they're already in the DB).
+    // The loadList operation should ONLY happen when user explicitly loads from dialog.
     useEffect(() => {
-        const activeListId = usePeopleStore.getState().activeListId;
-
-        if (activeListId) {
-            // A list was active — reload it via server endpoint
-            // This atomically replaces all people with the list snapshot
-            // and syncs AIMS with the restored state
-            peopleApi.lists.load(activeListId)
-                .then((result) => {
-                    const { list, people: _serverPeople } = result.data;
-                    // Now fetch the fresh people set from the server
-                    return fetchPeople().then(() => {
-                        const store = usePeopleStore.getState();
-                        store.setActiveListId(activeListId);
-                        store.setActiveListName(list.name);
-                        store.clearPendingChanges();
-                        store.updateSpaceAllocation();
-                        logger.info('PeopleManagerView', 'List restored on mount via server', {
-                            listId: activeListId,
-                            name: list.name,
-                            peopleCount: store.people.length,
-                        });
-                    });
-                })
-                .catch((err) => {
-                    // List may have been deleted — clear and fetch current state
-                    logger.warn('PeopleManagerView', 'Failed to restore list on mount, fetching current people', {
-                        activeListId,
-                        error: err instanceof Error ? err.message : 'Unknown',
-                    });
-                    usePeopleStore.getState().setActiveListId(undefined);
-                    usePeopleStore.getState().setActiveListName(undefined);
-                    fetchPeople().catch(() => {});
-                });
-        } else {
-            // No list — just fetch current server people
-            fetchPeople().catch((err) => {
-                logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
-                    error: err instanceof Error ? err.message : 'Unknown',
-                });
+        fetchPeople().catch((err) => {
+            logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
+                error: err instanceof Error ? err.message : 'Unknown',
             });
-        }
+        });
     }, [fetchPeople]);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
@@ -194,6 +158,14 @@ export function PeopleManagerView() {
 
     // The articleName mapped field key (shown as dedicated "Name" column)
     const nameFieldKey = settings.solumMappingConfig?.mappingInfo?.articleName;
+
+    // Friendly label for the name column (from mapping config)
+    const nameFieldLabel = useMemo(() => {
+        if (!nameFieldKey) return undefined;
+        const fieldConfig = settings.solumMappingConfig?.fields?.[nameFieldKey];
+        if (!fieldConfig) return undefined;
+        return i18n.language === 'he' ? fieldConfig.friendlyNameHe : fieldConfig.friendlyNameEn;
+    }, [nameFieldKey, settings.solumMappingConfig, i18n.language]);
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
@@ -485,6 +457,7 @@ export function PeopleManagerView() {
                 people={sortedPeople}
                 visibleFields={visibleFields}
                 nameFieldKey={nameFieldKey}
+                nameFieldLabel={nameFieldLabel}
                 selectedIds={selectedIds}
                 sortConfig={sortConfig}
                 searchQuery={searchQuery}

@@ -23,6 +23,9 @@ export interface CompanyStore {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+    spaceCount?: number;
+    peopleCount?: number;
+    conferenceRoomCount?: number;
     _count?: {
         spaces?: number;
         people?: number;
@@ -45,6 +48,8 @@ export interface Company {
     createdAt: string;
     updatedAt: string;
     stores?: CompanyStore[];
+    storeCount?: number;
+    userCount?: number;
     _count?: {
         stores?: number;
         users?: number;

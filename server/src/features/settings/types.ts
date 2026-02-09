@@ -35,9 +35,11 @@ export const fieldMappingConfigSchema = z.object({
     conferenceMapping: conferenceMappingSchema,
     globalFieldAssignments: z.record(z.string()).optional(),
     mappingInfo: z.object({
-        articleIdField: z.string().optional(),
-        articleNameField: z.string().optional(),
-    }).optional(),
+        store: z.string().optional(),
+        articleId: z.string().optional(),
+        articleName: z.string().optional(),
+        nfcUrl: z.string().optional(),
+    }).catchall(z.string().optional()).optional(),
 });
 
 /** Schema for AIMS article format mapping info */
@@ -90,6 +92,13 @@ export interface FieldMappingsResponse {
         fields: Record<string, { friendlyNameEn: string; friendlyNameHe: string; visible: boolean }>;
         conferenceMapping: { meetingName: string; meetingTime: string; participants: string };
         globalFieldAssignments?: Record<string, string>;
+        mappingInfo?: {
+            store?: string;
+            articleId?: string;
+            articleName?: string;
+            nfcUrl?: string;
+            [key: string]: string | undefined;
+        };
     };
 }
 
