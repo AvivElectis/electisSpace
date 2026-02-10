@@ -49,13 +49,17 @@ router.get(
 
         const clientId = randomUUID();
 
-        sseManager.addClient({
+        const accepted = sseManager.addClient({
             id: clientId,
             res,
             storeId,
             userId: user.id,
             userName: user.firstName || user.email,
         });
+
+        if (!accepted) {
+            return res.status(503).json({ error: { code: 'TOO_MANY_CONNECTIONS', message: 'Connection limit reached' } });
+        }
 
         // Keep-alive ping every 30 seconds
         const keepAlive = setInterval(() => {

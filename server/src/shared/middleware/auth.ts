@@ -11,23 +11,26 @@ interface StoreAccess {
     companyId: string;
 }
 
-// Company access info  
+// Company access info
 interface CompanyAccess {
     id: string;
     role: string;
+}
+
+// User context as attached to request
+interface UserContext {
+    id: string;
+    email: string;
+    globalRole: GlobalRole | null;
+    stores: StoreAccess[];
+    companies: CompanyAccess[];
 }
 
 // Extend Express Request type
 declare global {
     namespace Express {
         interface Request {
-            user?: {
-                id: string;
-                email: string;
-                globalRole: GlobalRole | null;
-                stores: StoreAccess[];
-                companies: CompanyAccess[];
-            };
+            user?: UserContext;
         }
     }
 }
@@ -40,6 +43,46 @@ interface JwtPayload {
     companies: CompanyAccess[];
     iat: number;
     exp: number;
+}
+
+// ---- User context cache ----
+// Reduces DB queries: each user's context is cached for up to 60 seconds.
+// Cache is keyed by userId. Entries auto-expire after USER_CACHE_TTL_MS.
+const USER_CACHE_TTL_MS = 60_000;
+const USER_CACHE_MAX_SIZE = 500;
+
+interface CachedUser {
+    context: UserContext;
+    expiresAt: number;
+}
+
+const userCache = new Map<string, CachedUser>();
+
+function getCachedUser(userId: string): UserContext | null {
+    const entry = userCache.get(userId);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+        userCache.delete(userId);
+        return null;
+    }
+    return entry.context;
+}
+
+function setCachedUser(userId: string, context: UserContext): void {
+    // Evict oldest entries if cache is full
+    if (userCache.size >= USER_CACHE_MAX_SIZE) {
+        const firstKey = userCache.keys().next().value;
+        if (firstKey) userCache.delete(firstKey);
+    }
+    userCache.set(userId, {
+        context,
+        expiresAt: Date.now() + USER_CACHE_TTL_MS,
+    });
+}
+
+/** Invalidate a user's cached context (call after role/store changes) */
+export function invalidateUserCache(userId: string): void {
+    userCache.delete(userId);
 }
 
 // Authentication middleware
@@ -64,6 +107,14 @@ export const authenticate = async (
 
         // Verify token
         const payload = jwt.verify(token, config.jwt.accessSecret) as JwtPayload;
+
+        // Check cache first
+        const cached = getCachedUser(payload.sub);
+        if (cached) {
+            req.user = cached;
+            next();
+            return;
+        }
 
         // Get user from database with stores and companies
         const user = await prisma.user.findUnique({
@@ -97,8 +148,8 @@ export const authenticate = async (
             throw unauthorized('User not found or inactive');
         }
 
-        // Attach user to request with stores and companies
-        req.user = {
+        // Build user context
+        const userContext: UserContext = {
             id: user.id,
             email: user.email,
             globalRole: user.globalRole,
@@ -112,6 +163,10 @@ export const authenticate = async (
                 role: uc.role,
             })),
         };
+
+        // Cache and attach to request
+        setCachedUser(user.id, userContext);
+        req.user = userContext;
 
         next();
     } catch (error) {

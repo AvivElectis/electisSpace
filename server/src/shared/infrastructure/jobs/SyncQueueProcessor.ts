@@ -38,6 +38,12 @@ interface ProcessResult {
     errors: Array<{ itemId: string; error: string }>;
 }
 
+/** Pre-fetched company settings for a store, cached per batch */
+interface StoreCompanySettings {
+    globalFieldAssignments: Record<string, string> | undefined;
+    conferenceMapping: ConferenceMappingConfig | null;
+}
+
 /**
  * Sync Queue Processor
  */
@@ -172,7 +178,7 @@ export class SyncQueueProcessor {
         // Process each store's items
         for (const [storeId, storeItems] of itemsByStore) {
             const store = storeItems[0].store;
-            
+
             // Skip if sync is disabled for this store
             if (!store.syncEnabled) {
                 for (const item of storeItems) {
@@ -183,14 +189,17 @@ export class SyncQueueProcessor {
                 continue;
             }
 
+            // Pre-fetch store company settings once for the entire batch (avoids N+1 queries)
+            const storeSettings = await this.getStoreCompanySettings(storeId);
+
             // Process items for this store
             for (const item of storeItems) {
                 result.processed++;
-                
+
                 try {
                     // Item is already marked as PROCESSING in the transaction above
 
-                    await this.processItem(item);
+                    await this.processItem(item, storeSettings);
                     
                     // Mark as completed
                     await prisma.syncQueueItem.update({
@@ -240,13 +249,13 @@ export class SyncQueueProcessor {
         entityId: string;
         action: string;
         payload: any;
-    }): Promise<void> {
+    }, storeSettings?: StoreCompanySettings): Promise<void> {
         const { storeId, entityType, entityId, action, payload } = item;
 
         switch (action) {
             case 'CREATE':
             case 'UPDATE':
-                await this.syncEntityToAIMS(storeId, entityType, entityId, payload);
+                await this.syncEntityToAIMS(storeId, entityType, entityId, payload, storeSettings);
                 break;
 
             case 'DELETE':
@@ -267,9 +276,9 @@ export class SyncQueueProcessor {
     }
 
     /**
-     * Fetch global field assignments from company settings for a store
+     * Pre-fetched company settings for a store (cached per batch to avoid N+1 queries)
      */
-    private async getGlobalFieldAssignments(storeId: string): Promise<Record<string, string> | undefined> {
+    private async getStoreCompanySettings(storeId: string): Promise<StoreCompanySettings> {
         try {
             const store = await prisma.store.findUnique({
                 where: { id: storeId },
@@ -280,38 +289,23 @@ export class SyncQueueProcessor {
                 },
             });
             const settings = (store?.company?.settings as Record<string, any>) || {};
-            const globalFields = settings.solumMappingConfig?.globalFieldAssignments;
-            if (globalFields && Object.keys(globalFields).length > 0) {
-                return globalFields as Record<string, string>;
-            }
-        } catch (error: any) {
-            console.warn(`[SyncQueue] Could not fetch global field assignments for store ${storeId}: ${error.message}`);
-        }
-        return undefined;
-    }
+            const mappingConfig = settings.solumMappingConfig || {};
 
-    /**
-     * Fetch conference mapping config from company settings for a store
-     */
-    private async getConferenceMapping(storeId: string): Promise<ConferenceMappingConfig | null> {
-        try {
-            const store = await prisma.store.findUnique({
-                where: { id: storeId },
-                include: {
-                    company: {
-                        select: { settings: true },
-                    },
-                },
-            });
-            const settings = (store?.company?.settings as Record<string, any>) || {};
-            const mapping = settings.solumMappingConfig?.conferenceMapping;
-            if (mapping && mapping.meetingName && mapping.meetingTime && mapping.participants) {
-                return mapping as ConferenceMappingConfig;
-            }
+            const globalFields = mappingConfig.globalFieldAssignments;
+            const conferenceMapping = mappingConfig.conferenceMapping;
+
+            return {
+                globalFieldAssignments: globalFields && Object.keys(globalFields).length > 0
+                    ? globalFields as Record<string, string>
+                    : undefined,
+                conferenceMapping: conferenceMapping?.meetingName && conferenceMapping?.meetingTime && conferenceMapping?.participants
+                    ? conferenceMapping as ConferenceMappingConfig
+                    : null,
+            };
         } catch (error: any) {
-            console.warn(`[SyncQueue] Could not fetch conference mapping for store ${storeId}: ${error.message}`);
+            console.warn(`[SyncQueue] Could not fetch company settings for store ${storeId}: ${error.message}`);
+            return { globalFieldAssignments: undefined, conferenceMapping: null };
         }
-        return null;
     }
 
     /**
@@ -321,9 +315,10 @@ export class SyncQueueProcessor {
         storeId: string,
         entityType: string,
         entityId: string,
-        payload: any
+        payload: any,
+        storeSettings?: StoreCompanySettings,
     ): Promise<void> {
-        // Fetch the company's article format (cached)
+        // Fetch the company's article format (cached by aimsGateway)
         let format: ArticleFormat | null = null;
         try {
             format = await aimsGateway.fetchArticleFormat(storeId);
@@ -332,8 +327,8 @@ export class SyncQueueProcessor {
         }
 
         // Build article data based on entity type
-        const article = await this.buildArticleFromEntity(entityType, entityId, payload, format, storeId);
-        
+        const article = await this.buildArticleFromEntity(entityType, entityId, payload, format, storeSettings);
+
         if (!article) {
             // For person entities, null means unassigned - skip (nothing to push to AIMS)
             if (entityType === 'person') {
@@ -378,13 +373,14 @@ export class SyncQueueProcessor {
 
     /**
      * Build AIMS article from entity using the company's article format
+     * Uses pre-fetched storeSettings to avoid N+1 queries within a batch.
      */
     private async buildArticleFromEntity(
         entityType: string,
         entityId: string,
         payload: any,
         format: ArticleFormat | null,
-        storeId?: string,
+        storeSettings?: StoreCompanySettings,
     ): Promise<any | null> {
         switch (entityType) {
             case 'space': {
@@ -406,9 +402,7 @@ export class SyncQueueProcessor {
                     return null;
                 }
 
-                // Fetch global field assignments from company settings
-                const globalFields = storeId ? await this.getGlobalFieldAssignments(storeId) : undefined;
-                return buildPersonArticle(person as any, format, globalFields);
+                return buildPersonArticle(person as any, format, storeSettings?.globalFieldAssignments);
             }
 
             case 'conference': {
@@ -416,9 +410,7 @@ export class SyncQueueProcessor {
                     where: { id: entityId },
                 });
                 if (!room) return null;
-                // Fetch the company's conference mapping from settings
-                const conferenceMapping = storeId ? await this.getConferenceMapping(storeId) : null;
-                return buildConferenceArticle(room, format, conferenceMapping);
+                return buildConferenceArticle(room, format, storeSettings?.conferenceMapping);
             }
 
             default:
@@ -583,8 +575,10 @@ export class SyncQueueProcessor {
         });
 
         try {
-            await this.processItem(item);
-            
+            // Fetch store settings for this single item
+            const storeSettings = await this.getStoreCompanySettings(item.storeId);
+            await this.processItem(item, storeSettings);
+
             await prisma.syncQueueItem.update({
                 where: { id: itemId },
                 data: {
