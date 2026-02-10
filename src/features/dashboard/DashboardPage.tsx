@@ -44,8 +44,6 @@ export function DashboardPage() {
     // Controllers
     const spaceController = useSpaceController({
         csvConfig: settingsController.settings.csvConfig,
-        solumConfig: settingsController.settings.solumConfig,
-        solumToken: settingsController.settings.solumConfig?.tokens?.accessToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
 

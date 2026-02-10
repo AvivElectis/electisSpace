@@ -24,6 +24,7 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { authService } from './authService';
 import { logger } from './logger';
+import type { SolumConfig } from '@shared/domain/types';
 
 // Buffer time before actual expiry to trigger refresh (5 minutes)
 const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
@@ -73,12 +74,12 @@ export async function refreshAimsToken(): Promise<string> {
                 solumConfig: {
                     ...currentSettings.solumConfig,
                     tokens: {
-                        ...currentSettings.solumConfig?.tokens,
+                        refreshToken: currentSettings.solumConfig?.tokens?.refreshToken || '',
                         accessToken: result.accessToken,
                         expiresAt: result.expiresAt,
                     },
                     lastConnected: Date.now(),
-                },
+                } as SolumConfig,
             });
 
             logger.info('AimsTokenManager', 'AIMS token refreshed successfully');

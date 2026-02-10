@@ -31,7 +31,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
-import { useSyncContext } from '@features/sync/application/SyncContext';
+import { useBackendSyncContext } from '@features/sync/application/SyncContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import type { ConferenceRoom } from '@shared/domain/types';
@@ -54,7 +54,7 @@ export function ConferencePage() {
     const solumToken = settings.solumConfig?.tokens?.accessToken;
 
     // Get sync context for triggering push after CRUD operations
-    const { push } = useSyncContext();
+    const { push } = useBackendSyncContext();
 
     // Push pending queue items to AIMS after each CRUD operation
     const handleSync = useCallback(async () => {

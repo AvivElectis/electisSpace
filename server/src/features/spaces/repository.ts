@@ -41,7 +41,6 @@ export const spacesRepository = {
         return prisma.space.findFirst({
             where: { id, storeId: { in: storeIds } },
             include: {
-                assignedPeople: { select: { id: true, externalId: true, data: true } },
                 store: { select: { name: true, code: true } },
             },
         });

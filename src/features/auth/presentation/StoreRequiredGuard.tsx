@@ -12,7 +12,7 @@
  *   - Platform admins always bypass AIMS checks
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Box, Paper, Typography, Stack, Button, CircularProgress } from '@mui/material';
 import StoreIcon from '@mui/icons-material/Store';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -56,7 +56,7 @@ export function StoreRequiredGuard({ children }: StoreRequiredGuardProps) {
             const info = await authService.getStoreConnectionInfo(storeId);
 
             // Platform admins skip AIMS checks entirely
-            const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
+            const isPlatformAdmin = user?.globalRole === 'PLATFORM_ADMIN';
             if (isPlatformAdmin || info.aimsConfigured) {
                 setConnectionState({ status: 'aims-ok' });
                 setActiveStore(storeId);
@@ -149,6 +149,7 @@ export function StoreRequiredGuard({ children }: StoreRequiredGuardProps) {
                     open={credDialogOpen}
                     companyId={connectionState.info.companyId}
                     companyName={connectionState.info.companyName}
+                    companyCode={connectionState.info.companyCode}
                     onSuccess={() => {
                         setCredDialogOpen(false);
                         if (selectedStoreId) setActiveStore(selectedStoreId);

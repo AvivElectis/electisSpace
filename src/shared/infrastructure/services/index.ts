@@ -21,15 +21,15 @@ export type {
 } from './spacesApi';
 
 export { peopleApi } from './peopleApi';
-export type { 
-    PeopleResponse, 
-    PersonResponse, 
-    ListPeopleParams, 
-    CreatePersonDto, 
+export type {
+    PeopleResponse,
+    PersonResponse,
+    ListPeopleParams,
+    CreatePersonDto,
     UpdatePersonDto,
     BulkCreatePeopleDto,
-    PeopleList,
-    PeopleListsResponse,
+    PeopleListItem,
+    PeopleListFull,
     CreatePeopleListDto,
     UpdatePeopleListDto,
 } from './peopleApi';

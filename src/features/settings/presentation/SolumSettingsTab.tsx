@@ -2,7 +2,6 @@ import { Box, Stack, Divider, Typography, Tabs, Tab, Alert, FormControl, InputLa
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
-import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
@@ -33,9 +32,8 @@ interface SolumSettingsTabProps {
  */
 export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) {
     const { t } = useTranslation();
-    const { articleFormat, fetchArticleFormat } = useConfigurationController();
-    const { sync } = useSyncContext();
-    const { activeCompanyId, reconnectToSolum } = useAuthStore();
+    const { articleFormat } = useConfigurationController();
+    const { reconnectToSolum } = useAuthStore();
     const { isCompanyAdmin, isPlatformAdmin } = useAuthContext();
     const { saveCompanySettingsToServer, saveFieldMappingsToServer } = useSettingsStore();
     const canManageCompanySettings = isCompanyAdmin || isPlatformAdmin;
@@ -76,15 +74,15 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
 
     // Callback for initial sync after successful connection
     // Fetches schema first (if not already fetched) to populate field mappings, then syncs
-    const handleConnectionEstablished = useCallback(async () => {
-        // Fetch article format schema to get field mappings
-        // This populates solumMappingConfig.fields which is needed for displaying columns
-        if (!settings.solumMappingConfig?.fields || Object.keys(settings.solumMappingConfig.fields).length === 0) {
-            await fetchArticleFormat();
-        }
-        // Now sync the data
-        await sync();
-    }, [sync, fetchArticleFormat, settings.solumMappingConfig?.fields]);
+    // const handleConnectionEstablished = useCallback(async () => {
+    //     // Fetch article format schema to get field mappings
+    //     // This populates solumMappingConfig.fields which is needed for displaying columns
+    //     if (!settings.solumMappingConfig?.fields || Object.keys(settings.solumMappingConfig.fields).length === 0) {
+    //         await fetchArticleFormat();
+    //     }
+    //     // Now sync the data
+    //     await sync();
+    // }, [sync, fetchArticleFormat, settings.solumMappingConfig?.fields]);
 
     // Handlers for nested component updates
     const handleCsvConfigChange = (config: CSVConfig) => {
