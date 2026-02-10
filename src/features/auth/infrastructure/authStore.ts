@@ -85,10 +85,15 @@ const autoConnectToSolum = async (storeId: string): Promise<void> => {
         const response = await authService.solumConnect(storeId);
         
         if (response.connected) {
+            // Validate token is not empty
+            if (!response.tokens?.accessToken) {
+                throw new Error('AIMS connection returned empty accessToken');
+            }
+
             // Get current settings and update with SOLUM connection
             const settingsStore = useSettingsStore.getState();
             const currentSettings = settingsStore.settings;
-            
+
             // Update settings with SOLUM config from server (without sensitive creds)
             settingsStore.updateSettings({
                 solumConfig: {

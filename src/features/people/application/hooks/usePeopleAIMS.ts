@@ -8,7 +8,10 @@ import { logger } from '@shared/infrastructure/services/logger';
  * Hook for AIMS synchronization operations in People Management
  */
 export function usePeopleAIMS() {
-    const peopleStore = usePeopleStore();
+    const people = usePeopleStore(state => state.people);
+    const updateSyncStatusLocal = usePeopleStore(state => state.updateSyncStatusLocal);
+    const unassignAllSpacesLocal = usePeopleStore(state => state.unassignAllSpacesLocal);
+    const setPeople = usePeopleStore(state => state.setPeople);
     const settings = useSettingsStore(state => state.settings);
 
     /**
@@ -23,13 +26,13 @@ export function usePeopleAIMS() {
                 throw new Error('SoluM configuration not complete');
             }
 
-            const selectedPeople = peopleStore.people.filter(p => personIds.includes(p.id));
+            const selectedPeople = people.filter(p => personIds.includes(p.id));
 
             if (selectedPeople.length === 0) {
                 throw new Error('No people found with the provided IDs');
             }
 
-            peopleStore.updateSyncStatusLocal(personIds, 'pending');
+            updateSyncStatusLocal(personIds, 'pending');
 
             try {
                 await postBulkAssignments(
@@ -39,25 +42,25 @@ export function usePeopleAIMS() {
                     settings.solumMappingConfig
                 );
 
-                peopleStore.updateSyncStatusLocal(personIds, 'synced');
+                updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleAIMS', 'Selected people posted to AIMS', { count: selectedPeople.length });
                 return { success: true, syncedCount: selectedPeople.length };
             } catch (aimsError: any) {
-                peopleStore.updateSyncStatusLocal(personIds, 'error');
+                updateSyncStatusLocal(personIds, 'error');
                 throw aimsError;
             }
         } catch (error: any) {
             logger.error('PeopleAIMS', 'Failed to post selected people to AIMS', { error: error.message });
             throw error;
         }
-    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
+    }, [people, updateSyncStatusLocal, settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Post ALL assigned people to AIMS
      */
     const postAllAssignmentsToAims = useCallback(async (): Promise<{ success: boolean; syncedCount: number }> => {
         try {
-            const assignedPeople = peopleStore.people.filter(p => p.assignedSpaceId);
+            const assignedPeople = people.filter(p => p.assignedSpaceId);
             
             if (assignedPeople.length === 0) {
                 logger.warn('PeopleAIMS', 'No assigned people to post');
@@ -71,7 +74,7 @@ export function usePeopleAIMS() {
             }
 
             const personIds = assignedPeople.map(p => p.id);
-            peopleStore.updateSyncStatusLocal(personIds, 'pending');
+            updateSyncStatusLocal(personIds, 'pending');
 
             try {
                 await postBulkAssignments(
@@ -81,25 +84,25 @@ export function usePeopleAIMS() {
                     settings.solumMappingConfig
                 );
 
-                peopleStore.updateSyncStatusLocal(personIds, 'synced');
+                updateSyncStatusLocal(personIds, 'synced');
                 logger.info('PeopleAIMS', 'All assignments posted to AIMS', { count: assignedPeople.length });
                 return { success: true, syncedCount: assignedPeople.length };
             } catch (aimsError: any) {
-                peopleStore.updateSyncStatusLocal(personIds, 'error');
+                updateSyncStatusLocal(personIds, 'error');
                 throw aimsError;
             }
         } catch (error: any) {
             logger.error('PeopleAIMS', 'Failed to post all assignments to AIMS', { error: error.message });
             throw error;
         }
-    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
+    }, [people, updateSyncStatusLocal, settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Cancel all assignments - clear locally and send empty data to AIMS
      */
     const cancelAllAssignments = useCallback(async (): Promise<{ success: boolean; clearedCount: number }> => {
         try {
-            const assignedPeople = peopleStore.people.filter(p => p.assignedSpaceId);
+            const assignedPeople = people.filter(p => p.assignedSpaceId);
             
             if (assignedPeople.length === 0) {
                 logger.warn('PeopleAIMS', 'No assignments to cancel');
@@ -125,7 +128,7 @@ export function usePeopleAIMS() {
             }
 
             // Clear all local assignments
-            peopleStore.unassignAllSpacesLocal();
+            unassignAllSpacesLocal();
 
             logger.info('PeopleAIMS', 'All assignments canceled', { count: assignedPeople.length });
             return { success: true, clearedCount: assignedPeople.length };
@@ -133,7 +136,7 @@ export function usePeopleAIMS() {
             logger.error('PeopleAIMS', 'Failed to cancel all assignments', { error: error.message });
             throw error;
         }
-    }, [peopleStore, settings.solumConfig, settings.solumMappingConfig]);
+    }, [people, updateSyncStatusLocal, settings.solumConfig, settings.solumMappingConfig]);
 
     /**
      * Sync people data FROM AIMS
@@ -196,14 +199,14 @@ export function usePeopleAIMS() {
             const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
 
             // Update the store with synced people
-            peopleStore.setPeople(people);
+            setPeople(people);
 
             logger.info('PeopleAIMS', 'Sync from AIMS complete', { peopleCount: people.length });
         } catch (error: any) {
             logger.error('PeopleAIMS', 'Failed to sync from AIMS', { error: error.message });
             throw error;
         }
-    }, [settings.solumConfig, settings.solumMappingConfig, peopleStore]);
+    }, [settings.solumConfig, settings.solumMappingConfig, setPeople]);
 
     /**
      * Sync from AIMS with Virtual Pool support
@@ -264,14 +267,14 @@ export function usePeopleAIMS() {
             const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
 
             // Update the store with synced people
-            peopleStore.setPeople(people);
+            setPeople(people);
 
             logger.info('PeopleAIMS', 'Sync from AIMS with virtual pool complete', { peopleCount: people.length });
         } catch (error: any) {
             logger.error('PeopleAIMS', 'Failed to sync from AIMS with virtual pool', { error: error.message });
             throw error;
         }
-    }, [settings.solumConfig, settings.solumMappingConfig, peopleStore]);
+    }, [settings.solumConfig, settings.solumMappingConfig, setPeople]);
 
     return {
         postSelectedToAims,

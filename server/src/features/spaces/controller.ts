@@ -10,7 +10,7 @@ import { createSpaceSchema, updateSpaceSchema, assignLabelSchema } from './types
 import type { SpacesUserContext } from './types.js';
 
 function getUserContext(req: Request): SpacesUserContext {
-    return { id: req.user!.id, stores: req.user?.stores?.map(s => ({ id: s.id })) };
+    return { id: req.user!.id, globalRole: req.user?.globalRole, stores: req.user?.stores?.map(s => ({ id: s.id })) };
 }
 
 export const spacesController = {

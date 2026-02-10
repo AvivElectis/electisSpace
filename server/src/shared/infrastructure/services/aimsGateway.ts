@@ -241,9 +241,22 @@ export class AIMSGateway {
      */
     async pullArticles(storeId: string): Promise<any[]> {
         const { token, config } = await this.getTokenForStore(storeId);
-        
+        const PAGE_SIZE = 100;
+        const MAX_PAGES = 50; // Safety limit to prevent infinite loops
+
         try {
-            return await solumService.fetchArticles(config, token);
+            const allArticles: any[] = [];
+            let page = 0;
+
+            while (page < MAX_PAGES) {
+                const articles = await solumService.fetchArticles(config, token, page, PAGE_SIZE);
+                if (!articles || articles.length === 0) break;
+                allArticles.push(...articles);
+                if (articles.length < PAGE_SIZE) break; // Last page
+                page++;
+            }
+
+            return allArticles;
         } catch (error: any) {
             // If authentication error, invalidate cache and retry once
             if (error.message?.includes('401') || error.message?.includes('403')) {

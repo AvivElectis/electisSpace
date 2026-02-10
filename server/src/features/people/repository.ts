@@ -18,6 +18,7 @@ export const peopleRepository = {
         storeIds: string[],
         filters: {
             storeId?: string;
+            search?: string;
             assigned?: string;
             listId?: string;
         },
@@ -27,6 +28,14 @@ export const peopleRepository = {
         const where: Prisma.PersonWhereInput = {
             storeId: filters.storeId ? filters.storeId : { in: storeIds },
         };
+
+        if (filters.search) {
+            // Search in JSON data fields and externalId
+            where.OR = [
+                { externalId: { contains: filters.search, mode: 'insensitive' } },
+                { virtualSpaceId: { contains: filters.search, mode: 'insensitive' } },
+            ];
+        }
 
         if (filters.assigned === 'true') {
             where.assignedSpaceId = { not: null };

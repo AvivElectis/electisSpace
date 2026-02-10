@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
+import { useShallow } from 'zustand/react/shallow';
 import { postPersonAssignment, postBulkAssignments, clearSpaceInAims } from '../../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
@@ -10,7 +11,13 @@ import { isPoolId } from '../../infrastructure/virtualPoolService';
  * Hook for space assignment operations in People Management
  */
 export function usePeopleAssignment() {
-    const peopleStore = usePeopleStore();
+    const peopleStore = usePeopleStore(useShallow(state => ({
+        people: state.people,
+        assignSpaceLocal: state.assignSpaceLocal,
+        updatePersonLocal: state.updatePersonLocal,
+        updateSyncStatusLocal: state.updateSyncStatusLocal,
+        unassignSpace: state.unassignSpace,
+    })));
     const settings = useSettingsStore(state => state.settings);
 
     /**

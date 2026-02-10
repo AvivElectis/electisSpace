@@ -23,7 +23,7 @@ interface SecuritySettingsTabProps {
     isPasswordProtected: boolean;
     isLocked: boolean;
     settings: SettingsData;
-    onSetPassword: (password: string) => void;
+    onSetPassword: (password: string) => void | Promise<void>;
     onLock: () => void;
     onUnlock: (password: string) => boolean;
     onUpdate: (updates: Partial<SettingsData>) => void;
@@ -68,7 +68,7 @@ export function SecuritySettingsTab({
         }
 
         try {
-            onSetPassword(newPassword);
+            await onSetPassword(newPassword);
             setNewPassword('');
             setConfirmPassword('');
             await confirm({

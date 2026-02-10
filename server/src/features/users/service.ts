@@ -240,6 +240,14 @@ export const userService = {
             if (storeId && managedStoreIds.includes(storeId)) {
                 managedStoreIds = [storeId];
             }
+
+            // Non-admin users with no managed stores cannot list any users
+            if (managedStoreIds.length === 0) {
+                return {
+                    data: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 },
+                };
+            }
         }
 
         // Build query
@@ -253,7 +261,8 @@ export const userService = {
             }),
         };
 
-        if (managedStoreIds.length > 0 && !isPlatformAdmin(user)) {
+        // Always scope non-admin users to their managed stores
+        if (!isPlatformAdmin(user)) {
             where.userStores = {
                 some: { storeId: { in: managedStoreIds } }
             };

@@ -43,11 +43,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     // After initialization, if not authenticated and no token, redirect to login
-    if (!isAuthenticated && !hasToken && !user) {
+    // Don't rely solely on persisted user - require either active auth or valid token
+    if (!isAuthenticated && !hasToken) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Render children if authenticated or has user/token
+    // Render children if authenticated or has valid token
     return <>{children}</>;
 }
 

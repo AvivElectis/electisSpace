@@ -135,11 +135,19 @@ export const syncService = {
     /**
      * Get sync job status
      */
-    async getJob(id: string): Promise<SyncJobResponse | null> {
+    async getJob(id: string, user?: SyncUserContext): Promise<SyncJobResponse | null> {
         const job = await syncRepository.getJob(id);
-        
+
         if (!job) {
             return null;
+        }
+
+        // Validate user has access to the store this job belongs to
+        if (user) {
+            const storeIds = getUserStoreIds(user);
+            if (storeIds.length > 0 && !storeIds.includes(job.storeId)) {
+                throw new Error('FORBIDDEN');
+            }
         }
 
         return {
@@ -293,7 +301,7 @@ export const syncService = {
             };
         }
 
-        const result = await syncQueueProcessor.processPendingItems();
+        const result = await syncQueueProcessor.processPendingItems(storeId);
 
         await syncRepository.updateStoreLastSync(storeId);
 

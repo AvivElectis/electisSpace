@@ -71,15 +71,17 @@ export const syncController = {
     async getJob(req: Request, res: Response, next: NextFunction) {
         try {
             const id = req.params.id as string;
-            const result = await syncService.getJob(id);
-            
+            const user = getUserContext(req);
+            const result = await syncService.getJob(id, user);
+
             if (!result) {
                 res.status(404).json({ error: 'Job not found' });
                 return;
             }
 
             res.json(result);
-        } catch (error) {
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this job'));
             next(error);
         }
     },

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
+import { useShallow } from 'zustand/react/shallow';
 import { parsePeopleCSV, buildArticleDataWithMetadata } from '../../infrastructure/peopleService';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
@@ -70,7 +71,11 @@ export async function fetchEmptyPoolArticlesFromAims(
  * Hook for CSV-related operations in People Management
  */
 export function usePeopleCSV() {
-    const peopleStore = usePeopleStore();
+    const peopleStore = usePeopleStore(useShallow(state => ({
+        people: state.people,
+        setPeople: state.setPeople,
+        updateSyncStatusLocal: state.updateSyncStatusLocal,
+    })));
     const settings = useSettingsStore(state => state.settings);
 
     /**

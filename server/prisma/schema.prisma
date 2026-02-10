@@ -313,6 +313,8 @@ model Person {
   
   @@index([storeId])
   @@index([assignedSpaceId])
+  @@index([externalId])
+  @@index([virtualSpaceId])
   @@map("people")
 }
 

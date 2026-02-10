@@ -48,6 +48,7 @@ export const peopleService = {
             storeIds,
             {
                 storeId: filters.storeId,
+                search: filters.search,
                 assigned: filters.assigned,
                 listId: filters.listId,
             },

@@ -95,9 +95,9 @@ export class SyncQueueProcessor {
     }
 
     /**
-     * Process pending queue items
+     * Process pending queue items, optionally scoped to a specific store
      */
-    async processPendingItems(): Promise<ProcessResult> {
+    async processPendingItems(storeId?: string): Promise<ProcessResult> {
         const result: ProcessResult = {
             processed: 0,
             succeeded: 0,
@@ -107,15 +107,16 @@ export class SyncQueueProcessor {
 
         // Get pending items older than processing delay
         const cutoffTime = new Date(Date.now() - PROCESSING_DELAY_MS);
-        
+
         // Atomically claim items using a transaction
         // This prevents multiple processors from claiming the same items
         const items = await prisma.$transaction(async (tx) => {
-            // Find pending items
+            // Find pending items (optionally scoped to a store)
             const pendingItems = await tx.syncQueueItem.findMany({
                 where: {
                     status: QueueStatus.PENDING,
                     scheduledAt: { lte: cutoffTime },
+                    ...(storeId && { storeId }),
                 },
                 orderBy: { scheduledAt: 'asc' },
                 take: BATCH_SIZE,
