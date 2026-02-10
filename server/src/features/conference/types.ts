@@ -6,8 +6,8 @@ import { z } from 'zod';
 
 export const createRoomSchema = z.object({
     storeId: z.string().uuid(),
-    externalId: z.string().max(50),
-    roomName: z.string().max(100),
+    externalId: z.string().min(1, 'External ID is required').max(50),
+    roomName: z.string().min(1, 'Room name is required').max(100),
     labelCode: z.string().max(50).optional(),
     hasMeeting: z.boolean().optional(),
     meetingName: z.string().max(255).optional(),

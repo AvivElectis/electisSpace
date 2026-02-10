@@ -33,17 +33,19 @@ import type {
  * Generate random 6-digit code
  */
 function generateCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    const crypto = require('crypto');
+    return String(crypto.randomInt(100000, 1000000));
 }
 
 /**
  * Generate random password
  */
 function generatePassword(): string {
+    const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
     let password = '';
     for (let i = 0; i < 12; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
+        password += chars.charAt(crypto.randomInt(chars.length));
     }
     return password;
 }
@@ -198,7 +200,7 @@ export const authService = {
         return {
             accessToken,
             refreshToken,
-            expiresIn: 3600,
+            expiresIn: 900,
             user: mapUserToInfo(user),
         };
     },
@@ -276,7 +278,7 @@ export const authService = {
         return {
             accessToken,
             refreshToken: newRefreshToken,
-            expiresIn: 3600,
+            expiresIn: 900,
         };
     },
 
@@ -361,13 +363,9 @@ export const authService = {
         newPassword?: string,
         adminUserId?: string
     ): Promise<AdminResetResponse> {
-        const targetUser = await authRepository.findUserByEmail(targetUserId);
+        const targetUser = await authRepository.findUserWithRelations(targetUserId);
         if (!targetUser) {
-            // Try by ID
-            const userById = await authRepository.findUserWithRelations(targetUserId);
-            if (!userById) {
-                throw new Error('USER_NOT_FOUND');
-            }
+            throw new Error('USER_NOT_FOUND');
         }
 
         let password = newPassword;

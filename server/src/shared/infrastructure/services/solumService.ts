@@ -426,13 +426,14 @@ export class SolumService {
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/link?company=${config.companyName}&store=${config.storeCode}`);
 
-        const body: any = {
+        const assignEntry: any = {
             labelCode,
-            articleId,
+            articleIdList: [articleId],
         };
         if (templateName) {
-            body.templateName = templateName;
+            assignEntry.templateName = templateName;
         }
+        const body = { assignList: [assignEntry] };
 
         return this.withRetry('linkLabel', async () => {
             try {
@@ -456,7 +457,7 @@ export class SolumService {
 
         return this.withRetry('unlinkLabel', async () => {
             try {
-                const response = await this.client.post(url, { labelCode }, {
+                const response = await this.client.post(url, { unAssignList: [labelCode] }, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 return response.data;

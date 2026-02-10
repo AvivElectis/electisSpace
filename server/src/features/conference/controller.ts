@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { conferenceService } from './service.js';
 import { createRoomSchema, updateRoomSchema, toggleMeetingSchema } from './types.js';
 import type { ConferenceUserContext } from './types.js';
-import { notFound, badRequest, conflict } from '../../shared/middleware/index.js';
+import { notFound, badRequest, conflict, forbidden } from '../../shared/middleware/index.js';
 import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 // SSE broadcasts for real-time updates
 
@@ -22,7 +22,7 @@ function mapServiceError(error: unknown): Error {
         return notFound('Conference room');
     }
     if (error === 'STORE_ACCESS_DENIED') {
-        return badRequest('Access denied to this store');
+        return forbidden('Access denied to this store');
     }
     if (error === 'CONFLICT') {
         return conflict('Conference room with this ID already exists');
@@ -30,7 +30,10 @@ function mapServiceError(error: unknown): Error {
     if (error === 'NO_LABEL_ASSIGNED') {
         return notFound('No label assigned to this room');
     }
-    throw error;
+    if (error instanceof Error) {
+        return error;
+    }
+    return new Error(String(error));
 }
 
 // ============================================================================

@@ -17,7 +17,7 @@ export const loginSchema = z.object({
 
 export const verify2FASchema = z.object({
     email: z.string().email('Invalid email address'),
-    code: z.string().length(6, 'Code must be 6 digits'),
+    code: z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must contain only digits'),
 });
 
 export const resendCodeSchema = z.object({
@@ -30,7 +30,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
     email: z.string().email('Invalid email address'),
-    code: z.string().min(1, 'Code is required'),
+    code: z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must contain only digits'),
     newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
