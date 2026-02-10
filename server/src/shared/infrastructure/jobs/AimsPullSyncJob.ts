@@ -204,6 +204,21 @@ export class AimsSyncReconciliationJob {
             expectedMap.set(article.articleId, article);
         }
 
+        // Fetch global field assignments for people mode
+        let globalFields: Record<string, string> | undefined = undefined;
+        if (isPeopleMode) {
+            try {
+                const company = await prisma.company.findUnique({
+                    where: { id: store.companyId },
+                    select: { settings: true },
+                });
+                const companySettings = (company?.settings as Record<string, any>) || {};
+                globalFields = companySettings.solumMappingConfig?.globalFieldAssignments;
+            } catch (error: any) {
+                console.warn(`[AimsReconcile] Could not fetch global field assignments for ${storeName}: ${error.message}`);
+            }
+        }
+
         if (isPeopleMode) {
             // People mode → push assigned people (articleId = assignedSpaceId)
             const people = await prisma.person.findMany({
@@ -211,7 +226,7 @@ export class AimsSyncReconciliationJob {
             });
             for (const person of people) {
                 if (!person.assignedSpaceId) continue;
-                const article = buildPersonArticle(person as any, format);
+                const article = buildPersonArticle(person as any, format, globalFields);
                 if (article) expectedMap.set(person.assignedSpaceId, article);
             }
         } else {

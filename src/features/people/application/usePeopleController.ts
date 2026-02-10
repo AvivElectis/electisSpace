@@ -135,10 +135,12 @@ export function usePeopleController() {
                         personId: serverPerson.id,
                         spaceId: personData.assignedSpaceId
                     });
+                    await triggerPush();
                     return assigned;
                 }
             }
 
+            await triggerPush();
             return serverPerson;
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to add person', { error: error.message });

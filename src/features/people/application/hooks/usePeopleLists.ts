@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { usePeopleStore } from '../../infrastructure/peopleStore';
+import { useShallow } from 'zustand/react/shallow';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { PeopleList, Person } from '../../domain/types';
 import {
@@ -21,7 +22,20 @@ import { usePeopleListsSync } from './usePeopleListsSync';
  * A person can be in multiple lists with different assignments per list
  */
 export function usePeopleLists() {
-    const peopleStore = usePeopleStore();
+    const peopleStore = usePeopleStore(useShallow(state => ({
+        people: state.people,
+        pendingChanges: state.pendingChanges,
+        activeListId: state.activeListId,
+        activeListName: state.activeListName,
+        peopleLists: state.peopleLists,
+        setPeople: state.setPeople,
+        setActiveListId: state.setActiveListId,
+        setActiveListName: state.setActiveListName,
+        addPeopleList: state.addPeopleList,
+        updatePeopleList: state.updatePeopleList,
+        markPendingChanges: state.markPendingChanges,
+        clearPendingChanges: state.clearPendingChanges,
+    })));
 
     // Use the sync hook for AIMS operations
     const { saveListToAims, applyListAssignmentsToAims, syncListLoadToAims } = usePeopleListsSync();

@@ -8,16 +8,19 @@ import { spacesRepository } from './repository.js';
 import type { SpacesUserContext, CreateSpaceInput, UpdateSpaceInput, ListSpacesFilters } from './types.js';
 import type { Prisma } from '@prisma/client';
 
+const isPlatformAdmin = (user: SpacesUserContext): boolean => user.globalRole === 'PLATFORM_ADMIN';
+
 const getUserStoreIds = (user: SpacesUserContext): string[] => user.stores?.map(s => s.id) || [];
 
-const validateStoreAccess = (storeId: string, storeIds: string[]): void => {
+const validateStoreAccess = (storeId: string, storeIds: string[], user: SpacesUserContext): void => {
+    if (isPlatformAdmin(user)) return;
     if (!storeIds.includes(storeId)) throw new Error('FORBIDDEN');
 };
 
 export const spacesService = {
     async list(filters: ListSpacesFilters, user: SpacesUserContext) {
         const storeIds = getUserStoreIds(user);
-        if (filters.storeId) validateStoreAccess(filters.storeId, storeIds);
+        if (filters.storeId) validateStoreAccess(filters.storeId, storeIds, user);
 
         const skip = (filters.page - 1) * filters.limit;
         const { spaces, total } = await spacesRepository.list(storeIds, filters, skip, filters.limit);
@@ -37,7 +40,7 @@ export const spacesService = {
 
     async create(input: CreateSpaceInput, user: SpacesUserContext) {
         const storeIds = getUserStoreIds(user);
-        validateStoreAccess(input.storeId, storeIds);
+        validateStoreAccess(input.storeId, storeIds, user);
 
         const existing = await spacesRepository.findByExternalId(input.storeId, input.externalId);
         if (existing) throw new Error('CONFLICT');
@@ -100,7 +103,7 @@ export const spacesService = {
 
     async forceSync(storeId: string | undefined, user: SpacesUserContext) {
         const storeIds = getUserStoreIds(user);
-        if (storeId && !storeIds.includes(storeId)) throw new Error('FORBIDDEN');
+        if (storeId && !isPlatformAdmin(user) && !storeIds.includes(storeId)) throw new Error('FORBIDDEN');
         return { message: 'Sync queued - use /sync/stores/:storeId/push to push changes' };
     },
 };
