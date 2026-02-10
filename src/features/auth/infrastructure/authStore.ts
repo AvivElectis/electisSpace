@@ -140,6 +140,7 @@ interface AuthState {
     pendingEmail: string | null; // Email pending 2FA verification
     lastValidation: number | null; // Timestamp of last session validation
     isInitialized: boolean; // Whether session restore has been attempted
+    isAppReady: boolean; // Whether app is fully initialized (auth + settings loaded)
 
     // Derived context (from user)
     activeCompanyId: string | null;
@@ -156,7 +157,8 @@ interface AuthState {
     clearError: () => void;
     validateSession: () => Promise<boolean>;
     setInitialized: (initialized: boolean) => void;
-    
+    setAppReady: (ready: boolean) => void;
+
     // Context switching
     setActiveCompany: (companyId: string | null) => Promise<void>;
     setActiveStore: (storeId: string | null) => Promise<void>;
@@ -180,6 +182,7 @@ export const useAuthStore = create<AuthState>()(
                 activeCompanyId: null,
                 activeStoreId: null,
                 isInitialized: false,
+                isAppReady: false,
 
                 // Actions
                 login: async (credentials: AuthCredentials): Promise<boolean> => {
@@ -285,6 +288,7 @@ export const useAuthStore = create<AuthState>()(
                             pendingEmail: null,
                             activeCompanyId: null,
                             activeStoreId: null,
+                            isAppReady: false,
                         }, false, 'logout/complete');
                     }
                 },
@@ -362,6 +366,10 @@ export const useAuthStore = create<AuthState>()(
 
                 setInitialized: (initialized: boolean) => {
                     set({ isInitialized: initialized }, false, 'setInitialized');
+                },
+
+                setAppReady: (ready: boolean) => {
+                    set({ isAppReady: ready }, false, 'setAppReady');
                 },
 
                 // Context switching actions

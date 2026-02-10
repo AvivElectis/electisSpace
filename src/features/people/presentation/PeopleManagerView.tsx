@@ -11,6 +11,7 @@ import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
 
 // Lazy load dialogs - not needed on initial render
@@ -39,6 +40,7 @@ import type { Person, PeopleFilters } from '../domain/types';
 export function PeopleManagerView() {
     const { t, i18n } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const isAppReady = useAuthStore((state) => state.isAppReady);
     const settings = useSettingsStore((state) => state.settings);
     const { getLabel } = useSpaceTypeLabels();
 
@@ -120,16 +122,20 @@ export function PeopleManagerView() {
         },
     });
 
-    // Fetch people from server on mount.
+    // Fetch people from server when app is ready.
     // If a list was active, just fetch current people (they're already in the DB).
     // The loadList operation should ONLY happen when user explicitly loads from dialog.
     useEffect(() => {
-        fetchPeople().catch((err) => {
-            logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
-                error: err instanceof Error ? err.message : 'Unknown',
+        if (isAppReady) {
+            fetchPeople().catch((err) => {
+                logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
+                    error: err instanceof Error ? err.message : 'Unknown',
+                });
             });
-        });
-    }, [fetchPeople]);
+        }
+        // fetchPeople is a Zustand store action (stable reference)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAppReady]);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;

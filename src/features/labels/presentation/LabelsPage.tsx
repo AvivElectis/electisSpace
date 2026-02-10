@@ -55,7 +55,7 @@ export function LabelsPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isRtl = i18n.language === 'he';
-    const { activeStoreId } = useAuthStore();
+    const { activeStoreId, isAppReady } = useAuthStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     
     const {
@@ -124,13 +124,15 @@ export function LabelsPage() {
         return filteredLabels.slice(start, start + rowsPerPage);
     }, [filteredLabels, page, rowsPerPage]);
 
-    // Check AIMS status and fetch labels on mount
+    // Check AIMS status and fetch labels when app is ready
     useEffect(() => {
-        if (activeStoreId) {
+        if (isAppReady && activeStoreId) {
             checkAimsStatus(activeStoreId);
             fetchLabels(activeStoreId);
         }
-    }, [activeStoreId]);
+        // checkAimsStatus and fetchLabels are Zustand store actions (stable references)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAppReady, activeStoreId]);
 
     const handleRefresh = () => {
         if (activeStoreId) {

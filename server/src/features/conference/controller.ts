@@ -4,6 +4,7 @@ import { createRoomSchema, updateRoomSchema, toggleMeetingSchema } from './types
 import type { ConferenceUserContext } from './types.js';
 import { notFound, badRequest, conflict } from '../../shared/middleware/index.js';
 import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
+// SSE broadcasts for real-time updates
 
 // ============================================================================
 // Helpers

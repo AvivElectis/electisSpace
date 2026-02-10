@@ -33,6 +33,7 @@ import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
 import { useSyncContext } from '@features/sync/application/SyncContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
@@ -45,6 +46,7 @@ const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m 
  */
 export function ConferencePage() {
     const { t } = useTranslation();
+    const isAppReady = useAuthStore((state) => state.isAppReady);
     const { settings } = useSettingsStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
@@ -100,10 +102,10 @@ export function ConferencePage() {
         },
     });
 
-    // Fetch conference rooms from server on mount (SoluM mode)
+    // Fetch conference rooms from server when app is ready (SoluM mode)
     // Server returns rooms with serverId (UUID) needed for correct PATCH/DELETE calls
     useEffect(() => {
-        if (settings.workingMode === 'SOLUM_API' && settings.solumConfig) {
+        if (isAppReady && settings.workingMode === 'SOLUM_API' && settings.solumConfig) {
             conferenceController.fetchRooms().catch(() => {
                 // Fallback to AIMS fetch if server fetch fails
                 if (solumToken && settings.solumMappingConfig) {
@@ -111,9 +113,10 @@ export function ConferencePage() {
                 }
             });
         }
-        // Only run once on mount
+        // conferenceController is created from useConferenceController with stable config
+        // Only re-run when app becomes ready, not on config changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isAppReady]);
 
     // Filter rooms based on debounced search query (memoized for performance)
     const filteredRooms = useMemo(() => {

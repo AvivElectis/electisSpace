@@ -40,6 +40,7 @@ import type { Space } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('./SpaceDialog').then(m => ({ default: m.SpaceDialog })));
@@ -54,6 +55,7 @@ export function SpacesManagementView() {
     const { t, i18n } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isAppReady = useAuthStore((state) => state.isAppReady);
     const settingsController = useSettingsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const activeListName = useSpacesStore((state) => state.activeListName);
@@ -117,13 +119,15 @@ export function SpacesManagementView() {
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
     const [saveListOpen, setSaveListOpen] = useState(false);
 
-    // Fetch spaces from Server DB on mount (Source of Truth for Cloud Persistence)
+    // Fetch spaces from Server DB when app is ready (Source of Truth for Cloud Persistence)
     useEffect(() => {
-        logger.info('SpacesManagementView', 'Fetching spaces from Server DB');
-        spaceController.fetchSpaces?.().catch(err => {
-            logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
-        });
-    }, []);
+        if (isAppReady) {
+            logger.info('SpacesManagementView', 'App ready - fetching spaces from Server DB');
+            spaceController.fetchSpaces?.().catch(err => {
+                logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
+            });
+        }
+    }, [isAppReady]);
 
     // The articleName mapped field key (shown as dedicated "Name" column)
     const nameFieldKey = settingsController.settings.solumMappingConfig?.mappingInfo?.articleName;
