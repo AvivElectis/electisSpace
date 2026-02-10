@@ -15,8 +15,10 @@
 import axios, { AxiosError } from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 
-// API base URL from environment or default
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+// API base URL from environment or derived from Vite base path
+// In dev: BASE_URL='./' → './api/v1' (works with Vite proxy)
+// In Docker prod: BASE_URL='/app/' → '/app/api/v1' (works with nginx)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${import.meta.env.BASE_URL}api/v1`;
 
 // Create axios instance
 export const api = axios.create({

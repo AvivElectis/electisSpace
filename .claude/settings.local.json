@@ -8,7 +8,19 @@
       "Bash(findstr:*)",
       "Bash(timeout:*)",
       "Bash(ping:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker start:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:docker:down:*)",
+      "Bash(npm run dev:docker:*)",
+      "Bash(npm run dev:docker:logs:*)",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(if not exist \"c:\\\\React\\\\electisSpace\\\\nginx\" mkdir \"c:\\\\React\\\\electisSpace\\\\nginx\")"
     ]
   }
 }

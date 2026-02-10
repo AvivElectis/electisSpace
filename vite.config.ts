@@ -8,13 +8,13 @@ import pkg from './package.json';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './', // Important for Electron - use relative paths for file:// protocol
+  base: process.env.VITE_BASE_PATH || './', // './' for Electron/dev, '/app/' for Docker production
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [
     react(),
-    basicSsl(),  // HTTPS with self-signed certificate for dev
+    // basicSsl(),  // HTTPS disabled to allow direct SSE connections (SSE through HTTPS proxy has buffering issues)
     // Gzip compression
     viteCompression({
       algorithm: 'gzip',
@@ -48,20 +48,36 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false, // Allow HTTP target
-        ws: true, // Enable WebSocket proxy (helps with long-lived connections)
+        ws: true, // Enable WebSocket proxy
         configure: (proxy, _options) => {
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            // Disable buffering for SSE endpoints
             if (req.url?.includes('/events')) {
-              proxyReq.setHeader('Connection', 'keep-alive');
+              // Disable any buffering for SSE
               proxyReq.setHeader('Cache-Control', 'no-cache');
+              proxyReq.setHeader('X-Accel-Buffering', 'no');
             }
           });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            // Don't buffer SSE responses
+
+          proxy.on('proxyRes', (proxyRes, req, res) => {
             if (req.url?.includes('/events')) {
-              proxyRes.headers['connection'] = 'keep-alive';
+              // Remove HTTP/1-specific headers for HTTP/2 compatibility
+              delete proxyRes.headers['connection'];
+              delete proxyRes.headers['transfer-encoding'];
+              delete proxyRes.headers['keep-alive'];
+              delete proxyRes.headers['content-encoding'];
+
+              // Set SSE headers
+              proxyRes.headers['content-type'] = 'text/event-stream';
               proxyRes.headers['cache-control'] = 'no-cache';
+              proxyRes.headers['x-accel-buffering'] = 'no';
+
+              // Write headers immediately
+              if (!res.headersSent) {
+                res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+              }
+
+              // CRITICAL: Pipe the response directly without buffering
+              proxyRes.pipe(res, { end: true });
             }
           });
         },

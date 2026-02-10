@@ -1,5 +1,6 @@
-import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton } from '@mui/material';
+import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, Paper, Typography, alpha } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -349,6 +350,33 @@ export function MainLayout({ children }: MainLayoutProps) {
                         </StoreRequiredGuard>
                     </Container>
                 </Box>
+
+                {/* BETA Version Badge - Fixed at bottom start (opposite of sync indicator) */}
+                <Paper
+                    elevation={2}
+                    sx={{
+                        position: 'fixed',
+                        bottom: { xs: 16, sm: 24 },
+                        insetInlineStart: { xs: 16, sm: 24 },
+                        zIndex: (theme) => theme.zIndex.fab,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 2,
+                        py: 1,
+                        borderRadius: '28px',
+                        border: '1px solid',
+                        borderColor: alpha(theme.palette.warning.main, 0.4),
+                        bgcolor: alpha(theme.palette.warning.main, 0.08),
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ fontSize: 18, color: theme.palette.warning.main }} />
+                    <Typography variant="caption" sx={{ fontSize: '0.8rem', color: 'text.secondary', fontWeight: 500 }}>
+                        {`v${__APP_VERSION__} - BETA - For Internal Use`}
+                    </Typography>
+                </Paper>
 
                 {/* Sync Status Indicator - Fixed at bottom end (RTL-aware) */}
                 <Box sx={{ 
