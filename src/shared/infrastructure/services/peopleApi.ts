@@ -163,6 +163,20 @@ export const peopleApi = {
     },
 
     /**
+     * Provision all space slot articles in AIMS for people mode.
+     * Creates empty articles for unassigned slots and full articles for assigned ones.
+     * If totalSpaces decreased, excess slots are deleted from AIMS.
+     */
+    async provisionSlots(storeId: string, totalSpaces: number, previousTotal: number): Promise<{ provisioned: number; deleted: number }> {
+        const response = await api.post<{ provisioned: number; deleted: number }>('/people/provision-slots', {
+            storeId,
+            totalSpaces,
+            previousTotal,
+        });
+        return response.data;
+    },
+
+    /**
      * Assign label to person
      */
     async assignLabel(personId: string, labelCode: string): Promise<PersonResponse> {

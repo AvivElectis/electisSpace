@@ -75,6 +75,19 @@ export function buildPersonArticle(
 }
 
 /**
+ * Build an empty AIMS article for an unoccupied space slot in people mode.
+ * articleId = slotId (e.g. "1", "2", ...)
+ * All data fields are empty — only the article ID is populated.
+ * Used to keep slots visible in AIMS even when no person is assigned.
+ */
+export function buildEmptySlotArticle(
+    slotId: string,
+    format: ArticleFormat | null,
+): any {
+    return buildArticle(slotId, '', '', {}, format);
+}
+
+/**
  * Conference mapping configuration from company settings.
  * When provided, uses the company's configured AIMS field names.
  */

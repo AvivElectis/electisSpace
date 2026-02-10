@@ -9,7 +9,7 @@ import { prisma } from '../../../config/index.js';
 import { QueueStatus, SyncStatus } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 
-export type EntityType = 'space' | 'person' | 'conference' | 'list';
+export type EntityType = 'space' | 'person' | 'conference' | 'list' | 'empty_slot';
 export type SyncAction = 'CREATE' | 'UPDATE' | 'DELETE';
 
 interface QueueOptions {
