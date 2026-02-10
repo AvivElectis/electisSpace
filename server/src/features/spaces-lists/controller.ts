@@ -13,12 +13,7 @@ export const spacesListsController = {
             const storeId = req.query.storeId as string | undefined;
             const lists = await spacesListsService.list(user, storeId);
 
-            const data = lists.map((list: any) => ({
-                ...list,
-                itemCount: Array.isArray(list.content) ? (list.content as any[]).length : 0,
-            }));
-
-            res.json({ data });
+            res.json({ data: lists });
         } catch (error: any) {
             if (error.message === 'FORBIDDEN') {
                 return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied to this store' } });

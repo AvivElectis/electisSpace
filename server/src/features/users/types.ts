@@ -71,7 +71,7 @@ export const updateUserSchema = z.object({
     firstName: z.string().max(100).optional(),
     lastName: z.string().max(100).optional(),
     isActive: z.boolean().optional(),
-    password: z.string().min(6).max(128).optional(),
+    password: z.string().min(8, 'Password must be at least 8 characters').max(128).optional(),
 });
 
 export const updateUserStoreSchema = z.object({

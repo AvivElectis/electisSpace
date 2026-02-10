@@ -4,7 +4,7 @@
  * @description HTTP request/response handling for people management endpoints.
  */
 import type { Request, Response, NextFunction } from 'express';
-import { notFound, badRequest } from '../../shared/middleware/index.js';
+import { notFound, badRequest, forbidden } from '../../shared/middleware/index.js';
 import { peopleService } from './service.js';
 import { createPersonSchema, updatePersonSchema, assignSchema } from './types.js';
 import type { PeopleUserContext } from './types.js';
@@ -34,7 +34,7 @@ export const peopleController = {
         try {
             const user = getUserContext(req);
             const page = parseInt(req.query.page as string) || 1;
-            const limit = Math.min(parseInt(req.query.limit as string) || 50, 10000);
+            const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
             const search = req.query.search as string | undefined;
             const assigned = req.query.assigned as string | undefined;
             const listId = req.query.listId as string | undefined;
@@ -46,7 +46,7 @@ export const peopleController = {
             );
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);
         }
     },
@@ -91,7 +91,7 @@ export const peopleController = {
                 excludeClientId: sseClientId,
             });
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);
         }
     },
@@ -215,7 +215,7 @@ export const peopleController = {
             const result = await peopleService.listPeopleLists(user, storeId);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);
         }
     },

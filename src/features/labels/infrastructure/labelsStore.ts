@@ -45,9 +45,9 @@ interface LabelsState {
 function transformLabels(aimsLabels: AIMSLabel[]): LabelArticleLink[] {
     return aimsLabels.map(label => ({
         labelCode: label.labelCode,
-        articleId: label.articleId || '',
-        articleName: label.articleName,
-        signal: label.signalQuality,
+        articleId: (label as any).articleList?.[0]?.articleId || label.articleId || '',
+        articleName: (label as any).articleList?.[0]?.articleName || label.articleName,
+        signal: (label as any).signal || label.signalQuality,
         battery: label.battery,
         status: label.status,
     }));

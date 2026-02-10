@@ -66,15 +66,6 @@ export function CompaniesTab() {
     const [storesDialogOpen, setStoresDialogOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
-    // Check authorization
-    if (!isPlatformAdmin) {
-        return (
-            <Alert severity="error" sx={{ m: 2 }}>
-                {t('settings.companies.unauthorizedAccess', 'You do not have permission to manage companies.')}
-            </Alert>
-        );
-    }
-
     // Fetch Companies
     const fetchCompanies = useCallback(async () => {
         try {
@@ -109,6 +100,15 @@ export function CompaniesTab() {
         }, 300);
         return () => clearTimeout(handler);
     }, [searchQuery]);
+
+    // Check authorization (after all hooks to avoid Rules of Hooks violation)
+    if (!isPlatformAdmin) {
+        return (
+            <Alert severity="error" sx={{ m: 2 }}>
+                {t('settings.companies.unauthorizedAccess', 'You do not have permission to manage companies.')}
+            </Alert>
+        );
+    }
 
     // Handlers
     const handleAdd = () => {

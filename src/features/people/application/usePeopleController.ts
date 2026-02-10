@@ -779,35 +779,12 @@ export function usePeopleController() {
 
             logger.info('PeopleController', 'Articles fetched from AIMS', { count: allArticles.length });
 
-            // DEBUG: Log first article structure to understand AIMS response format
-            if (allArticles.length > 0) {
-                const sampleArticle = allArticles[0];
-                console.log('[DEBUG syncFromAimsWithVirtualPool] Sample article structure:', {
-                    articleId: sampleArticle.articleId,
-                    hasDataProperty: 'data' in sampleArticle,
-                    hasArticleDataProperty: 'articleData' in sampleArticle,
-                    dataKeys: sampleArticle.data ? Object.keys(sampleArticle.data) : 'NO DATA PROPERTY',
-                    articleDataKeys: sampleArticle.articleData ? Object.keys(sampleArticle.articleData) : 'NO ARTICLEDATA PROPERTY',
-                    rootKeys: Object.keys(sampleArticle),
-                    hasListMemberships: sampleArticle.data?.['_LIST_MEMBERSHIPS_'] || sampleArticle.articleData?.['_LIST_MEMBERSHIPS_'] || sampleArticle['_LIST_MEMBERSHIPS_'] || 'NOT FOUND',
-                });
-            }
-
             // Convert articles to Space-like format for the converter
             const spaces = allArticles.map(article => ({
                 id: article.articleId || article.id,
                 data: article.data || article.articleData || {},
                 labelCode: article.labelCode,
             }));
-
-            // DEBUG: Log first space to see if _LIST_MEMBERSHIPS_ is included
-            if (spaces.length > 0) {
-                console.log('[DEBUG syncFromAimsWithVirtualPool] First space data:', {
-                    id: spaces[0].id,
-                    dataKeys: Object.keys(spaces[0].data),
-                    listMemberships: spaces[0].data['_LIST_MEMBERSHIPS_'] || 'NOT FOUND',
-                });
-            }
 
             // Convert spaces to people with virtual pool support
             const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);

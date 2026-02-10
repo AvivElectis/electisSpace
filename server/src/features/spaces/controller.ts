@@ -4,7 +4,7 @@
  * @description HTTP request/response handling for spaces management endpoints.
  */
 import type { Request, Response, NextFunction } from 'express';
-import { notFound, conflict, badRequest } from '../../shared/middleware/index.js';
+import { notFound, conflict, badRequest, forbidden } from '../../shared/middleware/index.js';
 import { spacesService } from './service.js';
 import { createSpaceSchema, updateSpaceSchema, assignLabelSchema } from './types.js';
 import type { SpacesUserContext } from './types.js';
@@ -18,7 +18,7 @@ export const spacesController = {
         try {
             const user = getUserContext(req);
             const page = parseInt(req.query.page as string) || 1;
-            const limit = Math.min(parseInt(req.query.limit as string) || 50, 10000);
+            const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
             const result = await spacesService.list({
                 page, limit,
                 search: req.query.search as string,
@@ -28,7 +28,7 @@ export const spacesController = {
             }, user);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);
         }
     },
@@ -49,7 +49,7 @@ export const spacesController = {
             const result = await spacesService.create(data, getUserContext(req));
             res.status(201).json(result);
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             if (error.message === 'CONFLICT') return next(conflict('Space with this ID already exists'));
             next(error);
         }
@@ -93,7 +93,7 @@ export const spacesController = {
             const result = await spacesService.forceSync(req.body.storeId, getUserContext(req));
             res.status(202).json(result);
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);
         }
     },

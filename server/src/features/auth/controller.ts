@@ -102,7 +102,9 @@ export const authController = {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
 
-            res.json(result);
+            // Strip refreshToken from response body (it's already in HttpOnly cookie)
+            const { refreshToken: _rt, ...safeResult } = result;
+            res.json(safeResult);
         } catch (error: any) {
             if (error.message === 'INVALID_CODE') {
                 return res.status(401).json({

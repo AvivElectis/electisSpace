@@ -27,7 +27,10 @@ function mapServiceError(error: unknown): Error {
     if (error === 'AIMS_NOT_CONFIGURED') {
         return badRequest('AIMS not configured for this store');
     }
-    throw error;
+    if (error instanceof Error) {
+        return error;
+    }
+    return new Error(String(error));
 }
 
 // ============================================================================

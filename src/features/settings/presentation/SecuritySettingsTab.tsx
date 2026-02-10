@@ -161,7 +161,7 @@ export function SecuritySettingsTab({
                 {!isLocked && (
                     <Box>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                            {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
+                            {isPasswordProtected ? t('settings.changePassword', 'Change Password') : t('settings.setPassword')}
                         </Typography>
                         <Stack gap={1.5}>
                             <TextField
@@ -193,7 +193,7 @@ export function SecuritySettingsTab({
                                     disabled={!newPassword || !confirmPassword}
                                     sx={{ width: 'fit-content' }}
                                 >
-                                    {isPasswordProtected ? t('settings.setPassword') : t('settings.setPassword')}
+                                    {isPasswordProtected ? t('settings.changePassword', 'Change Password') : t('settings.setPassword')}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -228,7 +228,7 @@ export function SecuritySettingsTab({
                                     label={t('settings.enterPasswordToUnlock')}
                                     value={unlockPassword}
                                     onChange={(e) => setUnlockPassword(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
                                 />
                                 <Tooltip title={t('settings.adminPasswordHint')} arrow>
                                     <InfoOutlined color="action" sx={{ cursor: 'help' }} />

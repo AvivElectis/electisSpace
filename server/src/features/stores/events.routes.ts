@@ -25,14 +25,13 @@ router.get(
         const storeId = req.params.storeId as string;
         const user = (req as any).user;
 
-        // Validate store access
+        // Validate store access (allow platform admins and allStoresAccess users)
         const userStoreIds = (user.stores || []).map((s: any) => s.id);
-        if (!userStoreIds.includes(storeId)) {
-            console.log('[SSE-ROUTE] Access denied - user does not have access to this store');
+        const isPlatformAdmin = user.globalRole === 'PLATFORM_ADMIN';
+        const hasAllStoresAccess = (user.companies || []).some((c: any) => c.allStoresAccess);
+        if (!isPlatformAdmin && !hasAllStoresAccess && !userStoreIds.includes(storeId)) {
             return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'No access to this store' } });
         }
-
-        console.log('[SSE-ROUTE] Store access validated, setting up SSE connection...');
 
         // Set SSE headers
         res.setHeader('Content-Type', 'text/event-stream');
@@ -48,23 +47,15 @@ router.get(
 
         res.flushHeaders();
 
-        // IMMEDIATE TEST: Send a message right away to verify the stream works
-        res.write('data: {"type":"test","message":"SSE stream working"}\n\n');
-        console.log('[SSE-ROUTE] Sent immediate test message');
-
         const clientId = randomUUID();
-
-        console.log('[SSE-ROUTE] About to add client to SSEManager', { clientId, storeId });
 
         sseManager.addClient({
             id: clientId,
             res,
             storeId,
             userId: user.id,
-            userName: user.name || user.email,
+            userName: user.firstName || user.email,
         });
-
-        console.log('[SSE-ROUTE] Client added to SSEManager successfully');
 
         // Keep-alive ping every 30 seconds
         const keepAlive = setInterval(() => {
