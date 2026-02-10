@@ -97,7 +97,7 @@ export const syncController = {
             const result = await syncService.listQueue(user, storeId, status);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'FORBIDDEN') return next(badRequest('Access denied to this store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);
         }
     },

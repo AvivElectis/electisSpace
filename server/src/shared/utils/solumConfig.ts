@@ -22,7 +22,7 @@ export async function getSolumConfig(storeId: string): Promise<SolumConfig | nul
 
     // Build SoluM config from company AIMS settings and store code
     const company = store.company;
-    if (!company.aimsBaseUrl || !company.aimsUsername) {
+    if (!company.aimsBaseUrl || !company.aimsUsername || !company.aimsPasswordEnc) {
         return null;
     }
 

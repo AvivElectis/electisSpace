@@ -90,9 +90,6 @@ export function StoreAssignment({
 }: StoreAssignmentProps) {
     const { t } = useTranslation();
 
-    // DEBUG
-    console.log('[StoreAssignment] Render - companyId:', companyId, 'assignments:', assignments, 'allStoresAccess:', allStoresAccess);
-
     // State
     const [stores, setStores] = useState<CompanyStore[]>([]);
     const [loading, setLoading] = useState(false);
@@ -100,7 +97,6 @@ export function StoreAssignment({
 
     // Fetch stores when company changes
     const fetchStores = useCallback(async () => {
-        console.log('[StoreAssignment] fetchStores called - companyId:', companyId);
         if (!companyId) {
             setStores([]);
             return;
@@ -110,7 +106,6 @@ export function StoreAssignment({
             setLoading(true);
             setError(null);
             const response = await companyService.getStores(companyId, { limit: 100 });
-            console.log('[StoreAssignment] fetchStores response:', response);
             // API returns {stores: [...]} not {data: [...]}
             setStores(response?.stores || []);
         } catch (err) {
@@ -129,7 +124,6 @@ export function StoreAssignment({
     // Guard against undefined arrays
     const safeAssignments = assignments || [];
     const safeStores = stores || [];
-    console.log('[StoreAssignment] safeAssignments:', safeAssignments, 'safeStores:', safeStores);
     const availableStores = safeStores.filter(
         store => !safeAssignments.some(a => a.storeId === store.id)
     );
@@ -278,7 +272,7 @@ export function StoreAssignment({
                     )}
 
                     {/* Store Assignments List */}
-                    {assignments.length === 0 ? (
+                    {safeAssignments.length === 0 ? (
                         <Alert severity="info" sx={{ mt: 1 }}>
                             {t('settings.users.noStoresAssigned', 'No stores assigned. Select stores above.')}
                         </Alert>

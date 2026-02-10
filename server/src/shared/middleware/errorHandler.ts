@@ -51,10 +51,8 @@ export const errorHandler = (
         if (err.details) {
             response.error.details = err.details;
         }
-    }
-
-    // Handle Zod validation errors
-    if (err instanceof ZodError) {
+    } else if (err instanceof ZodError) {
+        // Handle Zod validation errors
         statusCode = 400;
         response.error.code = 'VALIDATION_ERROR';
         response.error.message = 'Invalid input data';
@@ -62,16 +60,12 @@ export const errorHandler = (
             field: e.path.join('.'),
             message: e.message,
         }));
-    }
-
-    // Handle JWT errors
-    if (err.name === 'JsonWebTokenError') {
+    } else if (err.name === 'JsonWebTokenError') {
+        // Handle JWT errors
         statusCode = 401;
         response.error.code = 'INVALID_TOKEN';
         response.error.message = 'Invalid authentication token';
-    }
-
-    if (err.name === 'TokenExpiredError') {
+    } else if (err.name === 'TokenExpiredError') {
         statusCode = 401;
         response.error.code = 'TOKEN_EXPIRED';
         response.error.message = 'Authentication token has expired';

@@ -67,12 +67,10 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
 
     // Fetch stores
     const fetchStores = useCallback(async () => {
-        console.log('[StoresDialog] fetchStores called for company:', company.id);
         try {
             setLoading(true);
             setError(null);
             const response = await companyService.getStores(company.id);
-            console.log('[StoresDialog] fetchStores response:', response);
             setStores(response?.stores || []);
         } catch (err) {
             console.error('[StoresDialog] Failed to fetch stores:', err);
@@ -134,10 +132,8 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
     };
 
     const handleStoreSave = async () => {
-        console.log('[StoresDialog] handleStoreSave called');
         setStoreDialogOpen(false);
         setSelectedStore(null);
-        console.log('[StoresDialog] Calling fetchStores after save');
         fetchStores();
     };
 
