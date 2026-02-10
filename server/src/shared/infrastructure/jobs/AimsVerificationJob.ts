@@ -193,7 +193,7 @@ export class AimsVerificationJob {
 
         const aimsById = new Map<string, any>();
         for (const article of aimsArticles) {
-            const articleId = article.articleId || article.id || article.data?.ARTICLE_ID;
+            const articleId = article.articleId || article.id;
             if (articleId) {
                 aimsById.set(articleId, article);
             }
@@ -211,9 +211,8 @@ export class AimsVerificationJob {
         }
 
         // Check which AIMS articles don't have local counterparts
-        // Only flag POOL-* articles as those are our managed entities
         for (const [articleId] of aimsById) {
-            if (articleId.startsWith('POOL-') && !localByExternalId.has(articleId)) {
+            if (!localByExternalId.has(articleId)) {
                 extraInAims.push(articleId);
             }
         }

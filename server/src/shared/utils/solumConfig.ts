@@ -8,7 +8,7 @@ export async function getSolumConfig(storeId: string): Promise<SolumConfig | nul
         include: {
             company: {
                 select: {
-                    name: true,
+                    code: true,
                     aimsBaseUrl: true,
                     aimsCluster: true,
                     aimsUsername: true,
@@ -29,10 +29,10 @@ export async function getSolumConfig(storeId: string): Promise<SolumConfig | nul
     // Construct the SoluM config
     const config: SolumConfig = {
         baseUrl: company.aimsBaseUrl,
-        companyName: company.name,
+        companyName: company.code,
         storeCode: store.code,
         username: company.aimsUsername,
-        password: company.aimsPasswordEnc || '', // Will be decrypted in service
+        password: company.aimsPasswordEnc, // Encrypted - callers must decrypt
         cluster: company.aimsCluster || undefined,
     };
 

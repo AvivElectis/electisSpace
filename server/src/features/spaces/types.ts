@@ -54,5 +54,6 @@ export interface ListSpacesFilters {
 
 export interface SpacesUserContext {
     id: string;
+    globalRole?: string | null;
     stores?: Array<{ id: string }>;
 }
