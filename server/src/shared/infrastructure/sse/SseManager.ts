@@ -29,13 +29,31 @@ export interface StoreEvent {
     excludeClientId?: string;
 }
 
+// Connection limits to prevent resource exhaustion
+const MAX_TOTAL_CONNECTIONS = 500;
+const MAX_CONNECTIONS_PER_STORE = 50;
+
 class SseManager {
     private clients: Map<string, SseClient> = new Map();
 
     /**
-     * Register a new SSE client connection
+     * Register a new SSE client connection.
+     * Returns false if connection limits are exceeded.
      */
-    addClient(client: SseClient): void {
+    addClient(client: SseClient): boolean {
+        // Enforce total connection limit
+        if (this.clients.size >= MAX_TOTAL_CONNECTIONS) {
+            console.warn(`[SSE] Total connection limit reached (${MAX_TOTAL_CONNECTIONS}), rejecting client ${client.id}`);
+            return false;
+        }
+
+        // Enforce per-store connection limit
+        const storeCount = this.getStoreClientCount(client.storeId);
+        if (storeCount >= MAX_CONNECTIONS_PER_STORE) {
+            console.warn(`[SSE] Store ${client.storeId} connection limit reached (${MAX_CONNECTIONS_PER_STORE}), rejecting client ${client.id}`);
+            return false;
+        }
+
         this.clients.set(client.id, client);
         console.log(`[SSE] Client connected: ${client.id} (store=${client.storeId}, user=${client.userId}). Total: ${this.clients.size}`);
 
@@ -45,6 +63,8 @@ class SseManager {
             clientId: client.id,
             timestamp: new Date().toISOString(),
         });
+
+        return true;
     }
 
     /**

@@ -34,6 +34,13 @@ export function usePeopleController() {
     const settings = useSettingsStore(state => state.settings);
     const updateSettings = useSettingsStore(state => state.updateSettings);
 
+    // Subscribe to store values that are returned to consumers - these MUST trigger re-renders
+    const people = usePeopleStore(state => state.people);
+    const peopleLists = usePeopleStore(state => state.peopleLists);
+    const activeListName = usePeopleStore(state => state.activeListName);
+    const activeListId = usePeopleStore(state => state.activeListId);
+    const spaceAllocation = usePeopleStore(state => state.spaceAllocation);
+
     /**
      * Trigger server push to process pending sync queue items → AIMS
      */
@@ -805,12 +812,12 @@ export function usePeopleController() {
     }, [settings.solumConfig, settings.solumMappingConfig]);
 
     return {
-        // State
-        people: getStoreState().people,
-        peopleLists: getStoreState().peopleLists,
-        activeListName: getStoreState().activeListName,
-        activeListId: getStoreState().activeListId,
-        spaceAllocation: getStoreState().spaceAllocation,
+        // State (subscribed - triggers re-renders when store changes)
+        people,
+        peopleLists,
+        activeListName,
+        activeListId,
+        spaceAllocation,
 
         // Actions
         loadPeopleFromCSV,
