@@ -2,14 +2,15 @@
 
 ## Overview
 
-Full codebase audit of **electisSpace** - a multi-company, multi-store Electronic Shelf Label (ESL) management system integrating with SoluM AIMS API. The audit covered every server and client file, identified ~150 issues, and fixed ~75 of them across two batches.
+Full codebase audit of **electisSpace** - a multi-company, multi-store Electronic Shelf Label (ESL) management system integrating with SoluM AIMS API. The audit covered every server and client file, identified ~150 issues, and fixed ~75+ of them across multiple batches.
 
 **Branch:** `claude/project-audit-bugs-hqPHX`
 **Commits:**
-- `c9a1c07` — Batch 1: 23 files, 71 insertions, 126 deletions
-- `17c6299` — Batch 2: 22 files, 151 insertions, 51 deletions
-
-**Total:** 45 files modified across both batches
+- `c9a1c07` — Batch 1: 23 files, ~50 fixes (auth, labels root cause, XSS, validation, error handling)
+- `17c6299` — Batch 2: 22 files, ~25 fixes (authorization bypass, sync scope, pagination, Zustand re-renders)
+- `ff0e5bb` — Batch 3: 6 files (auth caching, SSE limits, stale state, N+1 query)
+- `ba2d0c0` — Empty slot articles feature: 8 files (AIMS articles for unassigned spaces)
+- Latest — totalSpaces company sync + /app routing conditional + dev Docker setup
 
 ---
 
@@ -604,3 +605,48 @@ if (!isPlatformAdmin(user)) {
 - SSE connections have proper error handling and keep-alive
 - Auth store validates token presence before storing
 - SSE endpoint returns 503 when connection limits are reached
+
+---
+
+## Batch 4: Empty Slot Articles + Company Sync + Dev/Prod Routing
+
+### Empty Slot Articles Feature
+**Problem:** When spaces were unassigned in People mode, their AIMS articles were deleted. Changing totalSpaces would leave gaps in AIMS.
+**Fix:** Unassigned spaces now push empty skeleton articles to AIMS instead of deleting them. Each space always has an article (with at least the space ID) in AIMS.
+
+**Files changed:**
+- `server/src/shared/infrastructure/services/articleBuilder.ts` — Added `buildEmptySlotArticle()` for skeleton AIMS articles
+- `server/src/features/people/service.ts` — Unassign/reassign/delete push empty_slot instead of DELETE; added `provisionSlots()` method
+- `server/src/features/people/controller.ts` — Added provisionSlots endpoint handler
+- `server/src/features/people/routes.ts` — Added POST `/people/provision-slots` route
+- `server/src/shared/infrastructure/jobs/SyncQueueProcessor.ts` — Handle `'empty_slot'` entity type in article building
+- `server/src/shared/infrastructure/services/syncQueueService.ts` — Added `'empty_slot'` to EntityType union
+- `src/features/people/application/usePeopleController.ts` — `setTotalSpaces` calls provisionSlots API
+- `src/shared/infrastructure/services/peopleApi.ts` — Added `provisionSlots()` client method
+
+### totalSpaces Company-Wide Sync
+**Problem:** `setTotalSpaces` only updated local Zustand state via `updateSettings()`. Other clients in the same company never saw the updated `totalSpaces`.
+**Fix:** `setTotalSpaces` now calls `saveCompanySettingsToServer({ peopleManagerConfig: { totalSpaces: count } })` after the local update, persisting to company-level settings. All clients fetch this when loading settings.
+
+**Files changed:**
+- `src/features/people/application/usePeopleController.ts` — Added `saveCompanySettingsToServer` subscription; `setTotalSpaces` persists to server
+
+### /app Routing: Production Only
+**Problem:** `/app` prefix was hardcoded in `Dockerfile` (`ENV VITE_BASE_PATH=/app/`), applying to all Docker builds. Production runs on Windows Server (with `/app`), development uses Docker (without `/app`).
+**Fix:** Made `VITE_BASE_PATH` a build ARG defaulting to `./` (no prefix). Production Docker Compose passes `/app/` explicitly. Created separate dev Docker setup.
+
+**Files changed:**
+- `Dockerfile` — Changed from hardcoded `ENV` to `ARG VITE_BASE_PATH=./` with default for dev
+- `docker-compose.prod.yml` — Added `args: VITE_BASE_PATH: /app/` to client build
+- `docker-compose.yml` (new) — Full-stack dev Docker Compose without `/app` prefix
+- `nginx/nginx.dev.conf` (new) — Dev nginx config serving at root `/` instead of `/app/`
+- `vite.config.ts` — Updated comment to reflect dev/prod distinction
+- `src/shared/infrastructure/services/apiClient.ts` — Updated comment
+
+### Deployment Modes
+| Mode | Base Path | Docker Compose | Nginx Config |
+|------|-----------|----------------|--------------|
+| Development (Vite) | `./` | `server/docker-compose.dev.yml` (backend only) | N/A (Vite proxy) |
+| Development (Full Stack Docker) | `./` | `docker-compose.yml` | `nginx/nginx.dev.conf` |
+| Production (Docker) | `/app/` | `docker-compose.prod.yml` | `nginx/nginx.conf` |
+| Production (Windows) | `/app/` | N/A | External web server |

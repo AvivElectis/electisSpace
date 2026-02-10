@@ -20,8 +20,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build for production with /app/ base path
-ENV VITE_BASE_PATH=/app/
+# Build arg for base path: '/app/' for production (Windows/Docker prod), './' for development
+ARG VITE_BASE_PATH=./
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 RUN npm run build
 
 # Stage 2: Lightweight output image

@@ -7,7 +7,7 @@ import pkg from './package.json';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH || './', // './' for Electron/dev, '/app/' for Docker production
+  base: process.env.VITE_BASE_PATH || './', // './' for dev/Docker dev, '/app/' for Windows production
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },

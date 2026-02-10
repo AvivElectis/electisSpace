@@ -1,26 +1,27 @@
 # ============================================================
-# electisSpace — Production Docker Compose
+# electisSpace — Development Docker Compose (Full Stack)
 # ============================================================
 # Usage:
-#   1. Copy .env.production.example to .env.production and fill in secrets
-#   2. docker compose -f docker-compose.prod.yml build
-#   3. docker compose -f docker-compose.prod.yml up -d
+#   1. Copy server/.env.development.example to server/.env.development
+#   2. docker compose build
+#   3. docker compose up -d
 #
-# The app will be available at http://localhost:8080/app
-# Point your host nginx to proxy solum.co.il/app → 127.0.0.1:8080
+# The app will be available at http://localhost:8080
+# No /app prefix — development mode.
+# For production with /app prefix, use docker-compose.prod.yml
 # ============================================================
 
 services:
   # ======================
-  # Nginx — Reverse Proxy + Static Frontend
+  # Nginx — Reverse Proxy + Static Frontend (Dev)
   # ======================
   nginx:
     image: nginx:alpine
-    container_name: electisspace-nginx
+    container_name: electisspace-nginx-dev
     ports:
       - "8080:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
       - frontend_dist:/usr/share/nginx/html:ro
     depends_on:
       client:
@@ -28,7 +29,7 @@ services:
       server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/app/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -38,15 +39,14 @@ services:
       - electisspace-network
 
   # ======================
-  # Client — Frontend Build (runs once, exits)
+  # Client — Frontend Build (Dev, no /app prefix)
   # ======================
   client:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        VITE_BASE_PATH: /app/
-    container_name: electisspace-client-build
+      # No VITE_BASE_PATH arg → defaults to './' (no /app prefix)
+    container_name: electisspace-client-build-dev
     volumes:
       - frontend_dist:/output
     entrypoint: ["sh", "-c", "cp -r /dist/* /output/ && echo 'Frontend files copied to volume'"]
@@ -60,13 +60,13 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: electisspace-server
+    container_name: electisspace-server-dev
     env_file:
-      - .env.production
+      - .env.development
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3000
-      - DATABASE_URL=postgresql://electis:${POSTGRES_PASSWORD:-electis_secret}@db:5432/electisspace_prod
+      - DATABASE_URL=postgresql://postgres:postgres_dev@db:5432/electisspace_dev
       - REDIS_URL=redis://redis:6379
     depends_on:
       db:
@@ -86,19 +86,19 @@ services:
   # ======================
   # PostgreSQL Database
   # ======================
-  # NOTE: Runs on internal Docker network only (port 5432 NOT exposed to host).
-  # No conflict with XAMPP MySQL on host port 3306.
   db:
     image: postgres:16-alpine
-    container_name: electisspace-db
+    container_name: electisspace-db-dev
     environment:
-      - POSTGRES_USER=electis
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-electis_secret}
-      - POSTGRES_DB=electisspace_prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_dev
+      - POSTGRES_DB=electisspace_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U electis -d electisspace_prod"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d electisspace_dev"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -112,10 +112,12 @@ services:
   # ======================
   redis:
     image: redis:7-alpine
-    container_name: electisspace-redis
+    container_name: electisspace-redis-dev
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    ports:
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -130,16 +132,16 @@ services:
 # ======================
 volumes:
   frontend_dist:
-    name: electisspace-frontend-dist
+    name: electisspace-frontend-dist-dev
   postgres_data:
-    name: electisspace-postgres-data
+    name: electisspace-dev-postgres-data
   redis_data:
-    name: electisspace-redis-data
+    name: electisspace-dev-redis-data
 
 # ======================
 # Networks
 # ======================
 networks:
   electisspace-network:
-    name: electisspace-network
+    name: electisspace-dev-network
     driver: bridge
