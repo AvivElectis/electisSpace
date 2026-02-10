@@ -71,13 +71,11 @@ export function LabelImagePreview({
         try {
             const response = await labelsApi.getImages(storeId, labelCode);
 
-            // Get the first image
-            if (response.data && response.data.length > 0) {
-                const firstImage = response.data[0];
-                if (firstImage?.base64) {
-                    setImageUrl(firstImage.base64);
-                } else if (firstImage?.imageUrl) {
-                    setImageUrl(firstImage.imageUrl);
+            // Get the first image from currentImage array
+            if (response.data?.currentImage && response.data.currentImage.length > 0) {
+                const firstImage = response.data.currentImage[0];
+                if (firstImage?.content) {
+                    setImageUrl(firstImage.content);
                 }
             }
         } catch (error: any) {

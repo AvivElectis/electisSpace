@@ -284,6 +284,7 @@ export const useAuthStore = create<AuthState>()(
                             user: null,
                             isAuthenticated: false,
                             isLoading: false,
+                            isInitialized: false,
                             error: null,
                             pendingEmail: null,
                             activeCompanyId: null,

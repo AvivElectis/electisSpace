@@ -236,12 +236,14 @@ export function useSettingsController() {
             // Merge with current settings for validation
             const updatedSettings = { ...settings, ...updates };
 
-            // Validate
-            const validation = validateSettings(updatedSettings);
+            // Validate only the fields being updated
+            const validation = validateSettings(updates);
             if (!validation.valid) {
                 const errorMsg = validation.errors.map(e => e.message).join(', ');
-                logger.error('SettingsController', 'Settings validation failed', { errors: validation.errors });
-                throw new Error(`Validation failed: ${errorMsg}`);
+                logger.warn('SettingsController', 'Settings validation failed, updating locally', { errors: validation.errors });
+                // Still update locally (for live typing) but skip server save
+                updateInStore(updates);
+                return;
             }
 
             updateInStore(updates);

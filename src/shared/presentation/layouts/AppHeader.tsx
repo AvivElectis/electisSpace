@@ -40,8 +40,8 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
     const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
 
     // Use dynamic logos or fall back to defaults
-    const leftLogo = settings.logos.logo1 || '/logos/CI_SOLUMLogo_WithClaim-Blue.png';
-    const rightLogo = settings.logos.logo2 || '/logos/logo_fixed_02.png';
+    const leftLogo = settings.logos.logo1 || `${import.meta.env.BASE_URL}logos/CI_SOLUMLogo_WithClaim-Blue.png`;
+    const rightLogo = settings.logos.logo2 || `${import.meta.env.BASE_URL}logos/logo_fixed_02.png`;
 
     // Icon color: blue only when dialog is open AND unlocked, otherwise default
     const iconColor = (settingsOpen || !isLocked) ? 'primary' : 'default';

@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import basicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteCompression from 'vite-plugin-compression';
@@ -109,7 +108,13 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 1200, // Raised for lazy-loaded ArticleFormatEditor (~1.1MB vanilla-jsoneditor)
-    sourcemap: false,
+    sourcemap: true, // Enable for debugging
     minify: 'terser',
+    terserOptions: {
+      compress: {
+        pure_funcs: ['console.log', 'console.debug', 'console.info'], // Only remove log/debug/info, keep error/warn
+        drop_debugger: true,
+      },
+    },
   },
 });

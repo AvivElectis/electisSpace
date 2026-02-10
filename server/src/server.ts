@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import app from './app.js';
 import { config, prisma, closeRedis } from './config/index.js';
 import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProcessor.js';
@@ -8,11 +9,51 @@ import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProces
 // import { aimsVerificationJob } from './shared/infrastructure/jobs/AimsVerificationJob.js';
 import { aimsPullSyncJob } from './shared/infrastructure/jobs/AimsPullSyncJob.js';
 
+/**
+ * Ensure admin user exists and password matches ADMIN_PASSWORD env var.
+ * Creates the admin if missing, updates password if changed.
+ */
+async function ensureAdminUser() {
+    const { email, password } = config.admin;
+    if (!email || !password) return;
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+
+    if (!existing) {
+        // Create admin user
+        const passwordHash = await bcrypt.hash(password, 12);
+        await prisma.user.create({
+            data: {
+                email,
+                passwordHash,
+                globalRole: 'PLATFORM_ADMIN',
+                isActive: true,
+            },
+        });
+        console.log(`✅ Admin user created: ${email}`);
+        return;
+    }
+
+    // Update password if it doesn't match
+    const matches = await bcrypt.compare(password, existing.passwordHash);
+    if (!matches) {
+        const passwordHash = await bcrypt.hash(password, 12);
+        await prisma.user.update({
+            where: { id: existing.id },
+            data: { passwordHash },
+        });
+        console.log(`✅ Admin password updated for: ${email}`);
+    }
+}
+
 const startServer = async () => {
     try {
         // Test database connection
         await prisma.$connect();
         console.log('✅ Database connected');
+
+        // Ensure admin user exists with correct password
+        await ensureAdminUser();
 
         // Start background jobs
         syncQueueProcessor.start(10000); // Process sync queue every 10 seconds

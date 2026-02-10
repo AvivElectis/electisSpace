@@ -1,11 +1,12 @@
 /**
  * Labels API Service
- * 
+ *
  * Frontend service for label operations via backend.
  * Backend handles AIMS communication with company credentials.
  */
 
 import { api } from './apiClient';
+import type { LabelImagesDetail } from '@features/labels/domain/types';
 
 // Label types from AIMS
 export interface AIMSLabel {
@@ -92,8 +93,8 @@ export const labelsApi = {
     /**
      * Get label images
      */
-    async getImages(storeId: string, labelCode: string): Promise<{ data: LabelImage[] }> {
-        const response = await api.get<{ data: LabelImage[] }>(`/labels/${encodeURIComponent(labelCode)}/images`, {
+    async getImages(storeId: string, labelCode: string): Promise<{ data: LabelImagesDetail }> {
+        const response = await api.get<{ data: LabelImagesDetail }>(`/labels/${encodeURIComponent(labelCode)}/images`, {
             params: { storeId },
         });
         return response.data;

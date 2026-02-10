@@ -101,10 +101,12 @@ export function validateAppName(name: string): ValidationResult {
 export function validateSettings(settings: Partial<SettingsData>): ValidationResult {
     const errors: ValidationError[] = [];
 
-    // Validate app name
-    const nameValidation = validateAppName(settings.appName || '');
-    if (!nameValidation.valid) {
-        errors.push(...nameValidation.errors);
+    // Validate app name only if it's explicitly provided (not undefined)
+    if (settings.appName !== undefined) {
+        const nameValidation = validateAppName(settings.appName || '');
+        if (!nameValidation.valid) {
+            errors.push(...nameValidation.errors);
+        }
     }
 
     // Validate auto-sync interval

@@ -173,7 +173,7 @@ export function LoginPage() {
                     <Box sx={{ textAlign: 'center', mb: 4, mt: 2 }}>
                         <Box
                             component="img"
-                            src="/logos/logo_fixed_02.png"
+                            src={`${import.meta.env.BASE_URL}logos/logo_fixed_02.png`}
                             alt="electisSpace"
                             sx={{
                                 height: { xs: 70, sm: 80, md: 90 },

@@ -32,7 +32,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useSpaceController } from '../application/useSpaceController';
-import { useSyncContext } from '@features/sync/application/SyncContext';
+import { useBackendSyncContext } from '@features/sync/application/SyncContext';
 import { useListsController } from '@features/lists/application/useListsController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -92,7 +92,7 @@ export function SpacesManagementView() {
     }, [activeListName, activeListId, lists]);
 
     // Get sync context for triggering push after CRUD operations
-    const { push } = useSyncContext();
+    const { push } = useBackendSyncContext();
     
     // Push pending queue items to AIMS after each CRUD operation
     const handleSync = useCallback(async () => {
