@@ -104,10 +104,7 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
     }, [fetchPeople]);
 
     useEffect(() => {
-        console.log('[useStoreEvents] Effect triggered, activeStoreId:', activeStoreId);
-
         if (!activeStoreId) {
-            console.log('[useStoreEvents] No activeStoreId, skipping connection');
             // Clean up any existing connection
             if (disconnectRef.current) {
                 disconnectRef.current();
@@ -118,7 +115,6 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
             return;
         }
 
-        console.log('[useStoreEvents] Initiating SSE connection for store:', activeStoreId);
         logger.info('StoreEvents', 'Connecting to SSE', { storeId: activeStoreId });
 
         const { getClientId, disconnect } = connectToStoreEvents(
@@ -139,7 +135,10 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
             getClientIdRef.current = null;
             setSseClientId(null);
         };
-    }, [activeStoreId, handleEvent]);
+        // handleEvent is memoized with useCallback and uses stable Zustand actions
+        // Only reconnect when activeStoreId changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeStoreId]);
 
     return {
         getClientId: () => getClientIdRef.current?.() || null,

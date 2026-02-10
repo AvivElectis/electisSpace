@@ -53,7 +53,16 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(compression());
+// Compression - but SKIP SSE endpoints (text/event-stream) as compression breaks streaming
+app.use(compression({
+    filter: (req, res) => {
+        // Don't compress SSE responses
+        if (res.getHeader('Content-Type') === 'text/event-stream') {
+            return false;
+        }
+        return compression.filter(req, res);
+    }
+}));
 
 // ======================
 // Logging

@@ -1,12 +1,15 @@
 /**
  * Store Events Service — SSE client for real-time store updates
- * 
+ *
  * Subscribes to server-sent events for a specific store.
  * Used by useStoreEvents hook to keep all clients in sync.
  */
 import { tokenManager } from './apiClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+// For SSE, connect directly to backend (bypasses Vite proxy which buffers SSE)
+// IMPORTANT: Use 127.0.0.1 (IPv4) instead of localhost to avoid WSL/IPv6 routing issues
+const isDev = import.meta.env.DEV;
+const API_BASE_URL = isDev ? 'http://127.0.0.1:3001/api/v1' : (import.meta.env.VITE_API_BASE_URL || `${import.meta.env.BASE_URL}api/v1`);
 
 export type StoreEventType = 'connected' | 'people:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed';
 
