@@ -26,6 +26,9 @@ router.get('/lists', requirePermission('people', 'read'), peopleController.listP
 // Bulk import from CSV
 router.post('/import', requirePermission('people', 'import'), peopleController.importFromCsv);
 
+// Provision space slot articles in AIMS (people mode)
+router.post('/provision-slots', requirePermission('people', 'assign'), peopleController.provisionSlots);
+
 // ======================
 // People CRUD
 // ======================

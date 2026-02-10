@@ -233,4 +233,30 @@ export const peopleController = {
             next(error);
         }
     },
+
+    /**
+     * POST /people/provision-slots
+     * Provision all space slot articles in AIMS for people mode.
+     * Pushes an article for each slot 1..totalSpaces (empty or filled).
+     * If totalSpaces decreased, excess slots are deleted from AIMS.
+     */
+    async provisionSlots(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { storeId, totalSpaces, previousTotal } = req.body;
+            if (!storeId || typeof storeId !== 'string') {
+                throw badRequest('storeId is required');
+            }
+            if (typeof totalSpaces !== 'number' || totalSpaces < 0 || totalSpaces > 10000) {
+                throw badRequest('totalSpaces must be a number between 0 and 10000');
+            }
+            const prevTotal = typeof previousTotal === 'number' ? previousTotal : 0;
+
+            const user = getUserContext(req);
+            const result = await peopleService.provisionSlots(storeId, totalSpaces, prevTotal, user);
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
+            next(error);
+        }
+    },
 };

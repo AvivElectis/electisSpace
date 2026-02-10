@@ -430,8 +430,10 @@ export function usePeopleController() {
     /**
      * Set total spaces available
      */
-    const setTotalSpaces = useCallback((count: number): void => {
+    const setTotalSpaces = useCallback(async (count: number): Promise<void> => {
         try {
+            const previousTotal = getStoreState().spaceAllocation.totalSpaces;
+
             updateSettings({
                 peopleManagerConfig: {
                     totalSpaces: count
@@ -443,6 +445,17 @@ export function usePeopleController() {
                 totalSpaces: count,
                 availableSpaces: count - getStoreState().spaceAllocation.assignedSpaces,
             });
+
+            // Provision all slot articles in AIMS (empty for unassigned, full for assigned)
+            const activeStoreId = useAuthStore.getState().activeStoreId;
+            if (activeStoreId) {
+                try {
+                    const result = await peopleApi.provisionSlots(activeStoreId, count, previousTotal);
+                    logger.info('PeopleController', 'Slots provisioned in AIMS', result);
+                } catch (err: any) {
+                    logger.warn('PeopleController', 'Failed to provision slots in AIMS', { error: err.message });
+                }
+            }
 
             logger.info('PeopleController', 'Total spaces set', { count });
         } catch (error: any) {

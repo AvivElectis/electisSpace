@@ -15,6 +15,7 @@ import {
     buildSpaceArticle,
     buildPersonArticle,
     buildConferenceArticle,
+    buildEmptySlotArticle,
     type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
@@ -411,6 +412,12 @@ export class SyncQueueProcessor {
                 });
                 if (!room) return null;
                 return buildConferenceArticle(room, format, storeSettings?.conferenceMapping);
+            }
+
+            case 'empty_slot': {
+                // Empty slot in people mode — entityId IS the slotId
+                const slotId = payload?.changes?.slotId || entityId;
+                return buildEmptySlotArticle(slotId, format);
             }
 
             default:
