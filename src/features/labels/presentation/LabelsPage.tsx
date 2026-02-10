@@ -68,7 +68,6 @@ export function LabelsPage() {
         isLoadingImages,
         imagesError,
         aimsConfigured,
-        aimsConnected,
         fetchLabels,
         fetchLabelImages,
         clearLabelImages,

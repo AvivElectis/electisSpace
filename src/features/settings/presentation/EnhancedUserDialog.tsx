@@ -228,7 +228,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                     
                     // Get store assignments
                     const userStoreAssignments: StoreAssignmentData[] = (data.stores || [])
-                        .filter(s => !firstCompanyAssignment || s.store.companyId === firstCompanyAssignment.company.id)
+                        .filter(s => s?.store && (!firstCompanyAssignment || s.store.companyId === firstCompanyAssignment.company.id))
                         .map(s => ({
                             storeId: s.store.id,
                             storeName: s.store.name,
@@ -292,7 +292,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
 
                 // Get store assignments for this company
                 const userStoreAssignments: StoreAssignmentData[] = (userToUse.stores || [])
-                    .filter(s => !firstCompanyAssignment || s.store.companyId === firstCompanyAssignment.company.id)
+                    .filter(s => s?.store && (!firstCompanyAssignment || s.store.companyId === firstCompanyAssignment.company.id))
                     .map(s => ({
                         storeId: s.store.id,
                         storeName: s.store.name,
@@ -403,7 +403,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
         setSuccess(null);
         
         try {
-            await api.post('/users/me/change-password', {
+            await api.post('/auth/change-password', {
                 currentPassword,
                 newPassword,
             });
@@ -516,9 +516,10 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                     }
                 }
 
-                // Update store assignments
+                // Update store assignments - use fetchedUserData which has full store relations
+                const userWithStores = fetchedUserData || user;
                 // First, remove stores no longer assigned
-                const existingStoreIds = new Set(user.stores?.map(s => s.store.id) || []);
+                const existingStoreIds = new Set(userWithStores.stores?.filter(s => s?.store).map(s => s.store.id) || []);
                 const newStoreIds = new Set(storeAssignments.map(a => a.storeId));
 
                 for (const storeId of existingStoreIds) {

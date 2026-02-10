@@ -34,7 +34,6 @@ export function useConferenceController({
     const {
         conferenceRooms,
         setConferenceRooms,
-        addConferenceRoomLocal: addToStore,
         fetchRooms: fetchRoomsFromServer,
         createRoom: createRoomOnServer,
         updateRoom: updateRoomOnServer,

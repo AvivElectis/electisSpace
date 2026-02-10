@@ -84,7 +84,7 @@ export const conferenceController = {
                 payload: {
                     action: 'create',
                     roomId: room.externalId,
-                    userName: req.user?.name || req.user?.email || 'Unknown',
+                    userName: req.user?.email || 'Unknown',
                 },
                 excludeClientId: sseClientId,
             });
@@ -111,7 +111,7 @@ export const conferenceController = {
                 payload: {
                     action: 'update',
                     roomId: room.externalId,
-                    userName: req.user?.name || req.user?.email || 'Unknown',
+                    userName: req.user?.email || 'Unknown',
                 },
                 excludeClientId: sseClientId,
             });
@@ -144,7 +144,7 @@ export const conferenceController = {
                 payload: {
                     action: 'delete',
                     roomId: externalId,
-                    userName: req.user?.name || req.user?.email || 'Unknown',
+                    userName: req.user?.email || 'Unknown',
                 },
                 excludeClientId: sseClientId,
             });
@@ -172,7 +172,7 @@ export const conferenceController = {
                     action: 'toggle',
                     roomId: room.externalId,
                     hasMeeting: room.hasMeeting,
-                    userName: req.user?.name || req.user?.email || 'Unknown',
+                    userName: req.user?.email || 'Unknown',
                 },
                 excludeClientId: sseClientId,
             });

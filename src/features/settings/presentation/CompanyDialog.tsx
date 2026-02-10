@@ -434,7 +434,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
                 },
             };
             const result = await companyService.create(createData);
-            const newCompanyId = result.company?.id || (result as any).id;
+            const newCompanyId = result.id;
             
             // Create the selected store
             if (selectedStoreCode && newCompanyId) {

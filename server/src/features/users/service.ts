@@ -488,7 +488,14 @@ export const userService = {
             throw new Error('CANNOT_DEACTIVATE_SELF');
         }
 
-        return userRepository.update(id, data);
+        // Hash password if provided
+        const { password, ...rest } = data;
+        const updateData: Record<string, any> = { ...rest };
+        if (password) {
+            updateData.passwordHash = await bcrypt.hash(password, 12);
+        }
+
+        return userRepository.update(id, updateData);
     },
 
     /**

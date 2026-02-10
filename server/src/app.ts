@@ -32,6 +32,11 @@ import storeEventsRoutes from './features/stores/events.routes.js';
 const app = express();
 
 // ======================
+// Trust Proxy (for nginx reverse proxy)
+// ======================
+app.set('trust proxy', true);
+
+// ======================
 // Request ID (for log correlation)
 // ======================
 app.use(requestIdMiddleware);

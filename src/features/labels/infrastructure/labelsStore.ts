@@ -43,35 +43,14 @@ interface LabelsState {
  * Transform AIMS labels to our display format
  */
 function transformLabels(aimsLabels: AIMSLabel[]): LabelArticleLink[] {
-    const links: LabelArticleLink[] = [];
-    
-    for (const label of aimsLabels) {
-        if (label.articleList && label.articleList.length > 0) {
-            // Label has linked articles
-            for (const article of label.articleList) {
-                links.push({
-                    labelCode: label.labelCode,
-                    articleId: article.articleId,
-                    articleName: article.articleName,
-                    signal: label.signalQuality,
-                    battery: label.battery,
-                    status: label.status,
-                });
-            }
-        } else {
-            // Label without articles (unlinked)
-            links.push({
-                labelCode: label.labelCode,
-                articleId: label.articleId || '',
-                articleName: label.articleName,
-                signal: label.signalQuality,
-                battery: label.battery,
-                status: label.status,
-            });
-        }
-    }
-    
-    return links;
+    return aimsLabels.map(label => ({
+        labelCode: label.labelCode,
+        articleId: label.articleId || '',
+        articleName: label.articleName,
+        signal: label.signalQuality,
+        battery: label.battery,
+        status: label.status,
+    }));
 }
 
 export const useLabelsStore = create<LabelsState>((set, get) => ({

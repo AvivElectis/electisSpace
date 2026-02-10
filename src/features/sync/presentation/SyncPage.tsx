@@ -17,7 +17,6 @@ import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
