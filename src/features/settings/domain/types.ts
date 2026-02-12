@@ -3,7 +3,7 @@
  */
 
 import type { ArticleFormat, MappingInfo } from '@features/configuration/domain/types';
-import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csvService';
+import type { EnhancedCSVConfig } from '@shared/infrastructure/services/csv';
 
 export type { EnhancedCSVConfig };
 

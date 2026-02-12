@@ -7,6 +7,7 @@ import { logger } from '@shared/infrastructure/services/logger';
 import { getValidAimsToken } from '@shared/infrastructure/services/aimsTokenManager';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
+import { fetchAllArticlesFromAims } from '../infrastructure/aimsArticleFetcher';
 import type { Person, PeopleList } from '../domain/types';
 import { getVirtualSpaceId, isPersonInList, removePersonFromList } from '../domain/types';
 import { getNextPoolId, isPoolId } from '../infrastructure/virtualPoolService';
@@ -586,56 +587,22 @@ export function usePeopleController() {
     }, [triggerPush]);
 
     /**
-     * Sync people data FROM AIMS
-     * Downloads current articles from AIMS and converts them to People format
-     * This allows the People table to reflect the current state in AIMS
+     * Sync people data FROM AIMS (pull).
+     * Downloads current articles from AIMS and converts them to People format.
+     * This allows the People table to reflect the current state in AIMS.
+     *
+     * @param extractLists - If true, also extracts list metadata from people's listMemberships
      */
-    const syncFromAims = useCallback(async (): Promise<void> => {
+    const syncFromAims = useCallback(async (extractLists = false): Promise<void> => {
         try {
-            logger.info('PeopleController', 'Starting sync from AIMS');
+            logger.info('PeopleController', 'Starting sync from AIMS', { extractLists });
 
-            // Get the sync context - note: this requires being inside SyncProvider
-            // We'll use a different approach - directly use the sync adapter
             if (!settings.solumConfig || !settings.solumConfig.tokens) {
                 throw new Error('SoluM API not connected. Please connect in Settings first.');
             }
 
-            // Import and use fetchArticles directly
-            const { fetchArticles } = await import('@shared/infrastructure/services/solumService');
-
             const token = await getValidAimsToken();
-            const storeNumber = settings.solumConfig.storeNumber;
-
-            // Fetch all articles with pagination
-            let allArticles: any[] = [];
-            let page = 0;
-            const pageSize = 100;
-            let hasMore = true;
-
-            logger.info('PeopleController', 'Fetching articles from AIMS', { storeNumber });
-
-            while (hasMore) {
-                const articlesChunk = await fetchArticles(
-                    settings.solumConfig,
-                    storeNumber,
-                    token,
-                    page,
-                    pageSize
-                );
-
-                if (articlesChunk.length > 0) {
-                    allArticles = [...allArticles, ...articlesChunk];
-                    if (articlesChunk.length < pageSize) {
-                        hasMore = false;
-                    } else {
-                        page++;
-                    }
-                } else {
-                    hasMore = false;
-                }
-            }
-
-            logger.info('PeopleController', 'Articles fetched from AIMS', { count: allArticles.length });
+            const allArticles = await fetchAllArticlesFromAims(settings.solumConfig, token);
 
             // Convert articles to Space-like format for the converter
             const spaces = allArticles.map(article => ({
@@ -645,13 +612,15 @@ export function usePeopleController() {
             }));
 
             // Convert spaces to people using virtual pool support
-            // This properly handles POOL-IDs and doesn't set them as assigned
             const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
 
-            // Update the store with synced people
             getStoreState().setPeople(people);
 
-            logger.info('PeopleController', 'Sync from AIMS complete', { peopleCount: people.length });
+            if (extractLists) {
+                getStoreState().extractListsFromPeople();
+            }
+
+            logger.info('PeopleController', 'Sync from AIMS complete', { peopleCount: people.length, extractLists });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to sync from AIMS', { error: error.message });
             throw error;
@@ -758,75 +727,14 @@ export function usePeopleController() {
     }, [settings.solumArticleFormat, settings.solumMappingConfig, triggerPush]);
 
     /**
-     * Sync from AIMS with Virtual Pool support
-     * Downloads articles and extracts cross-device metadata
+     * Sync from AIMS with Virtual Pool support.
+     * Downloads articles and extracts cross-device list metadata.
+     * Delegates to syncFromAims with extractLists=true.
      */
-    const syncFromAimsWithVirtualPool = useCallback(async (): Promise<void> => {
-        try {
-            logger.info('PeopleController', 'Starting sync from AIMS with virtual pool support');
-
-            if (!settings.solumConfig || !settings.solumConfig.tokens) {
-                throw new Error('SoluM API not connected. Please connect in Settings first.');
-            }
-
-            const { fetchArticles } = await import('@shared/infrastructure/services/solumService');
-
-            const token = await getValidAimsToken();
-            const storeNumber = settings.solumConfig.storeNumber;
-
-            // Fetch all articles with pagination
-            let allArticles: any[] = [];
-            let page = 0;
-            const pageSize = 100;
-            let hasMore = true;
-
-            logger.info('PeopleController', 'Fetching articles from AIMS', { storeNumber });
-
-            while (hasMore) {
-                const articlesChunk = await fetchArticles(
-                    settings.solumConfig,
-                    storeNumber,
-                    token,
-                    page,
-                    pageSize
-                );
-
-                if (articlesChunk.length > 0) {
-                    allArticles = [...allArticles, ...articlesChunk];
-                    if (articlesChunk.length < pageSize) {
-                        hasMore = false;
-                    } else {
-                        page++;
-                    }
-                } else {
-                    hasMore = false;
-                }
-            }
-
-            logger.info('PeopleController', 'Articles fetched from AIMS', { count: allArticles.length });
-
-            // Convert articles to Space-like format for the converter
-            const spaces = allArticles.map(article => ({
-                id: article.articleId || article.id,
-                data: article.data || article.articleData || {},
-                labelCode: article.labelCode,
-            }));
-
-            // Convert spaces to people with virtual pool support
-            const people = convertSpacesToPeopleWithVirtualPool(spaces, settings.solumMappingConfig);
-
-            // Update the store with synced people
-            getStoreState().setPeople(people);
-
-            // Extract unique list names from people's listMemberships and populate peopleLists
-            getStoreState().extractListsFromPeople();
-
-            logger.info('PeopleController', 'Sync from AIMS with virtual pool complete', { peopleCount: people.length });
-        } catch (error: any) {
-            logger.error('PeopleController', 'Failed to sync from AIMS with virtual pool', { error: error.message });
-            throw error;
-        }
-    }, [settings.solumConfig, settings.solumMappingConfig]);
+    const syncFromAimsWithVirtualPool = useCallback(
+        () => syncFromAims(true),
+        [syncFromAims]
+    );
 
     return {
         // State (subscribed - triggers re-renders when store changes)
