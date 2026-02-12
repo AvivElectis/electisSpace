@@ -35,26 +35,27 @@ export function PeopleToolbar({
                     <Typography variant="h4" sx={{ fontWeight: 500 }}>
                         {t('people.title')}
                     </Typography>
-                    {activeListName && (
-                        <Chip
-                            icon={<ListAltIcon />}
-                            label={activeListName}
-                            color="info"
-                            variant="filled"
-                            sx={{
-                                mx: 2,
-                                paddingInlineStart: 1,
-                                fontWeight: 600,
-                                fontSize: '0.95rem',
-                                height: 32,
-                            }}
-                        />
-                    )}
+
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
                     {t('people.total')} - {totalPeople}
                 </Typography>
             </Box>
+            {activeListName && (
+                <Chip
+                    icon={<ListAltIcon />}
+                    label={activeListName}
+                    color="info"
+                    variant="filled"
+                    sx={{
+                        mx: 2,
+                        paddingInlineStart: 1,
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        height: 32,
+                    }}
+                />
+            )}
             <Stack direction="row-reverse" gap={2} sx={{ width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-end', sm: 'flex-start' } }}>
                 <Button
                     variant="text"
