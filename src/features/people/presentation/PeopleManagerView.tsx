@@ -250,14 +250,22 @@ export function PeopleManagerView() {
                 aValue = a.id;
                 bValue = b.id;
             } else if (sortConfig.key === 'assignedSpaceId') {
-                aValue = a.assignedSpaceId || '';
-                bValue = b.assignedSpaceId || '';
+                // Numeric sort for space IDs: unassigned (empty) goes last
+                const aNum = a.assignedSpaceId ? parseInt(a.assignedSpaceId, 10) : Infinity;
+                const bNum = b.assignedSpaceId ? parseInt(b.assignedSpaceId, 10) : Infinity;
+                const comparison = aNum - bNum;
+                return sortConfig.direction === 'asc' ? comparison : -comparison;
             } else {
                 aValue = a.data[sortConfig.key] || '';
                 bValue = b.data[sortConfig.key] || '';
             }
 
-            const comparison = aValue.localeCompare(bValue);
+            // Smart comparison: use numeric sort when both values are numbers
+            const aNum = Number(aValue);
+            const bNum = Number(bValue);
+            const comparison = (!isNaN(aNum) && !isNaN(bNum) && aValue !== '' && bValue !== '')
+                ? aNum - bNum
+                : aValue.localeCompare(bValue);
             return sortConfig.direction === 'asc' ? comparison : -comparison;
         });
     }, [filteredPeople, sortConfig]);

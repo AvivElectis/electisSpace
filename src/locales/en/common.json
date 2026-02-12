@@ -871,7 +871,11 @@
         "unsavedChangesMessage": "You have unsaved changes to the current list. Would you like to save them before leaving?",
         "discardChanges": "Discard Changes",
         "freeList": "Free List",
-        "listFreed": "List detached. Working without a list now."
+        "listFreed": "List detached. Working without a list now.",
+        "listLoadedByOther": "{{user}} loaded list \"{{listName}}\"",
+        "listFreedByOther": "{{user}} freed the list",
+        "listUpdatedByOther": "{{user}} updated list \"{{listName}}\"",
+        "nameTooLong": "List name must be {{max}} characters or less"
     },
     "people": {
         "title": "People Manager",

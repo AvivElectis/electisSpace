@@ -229,8 +229,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                     settingsOpen={settingsOpen}
                 />
 
-                {/* Spacer for fixed header (taller on mobile due to 2-row layout) */}
-                <Box sx={{ height: { xs: 100, sm: 64 } }} />
+                {/* Spacer for fixed header (taller on mobile due to 2-row layout, taller on md+ due to 80px logos) */}
+                <Box sx={{ height: { xs: 100, sm: 64, md: 100 } }} />
 
                 {/* Navigation - Tabs for desktop, Drawer for mobile */}
                 {isMobile ? (
