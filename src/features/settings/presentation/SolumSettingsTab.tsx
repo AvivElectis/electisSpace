@@ -299,7 +299,6 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     <SolumPeopleManagerSection
                         enabled={settings.peopleManagerEnabled || false}
                         config={settings.peopleManagerConfig || {}}
-                        articleFormat={articleFormat}
                         onEnabledChange={handlePeopleManagerEnabledChange}
                         onConfigChange={handlePeopleManagerConfigChange}
                     />

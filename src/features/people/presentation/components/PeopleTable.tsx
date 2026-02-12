@@ -166,7 +166,7 @@ export function PeopleTable({
                         </Typography>
                     </Paper>
                 ) : (
-                    <Stack gap={1}>
+                    <Stack gap={0.5}>
                         {people.map((person, index) => (
                             <Card
                                 key={person.id}
@@ -175,16 +175,16 @@ export function PeopleTable({
                                     bgcolor: selectedIds.has(person.id) ? 'action.selected' : 'background.paper',
                                 }}
                             >
-                                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                                     {/* Row 1: Checkbox + Index + Name + Assignment Status */}
-                                    <Stack direction="row" alignItems="center" gap={1} mb={1}>
+                                    <Stack direction="row" alignItems="center" gap={0.5} mb={0.5}>
                                         <Checkbox
                                             checked={selectedIds.has(person.id)}
                                             onChange={(e) => onSelectOne(person.id, e.target.checked)}
                                             size="small"
                                         />
-                                        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 24 }}>
-                                            #{index + 1}
+                                        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 20 }}>
+                                            {index + 1}
                                         </Typography>
                                         {nameFieldKey && person.data[nameFieldKey] && (
                                             <Typography variant="subtitle2" fontWeight={600} noWrap>
@@ -204,9 +204,9 @@ export function PeopleTable({
                                     <Box sx={{
                                         display: 'grid',
                                         gridTemplateColumns: 'repeat(2, 1fr)',
-                                        gap: 0.5,
-                                        mb: 1,
-                                        pl: 1
+                                        gap: 0.25,
+                                        mb: 0.5,
+                                        pl: 0.5,
                                     }}>
                                         {visibleFields.map((field) => (
                                             <Box key={field.key}>

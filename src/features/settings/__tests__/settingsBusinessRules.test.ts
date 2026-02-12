@@ -5,7 +5,6 @@
  * Tests business rule functions for settings management
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import {
     fileToBase64,
     exportSettings,

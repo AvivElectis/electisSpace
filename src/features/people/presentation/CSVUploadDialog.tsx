@@ -44,19 +44,17 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
     const [error, setError] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
 
-    // Get expected columns from article format (excluding ID field - auto-generated)
+    // Get expected columns from article format (all data columns including global fields, excluding auto-generated ID)
     const getExpectedColumns = useCallback(() => {
         if (!settings.solumArticleFormat) return [];
 
-        const globalFields = settings.solumMappingConfig?.globalFieldAssignments || {};
-        const globalFieldKeys = Object.keys(globalFields);
         const articleIdField = settings.solumArticleFormat.mappingInfo?.articleId || 'ARTICLE_ID';
 
-        // Exclude global fields AND the ID field (auto-generated)
+        // Include all article data columns (including global fields), only exclude auto-generated ID
         return settings.solumArticleFormat.articleData.filter(
-            fieldKey => !globalFieldKeys.includes(fieldKey) && fieldKey !== articleIdField
+            fieldKey => fieldKey !== articleIdField
         );
-    }, [settings.solumArticleFormat, settings.solumMappingConfig]);
+    }, [settings.solumArticleFormat]);
 
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -181,7 +179,7 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
                         })}
                     </Typography>
                     <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-                        <strong>{t('people.columns')}:</strong> {expectedColumns.join(', ')}
+                        <strong>{t('people.columns')}:</strong> {expectedColumns.join('; ')}
                     </Typography>
                 </Alert>
 

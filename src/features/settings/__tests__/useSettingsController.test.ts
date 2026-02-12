@@ -8,7 +8,6 @@
  * - Import/Export
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSettingsController } from '../application/useSettingsController';
 import { useSettingsStore } from '../infrastructure/settingsStore';

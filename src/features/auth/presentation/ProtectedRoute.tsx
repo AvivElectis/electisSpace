@@ -8,6 +8,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { tokenManager } from '@shared/infrastructure/services/apiClient';
 import { CircularProgress, Box, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -15,6 +16,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const location = useLocation();
+    const { t } = useTranslation();
     const { isAuthenticated, isLoading, user, isInitialized } = useAuthStore();
 
     // Check if we have a token in memory
@@ -36,7 +38,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             >
                 <CircularProgress />
                 <Typography variant="body2" color="text.secondary">
-                    Restoring session...
+                    {t('app.restoringSession', 'Restoring session...')}
                 </Typography>
             </Box>
         );

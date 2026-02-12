@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 import { useConferenceController } from '../application/useConferenceController';
 import { useConferenceStore } from '../infrastructure/conferenceStore';
+import { conferenceApi } from '../infrastructure/conferenceApi';
 
 // Mock the adapters
 vi.mock('@features/sync/infrastructure/SFTPSyncAdapter', () => ({
@@ -42,6 +42,27 @@ vi.mock('@features/space/infrastructure/spacesStore', () => ({
         getState: () => ({ spaces: [] }),
     },
 }));
+
+// Mock auth store (provides activeStoreId for server API calls)
+vi.mock('@features/auth/infrastructure/authStore', () => ({
+    useAuthStore: {
+        getState: () => ({ activeStoreId: 'test-store-id' }),
+    },
+}));
+
+// Mock conferenceApi (used by conferenceStore for server operations)
+vi.mock('../infrastructure/conferenceApi', () => {
+    const api = {
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        toggleMeeting: vi.fn(),
+        getAll: vi.fn().mockResolvedValue({ rooms: [], stats: { total: 0, withLabels: 0, withMeetings: 0, available: 0 } }),
+        getById: vi.fn(),
+        flipPage: vi.fn(),
+    };
+    return { conferenceApi: api, default: api };
+});
 
 /**
  * Test the dynamic article building logic from mappingInfo
@@ -362,6 +383,51 @@ describe('useConferenceController - Hook Tests', () => {
         // Reset store before each test
         useConferenceStore.getState().clearAllData();
         vi.clearAllMocks();
+
+        // Configure conferenceApi mocks for server operations
+        vi.mocked(conferenceApi.create).mockImplementation(async (data: any) => ({
+            id: data.externalId,
+            serverId: `server-${data.externalId}`,
+            hasMeeting: data.hasMeeting || false,
+            meetingName: data.meetingName || '',
+            startTime: data.startTime || '',
+            endTime: data.endTime || '',
+            participants: data.participants || [],
+            labelCode: data.labelCode,
+            data: { roomName: data.roomName },
+        }));
+
+        vi.mocked(conferenceApi.update).mockImplementation(async (id: string, data: any) => {
+            const rooms = useConferenceStore.getState().conferenceRooms;
+            const existing = rooms.find(r => r.serverId === id || r.id === id);
+            return {
+                id: existing?.id || id,
+                serverId: existing?.serverId || id,
+                hasMeeting: data.hasMeeting ?? existing?.hasMeeting ?? false,
+                meetingName: data.meetingName ?? '',
+                startTime: data.startTime ?? '',
+                endTime: data.endTime ?? '',
+                participants: data.participants ?? [],
+                labelCode: data.labelCode,
+                data: { roomName: data.roomName || existing?.data?.roomName || '' },
+            };
+        });
+
+        vi.mocked(conferenceApi.delete).mockResolvedValue(undefined);
+
+        vi.mocked(conferenceApi.toggleMeeting).mockImplementation(async (id: string) => {
+            const rooms = useConferenceStore.getState().conferenceRooms;
+            const room = rooms.find(r => r.serverId === id || r.id === id);
+            if (!room) throw new Error('Room not found');
+            return {
+                ...room,
+                hasMeeting: !room.hasMeeting,
+                meetingName: room.hasMeeting ? '' : (room.meetingName || ''),
+                startTime: room.hasMeeting ? '' : (room.startTime || ''),
+                endTime: room.hasMeeting ? '' : (room.endTime || ''),
+                participants: room.hasMeeting ? [] : (room.participants || []),
+            };
+        });
     });
 
     describe('Initialization', () => {

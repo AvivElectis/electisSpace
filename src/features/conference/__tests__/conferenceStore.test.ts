@@ -8,7 +8,6 @@
  * - Data cleanup
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { useConferenceStore } from '../infrastructure/conferenceStore';
 import type { ConferenceRoom } from '@shared/domain/types';
 

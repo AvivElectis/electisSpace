@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { performanceMonitor } from './performanceMonitor';
 
 describe('Performance Monitor', () => {

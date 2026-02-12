@@ -10,6 +10,8 @@ import {
     Collapse,
     IconButton,
     CircularProgress,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import SaveIcon from '@mui/icons-material/Save';
@@ -38,13 +40,15 @@ export function PeopleListPanel({
     onSaveAsNew,
 }: PeopleListPanelProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const activeListId = usePeopleStore(state => state.activeListId);
     const activeListName = usePeopleStore(state => state.activeListName);
     const pendingChanges = usePeopleStore(state => state.pendingChanges);
     const people = usePeopleStore(state => state.people);
     const clearPendingChanges = usePeopleStore(state => state.clearPendingChanges);
 
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(!isMobile);
     const [isSaving, setIsSaving] = useState(false);
     const [isFreeing, setIsFreeing] = useState(false);
     const [error, setError] = useState<string | null>(null);

@@ -129,10 +129,10 @@ export function SecuritySettingsTab({
 
     const getPasswordStrength = (password: string): { level: number; text: string; color: string } => {
         if (!password) return { level: 0, text: '', color: 'grey' };
-        if (password.length < 4) return { level: 1, text: 'Too short', color: 'error' };
-        if (password.length < 6) return { level: 2, text: 'Weak', color: 'warning' };
-        if (password.length < 8) return { level: 3, text: 'Medium', color: 'info' };
-        return { level: 4, text: 'Strong', color: 'success' };
+        if (password.length < 4) return { level: 1, text: t('settings.passwordStrength.tooShort'), color: 'error' };
+        if (password.length < 6) return { level: 2, text: t('settings.passwordStrength.weak'), color: 'warning' };
+        if (password.length < 8) return { level: 3, text: t('settings.passwordStrength.medium'), color: 'info' };
+        return { level: 4, text: t('settings.passwordStrength.strong'), color: 'success' };
     };
 
     const strength = getPasswordStrength(newPassword);

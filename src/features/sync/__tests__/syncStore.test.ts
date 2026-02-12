@@ -8,7 +8,6 @@
  * - Token management
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { useSyncStore } from '../infrastructure/syncStore';
 
 describe('SyncStore', () => {

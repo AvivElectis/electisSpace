@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { validateExportedData } from '../domain/validation';
 
 /**

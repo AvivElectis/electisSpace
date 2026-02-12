@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { MANUAL_TABS } from './types';
 
 describe('Manual Domain Types', () => {
@@ -49,15 +48,16 @@ describe('Manual Domain Types', () => {
             expect(gettingStartedTab?.iconName).toBe('RocketLaunch');
         });
 
-        it('should have 3 sections', () => {
-            expect(gettingStartedTab?.sections.length).toBe(3);
+        it('should have 4 sections', () => {
+            expect(gettingStartedTab?.sections.length).toBe(4);
         });
 
-        it('should have overview, first-steps, connection sections', () => {
+        it('should have welcome, navigation, first-setup, roles sections', () => {
             const sectionIds = gettingStartedTab?.sections.map(s => s.id);
-            expect(sectionIds).toContain('overview');
-            expect(sectionIds).toContain('first-steps');
-            expect(sectionIds).toContain('connection');
+            expect(sectionIds).toContain('welcome');
+            expect(sectionIds).toContain('navigation');
+            expect(sectionIds).toContain('first-setup');
+            expect(sectionIds).toContain('roles');
         });
     });
 
@@ -72,8 +72,8 @@ describe('Manual Domain Types', () => {
             expect(spacesTab?.iconName).toBe('Business');
         });
 
-        it('should have 3 sections', () => {
-            expect(spacesTab?.sections.length).toBe(3);
+        it('should have 4 sections', () => {
+            expect(spacesTab?.sections.length).toBe(4);
         });
     });
 

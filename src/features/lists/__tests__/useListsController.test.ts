@@ -1,22 +1,30 @@
 /**
  * useListsController Hook Tests
- * Phase 10.13 - Deep Testing System
- * 
  * Tests the lists controller hook for list management operations
+ * (API-based implementation using spacesListsApi)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useListsController } from '../application/useListsController';
-import { useListsStore } from '../infrastructure/listsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { spacesListsApi } from '@shared/infrastructure/services/spacesListsApi';
 
-// Mock the sync context
-vi.mock('@features/sync/application/SyncContext', () => ({
-    useSyncContext: () => ({
-        workingMode: 'SOLUM_API',
-        safeUpload: vi.fn().mockResolvedValue(undefined),
-        sync: vi.fn().mockResolvedValue(undefined),
+// Mock spacesListsApi
+vi.mock('@shared/infrastructure/services/spacesListsApi', () => ({
+    spacesListsApi: {
+        list: vi.fn(),
+        getById: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+    },
+}));
+
+// Mock auth store
+vi.mock('@features/auth/infrastructure/authStore', () => ({
+    useAuthStore: vi.fn((selector: any) => {
+        const state = { activeStoreId: 'test-store-id' };
+        return selector ? selector(state) : state;
     }),
 }));
 
@@ -30,24 +38,21 @@ vi.mock('@shared/infrastructure/services/logger', () => ({
     },
 }));
 
-// Mock uuid
-vi.mock('uuid', () => ({
-    v4: () => 'test-uuid-123',
-}));
-
 describe('useListsController', () => {
     beforeEach(() => {
-        // Reset stores before each test
-        useListsStore.setState({ lists: [] });
+        vi.clearAllMocks();
         useSpacesStore.setState({
             spaces: [],
             activeListId: undefined,
             activeListName: undefined,
         });
+
+        // Default: list returns empty
+        vi.mocked(spacesListsApi.list).mockResolvedValue({ data: [] });
     });
 
     describe('initialization', () => {
-        it('should return lists from store', () => {
+        it('should return lists array', () => {
             const { result } = renderHook(() => useListsController());
 
             expect(result.current.lists).toBeDefined();
@@ -69,93 +74,139 @@ describe('useListsController', () => {
             expect(typeof result.current.loadList).toBe('function');
             expect(typeof result.current.deleteList).toBe('function');
             expect(typeof result.current.saveListChanges).toBe('function');
+            expect(typeof result.current.fetchLists).toBe('function');
         });
     });
 
     describe('saveCurrentSpacesAsList', () => {
-        it('should save current spaces as a new list', () => {
+        it('should call API to save current spaces as a new list', async () => {
             const mockSpaces = [
                 { id: '1', data: { name: 'Space 1' } },
                 { id: '2', data: { name: 'Space 2' } },
             ];
             useSpacesStore.setState({ spaces: mockSpaces });
 
-            const { result } = renderHook(() => useListsController());
-
-            act(() => {
-                result.current.saveCurrentSpacesAsList('Test List');
-            });
-
-            expect(result.current.lists.length).toBe(1);
-            expect(result.current.lists[0].name).toBe('Test List');
-            expect(result.current.lists[0].spaces).toEqual(mockSpaces);
-        });
-
-        it('should throw error if list name already exists', () => {
-            useListsStore.setState({
-                lists: [{
-                    id: 'existing-id',
-                    name: 'Existing List',
-                    spaces: [],
+            vi.mocked(spacesListsApi.create).mockResolvedValue({
+                data: {
+                    id: 'new-list-id',
+                    storeId: 'test-store-id',
+                    name: 'Test List',
+                    itemCount: 2,
+                    content: mockSpaces as any,
                     createdAt: '2025-01-01T00:00:00.000Z',
                     updatedAt: '2025-01-01T00:00:00.000Z',
-                }],
+                },
             });
 
             const { result } = renderHook(() => useListsController());
 
-            expect(() => {
-                result.current.saveCurrentSpacesAsList('Existing List');
-            }).toThrow('List name already exists');
+            await act(async () => {
+                await result.current.saveCurrentSpacesAsList('Test List');
+            });
+
+            expect(spacesListsApi.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    storeId: 'test-store-id',
+                    name: 'Test List',
+                })
+            );
         });
 
-        it('should set active list name and id after saving', () => {
+        it('should throw error if no store selected', async () => {
+            // Override auth store mock to have no activeStoreId
+            const { useAuthStore } = await import('@features/auth/infrastructure/authStore');
+            vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+                const state = { activeStoreId: undefined };
+                return selector ? selector(state) : state;
+            });
+
+            const { result } = renderHook(() => useListsController());
+
+            await expect(
+                result.current.saveCurrentSpacesAsList('Test List')
+            ).rejects.toThrow('No store selected');
+
+            // Restore
+            vi.mocked(useAuthStore).mockImplementation((selector: any) => {
+                const state = { activeStoreId: 'test-store-id' };
+                return selector ? selector(state) : state;
+            });
+        });
+
+        it('should set active list name and id after saving', async () => {
             const mockSpaces = [{ id: '1', data: { name: 'Space 1' } }];
             useSpacesStore.setState({ spaces: mockSpaces });
 
+            vi.mocked(spacesListsApi.create).mockResolvedValue({
+                data: {
+                    id: 'saved-list-id',
+                    storeId: 'test-store-id',
+                    name: 'New List',
+                    itemCount: 1,
+                    content: mockSpaces as any,
+                    createdAt: '2025-01-01T00:00:00.000Z',
+                    updatedAt: '2025-01-01T00:00:00.000Z',
+                },
+            });
+
             const { result } = renderHook(() => useListsController());
 
-            act(() => {
-                result.current.saveCurrentSpacesAsList('New List');
+            await act(async () => {
+                await result.current.saveCurrentSpacesAsList('New List');
             });
 
             const spacesState = useSpacesStore.getState();
             expect(spacesState.activeListName).toBe('New List');
-            expect(spacesState.activeListId).toBe('test-uuid-123');
+            expect(spacesState.activeListId).toBe('saved-list-id');
         });
 
-        it('should allow saving empty spaces list', () => {
+        it('should allow saving empty spaces list', async () => {
             useSpacesStore.setState({ spaces: [] });
+
+            vi.mocked(spacesListsApi.create).mockResolvedValue({
+                data: {
+                    id: 'empty-list-id',
+                    storeId: 'test-store-id',
+                    name: 'Empty List',
+                    itemCount: 0,
+                    content: [],
+                    createdAt: '2025-01-01T00:00:00.000Z',
+                    updatedAt: '2025-01-01T00:00:00.000Z',
+                },
+            });
 
             const { result } = renderHook(() => useListsController());
 
-            act(() => {
-                result.current.saveCurrentSpacesAsList('Empty List');
+            await act(async () => {
+                await result.current.saveCurrentSpacesAsList('Empty List');
             });
 
-            expect(result.current.lists.length).toBe(1);
-            expect(result.current.lists[0].spaces).toEqual([]);
+            expect(spacesListsApi.create).toHaveBeenCalled();
         });
     });
 
     describe('loadList', () => {
-        it('should throw error if list not found', async () => {
+        it('should throw error if API call fails', async () => {
+            vi.mocked(spacesListsApi.getById).mockRejectedValue(new Error('Not found'));
+
             const { result } = renderHook(() => useListsController());
 
             await expect(result.current.loadList('non-existent-id'))
-                .rejects.toThrow('List not found');
+                .rejects.toThrow('Not found');
         });
 
         it('should load list and set active list info', async () => {
             const mockSpaces = [{ id: '1', data: { name: 'Space 1' } }];
-            useListsStore.setState({
-                lists: [{
+            vi.mocked(spacesListsApi.getById).mockResolvedValue({
+                data: {
                     id: 'list-123',
+                    storeId: 'test-store-id',
                     name: 'Saved List',
-                    spaces: mockSpaces,
+                    itemCount: 1,
+                    content: mockSpaces as any,
                     createdAt: '2025-01-01T00:00:00.000Z',
                     updatedAt: '2025-01-01T00:00:00.000Z',
-                }],
+                },
             });
 
             const { result } = renderHook(() => useListsController());
@@ -168,50 +219,52 @@ describe('useListsController', () => {
             expect(spacesState.activeListName).toBe('Saved List');
             expect(spacesState.activeListId).toBe('list-123');
         });
-    });
 
-    describe('deleteList', () => {
-        it('should delete list from store', () => {
-            useListsStore.setState({
-                lists: [{
-                    id: 'list-to-delete',
-                    name: 'Delete Me',
-                    spaces: [],
+        it('should throw error if list content is invalid', async () => {
+            vi.mocked(spacesListsApi.getById).mockResolvedValue({
+                data: {
+                    id: 'list-123',
+                    storeId: 'test-store-id',
+                    name: 'Bad List',
+                    itemCount: 0,
+                    content: undefined as any,
                     createdAt: '2025-01-01T00:00:00.000Z',
                     updatedAt: '2025-01-01T00:00:00.000Z',
-                }],
+                },
             });
 
             const { result } = renderHook(() => useListsController());
 
-            expect(result.current.lists.length).toBe(1);
+            await expect(result.current.loadList('list-123'))
+                .rejects.toThrow('List content is empty or invalid');
+        });
+    });
 
-            act(() => {
-                result.current.deleteList('list-to-delete');
+    describe('deleteList', () => {
+        it('should call API to delete list', async () => {
+            vi.mocked(spacesListsApi.delete).mockResolvedValue(undefined);
+
+            const { result } = renderHook(() => useListsController());
+
+            await act(async () => {
+                await result.current.deleteList('list-to-delete');
             });
 
-            expect(result.current.lists.length).toBe(0);
+            expect(spacesListsApi.delete).toHaveBeenCalledWith('list-to-delete');
         });
 
-        it('should clear active list if deleted list was active', () => {
-            useListsStore.setState({
-                lists: [{
-                    id: 'active-list',
-                    name: 'Active List',
-                    spaces: [],
-                    createdAt: '2025-01-01T00:00:00.000Z',
-                    updatedAt: '2025-01-01T00:00:00.000Z',
-                }],
-            });
+        it('should clear active list if deleted list was active', async () => {
             useSpacesStore.setState({
                 activeListName: 'Active List',
                 activeListId: 'active-list',
             });
 
+            vi.mocked(spacesListsApi.delete).mockResolvedValue(undefined);
+
             const { result } = renderHook(() => useListsController());
 
-            act(() => {
-                result.current.deleteList('active-list');
+            await act(async () => {
+                await result.current.deleteList('active-list');
             });
 
             const spacesState = useSpacesStore.getState();
@@ -219,34 +272,18 @@ describe('useListsController', () => {
             expect(spacesState.activeListId).toBeUndefined();
         });
 
-        it('should not affect active list if different list deleted', () => {
-            useListsStore.setState({
-                lists: [
-                    {
-                        id: 'active-list',
-                        name: 'Active List',
-                        spaces: [],
-                        createdAt: '2025-01-01T00:00:00.000Z',
-                        updatedAt: '2025-01-01T00:00:00.000Z',
-                    },
-                    {
-                        id: 'other-list',
-                        name: 'Other List',
-                        spaces: [],
-                        createdAt: '2025-01-01T00:00:00.000Z',
-                        updatedAt: '2025-01-01T00:00:00.000Z',
-                    },
-                ],
-            });
+        it('should not affect active list if different list deleted', async () => {
             useSpacesStore.setState({
                 activeListName: 'Active List',
                 activeListId: 'active-list',
             });
 
+            vi.mocked(spacesListsApi.delete).mockResolvedValue(undefined);
+
             const { result } = renderHook(() => useListsController());
 
-            act(() => {
-                result.current.deleteList('other-list');
+            await act(async () => {
+                await result.current.deleteList('other-list');
             });
 
             const spacesState = useSpacesStore.getState();
@@ -256,86 +293,82 @@ describe('useListsController', () => {
     });
 
     describe('saveListChanges', () => {
-        it('should throw error if list not found', () => {
-            const { result } = renderHook(() => useListsController());
-
-            expect(() => {
-                result.current.saveListChanges('non-existent-id');
-            }).toThrow('List not found');
-        });
-
-        it('should update list with current spaces', () => {
-            const originalSpaces = [{ id: '1', data: { name: 'Original' } }];
+        it('should call API to update list', async () => {
             const updatedSpaces = [
                 { id: '1', data: { name: 'Updated' } },
                 { id: '2', data: { name: 'New Space' } },
             ];
-
-            useListsStore.setState({
-                lists: [{
-                    id: 'list-123',
-                    name: 'My List',
-                    spaces: originalSpaces,
-                    createdAt: '2025-01-01T00:00:00.000Z',
-                    updatedAt: '2025-01-01T00:00:00.000Z',
-                }],
-            });
             useSpacesStore.setState({ spaces: updatedSpaces });
 
-            const { result } = renderHook(() => useListsController());
-
-            act(() => {
-                result.current.saveListChanges('list-123');
-            });
-
-            expect(result.current.lists[0].spaces).toEqual(updatedSpaces);
-        });
-
-        it('should update updatedAt timestamp', () => {
-            const originalDate = '2025-01-01T00:00:00.000Z';
-            useListsStore.setState({
-                lists: [{
+            vi.mocked(spacesListsApi.update).mockResolvedValue({
+                data: {
                     id: 'list-123',
+                    storeId: 'test-store-id',
                     name: 'My List',
-                    spaces: [],
-                    createdAt: originalDate,
-                    updatedAt: originalDate,
-                }],
+                    itemCount: 2,
+                    content: updatedSpaces as any,
+                    createdAt: '2025-01-01T00:00:00.000Z',
+                    updatedAt: '2025-02-01T00:00:00.000Z',
+                },
             });
-            useSpacesStore.setState({ spaces: [] });
 
             const { result } = renderHook(() => useListsController());
 
-            act(() => {
-                result.current.saveListChanges('list-123');
+            await act(async () => {
+                await result.current.saveListChanges('list-123');
             });
 
-            // The updatedAt should be different from original
-            // (We can't check exact value due to timing, but listsStore.updateList updates it)
-            expect(result.current.lists[0].updatedAt).not.toBe(originalDate);
+            expect(spacesListsApi.update).toHaveBeenCalledWith(
+                'list-123',
+                expect.objectContaining({ content: expect.any(Array) })
+            );
         });
 
-        it('should set active list name and id after saving changes', () => {
-            useListsStore.setState({
-                lists: [{
-                    id: 'list-123',
-                    name: 'My List',
-                    spaces: [],
+        it('should throw error if API call fails', async () => {
+            vi.mocked(spacesListsApi.update).mockRejectedValue(new Error('Not found'));
+
+            const { result } = renderHook(() => useListsController());
+
+            await expect(
+                result.current.saveListChanges('non-existent-id')
+            ).rejects.toThrow('Not found');
+        });
+    });
+
+    describe('fetchLists', () => {
+        it('should fetch lists from API', async () => {
+            const mockLists = [
+                {
+                    id: 'list-1',
+                    storeId: 'test-store-id',
+                    name: 'List 1',
+                    itemCount: 3,
                     createdAt: '2025-01-01T00:00:00.000Z',
                     updatedAt: '2025-01-01T00:00:00.000Z',
-                }],
-            });
-            useSpacesStore.setState({ spaces: [] });
+                },
+            ];
+            vi.mocked(spacesListsApi.list).mockResolvedValue({ data: mockLists });
 
             const { result } = renderHook(() => useListsController());
 
-            act(() => {
-                result.current.saveListChanges('list-123');
+            await act(async () => {
+                await result.current.fetchLists();
             });
 
-            const spacesState = useSpacesStore.getState();
-            expect(spacesState.activeListName).toBe('My List');
-            expect(spacesState.activeListId).toBe('list-123');
+            expect(result.current.lists).toEqual(mockLists);
+        });
+
+        it('should handle API errors gracefully', async () => {
+            vi.mocked(spacesListsApi.list).mockRejectedValue(new Error('Network error'));
+
+            const { result } = renderHook(() => useListsController());
+
+            // Should not throw - errors are caught internally
+            await act(async () => {
+                await result.current.fetchLists();
+            });
+
+            expect(result.current.lists).toEqual([]);
         });
     });
 
@@ -343,7 +376,6 @@ describe('useListsController', () => {
         it('should provide functions that remain callable after rerender', () => {
             const { result, rerender } = renderHook(() => useListsController());
 
-            // Functions should be defined after first render
             expect(typeof result.current.saveCurrentSpacesAsList).toBe('function');
             expect(typeof result.current.loadList).toBe('function');
             expect(typeof result.current.deleteList).toBe('function');
@@ -351,29 +383,10 @@ describe('useListsController', () => {
 
             rerender();
 
-            // Functions should still be defined and callable after rerender
             expect(typeof result.current.saveCurrentSpacesAsList).toBe('function');
             expect(typeof result.current.loadList).toBe('function');
             expect(typeof result.current.deleteList).toBe('function');
             expect(typeof result.current.saveListChanges).toBe('function');
-        });
-
-        it('should update lists when store changes', () => {
-            const { result } = renderHook(() => useListsController());
-
-            expect(result.current.lists.length).toBe(0);
-
-            act(() => {
-                useListsStore.getState().saveList({
-                    id: 'new-list',
-                    name: 'New List',
-                    spaces: [],
-                    createdAt: '2025-01-01T00:00:00.000Z',
-                    updatedAt: '2025-01-01T00:00:00.000Z',
-                });
-            });
-
-            expect(result.current.lists.length).toBe(1);
         });
     });
 });

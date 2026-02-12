@@ -6,12 +6,9 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    FormControlLabel,
-    Switch,
     Typography,
     Divider,
     Button,
-    Alert,
     CircularProgress,
     Dialog,
     DialogTitle,
@@ -19,12 +16,10 @@ import {
     DialogContentText,
     DialogActions,
 } from '@mui/material';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUpdateController } from '@features/update/application/useUpdateController';
+
 import { useSettingsStore } from '../infrastructure/settingsStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
@@ -58,17 +53,6 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
     const [pendingMode, setPendingMode] = useState<WorkingMode | null>(null);
     const [showModeSwitchDialog, setShowModeSwitchDialog] = useState(false);
     const [isSwitching, setIsSwitching] = useState(false);
-    const {
-        currentVersion,
-        checking,
-        checkForUpdates,
-        updateInfo,
-    } = useUpdateController();
-
-    const handleCheckForUpdates = async () => {
-        await checkForUpdates();
-    };
-
     // Mode switching logic removed/deprecated
     /*
     const handleModeChange = (newMode: WorkingMode) => {
@@ -204,77 +188,6 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
                 </Box>
                 */}
 
-
-
-                {/* Update Settings */}
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('update.updateSettings')}
-                    </Typography>
-                    <Stack gap={1.5}>
-                        {/* Current Version */}
-                        <TextField
-                            size="small"
-                            label={t('update.currentVersion')}
-                            value={`v${currentVersion}`}
-                            InputProps={{
-                                readOnly: true,
-
-                            }}
-                            sx={{ width: 'fit-content' }}
-                            variant="filled"
-                        />
-
-                        {/* Auto-Update Toggle */}
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    size="small"
-                                    checked={settings.autoUpdateEnabled ?? true}
-                                    onChange={(e) => onUpdate({ autoUpdateEnabled: e.target.checked })}
-                                />
-                            }
-                            label={<Typography variant="body2">{t('update.autoUpdate')}</Typography>}
-                        />
-
-                        {/* Manual Check Button */}
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            startIcon={
-                                checking ? (
-                                    <CircularProgress size={20} color="inherit" />
-                                ) : (
-                                    <CloudDownloadIcon />
-                                )
-                            }
-                            onClick={handleCheckForUpdates}
-                            disabled={checking}
-                            sx={{ alignSelf: 'flex-start' }}
-                        >
-                            {checking
-                                ? t('update.checking')
-                                : t('update.checkForUpdates')}
-                        </Button>
-
-                        {/* Update Status */}
-                        {updateInfo && (
-                            <Alert severity="info" icon={<CheckCircleIcon />} sx={{ py: 0.5 }}>
-                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                    {t('update.newVersion', { version: updateInfo.version })}
-                                </Typography>
-                            </Alert>
-                        )}
-
-                        {!checking && !updateInfo && currentVersion && (
-                            <Alert severity="success" icon={<CheckCircleIcon />} sx={{ py: 0.5 }}>
-                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                    {t('update.upToDate')}
-                                </Typography>
-                            </Alert>
-                        )}
-                    </Stack>
-                </Box>
             </Stack>
         </Box>
     );

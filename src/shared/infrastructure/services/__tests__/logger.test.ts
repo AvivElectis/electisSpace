@@ -9,7 +9,6 @@
  * - Log statistics
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { Logger, LOG_CATEGORIES } from '../logger';
 
 describe('Logger', () => {

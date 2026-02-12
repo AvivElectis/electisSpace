@@ -4,7 +4,6 @@
  * Performance benchmarks and tests (Phase 6.4).
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     measureAsync,
     measureSync,

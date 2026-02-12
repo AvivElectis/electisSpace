@@ -6,7 +6,7 @@ import { createAppTheme } from './theme';
 import { AppRoutes } from './AppRoutes';
 import { MainLayout } from './shared/presentation/layouts/MainLayout';
 import { NotificationContainer } from './shared/presentation/components/NotificationContainer';
-import { UpdateNotification } from './features/update/presentation/UpdateNotification';
+
 import { CustomTitleBar } from './shared/presentation/components/CustomTitleBar';
 import { ErrorBoundary } from './shared/presentation/components/ErrorBoundary';
 import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
@@ -33,7 +33,7 @@ function AuthWatchdogWrapper({ children }: { children: React.ReactNode }) {
  * Supports dynamic RTL/LTR switching based on language
  */
 function App() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isAppReady = useAuthStore((state) => state.isAppReady);
 
   // Log app initialization
@@ -79,7 +79,7 @@ function App() {
               >
                 <CircularProgress size={60} />
                 <Typography variant="h6" color="text.secondary">
-                  Loading application...
+                  {t('app.loadingApplication', 'Loading application...')}
                 </Typography>
               </Box>
             ) : (
@@ -88,7 +88,6 @@ function App() {
                   <AppRoutes />
                 </MainLayout>
                 <NotificationContainer />
-                <UpdateNotification />
               </>
             )}
           </AuthWatchdogWrapper>

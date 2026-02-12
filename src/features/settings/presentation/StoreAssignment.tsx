@@ -121,6 +121,9 @@ export function StoreAssignment({
         fetchStores();
     }, [fetchStores]);
 
+    // All feature IDs for elevated roles
+    const ALL_FEATURES = AVAILABLE_FEATURES.map(f => f.id);
+
     // Guard against undefined arrays
     const safeAssignments = assignments || [];
     const safeStores = stores || [];
@@ -133,12 +136,17 @@ export function StoreAssignment({
         const store = safeStores.find(s => s.id === storeId);
         if (!store) return;
 
+        // Use all features for elevated roles
+        const effectiveFeatures = (defaultRole === 'STORE_MANAGER' || defaultRole === 'STORE_ADMIN')
+            ? [...ALL_FEATURES]
+            : [...defaultFeatures];
+
         const newAssignment: StoreAssignmentData = {
             storeId: store.id,
             storeName: store.name,
             storeCode: store.code,
             role: defaultRole,
-            features: [...defaultFeatures]
+            features: effectiveFeatures
         };
 
         onAssignmentsChange([...safeAssignments, newAssignment]);
@@ -152,9 +160,14 @@ export function StoreAssignment({
     // Update a store assignment's role
     const handleRoleChange = (storeId: string, role: StoreRole) => {
         onAssignmentsChange(
-            safeAssignments.map(a => 
-                a.storeId === storeId ? { ...a, role } : a
-            )
+            safeAssignments.map(a => {
+                if (a.storeId !== storeId) return a;
+                // Auto-enable all features for manager/admin roles
+                const features = (role === 'STORE_MANAGER' || role === 'STORE_ADMIN')
+                    ? [...ALL_FEATURES]
+                    : a.features;
+                return { ...a, role, features };
+            })
         );
     };
 

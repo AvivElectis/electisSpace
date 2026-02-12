@@ -7,7 +7,6 @@
  * - Person type helpers
  */
 
-import { describe, it, expect } from 'vitest';
 import { isPoolId, getNextPoolId } from '../infrastructure/virtualPoolService';
 import { getVirtualSpaceId } from '../domain/types';
 import type { Person } from '../domain/types';

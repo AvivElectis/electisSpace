@@ -4,7 +4,6 @@
  * Tests for Phase 6.5 - UI/UX Refinement components and utilities.
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import {
     animations,

@@ -5,7 +5,6 @@
  * Tests settings export/import, defaults, and password handling
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import {
     exportSettings,
     importSettings,

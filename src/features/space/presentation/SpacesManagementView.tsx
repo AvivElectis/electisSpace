@@ -12,6 +12,7 @@ import {
     Skeleton,
     Card,
     CardContent,
+    Collapse,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
@@ -23,6 +24,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import FolderIcon from '@mui/icons-material/Folder';
 import SaveIcon from '@mui/icons-material/Save';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import React, { useState, useEffect, useMemo, useCallback, useDeferredValue, lazy, Suspense } from 'react';
 import { List as VirtualList } from 'react-window';
 import { useTranslation } from 'react-i18next';
@@ -306,6 +310,7 @@ export function SpacesManagementView() {
     // Lists Dialogs State
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
     const [saveListOpen, setSaveListOpen] = useState(false);
+    const [listsPanelExpanded, setListsPanelExpanded] = useState(!isMobile);
 
     // Fetch spaces from Server DB when app is ready (Source of Truth for Cloud Persistence)
     useEffect(() => {
@@ -465,15 +470,15 @@ export function SpacesManagementView() {
         <Box>
             {/* Header Section */}
             <Stack
-                direction={{ xs: 'column', sm: 'row' }}
+                direction="row"
                 justifyContent="space-between"
-                alignItems={{ xs: 'stretch', sm: 'center' }}
-                gap={2}
+                alignItems="center"
+                gap={1}
                 sx={{ mb: 3 }}
             >
-                <Box>
-                    <Stack direction="row" alignItems="center" mb={0.5}>
-                        <Typography variant="h4" sx={{ fontWeight: 500 }}>
+                <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" gap={1} mb={0.5}>
+                        <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
                             {getLabel('plural')}
                         </Typography>
                         {activeListName && (
@@ -484,7 +489,11 @@ export function SpacesManagementView() {
                                 borderRadius: .5,
                                 px: 1,
                                 py: 0,
-                                mx: 2,
+                                fontSize: { xs: '0.85rem', sm: '1.1rem' },
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: { xs: 140, sm: 'none' },
                             }}>
                                 {activeListName}
                             </Typography>
@@ -494,15 +503,15 @@ export function SpacesManagementView() {
                         {t('spaces.total')} {getLabel('plural')} - {spaceController.spaces.length}
                     </Typography>
                 </Box>
-                <Stack direction="row" gap={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAdd}
-                    >
-                        {getLabel('add')}
-                    </Button>
-                </Stack>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleAdd}
+                    size="small"
+                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                >
+                    {getLabel('add')}
+                </Button>
             </Stack>
             {/* Search Bar */}
             <TextField
@@ -551,10 +560,10 @@ export function SpacesManagementView() {
                             </Typography>
                         </Paper>
                     ) : (
-                        <Stack gap={1}>
+                        <Stack gap={0.5}>
                             {filteredAndSortedSpaces.map((space, index) => (
                                 <Card key={`${space.id}-${index}`} variant="outlined">
-                                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                                         {/* Row 1: ID + Name + Actions */}
                                         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
                                             <Stack direction="row" alignItems="center" gap={1}>
@@ -617,51 +626,65 @@ export function SpacesManagementView() {
                     onDelete={handleDelete}
                 />)
             )}
-            {/* Bottom Actions Bar */}
-            <Box sx={{
-                mt: 2,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                bgcolor: 'background.paper',
-                p: 2,
-                borderRadius: 1,
-                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
-            }}>
-                <Box>
-                    <Button
-                        variant="outlined"
-                        startIcon={<FolderIcon />}
-                        onClick={() => setListsManagerOpen(true)}
-                        sx={{ mr: 2 }}
-                    >
-                        {t('lists.manage')}
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SaveIcon />}
-                        onClick={() => setSaveListOpen(true)}
-                    >
-                        {t('lists.saveAsNew')}
-                    </Button>
-                </Box>
+            {/* List Management Panel */}
+            <Paper sx={{ mt: 2, overflow: 'hidden' }}>
+                <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ px: 2, py: 1, bgcolor: 'action.hover', cursor: 'pointer' }}
+                    onClick={() => setListsPanelExpanded(!listsPanelExpanded)}
+                >
+                    <Stack direction="row" alignItems="center" gap={1}>
+                        <ListAltIcon fontSize="small" color="action" />
+                        <Typography variant="subtitle2">{t('lists.manage')}</Typography>
+                    </Stack>
+                    <IconButton size="small">
+                        {listsPanelExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    </IconButton>
+                </Stack>
+                <Collapse in={listsPanelExpanded}>
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        p: 2,
+                    }}>
+                        <Stack direction="row" gap={1} flexWrap="wrap">
+                            <Button
+                                variant="outlined"
+                                startIcon={<FolderIcon />}
+                                onClick={() => setListsManagerOpen(true)}
+                            >
+                                {t('lists.manage')}
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<SaveIcon />}
+                                onClick={() => setSaveListOpen(true)}
+                            >
+                                {t('lists.saveAsNew')}
+                            </Button>
+                        </Stack>
 
-                {activeListId && (
-                    <Button
-                        variant="outlined"
-                        color="success"
-                        startIcon={<SaveIcon />}
-                        disabled={!pendingChanges}
-                        onClick={() => {
-                            if (activeListId) {
-                                saveListChanges(activeListId);
-                            }
-                        }}
-                    >
-                        {t('lists.saveChanges')}
-                    </Button>
-                )}
-            </Box>
+                        {activeListId && (
+                            <Button
+                                variant="outlined"
+                                color="success"
+                                startIcon={<SaveIcon />}
+                                disabled={!pendingChanges}
+                                onClick={() => {
+                                    if (activeListId) {
+                                        saveListChanges(activeListId);
+                                    }
+                                }}
+                            >
+                                {t('lists.saveChanges')}
+                            </Button>
+                        )}
+                    </Box>
+                </Collapse>
+            </Paper>
             {/* Add/Edit Dialog - Lazy loaded */}
             <Suspense fallback={null}>
                 {dialogOpen && (

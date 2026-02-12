@@ -5,8 +5,6 @@
  * - Space type labels and translations
  */
 
-import { describe, it, expect } from 'vitest';
-
 // =============================================================================
 // SPACE TYPE LABELS TESTS
 // =============================================================================

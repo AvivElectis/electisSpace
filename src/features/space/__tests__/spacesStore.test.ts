@@ -7,7 +7,6 @@
  * - Merge operations
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { useSpacesStore } from '../infrastructure/spacesStore';
 import type { Space } from '@shared/domain/types';
 import type { SpacesList } from '../domain/types';

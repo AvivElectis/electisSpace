@@ -86,6 +86,7 @@ export interface CompanyInfo {
     name: string;
     code: string;
     role: CompanyRole;
+    allStoresAccess: boolean;
 }
 
 export interface UserInfo {
@@ -94,6 +95,8 @@ export interface UserInfo {
     firstName: string | null;
     lastName: string | null;
     globalRole: GlobalRole | null;
+    activeCompanyId: string | null;
+    activeStoreId: string | null;
     stores: StoreInfo[];
     companies: CompanyInfo[];
 }
@@ -173,9 +176,12 @@ export interface UserWithRelations {
             };
         };
     }>;
+    activeCompanyId: string | null;
+    activeStoreId: string | null;
     userCompanies: Array<{
         companyId: string;
         role: CompanyRole;
+        allStoresAccess: boolean;
         company: {
             name: string;
             code: string;

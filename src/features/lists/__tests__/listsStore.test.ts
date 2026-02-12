@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { act } from '@testing-library/react';
 import { useListsStore } from '../infrastructure/listsStore';
 import type { SavedList } from '../domain/types';

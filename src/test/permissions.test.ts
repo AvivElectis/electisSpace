@@ -5,7 +5,6 @@
  * Tests all permission helper functions across various user scenarios.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     runPermissionTests,
     createMockUser,
