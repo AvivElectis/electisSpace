@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse } from './aims.types.js';
 
 // Types definition (replicating needed parts from shared/domain/types)
 export interface SolumConfig {
@@ -219,7 +220,7 @@ export class SolumService {
     /**
      * Fetch articles
      */
-    async fetchArticles(config: SolumConfig, token: string, page = 0, size = 100): Promise<any[]> {
+    async fetchArticles(config: SolumConfig, token: string, page = 0, size = 100): Promise<AimsArticle[]> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
@@ -286,7 +287,7 @@ export class SolumService {
     /**
      * Push articles (Create/Update)
      */
-    async pushArticles(config: SolumConfig, token: string, articles: any[]): Promise<void> {
+    async pushArticles(config: SolumConfig, token: string, articles: AimsArticle[]): Promise<void> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}`);
@@ -327,7 +328,7 @@ export class SolumService {
     /**
      * Fetch labels from AIMS
      */
-    async fetchLabels(config: SolumConfig, token: string, page = 0, size = 100): Promise<any[]> {
+    async fetchLabels(config: SolumConfig, token: string, page = 0, size = 100): Promise<AimsLabel[]> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
@@ -353,8 +354,8 @@ export class SolumService {
     /**
      * Fetch all labels with pagination
      */
-    async fetchAllLabels(config: SolumConfig, token: string): Promise<any[]> {
-        const allLabels: any[] = [];
+    async fetchAllLabels(config: SolumConfig, token: string): Promise<AimsLabel[]> {
+        const allLabels: AimsLabel[] = [];
         let page = 0;
         const size = 100;
         let hasMore = true;
@@ -377,7 +378,7 @@ export class SolumService {
     /**
      * Fetch unassigned labels
      */
-    async fetchUnassignedLabels(config: SolumConfig, token: string): Promise<any[]> {
+    async fetchUnassignedLabels(config: SolumConfig, token: string): Promise<AimsLabel[]> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/unassigned?company=${config.companyName}&store=${config.storeCode}`);
@@ -400,7 +401,7 @@ export class SolumService {
     /**
      * Fetch label images
      */
-    async fetchLabelImages(config: SolumConfig, token: string, labelCode: string): Promise<{ displayImageList?: any[] }> {
+    async fetchLabelImages(config: SolumConfig, token: string, labelCode: string): Promise<AimsLabelDetail> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/detail?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}`);
@@ -421,18 +422,16 @@ export class SolumService {
     /**
      * Link label to article
      */
-    async linkLabel(config: SolumConfig, token: string, labelCode: string, articleId: string, templateName?: string): Promise<any> {
+    async linkLabel(config: SolumConfig, token: string, labelCode: string, articleId: string, templateName?: string): Promise<AimsApiResponse> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/link?company=${config.companyName}&store=${config.storeCode}`);
 
-        const assignEntry: any = {
+        const assignEntry: AimsLinkEntry = {
             labelCode,
             articleIdList: [articleId],
+            ...(templateName && { templateName }),
         };
-        if (templateName) {
-            assignEntry.templateName = templateName;
-        }
         const body = { assignList: [assignEntry] };
 
         return this.withRetry('linkLabel', async () => {
@@ -450,7 +449,7 @@ export class SolumService {
     /**
      * Unlink label from article
      */
-    async unlinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+    async unlinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<AimsApiResponse> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/unlink?company=${config.companyName}&store=${config.storeCode}`);
@@ -470,7 +469,7 @@ export class SolumService {
     /**
      * Change label page/template
      */
-    async changeLabelPage(config: SolumConfig, token: string, labelCode: string, page: number): Promise<any> {
+    async changeLabelPage(config: SolumConfig, token: string, labelCode: string, page: number): Promise<AimsApiResponse> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/changePage?company=${config.companyName}&store=${config.storeCode}`);
@@ -491,7 +490,7 @@ export class SolumService {
      * Fetch stores from AIMS for a company
      * Uses GET /common/api/v2/common/store?company=XXX
      */
-    async fetchStores(config: SolumConfig, token: string): Promise<any[]> {
+    async fetchStores(config: SolumConfig, token: string): Promise<AimsStore[]> {
         const url = this.buildUrl(config, `/common/api/v2/common/store?company=${config.companyName}`);
 
         return this.withRetry('fetchStores', async () => {
@@ -515,7 +514,7 @@ export class SolumService {
     /**
      * Blink/flash a label for identification
      */
-    async blinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+    async blinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<AimsApiResponse> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/blink?company=${config.companyName}&store=${config.storeCode}`);
