@@ -4,7 +4,6 @@
  * Basic tests for the settings dialog component
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '../../../test/utils/testUtils';
 import { SettingsDialog } from '../presentation/SettingsDialog';
 import { useSettingsStore } from '../infrastructure/settingsStore';

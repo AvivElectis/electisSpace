@@ -5,7 +5,6 @@
  * using pure functions (avoiding persisted Zustand stores)
  */
 
-import { describe, it, expect } from 'vitest';
 import type { SyncState, SyncStatus, SyncAdapter } from '../../features/sync/domain/types';
 import type { Space } from '../../shared/domain/types';
 

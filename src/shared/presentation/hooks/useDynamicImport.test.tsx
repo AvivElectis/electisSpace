@@ -5,7 +5,6 @@
  * Tests dynamic import loading, error handling, and retry logic
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useDynamicImport } from './useDynamicImport';
 

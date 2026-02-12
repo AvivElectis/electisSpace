@@ -5,7 +5,6 @@
  * Tests logging functionality including levels, categories, and performance timing
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Logger } from './logger';
 
 // Mock the logsStore

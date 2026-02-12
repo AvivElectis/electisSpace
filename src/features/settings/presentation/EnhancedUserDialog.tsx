@@ -132,7 +132,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                         onCompanyChange={state.handleCompanyChange}
                                         onCreateModeChange={state.setIsCreatingCompany}
                                         onNewCompanyDataChange={state.setNewCompanyData}
-                                        onCompanyRoleChange={state.setCompanyRole}
+                                        onCompanyRoleChange={state.handleCompanyRoleChange}
                                     />
                                 </>
                             )}
@@ -278,7 +278,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                         onCompanyChange={state.handleCompanyChange}
                         onCreateModeChange={state.setIsCreatingCompany}
                         onNewCompanyDataChange={state.setNewCompanyData}
-                        onCompanyRoleChange={state.setCompanyRole}
+                        onCompanyRoleChange={state.handleCompanyRoleChange}
                     />
                 )}
                 {state.activeStep === 2 && (

@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import CryptoJS from 'crypto-js';
 
 describe('Encryption Service', () => {

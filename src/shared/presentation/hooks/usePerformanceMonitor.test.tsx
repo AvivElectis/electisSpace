@@ -5,7 +5,6 @@
  * Tests performance monitoring for component renders
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePerformanceMonitor } from './usePerformanceMonitor';
 

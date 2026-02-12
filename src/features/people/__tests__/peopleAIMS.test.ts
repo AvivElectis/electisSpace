@@ -9,7 +9,6 @@
  * Note: These tests require RUN_INTEGRATION_TESTS=true to run against real AIMS.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { isPoolId } from '../infrastructure/virtualPoolService';
 import { parsePeopleCSV } from '../infrastructure/peopleService';
 import type { SolumMappingConfig } from '@features/settings/domain/types';

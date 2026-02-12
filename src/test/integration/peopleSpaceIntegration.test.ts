@@ -5,7 +5,6 @@
  * using pure functions and objects (avoiding persisted Zustand stores)
  */
 
-import { describe, it, expect } from 'vitest';
 import type { Person } from '../../features/people/domain/types';
 import type { Space } from '../../shared/domain/types';
 import { getVirtualSpaceId, setPersonListMembership, isPersonInList, getPersonListNames } from '../../features/people/domain/types';

@@ -5,7 +5,6 @@
  * Tests the logs store for managing application logs with IndexedDB persistence
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { useLogsStore, type LogEntry, type LogLevel } from '../logsStore';
 
 // Mock idb-keyval

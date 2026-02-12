@@ -8,7 +8,6 @@
  * - Error handling
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSyncController } from '../application/useSyncController';
 import { useSyncStore } from '../infrastructure/syncStore';

@@ -8,7 +8,6 @@
  * - DashboardPeopleCard
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '../../../test/utils/testUtils';
 import { DashboardStatusChip } from '../components/DashboardStatusChip';
 import { DashboardAppInfoCard } from '../components/DashboardAppInfoCard';

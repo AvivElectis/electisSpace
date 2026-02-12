@@ -5,7 +5,6 @@
  * Tests the people domain helper functions and validation
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     getPersonListNames,
     getPersonListSpaceId,

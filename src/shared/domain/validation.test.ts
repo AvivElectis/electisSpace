@@ -1,5 +1,3 @@
-import { describe, it, expect } from 'vitest';
-
 describe('Space Domain Validation', () => {
     describe('Space ID Validation', () => {
         it('should accept valid numeric IDs', () => {

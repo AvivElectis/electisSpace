@@ -5,7 +5,6 @@
  * Tests business rules and validation for space management
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     generateSpaceId,
     mergeSpaceDefaults,

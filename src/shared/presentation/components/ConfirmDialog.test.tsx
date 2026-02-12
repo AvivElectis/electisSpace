@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '../../../test/utils/testUtils';
 import { ConfirmDialog } from './ConfirmDialog';
 

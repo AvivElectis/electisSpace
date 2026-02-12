@@ -34,3 +34,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test credentials (contain secrets - never commit)
+TEST_CREDENTIALS.txt
+

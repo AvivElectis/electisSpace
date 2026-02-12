@@ -5,7 +5,6 @@
  * Tests dynamic field rendering based on SoluM mapping config
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DynamicFieldDisplay } from './DynamicFieldDisplay';
 import type { SolumMappingConfig } from '@features/settings/domain/types';

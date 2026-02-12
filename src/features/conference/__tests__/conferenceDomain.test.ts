@@ -5,7 +5,6 @@
  * Tests business rules and validation for conference room management
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     generateConferenceRoomId,
     createEmptyConferenceRoom,

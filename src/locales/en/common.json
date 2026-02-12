@@ -1,7 +1,9 @@
 {
     "app": {
         "title": "electis Space",
-        "subtitle": "ESL Management System"
+        "subtitle": "ESL Management System",
+        "loadingApplication": "Loading application...",
+        "restoringSession": "Restoring session..."
     },
     "navigation": {
         "dashboard": "Dashboard",
@@ -409,6 +411,12 @@
         "autoLockTimeout": "Auto-lock timeout (minutes)",
         "autoLockEnabled": "Enable auto-lock after 30 minutes of inactivity",
         "autoLockDescription": "Settings will automatically lock 30 minutes after closing the settings dialog",
+        "passwordStrength": {
+            "tooShort": "Too short",
+            "weak": "Weak",
+            "medium": "Medium",
+            "strong": "Strong"
+        },
         "adminPasswordHint": "Forgot your password? Use the emergency admin password for access.",
         "levelFilter": "Level",
         "categoryFilter": "Category",
@@ -476,7 +484,7 @@
         "peopleManager": {
             "title": "People Manager",
             "enable": "Enable People Manager Mode",
-            "description": "Transform space management into a people allocation system. When enabled, the Spaces section becomes a People allocation system for uploading CSV lists and assigning spaces. Automatically adds the _LIST_MEMBERSHIPS_ field to article format.",
+            "description": "When enabled, the Spaces tab is replaced with People Manager — upload people lists and assign them to numbered label slots.",
             "totalSpaces": "Total Available Spaces",
             "totalSpacesHelp": "The total number of spaces available for allocation"
         },
@@ -986,12 +994,27 @@
     "manual": {
         "title": "User Manual",
         "tabs": {
+            "contactInfo": "Contact & Info",
+            "manual": "Manual",
             "gettingStarted": "Getting Started",
             "spaces": "Spaces",
             "people": "People Manager",
             "conference": "Conference Rooms",
             "sync": "Synchronization",
             "settings": "Settings"
+        },
+        "contactInfo": {
+            "supportTitle": "Support",
+            "companyTitle": "Company Details",
+            "releaseNotesTitle": "Release Notes",
+            "name": "Name",
+            "supportName": "Aviv Ben Waiss",
+            "email": "Email",
+            "phone": "Phone",
+            "address": "Address",
+            "companyAddress": "30 Sheshet HaYamim St., Bnei Brak",
+            "companyId": "Company ID",
+            "releaseNotesContent": "v2.1.0 — Server Architecture & Mobile UX\n• Server-backed lists — People and Spaces lists now stored in DB and shared across all store users\n• Conference rooms managed via server API with automatic AIMS sync queue\n• Mobile-optimized UI — collapsible list panel, compact cards, inline action buttons\n• Status filter placed alongside cancel assignments for faster mobile workflows\n• Real-time SSE notifications when other users load, free, or update lists\n• Unsaved changes guard — prompts to save before navigating away\n• Enhanced authentication with server-side validation\n• Comprehensive test suite — 1250+ tests covering all features"
         },
         "gettingStarted": {
             "welcome": {

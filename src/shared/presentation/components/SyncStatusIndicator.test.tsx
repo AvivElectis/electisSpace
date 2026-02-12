@@ -5,7 +5,6 @@
  * Tests sync/connection status indicator with popover
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SyncStatusIndicator, type ConnectionStatus } from './SyncStatusIndicator';
 
@@ -53,7 +52,8 @@ describe('SyncStatusIndicator Component', () => {
         it('should render syncing status', () => {
             render(<SyncStatusIndicator status="syncing" />);
 
-            expect(screen.getByText('Syncing')).toBeInTheDocument();
+            // "Syncing" appears in both label and caption initially
+            expect(screen.getAllByText('Syncing').length).toBeGreaterThanOrEqual(1);
         });
 
         it('should render error status', () => {
@@ -200,7 +200,10 @@ describe('SyncStatusIndicator Component', () => {
             it(`should show "${description}" for ${status} status`, async () => {
                 render(<SyncStatusIndicator status={status} />);
 
-                fireEvent.click(screen.getByText(status.charAt(0).toUpperCase() + status.slice(1)));
+                const label = status.charAt(0).toUpperCase() + status.slice(1);
+                // Use getAllByText for syncing status which shows "Syncing" in both label and caption
+                const elements = screen.getAllByText(label);
+                fireEvent.click(elements[0]);
 
                 await waitFor(() => {
                     expect(screen.getByText(description)).toBeInTheDocument();

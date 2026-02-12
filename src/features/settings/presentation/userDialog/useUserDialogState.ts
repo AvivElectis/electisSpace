@@ -251,6 +251,15 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         setAllStoresAccess(false);
     }, []);
 
+    // When company role changes to COMPANY_ADMIN, auto-enable allStoresAccess
+    const handleCompanyRoleChange = useCallback((role: CompanyRole) => {
+        setCompanyRole(role);
+        if (role === 'COMPANY_ADMIN') {
+            setAllStoresAccess(true);
+            setStoreAssignments([]);
+        }
+    }, []);
+
     // Step validation
     const isStepValid = useCallback((step: number): boolean => {
         switch (step) {
@@ -369,7 +378,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 if (companyId) {
                     if (existingCompanyAssignment) {
                         await api.patch(`/users/${user.id}/companies/${companyId}`, {
-                            role: companyRole,
+                            isCompanyAdmin: companyRole === 'COMPANY_ADMIN',
                             allStoresAccess
                         });
                     } else if (hasAnyCompanyAssignment) {
@@ -505,7 +514,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         // Company
         selectedCompanyId, isCreatingCompany, setIsCreatingCompany,
         newCompanyData, setNewCompanyData,
-        companyRole, setCompanyRole,
+        companyRole, setCompanyRole, handleCompanyRoleChange,
         allStoresAccess, setAllStoresAccess,
         isPlatformAdmin, accessibleCompanyId,
         handleCompanyChange,

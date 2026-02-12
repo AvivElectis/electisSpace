@@ -5,7 +5,6 @@
  * Tests the import/export controller hook for settings import/export operations
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useImportExportController } from '../application/useImportExportController';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
