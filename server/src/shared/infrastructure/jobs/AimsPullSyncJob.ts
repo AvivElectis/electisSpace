@@ -21,6 +21,7 @@ import { aimsGateway } from '../services/aimsGateway.js';
 import {
     buildSpaceArticle,
     buildPersonArticle,
+    buildEmptySlotArticle,
     buildConferenceArticle,
     articleNeedsUpdate,
     type ConferenceMappingConfig,
@@ -224,10 +225,30 @@ export class AimsSyncReconciliationJob {
             const people = await prisma.person.findMany({
                 where: { storeId, assignedSpaceId: { not: null } },
             });
+            const occupiedSlots = new Set<string>();
             for (const person of people) {
                 if (!person.assignedSpaceId) continue;
                 const article = buildPersonArticle(person as any, format, globalFields);
-                if (article) expectedMap.set(person.assignedSpaceId, article);
+                if (article) {
+                    expectedMap.set(person.assignedSpaceId, article);
+                    occupiedSlots.add(person.assignedSpaceId);
+                }
+            }
+
+            // Also include empty slot articles for unoccupied spaces (1..totalSpaces)
+            // so AIMS always has all slots present
+            const companyForSlots = await prisma.company.findUnique({
+                where: { id: store.companyId },
+                select: { settings: true },
+            });
+            const companySettingsForSlots = (companyForSlots?.settings as Record<string, any>) || {};
+            const totalSpaces = companySettingsForSlots.peopleManagerConfig?.totalSpaces ?? 0;
+            for (let i = 1; i <= totalSpaces; i++) {
+                const slotId = String(i);
+                if (!occupiedSlots.has(slotId)) {
+                    const emptyArticle = buildEmptySlotArticle(slotId, format);
+                    expectedMap.set(slotId, emptyArticle);
+                }
             }
         } else {
             // Spaces mode → push all spaces (articleId = externalId)

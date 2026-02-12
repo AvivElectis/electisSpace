@@ -5,11 +5,19 @@ import { z } from 'zod';
 
 /**
  * Load environment-specific configuration files.
- * Priority: .env.{NODE_ENV} > .env.local > .env
+ * Priority: .env.local > .env.{NODE_ENV} > .env
+ *
+ * Docker detection: checks if DATABASE_URL was set as an OS-level env var
+ * BEFORE any .env files are loaded. If so, we're running inside Docker
+ * and skip local overrides to avoid conflicting with Docker network config.
  */
 const loadEnvironmentFiles = () => {
     const nodeEnv = process.env.NODE_ENV || 'development';
     const rootDir = path.resolve(__dirname, '../..');
+
+    // Check for Docker BEFORE loading any .env files
+    // If DATABASE_URL is already in process.env, it was set by Docker/container runtime
+    const isDocker = !!process.env.DATABASE_URL;
 
     // Environment-specific file (e.g., .env.development, .env.production)
     const envFile = path.join(rootDir, `.env.${nodeEnv}`);
@@ -20,37 +28,31 @@ const loadEnvironmentFiles = () => {
     // Base .env file
     const baseEnvFile = path.join(rootDir, '.env');
 
-    // Load in order of priority (later files override earlier ones)
     // 1. Base .env (lowest priority)
     if (fs.existsSync(baseEnvFile)) {
         dotenv.config({ path: baseEnvFile });
     }
 
     // 2. Environment-specific file
-    // Only load if NOT running in Docker (simplified check: if DATABASE_URL is already set in process.env, assume Docker)
-    if (fs.existsSync(envFile) && !process.env.DATABASE_URL) {
-        dotenv.config({ path: envFile });
-        console.log(`📁 Loaded environment config: .env.${nodeEnv}`);
-    } else if (process.env.DATABASE_URL) {
-        console.log(`🐳 Docker environment detected (DATABASE_URL set), skipping .env.${nodeEnv} network config`);
-        // We still might want to load other non-network vars from .env.development if needed, 
-        // but for now, let's rely on Docker env vars or safe defaults.
-        // Actually, safer to load it but NOT override existing process.env
-        if (fs.existsSync(envFile)) {
+    if (fs.existsSync(envFile)) {
+        if (isDocker) {
+            // In Docker: load extra config but don't override Docker-provided vars
             dotenv.config({ path: envFile, override: false });
-            console.log(`📁 Loaded extra config from .env.${nodeEnv} (no override)`);
+            console.log(`🐳 Docker environment detected, loaded .env.${nodeEnv} (no override)`);
+        } else {
+            dotenv.config({ path: envFile, override: true });
+            console.log(`📁 Loaded environment config: .env.${nodeEnv}`);
         }
-    } else {
+    } else if (!isDocker) {
         console.log(`⚠️ No .env.${nodeEnv} file found, using defaults`);
     }
 
-    // 3. Local overrides (highest priority)
-    // Only load .env.local if NOT in Docker (same check as above)
-    if (fs.existsSync(envLocalFile) && !process.env.DATABASE_URL) {
+    // 3. Local overrides (highest priority) - only for local dev, not Docker
+    if (fs.existsSync(envLocalFile) && !isDocker) {
         dotenv.config({ path: envLocalFile, override: true });
         console.log('📁 Loaded local overrides: .env.local');
-    } else if (fs.existsSync(envLocalFile) && process.env.DATABASE_URL) {
-        console.log('🐳 Docker environment detected, skipping .env.local overrides');
+    } else if (isDocker) {
+        console.log('🐳 Docker environment, skipping .env.local');
     }
 };
 
