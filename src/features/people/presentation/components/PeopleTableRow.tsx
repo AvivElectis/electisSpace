@@ -1,6 +1,5 @@
 import {
-    TableRow,
-    TableCell,
+    Box,
     Checkbox,
     Typography,
     Chip,
@@ -48,6 +47,7 @@ interface PeopleTableRowProps {
     nameFieldKey?: string;
     isSelected: boolean;
     translations: PeopleTableTranslations;
+    style?: React.CSSProperties; // react-window absolute positioning
     onSelect: (id: string, checked: boolean) => void;
     onEdit: (person: Person) => void;
     onDelete: (id: string) => void;
@@ -55,9 +55,17 @@ interface PeopleTableRowProps {
     onUnassignSpace: (person: Person) => void;
 }
 
+// Shared cell style for consistent column alignment
+const cellSx = {
+    display: 'flex',
+    alignItems: 'center',
+    px: 1,
+    overflow: 'hidden',
+} as const;
+
 /**
  * PeopleTableRow - Single row in the people table
- * Wrapped with React.memo for performance optimization
+ * Uses flexbox layout for react-window virtualization compatibility
  */
 function PeopleTableRowComponent({
     index,
@@ -66,6 +74,7 @@ function PeopleTableRowComponent({
     nameFieldKey,
     isSelected,
     translations,
+    style,
     onSelect,
     onEdit,
     onDelete,
@@ -146,7 +155,7 @@ function PeopleTableRowComponent({
     // Memoized lists chip
     const listsChipElement = useMemo(() => {
         const listNames = getPersonListNames(person);
-        
+
         if (listNames.length === 0) {
             return (
                 <Typography variant="body2" color="text.disabled">
@@ -156,12 +165,12 @@ function PeopleTableRowComponent({
         }
 
         const displayNames = listNames.map(toDisplayName);
-        
+
         if (listNames.length === 1) {
             return (
-                <Chip 
-                    label={displayNames[0]} 
-                    size="small" 
+                <Chip
+                    label={displayNames[0]}
+                    size="small"
                     variant="outlined"
                     sx={{ p: 1, px: .5}}
                     icon={<ListAltIcon fontSize="small" />}
@@ -172,9 +181,9 @@ function PeopleTableRowComponent({
         // Multiple lists - show count with tooltip listing all
         return (
             <Tooltip title={displayNames.join(', ')}>
-                <Chip 
-                    label={translations.inListsFormat(listNames.length)} 
-                    size="small" 
+                <Chip
+                    label={translations.inListsFormat(listNames.length)}
+                    size="small"
                     variant="outlined"
                     color="info"
                     sx={{ p: 1, px: .5}}
@@ -195,27 +204,46 @@ function PeopleTableRowComponent({
     const handleUnassignSpace = useCallback(() => onUnassignSpace(person), [person, onUnassignSpace]);
 
     return (
-        <TableRow hover selected={isSelected}>
-            <TableCell sx={{ textAlign: 'center', width: 50, color: 'text.secondary' }}>
-                <Typography variant="body2">{index}</Typography>
-            </TableCell>
-            <TableCell padding="checkbox">
-                <Checkbox checked={isSelected} onChange={handleSelect} />
-            </TableCell>
+        <Box
+            style={style}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                bgcolor: isSelected ? 'action.selected' : 'background.paper',
+                '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
+                boxSizing: 'border-box',
+            }}
+        >
+            {/* Index */}
+            <Box sx={{ ...cellSx, width: 50, flexShrink: 0, justifyContent: 'center' }}>
+                <Typography variant="body2" color="text.secondary">{index}</Typography>
+            </Box>
+            {/* Checkbox */}
+            <Box sx={{ ...cellSx, width: 48, flexShrink: 0, justifyContent: 'center' }}>
+                <Checkbox checked={isSelected} onChange={handleSelect} size="small" />
+            </Box>
+            {/* Name field */}
             {nameFieldKey && (
-                <TableCell sx={{ textAlign: 'start' }}>
-                    <Typography variant="body2">{person.data[nameFieldKey] || '-'}</Typography>
-                </TableCell>
+                <Box sx={{ ...cellSx, flex: 1, minWidth: 100 }}>
+                    <Typography variant="body2" noWrap>{person.data[nameFieldKey] || '-'}</Typography>
+                </Box>
             )}
+            {/* Dynamic fields */}
             {visibleFields.map((field) => (
-                <TableCell key={field.key} sx={{ textAlign: 'start' }}>
-                    <Typography variant="body2">{field.globalValue || person.data[field.key] || '-'}</Typography>
-                </TableCell>
+                <Box key={field.key} sx={{ ...cellSx, flex: 1, minWidth: 80 }}>
+                    <Typography variant="body2" noWrap>{field.globalValue || person.data[field.key] || '-'}</Typography>
+                </Box>
             ))}
-            <TableCell sx={{ textAlign: 'start' }}>{spaceChipElement}</TableCell>
-            <TableCell sx={{ textAlign: 'start' }}>{listsChipElement}</TableCell>
-            <TableCell sx={{ textAlign: 'start' }}>{aimsStatusElement}</TableCell>
-            <TableCell sx={{ textAlign: 'start' }}>
+            {/* Assigned Space */}
+            <Box sx={{ ...cellSx, width: 120, flexShrink: 0 }}>{spaceChipElement}</Box>
+            {/* Lists */}
+            <Box sx={{ ...cellSx, width: 120, flexShrink: 0 }}>{listsChipElement}</Box>
+            {/* AIMS Status */}
+            <Box sx={{ ...cellSx, width: 80, flexShrink: 0 }}>{aimsStatusElement}</Box>
+            {/* Actions */}
+            <Box sx={{ ...cellSx, width: 160, flexShrink: 0 }}>
                 <Stack direction="row" gap={0.5} justifyContent="flex-start">
                     {!person.assignedSpaceId && (
                         <Tooltip title={translations.assignSpace}>
@@ -242,8 +270,8 @@ function PeopleTableRowComponent({
                         </IconButton>
                     </Tooltip>
                 </Stack>
-            </TableCell>
-        </TableRow>
+            </Box>
+        </Box>
     );
 }
 
@@ -259,10 +287,11 @@ function arePropsEqual(prevProps: PeopleTableRowProps, nextProps: PeopleTableRow
         prevProps.person.listMemberships?.length === nextProps.person.listMemberships?.length &&
         prevProps.visibleFields.length === nextProps.visibleFields.length &&
         prevProps.nameFieldKey === nextProps.nameFieldKey &&
+        prevProps.style?.transform === nextProps.style?.transform &&
         // Compare name field data if present
         (!prevProps.nameFieldKey || prevProps.person.data[prevProps.nameFieldKey] === nextProps.person.data[nextProps.nameFieldKey!]) &&
         // Compare data fields that are visible
-        prevProps.visibleFields.every((field, i) => 
+        prevProps.visibleFields.every((field, i) =>
             field.key === nextProps.visibleFields[i]?.key &&
             prevProps.person.data[field.key] === nextProps.person.data[field.key]
         )

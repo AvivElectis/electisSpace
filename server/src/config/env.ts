@@ -68,6 +68,7 @@ const envSchema = z.object({
 
     // Database
     DATABASE_URL: z.string().url(),
+    DB_POOL_MAX: z.string().default('20').transform(Number),
 
     // Redis
     REDIS_URL: z.string().default('redis://localhost:6379'),
@@ -126,6 +127,7 @@ export const config = {
 
     // Database
     databaseUrl: env.DATABASE_URL,
+    dbPoolMax: env.DB_POOL_MAX,
 
     // Redis
     redisUrl: env.REDIS_URL,

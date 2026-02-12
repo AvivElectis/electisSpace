@@ -18,6 +18,7 @@
 
 import { prisma } from '../../../config/index.js';
 import { aimsGateway } from '../services/aimsGateway.js';
+import { cacheGet, cacheSet } from '../services/redisCache.js';
 import {
     buildSpaceArticle,
     buildPersonArticle,
@@ -27,6 +28,10 @@ import {
     type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
+import type { AimsArticle } from '../services/aims.types.js';
+
+// Cache TTL for company settings (60 seconds — matches reconciliation interval)
+const COMPANY_SETTINGS_TTL = 60;
 
 // Default interval: 60 seconds
 const DEFAULT_INTERVAL_MS = 60 * 1000;
@@ -168,7 +173,36 @@ export class AimsSyncReconciliationJob {
             totalExpected: 0, totalInAims: 0,
         };
 
-        // 0. Fetch the company's article format from AIMS (cached per company)
+        // 0. Fetch company settings ONCE with Redis caching (eliminates N+1 queries)
+        const cacheKey = `company-settings:${store.companyId}`;
+        let companySettings: Record<string, any> = {};
+        try {
+            const cached = await cacheGet<Record<string, any>>(cacheKey);
+            if (cached) {
+                companySettings = cached;
+            } else {
+                const company = await prisma.company.findUnique({
+                    where: { id: store.companyId },
+                    select: { settings: true },
+                });
+                companySettings = (company?.settings as Record<string, any>) || {};
+                await cacheSet(cacheKey, companySettings, COMPANY_SETTINGS_TTL);
+            }
+        } catch (error: any) {
+            console.warn(`[AimsReconcile] Could not fetch company settings for ${storeName}: ${error.message}`);
+        }
+
+        // Extract needed config from company settings
+        const mappingConfig = companySettings.solumMappingConfig || {};
+        const rawConferenceMapping = mappingConfig.conferenceMapping;
+        const conferenceMapping: ConferenceMappingConfig | null =
+            rawConferenceMapping?.meetingName && rawConferenceMapping?.meetingTime && rawConferenceMapping?.participants
+                ? rawConferenceMapping as ConferenceMappingConfig
+                : null;
+        const globalFields: Record<string, string> | undefined = mappingConfig.globalFieldAssignments;
+        const totalSpaces: number = companySettings.peopleManagerConfig?.totalSpaces ?? 0;
+
+        // Fetch the company's article format from AIMS (cached per company)
         let format: ArticleFormat | null = null;
         try {
             format = await aimsGateway.fetchArticleFormat(storeId);
@@ -177,47 +211,16 @@ export class AimsSyncReconciliationJob {
         }
 
         // 1. Build expected article map  { articleId → articlePayload }
-        const expectedMap = new Map<string, any>();
+        const expectedMap = new Map<string, AimsArticle>();
 
         // Always include conference rooms
         const rooms = await prisma.conferenceRoom.findMany({
             where: { storeId },
         });
 
-        // Look up the company's conference mapping from settings
-        let conferenceMapping: ConferenceMappingConfig | null = null;
-        try {
-            const company = await prisma.company.findUnique({
-                where: { id: store.companyId },
-                select: { settings: true },
-            });
-            const companySettings = (company?.settings as Record<string, any>) || {};
-            const mapping = companySettings.solumMappingConfig?.conferenceMapping;
-            if (mapping && mapping.meetingName && mapping.meetingTime && mapping.participants) {
-                conferenceMapping = mapping as ConferenceMappingConfig;
-            }
-        } catch (error: any) {
-            console.warn(`[AimsReconcile] Could not fetch conference mapping for ${storeName}: ${error.message}`);
-        }
-
         for (const room of rooms) {
             const article = buildConferenceArticle(room, format, conferenceMapping);
             expectedMap.set(article.articleId, article);
-        }
-
-        // Fetch global field assignments for people mode
-        let globalFields: Record<string, string> | undefined = undefined;
-        if (isPeopleMode) {
-            try {
-                const company = await prisma.company.findUnique({
-                    where: { id: store.companyId },
-                    select: { settings: true },
-                });
-                const companySettings = (company?.settings as Record<string, any>) || {};
-                globalFields = companySettings.solumMappingConfig?.globalFieldAssignments;
-            } catch (error: any) {
-                console.warn(`[AimsReconcile] Could not fetch global field assignments for ${storeName}: ${error.message}`);
-            }
         }
 
         if (isPeopleMode) {
@@ -237,12 +240,6 @@ export class AimsSyncReconciliationJob {
 
             // Also include empty slot articles for unoccupied spaces (1..totalSpaces)
             // so AIMS always has all slots present
-            const companyForSlots = await prisma.company.findUnique({
-                where: { id: store.companyId },
-                select: { settings: true },
-            });
-            const companySettingsForSlots = (companyForSlots?.settings as Record<string, any>) || {};
-            const totalSpaces = companySettingsForSlots.peopleManagerConfig?.totalSpaces ?? 0;
             for (let i = 1; i <= totalSpaces; i++) {
                 const slotId = String(i);
                 if (!occupiedSlots.has(slotId)) {
@@ -264,7 +261,7 @@ export class AimsSyncReconciliationJob {
         result.totalExpected = expectedMap.size;
 
         // 2. Fetch current AIMS articles
-        let aimsArticles: any[];
+        let aimsArticles: AimsArticle[];
         try {
             aimsArticles = await aimsGateway.pullArticles(storeId);
         } catch (error: any) {
@@ -273,7 +270,7 @@ export class AimsSyncReconciliationJob {
             return result;
         }
 
-        const aimsMap = new Map<string, any>();
+        const aimsMap = new Map<string, AimsArticle>();
         for (const a of aimsArticles) {
             const id = a.articleId || a.article_id;
             if (id) aimsMap.set(id, a);
@@ -281,7 +278,7 @@ export class AimsSyncReconciliationJob {
         result.totalInAims = aimsMap.size;
 
         // 3. Diff
-        const toPush: any[] = [];   // create or update in AIMS
+        const toPush: AimsArticle[] = [];   // create or update in AIMS
         const toDelete: string[] = []; // remove from AIMS
 
         // Articles that should exist

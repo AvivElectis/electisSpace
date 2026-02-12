@@ -107,8 +107,8 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 1200, // Raised for lazy-loaded ArticleFormatEditor (~1.1MB vanilla-jsoneditor)
-    sourcemap: true, // Enable for debugging
+    chunkSizeWarningLimit: 600, // Lowered to detect unexpected chunk growth (vanilla-jsoneditor is lazy-loaded)
+    sourcemap: false, // Disabled in production for security and smaller dist
     minify: 'terser',
     terserOptions: {
       compress: {
