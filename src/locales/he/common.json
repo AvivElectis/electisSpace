@@ -886,7 +886,11 @@
         "unsavedChangesMessage": "יש לך שינויים שלא נשמרו ברשימה הנוכחית. האם ברצונך לשמור אותם לפני היציאה?",
         "discardChanges": "מחק שינויים",
         "freeList": "שחרר רשימה",
-        "listFreed": "הרשימה שוחררה. עובד כעת ללא רשימה."
+        "listFreed": "הרשימה שוחררה. עובד כעת ללא רשימה.",
+        "listLoadedByOther": "{{user}} טען את הרשימה \"{{listName}}\"",
+        "listFreedByOther": "{{user}} שחרר את הרשימה",
+        "listUpdatedByOther": "{{user}} עדכן את הרשימה \"{{listName}}\"",
+        "nameTooLong": "שם הרשימה חייב להיות עד {{max}} תווים"
     },
     "people": {
         "title": "מנהל אנשים",

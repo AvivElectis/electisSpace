@@ -23,7 +23,7 @@ import type {
 // ======================
 
 const isPlatformAdmin = (user: SettingsUserContext): boolean => {
-    return user.globalRole === GlobalRole.PLATFORM_ADMIN;
+    return user.globalRole === GlobalRole.PLATFORM_ADMIN || user.globalRole === 'PLATFORM_ADMIN';
 };
 
 // ======================
