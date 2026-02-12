@@ -6,6 +6,7 @@
  */
 import { prisma } from '../../config/index.js';
 import type { Prisma, Company, UserCompany } from '@prisma/client';
+import { cacheInvalidate } from '../../shared/infrastructure/services/redisCache.js';
 
 // ======================
 // Types
@@ -176,20 +177,24 @@ export const companyRepository = {
      * Update company basic info
      */
     async update(id: string, data: CompanyUpdateData): Promise<Company> {
-        return prisma.company.update({
+        const result = await prisma.company.update({
             where: { id },
             data,
         });
+        await cacheInvalidate(`company-settings:${id}`);
+        return result;
     },
 
     /**
      * Update AIMS configuration
      */
     async updateAimsConfig(id: string, data: AimsConfigData): Promise<Company> {
-        return prisma.company.update({
+        const result = await prisma.company.update({
             where: { id },
             data,
         });
+        await cacheInvalidate(`company-settings:${id}`);
+        return result;
     },
 
     /**

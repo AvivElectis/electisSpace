@@ -4,6 +4,7 @@
  * @description Data access layer for settings management.
  */
 import { prisma } from '../../config/index.js';
+import { cacheInvalidate } from '../../shared/infrastructure/services/redisCache.js';
 
 // ======================
 // Repository
@@ -89,13 +90,16 @@ export const settingsRepository = {
         });
         const existingSettings = (company?.settings as Record<string, any>) || {};
         const mergedSettings = { ...existingSettings, ...settings };
-        return prisma.company.update({
+        const result = await prisma.company.update({
             where: { id: companyId },
             data: {
                 settings: mergedSettings,
                 updatedAt: new Date(),
             },
         });
+        // Invalidate cached company settings
+        await cacheInvalidate(`company-settings:${companyId}`);
+        return result;
     },
 
     /**

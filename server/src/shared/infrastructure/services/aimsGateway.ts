@@ -12,6 +12,7 @@
 import { prisma } from '../../../config/index.js';
 import { config as appConfig } from '../../../config/index.js';
 import { solumService, type SolumConfig, type SolumTokens, type ArticleFormat } from './solumService.js';
+import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsApiResponse } from './aims.types.js';
 import { decrypt } from '../../utils/encryption.js';
 
 interface AIMSCredentials {
@@ -239,13 +240,13 @@ export class AIMSGateway {
     /**
      * Pull articles from AIMS for a store
      */
-    async pullArticles(storeId: string): Promise<any[]> {
+    async pullArticles(storeId: string): Promise<AimsArticle[]> {
         const { token, config } = await this.getTokenForStore(storeId);
         const PAGE_SIZE = 100;
         const MAX_PAGES = 50; // Safety limit to prevent infinite loops
 
         try {
-            const allArticles: any[] = [];
+            const allArticles: AimsArticle[] = [];
             let page = 0;
 
             while (page < MAX_PAGES) {
@@ -274,13 +275,13 @@ export class AIMSGateway {
     /**
      * Push articles to AIMS for a store (handles batching in groups of 500)
      */
-    async pushArticles(storeId: string, articles: any[]): Promise<void> {
+    async pushArticles(storeId: string, articles: AimsArticle[]): Promise<void> {
         if (articles.length === 0) return;
 
         const { token, config } = await this.getTokenForStore(storeId);
 
         // Split into batches of AIMS_BATCH_SIZE
-        const batches: any[][] = [];
+        const batches: AimsArticle[][] = [];
         for (let i = 0; i < articles.length; i += AIMS_BATCH_SIZE) {
             batches.push(articles.slice(i, i + AIMS_BATCH_SIZE));
         }
@@ -451,7 +452,7 @@ export class AIMSGateway {
      * Fetch stores from AIMS using raw credentials (not yet saved to DB).
      * Used during company creation wizard to let the user pick stores.
      */
-    async fetchStoresWithCredentials(credentials: AIMSCredentials, companyCode: string): Promise<any[]> {
+    async fetchStoresWithCredentials(credentials: AIMSCredentials, companyCode: string): Promise<AimsStore[]> {
         const config: SolumConfig = {
             baseUrl: credentials.baseUrl,
             companyName: companyCode,
@@ -472,7 +473,7 @@ export class AIMSGateway {
     /**
      * Fetch all labels for a store
      */
-    async fetchLabels(storeId: string): Promise<any[]> {
+    async fetchLabels(storeId: string): Promise<AimsLabel[]> {
         const { token, config } = await this.getTokenForStore(storeId);
         
         try {
@@ -494,7 +495,7 @@ export class AIMSGateway {
     /**
      * Fetch unassigned labels for a store
      */
-    async fetchUnassignedLabels(storeId: string): Promise<any[]> {
+    async fetchUnassignedLabels(storeId: string): Promise<AimsLabel[]> {
         const { token, config } = await this.getTokenForStore(storeId);
         
         try {
@@ -515,7 +516,7 @@ export class AIMSGateway {
     /**
      * Fetch label images/details
      */
-    async fetchLabelImages(storeId: string, labelCode: string): Promise<{ displayImageList?: any[] }> {
+    async fetchLabelImages(storeId: string, labelCode: string): Promise<AimsLabelDetail> {
         const { token, config } = await this.getTokenForStore(storeId);
         
         try {
@@ -536,7 +537,7 @@ export class AIMSGateway {
     /**
      * Link label to article
      */
-    async linkLabel(storeId: string, labelCode: string, articleId: string, templateName?: string): Promise<any> {
+    async linkLabel(storeId: string, labelCode: string, articleId: string, templateName?: string): Promise<AimsApiResponse> {
         const { token, config } = await this.getTokenForStore(storeId);
         
         try {
@@ -557,7 +558,7 @@ export class AIMSGateway {
     /**
      * Unlink label from article
      */
-    async unlinkLabel(storeId: string, labelCode: string): Promise<any> {
+    async unlinkLabel(storeId: string, labelCode: string): Promise<AimsApiResponse> {
         const { token, config } = await this.getTokenForStore(storeId);
         
         try {
@@ -578,7 +579,7 @@ export class AIMSGateway {
     /**
      * Blink a label for identification
      */
-    async blinkLabel(storeId: string, labelCode: string): Promise<any> {
+    async blinkLabel(storeId: string, labelCode: string): Promise<AimsApiResponse> {
         const { token, config } = await this.getTokenForStore(storeId);
         
         try {

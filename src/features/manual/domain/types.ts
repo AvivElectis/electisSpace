@@ -26,9 +26,10 @@ export const MANUAL_TABS: ManualTab[] = [
         titleKey: 'manual.tabs.gettingStarted',
         iconName: 'RocketLaunch',
         sections: [
-            { id: 'overview', titleKey: 'manual.gettingStarted.overview.title', contentKey: 'manual.gettingStarted.overview.content' },
-            { id: 'first-steps', titleKey: 'manual.gettingStarted.firstSteps.title', contentKey: 'manual.gettingStarted.firstSteps.content' },
-            { id: 'connection', titleKey: 'manual.gettingStarted.connection.title', contentKey: 'manual.gettingStarted.connection.content' },
+            { id: 'welcome', titleKey: 'manual.gettingStarted.welcome.title', contentKey: 'manual.gettingStarted.welcome.content' },
+            { id: 'navigation', titleKey: 'manual.gettingStarted.navigation.title', contentKey: 'manual.gettingStarted.navigation.content' },
+            { id: 'first-setup', titleKey: 'manual.gettingStarted.firstSetup.title', contentKey: 'manual.gettingStarted.firstSetup.content' },
+            { id: 'roles', titleKey: 'manual.gettingStarted.roles.title', contentKey: 'manual.gettingStarted.roles.content' },
         ]
     },
     {
@@ -38,6 +39,7 @@ export const MANUAL_TABS: ManualTab[] = [
         sections: [
             { id: 'overview', titleKey: 'manual.spaces.overview.title', contentKey: 'manual.spaces.overview.content' },
             { id: 'management', titleKey: 'manual.spaces.management.title', contentKey: 'manual.spaces.management.content' },
+            { id: 'data-fields', titleKey: 'manual.spaces.dataFields.title', contentKey: 'manual.spaces.dataFields.content' },
             { id: 'labels', titleKey: 'manual.spaces.labels.title', contentKey: 'manual.spaces.labels.content' },
         ]
     },
@@ -67,8 +69,9 @@ export const MANUAL_TABS: ManualTab[] = [
         titleKey: 'manual.tabs.sync',
         iconName: 'Sync',
         sections: [
-            { id: 'overview', titleKey: 'manual.sync.overview.title', contentKey: 'manual.sync.overview.content' },
-            { id: 'auto-sync', titleKey: 'manual.sync.autoSync.title', contentKey: 'manual.sync.autoSync.content' },
+            { id: 'how-it-works', titleKey: 'manual.sync.howItWorks.title', contentKey: 'manual.sync.howItWorks.content' },
+            { id: 'real-time', titleKey: 'manual.sync.realTime.title', contentKey: 'manual.sync.realTime.content' },
+            { id: 'manual-sync', titleKey: 'manual.sync.manualSync.title', contentKey: 'manual.sync.manualSync.content' },
             { id: 'troubleshooting', titleKey: 'manual.sync.troubleshooting.title', contentKey: 'manual.sync.troubleshooting.content' },
         ]
     },
@@ -78,8 +81,9 @@ export const MANUAL_TABS: ManualTab[] = [
         iconName: 'Settings',
         sections: [
             { id: 'overview', titleKey: 'manual.settings.overview.title', contentKey: 'manual.settings.overview.content' },
-            { id: 'solum', titleKey: 'manual.settings.solum.title', contentKey: 'manual.settings.solum.content' },
-            { id: 'security', titleKey: 'manual.settings.security.title', contentKey: 'manual.settings.security.content' },
+            { id: 'companies', titleKey: 'manual.settings.companies.title', contentKey: 'manual.settings.companies.content' },
+            { id: 'users', titleKey: 'manual.settings.users.title', contentKey: 'manual.settings.users.content' },
+            { id: 'aims-config', titleKey: 'manual.settings.aimsConfig.title', contentKey: 'manual.settings.aimsConfig.content' },
         ]
     },
 ];

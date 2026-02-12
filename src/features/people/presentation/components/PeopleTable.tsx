@@ -1,13 +1,6 @@
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Paper,
     Checkbox,
-    TableSortLabel,
     Typography,
     Box,
     Stack,
@@ -23,9 +16,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { List as VirtualList } from 'react-window';
 import { PeopleTableRow, type PeopleTableTranslations } from './PeopleTableRow';
 import type { Person } from '../../domain/types';
 
@@ -59,8 +55,35 @@ interface PeopleTableProps {
     onUnassignSpace: (person: Person) => void;
 }
 
+// Row height for virtualized list
+const ROW_HEIGHT = 52;
+
+// Shared header cell style
+const headerCellSx = {
+    display: 'flex',
+    alignItems: 'center',
+    px: 1,
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    cursor: 'pointer',
+    userSelect: 'none',
+    '&:hover': { color: 'primary.main' },
+} as const;
+
+/**
+ * Sort indicator icon
+ */
+function SortIndicator({ active, direction }: { active: boolean; direction: 'asc' | 'desc' }) {
+    if (!active) return null;
+    return direction === 'asc'
+        ? <ArrowUpwardIcon sx={{ fontSize: 16, ml: 0.5, color: 'primary.main' }} />
+        : <ArrowDownwardIcon sx={{ fontSize: 16, ml: 0.5, color: 'primary.main' }} />;
+}
+
 /**
  * PeopleTable - Main data table for people list
+ * Desktop: virtualized with react-window for performance
+ * Mobile: card-based layout (not virtualized, kept simple)
  */
 export function PeopleTable({
     people,
@@ -115,7 +138,7 @@ export function PeopleTable({
     const allSelected = people.length > 0 && selectedIds.size === people.length;
     const someSelected = selectedIds.size > 0 && selectedIds.size < people.length;
 
-    // Mobile Card View
+    // Mobile Card View (unchanged - not virtualized since it scrolls naturally)
     if (isMobile) {
         return (
             <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
@@ -128,7 +151,7 @@ export function PeopleTable({
                         size="small"
                     />
                     <Typography variant="body2" color="text.secondary">
-                        {selectedIds.size > 0 
+                        {selectedIds.size > 0
                             ? t('people.selectedCount', { count: selectedIds.size })
                             : t('people.selectAll')}
                     </Typography>
@@ -145,10 +168,10 @@ export function PeopleTable({
                 ) : (
                     <Stack gap={1}>
                         {people.map((person, index) => (
-                            <Card 
-                                key={person.id} 
+                            <Card
+                                key={person.id}
                                 variant="outlined"
-                                sx={{ 
+                                sx={{
                                     bgcolor: selectedIds.has(person.id) ? 'action.selected' : 'background.paper',
                                 }}
                             >
@@ -178,10 +201,10 @@ export function PeopleTable({
                                     </Stack>
 
                                     {/* Row 2: All Visible Fields (2 columns) */}
-                                    <Box sx={{ 
-                                        display: 'grid', 
-                                        gridTemplateColumns: 'repeat(2, 1fr)', 
-                                        gap: 0.5, 
+                                    <Box sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gap: 0.5,
                                         mb: 1,
                                         pl: 1
                                     }}>
@@ -202,9 +225,9 @@ export function PeopleTable({
                                         <Stack direction="row" gap={1} alignItems="center">
                                             {/* Lists indicator */}
                                             {person.listMemberships && person.listMemberships.length > 0 && (
-                                                <Chip 
-                                                    label={t('people.inLists', { count: person.listMemberships.length })} 
-                                                    size="small" 
+                                                <Chip
+                                                    label={t('people.inLists', { count: person.listMemberships.length })}
+                                                    size="small"
                                                     variant="outlined"
                                                     color="info"
                                                     sx={{ p: 1 }}
@@ -247,87 +270,112 @@ export function PeopleTable({
         );
     }
 
-    // Desktop Table View
+    // Desktop Virtualized View
+    // Row component for react-window - maps index to PeopleTableRow props
+    const VirtualRow = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+        const person = people[index];
+        if (!person) return null;
+        return (
+            <PeopleTableRow
+                index={index + 1}
+                person={person}
+                visibleFields={visibleFields}
+                nameFieldKey={nameFieldKey}
+                isSelected={selectedIds.has(person.id)}
+                translations={rowTranslations}
+                style={style}
+                onSelect={onSelectOne}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onAssignSpace={onAssignSpace}
+                onUnassignSpace={onUnassignSpace}
+            />
+        );
+    }, [people, visibleFields, nameFieldKey, selectedIds, rowTranslations, onSelectOne, onEdit, onDelete, onAssignSpace, onUnassignSpace]);
+
+    // Calculate list height - cap at 60vh equivalent
+    const listHeight = Math.min(people.length * ROW_HEIGHT, window.innerHeight * 0.6);
+
+    const TypedVirtualList = VirtualList as any;
+
     return (
-        <TableContainer component={Paper} sx={{ maxHeight: { xs: '50vh', sm: '55vh', md: '60vh' } }}>
-            <Table stickyHeader size="small" aria-label="people table">
-                <TableHead>
-                    <TableRow>
-                        <TableCell sx={{ fontWeight: 600, textAlign: 'center', width: 50 }}>#</TableCell>
-                        <TableCell padding="checkbox">
-                            <Checkbox
-                                indeterminate={someSelected}
-                                checked={allSelected}
-                                onChange={(e) => onSelectAll(e.target.checked)}
-                            />
-                        </TableCell>
-                        {nameFieldKey && (
-                            <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
-                                <TableSortLabel
-                                    active={sortConfig?.key === nameFieldKey}
-                                    direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'}
-                                    onClick={() => onSort(nameFieldKey)}
-                                >
-                                    {nameFieldLabel || t('people.name')}
-                                </TableSortLabel>
-                            </TableCell>
-                        )}
-                        {visibleFields.map((field) => (
-                            <TableCell key={field.key} sx={{ fontWeight: 600, textAlign: 'start' }}>
-                                <TableSortLabel
-                                    active={sortConfig?.key === field.key}
-                                    direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'}
-                                    onClick={() => onSort(field.key)}
-                                >
-                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
-                                </TableSortLabel>
-                            </TableCell>
-                        ))}
-                        <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>
-                            <TableSortLabel
-                                active={sortConfig?.key === 'assignedSpaceId'}
-                                direction={sortConfig?.key === 'assignedSpaceId' ? sortConfig.direction : 'asc'}
-                                onClick={() => onSort('assignedSpaceId')}
-                            >
-                                {tWithSpaceType('people.assignedSpace')}
-                            </TableSortLabel>
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>{t('people.lists')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>{t('people.aimsStatus')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, textAlign: 'start' }}>{t('common.actions')}</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {people.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={visibleFields.length + (nameFieldKey ? 7 : 6)} align="center" sx={{ py: 4 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    {searchQuery || assignmentFilter !== 'all'
-                                        ? t('people.noResults')
-                                        : t('people.noPeopleYet')}
-                                </Typography>
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        people.map((person, index) => (
-                            <PeopleTableRow
-                                key={person.id}
-                                index={index + 1}
-                                person={person}
-                                visibleFields={visibleFields}
-                                nameFieldKey={nameFieldKey}
-                                isSelected={selectedIds.has(person.id)}
-                                translations={rowTranslations}
-                                onSelect={onSelectOne}
-                                onEdit={onEdit}
-                                onDelete={onDelete}
-                                onAssignSpace={onAssignSpace}
-                                onUnassignSpace={onUnassignSpace}
-                            />
-                        ))
-                    )}
-                </TableBody>
-            </Table>
-        </TableContainer>
+        <Paper sx={{ overflow: 'hidden' }}>
+            {/* Sticky Header */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'grey.100',
+                    borderBottom: '2px solid',
+                    borderColor: 'divider',
+                    py: 1,
+                    minHeight: 42,
+                }}
+            >
+                {/* Index */}
+                <Box sx={{ ...headerCellSx, width: 50, flexShrink: 0, justifyContent: 'center', cursor: 'default' }}>
+                    #
+                </Box>
+                {/* Checkbox */}
+                <Box sx={{ ...headerCellSx, width: 48, flexShrink: 0, justifyContent: 'center', cursor: 'default' }}>
+                    <Checkbox
+                        indeterminate={someSelected}
+                        checked={allSelected}
+                        onChange={(e) => onSelectAll(e.target.checked)}
+                        size="small"
+                    />
+                </Box>
+                {/* Name */}
+                {nameFieldKey && (
+                    <Box sx={{ ...headerCellSx, flex: 1, minWidth: 100 }} onClick={() => onSort(nameFieldKey)}>
+                        {nameFieldLabel || t('people.name')}
+                        <SortIndicator active={sortConfig?.key === nameFieldKey} direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'} />
+                    </Box>
+                )}
+                {/* Dynamic fields */}
+                {visibleFields.map((field) => (
+                    <Box key={field.key} sx={{ ...headerCellSx, flex: 1, minWidth: 80 }} onClick={() => onSort(field.key)}>
+                        {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                        <SortIndicator active={sortConfig?.key === field.key} direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'} />
+                    </Box>
+                ))}
+                {/* Assigned Space */}
+                <Box sx={{ ...headerCellSx, width: 120, flexShrink: 0 }} onClick={() => onSort('assignedSpaceId')}>
+                    {tWithSpaceType('people.assignedSpace')}
+                    <SortIndicator active={sortConfig?.key === 'assignedSpaceId'} direction={sortConfig?.key === 'assignedSpaceId' ? sortConfig.direction : 'asc'} />
+                </Box>
+                {/* Lists */}
+                <Box sx={{ ...headerCellSx, width: 120, flexShrink: 0, cursor: 'default' }}>
+                    {t('people.lists')}
+                </Box>
+                {/* AIMS Status */}
+                <Box sx={{ ...headerCellSx, width: 80, flexShrink: 0, cursor: 'default' }}>
+                    {t('people.aimsStatus')}
+                </Box>
+                {/* Actions */}
+                <Box sx={{ ...headerCellSx, width: 160, flexShrink: 0, cursor: 'default' }}>
+                    {t('common.actions')}
+                </Box>
+            </Box>
+
+            {/* Virtualized Body */}
+            {people.length === 0 ? (
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        {searchQuery || assignmentFilter !== 'all'
+                            ? t('people.noResults')
+                            : t('people.noPeopleYet')}
+                    </Typography>
+                </Box>
+            ) : (
+                <TypedVirtualList
+                    rowCount={people.length}
+                    rowHeight={ROW_HEIGHT}
+                    rowComponent={VirtualRow}
+                    rowProps={{}}
+                    style={{ height: listHeight, maxHeight: '60vh' }}
+                />
+            )}
+        </Paper>
     );
 }

@@ -1,6 +1,6 @@
 import { logger } from '@shared/infrastructure/services/logger';
 import { Box, Snackbar, Alert } from '@mui/material';
-import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useState, useMemo, useCallback, useEffect, useDeferredValue, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { usePeopleController } from '../application/usePeopleController';
@@ -148,10 +148,11 @@ export function PeopleManagerView() {
     // Filter state
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
     const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
 
     const filters: PeopleFilters = {
-        searchQuery: debouncedSearchQuery,
+        searchQuery: deferredSearchQuery,
         assignmentStatus: assignmentFilter,
     };
 

@@ -24,6 +24,7 @@
  */
 
 import type { ArticleFormat, MappingInfo } from './solumService.js';
+import type { AimsArticle } from './aims.types.js';
 
 /**
  * Build an AIMS article for a Space entity.
@@ -33,7 +34,7 @@ import type { ArticleFormat, MappingInfo } from './solumService.js';
 export function buildSpaceArticle(
     space: { externalId: string; data: any },
     format: ArticleFormat | null,
-): any {
+): AimsArticle {
     const data = (space.data ?? {}) as Record<string, any>;
     const mapping = format?.mappingInfo;
 
@@ -57,7 +58,7 @@ export function buildPersonArticle(
     person: { assignedSpaceId: string | null; data: any },
     format: ArticleFormat | null,
     globalFieldAssignments?: Record<string, string>,
-): any | null {
+): AimsArticle | null {
     if (!person.assignedSpaceId) return null;
 
     // Merge global field assignments into person data — global fields are company-wide
@@ -83,7 +84,7 @@ export function buildPersonArticle(
 export function buildEmptySlotArticle(
     slotId: string,
     format: ArticleFormat | null,
-): any {
+): AimsArticle {
     return buildArticle(slotId, '', '', {}, format);
 }
 
@@ -117,7 +118,7 @@ export function buildConferenceArticle(
     },
     format: ArticleFormat | null,
     conferenceMapping?: ConferenceMappingConfig | null,
-): any {
+): AimsArticle {
     const articleId = `C${room.externalId}`;
     const articleName = room.roomName || `Conference ${room.externalId}`;
 
@@ -163,7 +164,7 @@ function buildArticle(
     nfcUrl: string,
     entityData: Record<string, any>,
     format: ArticleFormat | null,
-): any {
+): AimsArticle {
     const mapping = format?.mappingInfo;
 
     // Build the data object
@@ -206,7 +207,7 @@ function buildArticle(
  * Compare an expected article against what AIMS currently has.
  * Returns true if it needs to be re-pushed.
  */
-export function articleNeedsUpdate(expected: any, aims: any): boolean {
+export function articleNeedsUpdate(expected: AimsArticle, aims: AimsArticle): boolean {
     // Compare article name
     if ((expected.articleName || '') !== (aims.articleName || aims.article_name || '')) return true;
 

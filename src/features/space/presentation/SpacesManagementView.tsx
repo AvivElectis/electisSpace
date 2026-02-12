@@ -3,32 +3,28 @@ import {
     Box,
     Typography,
     Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Paper,
     IconButton,
     Stack,
     TextField,
     InputAdornment,
     Tooltip,
-    TableSortLabel,
     Skeleton,
     Card,
     CardContent,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import FolderIcon from '@mui/icons-material/Folder';
 import SaveIcon from '@mui/icons-material/Save';
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useDeferredValue, lazy, Suspense } from 'react';
+import { List as VirtualList } from 'react-window';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useSpaceController } from '../application/useSpaceController';
@@ -47,12 +43,203 @@ const SpaceDialog = lazy(() => import('./SpaceDialog').then(m => ({ default: m.S
 const ListsManagerDialog = lazy(() => import('@features/lists/presentation/ListsManagerDialog').then(m => ({ default: m.ListsManagerDialog })));
 const SaveListDialog = lazy(() => import('@features/lists/presentation/SaveListDialog').then(m => ({ default: m.SaveListDialog })));
 
+// ======================
+// Desktop Virtualized Table Sub-components
+// ======================
+
+const ROW_HEIGHT = 48;
+
+const headerCellSx = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    px: 1,
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    cursor: 'pointer',
+    userSelect: 'none',
+    '&:hover': { color: 'primary.main' },
+} as const;
+
+const cellSx = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    px: 1,
+    overflow: 'hidden',
+} as const;
+
+function SortIndicator({ active, direction }: { active: boolean; direction: 'asc' | 'desc' }) {
+    if (!active) return null;
+    return direction === 'asc'
+        ? <ArrowUpwardIcon sx={{ fontSize: 16, ml: 0.5, color: 'primary.main' }} />
+        : <ArrowDownwardIcon sx={{ fontSize: 16, ml: 0.5, color: 'primary.main' }} />;
+}
+
+interface VisibleField {
+    key: string;
+    labelEn: string;
+    labelHe: string;
+}
+
+interface SpacesDesktopTableProps {
+    spaces: Space[];
+    isFetching: boolean;
+    visibleFields: VisibleField[];
+    nameFieldKey?: string;
+    sortConfig: { key: string; direction: 'asc' | 'desc' } | null;
+    searchQuery: string;
+    onSort: (key: string) => void;
+    onEdit: (space: Space) => void;
+    onDelete: (id: string) => void;
+}
+
+function SpacesDesktopTable({
+    spaces, isFetching, visibleFields, nameFieldKey,
+    sortConfig, searchQuery, onSort, onEdit, onDelete,
+}: SpacesDesktopTableProps) {
+    const { t, i18n } = useTranslation();
+    const { getLabel } = useSpaceTypeLabels();
+
+    const VirtualRow = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+        const space = spaces[index];
+        if (!space) return null;
+        return (
+            <Box
+                style={style}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                    '&:hover': { bgcolor: 'action.hover' },
+                    boxSizing: 'border-box',
+                }}
+            >
+                {/* ID */}
+                <Box sx={{ ...cellSx, width: 120, flexShrink: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+                        {space.externalId || space.id}
+                    </Typography>
+                </Box>
+                {/* Name */}
+                {nameFieldKey && (
+                    <Box sx={{ ...cellSx, flex: 1, minWidth: 100 }}>
+                        <Typography variant="body2" noWrap>{space.data[nameFieldKey] || '-'}</Typography>
+                    </Box>
+                )}
+                {/* Dynamic fields */}
+                {visibleFields.map(field => (
+                    <Box key={field.key} sx={{ ...cellSx, flex: 1, minWidth: 80 }}>
+                        <Typography variant="body2" noWrap>{space.data[field.key] || '-'}</Typography>
+                    </Box>
+                ))}
+                {/* Actions */}
+                <Box sx={{ ...cellSx, width: 100, flexShrink: 0 }}>
+                    <Stack direction="row" gap={0.5} justifyContent="center">
+                        <Tooltip title={t('common.edit')}>
+                            <IconButton size="small" color="primary" onClick={() => onEdit(space)}>
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title={t('common.delete')}>
+                            <IconButton size="small" color="error" onClick={() => onDelete(space.id)}>
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                </Box>
+            </Box>
+        );
+    }, [spaces, visibleFields, nameFieldKey, t, onEdit, onDelete]);
+
+    const listHeight = Math.min(spaces.length * ROW_HEIGHT, window.innerHeight * 0.65);
+    const TypedVirtualList = VirtualList as any;
+
+    return (
+        <Paper sx={{ overflow: 'hidden' }}>
+            {/* Sticky Header */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'grey.100',
+                    borderBottom: '2px solid',
+                    borderColor: 'divider',
+                    py: 1,
+                    minHeight: 42,
+                }}
+            >
+                {/* ID */}
+                <Box sx={{ ...headerCellSx, width: 120, flexShrink: 0 }} onClick={() => onSort('id')}>
+                    {t('spaces.id')}
+                    <SortIndicator active={sortConfig?.key === 'id'} direction={sortConfig?.key === 'id' ? sortConfig.direction : 'asc'} />
+                </Box>
+                {/* Name */}
+                {nameFieldKey && (
+                    <Box sx={{ ...headerCellSx, flex: 1, minWidth: 100 }} onClick={() => onSort(nameFieldKey)}>
+                        {t('spaces.name')}
+                        <SortIndicator active={sortConfig?.key === nameFieldKey} direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'} />
+                    </Box>
+                )}
+                {/* Dynamic fields */}
+                {visibleFields.map(field => (
+                    <Box key={field.key} sx={{ ...headerCellSx, flex: 1, minWidth: 80 }} onClick={() => onSort(field.key)}>
+                        {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                        <SortIndicator active={sortConfig?.key === field.key} direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'} />
+                    </Box>
+                ))}
+                {/* Actions */}
+                <Box sx={{ ...headerCellSx, width: 100, flexShrink: 0, cursor: 'default' }}>
+                    {t('spaces.actions')}
+                </Box>
+            </Box>
+
+            {/* Virtualized Body */}
+            {isFetching ? (
+                <Box sx={{ p: 2 }}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Box key={i} sx={{ display: 'flex', alignItems: 'center', py: 1, gap: 2 }}>
+                            <Skeleton variant="text" width="15%" />
+                            <Skeleton variant="text" width="25%" />
+                            {visibleFields.map(field => (
+                                <Skeleton key={field.key} variant="text" width="15%" />
+                            ))}
+                            <Stack direction="row" gap={1}>
+                                <Skeleton variant="circular" width={32} height={32} />
+                                <Skeleton variant="circular" width={32} height={32} />
+                            </Stack>
+                        </Box>
+                    ))}
+                </Box>
+            ) : spaces.length === 0 ? (
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        {searchQuery
+                            ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
+                            : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
+                    </Typography>
+                </Box>
+            ) : (
+                <TypedVirtualList
+                    rowCount={spaces.length}
+                    rowHeight={ROW_HEIGHT}
+                    rowComponent={VirtualRow}
+                    rowProps={{}}
+                    style={{ height: listHeight, maxHeight: '65vh' }}
+                />
+            )}
+        </Paper>
+    );
+}
+
 /**
  * Spaces Management View - Extracted from SpacesPage
  * This component handles the original space management functionality
  */
 export function SpacesManagementView() {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isAppReady = useAuthStore((state) => state.isAppReady);
@@ -109,6 +296,7 @@ export function SpacesManagementView() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
 
@@ -177,7 +365,7 @@ export function SpacesManagementView() {
 
     // Filter AND Sort spaces
     const filteredAndSortedSpaces = useMemo(() => {
-        const query = debouncedSearchQuery.toLowerCase();
+        const query = deferredSearchQuery.toLowerCase();
         let result = spaceController.spaces;
 
         // 1. Filter by search query
@@ -228,7 +416,7 @@ export function SpacesManagementView() {
         }
 
         return result;
-    }, [spaceController.spaces, debouncedSearchQuery, sortConfig]);
+    }, [spaceController.spaces, deferredSearchQuery, sortConfig]);
 
     // Memoized event handlers
     const handleDelete = useCallback(async (id: string) => {
@@ -416,138 +604,18 @@ export function SpacesManagementView() {
                     )}
                 </Box>)
             ) : (
-                /* Desktop Table View */
-                (<TableContainer component={Paper} sx={{ maxHeight: { xs: '55vh', sm: '65vh', md: '70vh' } }}>
-                    <Table stickyHeader>
-                        <TableHead>
-                            <TableRow sx={{ bgcolor: 'background.default' }}>
-                                <TableCell sx={{ fontWeight: 600 }} align="center">
-                                    <TableSortLabel
-                                        active={sortConfig?.key === 'id'}
-                                        direction={sortConfig?.key === 'id' ? sortConfig.direction : 'asc'}
-                                        onClick={() => handleSort('id')}
-                                    >
-                                        {t('spaces.id')}
-                                    </TableSortLabel>
-                                </TableCell>
-                                {nameFieldKey && (
-                                    <TableCell sx={{ fontWeight: 600 }} align="center">
-                                        <TableSortLabel
-                                            active={sortConfig?.key === nameFieldKey}
-                                            direction={sortConfig?.key === nameFieldKey ? sortConfig.direction : 'asc'}
-                                            onClick={() => handleSort(nameFieldKey)}
-                                        >
-                                            {t('spaces.name')}
-                                        </TableSortLabel>
-                                    </TableCell>
-                                )}
-                                {visibleFields.map(field => (
-                                    <TableCell key={field.key} sx={{ fontWeight: 600 }} align="center">
-                                        <TableSortLabel
-                                            active={sortConfig?.key === field.key}
-                                            direction={sortConfig?.key === field.key ? sortConfig.direction : 'asc'}
-                                            onClick={() => handleSort(field.key)}
-                                        >
-                                            {i18n.language === 'he' ? field.labelHe : field.labelEn}
-                                        </TableSortLabel>
-                                    </TableCell>
-                                ))}
-                                <TableCell sx={{ fontWeight: 600 }} align="center">{t('spaces.actions')}</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {spaceController.isFetching ? (
-                                // Show skeleton rows while fetching
-                                (Array.from({ length: 5 }).map((_, index) => (
-                                    <TableRow key={`skeleton-${index}`}>
-                                        <TableCell align="center">
-                                            <Skeleton variant="text" width="80%" />
-                                        </TableCell>
-                                        {nameFieldKey && (
-                                            <TableCell align="center">
-                                                <Skeleton variant="text" width="70%" />
-                                            </TableCell>
-                                        )}
-                                        {visibleFields.map(field => (
-                                            <TableCell key={field.key} align="center">
-                                                <Skeleton variant="text" width="70%" />
-                                            </TableCell>
-                                        ))}
-                                        <TableCell align="center">
-                                            <Stack direction="row" gap={1} justifyContent="center">
-                                                <Skeleton variant="circular" width={32} height={32} />
-                                                <Skeleton variant="circular" width={32} height={32} />
-                                            </Stack>
-                                        </TableCell>
-                                    </TableRow>
-                                )))
-                            ) : filteredAndSortedSpaces.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={visibleFields.length + (nameFieldKey ? 3 : 2)} align="center" sx={{ py: 4 }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {searchQuery
-                                                ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
-                                                : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredAndSortedSpaces.map((space, index) => (
-                                    <TableRow
-                                        key={`${space.id}-${index}`}
-                                        sx={{
-                                            '&:hover': {
-                                                bgcolor: 'action.hover',
-                                            },
-                                        }}
-                                    >
-                                        <TableCell align="center">
-                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                {space.externalId || space.id}
-                                            </Typography>
-                                        </TableCell>
-                                        {nameFieldKey && (
-                                            <TableCell align="center">
-                                                <Typography variant="body2">
-                                                    {space.data[nameFieldKey] || '-'}
-                                                </Typography>
-                                            </TableCell>
-                                        )}
-                                        {visibleFields.map(field => (
-                                            <TableCell key={field.key} align="center">
-                                                <Typography variant="body2">
-                                                    {space.data[field.key] || '-'}
-                                                </Typography>
-                                            </TableCell>
-                                        ))}
-                                        <TableCell align="center">
-                                            <Stack direction="row" gap={1} justifyContent="center">
-                                                <Tooltip title="Edit">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="primary"
-                                                        onClick={() => handleEdit(space)}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Delete">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleDelete(space.id)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Stack>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>)
+                /* Desktop Virtualized Table */
+                (<SpacesDesktopTable
+                    spaces={filteredAndSortedSpaces}
+                    isFetching={spaceController.isFetching}
+                    visibleFields={visibleFields}
+                    nameFieldKey={nameFieldKey}
+                    sortConfig={sortConfig}
+                    searchQuery={searchQuery}
+                    onSort={handleSort}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />)
             )}
             {/* Bottom Actions Bar */}
             <Box sx={{

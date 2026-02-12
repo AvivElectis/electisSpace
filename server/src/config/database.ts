@@ -6,6 +6,9 @@ import { config } from './env.js';
 // Create PostgreSQL connection pool
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+    max: config.dbPoolMax,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
 });
 
 // Create Prisma adapter

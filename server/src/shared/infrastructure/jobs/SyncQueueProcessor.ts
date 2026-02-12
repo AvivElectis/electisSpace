@@ -11,6 +11,7 @@
 
 import { prisma } from '../../../config/index.js';
 import { aimsGateway } from '../services/aimsGateway.js';
+import { cacheGet, cacheSet } from '../services/redisCache.js';
 import {
     buildSpaceArticle,
     buildPersonArticle,
@@ -19,8 +20,12 @@ import {
     type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
+import type { AimsArticle } from '../services/aims.types.js';
 import { QueueStatus, SyncStatus } from '@prisma/client';
 import { sseManager } from '../sse/SseManager.js';
+
+// Cache TTL for company settings (60 seconds)
+const COMPANY_SETTINGS_TTL = 60;
 
 // Processing delay (items must be at least this old)
 const PROCESSING_DELAY_MS = 5000;
@@ -283,15 +288,24 @@ export class SyncQueueProcessor {
         try {
             const store = await prisma.store.findUnique({
                 where: { id: storeId },
-                include: {
-                    company: {
-                        select: { settings: true },
-                    },
-                },
+                select: { companyId: true },
             });
-            const settings = (store?.company?.settings as Record<string, any>) || {};
-            const mappingConfig = settings.solumMappingConfig || {};
+            if (!store) return { globalFieldAssignments: undefined, conferenceMapping: null };
 
+            // Try Redis cache first
+            const cacheKey = `company-settings:${store.companyId}`;
+            let settings: Record<string, any> | null = await cacheGet<Record<string, any>>(cacheKey);
+
+            if (!settings) {
+                const company = await prisma.company.findUnique({
+                    where: { id: store.companyId },
+                    select: { settings: true },
+                });
+                settings = (company?.settings as Record<string, any>) || {};
+                await cacheSet(cacheKey, settings, COMPANY_SETTINGS_TTL);
+            }
+
+            const mappingConfig = settings.solumMappingConfig || {};
             const globalFields = mappingConfig.globalFieldAssignments;
             const conferenceMapping = mappingConfig.conferenceMapping;
 
@@ -382,7 +396,7 @@ export class SyncQueueProcessor {
         payload: any,
         format: ArticleFormat | null,
         storeSettings?: StoreCompanySettings,
-    ): Promise<any | null> {
+    ): Promise<AimsArticle | null> {
         switch (entityType) {
             case 'space': {
                 const space = await prisma.space.findUnique({
