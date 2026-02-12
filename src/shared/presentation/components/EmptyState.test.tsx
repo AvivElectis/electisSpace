@@ -5,7 +5,6 @@
  * Tests the EmptyState component for displaying empty data states
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { EmptyState } from './EmptyState';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';

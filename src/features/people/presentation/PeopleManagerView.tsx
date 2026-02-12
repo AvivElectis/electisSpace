@@ -496,6 +496,8 @@ export function PeopleManagerView() {
                 onCancelAllAssignments={handleCancelAllAssignments}
                 onRemoveSelected={handleRemoveSelectedPeople}
                 assignedCount={assignedCount}
+                assignmentFilter={assignmentFilter}
+                onAssignmentFilterChange={setAssignmentFilter}
             />
 
             {/* People Table */}

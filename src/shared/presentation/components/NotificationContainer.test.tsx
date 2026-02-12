@@ -5,7 +5,6 @@
  * Tests the NotificationContainer component for displaying toast notifications
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { NotificationContainer } from './NotificationContainer';
 import { useNotificationStore } from '@shared/infrastructure/store/notificationStore';

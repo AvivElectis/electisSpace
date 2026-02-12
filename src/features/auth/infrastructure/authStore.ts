@@ -242,14 +242,22 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId,
                         }, false, 'verify2FA/success');
 
-                        // Fetch settings from server, then auto-connect to SOLUM
-                        // Settings must load first so autoConnect doesn't get overwritten
+                        // Set settings store context immediately so StoreRequiredGuard works
+                        const settingsStore = useSettingsStore.getState();
+                        if (activeStoreId) settingsStore.setActiveStoreId(activeStoreId);
+                        if (activeCompanyId) settingsStore.setActiveCompanyId(activeCompanyId);
+
+                        // Fetch settings from server (blocking), then auto-connect to SOLUM
                         if (activeStoreId && activeCompanyId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId)
-                                .then(() => autoConnectToSolum(activeStoreId))
-                                .catch((error) => {
-                                    logger.warn('AuthStore', 'Auto SOLUM connect failed (will use manual connect)', { error: error instanceof Error ? error.message : String(error) });
-                                });
+                            try {
+                                await settingsStore.fetchSettingsFromServer(activeStoreId, activeCompanyId);
+                            } catch (error) {
+                                logger.warn('AuthStore', 'Settings fetch after login failed', { error: error instanceof Error ? error.message : String(error) });
+                            }
+                            // Auto-connect to SOLUM (non-blocking)
+                            autoConnectToSolum(activeStoreId).catch((error) => {
+                                logger.warn('AuthStore', 'Auto SOLUM connect failed (will use manual connect)', { error: error instanceof Error ? error.message : String(error) });
+                            });
                         }
 
                         return true;

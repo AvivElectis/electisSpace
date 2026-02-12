@@ -5,7 +5,6 @@
  * Tests the root store utilities for unified state management
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import {
     useRootStore,

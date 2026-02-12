@@ -52,6 +52,31 @@ export function canManageStore(user: UserContext, storeId: string): boolean {
     return storeAccess?.role === 'STORE_ADMIN';
 }
 
+/**
+ * Check if user can manage a store via company admin role.
+ * Falls back to canManageStore first, then checks company admin.
+ */
+export async function canManageStoreOrCompany(user: UserContext, storeId: string): Promise<boolean> {
+    if (canManageStore(user, storeId)) return true;
+    const store = await userRepository.findStore(storeId);
+    if (!store) return false;
+    return isCompanyAdmin(user.id, store.companyId);
+}
+
+/**
+ * Check if user is company admin for any company the target user belongs to.
+ */
+export async function canManageUserViaCompany(currentUser: UserContext, targetUserId: string): Promise<boolean> {
+    if (isPlatformAdmin(currentUser)) return true;
+    const managedCompanyIds = (currentUser.companies || [])
+        .filter(c => c.role === 'COMPANY_ADMIN')
+        .map(c => c.id);
+    if (managedCompanyIds.length === 0) return false;
+    const targetCompanies = await userRepository.getUserCompanies(targetUserId);
+    if (!targetCompanies) return false;
+    return targetCompanies.userCompanies.some(uc => managedCompanyIds.includes(uc.companyId));
+}
+
 // ======================
 // Service
 // ======================
@@ -222,34 +247,6 @@ export const userService = {
         const { page, limit, search, storeId, companyId } = params;
         const skip = (page - 1) * limit;
 
-        // Get manageable stores
-        let managedStoreIds: string[] = [];
-
-        if (isPlatformAdmin(user)) {
-            if (storeId) {
-                managedStoreIds = [storeId];
-            } else if (companyId) {
-                const companyStores = await userRepository.getCompanyStores(companyId);
-                managedStoreIds = companyStores.map(s => s.id);
-            }
-        } else {
-            managedStoreIds = (user.stores || [])
-                .filter(s => s.role === 'STORE_ADMIN')
-                .map(s => s.id);
-
-            if (storeId && managedStoreIds.includes(storeId)) {
-                managedStoreIds = [storeId];
-            }
-
-            // Non-admin users with no managed stores cannot list any users
-            if (managedStoreIds.length === 0) {
-                return {
-                    data: [],
-                    pagination: { page, limit, total: 0, totalPages: 0 },
-                };
-            }
-        }
-
         // Build query
         const where: any = {
             ...(search && {
@@ -261,11 +258,57 @@ export const userService = {
             }),
         };
 
-        // Always scope non-admin users to their managed stores
-        if (!isPlatformAdmin(user)) {
-            where.userStores = {
-                some: { storeId: { in: managedStoreIds } }
-            };
+        if (isPlatformAdmin(user)) {
+            // Platform admin: apply optional filters
+            if (storeId) {
+                where.userStores = { some: { storeId } };
+            } else if (companyId) {
+                where.userCompanies = { some: { companyId } };
+            }
+        } else {
+            // Determine managed companies (company admin) and stores (store admin)
+            const managedCompanyIds = (user.companies || [])
+                .filter(c => c.role === 'COMPANY_ADMIN')
+                .map(c => c.id);
+            const managedStoreIds = (user.stores || [])
+                .filter(s => s.role === 'STORE_ADMIN')
+                .map(s => s.id);
+
+            if (managedCompanyIds.length === 0 && managedStoreIds.length === 0) {
+                return {
+                    data: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 },
+                };
+            }
+
+            // Apply storeId/companyId filter if specified
+            if (storeId) {
+                where.userStores = { some: { storeId } };
+            } else if (companyId) {
+                if (managedCompanyIds.includes(companyId)) {
+                    where.userCompanies = { some: { companyId } };
+                } else {
+                    return { data: [], pagination: { page, limit, total: 0, totalPages: 0 } };
+                }
+            } else {
+                // No filter: scope to managed companies + stores
+                const scopeConditions: any[] = [];
+                if (managedCompanyIds.length > 0) {
+                    scopeConditions.push({
+                        userCompanies: { some: { companyId: { in: managedCompanyIds } } }
+                    });
+                }
+                if (managedStoreIds.length > 0) {
+                    scopeConditions.push({
+                        userStores: { some: { storeId: { in: managedStoreIds } } }
+                    });
+                }
+                if (scopeConditions.length === 1) {
+                    Object.assign(where, scopeConditions[0]);
+                } else {
+                    where.AND = [...(where.AND || []), { OR: scopeConditions }];
+                }
+            }
         }
 
         const [users, total] = await Promise.all([
@@ -486,9 +529,10 @@ export const userService = {
         const existing = await userRepository.findWithStores(id);
         if (!existing) throw new Error('USER_NOT_FOUND');
 
-        // Check permission
-        const canManage = existing.userStores.some(us => canManageStore(currentUser, us.storeId));
-        if (!canManage && !isPlatformAdmin(currentUser)) {
+        // Check permission: platform admin, store admin, or company admin
+        const canManageViaStore = existing.userStores.some(us => canManageStore(currentUser, us.storeId));
+        const canManageViaCompany = !canManageViaStore && await canManageUserViaCompany(currentUser, id);
+        if (!canManageViaStore && !canManageViaCompany && !isPlatformAdmin(currentUser)) {
             throw new Error('FORBIDDEN');
         }
 
@@ -511,7 +555,7 @@ export const userService = {
      * Update user-store assignment
      */
     async updateUserStore(userId: string, storeId: string, data: UpdateUserStoreDto, currentUser: UserContext) {
-        if (!canManageStore(currentUser, storeId)) {
+        if (!await canManageStoreOrCompany(currentUser, storeId)) {
             throw new Error('FORBIDDEN');
         }
 
@@ -533,7 +577,7 @@ export const userService = {
      * Assign user to store
      */
     async assignToStore(userId: string, storeId: string, role: string, features: string[], currentUser: UserContext) {
-        if (!canManageStore(currentUser, storeId)) {
+        if (!await canManageStoreOrCompany(currentUser, storeId)) {
             throw new Error('FORBIDDEN');
         }
 
@@ -558,7 +602,7 @@ export const userService = {
      * Remove user from store
      */
     async removeFromStore(userId: string, storeId: string, currentUser: UserContext) {
-        if (!canManageStore(currentUser, storeId)) {
+        if (!await canManageStoreOrCompany(currentUser, storeId)) {
             throw new Error('FORBIDDEN');
         }
 
@@ -584,8 +628,12 @@ export const userService = {
         if (!existing) throw new Error('USER_NOT_FOUND');
 
         if (!isPlatformAdmin(currentUser)) {
-            const canDeleteAll = existing.userStores.every(us => canManageStore(currentUser, us.storeId));
-            if (!canDeleteAll) throw new Error('FORBIDDEN');
+            // Allow if company admin for any of the target user's companies
+            const canDeleteViaCompany = await canManageUserViaCompany(currentUser, id);
+            if (!canDeleteViaCompany) {
+                const canDeleteAll = existing.userStores.every(us => canManageStore(currentUser, us.storeId));
+                if (!canDeleteAll) throw new Error('FORBIDDEN');
+            }
         }
 
         await userRepository.delete(id);

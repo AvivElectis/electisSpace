@@ -5,7 +5,6 @@
  * Tests configuration validation for article formats and CSV structure
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     validateArticleFormat,
     validateCSVStructure,

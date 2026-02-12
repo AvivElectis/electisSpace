@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
 
 // Mock localStorage
 const localStorageMock = {
@@ -84,9 +83,6 @@ global.ResizeObserver = class ResizeObserver {
     unobserve() { }
 } as any;
 
-// Suppress console errors in tests (optional)
-global.console = {
-    ...console,
-    error: vi.fn(),
-    warn: vi.fn(),
-};
+// Suppress console errors/warnings in tests
+vi.spyOn(console, 'error').mockImplementation(() => {});
+vi.spyOn(console, 'warn').mockImplementation(() => {});

@@ -5,7 +5,6 @@
  * Tests the filter drawer for data filtering
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { FilterDrawer, type FilterField } from './FilterDrawer';
 

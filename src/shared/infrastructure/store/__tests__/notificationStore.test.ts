@@ -5,7 +5,6 @@
  * Tests the notification store for managing app notifications
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { useNotificationStore, useNotifications } from '../notificationStore';
 import { renderHook, act } from '@testing-library/react';
 

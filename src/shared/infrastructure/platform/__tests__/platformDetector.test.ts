@@ -5,7 +5,6 @@
  * Tests platform detection utilities for web, electron, and android
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
     detectPlatform,
     isElectron,

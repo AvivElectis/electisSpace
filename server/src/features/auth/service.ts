@@ -69,6 +69,7 @@ function mapUserToInfo(user: UserWithRelations): UserInfo {
         name: uc.company.name,
         code: uc.company.code,
         role: uc.role,
+        allStoresAccess: uc.allStoresAccess,
     }));
 
     return {
@@ -77,6 +78,8 @@ function mapUserToInfo(user: UserWithRelations): UserInfo {
         firstName: user.firstName,
         lastName: user.lastName,
         globalRole: user.globalRole,
+        activeCompanyId: user.activeCompanyId,
+        activeStoreId: user.activeStoreId,
         stores,
         companies,
     };

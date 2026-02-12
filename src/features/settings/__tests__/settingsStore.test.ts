@@ -8,7 +8,6 @@
  * - Mode-specific credential cleanup
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { useSettingsStore } from '../infrastructure/settingsStore';
 
 describe('SettingsStore', () => {

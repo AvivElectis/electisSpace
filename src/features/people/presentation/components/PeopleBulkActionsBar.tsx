@@ -1,4 +1,4 @@
-import { Paper, Stack, Typography, Button, Box } from '@mui/material';
+import { Paper, Stack, Typography, Button, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -12,6 +12,8 @@ interface PeopleBulkActionsBarProps {
     onCancelAllAssignments: () => void;
     onRemoveSelected: () => void;
     assignedCount: number;
+    assignmentFilter?: 'all' | 'assigned' | 'unassigned';
+    onAssignmentFilterChange?: (value: 'all' | 'assigned' | 'unassigned') => void;
 }
 
 /**
@@ -23,6 +25,8 @@ export function PeopleBulkActionsBar({
     onCancelAllAssignments,
     onRemoveSelected,
     assignedCount,
+    assignmentFilter,
+    onAssignmentFilterChange,
 }: PeopleBulkActionsBarProps) {
     const { t } = useTranslation();
     const { getLabel } = useSpaceTypeLabels();
@@ -62,16 +66,34 @@ export function PeopleBulkActionsBar({
                 <Box />
             )}
 
-            {/* Cancel All Assignments - Always visible on right */}
-            <Button
-                variant="text"
-                color="error"
-                startIcon={<CancelIcon />}
-                onClick={onCancelAllAssignments}
-                disabled={assignedCount === 0}
-            >
-                {t('people.cancelAllAssignments')}
-            </Button>
+            {/* Right side: Status filter (mobile only) + Cancel All */}
+            <Stack direction="row" alignItems="center" gap={1}>
+                {/* Status filter - mobile only (hidden on desktop, shown in PeopleFiltersBar) */}
+                {assignmentFilter !== undefined && onAssignmentFilterChange && (
+                    <FormControl size="small" sx={{ minWidth: 120, display: { xs: 'flex', md: 'none' } }}>
+                        <InputLabel>{t('people.filterStatus')}</InputLabel>
+                        <Select
+                            value={assignmentFilter}
+                            label={t('people.filterStatus')}
+                            onChange={(e) => onAssignmentFilterChange(e.target.value as 'all' | 'assigned' | 'unassigned')}
+                        >
+                            <MenuItem value="all">{t('people.all')}</MenuItem>
+                            <MenuItem value="assigned">{t('people.assigned')}</MenuItem>
+                            <MenuItem value="unassigned">{t('people.unassigned')}</MenuItem>
+                        </Select>
+                    </FormControl>
+                )}
+                <Button
+                    variant="text"
+                    color="error"
+                    startIcon={<CancelIcon />}
+                    onClick={onCancelAllAssignments}
+                    disabled={assignedCount === 0}
+                    size="small"
+                >
+                    {t('people.cancelAllAssignments')}
+                </Button>
+            </Stack>
         </Stack>
     );
 }

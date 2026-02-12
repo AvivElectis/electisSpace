@@ -5,7 +5,6 @@
  * Tests log persistence and filtering functionality
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Mock idb-keyval before importing store

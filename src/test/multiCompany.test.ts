@@ -5,7 +5,6 @@
  * Verifies data isolation and cross-company access controls.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     createMockUser,
     createMockCompany,

@@ -5,7 +5,6 @@
  * These IDs are used for people who are not assigned to physical spaces.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     getNextPoolId,
     isPoolId,

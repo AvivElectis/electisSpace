@@ -5,7 +5,6 @@
  * Tests settings validation functions
  */
 
-import { describe, it, expect } from 'vitest';
 import {
     validatePassword,
     validateLogoFile,
