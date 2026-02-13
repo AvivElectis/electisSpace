@@ -233,13 +233,9 @@ export function useSettingsController() {
         (updates: Partial<SettingsData>): void => {
             logger.info('SettingsController', 'Updating settings');
 
-            // Merge with current settings for validation
-            const updatedSettings = { ...settings, ...updates };
-
             // Validate only the fields being updated
             const validation = validateSettings(updates);
             if (!validation.valid) {
-                const errorMsg = validation.errors.map(e => e.message).join(', ');
                 logger.warn('SettingsController', 'Settings validation failed, updating locally', { errors: validation.errors });
                 // Still update locally (for live typing) but skip server save
                 updateInStore(updates);

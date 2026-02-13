@@ -138,6 +138,28 @@ export function PeopleTable({
     const allSelected = people.length > 0 && selectedIds.size === people.length;
     const someSelected = selectedIds.size > 0 && selectedIds.size < people.length;
 
+    // Desktop Virtualized View — hooks must be called before any early return
+    const VirtualRow = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+        const person = people[index];
+        if (!person) return null;
+        return (
+            <PeopleTableRow
+                index={index + 1}
+                person={person}
+                visibleFields={visibleFields}
+                nameFieldKey={nameFieldKey}
+                isSelected={selectedIds.has(person.id)}
+                translations={rowTranslations}
+                style={style}
+                onSelect={onSelectOne}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onAssignSpace={onAssignSpace}
+                onUnassignSpace={onUnassignSpace}
+            />
+        );
+    }, [people, visibleFields, nameFieldKey, selectedIds, rowTranslations, onSelectOne, onEdit, onDelete, onAssignSpace, onUnassignSpace]);
+
     // Mobile Card View (unchanged - not virtualized since it scrolls naturally)
     if (isMobile) {
         return (
@@ -270,34 +292,12 @@ export function PeopleTable({
         );
     }
 
-    // Desktop Virtualized View
-    // Row component for react-window - maps index to PeopleTableRow props
-    const VirtualRow = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
-        const person = people[index];
-        if (!person) return null;
-        return (
-            <PeopleTableRow
-                index={index + 1}
-                person={person}
-                visibleFields={visibleFields}
-                nameFieldKey={nameFieldKey}
-                isSelected={selectedIds.has(person.id)}
-                translations={rowTranslations}
-                style={style}
-                onSelect={onSelectOne}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onAssignSpace={onAssignSpace}
-                onUnassignSpace={onUnassignSpace}
-            />
-        );
-    }, [people, visibleFields, nameFieldKey, selectedIds, rowTranslations, onSelectOne, onEdit, onDelete, onAssignSpace, onUnassignSpace]);
-
     // Calculate list height - cap at 60vh equivalent
     const listHeight = Math.min(people.length * ROW_HEIGHT, window.innerHeight * 0.6);
 
     const TypedVirtualList = VirtualList as any;
 
+    // Desktop Virtualized View
     return (
         <Paper sx={{ overflow: 'hidden' }}>
             {/* Sticky Header */}
