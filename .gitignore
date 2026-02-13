@@ -38,3 +38,5 @@ dist-ssr
 # Test credentials (contain secrets - never commit)
 TEST_CREDENTIALS.txt
 
+.claude/settings.local.json
+nul
