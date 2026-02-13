@@ -17,7 +17,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const location = useLocation();
     const { t } = useTranslation();
-    const { isAuthenticated, isLoading, user, isInitialized } = useAuthStore();
+    const { isAuthenticated, isLoading, isInitialized } = useAuthStore();
 
     // Check if we have a token in memory
     const hasToken = tokenManager.getAccessToken();

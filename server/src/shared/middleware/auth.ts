@@ -15,6 +15,7 @@ interface StoreAccess {
 interface CompanyAccess {
     id: string;
     role: string;
+    allStoresAccess?: boolean;
 }
 
 // User context as attached to request
@@ -139,6 +140,7 @@ export const authenticate = async (
                     select: {
                         companyId: true,
                         role: true,
+                        allStoresAccess: true,
                     }
                 }
             },
@@ -161,6 +163,7 @@ export const authenticate = async (
             companies: user.userCompanies.map(uc => ({
                 id: uc.companyId,
                 role: uc.role,
+                allStoresAccess: uc.allStoresAccess,
             })),
         };
 
