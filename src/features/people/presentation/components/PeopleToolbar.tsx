@@ -28,11 +28,11 @@ export function PeopleToolbar({
             justifyContent="space-between"
             alignItems="center"
             gap={1}
-            sx={{ mb: 3 }}
+            sx={{ mb: { xs: 2, sm: 3 } }}
         >
             <Box sx={{ minWidth: 0 }}>
                 <Stack direction="row" alignItems="center" gap={1} mb={0.5}>
-                    <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
                         {t('people.title')}
                     </Typography>
                     {activeListName && (

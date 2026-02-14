@@ -992,7 +992,7 @@
         "syncToAimsFailed": "Failed to sync list to AIMS"
     },
     "manual": {
-        "title": "User Manual",
+        "title": "Info & Manual",
         "tabs": {
             "contactInfo": "Contact & Info",
             "manual": "Manual",
@@ -1013,6 +1013,7 @@
             "phone": "Phone",
             "address": "Address",
             "companyAddress": "30 Sheshet HaYamim St., Bnei Brak",
+            "companyName": "Company Name",
             "companyId": "Company ID",
             "releaseNotesContent": "v2.1.0 — Server Architecture & Mobile UX\n• Server-backed lists — People and Spaces lists now stored in DB and shared across all store users\n• Conference rooms managed via server API with automatic AIMS sync queue\n• Mobile-optimized UI — collapsible list panel, compact cards, inline action buttons\n• Status filter placed alongside cancel assignments for faster mobile workflows\n• Real-time SSE notifications when other users load, free, or update lists\n• Unsaved changes guard — prompts to save before navigating away\n• Enhanced authentication with server-side validation\n• Comprehensive test suite — 1250+ tests covering all features"
         },
