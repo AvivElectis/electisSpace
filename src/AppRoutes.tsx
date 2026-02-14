@@ -17,9 +17,6 @@ const SpacesPage = lazy(() =>
 const ConferencePage = lazy(() =>
     import('@features/conference/presentation/ConferencePage').then(m => ({ default: m.ConferencePage }))
 );
-const SyncPage = lazy(() =>
-    import('@features/sync/presentation/SyncPage').then(m => ({ default: m.SyncPage }))
-);
 const PeopleManagerView = lazy(() =>
     import('@features/people/presentation/PeopleManagerView').then(m => ({ default: m.PeopleManagerView }))
 );
@@ -70,7 +67,6 @@ export function AppRoutes() {
             <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/spaces" element={<ProtectedRoute><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/conference" element={<ProtectedRoute><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/sync" element={<ProtectedRoute><SuspenseRoute><SyncPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/people" element={<ProtectedRoute><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/labels" element={<ProtectedRoute><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />

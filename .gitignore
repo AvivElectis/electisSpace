@@ -40,3 +40,4 @@ TEST_CREDENTIALS.txt
 
 .claude/settings.local.json
 nul
+migration_20260212_main_windows.sql

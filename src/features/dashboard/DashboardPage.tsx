@@ -1,7 +1,10 @@
-import { Box, Typography, Grid, Button, Stack } from '@mui/material';
+import { Box, Typography, Grid, Button, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import { useState, useMemo, lazy, Suspense, useCallback } from 'react';
 import LinkIcon from '@mui/icons-material/Link';
+import AddIcon from '@mui/icons-material/Add';
+import GroupsIcon from '@mui/icons-material/Groups';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -24,7 +27,6 @@ import {
     DashboardSpacesCard,
     DashboardConferenceCard,
     DashboardPeopleCard,
-    DashboardAppInfoCard,
     DashboardSkeleton,
 } from './components';
 
@@ -36,6 +38,8 @@ import type { Space, ConferenceRoom } from '@shared/domain/types';
  */
 export function DashboardPage() {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
     const { syncState } = useSyncContext();
@@ -123,25 +127,16 @@ export function DashboardPage() {
 
     return (
         <Box>
-            {/* Header with Quick Action */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: 4 }}>
+            {/* Header */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: isMobile ? 2 : 4 }}>
                 <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
                         {t('dashboard.title')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
                         {t('dashboard.overview', 'Welcome to your space management dashboard')}
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<LinkIcon />}
-                    onClick={() => setLinkLabelDialogOpen(true)}
-                    sx={{ minWidth: { xs: 'auto', sm: 160 }, whiteSpace: 'nowrap' }}
-                >
-                    {t('dashboard.linkLabel', 'Link Label')}
-                </Button>
             </Stack>
 
             <Grid container spacing={3}>
@@ -155,6 +150,7 @@ export function DashboardPage() {
                             spacesWithLabels={spacesWithLabels}
                             spacesWithoutLabels={spacesWithoutLabels}
                             onAddSpace={() => setSpaceDialogOpen(true)}
+                            hideAddButton={isMobile}
                         />
                     </Grid>
                 )}
@@ -182,21 +178,103 @@ export function DashboardPage() {
                         availableRooms={availableRooms}
                         occupiedRooms={occupiedRooms}
                         onAddRoom={() => setConferenceDialogOpen(true)}
+                        hideAddButton={isMobile}
                     />
                 </Grid>
 
-                {/* App Information (Full Width) */}
-                <Grid size={{ xs: 12 }}>
-                    <DashboardAppInfoCard
-                        workingMode={settingsController.settings.workingMode}
-                        spaceType={settingsController.settings.spaceType || 'chair'}
-                        spaceTypeLabel={getLabel('singular')}
-                        autoSyncEnabled={settingsController.settings.autoSyncEnabled}
-                        syncInterval={settingsController.settings.solumConfig?.syncInterval || 60}
-                        lastSync={syncState.lastSync}
-                    />
-                </Grid>
             </Grid>
+
+            {/* Floating Quick Actions — liquid glass box, opposite side of sync indicator */}
+            <Box sx={{
+                position: 'fixed',
+                bottom: { xs: 16, sm: 24 },
+                insetInlineStart: { xs: 16, sm: 24 },
+                zIndex: (theme) => theme.zIndex.fab,
+            }}>
+                <Stack
+                    direction="column"
+                    spacing={1.5}
+                    sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        background: (theme) =>
+                            theme.palette.mode === 'dark'
+                                ? `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, ${alpha(theme.palette.background.paper, 0.25)} 100%)`
+                                : `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 0.75)} 100%)`,
+                        backdropFilter: 'blur(40px) saturate(2)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(2)',
+                        border: (theme) =>
+                            theme.palette.mode === 'dark'
+                                ? `1px solid ${alpha(theme.palette.primary.light, 0.2)}`
+                                : `1.5px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+                        boxShadow: (theme) =>
+                            theme.palette.mode === 'dark'
+                                ? `0 12px 40px ${alpha(theme.palette.common.black, 0.45)}, inset 0 1px 0 ${alpha(theme.palette.primary.light, 0.1)}, inset 0 -1px 0 ${alpha(theme.palette.common.black, 0.2)}`
+                                : `0 12px 40px ${alpha(theme.palette.primary.main, 0.12)}, 0 4px 12px ${alpha(theme.palette.common.black, 0.06)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.9)}`,
+                    }}
+                >
+                    <Button
+                        variant="contained"
+                        startIcon={<LinkIcon />}
+                        onClick={() => setLinkLabelDialogOpen(true)}
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 3,
+                            py: 1.2,
+                            fontSize: '0.9rem',
+                            boxShadow: (theme) => `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                        }}
+                    >
+                        {t('dashboard.linkLabel', 'Link Label')}
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={() => setSpaceDialogOpen(true)}
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            px: 3,
+                            py: 1,
+                            fontSize: '0.85rem',
+                            borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
+                            '&:hover': {
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                                borderColor: 'primary.main',
+                            },
+                        }}
+                    >
+                        {isPeopleManagerMode
+                            ? t('dashboard.addPerson', 'Add Person')
+                            : t('dashboard.addSpace', 'Add Space')}
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<GroupsIcon />}
+                        onClick={() => setConferenceDialogOpen(true)}
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            px: 3,
+                            py: 1,
+                            fontSize: '0.85rem',
+                            borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
+                            '&:hover': {
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                                borderColor: 'primary.main',
+                            },
+                        }}
+                    >
+                        {t('conference.addRoom')}
+                    </Button>
+                </Stack>
+            </Box>
 
             {/* Dialogs - Lazy loaded */}
             <Suspense fallback={null}>

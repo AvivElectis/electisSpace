@@ -16,6 +16,7 @@ interface DashboardSpacesCardProps {
     spacesWithLabels: number;
     spacesWithoutLabels: number;
     onAddSpace: () => void;
+    hideAddButton?: boolean;
 }
 
 /**
@@ -28,6 +29,7 @@ export function DashboardSpacesCard({
     spacesWithLabels,
     spacesWithoutLabels,
     onAddSpace,
+    hideAddButton,
 }: DashboardSpacesCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -49,8 +51,8 @@ export function DashboardSpacesCard({
 
     return (
         <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="spaces-card">
-            <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
                     <Stack direction="row" gap={1} alignItems="center">
                         <Box sx={{ color: 'primary.main', display: 'flex', '& svg': { fontSize: 28 } }}>
                             {getSpaceIcon(spaceTypeIcon)}
@@ -70,8 +72,8 @@ export function DashboardSpacesCard({
                     </Button>
                 </Stack>
 
-                <Stack gap={3}>
-                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                <Stack gap={2}>
+                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                             {t('dashboard.totalSpaces', 'Total Spaces')}
                         </Typography>
@@ -103,14 +105,16 @@ export function DashboardSpacesCard({
                         </Grid>
                     </Grid>
 
-                    <Button
-                        variant="outlined"
-                        startIcon={<AddIcon />}
-                        onClick={onAddSpace}
-                        sx={{ mt: 2, width: 'fit-content' }}
-                    >
-                        {t('dashboard.addSpace', 'Add Space')}
-                    </Button>
+                    {!hideAddButton && (
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={onAddSpace}
+                            sx={{ width: 'fit-content' }}
+                        >
+                            {t('dashboard.addSpace', 'Add Space')}
+                        </Button>
+                    )}
                 </Stack>
             </CardContent>
         </Card>

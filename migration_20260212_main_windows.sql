@@ -13,5 +13,5 @@
 --   cd server && npx prisma db push
 -- =====================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "people_externalId_idx" ON "people" ("externalId");
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "people_virtualSpaceId_idx" ON "people" ("virtualSpaceId");
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "people_external_id_idx" ON "people" ("external_id");
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "people_virtual_space_id_idx" ON "people" ("virtual_space_id");

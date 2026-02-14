@@ -3,6 +3,7 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 import SyncRoundedIcon from '@mui/icons-material/SyncRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useState, useEffect } from 'react';
 import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,8 @@ interface SyncStatusIndicatorProps {
     serverConnected?: boolean;
     aimsConnected?: boolean;
     syncStartedAt?: Date;
+    autoSyncEnabled?: boolean;
+    autoSyncInterval?: number;
 }
 
 /** Format elapsed seconds into a human-readable string like "1m 23s" */
@@ -33,6 +36,13 @@ function formatElapsed(seconds: number): string {
  * Displays connection/sync status with a professional floating badge design.
  * Shows detailed info in a popover on click.
  */
+/** Format sync interval seconds into a friendly string like "Every 5 min" */
+function formatSyncInterval(seconds: number): string {
+    if (seconds < 60) return `Every ${seconds}s`;
+    const minutes = Math.round(seconds / 60);
+    return `Every ${minutes} min`;
+}
+
 export function SyncStatusIndicator({
     status,
     lastSyncTime,
@@ -41,6 +51,8 @@ export function SyncStatusIndicator({
     serverConnected,
     aimsConnected,
     syncStartedAt,
+    autoSyncEnabled,
+    autoSyncInterval,
 }: SyncStatusIndicatorProps) {
     const { t } = useTranslation();
     const theme = useTheme();
@@ -272,6 +284,23 @@ export function SyncStatusIndicator({
                                 <Typography variant="body2" fontWeight={500}>
                                     {lastSyncTime}
                                 </Typography>
+                            </Box>
+                        )}
+
+                        {/* Auto Sync Interval */}
+                        {autoSyncEnabled !== undefined && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    {t('sync.autoSync', 'Auto Sync')}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <AccessTimeIcon sx={{ fontSize: 16, color: autoSyncEnabled ? 'success.main' : 'text.disabled' }} />
+                                    <Typography variant="body2" fontWeight={500} color={autoSyncEnabled ? 'success.main' : 'text.disabled'}>
+                                        {autoSyncEnabled && autoSyncInterval
+                                            ? formatSyncInterval(autoSyncInterval)
+                                            : t('sync.disabled', 'Disabled')}
+                                    </Typography>
+                                </Box>
                             </Box>
                         )}
 
