@@ -25,6 +25,9 @@ import {
     Card,
     CardContent,
     Stack,
+    Fab,
+    Badge,
+    Collapse,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -36,6 +39,7 @@ import {
     Battery0Bar as BatteryIcon,
     Image as ImageIcon,
 } from '@mui/icons-material';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { useTranslation } from 'react-i18next';
 import { useLabelsStore } from '../infrastructure/labelsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -90,6 +94,8 @@ export function LabelsPage() {
     // Images dialog
     const [imagesDialogOpen, setImagesDialogOpen] = useState(false);
     const [imagesLabelCode, setImagesLabelCode] = useState('');
+
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     // Check if AIMS is configured (via server)
     const isSolumConfigured = !!activeStoreId && (aimsConfigured || !error);
@@ -337,6 +343,7 @@ export function LabelsPage() {
                         sx={{
                             fontSize: { xs: '0.8rem', md: '1.25rem' },
                             whiteSpace: 'nowrap',
+                            display: { xs: 'none', md: 'inline-flex' },
                         }}
                     >
                         {t('labels.linkNew', 'Link Label')}
@@ -370,48 +377,98 @@ export function LabelsPage() {
             )}
 
             {/* Filters */}
-            <Paper sx={{ p: { xs: 1, md: 2 }, mb: 2 }}>
-                <Stack
-                    direction={{ xs: 'column', md: 'row' }}
-                    gap={{ xs: 1, md: 2 }}
-                    alignItems={{ xs: 'stretch', md: 'center' }}
-                >
-                    <TextField
-                        placeholder={t('labels.search', 'Search labels or articles...')}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        size="small"
-                        fullWidth={isMobile}
-                        sx={{ minWidth: { md: 300 } }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon />
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: { xs: '100%', md: 'auto' } }}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={filterLinkedOnly}
-                                    onChange={(e) => setFilterLinkedOnly(e.target.checked)}
-                                    size={isMobile ? 'small' : 'medium'}
-                                />
-                            }
-                            label={
-                                <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
-                                    {t('labels.filterLinkedOnly', 'Show linked only')}
-                                </Typography>
-                            }
-                        />
-                        <Typography variant="body2" color="text.secondary" sx={{ ml: { md: 'auto' }, fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
+            {isMobile ? (
+                <Box sx={{ mb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <IconButton
+                            onClick={() => setFiltersOpen(!filtersOpen)}
+                            color={(searchQuery || filterLinkedOnly) ? 'primary' : 'default'}
+                            size="small"
+                        >
+                            <Badge badgeContent={(searchQuery ? 1 : 0) + (filterLinkedOnly ? 1 : 0)} color="primary">
+                                <FilterListIcon />
+                            </Badge>
+                        </IconButton>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                             {filteredLabels.length} {t('labels.totalCountShort', 'labels')}
                         </Typography>
                     </Stack>
-                </Stack>
-            </Paper>
+                    <Collapse in={filtersOpen}>
+                        <Stack gap={1.5} sx={{ mt: 1 }}>
+                            <TextField
+                                placeholder={t('labels.search', 'Search labels or articles...')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                size="small"
+                                fullWidth
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={filterLinkedOnly}
+                                        onChange={(e) => setFilterLinkedOnly(e.target.checked)}
+                                        size="small"
+                                    />
+                                }
+                                label={
+                                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                        {t('labels.filterLinkedOnly', 'Show linked only')}
+                                    </Typography>
+                                }
+                            />
+                        </Stack>
+                    </Collapse>
+                </Box>
+            ) : (
+                <Paper sx={{ p: 2, mb: 2 }}>
+                    <Stack
+                        direction="row"
+                        gap={2}
+                        alignItems="center"
+                    >
+                        <TextField
+                            placeholder={t('labels.search', 'Search labels or articles...')}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            size="small"
+                            sx={{ minWidth: 300 }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: 'auto' }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={filterLinkedOnly}
+                                        onChange={(e) => setFilterLinkedOnly(e.target.checked)}
+                                        size="medium"
+                                    />
+                                }
+                                label={
+                                    <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                        {t('labels.filterLinkedOnly', 'Show linked only')}
+                                    </Typography>
+                                }
+                            />
+                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', fontSize: '0.875rem' }}>
+                                {filteredLabels.length} {t('labels.totalCountShort', 'labels')}
+                            </Typography>
+                        </Stack>
+                    </Stack>
+                </Paper>
+            )}
 
             {/* Labels - Mobile Card View or Desktop Table */}
             {isMobile ? (
@@ -589,6 +646,19 @@ export function LabelsPage() {
                         rowsPerPageOptions={[10, 25, 50, 100]}
                     />
                 </Paper>
+            )}
+
+            {/* Mobile FAB — Link Label */}
+            {isMobile && (
+                <Fab
+                    color="primary"
+                    variant="extended"
+                    onClick={() => handleOpenLinkDialog()}
+                    sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1050 }}
+                >
+                    <AddIcon sx={{ mr: 1 }} />
+                    {t('labels.linkNew', 'Link Label')}
+                </Fab>
             )}
 
             {/* Link Dialog */}

@@ -12,6 +12,7 @@ interface DashboardConferenceCardProps {
     availableRooms: number;
     occupiedRooms: number;
     onAddRoom: () => void;
+    hideAddButton?: boolean;
 }
 
 /**
@@ -24,14 +25,15 @@ export function DashboardConferenceCard({
     availableRooms,
     occupiedRooms,
     onAddRoom,
+    hideAddButton,
 }: DashboardConferenceCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
     return (
         <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="conference-card">
-            <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
                     <Stack direction="row" gap={1} alignItems="center">
                         <GroupsIcon color="primary" sx={{ fontSize: 28 }} />
                         <Typography variant="h6" fontWeight={600} sx={{ px: 1 }}>
@@ -49,8 +51,8 @@ export function DashboardConferenceCard({
                     </Button>
                 </Stack>
 
-                <Stack gap={3}>
-                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                <Stack gap={2}>
+                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                             {t('dashboard.totalRooms', 'Total Rooms')}
                         </Typography>
@@ -102,14 +104,16 @@ export function DashboardConferenceCard({
                         </Grid>
                     </Grid>
 
-                    <Button
-                        variant="outlined"
-                        startIcon={<AddIcon />}
-                        onClick={onAddRoom}
-                        sx={{ mt: 2, width: 'fit-content' }}
-                    >
-                        {t('conference.addRoom')}
-                    </Button>
+                    {!hideAddButton && (
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={onAddRoom}
+                            sx={{ width: 'fit-content' }}
+                        >
+                            {t('conference.addRoom')}
+                        </Button>
+                    )}
                 </Stack>
             </CardContent>
         </Card>

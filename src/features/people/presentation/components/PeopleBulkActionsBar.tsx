@@ -1,4 +1,4 @@
-import { Paper, Stack, Typography, Button, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Paper, Stack, Typography, Button, Box, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -12,12 +12,12 @@ interface PeopleBulkActionsBarProps {
     onCancelAllAssignments: () => void;
     onRemoveSelected: () => void;
     assignedCount: number;
-    assignmentFilter?: 'all' | 'assigned' | 'unassigned';
-    onAssignmentFilterChange?: (value: 'all' | 'assigned' | 'unassigned') => void;
 }
 
 /**
  * PeopleBulkActionsBar - Actions bar for bulk operations and cancel all assignments
+ * Mobile: icon-only buttons with tooltips
+ * Desktop: full text buttons
  */
 export function PeopleBulkActionsBar({
     selectedCount,
@@ -25,10 +25,10 @@ export function PeopleBulkActionsBar({
     onCancelAllAssignments,
     onRemoveSelected,
     assignedCount,
-    assignmentFilter,
-    onAssignmentFilterChange,
 }: PeopleBulkActionsBarProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { getLabel } = useSpaceTypeLabels();
 
     // Helper for translations with space type
@@ -49,40 +49,42 @@ export function PeopleBulkActionsBar({
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             {/* Bulk Selection Actions */}
             {selectedCount > 0 ? (
-                <Paper sx={{ p: 1.5, bgcolor: 'action.selected' }}>
-                    <Stack direction="row" gap={2} alignItems="center">
-                        <Typography variant="body2">
+                <Paper sx={{ p: isMobile ? 1 : 1.5, bgcolor: 'action.selected' }}>
+                    <Stack direction="row" gap={isMobile ? 0.5 : 2} alignItems="center">
+                        <Typography variant="body2" sx={{ fontSize: isMobile ? '0.75rem' : undefined }}>
                             {t('people.selectedCount', { count: selectedCount })}
                         </Typography>
-                        <Button size="small" startIcon={<AutoAwesomeIcon />} onClick={onBulkAssign}>
-                            {tWithSpaceType('people.autoAssignSpaces')}
-                        </Button>
-                        <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={onRemoveSelected}>
-                            {t('people.removeSelectedPeople')}
-                        </Button>
+                        {isMobile ? (
+                            <>
+                                <Tooltip title={tWithSpaceType('people.autoAssignSpaces')}>
+                                    <IconButton size="small" color="primary" onClick={onBulkAssign}>
+                                        <AutoAwesomeIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title={t('people.removeSelectedPeople')}>
+                                    <IconButton size="small" color="error" onClick={onRemoveSelected}>
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </>
+                        ) : (
+                            <>
+                                <Button size="small" startIcon={<AutoAwesomeIcon />} onClick={onBulkAssign}>
+                                    {tWithSpaceType('people.autoAssignSpaces')}
+                                </Button>
+                                <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={onRemoveSelected}>
+                                    {t('people.removeSelectedPeople')}
+                                </Button>
+                            </>
+                        )}
                     </Stack>
                 </Paper>
             ) : (
                 <Box />
             )}
 
-            {/* Right side: Status filter (mobile only) + Cancel All */}
-            <Stack direction="row" alignItems="center" gap={1}>
-                {/* Status filter - mobile only (hidden on desktop, shown in PeopleFiltersBar) */}
-                {assignmentFilter !== undefined && onAssignmentFilterChange && (
-                    <FormControl size="small" sx={{ minWidth: 120, display: { xs: 'flex', md: 'none' } }}>
-                        <InputLabel>{t('people.filterStatus')}</InputLabel>
-                        <Select
-                            value={assignmentFilter}
-                            label={t('people.filterStatus')}
-                            onChange={(e) => onAssignmentFilterChange(e.target.value as 'all' | 'assigned' | 'unassigned')}
-                        >
-                            <MenuItem value="all">{t('people.all')}</MenuItem>
-                            <MenuItem value="assigned">{t('people.assigned')}</MenuItem>
-                            <MenuItem value="unassigned">{t('people.unassigned')}</MenuItem>
-                        </Select>
-                    </FormControl>
-                )}
+            {/* Cancel All Assignments — desktop only (on mobile it's in PeopleFiltersBar) */}
+            {!isMobile && (
                 <Button
                     variant="text"
                     color="error"
@@ -93,7 +95,7 @@ export function PeopleBulkActionsBar({
                 >
                     {t('people.cancelAllAssignments')}
                 </Button>
-            </Stack>
+            )}
         </Stack>
     );
 }

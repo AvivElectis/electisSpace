@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography, Stack, Grid } from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, Grid, Collapse, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SyncIcon from '@mui/icons-material/Sync';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -7,6 +7,9 @@ import BusinessIcon from '@mui/icons-material/Business';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
 import PersonIcon from '@mui/icons-material/Person';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DashboardStatusChip } from './DashboardStatusChip';
 
@@ -31,6 +34,9 @@ export function DashboardAppInfoCard({
     lastSync,
 }: DashboardAppInfoCardProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [expanded, setExpanded] = useState(false);
 
     const getSpaceIcon = (type: string) => {
         switch (type) {
@@ -47,6 +53,93 @@ export function DashboardAppInfoCard({
         }
     };
 
+    // Mobile: compact collapsible card
+    if (isMobile) {
+        const modeLabel = workingMode === 'SFTP' ? t('sync.sftpMode') : 'SoluM API';
+        const syncLabel = autoSyncEnabled ? `${t('dashboard.every')} ${syncInterval}s` : t('dashboard.disabled');
+
+        return (
+            <Card data-testid="app-info-card">
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        onClick={() => setExpanded(!expanded)}
+                        sx={{ cursor: 'pointer' }}
+                    >
+                        <Stack direction="row" alignItems="center" gap={1}>
+                            <SettingsIcon fontSize="small" color="action" />
+                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
+                                {modeLabel} &bull; {syncLabel}
+                            </Typography>
+                        </Stack>
+                        <IconButton size="small">
+                            {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                        </IconButton>
+                    </Stack>
+
+                    <Collapse in={expanded}>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid size={{ xs: 12 }}>
+                                <Stack gap={0.5}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                        {t('sync.workingMode')}
+                                    </Typography>
+                                    {workingMode === 'SFTP' ? (
+                                        <DashboardStatusChip label={t('sync.sftpMode')} color="info" icon={<SyncIcon />} sx={{ bgcolor: 'info.main', p: 1 }} />
+                                    ) : (
+                                        <DashboardStatusChip label={t('sync.solumMode')} color="primary" icon={<SyncIcon />} sx={{ bgcolor: 'primary.main', p: 1 }} />
+                                    )}
+                                </Stack>
+                            </Grid>
+                            <Grid size={{ xs: 6 }}>
+                                <Stack gap={0.5}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                        {t('dashboard.spaceType')}
+                                    </Typography>
+                                    <Stack direction="row" alignItems="center" gap={0.5}>
+                                        <Box sx={{ color: 'action.active', display: 'flex', '& svg': { fontSize: 18 } }}>
+                                            {getSpaceIcon(spaceType)}
+                                        </Box>
+                                        <Typography variant="body2" sx={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                                            {spaceTypeLabel}
+                                        </Typography>
+                                    </Stack>
+                                </Stack>
+                            </Grid>
+                            <Grid size={{ xs: 6 }}>
+                                <Stack gap={0.5}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                        {t('dashboard.autoSync')}
+                                    </Typography>
+                                    {autoSyncEnabled ? (
+                                        <DashboardStatusChip
+                                            label={`${t('dashboard.every')} ${syncInterval}s`}
+                                            color="success"
+                                            icon={<AccessTimeIcon sx={{ width: 16, height: 16 }} />}
+                                            sx={{ px: 0.5, paddingInlineStart: 1 }}
+                                        />
+                                    ) : (
+                                        <DashboardStatusChip label={t('dashboard.disabled')} color="default" icon={<ErrorIcon />} />
+                                    )}
+                                </Stack>
+                            </Grid>
+                            {lastSync && (
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Last: {new Date(lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </Typography>
+                                </Grid>
+                            )}
+                        </Grid>
+                    </Collapse>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Desktop: full layout (unchanged)
     return (
         <Card data-testid="app-info-card">
             <CardContent>

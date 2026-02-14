@@ -9,7 +9,6 @@ const routeImports: Record<string, () => Promise<unknown>> = {
     '/spaces': () => import('@features/space/presentation/SpacesPage'),
     '/people': () => import('@features/people/presentation/PeopleManagerView'),
     '/conference': () => import('@features/conference/presentation/ConferencePage'),
-    '/sync': () => import('@features/sync/presentation/SyncPage'),
 };
 
 // Track which routes have been prefetched
