@@ -55,12 +55,12 @@ export function DashboardPage() {
 
     // Stats - Spaces
     const totalSpaces = spaceController.spaces.length;
-    const spacesWithLabels = spaceController.spaces.filter((s) => s.labelCode).length;
+    const spacesWithLabels = spaceController.spaces.filter((s) => s.labelCode || (s.assignedLabels && s.assignedLabels.length > 0)).length;
     const spacesWithoutLabels = totalSpaces - spacesWithLabels;
 
     // Stats - Conference
     const totalRooms = conferenceController.conferenceRooms.length;
-    const roomsWithLabels = conferenceController.conferenceRooms.filter((r) => r.labelCode).length;
+    const roomsWithLabels = conferenceController.conferenceRooms.filter((r) => r.labelCode || (r.assignedLabels && r.assignedLabels.length > 0)).length;
     const roomsWithoutLabels = totalRooms - roomsWithLabels;
     const occupiedRooms = conferenceController.conferenceRooms.filter((r) => r.hasMeeting).length;
     const availableRooms = totalRooms - occupiedRooms;
@@ -124,12 +124,12 @@ export function DashboardPage() {
     return (
         <Box>
             {/* Header with Quick Action */}
-            <Stack direction={{ xs: 'column', sm: 'column' }}  justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }}  gap={2} sx={{ mb: 4 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: 4 }}>
                 <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                         {t('dashboard.title')}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
                         {t('dashboard.overview', 'Welcome to your space management dashboard')}
                     </Typography>
                 </Box>
@@ -138,7 +138,7 @@ export function DashboardPage() {
                     size="large"
                     startIcon={<LinkIcon />}
                     onClick={() => setLinkLabelDialogOpen(true)}
-                    sx={{ minWidth: 160 }}
+                    sx={{ minWidth: { xs: 'auto', sm: 160 }, whiteSpace: 'nowrap' }}
                 >
                     {t('dashboard.linkLabel', 'Link Label')}
                 </Button>

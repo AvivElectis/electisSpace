@@ -18,6 +18,7 @@ interface ServerConferenceRoom {
     startTime: string | null;
     endTime: string | null;
     participants: string[];
+    assignedLabels?: string[];  // Label codes assigned to this room's article from AIMS
     syncStatus: 'PENDING' | 'SYNCED' | 'ERROR';
     createdAt: string;
     updatedAt: string;
@@ -47,6 +48,9 @@ function transformRoom(serverRoom: ServerConferenceRoom): ConferenceRoom {
         endTime: serverRoom.endTime || '',
         participants: serverRoom.participants || [],
         labelCode: serverRoom.labelCode || undefined,
+        assignedLabels: Array.isArray(serverRoom.assignedLabels) && serverRoom.assignedLabels.length > 0
+            ? serverRoom.assignedLabels
+            : undefined,
         data: {
             roomName: serverRoom.roomName,   // Keep in data for backward compat
         },

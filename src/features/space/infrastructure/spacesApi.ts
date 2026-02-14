@@ -14,6 +14,7 @@ interface ServerSpace {
     labelCode: string | null;
     templateName: string | null;
     data: Record<string, unknown>;
+    assignedLabels?: string[];  // Label codes assigned to this article from AIMS
     syncStatus: 'PENDING' | 'SYNCED' | 'ERROR';
     syncError: string | null;
     organizationId: string;
@@ -40,6 +41,9 @@ function transformSpace(serverSpace: ServerSpace): Space {
         labelCode: serverSpace.labelCode || undefined,
         templateName: serverSpace.templateName || undefined,
         data: stringData,
+        assignedLabels: Array.isArray(serverSpace.assignedLabels) && serverSpace.assignedLabels.length > 0
+            ? serverSpace.assignedLabels
+            : undefined,
         syncStatus: serverSpace.syncStatus,
     };
 }

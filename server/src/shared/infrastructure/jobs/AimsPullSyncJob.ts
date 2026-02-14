@@ -326,13 +326,48 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // 5. Update store last sync timestamp
+        // 5. Sync assignedLabels from AIMS articles back to DB
+        // AIMS articles carry `assignedLabel` arrays — store them on Space / ConferenceRoom
+        await this.syncAssignedLabels(storeId, aimsArticles);
+
+        // 6. Update store last sync timestamp
         await prisma.store.update({
             where: { id: storeId },
             data: { lastAimsSyncAt: new Date() },
         });
 
         return result;
+    }
+
+    // ───── assigned labels sync ─────
+
+    /**
+     * Extract assignedLabel arrays from AIMS articles and persist to Space / ConferenceRoom.
+     * Conference articles use a "C" prefix on their articleId (e.g. "C12").
+     */
+    private async syncAssignedLabels(storeId: string, aimsArticles: AimsArticle[]): Promise<void> {
+        for (const article of aimsArticles) {
+            const artId = article.articleId || article.article_id;
+            if (!artId) continue;
+
+            const raw = (article as any).assignedLabel;
+            const labels: string[] = Array.isArray(raw) ? raw : [];
+
+            if (artId.startsWith('C')) {
+                // Conference room (articleId = "C" + externalId)
+                const externalId = artId.slice(1);
+                await prisma.conferenceRoom.updateMany({
+                    where: { storeId, externalId },
+                    data: { assignedLabels: labels },
+                });
+            } else {
+                // Space (articleId = externalId)
+                await prisma.space.updateMany({
+                    where: { storeId, externalId: artId },
+                    data: { assignedLabels: labels },
+                });
+            }
+        }
     }
 
     // ───── manual triggers ─────

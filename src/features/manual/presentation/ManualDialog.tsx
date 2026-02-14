@@ -176,6 +176,11 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
                     </Typography>
                 </Box>
                 <InfoRow
+                    icon={<BusinessIcon fontSize="small" />}
+                    label={t('manual.contactInfo.companyName')}
+                    value={'אלקטיס 1 2007 בע"מ'}
+                />
+                <InfoRow
                     icon={<EmailIcon fontSize="small" />}
                     label={t('manual.contactInfo.email')}
                     value="support@electis.co.il"

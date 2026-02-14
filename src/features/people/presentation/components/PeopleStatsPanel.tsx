@@ -44,8 +44,8 @@ export function PeopleStatsPanel({
     const allocationProgress = totalSpaces > 0 ? (assignedSpaces / totalSpaces) * 100 : 0;
 
     return (
-        <Paper sx={{ p: 2, mb: 3 }}>
-            <Stack direction={{ xs: 'column', md: 'row' }} gap={3} alignItems="flex-start">
+        <Paper sx={{ p: { xs: 1.5, sm: 2 }, mb: { xs: 2, sm: 3 } }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} gap={{ xs: 1.5, md: 3 }} alignItems="flex-start">
                 <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, width: '100%' }}>
                     <TextField
                         label={tWithSpaceType('people.totalSpaces')}
@@ -54,39 +54,39 @@ export function PeopleStatsPanel({
                         value={totalSpaces}
                         onChange={(e) => onTotalSpacesChange(Number(e.target.value))}
                         sx={{
-                            width: { xs: 100, sm: 'fit-content' },
+                            width: { xs: 80, sm: 'fit-content' },
                             '& .MuiInputBase-input': {
                                 px: { xs: 1, sm: 1.5 },
-                                py: { xs: 0.75, sm: 1 },
-                                fontSize: { xs: '1rem', sm: '1rem' },
+                                py: { xs: 0.5, sm: 1 },
+                                fontSize: { xs: '0.875rem', sm: '1rem' },
                             },
                             '& .MuiInputLabel-root': {
-                                fontSize: { xs: '1rem', sm: '1rem' },
+                                fontSize: { xs: '0.875rem', sm: '1rem' },
                             },
                         }}
                         inputProps={{ min: 0 }}
                     />
-                    <Box sx={{ flex: 1 , width: 'auto'}}>
+                    <Box sx={{ flex: 1, width: 'auto' }}>
                         <Stack direction="row" justifyContent="space-between" gap={1} mb={0.5}>
-                            <Typography variant="body2">
+                            <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                 {tWithSpaceType('people.spacesAssigned', { assigned: assignedCount, total: totalSpaces })}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                 {availableSpaces} {t('people.available')}
                             </Typography>
                         </Stack>
                         <LinearProgress
                             variant="determinate"
                             value={allocationProgress}
-                            sx={{ height: 8, borderRadius: 4 }}
+                            sx={{ height: { xs: 6, sm: 8 }, borderRadius: 4 }}
                             color={allocationProgress > 90 ? 'warning' : 'primary'}
                         />
                     </Box>
                 </Box>
-                
+
                 <Stack direction="row" gap={1}>
-                    <Chip label={`${assignedCount} ${t('people.assigned')}`} color="success" size="small" sx={{ p: 1 }} />
-                    <Chip label={`${unassignedCount} ${t('people.unassigned')}`} color="default" size="small" sx={{ p: 1 }} />
+                    <Chip label={`${assignedCount} ${t('people.assigned')}`} color="success" size="small" sx={{ p: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.7rem', sm: '0.8125rem' } }} />
+                    <Chip label={`${unassignedCount} ${t('people.unassigned')}`} color="default" size="small" sx={{ p: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.7rem', sm: '0.8125rem' } }} />
                 </Stack>
             </Stack>
         </Paper>

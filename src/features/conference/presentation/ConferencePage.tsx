@@ -223,87 +223,81 @@ export function ConferencePage() {
                     {t('conference.addRoom')}
                 </Button>
             </Stack>
-            {/* Stats Cards */}
-            <Grid container gap={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card sx={cardsSetting}>
-                        <CardContent>
-                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
-                                <Box
-                                    sx={{
-                                        bgcolor: 'primary.main',
-                                        borderRadius: 2,
-                                        p: 1.5,
-                                        display: 'flex',
-                                    }}
-                                >
-                                    <ConferenceIcon sx={{ color: 'white' }} />
-                                </Box>
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 500 }}>
-                                        {conferenceController.conferenceRooms.length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('conference.totalRooms')}
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card sx={cardsSetting}>
-                        <CardContent>
-                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
-                                <Box
-                                    sx={{
-                                        bgcolor: 'success.main',
-                                        borderRadius: 2,
-                                        p: 1.5,
-                                        display: 'flex',
-                                    }}
-                                >
-                                    <EventIcon sx={{ color: 'white' }} />
-                                </Box>
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 500 }}>
-                                        {availableRooms}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('conference.available')}
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card sx={cardsSetting}>
-                        <CardContent>
-                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
-                                <Box
-                                    sx={{
-                                        bgcolor: 'error.light',
-                                        borderRadius: 2,
-                                        p: 1.5,
-                                        display: 'flex',
-                                    }}
-                                >
-                                    <PeopleIcon sx={{ color: 'white' }} />
-                                </Box>
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 500 }}>
-                                        {occupiedRooms}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('conference.occupied')}
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+            {/* Stats Cards — horizontal row on all screens */}
+            <Stack direction="row" gap={{ xs: 1, sm: 2 }} sx={{ mb: 3, overflowX: 'auto' }}>
+                <Card sx={{ ...cardsSetting, flex: 1, minWidth: 0 }}>
+                    <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                        <Stack direction="row" alignItems="center" sx={{ gap: { xs: 1, sm: 2 } }}>
+                            <Box
+                                sx={{
+                                    bgcolor: 'primary.main',
+                                    borderRadius: 2,
+                                    p: { xs: 1, sm: 1.5 },
+                                    display: 'flex',
+                                }}
+                            >
+                                <ConferenceIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24 } }} />
+                            </Box>
+                            <Box>
+                                <Typography variant="h4" sx={{ fontWeight: 500, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                                    {conferenceController.conferenceRooms.length}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                                    {t('conference.totalRooms')}
+                                </Typography>
+                            </Box>
+                        </Stack>
+                    </CardContent>
+                </Card>
+                <Card sx={{ ...cardsSetting, flex: 1, minWidth: 0 }}>
+                    <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                        <Stack direction="row" alignItems="center" sx={{ gap: { xs: 1, sm: 2 } }}>
+                            <Box
+                                sx={{
+                                    bgcolor: 'success.main',
+                                    borderRadius: 2,
+                                    p: { xs: 1, sm: 1.5 },
+                                    display: 'flex',
+                                }}
+                            >
+                                <EventIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24 } }} />
+                            </Box>
+                            <Box>
+                                <Typography variant="h4" sx={{ fontWeight: 500, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                                    {availableRooms}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                                    {t('conference.available')}
+                                </Typography>
+                            </Box>
+                        </Stack>
+                    </CardContent>
+                </Card>
+                <Card sx={{ ...cardsSetting, flex: 1, minWidth: 0 }}>
+                    <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                        <Stack direction="row" alignItems="center" sx={{ gap: { xs: 1, sm: 2 } }}>
+                            <Box
+                                sx={{
+                                    bgcolor: 'error.light',
+                                    borderRadius: 2,
+                                    p: { xs: 1, sm: 1.5 },
+                                    display: 'flex',
+                                }}
+                            >
+                                <PeopleIcon sx={{ color: 'white', fontSize: { xs: 20, sm: 24 } }} />
+                            </Box>
+                            <Box>
+                                <Typography variant="h4" sx={{ fontWeight: 500, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                                    {occupiedRooms}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                                    {t('conference.occupied')}
+                                </Typography>
+                            </Box>
+                        </Stack>
+                    </CardContent>
+                </Card>
+            </Stack>
             {/* Search Bar */}
             <TextField
                 fullWidth
@@ -367,7 +361,7 @@ export function ConferencePage() {
                 <Box sx={{ maxHeight: '70vh', overflowY: 'auto', p: 1 }}>
                     <Grid container spacing={3}>
                         {filteredRooms.map((room) => (
-                            <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={room.id}>
+                            <Grid size={{ xs: 6, sm: 6, lg: 4 }} key={room.id}>
                                 <Card
                                     sx={{
                                         height: '100%',
