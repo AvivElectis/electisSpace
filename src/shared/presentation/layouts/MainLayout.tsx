@@ -7,7 +7,6 @@ import { checkNavigationGuard } from '../navigationGuard';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
-import SyncIcon from '@mui/icons-material/Sync';
 import LabelIcon from '@mui/icons-material/Label';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
@@ -97,23 +96,19 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     /**
      * Combined space update handler
-     * In People Manager mode, people data comes from the server DB (loaded by PeopleManagerView),
-     * NOT from AIMS articles. So we skip overwriting the people store here.
-     * AIMS sync only updates the spaces store.
+     * In People Manager mode, AIMS articles represent people, not spaces.
+     * People data comes from the server DB (loaded by PeopleManagerView).
+     * Only populate the spaces store when NOT in People Manager mode.
      */
     const handleSpaceUpdate = useCallback((spaces: any[]) => {
-        // Always update spaces store
-        setSpaces(spaces);
-        
-        // In People Manager mode, the server DB is source of truth for people.
-        // PeopleManagerView fetches people from server on mount.
-        // Do NOT overwrite people store with AIMS article data.
         if (settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API') {
-            logger.info('MainLayout', 'Spaces updated from AIMS (people managed by server)', { 
-                spacesCount: spaces.length 
+            logger.info('MainLayout', 'Skipping spaces update (people managed by server)', {
+                articlesCount: spaces.length
             });
             return;
         }
+
+        setSpaces(spaces);
     }, [setSpaces, settings.peopleManagerEnabled, settings.workingMode]);
 
     // Build navigation tabs dynamically
@@ -128,7 +123,6 @@ export function MainLayout({ children }: MainLayoutProps) {
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
         { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
-        { labelKey: 'navigation.sync', value: '/sync', icon: <SyncIcon fontSize="small" />, feature: 'sync' },
     ];
 
     // Filter tabs by user permissions
@@ -369,6 +363,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                         serverConnected={syncController.serverConnected}
                         aimsConnected={syncState.isConnected}
                         syncStartedAt={syncState.syncStartedAt}
+                        autoSyncEnabled={settings.autoSyncEnabled}
+                        autoSyncInterval={settings.autoSyncInterval}
                     />
                 </Box>
 

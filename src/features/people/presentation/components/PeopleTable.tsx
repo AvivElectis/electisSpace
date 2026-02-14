@@ -18,7 +18,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { List as VirtualList } from 'react-window';
@@ -160,19 +160,26 @@ export function PeopleTable({
         );
     }, [people, visibleFields, nameFieldKey, selectedIds, rowTranslations, onSelectOne, onEdit, onDelete, onAssignSpace, onUnassignSpace]);
 
-    // Mobile Card View (unchanged - not virtualized since it scrolls naturally)
+    // Expanded card state for mobile tap-to-expand
+    const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+
+    const handleCardTap = useCallback((personId: string) => {
+        setExpandedCardId(prev => prev === personId ? null : personId);
+    }, []);
+
+    // Mobile Card View — compact by default, tap to expand
     if (isMobile) {
         return (
             <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
                 {/* Select All Header */}
-                <Paper sx={{ p: 1.5, mb: 1, display: 'flex', alignItems: 'center', gap: 1, position: 'sticky', top: 0, zIndex: 1 }}>
+                <Paper sx={{ p: 1, mb: 0.5, display: 'flex', alignItems: 'center', gap: 1, position: 'sticky', top: 0, zIndex: 1 }}>
                     <Checkbox
                         indeterminate={someSelected}
                         checked={allSelected}
                         onChange={(e) => onSelectAll(e.target.checked)}
                         size="small"
                     />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                         {selectedIds.size > 0
                             ? t('people.selectedCount', { count: selectedIds.size })
                             : t('people.selectAll')}
@@ -189,103 +196,123 @@ export function PeopleTable({
                     </Paper>
                 ) : (
                     <Stack gap={0.5}>
-                        {people.map((person, index) => (
-                            <Card
-                                key={person.id}
-                                variant="outlined"
-                                sx={{
-                                    bgcolor: selectedIds.has(person.id) ? 'action.selected' : 'background.paper',
-                                }}
-                            >
-                                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                                    {/* Row 1: Checkbox + Index + Name + Assignment Status */}
-                                    <Stack direction="row" alignItems="center" gap={0.5} mb={0.5}>
-                                        <Checkbox
-                                            checked={selectedIds.has(person.id)}
-                                            onChange={(e) => onSelectOne(person.id, e.target.checked)}
-                                            size="small"
-                                        />
-                                        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 20 }}>
-                                            {index + 1}
-                                        </Typography>
-                                        {nameFieldKey && person.data[nameFieldKey] && (
-                                            <Typography variant="subtitle2" fontWeight={600} noWrap>
-                                                {person.data[nameFieldKey]}
+                        {people.map((person, index) => {
+                            const isExpanded = expandedCardId === person.id;
+                            return (
+                                <Card
+                                    key={person.id}
+                                    variant="outlined"
+                                    sx={{
+                                        bgcolor: selectedIds.has(person.id) ? 'action.selected' : 'background.paper',
+                                        transition: 'background-color 0.15s',
+                                    }}
+                                >
+                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                                        {/* Compact row — always visible */}
+                                        <Stack
+                                            direction="row"
+                                            alignItems="center"
+                                            gap={0.5}
+                                            onClick={() => handleCardTap(person.id)}
+                                            sx={{ cursor: 'pointer' }}
+                                        >
+                                            <Checkbox
+                                                checked={selectedIds.has(person.id)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    onSelectOne(person.id, e.target.checked);
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                size="small"
+                                            />
+                                            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 18, fontSize: '0.7rem' }}>
+                                                {index + 1}
                                             </Typography>
-                                        )}
-                                        <Box sx={{ flex: 1 }} />
-                                        {/* Assignment Status Chip */}
-                                        {person.assignedSpaceId ? (
-                                            <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ p: 1 }} />
-                                        ) : (
-                                            <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ p: 1 }} />
-                                        )}
-                                    </Stack>
+                                            {nameFieldKey && person.data[nameFieldKey] && (
+                                                <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, fontSize: '0.85rem' }}>
+                                                    {person.data[nameFieldKey]}
+                                                </Typography>
+                                            )}
+                                            {!nameFieldKey && (
+                                                <Box sx={{ flex: 1 }} />
+                                            )}
+                                            {person.assignedSpaceId ? (
+                                                <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ height: 22, fontSize: '0.7rem' }} />
+                                            ) : (
+                                                <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                                            )}
+                                        </Stack>
 
-                                    {/* Row 2: All Visible Fields (2 columns) */}
-                                    <Box sx={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(2, 1fr)',
-                                        gap: 0.25,
-                                        mb: 0.5,
-                                        pl: 0.5,
-                                    }}>
-                                        {visibleFields.map((field) => (
-                                            <Box key={field.key}>
-                                                <Typography variant="caption" color="text.secondary" component="div">
-                                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
-                                                </Typography>
-                                                <Typography variant="body2" noWrap>
-                                                    {field.globalValue || person.data[field.key] || '-'}
-                                                </Typography>
+                                        {/* Expanded details — shown on tap */}
+                                        {isExpanded && (
+                                            <Box sx={{ mt: 1, pl: 4.5 }}>
+                                                {/* Visible Fields (2 columns) */}
+                                                {visibleFields.length > 0 && (
+                                                    <Box sx={{
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                                        gap: 0.25,
+                                                        mb: 1,
+                                                    }}>
+                                                        {visibleFields.map((field) => (
+                                                            <Box key={field.key}>
+                                                                <Typography variant="caption" color="text.secondary" component="div" sx={{ fontSize: '0.65rem' }}>
+                                                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                                                </Typography>
+                                                                <Typography variant="body2" noWrap sx={{ fontSize: '0.8rem' }}>
+                                                                    {field.globalValue || person.data[field.key] || '-'}
+                                                                </Typography>
+                                                            </Box>
+                                                        ))}
+                                                    </Box>
+                                                )}
+
+                                                {/* Lists + Actions */}
+                                                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                                                    <Stack direction="row" gap={0.5} alignItems="center">
+                                                        {person.listMemberships && person.listMemberships.length > 0 && (
+                                                            <Chip
+                                                                label={t('people.inLists', { count: person.listMemberships.length })}
+                                                                size="small"
+                                                                variant="outlined"
+                                                                color="info"
+                                                                sx={{ height: 22, fontSize: '0.7rem' }}
+                                                            />
+                                                        )}
+                                                    </Stack>
+                                                    <Stack direction="row" gap={0.5}>
+                                                        {!person.assignedSpaceId && (
+                                                            <Tooltip title={tWithSpaceType('people.assignSpace')}>
+                                                                <IconButton size="small" color="success" onClick={() => onAssignSpace(person)}>
+                                                                    <AssignmentIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        )}
+                                                        {person.assignedSpaceId && (
+                                                            <Tooltip title={tWithSpaceType('people.unassignSpace')}>
+                                                                <IconButton size="small" color="warning" onClick={() => onUnassignSpace(person)}>
+                                                                    <PersonRemoveIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        )}
+                                                        <Tooltip title={t('common.edit')}>
+                                                            <IconButton size="small" color="primary" onClick={() => onEdit(person)}>
+                                                                <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title={t('common.delete')}>
+                                                            <IconButton size="small" color="error" onClick={() => onDelete(person.id)}>
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+                                                </Stack>
                                             </Box>
-                                        ))}
-                                    </Box>
-
-                                    {/* Row 3: Lists + AIMS Status + Actions */}
-                                    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-                                        <Stack direction="row" gap={1} alignItems="center">
-                                            {/* Lists indicator */}
-                                            {person.listMemberships && person.listMemberships.length > 0 && (
-                                                <Chip
-                                                    label={t('people.inLists', { count: person.listMemberships.length })}
-                                                    size="small"
-                                                    variant="outlined"
-                                                    color="info"
-                                                    sx={{ p: 1 }}
-                                                />
-                                            )}
-                                        </Stack>
-                                        <Stack direction="row" gap={0.5}>
-                                            {!person.assignedSpaceId && (
-                                                <Tooltip title={tWithSpaceType('people.assignSpace')}>
-                                                    <IconButton size="small" color="success" onClick={() => onAssignSpace(person)}>
-                                                        <AssignmentIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            )}
-                                            {person.assignedSpaceId && (
-                                                <Tooltip title={tWithSpaceType('people.unassignSpace')}>
-                                                    <IconButton size="small" color="warning" onClick={() => onUnassignSpace(person)}>
-                                                        <PersonRemoveIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            )}
-                                            <Tooltip title={t('common.edit')}>
-                                                <IconButton size="small" color="primary" onClick={() => onEdit(person)}>
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title={t('common.delete')}>
-                                                <IconButton size="small" color="error" onClick={() => onDelete(person.id)}>
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </Stack>
-                                    </Stack>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </Stack>
                 )}
             </Box>

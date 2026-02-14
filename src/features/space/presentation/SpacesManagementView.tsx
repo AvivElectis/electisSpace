@@ -15,6 +15,8 @@ import {
     Collapse,
     useMediaQuery,
     useTheme,
+    Fab,
+    Badge,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -27,6 +29,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import React, { useState, useEffect, useMemo, useCallback, useDeferredValue, lazy, Suspense } from 'react';
 import { List as VirtualList } from 'react-window';
 import { useTranslation } from 'react-i18next';
@@ -311,6 +314,8 @@ export function SpacesManagementView() {
     const [listsManagerOpen, setListsManagerOpen] = useState(false);
     const [saveListOpen, setSaveListOpen] = useState(false);
     const [listsPanelExpanded, setListsPanelExpanded] = useState(!isMobile);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
     // Fetch spaces from Server DB when app is ready (Source of Truth for Cloud Persistence)
     useEffect(() => {
@@ -474,31 +479,12 @@ export function SpacesManagementView() {
                 justifyContent="space-between"
                 alignItems="center"
                 gap={1}
-                sx={{ mb: 3 }}
+                sx={{ mb: { xs: 2, sm: 3 } }}
             >
                 <Box sx={{ minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" gap={1} mb={0.5}>
-                        <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
-                            {getLabel('plural')}
-                        </Typography>
-                        {activeListName && (
-                            <Typography variant="h6" sx={{
-                                fontWeight: 600,
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                borderRadius: .5,
-                                px: 1,
-                                py: 0,
-                                fontSize: { xs: '0.85rem', sm: '1.1rem' },
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: { xs: 140, sm: 'none' },
-                            }}>
-                                {activeListName}
-                            </Typography>
-                        )}
-                    </Stack>
+                    <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
+                        {getLabel('plural')}
+                    </Typography>
                     <Typography variant="body2" color="text.secondary">
                         {t('spaces.total')} {getLabel('plural')} - {spaceController.spaces.length}
                     </Typography>
@@ -508,126 +494,13 @@ export function SpacesManagementView() {
                     startIcon={<AddIcon />}
                     onClick={handleAdd}
                     size="small"
-                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                    sx={{ flexShrink: 0, whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
                 >
                     {getLabel('add')}
                 </Button>
             </Stack>
-            {/* Search Bar */}
-            <TextField
-                fullWidth
-                placeholder={t('spaces.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{
-                    mb: 3,
-                    maxWidth: { xs: '100%', sm: 400 },
-                    '& .MuiOutlinedInput-root': {
-                        borderRadius: 4,
-                    }
-                }}
-                slotProps={{
-                    input: {
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }
-                }}
-            />
-            {/* Spaces Table / Mobile Card View */}
-            {isMobile ? (
-                /* Mobile Card View */
-                (<Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
-                    {spaceController.isFetching ? (
-                        <Stack gap={1}>
-                            {Array.from({ length: 5 }).map((_, index) => (
-                                <Card key={`skeleton-${index}`} variant="outlined">
-                                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                        <Skeleton variant="text" width="60%" height={24} />
-                                        <Skeleton variant="text" width="80%" height={20} />
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </Stack>
-                    ) : filteredAndSortedSpaces.length === 0 ? (
-                        <Paper sx={{ p: 4, textAlign: 'center' }}>
-                            <Typography variant="body2" color="text.secondary">
-                                {searchQuery
-                                    ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
-                                    : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
-                            </Typography>
-                        </Paper>
-                    ) : (
-                        <Stack gap={0.5}>
-                            {filteredAndSortedSpaces.map((space, index) => (
-                                <Card key={`${space.id}-${index}`} variant="outlined">
-                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                                        {/* Row 1: ID + Name + Actions */}
-                                        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
-                                            <Stack direction="row" alignItems="center" gap={1}>
-                                                <Typography variant="subtitle2" fontWeight={600}>
-                                                    {space.externalId || space.id}
-                                                </Typography>
-                                                {nameFieldKey && space.data[nameFieldKey] && (
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {space.data[nameFieldKey]}
-                                                    </Typography>
-                                                )}
-                                            </Stack>
-                                            <Stack direction="row" gap={0.5}>
-                                                <Tooltip title={t('common.edit')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="primary"
-                                                        onClick={() => handleEdit(space)}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title={t('common.delete')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleDelete(space.id)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Stack>
-                                        </Stack>
-                                        {/* Row 2: Fields (stacked) */}
-                                        <Typography variant="body2" color="text.secondary" noWrap>
-                                            {visibleFields.slice(0, 3).map((field, i) => (
-                                                <span key={field.key}>
-                                                    {i > 0 && ' • '}
-                                                    {space.data[field.key] || '-'}
-                                                </span>
-                                            ))}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </Stack>
-                    )}
-                </Box>)
-            ) : (
-                /* Desktop Virtualized Table */
-                (<SpacesDesktopTable
-                    spaces={filteredAndSortedSpaces}
-                    isFetching={spaceController.isFetching}
-                    visibleFields={visibleFields}
-                    nameFieldKey={nameFieldKey}
-                    sortConfig={sortConfig}
-                    searchQuery={searchQuery}
-                    onSort={handleSort}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />)
-            )}
-            {/* List Management Panel */}
-            <Paper sx={{ mt: 2, overflow: 'hidden' }}>
+            {/* List Management Panel — beneath header */}
+            <Paper sx={{ mb: 2, overflow: 'hidden' }}>
                 <Stack
                     direction="row"
                     alignItems="center"
@@ -685,6 +558,171 @@ export function SpacesManagementView() {
                     </Box>
                 </Collapse>
             </Paper>
+            {/* Search — filter icon on mobile, inline on desktop */}
+            {isMobile ? (
+                <Box sx={{ mb: 2 }}>
+                    <IconButton
+                        onClick={() => setSearchOpen(!searchOpen)}
+                        color={searchQuery ? 'primary' : 'default'}
+                        size="small"
+                    >
+                        <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
+                            <FilterListIcon />
+                        </Badge>
+                    </IconButton>
+                    <Collapse in={searchOpen}>
+                        <TextField
+                            fullWidth
+                            placeholder={t('spaces.searchPlaceholder')}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            size="small"
+                            sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon fontSize="small" />
+                                        </InputAdornment>
+                                    ),
+                                }
+                            }}
+                        />
+                    </Collapse>
+                </Box>
+            ) : (
+                <TextField
+                    fullWidth
+                    placeholder={t('spaces.searchPlaceholder')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{
+                        mb: 3,
+                        maxWidth: 400,
+                        '& .MuiOutlinedInput-root': { borderRadius: 4 }
+                    }}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
+                        }
+                    }}
+                />
+            )}
+            {/* Spaces Table / Mobile Card View */}
+            {isMobile ? (
+                /* Mobile Card View — tap to expand */
+                (<Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
+                    {spaceController.isFetching ? (
+                        <Stack gap={1}>
+                            {Array.from({ length: 5 }).map((_, index) => (
+                                <Card key={`skeleton-${index}`} variant="outlined">
+                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                                        <Skeleton variant="text" width="60%" height={20} />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Stack>
+                    ) : filteredAndSortedSpaces.length === 0 ? (
+                        <Paper sx={{ p: 4, textAlign: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {searchQuery
+                                    ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
+                                    : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
+                            </Typography>
+                        </Paper>
+                    ) : (
+                        <Stack gap={0.5}>
+                            {filteredAndSortedSpaces.map((space, index) => {
+                                const isExpanded = expandedCardId === space.id;
+                                return (
+                                    <Card
+                                        key={`${space.id}-${index}`}
+                                        variant="outlined"
+                                        sx={{ transition: 'background-color 0.15s' }}
+                                    >
+                                        <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                                            {/* Compact row — always visible */}
+                                            <Stack
+                                                direction="row"
+                                                alignItems="center"
+                                                justifyContent="space-between"
+                                                onClick={() => setExpandedCardId(prev => prev === space.id ? null : space.id)}
+                                                sx={{ cursor: 'pointer' }}
+                                            >
+                                                <Stack direction="row" alignItems="center" gap={1}>
+                                                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
+                                                        {space.externalId || space.id}
+                                                    </Typography>
+                                                    {nameFieldKey && space.data[nameFieldKey] && (
+                                                        <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: '0.8rem' }}>
+                                                            {space.data[nameFieldKey]}
+                                                        </Typography>
+                                                    )}
+                                                </Stack>
+                                            </Stack>
+
+                                            {/* Expanded details */}
+                                            {isExpanded && (
+                                                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                                                    <Typography variant="body2" color="text.secondary" noWrap sx={{ mb: 1, fontSize: '0.8rem' }}>
+                                                        {visibleFields.slice(0, 3).map((field, i) => (
+                                                            <span key={field.key}>
+                                                                {i > 0 && ' • '}
+                                                                {space.data[field.key] || '-'}
+                                                            </span>
+                                                        ))}
+                                                    </Typography>
+                                                    <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                        <Tooltip title={t('common.edit')}>
+                                                            <IconButton size="small" color="primary" onClick={() => handleEdit(space)}>
+                                                                <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title={t('common.delete')}>
+                                                            <IconButton size="small" color="error" onClick={() => handleDelete(space.id)}>
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+                                                </Box>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </Stack>
+                    )}
+                </Box>)
+            ) : (
+                /* Desktop Virtualized Table */
+                (<SpacesDesktopTable
+                    spaces={filteredAndSortedSpaces}
+                    isFetching={spaceController.isFetching}
+                    visibleFields={visibleFields}
+                    nameFieldKey={nameFieldKey}
+                    sortConfig={sortConfig}
+                    searchQuery={searchQuery}
+                    onSort={handleSort}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />)
+            )}
+            {/* Mobile FAB — Add Space */}
+            {isMobile && (
+                <Fab
+                    color="primary"
+                    variant="extended"
+                    onClick={handleAdd}
+                    sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1050 }}
+                >
+                    <AddIcon sx={{ mr: 1 }} />
+                    {getLabel('add')}
+                </Fab>
+            )}
             {/* Add/Edit Dialog - Lazy loaded */}
             <Suspense fallback={null}>
                 {dialogOpen && (

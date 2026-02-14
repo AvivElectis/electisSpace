@@ -219,13 +219,22 @@ export const useSpacesStore = create<SpacesStore>()(
             }),
             {
                 name: 'spaces-store',
+                version: 2,
                 partialize: (state) => ({
-                    spaces: state.spaces,
+                    // Do NOT persist spaces — always fresh-fetch from server
+                    // Persisting stale AIMS data causes jibberish/phantom spaces
                     spacesLists: state.spacesLists,
                     activeListName: state.activeListName,
                     activeListId: state.activeListId,
-                    // Don't persist loading/error states
                 }),
+                migrate: (persistedState: unknown, version: number) => {
+                    const state = persistedState as Record<string, unknown>;
+                    if (version < 2) {
+                        // Strip stale spaces from old localStorage data
+                        delete state.spaces;
+                    }
+                    return state as any;
+                },
             }
         ),
         { name: 'SpacesStore' }

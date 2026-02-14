@@ -1,5 +1,6 @@
 import { logger } from '@shared/infrastructure/services/logger';
-import { Box, Snackbar, Alert } from '@mui/material';
+import { Box, Snackbar, Alert, Fab, useMediaQuery, useTheme } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { useState, useMemo, useCallback, useEffect, useDeferredValue, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
@@ -39,6 +40,8 @@ import type { Person, PeopleFilters } from '../domain/types';
  */
 export function PeopleManagerView() {
     const { t, i18n } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const isAppReady = useAuthStore((state) => state.isAppReady);
     const settings = useSettingsStore((state) => state.settings);
@@ -58,7 +61,6 @@ export function PeopleManagerView() {
     // Store state
     const people = usePeopleStore((state) => state.people);
     const fetchPeople = usePeopleStore((state) => state.fetchPeople);
-    const activeListName = usePeopleStore((state) => state.activeListName);
     const activeListId = usePeopleStore((state) => state.activeListId);
     const pendingChanges = usePeopleStore((state) => state.pendingChanges);
     const clearPendingChanges = usePeopleStore((state) => state.clearPendingChanges);
@@ -459,7 +461,6 @@ export function PeopleManagerView() {
         <Box>
             {/* Header Section */}
             <PeopleToolbar
-                activeListName={activeListName ?? null}
                 totalPeople={people.length}
                 onAddPerson={handleAdd}
                 onUploadCSV={() => setCSVUploadOpen(true)}
@@ -487,6 +488,8 @@ export function PeopleManagerView() {
                 onSearchChange={setSearchQuery}
                 assignmentFilter={assignmentFilter}
                 onAssignmentFilterChange={setAssignmentFilter}
+                onCancelAllAssignments={handleCancelAllAssignments}
+                assignedCount={assignedCount}
             />
 
             {/* Bulk Actions */}
@@ -496,8 +499,6 @@ export function PeopleManagerView() {
                 onCancelAllAssignments={handleCancelAllAssignments}
                 onRemoveSelected={handleRemoveSelectedPeople}
                 assignedCount={assignedCount}
-                assignmentFilter={assignmentFilter}
-                onAssignmentFilterChange={setAssignmentFilter}
             />
 
             {/* People Table */}
@@ -519,6 +520,24 @@ export function PeopleManagerView() {
                 onUnassignSpace={handleUnassignSpace}
             />
 
+
+            {/* Mobile FAB — Add Person */}
+            {isMobile && (
+                <Fab
+                    color="primary"
+                    variant="extended"
+                    onClick={handleAdd}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        zIndex: 1050,
+                    }}
+                >
+                    <AddIcon sx={{ mr: 1 }} />
+                    {t('people.addPerson')}
+                </Fab>
+            )}
 
             {/* Dialogs - Lazy loaded */}
             <Suspense fallback={null}>
