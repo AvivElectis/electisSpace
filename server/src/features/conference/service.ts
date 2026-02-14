@@ -31,7 +31,7 @@ export const conferenceService = {
         // Calculate stats
         const stats: ConferenceRoomStats = {
             total: rooms.length,
-            withLabels: rooms.filter((r) => r.labelCode).length,
+            withLabels: rooms.filter((r) => r.labelCode || (r.assignedLabels && r.assignedLabels.length > 0)).length,
             withMeetings: rooms.filter((r) => r.hasMeeting).length,
             available: rooms.filter((r) => !r.hasMeeting).length,
         };

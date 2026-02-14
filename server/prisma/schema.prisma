@@ -258,7 +258,8 @@ model Space {
   externalId   String     @map("external_id") @db.VarChar(50)
   labelCode    String?    @map("label_code") @db.VarChar(50)
   templateName String?    @map("template_name") @db.VarChar(100)
-  
+  assignedLabels String[] @default([]) @map("assigned_labels")
+
   // Dynamic data fields
   data         Json       @default("{}")
   
@@ -327,7 +328,8 @@ model ConferenceRoom {
   externalId   String     @map("external_id") @db.VarChar(50)
   roomName     String     @map("room_name") @db.VarChar(100)
   labelCode    String?    @map("label_code") @db.VarChar(50)
-  
+  assignedLabels String[] @default([]) @map("assigned_labels")
+
   // Meeting status
   hasMeeting   Boolean  @default(false) @map("has_meeting")
   meetingName  String?  @map("meeting_name") @db.VarChar(255)
