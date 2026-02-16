@@ -30,6 +30,7 @@ import CloudIcon from '@mui/icons-material/Cloud';
 import BusinessIcon from '@mui/icons-material/Business';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
+import TuneIcon from '@mui/icons-material/Tune';
 import { useTranslation } from 'react-i18next';
 import type { useCompanyDialogState } from './useCompanyDialogState';
 
@@ -68,6 +69,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                 >
                     <Tab icon={<BusinessIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.basicInfo')} sx={{ minHeight: 48 }} />
                     <Tab icon={<CloudIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.aimsConfig')} sx={{ minHeight: 48 }} />
+                    <Tab icon={<TuneIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.featuresTab', 'Features')} sx={{ minHeight: 48 }} />
                 </Tabs>
 
                 {/* Basic Info Tab */}
@@ -104,6 +106,102 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                         <FormControlLabel
                             control={<Switch checked={state.isActive} onChange={(e) => state.setIsActive(e.target.checked)} />}
                             label={t('settings.companies.activeLabel')}
+                        />
+                    </Box>
+                </TabPanel>
+
+                {/* Features Tab */}
+                <TabPanel value={state.activeTab} index={2}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <FormControl fullWidth>
+                            <InputLabel>{t('settings.companies.spaceTypeLabel', 'Space Type')}</InputLabel>
+                            <Select
+                                value={state.spaceType}
+                                label={t('settings.companies.spaceTypeLabel', 'Space Type')}
+                                onChange={(e) => state.setSpaceType(e.target.value as any)}
+                            >
+                                <MenuItem value="office">{t('settings.offices')}</MenuItem>
+                                <MenuItem value="room">{t('settings.rooms')}</MenuItem>
+                                <MenuItem value="chair">{t('settings.chairs')}</MenuItem>
+                                <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <Divider />
+
+                        <Typography variant="subtitle2">{t('settings.companies.enabledFeatures', 'Enabled Features')}</Typography>
+
+                        {/* Spaces / People — single toggle with mode selector */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.companyFeatures.spacesEnabled || state.companyFeatures.peopleEnabled}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                state.handleFeatureToggle('peopleEnabled', true);
+                                            } else {
+                                                state.handleFeatureToggle('spacesEnabled', false);
+                                                state.handleFeatureToggle('peopleEnabled', false);
+                                            }
+                                        }}
+                                    />
+                                }
+                                label={t('settings.companies.spacesOrPeopleLabel', 'Spaces / People')}
+                                sx={{ minWidth: 180 }}
+                            />
+                            {(state.companyFeatures.spacesEnabled || state.companyFeatures.peopleEnabled) && (
+                                <FormControl size="small" sx={{ minWidth: 160 }}>
+                                    <Select
+                                        value={state.companyFeatures.spacesEnabled ? 'spaces' : 'people'}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'spaces') {
+                                                state.handleFeatureToggle('spacesEnabled', true);
+                                            } else {
+                                                state.handleFeatureToggle('peopleEnabled', true);
+                                            }
+                                        }}
+                                    >
+                                        <MenuItem value="spaces">{t('navigation.spaces')}</MenuItem>
+                                        <MenuItem value="people">{t('navigation.people')}</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            )}
+                        </Box>
+
+                        {/* Conference — single toggle with mode selector */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={state.companyFeatures.conferenceEnabled}
+                                        onChange={(e) => state.handleFeatureToggle('conferenceEnabled', e.target.checked)}
+                                    />
+                                }
+                                label={t('navigation.conference')}
+                                sx={{ minWidth: 180 }}
+                            />
+                            {state.companyFeatures.conferenceEnabled && (
+                                <FormControl size="small" sx={{ minWidth: 160 }}>
+                                    <Select
+                                        value={state.companyFeatures.simpleConferenceMode ? 'simple' : 'standard'}
+                                        onChange={(e) => state.handleFeatureToggle('simpleConferenceMode', e.target.value === 'simple')}
+                                    >
+                                        <MenuItem value="standard">{t('settings.companies.conferenceStandard', 'Standard')}</MenuItem>
+                                        <MenuItem value="simple">{t('settings.companies.conferenceSimple', 'Simple')}</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            )}
+                        </Box>
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={state.companyFeatures.labelsEnabled}
+                                    onChange={(e) => state.handleFeatureToggle('labelsEnabled', e.target.checked)}
+                                />
+                            }
+                            label={t('labels.title')}
                         />
                     </Box>
                 </TabPanel>

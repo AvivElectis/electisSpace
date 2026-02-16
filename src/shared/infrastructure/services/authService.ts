@@ -5,6 +5,26 @@
 import api, { tokenManager } from './apiClient';
 
 // Types
+
+/** Company-level feature toggles */
+export interface CompanyFeatures {
+    spacesEnabled: boolean;
+    peopleEnabled: boolean;
+    conferenceEnabled: boolean;
+    simpleConferenceMode: boolean;
+    labelsEnabled: boolean;
+}
+
+export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
+    spacesEnabled: false,
+    peopleEnabled: true,
+    conferenceEnabled: true,
+    simpleConferenceMode: false,
+    labelsEnabled: true,
+};
+
+export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
+
 export interface Store {
     id: string;
     name: string;
@@ -13,6 +33,8 @@ export interface Store {
     features: string[]; // Available features: 'dashboard', 'spaces', 'conference', 'people'
     companyId: string;
     companyName: string;
+    effectiveFeatures?: CompanyFeatures;
+    effectiveSpaceType?: SpaceType;
 }
 
 export interface Company {
@@ -21,6 +43,8 @@ export interface Company {
     code: string;
     role: 'COMPANY_ADMIN' | 'VIEWER';
     allStoresAccess: boolean;
+    companyFeatures?: CompanyFeatures;
+    spaceType?: SpaceType;
 }
 
 export interface User {

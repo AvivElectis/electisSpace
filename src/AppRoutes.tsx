@@ -23,6 +23,9 @@ const PeopleManagerView = lazy(() =>
 const LabelsPage = lazy(() =>
     import('@features/labels/presentation/LabelsPage').then(m => ({ default: m.LabelsPage }))
 );
+const ImageLabelsPage = lazy(() =>
+    import('@features/imageLabels/presentation/ImageLabelsPage').then(m => ({ default: m.ImageLabelsPage }))
+);
 const NotFoundPage = lazy(() =>
     import('@shared/presentation/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
 );
@@ -69,6 +72,7 @@ export function AppRoutes() {
             <Route path="/conference" element={<ProtectedRoute><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/people" element={<ProtectedRoute><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/labels" element={<ProtectedRoute><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/image-labels" element={<ProtectedRoute><SuspenseRoute><ImageLabelsPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );

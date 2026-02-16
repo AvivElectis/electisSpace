@@ -1,10 +1,11 @@
 /**
  * Companies Feature - Types & DTOs
- * 
+ *
  * @description Type definitions, interfaces, and validation schemas for the companies feature.
  */
 import { z } from 'zod';
 import { CompanyRole } from '@prisma/client';
+import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResolution.js';
 
 // ======================
 // Validation Schemas
@@ -24,6 +25,21 @@ export const aimsConfigSchema = z.object({
     password: z.string().min(1, 'Password is required'),
 });
 
+/** Company features schema with mutual exclusivity validation */
+export const companyFeaturesSchema = z.object({
+    spacesEnabled: z.boolean(),
+    peopleEnabled: z.boolean(),
+    conferenceEnabled: z.boolean(),
+    simpleConferenceMode: z.boolean(),
+    labelsEnabled: z.boolean(),
+}).refine(
+    (data) => !(data.spacesEnabled && data.peopleEnabled),
+    { message: 'Spaces and People cannot both be enabled' }
+);
+
+/** Space type enum */
+export const spaceTypeSchema = z.enum(['office', 'room', 'chair', 'person-tag']);
+
 /** Create company schema */
 export const createCompanySchema = z.object({
     code: companyCodeSchema,
@@ -31,6 +47,8 @@ export const createCompanySchema = z.object({
     location: z.string().max(255).optional(),
     description: z.string().optional(),
     aimsConfig: aimsConfigSchema.optional(),
+    companyFeatures: companyFeaturesSchema.optional(),
+    spaceType: spaceTypeSchema.optional(),
 });
 
 /** Update company schema */
@@ -39,6 +57,8 @@ export const updateCompanySchema = z.object({
     location: z.string().max(255).nullable().optional(),
     description: z.string().nullable().optional(),
     isActive: z.boolean().optional(),
+    companyFeatures: companyFeaturesSchema.optional(),
+    spaceType: spaceTypeSchema.optional(),
 });
 
 /** Update AIMS config schema - password is optional (only updates if provided) */
@@ -84,6 +104,8 @@ export interface CreateCompanyDto {
         username: string;
         password: string;
     };
+    companyFeatures?: CompanyFeatures;
+    spaceType?: SpaceType;
 }
 
 export interface UpdateCompanyDto {
@@ -91,6 +113,8 @@ export interface UpdateCompanyDto {
     location?: string | null;
     description?: string | null;
     isActive?: boolean;
+    companyFeatures?: CompanyFeatures;
+    spaceType?: SpaceType;
 }
 
 export interface UpdateAimsConfigDto {
@@ -116,6 +140,8 @@ export interface CompanyListItem {
     userRole: CompanyRole | null;
     allStoresAccess?: boolean;
     aimsConfigured: boolean;
+    companyFeatures: CompanyFeatures;
+    spaceType: SpaceType;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -151,6 +177,9 @@ export interface CompanyDetails {
         username: string | null;
         hasPassword: boolean;
     };
+    // Company-level features and space type
+    companyFeatures: CompanyFeatures;
+    spaceType: SpaceType;
 }
 
 export interface StoreListItem {

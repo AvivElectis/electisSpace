@@ -1,10 +1,6 @@
-import { Box, Typography, Grid, Button, Stack, useMediaQuery, useTheme } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Box, Typography, Grid, Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useState, useMemo, lazy, Suspense, useCallback } from 'react';
-import LinkIcon from '@mui/icons-material/Link';
-import AddIcon from '@mui/icons-material/Add';
-import GroupsIcon from '@mui/icons-material/Groups';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -28,6 +24,7 @@ import {
     DashboardConferenceCard,
     DashboardPeopleCard,
     DashboardSkeleton,
+    QuickActionsPanel,
 } from './components';
 
 import type { Space, ConferenceRoom } from '@shared/domain/types';
@@ -191,89 +188,12 @@ export function DashboardPage() {
                 insetInlineStart: { xs: 16, sm: 24 },
                 zIndex: (theme) => theme.zIndex.fab,
             }}>
-                <Stack
-                    direction="column"
-                    spacing={1.5}
-                    sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        background: (theme) =>
-                            theme.palette.mode === 'dark'
-                                ? `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, ${alpha(theme.palette.background.paper, 0.25)} 100%)`
-                                : `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 0.75)} 100%)`,
-                        backdropFilter: 'blur(40px) saturate(2)',
-                        WebkitBackdropFilter: 'blur(40px) saturate(2)',
-                        border: (theme) =>
-                            theme.palette.mode === 'dark'
-                                ? `1px solid ${alpha(theme.palette.primary.light, 0.2)}`
-                                : `1.5px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                        boxShadow: (theme) =>
-                            theme.palette.mode === 'dark'
-                                ? `0 12px 40px ${alpha(theme.palette.common.black, 0.45)}, inset 0 1px 0 ${alpha(theme.palette.primary.light, 0.1)}, inset 0 -1px 0 ${alpha(theme.palette.common.black, 0.2)}`
-                                : `0 12px 40px ${alpha(theme.palette.primary.main, 0.12)}, 0 4px 12px ${alpha(theme.palette.common.black, 0.06)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.9)}`,
-                    }}
-                >
-                    <Button
-                        variant="contained"
-                        startIcon={<LinkIcon />}
-                        onClick={() => setLinkLabelDialogOpen(true)}
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            px: 3,
-                            py: 1.2,
-                            fontSize: '0.9rem',
-                            boxShadow: (theme) => `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
-                        }}
-                    >
-                        {t('dashboard.linkLabel', 'Link Label')}
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<AddIcon />}
-                        onClick={() => setSpaceDialogOpen(true)}
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            px: 3,
-                            py: 1,
-                            fontSize: '0.85rem',
-                            borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
-                            '&:hover': {
-                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                                borderColor: 'primary.main',
-                            },
-                        }}
-                    >
-                        {isPeopleManagerMode
-                            ? t('dashboard.addPerson', 'Add Person')
-                            : t('dashboard.addSpace', 'Add Space')}
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<GroupsIcon />}
-                        onClick={() => setConferenceDialogOpen(true)}
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            px: 3,
-                            py: 1,
-                            fontSize: '0.85rem',
-                            borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
-                            '&:hover': {
-                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                                borderColor: 'primary.main',
-                            },
-                        }}
-                    >
-                        {t('conference.addRoom')}
-                    </Button>
-                </Stack>
+                <QuickActionsPanel
+                    isPeopleManagerMode={isPeopleManagerMode}
+                    onLinkLabel={() => setLinkLabelDialogOpen(true)}
+                    onAddSpace={() => setSpaceDialogOpen(true)}
+                    onAddConferenceRoom={() => setConferenceDialogOpen(true)}
+                />
             </Box>
 
             {/* Dialogs - Lazy loaded */}
