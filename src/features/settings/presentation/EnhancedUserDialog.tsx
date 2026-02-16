@@ -151,6 +151,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                         onAssignmentsChange={state.setStoreAssignments}
                                         isEdit={state.isEdit}
                                         isEditing={state.isEditing}
+                                        companyEnabledFeatures={state.companyEnabledFeatures}
                                     />
                                 </>
                             )}

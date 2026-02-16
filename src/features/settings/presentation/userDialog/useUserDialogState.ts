@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { companyService, type Company, type CreateCompanyDto } from '@shared/infrastructure/services/companyService';
+import type { CompanyFeatures } from '@shared/infrastructure/services/authService';
 import api from '@shared/infrastructure/services/apiClient';
 import type { UserData, CompanyRole, StoreAssignmentData } from './types';
 
@@ -104,6 +105,9 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
 
     // Store Assignments
     const [storeAssignments, setStoreAssignments] = useState<StoreAssignmentData[]>([]);
+
+    // Company features for filtering store assignment features
+    const [selectedCompanyFeatures, setSelectedCompanyFeatures] = useState<CompanyFeatures | null>(null);
 
     // Fetched user data (for edit mode - to get companies/stores)
     const [fetchedUserData, setFetchedUserData] = useState<UserData | null>(null);
@@ -217,6 +221,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 setCompanyRole('VIEWER');
                 setAllStoresAccess(false);
                 setStoreAssignments([]);
+                setSelectedCompanyFeatures(null);
             }
             setActiveStep(0);
             setError(null);
@@ -232,6 +237,29 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         }
     }, [open, user, fetchedUserData, profileMode]);
 
+    // Fetch company features when selectedCompanyId changes and features are unknown
+    useEffect(() => {
+        if (!selectedCompanyId || isCreatingCompany || selectedCompanyFeatures) return;
+
+        companyService.getById(selectedCompanyId).then(company => {
+            if (company.companyFeatures) {
+                setSelectedCompanyFeatures(company.companyFeatures);
+            }
+        }).catch(() => {
+            // Ignore - features won't be filtered
+        });
+    }, [selectedCompanyId, isCreatingCompany, selectedCompanyFeatures]);
+
+    // Derive enabled feature names from company features
+    const companyEnabledFeatures = useMemo(() => {
+        if (!selectedCompanyFeatures) return undefined;
+        const enabled: string[] = [];
+        if (selectedCompanyFeatures.spacesEnabled) enabled.push('spaces');
+        if (selectedCompanyFeatures.peopleEnabled) enabled.push('people');
+        if (selectedCompanyFeatures.conferenceEnabled) enabled.push('conference');
+        return enabled;
+    }, [selectedCompanyFeatures]);
+
     // Accessible company for non-platform admins
     const accessibleCompanyId = useMemo(() => {
         if (isPlatformAdmin) return null;
@@ -245,8 +273,9 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         }
     }, [isPlatformAdmin, accessibleCompanyId, isEdit]);
 
-    const handleCompanyChange = useCallback((companyId: string, _company?: Company) => {
+    const handleCompanyChange = useCallback((companyId: string, company?: Company) => {
         setSelectedCompanyId(companyId);
+        setSelectedCompanyFeatures(company?.companyFeatures ?? null);
         setStoreAssignments([]);
         setAllStoresAccess(false);
     }, []);
@@ -521,6 +550,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
 
         // Store
         storeAssignments, setStoreAssignments,
+        companyEnabledFeatures,
 
         // Password
         showPasswordSection, setShowPasswordSection,

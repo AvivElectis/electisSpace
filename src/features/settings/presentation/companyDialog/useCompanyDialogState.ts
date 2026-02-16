@@ -13,6 +13,8 @@ import {
     type AimsStoreInfo,
 } from '@shared/infrastructure/services/companyService';
 import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
+import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 interface Params {
     open: boolean;
@@ -60,6 +62,10 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
     const [isConnected, setIsConnected] = useState(false);
     const healthCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Company Features State
+    const [companyFeatures, setCompanyFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
+    const [spaceType, setSpaceType] = useState<SpaceType>('office');
+
     // Create Mode Wizard State
     const [wizardStep, setWizardStep] = useState(0);
     const [connecting, setConnecting] = useState(false);
@@ -94,6 +100,9 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                 setAimsPassword('');
                 setCodeValid(true);
                 setActiveTab(0);
+                // Initialize features from company data
+                setCompanyFeatures(company.companyFeatures ?? { ...DEFAULT_COMPANY_FEATURES });
+                setSpaceType((company.spaceType as SpaceType) ?? 'office');
 
                 if (company.aimsConfigured) {
                     checkConnectionStatus(company.id);
@@ -115,6 +124,8 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                 setAimsStores([]);
                 setSelectedStoreCode(null);
                 setStoreFriendlyName('');
+                setCompanyFeatures({ ...DEFAULT_COMPANY_FEATURES });
+                setSpaceType('office');
             }
         } else {
             if (healthCheckIntervalRef.current) {
@@ -198,6 +209,23 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
 
     const handleCodeChange = (value: string) => {
         setCode(value.toUpperCase().replace(/[^A-Z]/g, ''));
+    };
+
+    const handleFeatureToggle = (feature: keyof CompanyFeatures, value: boolean) => {
+        setCompanyFeatures(prev => {
+            const updated = { ...prev, [feature]: value };
+            // Enforce mutual exclusivity: spaces and people
+            if (feature === 'spacesEnabled' && value) {
+                updated.peopleEnabled = false;
+            } else if (feature === 'peopleEnabled' && value) {
+                updated.spacesEnabled = false;
+            }
+            // If conference is disabled, also disable simple conference mode
+            if (feature === 'conferenceEnabled' && !value) {
+                updated.simpleConferenceMode = false;
+            }
+            return updated;
+        });
     };
 
     const handleAimsFieldChange = (setter: (value: string) => void) => (value: string) => {
@@ -324,7 +352,9 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                     name: name.trim(),
                     location: location.trim() || undefined,
                     description: description.trim() || undefined,
-                    isActive
+                    isActive,
+                    companyFeatures,
+                    spaceType,
                 };
                 await companyService.update(company.id, updateData);
                 if (aimsChanged && aimsBaseUrl && aimsCluster && aimsUsername) {
@@ -361,6 +391,8 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                     username: aimsUsername.trim(),
                     password: aimsPassword,
                 },
+                companyFeatures,
+                spaceType,
             };
             const result = await companyService.create(createData);
             const newCompanyId = result.id;
@@ -394,6 +426,10 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         aimsUsername, setAimsUsername, aimsPassword, setAimsPassword,
         showPassword, setShowPassword, aimsChanged,
         handleAimsFieldChange,
+
+        // Company Features
+        companyFeatures, spaceType, setSpaceType,
+        handleFeatureToggle,
 
         // Edit Mode
         activeTab, setActiveTab,

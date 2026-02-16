@@ -11,6 +11,7 @@
         "people": "People",
         "conference": "Conference Rooms",
         "labels": "Labels",
+        "imageLabels": "Image Labels",
         "sync": "Synchronization"
     },
     "common": {
@@ -125,6 +126,7 @@
         "quickActions": "Quick Actions",
         "linkLabel": "Link Label",
         "addSpace": "Add Space",
+        "addPerson": "Add Person",
         "addRoom": "Add Room",
         "syncNow": "Sync Now",
         "applicationInfo": "Application Information",
@@ -645,7 +647,15 @@
             "gateways": "gateways",
             "companyDetails": "Company Details",
             "storeFriendlyName": "Store Display Name",
-            "storeFriendlyNameHelp": "A friendly name for this store in your app (defaults to AIMS store name)"
+            "storeFriendlyNameHelp": "A friendly name for this store in your app (defaults to AIMS store name)",
+            "featuresTab": "Features",
+            "enabledFeatures": "Enabled Features",
+            "spacesOrPeople": "Spaces and People are mutually exclusive — only one can be active at a time.",
+            "spacesOrPeopleLabel": "Spaces / People",
+            "simpleConferenceMode": "Simple Conference Mode",
+            "conferenceStandard": "Standard",
+            "conferenceSimple": "Simple",
+            "spaceTypeLabel": "Space Type"
         },
         "stores": {
             "dialogTitle": "Manage Stores",
@@ -681,7 +691,9 @@
             "timezoneHelp": "Used for scheduling and timestamps",
             "syncEnabledLabel": "Enable AIMS sync for this store",
             "activeLabel": "Store is active",
-            "saveError": "Failed to save store"
+            "saveError": "Failed to save store",
+            "overrideCompanyFeatures": "Override Company Features",
+            "inheritingFromCompany": "Inheriting features from company defaults"
         }
     },
     "errors": {
@@ -1246,6 +1258,37 @@
             "scan": "Scan",
             "scanLabel": "Scan Label Code",
             "scanArticle": "Scan Article ID"
+        }
+    },
+    "imageLabels": {
+        "title": "Image Labels",
+        "noStore": "No store selected. Please select a store to view image labels.",
+        "assignImage": "Assign Image",
+        "search": "Search labels...",
+        "previewFailed": "Could not generate preview",
+        "table": {
+            "preview": "Preview"
+        },
+        "dialog": {
+            "title": "Assign Image to Label",
+            "labelCode": "Label Code",
+            "labelCodePlaceholder": "Enter or scan label code...",
+            "uploadImage": "Upload Image",
+            "dropOrClick": "Drop an image here or click to browse",
+            "fitMode": "Fit Mode",
+            "fitContain": "Contain",
+            "fitCover": "Cover",
+            "fitFill": "Fill",
+            "fitContainHelp": "Fits image within label, may add white bars",
+            "fitCoverHelp": "Fills label completely, may crop image",
+            "fitFillHelp": "Stretches image to fill label exactly",
+            "preview": "Preview",
+            "ditheredPreview": "Dithered Preview (as it will appear on label)",
+            "resizedPreview": "Resized Preview",
+            "pushButton": "Push to Label",
+            "pushSuccess": "Image pushed to label successfully!",
+            "scanLabel": "Scan Label Code",
+            "acceptedFormats": "PNG, JPEG, BMP"
         }
     }
 }

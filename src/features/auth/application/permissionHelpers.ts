@@ -5,7 +5,8 @@
  * These work with the User type from authService.
  */
 
-import type { User, Store, Company } from '@shared/infrastructure/services/authService';
+import type { User, Store, Company, CompanyFeatures } from '@shared/infrastructure/services/authService';
+import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 // Role hierarchy for comparison
 const STORE_ROLE_HIERARCHY: Record<Store['role'], number> = {
@@ -102,16 +103,54 @@ export function hasCompanyRole(
 }
 
 /**
- * Check if user can access a specific feature in a store
+ * Check if a feature is enabled at the company/store level (effective features).
+ * Dashboard, sync, and settings are always considered enabled.
+ * When features is undefined/null (backward compat — old data without company features),
+ * all features are considered enabled.
+ */
+export function isFeatureEnabled(features: CompanyFeatures | undefined | null, feature: Feature): boolean {
+    // These features are always available (not governed by company features)
+    if (feature === 'dashboard' || feature === 'sync' || feature === 'settings') return true;
+
+    // Backward compat: if no features config exists, all features are enabled
+    if (!features) return true;
+
+    switch (feature) {
+        case 'spaces': return features.spacesEnabled;
+        case 'people': return features.peopleEnabled;
+        case 'conference': return features.conferenceEnabled;
+        case 'labels': return features.labelsEnabled;
+        default: return true;
+    }
+}
+
+/**
+ * Get the list of Feature names that are effectively enabled for a store.
+ */
+export function getEffectiveEnabledFeatures(user: User | null, storeId: string): Feature[] {
+    const allFeatures: Feature[] = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels'];
+    if (!user) return [];
+
+    const store = user.stores.find(s => s.id === storeId);
+    // Pass undefined when no effective features (backward compat: all enabled)
+    const effectiveFeatures = store?.effectiveFeatures ?? undefined;
+
+    return allFeatures.filter(f => isFeatureEnabled(effectiveFeatures, f));
+}
+
+/**
+ * Check if user can access a specific feature in a store.
+ * First checks if the feature is enabled at the company/store level,
+ * then checks user-level permissions.
  */
 export function canAccessFeature(
-    user: User | null, 
-    storeId: string, 
+    user: User | null,
+    storeId: string,
     feature: Feature
 ): boolean {
     if (!user) return false;
     if (isPlatformAdmin(user)) return true;
-    
+
     const store = user.stores.find(s => s.id === storeId);
     if (!store) {
         // Check all-stores access
@@ -119,13 +158,16 @@ export function canAccessFeature(
         if (company && isCompanyAdmin(user, company.id)) return true;
         return false;
     }
-    
-    // Company admins have access to all features
+
+    // Check if the feature is enabled at company/store level
+    if (!isFeatureEnabled(store.effectiveFeatures, feature)) return false;
+
+    // Company admins have access to all enabled features
     if (isCompanyAdmin(user, store.companyId)) return true;
-    
-    // Store admins have access to all features
+
+    // Store admins have access to all enabled features
     if (store.role === 'STORE_ADMIN') return true;
-    
+
     // Check feature list for other roles
     return store.features.includes(feature);
 }

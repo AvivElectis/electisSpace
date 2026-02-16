@@ -17,7 +17,13 @@ import {
     FormControlLabel,
     Switch,
     InputAdornment,
-    Autocomplete
+    Autocomplete,
+    Divider,
+    Typography,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -27,8 +33,10 @@ import {
     companyService,
     type CompanyStore,
     type CreateStoreDto,
-    type UpdateStoreDto
+    type UpdateStoreDto,
 } from '@shared/infrastructure/services/companyService';
+import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 // Common timezones
 const TIMEZONES = [
@@ -80,6 +88,11 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
     const [codeValid, setCodeValid] = useState<boolean | null>(null);
     const [codeError, setCodeError] = useState<string | null>(null);
 
+    // Store feature overrides
+    const [overrideEnabled, setOverrideEnabled] = useState(false);
+    const [storeFeatures, setStoreFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
+    const [storeSpaceType, setStoreSpaceType] = useState<SpaceType>('office');
+
     // Initialize form when dialog opens
     useEffect(() => {
         if (open) {
@@ -91,6 +104,16 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                 setSyncEnabled(store.syncEnabled);
                 setIsActive(store.isActive);
                 setCodeValid(true); // Existing code is valid
+                // Initialize feature overrides
+                if (store.storeFeatures) {
+                    setOverrideEnabled(true);
+                    setStoreFeatures(store.storeFeatures);
+                    setStoreSpaceType(store.storeSpaceType ?? 'office');
+                } else {
+                    setOverrideEnabled(false);
+                    setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
+                    setStoreSpaceType('office');
+                }
             } else {
                 // Create mode
                 setName('');
@@ -99,6 +122,9 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                 setSyncEnabled(true);
                 setIsActive(true);
                 setCodeValid(null);
+                setOverrideEnabled(false);
+                setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
+                setStoreSpaceType('office');
             }
             setError(null);
             setCodeError(null);
@@ -150,6 +176,16 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
         return true;
     };
 
+    const handleStoreFeatureToggle = (feature: keyof CompanyFeatures, value: boolean) => {
+        setStoreFeatures(prev => {
+            const updated = { ...prev, [feature]: value };
+            if (feature === 'spacesEnabled' && value) updated.peopleEnabled = false;
+            else if (feature === 'peopleEnabled' && value) updated.spacesEnabled = false;
+            if (feature === 'conferenceEnabled' && !value) updated.simpleConferenceMode = false;
+            return updated;
+        });
+    };
+
     // Handle submit
     const handleSubmit = async () => {
         if (!isValid()) return;
@@ -164,7 +200,9 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     name: name.trim(),
                     timezone,
                     syncEnabled,
-                    isActive
+                    isActive,
+                    storeFeatures: overrideEnabled ? storeFeatures : null,
+                    storeSpaceType: overrideEnabled ? storeSpaceType : null,
                 };
                 console.log('[StoreDialog] Updating store:', store.id, updateData);
                 await companyService.updateStore(store.id, updateData);
@@ -295,6 +333,118 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                             }
                             label={t('settings.stores.activeLabel')}
                         />
+                    )}
+
+                    {/* Feature Override Section (edit mode only) */}
+                    {isEdit && (
+                        <>
+                            <Divider sx={{ my: 1 }} />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={overrideEnabled}
+                                        onChange={(e) => setOverrideEnabled(e.target.checked)}
+                                    />
+                                }
+                                label={t('settings.stores.overrideCompanyFeatures', 'Override Company Features')}
+                            />
+                            {!overrideEnabled && (
+                                <Alert severity="info" sx={{ py: 0.5 }}>
+                                    {t('settings.stores.inheritingFromCompany', 'Inheriting features from company defaults')}
+                                </Alert>
+                            )}
+                            {overrideEnabled && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 1 }}>
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>{t('settings.companies.spaceTypeLabel', 'Space Type')}</InputLabel>
+                                        <Select
+                                            value={storeSpaceType}
+                                            label={t('settings.companies.spaceTypeLabel', 'Space Type')}
+                                            onChange={(e) => setStoreSpaceType(e.target.value as SpaceType)}
+                                        >
+                                            <MenuItem value="office">{t('settings.offices')}</MenuItem>
+                                            <MenuItem value="room">{t('settings.rooms')}</MenuItem>
+                                            <MenuItem value="chair">{t('settings.chairs')}</MenuItem>
+                                            <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
+                                        </Select>
+                                    </FormControl>
+
+                                    <Typography variant="caption" color="text.secondary">
+                                        {t('settings.companies.enabledFeatures', 'Enabled Features')}
+                                    </Typography>
+
+                                    {/* Spaces / People — single toggle with mode selector */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    checked={storeFeatures.spacesEnabled || storeFeatures.peopleEnabled}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            handleStoreFeatureToggle('peopleEnabled', true);
+                                                        } else {
+                                                            handleStoreFeatureToggle('spacesEnabled', false);
+                                                            handleStoreFeatureToggle('peopleEnabled', false);
+                                                        }
+                                                    }}
+                                                    size="small"
+                                                />
+                                            }
+                                            label={t('settings.companies.spacesOrPeopleLabel', 'Spaces / People')}
+                                            sx={{ minWidth: 160 }}
+                                        />
+                                        {(storeFeatures.spacesEnabled || storeFeatures.peopleEnabled) && (
+                                            <FormControl size="small" sx={{ minWidth: 140 }}>
+                                                <Select
+                                                    value={storeFeatures.spacesEnabled ? 'spaces' : 'people'}
+                                                    onChange={(e) => {
+                                                        if (e.target.value === 'spaces') {
+                                                            handleStoreFeatureToggle('spacesEnabled', true);
+                                                        } else {
+                                                            handleStoreFeatureToggle('peopleEnabled', true);
+                                                        }
+                                                    }}
+                                                >
+                                                    <MenuItem value="spaces">{t('navigation.spaces')}</MenuItem>
+                                                    <MenuItem value="people">{t('navigation.people')}</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        )}
+                                    </Box>
+
+                                    {/* Conference — single toggle with mode selector */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    checked={storeFeatures.conferenceEnabled}
+                                                    onChange={(e) => handleStoreFeatureToggle('conferenceEnabled', e.target.checked)}
+                                                    size="small"
+                                                />
+                                            }
+                                            label={t('navigation.conference')}
+                                            sx={{ minWidth: 160 }}
+                                        />
+                                        {storeFeatures.conferenceEnabled && (
+                                            <FormControl size="small" sx={{ minWidth: 140 }}>
+                                                <Select
+                                                    value={storeFeatures.simpleConferenceMode ? 'simple' : 'standard'}
+                                                    onChange={(e) => handleStoreFeatureToggle('simpleConferenceMode', e.target.value === 'simple')}
+                                                >
+                                                    <MenuItem value="standard">{t('settings.companies.conferenceStandard', 'Standard')}</MenuItem>
+                                                    <MenuItem value="simple">{t('settings.companies.conferenceSimple', 'Simple')}</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        )}
+                                    </Box>
+
+                                    <FormControlLabel
+                                        control={<Switch checked={storeFeatures.labelsEnabled} onChange={(e) => handleStoreFeatureToggle('labelsEnabled', e.target.checked)} size="small" />}
+                                        label={t('labels.title')}
+                                    />
+                                </Box>
+                            )}
+                        </>
                     )}
                 </Box>
             </DialogContent>

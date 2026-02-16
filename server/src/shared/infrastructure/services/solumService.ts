@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse } from './aims.types.js';
+import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
 
 // Types definition (replicating needed parts from shared/domain/types)
 export interface SolumConfig {
@@ -507,6 +507,64 @@ export class SolumService {
             } catch (error: any) {
                 if (error.response?.status === 204) return [];
                 throw new Error(`Fetch stores failed: ${error.message}`);
+            }
+        });
+    }
+
+    /**
+     * Fetch label type/hardware info (dimensions, color type, etc.)
+     */
+    async fetchLabelTypeInfo(config: SolumConfig, token: string, labelCode: string): Promise<AimsLabelTypeInfo> {
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/type/info?labelCode=${encodeURIComponent(labelCode)}`);
+
+        return this.withRetry('fetchLabelTypeInfo', async () => {
+            try {
+                const response = await this.client.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data as AimsLabelTypeInfo;
+            } catch (error: any) {
+                throw new Error(`Fetch label type info failed: ${error.message}`);
+            }
+        });
+    }
+
+    /**
+     * Push an image to a label via AIMS
+     */
+    async pushLabelImage(config: SolumConfig, token: string, request: AimsImagePushRequest): Promise<AimsApiResponse> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/image?company=${config.companyName}&store=${config.storeCode}`);
+
+        return this.withRetry('pushLabelImage', async () => {
+            try {
+                const response = await this.client.post(url, request, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Push label image failed: ${error.message}`);
+            }
+        });
+    }
+
+    /**
+     * Get dithered preview of an image from AIMS
+     */
+    async fetchDitherPreview(config: SolumConfig, token: string, labelCode: string, request: AimsDitherPreviewRequest): Promise<AimsApiResponse> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/image/dither/preview?company=${config.companyName}&labelCode=${encodeURIComponent(labelCode)}`);
+
+        return this.withRetry('fetchDitherPreview', async () => {
+            try {
+                const response = await this.client.put(url, request, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Fetch dither preview failed: ${error.message}`);
             }
         });
     }

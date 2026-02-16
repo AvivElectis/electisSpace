@@ -11,6 +11,7 @@
         "people": "אנשים",
         "conference": "חדרי ישיבות",
         "labels": "תגיות",
+        "imageLabels": "שיוך תמונה לתגית",
         "sync": "סינכרון"
     },
     "common": {
@@ -128,6 +129,7 @@
         "quickActions": "פעולות מהירות",
         "linkLabel": "קשר תגית",
         "addSpace": "הוסף חלל",
+        "addPerson": "הוסף אדם",
         "addRoom": "הוסף חדר",
         "syncNow": "סנכרן כעת",
         "applicationInfo": "מידע על האפליקציה",
@@ -656,7 +658,15 @@
             "gateways": "שערים",
             "companyDetails": "פרטי חברה",
             "storeFriendlyName": "שם תצוגה לחנות",
-            "storeFriendlyNameHelp": "שם ידידותי לחנות באפליקציה (ברירת מחדל: שם החנות ב-AIMS)"
+            "storeFriendlyNameHelp": "שם ידידותי לחנות באפליקציה (ברירת מחדל: שם החנות ב-AIMS)",
+            "featuresTab": "תכונות",
+            "enabledFeatures": "תכונות מופעלות",
+            "spacesOrPeople": "חללים ואנשים הם בלעדיים הדדית — רק אחד יכול להיות פעיל בו-זמנית.",
+            "spacesOrPeopleLabel": "חללים / אנשים",
+            "simpleConferenceMode": "מצב ועידה פשוט",
+            "conferenceStandard": "רגיל",
+            "conferenceSimple": "פשוט",
+            "spaceTypeLabel": "סוג חלל"
         },
         "stores": {
             "dialogTitle": "ניהול חנויות",
@@ -692,7 +702,9 @@
             "timezoneHelp": "משמש לתזמון וחותמות זמן",
             "syncEnabledLabel": "הפעל סינכרון AIMS לחנות זו",
             "activeLabel": "החנות פעילה",
-            "saveError": "שמירת החנות נכשלה"
+            "saveError": "שמירת החנות נכשלה",
+            "overrideCompanyFeatures": "דריסת תכונות החברה",
+            "inheritingFromCompany": "יורש תכונות מברירות המחדל של החברה"
         }
     },
     "errors": {
@@ -1261,6 +1273,37 @@
             "scan": "סרוק",
             "scanLabel": "סרוק קוד תגית",
             "scanArticle": "סרוק מזהה מוצר"
+        }
+    },
+    "imageLabels": {
+        "title": "שיוך תמונה לתגית",
+        "noStore": "לא נבחרה חנות. אנא בחר חנות כדי לצפות בשיוך תמונות לתגיות.",
+        "assignImage": "שייך תמונה",
+        "search": "חפש תגיות...",
+        "previewFailed": "לא ניתן ליצור תצוגה מקדימה",
+        "table": {
+            "preview": "תצוגה מקדימה"
+        },
+        "dialog": {
+            "title": "שייך תמונה לתגית",
+            "labelCode": "קוד תגית",
+            "labelCodePlaceholder": "הזן או סרוק קוד תגית...",
+            "uploadImage": "העלה תמונה",
+            "dropOrClick": "גרור תמונה לכאן או לחץ לעיון",
+            "fitMode": "מצב התאמה",
+            "fitContain": "הכל",
+            "fitCover": "מילוי",
+            "fitFill": "מתיחה",
+            "fitContainHelp": "מתאים תמונה בתוך התגית, עלולים להופיע פסים לבנים",
+            "fitCoverHelp": "ממלא את התגית לגמרי, עלול לחתוך את התמונה",
+            "fitFillHelp": "מותח את התמונה למילוי מדויק של התגית",
+            "preview": "תצוגה מקדימה",
+            "ditheredPreview": "תצוגה מקדימה מעובדת (כפי שתופיע בתגית)",
+            "resizedPreview": "תצוגה מקדימה מוקטנת",
+            "pushButton": "שלח לתגית",
+            "pushSuccess": "התמונה נשלחה לתגית בהצלחה!",
+            "scanLabel": "סרוק קוד תגית",
+            "acceptedFormats": "PNG, JPEG, BMP"
         }
     }
 }

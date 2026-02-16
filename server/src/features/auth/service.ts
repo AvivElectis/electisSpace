@@ -11,6 +11,14 @@ import { CodeType, GlobalRole } from '@prisma/client';
 import { config } from '../../config/index.js';
 import { authRepository } from './repository.js';
 import { EmailService } from '../../shared/services/email.service.js';
+import {
+    extractCompanyFeatures,
+    extractSpaceType,
+    extractStoreFeatures,
+    extractStoreSpaceType,
+    resolveEffectiveFeatures,
+    resolveEffectiveSpaceType,
+} from '../../shared/utils/featureResolution.js';
 import type {
     TokenPair,
     TokenResponse,
@@ -54,23 +62,39 @@ function generatePassword(): string {
  * Map user with relations to UserInfo response
  */
 function mapUserToInfo(user: UserWithRelations): UserInfo {
-    const stores: StoreInfo[] = user.userStores.map(us => ({
-        id: us.storeId,
-        name: us.store.name,
-        code: us.store.code,
-        role: us.role,
-        features: (us.features as string[]) || ['dashboard'],
-        companyId: us.store.companyId,
-        companyName: us.store.company.name,
-    }));
+    const stores: StoreInfo[] = user.userStores.map(us => {
+        const companySettings = us.store.company.settings as Record<string, unknown> | null;
+        const storeSettings = us.store.settings as Record<string, unknown> | null;
+        const companyFeatures = extractCompanyFeatures(companySettings);
+        const companySpaceType = extractSpaceType(companySettings);
+        const storeFeatures = extractStoreFeatures(storeSettings);
+        const storeSpaceType = extractStoreSpaceType(storeSettings);
 
-    const companies: CompanyInfo[] = user.userCompanies.map(uc => ({
-        id: uc.companyId,
-        name: uc.company.name,
-        code: uc.company.code,
-        role: uc.role,
-        allStoresAccess: uc.allStoresAccess,
-    }));
+        return {
+            id: us.storeId,
+            name: us.store.name,
+            code: us.store.code,
+            role: us.role,
+            features: (us.features as string[]) || ['dashboard'],
+            companyId: us.store.companyId,
+            companyName: us.store.company.name,
+            effectiveFeatures: resolveEffectiveFeatures(companyFeatures, storeFeatures),
+            effectiveSpaceType: resolveEffectiveSpaceType(companySpaceType, storeSpaceType),
+        };
+    });
+
+    const companies: CompanyInfo[] = user.userCompanies.map(uc => {
+        const companySettings = uc.company.settings as Record<string, unknown> | null;
+        return {
+            id: uc.companyId,
+            name: uc.company.name,
+            code: uc.company.code,
+            role: uc.role,
+            allStoresAccess: uc.allStoresAccess,
+            companyFeatures: extractCompanyFeatures(companySettings),
+            spaceType: extractSpaceType(companySettings),
+        };
+    });
 
     return {
         id: user.id,

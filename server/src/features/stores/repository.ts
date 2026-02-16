@@ -4,6 +4,7 @@
  * @description Data access layer for store operations.
  */
 import { prisma } from '../../config/index.js';
+import type { Prisma } from '@prisma/client';
 
 // ======================
 // Store Queries
@@ -97,10 +98,11 @@ export const storeRepository = {
         timezone?: string;
         syncEnabled?: boolean;
         isActive?: boolean;
+        settings?: Prisma.InputJsonValue;
     }) {
         return prisma.store.update({
             where: { id },
-            data,
+            data: data as Prisma.StoreUpdateInput,
         });
     },
 

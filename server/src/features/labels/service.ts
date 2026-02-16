@@ -3,6 +3,8 @@ import type {
     LabelsUserContext,
     LinkLabelDTO,
     UnlinkLabelDTO,
+    ImagePushDTO,
+    DitherPreviewDTO,
 } from './types.js';
 
 // ============================================================================
@@ -87,6 +89,46 @@ export const labelsService = {
         await ensureAimsConfigured(storeId);
 
         return aimsGateway.blinkLabel(storeId, labelCode);
+    },
+
+    /**
+     * Fetch label type/hardware info
+     */
+    async getLabelTypeInfo(userContext: LabelsUserContext, storeId: string, labelCode: string) {
+        validateStoreAccess(storeId, userContext.storeIds);
+        await ensureAimsConfigured(storeId);
+
+        return aimsGateway.fetchLabelTypeInfo(storeId, labelCode);
+    },
+
+    /**
+     * Get dithered preview of an image from AIMS
+     */
+    async getDitherPreview(userContext: LabelsUserContext, data: DitherPreviewDTO) {
+        validateStoreAccess(data.storeId, userContext.storeIds);
+        await ensureAimsConfigured(data.storeId);
+
+        return aimsGateway.fetchDitherPreview(data.storeId, data.labelCode, {
+            image: data.image,
+            optAlgType: data.optAlgType,
+        });
+    },
+
+    /**
+     * Push an image to a label
+     */
+    async pushImage(userContext: LabelsUserContext, data: ImagePushDTO) {
+        validateStoreAccess(data.storeId, userContext.storeIds);
+        await ensureAimsConfigured(data.storeId);
+
+        return aimsGateway.pushLabelImage(data.storeId, {
+            labelCode: data.labelCode,
+            page: data.page,
+            frontPage: data.frontPage,
+            image: data.image,
+            dithering: data.dithering,
+            optAlgType: data.optAlgType,
+        });
     },
 
     /**

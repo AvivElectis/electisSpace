@@ -75,6 +75,40 @@ export interface AimsLinkEntry {
     templateName?: string;
 }
 
+// ─── Label Type Info ────────────────────────────────────────────────────────
+
+/** Label type/hardware info from AIMS type info endpoint */
+export interface AimsLabelTypeInfo {
+    labelCode: string;
+    name: string;
+    displayWidth: number;
+    displayHeight: number;
+    totalPage: number;
+    colorType: string;      // "TERNARY_RED", "BINARY", etc.
+    resolution: number;     // DPI
+    nfc: boolean;
+}
+
+// ─── Image Push Types ──────────────────────────────────────────────────────
+
+/** Request to push an image to a label via AIMS */
+export interface AimsImagePushRequest {
+    labelCode: string;
+    page: number;           // integer (1-based)
+    frontPage: number;      // integer (1-based)
+    image: string;          // base64 PNG
+    dithering?: boolean;    // AIMS server-side dithering
+    optAlgType?: number;    // dithering algorithm (default 1)
+}
+
+/** Request for AIMS dither preview */
+export interface AimsDitherPreviewRequest {
+    image: string;          // base64 PNG
+    optAlgType?: number;
+}
+
+// ─── Response Types ────────────────────────────────────────────────────────
+
 /** Generic AIMS API response envelope */
 export interface AimsApiResponse {
     responseCode?: string;

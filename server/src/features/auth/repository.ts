@@ -31,12 +31,20 @@ export const authRepository = {
                 userStores: {
                     include: {
                         store: {
-                            include: { company: true }
+                            include: {
+                                company: {
+                                    select: { name: true, settings: true }
+                                }
+                            }
                         }
                     }
                 },
                 userCompanies: {
-                    include: { company: true }
+                    include: {
+                        company: {
+                            select: { name: true, code: true, settings: true }
+                        }
+                    }
                 }
             }
         }) as unknown as UserWithRelations | null;
@@ -52,12 +60,20 @@ export const authRepository = {
                 userStores: {
                     include: {
                         store: {
-                            include: { company: true }
+                            include: {
+                                company: {
+                                    select: { name: true, settings: true }
+                                }
+                            }
                         }
                     }
                 },
                 userCompanies: {
-                    include: { company: true }
+                    include: {
+                        company: {
+                            select: { name: true, code: true, settings: true }
+                        }
+                    }
                 }
             }
         }) as unknown as UserWithRelations | null;

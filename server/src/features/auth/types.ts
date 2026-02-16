@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
+import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResolution.js';
 
 // ======================
 // Validation Schemas
@@ -79,6 +80,8 @@ export interface StoreInfo {
     features: string[];
     companyId: string;
     companyName: string;
+    effectiveFeatures: CompanyFeatures;
+    effectiveSpaceType: SpaceType;
 }
 
 export interface CompanyInfo {
@@ -87,6 +90,8 @@ export interface CompanyInfo {
     code: string;
     role: CompanyRole;
     allStoresAccess: boolean;
+    companyFeatures: CompanyFeatures;
+    spaceType: SpaceType;
 }
 
 export interface UserInfo {
@@ -171,8 +176,10 @@ export interface UserWithRelations {
             name: string;
             code: string;
             companyId: string;
+            settings: unknown;
             company: {
                 name: string;
+                settings: unknown;
             };
         };
     }>;
@@ -185,6 +192,7 @@ export interface UserWithRelations {
         company: {
             name: string;
             code: string;
+            settings: unknown;
         };
     }>;
 }

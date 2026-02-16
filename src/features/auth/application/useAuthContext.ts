@@ -17,6 +17,8 @@ import {
     hasStoreRole,
     hasCompanyRole,
     canAccessFeature,
+    isFeatureEnabled,
+    getEffectiveEnabledFeatures,
     getAccessibleCompanies,
     getAccessibleStores,
     canManageUsers,
@@ -27,7 +29,8 @@ import {
     getHighestRole,
     type Feature,
 } from './permissionHelpers';
-import type { User, Store, Company } from '@shared/infrastructure/services/authService';
+import type { User, Store, Company, CompanyFeatures } from '@shared/infrastructure/services/authService';
+import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 export interface AuthContext {
     // User state
@@ -57,6 +60,11 @@ export interface AuthContext {
     canAccessFeature: (feature: Feature) => boolean;
     hasStoreRole: (minimumRole: Store['role']) => boolean;
     hasCompanyRole: (minimumRole: Company['role']) => boolean;
+
+    // Company/store-level feature config
+    activeCompanyFeatures: CompanyFeatures | null;
+    activeStoreEffectiveFeatures: CompanyFeatures | null;
+    effectiveEnabledFeatures: Feature[];
 
     // Management permissions
     canManageUsers: boolean;
@@ -146,6 +154,22 @@ export function useAuthContext(): AuthContext {
         };
     }, [user, activeCompanyId, isPlatformAdminFlag]);
 
+    // Company/store-level feature config
+    const activeCompanyFeatures = useMemo<CompanyFeatures | null>(() => {
+        if (!activeCompany) return null;
+        return activeCompany.companyFeatures ?? DEFAULT_COMPANY_FEATURES;
+    }, [activeCompany]);
+
+    const activeStoreEffectiveFeatures = useMemo<CompanyFeatures | null>(() => {
+        if (!activeStore) return null;
+        return activeStore.effectiveFeatures ?? DEFAULT_COMPANY_FEATURES;
+    }, [activeStore]);
+
+    const effectiveEnabledFeatures = useMemo<Feature[]>(() => {
+        if (!user || !activeStoreId) return [];
+        return getEffectiveEnabledFeatures(user, activeStoreId);
+    }, [user, activeStoreId]);
+
     // Management permissions
     const canManageUsersFlag = useMemo(
         () => canManageUsers(user, activeCompanyId || undefined),
@@ -193,6 +217,11 @@ export function useAuthContext(): AuthContext {
         canAccessFeature: canAccessFeatureFn,
         hasStoreRole: hasStoreRoleFn,
         hasCompanyRole: hasCompanyRoleFn,
+
+        // Company/store-level feature config
+        activeCompanyFeatures,
+        activeStoreEffectiveFeatures,
+        effectiveEnabledFeatures,
 
         // Management permissions
         canManageUsers: canManageUsersFlag,

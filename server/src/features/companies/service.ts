@@ -4,11 +4,17 @@
  * @description Business logic layer for companies. Orchestrates repository calls,
  * handles authorization, and applies business rules.
  */
-import { GlobalRole, CompanyRole } from '@prisma/client';
+import { GlobalRole, CompanyRole, Prisma } from '@prisma/client';
 import { companyRepository } from './repository.js';
 import { encrypt } from '../../shared/utils/encryption.js';
 import { config } from '../../config/index.js';
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
+import {
+    DEFAULT_COMPANY_FEATURES,
+    DEFAULT_SPACE_TYPE,
+    extractCompanyFeatures,
+    extractSpaceType,
+} from '../../shared/utils/featureResolution.js';
 import type {
     CompanyListParams,
     CompanyListItem,
@@ -88,20 +94,25 @@ export const companyService = {
             ]);
             
             total = count;
-            companies = fetchedCompanies.map(c => ({
-                id: c.id,
-                code: c.code,
-                name: c.name,
-                location: c.location,
-                description: c.description,
-                isActive: c.isActive,
-                storeCount: c._count.stores,
-                userCount: c._count.userCompanies,
-                userRole: null, // Platform admin has implicit access
-                aimsConfigured: !!(c.aimsBaseUrl && c.aimsUsername),
-                createdAt: c.createdAt,
-                updatedAt: c.updatedAt,
-            }));
+            companies = fetchedCompanies.map(c => {
+                const settings = c.settings as Record<string, unknown> | null;
+                return {
+                    id: c.id,
+                    code: c.code,
+                    name: c.name,
+                    location: c.location,
+                    description: c.description,
+                    isActive: c.isActive,
+                    storeCount: c._count.stores,
+                    userCount: c._count.userCompanies,
+                    userRole: null, // Platform admin has implicit access
+                    aimsConfigured: !!(c.aimsBaseUrl && c.aimsUsername),
+                    companyFeatures: extractCompanyFeatures(settings),
+                    spaceType: extractSpaceType(settings),
+                    createdAt: c.createdAt,
+                    updatedAt: c.updatedAt,
+                };
+            });
         } else {
             // Regular users see only assigned companies
             const userCompanies = await companyRepository.findUserCompanies(user.id);
@@ -117,21 +128,26 @@ export const companyService = {
             total = filtered.length;
             companies = filtered
                 .slice(skip, skip + limit)
-                .map(uc => ({
-                    id: uc.company.id,
-                    code: uc.company.code,
-                    name: uc.company.name,
-                    location: uc.company.location,
-                    description: uc.company.description,
-                    isActive: uc.company.isActive,
-                    storeCount: uc.company._count.stores,
-                    userCount: uc.company._count.userCompanies,
-                    userRole: uc.role,
-                    allStoresAccess: uc.allStoresAccess,
-                    aimsConfigured: !!(uc.company.aimsBaseUrl && uc.company.aimsUsername),
-                    createdAt: uc.company.createdAt,
-                    updatedAt: uc.company.updatedAt,
-                }));
+                .map(uc => {
+                    const settings = uc.company.settings as Record<string, unknown> | null;
+                    return {
+                        id: uc.company.id,
+                        code: uc.company.code,
+                        name: uc.company.name,
+                        location: uc.company.location,
+                        description: uc.company.description,
+                        isActive: uc.company.isActive,
+                        storeCount: uc.company._count.stores,
+                        userCount: uc.company._count.userCompanies,
+                        userRole: uc.role,
+                        allStoresAccess: uc.allStoresAccess,
+                        aimsConfigured: !!(uc.company.aimsBaseUrl && uc.company.aimsUsername),
+                        companyFeatures: extractCompanyFeatures(settings),
+                        spaceType: extractSpaceType(settings),
+                        createdAt: uc.company.createdAt,
+                        updatedAt: uc.company.updatedAt,
+                    };
+                });
         }
         
         return {
@@ -162,9 +178,10 @@ export const companyService = {
     async getById(id: string, user: UserContext): Promise<CompanyDetailResponse | null> {
         const company = await companyRepository.findByIdWithDetails(id);
         if (!company) return null;
-        
+
         const canManage = canManageCompany(user, id);
-        
+        const settings = company.settings as Record<string, unknown> | null;
+
         return {
             company: {
                 id: company.id,
@@ -187,6 +204,9 @@ export const companyService = {
                     username: company.aimsUsername,
                     hasPassword: !!company.aimsPasswordEnc,
                 } : undefined,
+                // Company-level features and space type
+                companyFeatures: extractCompanyFeatures(settings),
+                spaceType: extractSpaceType(settings),
             },
             stores: company.stores.map(s => ({
                 id: s.id,
@@ -218,19 +238,29 @@ export const companyService = {
      */
     async create(data: CreateCompanyDto): Promise<CompanyListItem> {
         const upperCode = data.code.toUpperCase();
-        
+
         // Check code uniqueness
         const exists = await companyRepository.codeExists(upperCode);
         if (exists) {
             throw new Error('COMPANY_CODE_EXISTS');
         }
-        
+
         // Encrypt AIMS password if provided
         let encryptedPassword: string | undefined;
         if (data.aimsConfig?.password) {
             encryptedPassword = encrypt(data.aimsConfig.password, config.encryptionKey);
         }
-        
+
+        // Build initial settings with company features
+        const companyFeatures = data.companyFeatures ?? DEFAULT_COMPANY_FEATURES;
+        const spaceType = data.spaceType ?? DEFAULT_SPACE_TYPE;
+        // Sync legacy peopleManagerEnabled flag
+        const initialSettings = {
+            companyFeatures: { ...companyFeatures },
+            spaceType,
+            peopleManagerEnabled: companyFeatures.peopleEnabled,
+        };
+
         const company = await companyRepository.create({
             code: upperCode,
             name: data.name,
@@ -240,8 +270,9 @@ export const companyService = {
             aimsCluster: data.aimsConfig?.cluster,
             aimsUsername: data.aimsConfig?.username,
             aimsPasswordEnc: encryptedPassword,
+            settings: initialSettings as unknown as Prisma.InputJsonValue,
         });
-        
+
         return {
             id: company.id,
             code: company.code,
@@ -253,6 +284,8 @@ export const companyService = {
             userCount: company._count.userCompanies,
             userRole: null,
             aimsConfigured: !!(company.aimsBaseUrl && company.aimsUsername),
+            companyFeatures,
+            spaceType,
             createdAt: company.createdAt,
             updatedAt: company.updatedAt,
         };
@@ -262,8 +295,39 @@ export const companyService = {
      * Update company basic info
      */
     async update(id: string, data: UpdateCompanyDto) {
-        const company = await companyRepository.update(id, data);
-        
+        // If companyFeatures or spaceType are provided, merge into settings JSON
+        const updateData: any = {
+            name: data.name,
+            location: data.location,
+            description: data.description,
+            isActive: data.isActive,
+        };
+
+        if (data.companyFeatures || data.spaceType) {
+            // Fetch existing company to merge settings
+            const existing = await companyRepository.findById(id);
+            if (!existing) throw new Error('COMPANY_NOT_FOUND');
+
+            const existingSettings = (existing.settings as Record<string, unknown>) || {};
+            const newSettings = { ...existingSettings };
+
+            if (data.companyFeatures) {
+                newSettings.companyFeatures = data.companyFeatures;
+                // Sync legacy peopleManagerEnabled flag
+                newSettings.peopleManagerEnabled = data.companyFeatures.peopleEnabled;
+            }
+            if (data.spaceType) {
+                newSettings.spaceType = data.spaceType;
+            }
+
+            updateData.settings = newSettings;
+        }
+
+        // Remove undefined keys
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+        const company = await companyRepository.update(id, updateData);
+
         return {
             id: company.id,
             code: company.code,
