@@ -12,7 +12,7 @@
 import { prisma } from '../../../config/index.js';
 import { config as appConfig } from '../../../config/index.js';
 import { solumService, type SolumConfig, type SolumTokens, type ArticleFormat } from './solumService.js';
-import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsApiResponse } from './aims.types.js';
+import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
 import { decrypt } from '../../utils/encryption.js';
 
 interface AIMSCredentials {
@@ -570,6 +570,69 @@ export class AIMSGateway {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
                     return await solumService.unlinkLabel(config, newToken, labelCode);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Fetch label type/hardware info (dimensions, color type, etc.)
+     */
+    async fetchLabelTypeInfo(storeId: string, labelCode: string): Promise<AimsLabelTypeInfo> {
+        const { token, config } = await this.getTokenForStore(storeId);
+
+        try {
+            return await solumService.fetchLabelTypeInfo(config, token, labelCode);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.fetchLabelTypeInfo(config, newToken, labelCode);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Push an image to a label
+     */
+    async pushLabelImage(storeId: string, request: AimsImagePushRequest): Promise<AimsApiResponse> {
+        const { token, config } = await this.getTokenForStore(storeId);
+
+        try {
+            return await solumService.pushLabelImage(config, token, request);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.pushLabelImage(config, newToken, request);
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Get dithered preview of an image
+     */
+    async fetchDitherPreview(storeId: string, labelCode: string, request: AimsDitherPreviewRequest): Promise<AimsApiResponse> {
+        const { token, config } = await this.getTokenForStore(storeId);
+
+        try {
+            return await solumService.fetchDitherPreview(config, token, labelCode, request);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.fetchDitherPreview(config, newToken, labelCode, request);
                 }
             }
             throw error;

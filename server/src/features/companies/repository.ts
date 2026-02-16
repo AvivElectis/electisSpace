@@ -29,6 +29,7 @@ export interface CompanyCreateData {
     aimsCluster?: string;
     aimsUsername?: string;
     aimsPasswordEnc?: string;
+    settings?: Prisma.InputJsonValue;
 }
 
 export interface CompanyUpdateData {
@@ -36,6 +37,7 @@ export interface CompanyUpdateData {
     location?: string | null;
     description?: string | null;
     isActive?: boolean;
+    settings?: Prisma.InputJsonValue;
 }
 
 export interface AimsConfigData {
@@ -164,13 +166,13 @@ export const companyRepository = {
      */
     async create(data: CompanyCreateData): Promise<CompanyWithCounts> {
         return prisma.company.create({
-            data,
+            data: data as Prisma.CompanyCreateInput,
             include: {
                 _count: {
                     select: { stores: true, userCompanies: true }
                 }
             }
-        });
+        }) as unknown as Promise<CompanyWithCounts>;
     },
 
     /**
@@ -179,7 +181,7 @@ export const companyRepository = {
     async update(id: string, data: CompanyUpdateData): Promise<Company> {
         const result = await prisma.company.update({
             where: { id },
-            data,
+            data: data as Prisma.CompanyUpdateInput,
         });
         await cacheInvalidate(`company-settings:${id}`);
         return result;

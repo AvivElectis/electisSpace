@@ -5,6 +5,9 @@ import {
     linkLabelSchema,
     unlinkLabelSchema,
     blinkLabelSchema,
+    labelTypeInfoSchema,
+    imagePushSchema,
+    ditherPreviewSchema,
 } from './types.js';
 import type { LabelsUserContext } from './types.js';
 import { badRequest, forbidden } from '../../shared/middleware/index.js';
@@ -124,6 +127,51 @@ export const labelsController = {
             const labelCode = String(req.params.labelCode);
 
             const result = await labelsService.blinkLabel(userContext, storeId, labelCode);
+            res.json({ success: true, data: result });
+        } catch (error) {
+            next(mapServiceError(error));
+        }
+    },
+
+    /**
+     * GET /labels/type-info - Fetch label type/hardware info
+     */
+    async getLabelTypeInfo(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userContext = getUserContext(req);
+            const { storeId, labelCode } = labelTypeInfoSchema.parse(req.query);
+
+            const result = await labelsService.getLabelTypeInfo(userContext, storeId, labelCode);
+            res.json({ data: result });
+        } catch (error) {
+            next(mapServiceError(error));
+        }
+    },
+
+    /**
+     * POST /labels/dither-preview - Get dithered image preview
+     */
+    async getDitherPreview(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userContext = getUserContext(req);
+            const data = ditherPreviewSchema.parse(req.body);
+
+            const result = await labelsService.getDitherPreview(userContext, data);
+            res.json({ data: result });
+        } catch (error) {
+            next(mapServiceError(error));
+        }
+    },
+
+    /**
+     * POST /labels/image-push - Push image to a label
+     */
+    async pushImage(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userContext = getUserContext(req);
+            const data = imagePushSchema.parse(req.body);
+
+            const result = await labelsService.pushImage(userContext, data);
             res.json({ success: true, data: result });
         } catch (error) {
             next(mapServiceError(error));

@@ -7,6 +7,7 @@
  * COMPANY_ADMIN+ can manage stores within their company.
  */
 import api from './apiClient';
+import type { CompanyFeatures, SpaceType } from './authService';
 
 // ============================================================================
 // Types
@@ -31,6 +32,8 @@ export interface CompanyStore {
         people?: number;
         conferenceRooms?: number;
     };
+    storeFeatures?: CompanyFeatures | null;
+    storeSpaceType?: SpaceType | null;
 }
 
 /** Company entity */
@@ -54,6 +57,8 @@ export interface Company {
         stores?: number;
         users?: number;
     };
+    companyFeatures?: CompanyFeatures;
+    spaceType?: SpaceType;
 }
 
 /** Paginated list response */
@@ -79,6 +84,8 @@ export interface CreateCompanyDto {
         username: string;
         password: string;
     };
+    companyFeatures?: CompanyFeatures;
+    spaceType?: SpaceType;
 }
 
 /** Update company DTO */
@@ -87,6 +94,8 @@ export interface UpdateCompanyDto {
     location?: string;
     description?: string;
     isActive?: boolean;
+    companyFeatures?: CompanyFeatures;
+    spaceType?: SpaceType;
 }
 
 /** Update AIMS configuration DTO - matches backend aimsConfigSchema */
@@ -111,6 +120,8 @@ export interface UpdateStoreDto {
     timezone?: string;
     syncEnabled?: boolean;
     isActive?: boolean;
+    storeFeatures?: CompanyFeatures | null;
+    storeSpaceType?: SpaceType | null;
 }
 
 /** Query parameters for company list */

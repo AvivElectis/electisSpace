@@ -136,16 +136,17 @@ export function SyncStatusIndicator({
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    paddingInlineEnd: 2,
-                    paddingInlineStart: 1,
-                    py: 1,
-                    borderRadius: '28px',
+                    justifyContent: 'center',
+                    width: 36,
+                    height: 36,
+                    p: 0,
+                    borderRadius: '50%',
                     cursor: 'pointer',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     border: '1px solid',
                     borderColor: config.borderColor,
                     bgcolor: config.bg,
+                    color: config.color,
                     '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: theme.shadows[4],
@@ -153,32 +154,7 @@ export function SyncStatusIndicator({
                     }
                 }}
             >
-                {/* Status Icon Circle */}
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: config.bg,
-                    color: config.color,
-                    transition: 'background-color 0.3s ease',
-                }}>
-                    {config.icon}
-                </Box>
-                
-                {/* Text Info */}
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="subtitle2" fontWeight={700} lineHeight={1.2} color="text.primary">
-                        {config.label}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.1, mt: 0.3 }}>
-                        {status === 'syncing'
-                            ? (elapsedSeconds >= 5 ? t('sync.processingData') : t('sync.syncing'))
-                            : 'SoluM API'}
-                    </Typography>
-                </Box>
+                {config.icon}
             </Paper>
             <Popover
                 open={open}

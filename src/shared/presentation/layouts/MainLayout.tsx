@@ -8,6 +8,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LabelIcon from '@mui/icons-material/Label';
+import ImageIcon from '@mui/icons-material/Image';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
@@ -74,7 +75,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [manualOpen, setManualOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const { syncState, setWorkingMode } = useSyncStore();
-    const { canAccessFeature, isAuthenticated } = useAuthContext();
+    const { canAccessFeature, isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
     
     // Determine drawer direction based on current language (more reliable than theme.direction)
@@ -92,7 +93,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     }, [settings.workingMode, setWorkingMode]);
 
     // Determine if People Manager mode is enabled
-    const isPeopleManagerMode = settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API';
+    // Use effective features from auth context (company/store level) with fallback to legacy settings
+    const isPeopleManagerMode = (activeStoreEffectiveFeatures?.peopleEnabled ?? settings.peopleManagerEnabled) && settings.workingMode === 'SOLUM_API';
 
     /**
      * Combined space update handler
@@ -101,7 +103,7 @@ export function MainLayout({ children }: MainLayoutProps) {
      * Only populate the spaces store when NOT in People Manager mode.
      */
     const handleSpaceUpdate = useCallback((spaces: any[]) => {
-        if (settings.peopleManagerEnabled && settings.workingMode === 'SOLUM_API') {
+        if ((activeStoreEffectiveFeatures?.peopleEnabled ?? settings.peopleManagerEnabled) && settings.workingMode === 'SOLUM_API') {
             logger.info('MainLayout', 'Skipping spaces update (people managed by server)', {
                 articlesCount: spaces.length
             });
@@ -109,7 +111,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         }
 
         setSpaces(spaces);
-    }, [setSpaces, settings.peopleManagerEnabled, settings.workingMode]);
+    }, [setSpaces, settings.peopleManagerEnabled, settings.workingMode, activeStoreEffectiveFeatures]);
 
     // Build navigation tabs dynamically
     const allNavTabs: NavTab[] = [
@@ -123,6 +125,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
         { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
+        { labelKey: 'navigation.imageLabels', value: '/image-labels', icon: <ImageIcon fontSize="small" />, feature: 'labels' },
     ];
 
     // Filter tabs by user permissions

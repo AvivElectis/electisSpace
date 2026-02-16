@@ -7,6 +7,14 @@ import { GlobalRole, CompanyRole, StoreRole } from '@prisma/client';
 import { storeRepository, companyRepository, userCompanyRepository } from './repository.js';
 import type { StoreUserContext, CreateStoreInput, UpdateStoreInput, StoreResponse, StoreListResponse, CodeValidationResponse } from './types.js';
 import { storeCodeSchema } from './types.js';
+import {
+    extractCompanyFeatures,
+    extractSpaceType,
+    extractStoreFeatures,
+    extractStoreSpaceType,
+    resolveEffectiveFeatures,
+    resolveEffectiveSpaceType,
+} from '../../shared/utils/featureResolution.js';
 
 // ======================
 // Authorization Helpers
@@ -207,18 +215,50 @@ export const storeService = {
      */
     async update(id: string, data: UpdateStoreInput, user: StoreUserContext) {
         const existingStore = await storeRepository.findById(id);
-        
+
         if (!existingStore) {
             throw new Error('STORE_NOT_FOUND');
         }
-        
+
         // Check permission (store admin or company admin)
         if (!canManageStore(user, id) && !canManageCompany(user, existingStore.companyId)) {
             throw new Error('FORBIDDEN_UPDATE');
         }
-        
-        const store = await storeRepository.update(id, data);
-        
+
+        // Build update data
+        const updateData: any = {
+            name: data.name,
+            timezone: data.timezone,
+            syncEnabled: data.syncEnabled,
+            isActive: data.isActive,
+        };
+
+        // Handle store feature overrides via settings JSON
+        if (data.storeFeatures !== undefined || data.storeSpaceType !== undefined) {
+            const existingSettings = (existingStore.settings as Record<string, unknown>) || {};
+            const newSettings = { ...existingSettings };
+
+            // null = clear override (inherit from company), object = set override
+            if (data.storeFeatures === null) {
+                delete newSettings.storeFeatures;
+            } else if (data.storeFeatures) {
+                newSettings.storeFeatures = data.storeFeatures;
+            }
+
+            if (data.storeSpaceType === null) {
+                delete newSettings.storeSpaceType;
+            } else if (data.storeSpaceType) {
+                newSettings.storeSpaceType = data.storeSpaceType;
+            }
+
+            updateData.settings = newSettings;
+        }
+
+        // Remove undefined keys
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+        const store = await storeRepository.update(id, updateData);
+
         return {
             store: {
                 id: store.id,

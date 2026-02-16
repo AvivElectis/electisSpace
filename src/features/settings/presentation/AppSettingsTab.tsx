@@ -2,10 +2,6 @@ import {
     Box,
     TextField,
     Stack,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Typography,
     Divider,
     Button,
@@ -149,31 +145,6 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
                             helperText={t('settings.displayedBelowAppName')}
                         />
                     </Stack>
-                </Box>
-
-                <Divider />
-
-                {/* Space Type */}
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.spaceTypeConfig')}
-                    </Typography>
-                    <FormControl fullWidth size="small">
-                        <InputLabel>{t('settings.spaceType')}</InputLabel>
-                        <Select
-                            value={settings.spaceType}
-                            label={t('settings.spaceType')}
-                            onChange={(e) => onUpdate({ spaceType: e.target.value as any })}
-                        >
-                            <MenuItem value="office">{t('settings.offices')}</MenuItem>
-                            <MenuItem value="room">{t('settings.rooms')}</MenuItem>
-                            <MenuItem value="chair">{t('settings.chairs')}</MenuItem>
-                            <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        {t('settings.affectsLabels')}
-                    </Typography>
                 </Box>
 
                 <Divider />

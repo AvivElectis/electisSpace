@@ -75,6 +75,8 @@ interface StoreAssignmentProps {
     defaultRole?: StoreRole;
     /** Default features for new assignments */
     defaultFeatures?: string[];
+    /** Company-level enabled features — filters which features are shown */
+    companyEnabledFeatures?: string[];
 }
 
 export function StoreAssignment({
@@ -86,7 +88,8 @@ export function StoreAssignment({
     onAssignmentsChange,
     disabled = false,
     defaultRole = 'STORE_VIEWER',
-    defaultFeatures = ['dashboard']
+    defaultFeatures = ['dashboard'],
+    companyEnabledFeatures,
 }: StoreAssignmentProps) {
     const { t } = useTranslation();
 
@@ -121,8 +124,15 @@ export function StoreAssignment({
         fetchStores();
     }, [fetchStores]);
 
-    // All feature IDs for elevated roles
-    const ALL_FEATURES = AVAILABLE_FEATURES.map(f => f.id);
+    // Filter features by what's enabled at the company/store level
+    // Dashboard, sync, and settings are always available
+    const ALWAYS_AVAILABLE = ['dashboard', 'sync', 'settings'];
+    const visibleFeatures = companyEnabledFeatures
+        ? AVAILABLE_FEATURES.filter(f => ALWAYS_AVAILABLE.includes(f.id) || companyEnabledFeatures.includes(f.id))
+        : AVAILABLE_FEATURES;
+
+    // All feature IDs for elevated roles (only enabled ones)
+    const ALL_FEATURES = visibleFeatures.map(f => f.id);
 
     // Guard against undefined arrays
     const safeAssignments = assignments || [];
@@ -356,7 +366,7 @@ export function StoreAssignment({
                                             </Typography>
                                         </FormLabel>
                                         <FormGroup row>
-                                            {AVAILABLE_FEATURES.map(feature => (
+                                            {visibleFeatures.map(feature => (
                                                 <FormControlLabel
                                                     key={feature.id}
                                                     control={
