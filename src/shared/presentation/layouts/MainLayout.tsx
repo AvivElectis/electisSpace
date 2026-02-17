@@ -125,7 +125,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
         { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
-        { labelKey: 'navigation.imageLabels', value: '/image-labels', icon: <ImageIcon fontSize="small" />, feature: 'labels' },
+        { labelKey: 'navigation.imageLabels', value: '/image-labels', icon: <ImageIcon fontSize="small" />, feature: 'imageLabels' },
     ];
 
     // Filter tabs by user permissions
@@ -158,13 +158,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         return () => clearTimeout(idleTimeout);
     }, []);
 
-    // Auto-sync on app load when store is selected AND auth is ready
-    // Fires once when both conditions are first met
-    const hasSyncedOnLoad = useRef(false);
+    // Auto-sync on app load and when store changes
+    // Tracks which store was last synced so switching stores triggers a new sync
+    const lastSyncedStoreId = useRef<string | null>(null);
     useEffect(() => {
-        if (activeStoreId && authReady && sync && !hasSyncedOnLoad.current) {
-            hasSyncedOnLoad.current = true;
-            logger.info('MainLayout', 'Auto-syncing on app load', { storeId: activeStoreId });
+        if (activeStoreId && authReady && sync && lastSyncedStoreId.current !== activeStoreId) {
+            lastSyncedStoreId.current = activeStoreId;
+            logger.info('MainLayout', 'Auto-syncing on app load / store switch', { storeId: activeStoreId });
             const syncTimeout = setTimeout(() => {
                 sync().catch((err) => {
                     logger.warn('MainLayout', 'Initial sync failed', { error: err instanceof Error ? err.message : 'Unknown' });

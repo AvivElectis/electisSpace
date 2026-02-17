@@ -95,7 +95,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
     if (allStoresCompanyIds.length > 0) {
         const existingStoreIds = new Set(stores.map(s => s.id));
         const allStores = await authRepository.findStoresByCompanyIds(allStoresCompanyIds);
-        const allFeatures = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings'];
+        const allFeatures = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels', 'imageLabels'];
 
         for (const store of allStores) {
             if (existingStoreIds.has(store.id)) continue;

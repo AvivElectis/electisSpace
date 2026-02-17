@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { companyService, type Company, type CompanyQueryParams } from '@shared/infrastructure/services/companyService';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 // Lazy load dialogs - using default exports
 const CompanyDialog = lazy(() => import('./CompanyDialog'));
@@ -166,6 +167,8 @@ export function CompaniesTab() {
         setCompanyDialogOpen(false);
         setSelectedCompany(null);
         fetchCompanies();
+        // Refresh auth to pick up updated effectiveFeatures for nav tabs
+        useAuthStore.getState().validateSession();
     };
 
     // Format date

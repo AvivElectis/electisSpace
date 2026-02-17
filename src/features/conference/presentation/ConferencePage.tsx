@@ -53,6 +53,7 @@ const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m 
 export function ConferencePage() {
     const { t } = useTranslation();
     const isAppReady = useAuthStore((state) => state.isAppReady);
+    const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const { settings } = useSettingsStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
@@ -113,10 +114,10 @@ export function ConferencePage() {
         },
     });
 
-    // Fetch conference rooms from server when app is ready (SoluM mode)
+    // Fetch conference rooms from server when app is ready or store changes (SoluM mode)
     // Server returns rooms with serverId (UUID) needed for correct PATCH/DELETE calls
     useEffect(() => {
-        if (isAppReady && settings.workingMode === 'SOLUM_API' && settings.solumConfig) {
+        if (isAppReady && activeStoreId && settings.workingMode === 'SOLUM_API' && settings.solumConfig) {
             conferenceController.fetchRooms().catch(() => {
                 // Fallback to AIMS fetch if server fetch fails
                 if (solumToken && settings.solumMappingConfig) {
@@ -125,9 +126,9 @@ export function ConferencePage() {
             });
         }
         // conferenceController is created from useConferenceController with stable config
-        // Only re-run when app becomes ready, not on config changes
+        // Only re-run when app becomes ready or store changes, not on config changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady]);
+    }, [isAppReady, activeStoreId]);
 
     // Filter rooms based on debounced search query (memoized for performance)
     const filteredRooms = useMemo(() => {
@@ -312,7 +313,6 @@ export function ConferencePage() {
                     <IconButton
                         onClick={() => setSearchOpen(!searchOpen)}
                         color={searchQuery ? 'primary' : 'default'}
-                        size="small"
                     >
                         <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
                             <FilterListIcon />
@@ -454,15 +454,15 @@ export function ConferencePage() {
                                                             {t('conference.noScheduledMeetings')}
                                                         </Typography>
                                                     )}
-                                                    <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    <Stack direction="row" gap={1} justifyContent="flex-end">
                                                         <Tooltip title={t('common.edit')}>
-                                                            <IconButton size="small" color="primary" onClick={() => handleEdit(room)}>
-                                                                <EditIcon fontSize="small" />
+                                                            <IconButton size="medium" color="primary" onClick={() => handleEdit(room)}>
+                                                                <EditIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                         <Tooltip title={t('common.delete')}>
-                                                            <IconButton size="small" color="error" onClick={() => handleDelete(room.id)}>
-                                                                <DeleteIcon fontSize="small" />
+                                                            <IconButton size="medium" color="error" onClick={() => handleDelete(room.id)}>
+                                                                <DeleteIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                     </Stack>
