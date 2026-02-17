@@ -234,9 +234,9 @@ export function ImageLabelsPage() {
         <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, width: '100%' }}>
             {/* Header */}
             <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
+                direction={isMobile ? 'row' : 'column'}
+                justifyContent={isMobile ? 'space-between' : 'flex-start'}
+                alignItems={isMobile ? 'center' : 'flex-start'}
                 sx={{ mb: { xs: 2, md: 3 } }}
                 gap={1}
             >

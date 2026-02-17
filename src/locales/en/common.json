@@ -1195,6 +1195,7 @@
         "search": "Search labels or articles...",
         "filterLinkedOnly": "Show linked only",
         "totalCount": "{{count}} labels",
+        "totalCountShort": "labels",
         "noLabels": "No labels found",
         "notLinked": "Not linked",
         "table": {

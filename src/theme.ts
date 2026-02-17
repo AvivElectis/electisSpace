@@ -13,9 +13,9 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
         palette: {
             mode: 'light',
             primary: {
-                main: '#007AFF', // Apple Blue
-                light: '#5AC8FA',
-                dark: '#0051D5',
+                main: '#0D47A1', // Dark Blue
+                light: '#1565C0',
+                dark: '#072D6F',
                 contrastText: '#fff',
             },
             secondary: {
@@ -40,9 +40,9 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                 dark: '#248A3D',
             },
             info: {
-                main: '#007AFF',
-                light: '#5AC8FA',
-                dark: '#0051D5',
+                main: '#0D47A1',
+                light: '#1565C0',
+                dark: '#072D6F',
             },
             background: {
                 default: '#F5F5F7', // Apple gentle gray
@@ -122,8 +122,8 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
             '0px 2px 8px rgba(0, 0, 0, 0.04), 0px 2px 4px rgba(0, 0, 0, 0.04)',
             '0px 4px 16px rgba(0, 0, 0, 0.06), 0px 4px 8px rgba(0, 0, 0, 0.06)',
             '0px 2px 4px rgba(0, 0, 0, 0.2)', // Elevated shadow for buttons
-            '0px 8px 24px rgba(90, 200, 250, 0.3)', // FAB shadow
-            '0px 12px 32px rgba(90, 200, 250, 0.4)', // FAB hover shadow
+            '0px 8px 24px rgba(13, 71, 161, 0.3)', // FAB shadow
+            '0px 12px 32px rgba(13, 71, 161, 0.4)', // FAB hover shadow
             '0px 12px 40px rgba(0, 0, 0, 0.12), 0px 12px 24px rgba(0, 0, 0, 0.08)', // Dialog shadow
             ...Array(17).fill('none'),
         ] as any,
@@ -157,7 +157,7 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         },
                     },
                     containedPrimary: {
-                        background: 'linear-gradient(135deg, #007AFF 0%, #6cc9ffd7 50%, #007AFF 100%)',
+                        background: 'linear-gradient(135deg, #0D47A1 0%, #1565C0d7 50%, #0D47A1 100%)',
                         backgroundSize: '200% auto',
                         color: '#FFFFFF',
                         textShadow: '0 0px 3px rgba(0, 0, 0, 1)',
@@ -249,7 +249,7 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                                 borderColor: 'rgba(0, 0, 0, 0.2)',
                             },
                             '&.Mui-focused fieldset': {
-                                borderColor: '#007AFF',
+                                borderColor: '#0D47A1',
                                 borderWidth: '2px',
                             },
                         },
@@ -308,11 +308,11 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
             MuiFab: {
                 styleOverrides: {
                     root: {
-                        background: 'linear-gradient(135deg, #5AC8FA 0%, #007AFF 100%)',
-                        boxShadow: '0 8px 24px rgba(90, 200, 250, 0.3)',
+                        background: 'linear-gradient(135deg, #1565C0 0%, #0D47A1 100%)',
+                        boxShadow: '0 8px 24px rgba(13, 71, 161, 0.3)',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         '&:hover': {
-                            boxShadow: '0 12px 32px rgba(90, 200, 250, 0.4)',
+                            boxShadow: '0 12px 32px rgba(13, 71, 161, 0.4)',
                             transform: 'translateY(-2px) scale(1.05)',
                         },
                         '&:active': {
@@ -353,7 +353,7 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         backgroundColor: 'transparent',
                         border: '1px solid #ffffffff',
                         '&:hover': {
-                            backgroundColor: '#007bffff',
+                            backgroundColor: '#0D47A1ff',
                         },
                     },
                 },
