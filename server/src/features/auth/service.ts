@@ -59,9 +59,13 @@ function generatePassword(): string {
 }
 
 /**
- * Map user with relations to UserInfo response
+ * Map user with relations to UserInfo response.
+ * For companies where the user has allStoresAccess, all stores in
+ * that company are included (with STORE_ADMIN role) even without
+ * explicit UserStore entries.
  */
-function mapUserToInfo(user: UserWithRelations): UserInfo {
+async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
+    // Build stores from explicit UserStore entries
     const stores: StoreInfo[] = user.userStores.map(us => {
         const companySettings = us.store.company.settings as Record<string, unknown> | null;
         const storeSettings = us.store.settings as Record<string, unknown> | null;
@@ -82,6 +86,40 @@ function mapUserToInfo(user: UserWithRelations): UserInfo {
             effectiveSpaceType: resolveEffectiveSpaceType(companySpaceType, storeSpaceType),
         };
     });
+
+    // For companies where user has allStoresAccess, add any missing stores
+    const allStoresCompanyIds = user.userCompanies
+        .filter(uc => uc.allStoresAccess)
+        .map(uc => uc.companyId);
+
+    if (allStoresCompanyIds.length > 0) {
+        const existingStoreIds = new Set(stores.map(s => s.id));
+        const allStores = await authRepository.findStoresByCompanyIds(allStoresCompanyIds);
+        const allFeatures = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings'];
+
+        for (const store of allStores) {
+            if (existingStoreIds.has(store.id)) continue;
+
+            const companySettings = store.company.settings as Record<string, unknown> | null;
+            const storeSettings = store.settings as Record<string, unknown> | null;
+            const companyFeatures = extractCompanyFeatures(companySettings);
+            const companySpaceType = extractSpaceType(companySettings);
+            const storeFeatures = extractStoreFeatures(storeSettings);
+            const storeSpaceType = extractStoreSpaceType(storeSettings);
+
+            stores.push({
+                id: store.id,
+                name: store.name,
+                code: store.code,
+                role: 'STORE_ADMIN' as any, // Company-wide access implies full admin
+                features: allFeatures,
+                companyId: store.companyId,
+                companyName: store.company.name,
+                effectiveFeatures: resolveEffectiveFeatures(companyFeatures, storeFeatures),
+                effectiveSpaceType: resolveEffectiveSpaceType(companySpaceType, storeSpaceType),
+            });
+        }
+    }
 
     const companies: CompanyInfo[] = user.userCompanies.map(uc => {
         const companySettings = uc.company.settings as Record<string, unknown> | null;
@@ -228,7 +266,7 @@ export const authService = {
             accessToken,
             refreshToken,
             expiresIn: 900,
-            user: mapUserToInfo(user),
+            user: await mapUserToInfo(user),
         };
     },
 
@@ -319,7 +357,7 @@ export const authService = {
             throw new Error('USER_NOT_FOUND');
         }
 
-        return { user: mapUserToInfo(user) };
+        return { user: await mapUserToInfo(user) };
     },
 
     /**
@@ -487,14 +525,23 @@ export const authService = {
     async solumConnect(
         storeId: string,
         userId: string,
-        userStores: Array<{ id: string }>,
-        userGlobalRole: string | null
+        userStores: Array<{ id: string; companyId?: string }>,
+        userGlobalRole: string | null,
+        userCompanies?: Array<{ id: string; allStoresAccess?: boolean }>
     ): Promise<SolumConnectResponse> {
-        // Verify access
-        const hasAccess = userStores.some(s => s.id === storeId) ||
-            userGlobalRole === GlobalRole.PLATFORM_ADMIN;
+        // Verify access — direct store assignment, allStoresAccess, or platform admin
+        const directAccess = userStores.some(s => s.id === storeId);
+        const isPlatAdmin = userGlobalRole === GlobalRole.PLATFORM_ADMIN;
+        // Check allStoresAccess: need to know the store's company first
+        let allStoresAccessGrant = false;
+        if (!directAccess && !isPlatAdmin && userCompanies) {
+            const store = await authRepository.findStoreWithCompany(storeId);
+            if (store) {
+                allStoresAccessGrant = userCompanies.some(c => c.id === store.companyId && c.allStoresAccess);
+            }
+        }
 
-        if (!hasAccess) {
+        if (!directAccess && !isPlatAdmin && !allStoresAccessGrant) {
             throw new Error('NO_ACCESS');
         }
 

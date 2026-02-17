@@ -276,6 +276,26 @@ export const authRepository = {
     },
 
     // ======================
+    // All-Stores Access Queries
+    // ======================
+
+    /**
+     * Find all stores belonging to the given company IDs.
+     * Used to populate the stores list for users with allStoresAccess.
+     */
+    async findStoresByCompanyIds(companyIds: string[]) {
+        if (companyIds.length === 0) return [];
+        return prisma.store.findMany({
+            where: { companyId: { in: companyIds }, isActive: true },
+            include: {
+                company: {
+                    select: { name: true, code: true, settings: true },
+                },
+            },
+        });
+    },
+
+    // ======================
     // Store/SOLUM Queries
     // ======================
 

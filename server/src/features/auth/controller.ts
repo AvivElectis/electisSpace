@@ -341,7 +341,8 @@ export const authController = {
                 validation.data.storeId,
                 req.user!.id,
                 req.user!.stores,
-                req.user!.globalRole
+                req.user!.globalRole,
+                req.user!.companies
             );
 
             res.json(result);

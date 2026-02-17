@@ -7,6 +7,10 @@ import { persist, devtools } from 'zustand/middleware';
 import { authService, type User, type AuthCredentials } from '@shared/infrastructure/services/authService';
 import { tokenManager } from '@shared/infrastructure/services/apiClient';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
+import { useLabelsStore } from '@features/labels/infrastructure/labelsStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import { AxiosError } from 'axios';
 
@@ -396,6 +400,21 @@ export const useAuthStore = create<AuthState>()(
                             activeCompanyId: companyId,
                             activeStoreId: null, // Reset store when company changes
                         }, false, 'setActiveCompany');
+
+                        // Sync settingsStore context
+                        const settingsStore = useSettingsStore.getState();
+                        if (companyId) settingsStore.setActiveCompanyId(companyId);
+                        settingsStore.setActiveStoreId(null);
+
+                        // Clear all data stores — company changed, old store data is stale
+                        try {
+                            useSpacesStore.getState().clearAllData();
+                            usePeopleStore.getState().clearAllData();
+                            useConferenceStore.getState().clearAllData();
+                            useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
+                        } catch (e) {
+                            logger.warn('AuthStore', 'Failed to clear data stores on company switch', { error: e instanceof Error ? e.message : String(e) });
+                        }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch company');
                         set({ error: message }, false, 'setActiveCompany/error');
@@ -411,12 +430,27 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId: storeId,
                         }, false, 'setActiveStore');
 
+                        // Immediately sync settingsStore context so StoreRequiredGuard works
+                        const settingsStore = useSettingsStore.getState();
+                        if (storeId) settingsStore.setActiveStoreId(storeId);
+                        const currentCompanyId = get().activeCompanyId;
+                        if (currentCompanyId) settingsStore.setActiveCompanyId(currentCompanyId);
+
+                        // Clear all data stores to prevent cross-store data leaks
+                        try {
+                            useSpacesStore.getState().clearAllData();
+                            usePeopleStore.getState().clearAllData();
+                            useConferenceStore.getState().clearAllData();
+                            useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
+                        } catch (e) {
+                            logger.warn('AuthStore', 'Failed to clear data stores on store switch', { error: e instanceof Error ? e.message : String(e) });
+                        }
+
                         // Fetch settings for the new store and auto-connect to SOLUM
                         if (storeId) {
-                            const currentCompanyId = get().activeCompanyId;
                             if (currentCompanyId) {
                                 // Settings must load first so autoConnect doesn't get overwritten
-                                useSettingsStore.getState().fetchSettingsFromServer(storeId, currentCompanyId)
+                                settingsStore.fetchSettingsFromServer(storeId, currentCompanyId)
                                     .then(() => autoConnectToSolum(storeId))
                                     .catch((error) => {
                                         logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error instanceof Error ? error.message : String(error) });
@@ -443,9 +477,24 @@ export const useAuthStore = create<AuthState>()(
                             activeStoreId: storeId,
                         }, false, 'setActiveContext');
 
+                        // Immediately sync settingsStore context
+                        const settingsStore = useSettingsStore.getState();
+                        if (storeId) settingsStore.setActiveStoreId(storeId);
+                        if (companyId) settingsStore.setActiveCompanyId(companyId);
+
+                        // Clear all data stores
+                        try {
+                            useSpacesStore.getState().clearAllData();
+                            usePeopleStore.getState().clearAllData();
+                            useConferenceStore.getState().clearAllData();
+                            useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
+                        } catch (e) {
+                            logger.warn('AuthStore', 'Failed to clear data stores on context switch', { error: e instanceof Error ? e.message : String(e) });
+                        }
+
                         // Fetch settings first, then auto-connect to SOLUM
                         if (storeId && companyId) {
-                            useSettingsStore.getState().fetchSettingsFromServer(storeId, companyId)
+                            settingsStore.fetchSettingsFromServer(storeId, companyId)
                                 .then(() => autoConnectToSolum(storeId))
                                 .catch((error) => {
                                     logger.warn('AuthStore', 'Auto SOLUM connect on context switch failed', { error: error instanceof Error ? error.message : String(error) });
