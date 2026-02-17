@@ -44,6 +44,7 @@ export function PeopleManagerView() {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const isAppReady = useAuthStore((state) => state.isAppReady);
+    const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const settings = useSettingsStore((state) => state.settings);
     const { getLabel } = useSpaceTypeLabels();
 
@@ -124,11 +125,11 @@ export function PeopleManagerView() {
         },
     });
 
-    // Fetch people from server when app is ready.
+    // Fetch people from server when app is ready or store changes.
     // If a list was active, just fetch current people (they're already in the DB).
     // The loadList operation should ONLY happen when user explicitly loads from dialog.
     useEffect(() => {
-        if (isAppReady) {
+        if (isAppReady && activeStoreId) {
             fetchPeople().catch((err) => {
                 logger.warn('PeopleManagerView', 'Failed to fetch people from server', {
                     error: err instanceof Error ? err.message : 'Unknown',
@@ -137,7 +138,7 @@ export function PeopleManagerView() {
         }
         // fetchPeople is a Zustand store action (stable reference)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady]);
+    }, [isAppReady, activeStoreId]);
 
     // Single source of truth: totalSpaces from settings, assignedSpaces computed from people
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;

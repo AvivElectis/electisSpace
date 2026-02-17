@@ -203,6 +203,15 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             }
                             label={t('labels.title')}
                         />
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={state.companyFeatures.imageLabelsEnabled}
+                                    onChange={(e) => state.handleFeatureToggle('imageLabelsEnabled', e.target.checked)}
+                                />
+                            }
+                            label={t('navigation.imageLabels')}
+                        />
                     </Box>
                 </TabPanel>
 

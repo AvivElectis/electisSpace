@@ -43,7 +43,6 @@ export function PeopleFiltersBar({
                     <IconButton
                         onClick={() => setFiltersOpen(!filtersOpen)}
                         color={activeFilterCount > 0 ? 'primary' : 'default'}
-                        size="small"
                     >
                         <Badge badgeContent={activeFilterCount} color="primary">
                             <FilterListIcon />
@@ -57,9 +56,8 @@ export function PeopleFiltersBar({
                                     color="error"
                                     onClick={onCancelAllAssignments}
                                     disabled={assignedCount === 0}
-                                    size="small"
                                 >
-                                    <CancelIcon fontSize="small" />
+                                    <CancelIcon />
                                 </IconButton>
                             </span>
                         </Tooltip>

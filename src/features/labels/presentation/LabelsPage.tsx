@@ -37,7 +37,6 @@ import {
     Add as AddIcon,
     SignalCellularAlt as SignalIcon,
     Battery0Bar as BatteryIcon,
-    Image as ImageIcon,
 } from '@mui/icons-material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useTranslation } from 'react-i18next';
@@ -256,19 +255,19 @@ export function LabelsPage() {
                             <Stack direction="row" gap={0}>
                                 {isLinked ? (
                                     <IconButton
-                                        size="small"
+                                        size="medium"
                                         color="error"
                                         onClick={() => handleUnlink(label.labelCode)}
                                     >
-                                        <UnlinkIcon fontSize="small" />
+                                        <UnlinkIcon />
                                     </IconButton>
                                 ) : (
                                     <IconButton
-                                        size="small"
+                                        size="medium"
                                         color="primary"
                                         onClick={() => handleOpenLinkDialog(label.labelCode)}
                                     >
-                                        <LinkIcon fontSize="small" />
+                                        <LinkIcon />
                                     </IconButton>
                                 )}
                             </Stack>
@@ -383,7 +382,6 @@ export function LabelsPage() {
                         <IconButton
                             onClick={() => setFiltersOpen(!filtersOpen)}
                             color={(searchQuery || filterLinkedOnly) ? 'primary' : 'default'}
-                            size="small"
                         >
                             <Badge badgeContent={(searchQuery ? 1 : 0) + (filterLinkedOnly ? 1 : 0)} color="primary">
                                 <FilterListIcon />

@@ -1,8 +1,9 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, type ReactNode, useEffect } from 'react';
 import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
 import { logger } from '@shared/infrastructure/services/logger';
 import { ProtectedRoute } from '@features/auth/presentation/ProtectedRoute';
+import { ProtectedFeature } from '@features/auth/presentation/ProtectedFeature';
 
 // Lazy load all page components for code splitting
 const LoginPage = lazy(() =>
@@ -68,11 +69,11 @@ export function AppRoutes() {
 
             {/* Protected Routes */}
             <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/spaces" element={<ProtectedRoute><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/conference" element={<ProtectedRoute><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/people" element={<ProtectedRoute><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/labels" element={<ProtectedRoute><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/image-labels" element={<ProtectedRoute><SuspenseRoute><ImageLabelsPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/spaces" element={<ProtectedRoute><ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/conference" element={<ProtectedRoute><ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/image-labels" element={<ProtectedRoute><ProtectedFeature feature="imageLabels" fallback={<Navigate to="/" replace />}><SuspenseRoute><ImageLabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );

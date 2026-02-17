@@ -6,7 +6,6 @@
  */
 
 import type { User, Store, Company, CompanyFeatures } from '@shared/infrastructure/services/authService';
-import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 // Role hierarchy for comparison
 const STORE_ROLE_HIERARCHY: Record<Store['role'], number> = {
@@ -22,7 +21,7 @@ const COMPANY_ROLE_HIERARCHY: Record<Company['role'], number> = {
 };
 
 // Feature names
-export type Feature = 'dashboard' | 'spaces' | 'conference' | 'people' | 'sync' | 'settings' | 'labels';
+export type Feature = 'dashboard' | 'spaces' | 'conference' | 'people' | 'sync' | 'settings' | 'labels' | 'imageLabels';
 
 /**
  * Check if user is a Platform Admin
@@ -120,6 +119,7 @@ export function isFeatureEnabled(features: CompanyFeatures | undefined | null, f
         case 'people': return features.peopleEnabled;
         case 'conference': return features.conferenceEnabled;
         case 'labels': return features.labelsEnabled;
+        case 'imageLabels': return features.imageLabelsEnabled;
         default: return true;
     }
 }
@@ -128,7 +128,7 @@ export function isFeatureEnabled(features: CompanyFeatures | undefined | null, f
  * Get the list of Feature names that are effectively enabled for a store.
  */
 export function getEffectiveEnabledFeatures(user: User | null, storeId: string): Feature[] {
-    const allFeatures: Feature[] = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels'];
+    const allFeatures: Feature[] = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels', 'imageLabels'];
     if (!user) return [];
 
     const store = user.stores.find(s => s.id === storeId);
@@ -149,18 +149,21 @@ export function canAccessFeature(
     feature: Feature
 ): boolean {
     if (!user) return false;
-    if (isPlatformAdmin(user)) return true;
 
     const store = user.stores.find(s => s.id === storeId);
+
+    // Feature toggle check applies to ALL users including platform admins.
+    // This is a company/store-level feature gate, not a permission.
+    if (store && !isFeatureEnabled(store.effectiveFeatures, feature)) return false;
+
+    if (isPlatformAdmin(user)) return true;
+
     if (!store) {
         // Check all-stores access
         const company = user.companies.find(c => c.allStoresAccess);
         if (company && isCompanyAdmin(user, company.id)) return true;
         return false;
     }
-
-    // Check if the feature is enabled at company/store level
-    if (!isFeatureEnabled(store.effectiveFeatures, feature)) return false;
 
     // Company admins have access to all enabled features
     if (isCompanyAdmin(user, store.companyId)) return true;
