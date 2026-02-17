@@ -250,6 +250,7 @@ export function SpacesManagementView() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isAppReady = useAuthStore((state) => state.isAppReady);
+    const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const settingsController = useSettingsController();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const activeListName = useSpacesStore((state) => state.activeListName);
@@ -317,15 +318,16 @@ export function SpacesManagementView() {
     const [searchOpen, setSearchOpen] = useState(false);
     const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
-    // Fetch spaces from Server DB when app is ready (Source of Truth for Cloud Persistence)
+    // Fetch spaces from Server DB when app is ready or store changes
     useEffect(() => {
-        if (isAppReady) {
+        if (isAppReady && activeStoreId) {
             logger.info('SpacesManagementView', 'App ready - fetching spaces from Server DB');
             spaceController.fetchSpaces?.().catch(err => {
                 logger.error('SpacesManagementView', 'Failed to fetch spaces from server', { err });
             });
         }
-    }, [isAppReady]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAppReady, activeStoreId]);
 
     // The articleName mapped field key (shown as dedicated "Name" column)
     const nameFieldKey = settingsController.settings.solumMappingConfig?.mappingInfo?.articleName;
@@ -564,7 +566,6 @@ export function SpacesManagementView() {
                     <IconButton
                         onClick={() => setSearchOpen(!searchOpen)}
                         color={searchQuery ? 'primary' : 'default'}
-                        size="small"
                     >
                         <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
                             <FilterListIcon />
@@ -676,15 +677,15 @@ export function SpacesManagementView() {
                                                             </span>
                                                         ))}
                                                     </Typography>
-                                                    <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    <Stack direction="row" gap={1} justifyContent="flex-end">
                                                         <Tooltip title={t('common.edit')}>
-                                                            <IconButton size="small" color="primary" onClick={() => handleEdit(space)}>
-                                                                <EditIcon fontSize="small" />
+                                                            <IconButton size="medium" color="primary" onClick={() => handleEdit(space)}>
+                                                                <EditIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                         <Tooltip title={t('common.delete')}>
-                                                            <IconButton size="small" color="error" onClick={() => handleDelete(space.id)}>
-                                                                <DeleteIcon fontSize="small" />
+                                                            <IconButton size="medium" color="error" onClick={() => handleDelete(space.id)}>
+                                                                <DeleteIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                     </Stack>

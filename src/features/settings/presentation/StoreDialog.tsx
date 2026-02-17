@@ -442,6 +442,10 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                         control={<Switch checked={storeFeatures.labelsEnabled} onChange={(e) => handleStoreFeatureToggle('labelsEnabled', e.target.checked)} size="small" />}
                                         label={t('labels.title')}
                                     />
+                                    <FormControlLabel
+                                        control={<Switch checked={storeFeatures.imageLabelsEnabled} onChange={(e) => handleStoreFeatureToggle('imageLabelsEnabled', e.target.checked)} size="small" />}
+                                        label={t('navigation.imageLabels')}
+                                    />
                                 </Box>
                             )}
                         </>

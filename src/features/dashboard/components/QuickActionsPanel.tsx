@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Fab, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Fab, Stack, useMediaQuery, useTheme, ClickAwayListener } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import LinkIcon from '@mui/icons-material/Link';
@@ -78,69 +78,71 @@ export function QuickActionsPanel({
 
     if (isMobile) {
         return (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                {/* Staggered action buttons */}
-                <Stack direction="column" spacing={1.5} sx={{ mb: 1.5 }}>
-                    {actions.map((action, index) => (
-                        <Box
-                            key={action.key}
-                            sx={{
-                                opacity: open ? 1 : 0,
-                                transform: open ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
-                                transition: open
-                                    ? `opacity 0.2s ease ${index * 60}ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) ${index * 60}ms`
-                                    : `opacity 0.15s ease ${(actions.length - 1 - index) * 40}ms, transform 0.15s ease ${(actions.length - 1 - index) * 40}ms`,
-                                pointerEvents: open ? 'auto' : 'none',
-                            }}
-                        >
-                            <Button
-                                variant={action.variant}
-                                startIcon={action.icon}
-                                onClick={() => handleAction(action.onClick)}
-                                fullWidth
+            <ClickAwayListener onClickAway={() => open && setOpen(false)}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    {/* Staggered action buttons */}
+                    <Stack direction="column" spacing={1.5} sx={{ mb: 1.5 }}>
+                        {actions.map((action, index) => (
+                            <Box
+                                key={action.key}
                                 sx={{
-                                    borderRadius: 3,
-                                    textTransform: 'none',
-                                    fontWeight: action.variant === 'contained' ? 600 : 500,
-                                    px: 4,
-                                    py: action.variant === 'contained' ? 1.5 : 1.3,
-                                    fontSize: action.variant === 'contained' ? '1rem' : '0.95rem',
-                                    whiteSpace: 'nowrap',
-                                    ...(action.variant === 'contained'
-                                        ? {
-                                              boxShadow: (theme: any) =>
-                                                  `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
-                                          }
-                                        : {
-                                              borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
-                                              bgcolor: (theme: any) => alpha(theme.palette.background.paper, 0.85),
-                                              backdropFilter: 'blur(12px)',
-                                              '&:hover': {
-                                                  bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
-                                                  borderColor: 'primary.main',
-                                              },
-                                          }),
+                                    opacity: open ? 1 : 0,
+                                    transform: open ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
+                                    transition: open
+                                        ? `opacity 0.2s ease ${index * 60}ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) ${index * 60}ms`
+                                        : `opacity 0.15s ease ${(actions.length - 1 - index) * 40}ms, transform 0.15s ease ${(actions.length - 1 - index) * 40}ms`,
+                                    pointerEvents: open ? 'auto' : 'none',
                                 }}
                             >
-                                {action.label}
-                            </Button>
-                        </Box>
-                    ))}
-                </Stack>
+                                <Button
+                                    variant={action.variant}
+                                    startIcon={action.icon}
+                                    onClick={() => handleAction(action.onClick)}
+                                    fullWidth
+                                    sx={{
+                                        borderRadius: 3,
+                                        textTransform: 'none',
+                                        fontWeight: action.variant === 'contained' ? 600 : 500,
+                                        px: 4,
+                                        py: action.variant === 'contained' ? 1.5 : 1.3,
+                                        fontSize: action.variant === 'contained' ? '1rem' : '0.95rem',
+                                        whiteSpace: 'nowrap',
+                                        ...(action.variant === 'contained'
+                                            ? {
+                                                  boxShadow: (theme: any) =>
+                                                      `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                                              }
+                                            : {
+                                                  borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
+                                                  bgcolor: (theme: any) => alpha(theme.palette.background.paper, 0.85),
+                                                  backdropFilter: 'blur(12px)',
+                                                  '&:hover': {
+                                                      bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
+                                                      borderColor: 'primary.main',
+                                                  },
+                                              }),
+                                    }}
+                                >
+                                    {action.label}
+                                </Button>
+                            </Box>
+                        ))}
+                    </Stack>
 
-                {/* FAB trigger */}
-                <Fab
-                    color="primary"
-                    size="large"
-                    onClick={() => setOpen((prev) => !prev)}
-                    sx={{
-                        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        transform: open ? 'rotate(45deg)' : 'none',
-                    }}
-                >
-                    {open ? <CloseIcon /> : <AddIcon />}
-                </Fab>
-            </Box>
+                    {/* FAB trigger */}
+                    <Fab
+                        color="primary"
+                        size="large"
+                        onClick={() => setOpen((prev) => !prev)}
+                        sx={{
+                            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            transform: open ? 'rotate(45deg)' : 'none',
+                        }}
+                    >
+                        {open ? <CloseIcon /> : <AddIcon />}
+                    </Fab>
+                </Box>
+            </ClickAwayListener>
         );
     }
 

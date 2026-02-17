@@ -280,29 +280,29 @@ export function PeopleTable({
                                                             />
                                                         )}
                                                     </Stack>
-                                                    <Stack direction="row" gap={0.5}>
+                                                    <Stack direction="row" gap={1}>
                                                         {!person.assignedSpaceId && (
                                                             <Tooltip title={tWithSpaceType('people.assignSpace')}>
-                                                                <IconButton size="small" color="success" onClick={() => onAssignSpace(person)}>
-                                                                    <AssignmentIcon fontSize="small" />
+                                                                <IconButton size="medium" color="success" onClick={() => onAssignSpace(person)}>
+                                                                    <AssignmentIcon />
                                                                 </IconButton>
                                                             </Tooltip>
                                                         )}
                                                         {person.assignedSpaceId && (
                                                             <Tooltip title={tWithSpaceType('people.unassignSpace')}>
-                                                                <IconButton size="small" color="warning" onClick={() => onUnassignSpace(person)}>
-                                                                    <PersonRemoveIcon fontSize="small" />
+                                                                <IconButton size="medium" color="warning" onClick={() => onUnassignSpace(person)}>
+                                                                    <PersonRemoveIcon />
                                                                 </IconButton>
                                                             </Tooltip>
                                                         )}
                                                         <Tooltip title={t('common.edit')}>
-                                                            <IconButton size="small" color="primary" onClick={() => onEdit(person)}>
-                                                                <EditIcon fontSize="small" />
+                                                            <IconButton size="medium" color="primary" onClick={() => onEdit(person)}>
+                                                                <EditIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                         <Tooltip title={t('common.delete')}>
-                                                            <IconButton size="small" color="error" onClick={() => onDelete(person.id)}>
-                                                                <DeleteIcon fontSize="small" />
+                                                            <IconButton size="medium" color="error" onClick={() => onDelete(person.id)}>
+                                                                <DeleteIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                     </Stack>

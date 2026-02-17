@@ -17,7 +17,6 @@ import {
     hasStoreRole,
     hasCompanyRole,
     canAccessFeature,
-    isFeatureEnabled,
     getEffectiveEnabledFeatures,
     getAccessibleCompanies,
     getAccessibleStores,

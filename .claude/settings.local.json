@@ -40,7 +40,8 @@
       "Bash(npx vite build)",
       "Bash(find:*)",
       "Bash(npx vitest:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

@@ -39,6 +39,7 @@ import {
     type Company,
     type CompanyStore
 } from '@shared/infrastructure/services/companyService';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 // Lazy load store dialog - using default export
 const StoreDialog = lazy(() => import('./StoreDialog'));
@@ -135,6 +136,8 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
         setStoreDialogOpen(false);
         setSelectedStore(null);
         fetchStores();
+        // Refresh auth to pick up updated effectiveFeatures for nav tabs
+        useAuthStore.getState().validateSession();
     };
 
     // Format date
