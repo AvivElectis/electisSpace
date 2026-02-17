@@ -1210,6 +1210,7 @@
         "search": "חפש תגיות או מוצרים...",
         "filterLinkedOnly": "הצג מקושרים בלבד",
         "totalCount": "{{count}} תגיות",
+        "totalCountShort": "תגיות",
         "noLabels": "לא נמצאו תגיות",
         "notLinked": "לא מקושר",
         "table": {

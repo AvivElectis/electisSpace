@@ -20,7 +20,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     peopleEnabled: true,
     conferenceEnabled: true,
     simpleConferenceMode: false,
-    labelsEnabled: true,
+    labelsEnabled: false,
 };
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
