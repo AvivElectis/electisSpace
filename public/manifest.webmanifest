@@ -1,0 +1,23 @@
+{
+  "name": "electis Space",
+  "short_name": "electisSpace",
+  "description": "ESL Management System - electis Space",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "logos/AppIcon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
