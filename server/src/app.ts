@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -126,6 +127,24 @@ apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
 apiRouter.use('/health', healthRoutes);  // Also mount health inside API for proxy access
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
+
+// ======================
+// Static Frontend (production only)
+// ======================
+if (!config.isDev) {
+    const publicDir = path.resolve('public');
+    app.use(express.static(publicDir, {
+        maxAge: '1y',
+        immutable: true,
+        index: false,
+    }));
+    // SPA fallback: serve index.html for any unmatched GET
+    app.get('*', (_req, res) => {
+        res.sendFile(path.join(publicDir, 'index.html'), {
+            headers: { 'Cache-Control': 'no-cache' },
+        });
+    });
+}
 
 // ======================
 // Error Handling
