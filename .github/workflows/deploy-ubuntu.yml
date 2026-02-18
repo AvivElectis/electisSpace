@@ -24,7 +24,7 @@ jobs:
           envs: GH_PAT
           script: |
             set -e
-            cd ~/electisSpace
+            cd /opt/electisSpace
 
             echo "=== Pulling latest code ==="
             git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/AvivElectis/electisSpace.git"
