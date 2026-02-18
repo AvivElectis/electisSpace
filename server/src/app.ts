@@ -44,6 +44,21 @@ app.set('trust proxy', 1);
 app.use(requestIdMiddleware);
 
 // ======================
+// Service Worker (before helmet — SW CSP is locked at install time,
+// restrictive CSP breaks cross-origin font loading inside the SW context)
+// ======================
+if (!config.isDev) {
+    const swPath = path.resolve('public/sw.js');
+    if (fs.existsSync(swPath)) {
+        app.get('/sw.js', (_req, res) => {
+            res.sendFile(swPath, {
+                headers: { 'Cache-Control': 'no-cache', 'Content-Type': 'application/javascript' },
+            });
+        });
+    }
+}
+
+// ======================
 // Security Middleware
 // ======================
 app.use(helmet({

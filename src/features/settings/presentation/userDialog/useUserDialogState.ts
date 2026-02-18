@@ -179,7 +179,10 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
     // Initialize form when dialog opens or user changes (non-profile mode)
     useEffect(() => {
         if (open && !profileMode) {
-            const userToUse = fetchedUserData || user;
+            // Edit mode: wait for fetchedUserData (correct nested shape) before initializing
+            if (user && !fetchedUserData) return;
+
+            const userToUse = fetchedUserData;
             if (userToUse) {
                 setEmail(userToUse.email);
                 setFirstName(userToUse.firstName || '');
