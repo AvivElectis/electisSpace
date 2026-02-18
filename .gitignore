@@ -32,6 +32,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Deploy directory (env secrets — copy manually to server)
+deploy/*
+!deploy/server.env.example
+!deploy/DEPLOYMENT.md
+
 # Test credentials (contain secrets - never commit)
 TEST_CREDENTIALS.txt
 
