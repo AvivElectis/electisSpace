@@ -241,11 +241,10 @@ export class AIMSGateway {
      * Pull articles from AIMS for a store
      */
     async pullArticles(storeId: string): Promise<AimsArticle[]> {
-        const { token, config } = await this.getTokenForStore(storeId);
         const PAGE_SIZE = 100;
         const MAX_PAGES = 50; // Safety limit to prevent infinite loops
 
-        try {
+        const fetchAllPages = async (config: SolumConfig, token: string): Promise<AimsArticle[]> => {
             const allArticles: AimsArticle[] = [];
             let page = 0;
 
@@ -257,15 +256,24 @@ export class AIMSGateway {
                 page++;
             }
 
+            console.log(`[AIMS Gateway] Pulled ${allArticles.length} articles from AIMS for store ${storeId} (${page + 1} pages)`);
             return allArticles;
+        };
+
+        const { token, config } = await this.getTokenForStore(storeId);
+
+        try {
+            return await fetchAllPages(config, token);
         } catch (error: any) {
-            // If authentication error, invalidate cache and retry once
-            if (error.message?.includes('401') || error.message?.includes('403')) {
+            // If authentication error, invalidate cache and retry full pagination
+            const msg = error.message || '';
+            const status = error.response?.status;
+            if (status === 401 || status === 403 || msg.includes('401') || msg.includes('403')) {
                 const storeConfig = await this.getStoreConfig(storeId);
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchArticles(config, newToken);
+                    return await fetchAllPages(config, newToken);
                 }
             }
             throw error;
