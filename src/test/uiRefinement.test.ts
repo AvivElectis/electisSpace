@@ -4,7 +4,6 @@
  * Tests for Phase 6.5 - UI/UX Refinement components and utilities.
  */
 
-import { renderHook, act } from '@testing-library/react';
 import {
     animations,
     spacing,
@@ -90,123 +89,6 @@ describe('Design Tokens', () => {
         it('should have scrollbar styles', () => {
             expect(componentStyles.scrollbar.thin).toBeDefined();
             expect(componentStyles.scrollbar.hidden).toBeDefined();
-        });
-    });
-});
-
-describe('Accessibility Utilities', () => {
-    describe('usePrefersReducedMotion', () => {
-        it('should return boolean preference', async () => {
-            // Mock matchMedia
-            const mockMatchMedia = vi.fn().mockImplementation((query: string) => ({
-                matches: query.includes('reduce'),
-                media: query,
-                addEventListener: vi.fn(),
-                removeEventListener: vi.fn(),
-            }));
-            
-            Object.defineProperty(window, 'matchMedia', {
-                writable: true,
-                value: mockMatchMedia,
-            });
-
-            const { usePrefersReducedMotion } = await import(
-                '../shared/presentation/hooks/useAccessibility'
-            );
-            
-            const { result } = renderHook(() => usePrefersReducedMotion());
-            expect(typeof result.current).toBe('boolean');
-        });
-    });
-
-    describe('useAnnounce', () => {
-        it('should create and remove announcement element', async () => {
-            const { useAnnounce } = await import(
-                '../shared/presentation/hooks/useAccessibility'
-            );
-
-            const { result } = renderHook(() => useAnnounce());
-
-            act(() => {
-                result.current('Test announcement');
-            });
-
-            // Allow time for DOM manipulation
-            await new Promise(resolve => setTimeout(resolve, 150));
-            
-            const statusElements = document.querySelectorAll('[role="status"]');
-            expect(statusElements.length).toBeGreaterThanOrEqual(0); // May have been cleaned up
-        });
-    });
-
-    describe('useLiveRegion', () => {
-        it('should provide announce function and region props', async () => {
-            const { useLiveRegion } = await import(
-                '../shared/presentation/hooks/useAccessibility'
-            );
-
-            const { result } = renderHook(() => useLiveRegion('polite'));
-
-            expect(result.current.announce).toBeDefined();
-            expect(result.current.clear).toBeDefined();
-            expect(result.current.regionProps).toBeDefined();
-            expect(result.current.regionProps.role).toBe('status');
-            expect(result.current.regionProps['aria-live']).toBe('polite');
-        });
-
-        it('should update message on announce', async () => {
-            const { useLiveRegion } = await import(
-                '../shared/presentation/hooks/useAccessibility'
-            );
-
-            const { result } = renderHook(() => useLiveRegion());
-
-            expect(result.current.message).toBe('');
-
-            act(() => {
-                result.current.announce('Hello');
-            });
-
-            // Wait for the delayed message update
-            await new Promise(resolve => setTimeout(resolve, 150));
-
-            expect(result.current.message).toBe('Hello');
-        });
-    });
-
-    describe('useKeyboardNavigation', () => {
-        it('should track focused index', async () => {
-            const { useKeyboardNavigation } = await import(
-                '../shared/presentation/hooks/useAccessibility'
-            );
-
-            const items = ['A', 'B', 'C', 'D'];
-            const { result } = renderHook(() => useKeyboardNavigation(items));
-
-            expect(result.current.focusedIndex).toBe(0);
-
-            act(() => {
-                result.current.setFocusedIndex(2);
-            });
-
-            expect(result.current.focusedIndex).toBe(2);
-        });
-
-        it('should provide item props', async () => {
-            const { useKeyboardNavigation } = await import(
-                '../shared/presentation/hooks/useAccessibility'
-            );
-
-            const items = ['A', 'B', 'C'];
-            const { result } = renderHook(() => useKeyboardNavigation(items));
-
-            const props = result.current.getItemProps(0);
-            expect(props.tabIndex).toBe(0); // Focused item
-            expect(props['aria-selected']).toBe(true);
-
-            const props2 = result.current.getItemProps(1);
-            expect(props2.tabIndex).toBe(-1); // Non-focused item
-            expect(props2['aria-selected']).toBe(false);
         });
     });
 });

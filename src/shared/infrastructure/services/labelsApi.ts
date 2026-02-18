@@ -7,6 +7,7 @@
 
 import { api } from './apiClient';
 import type { LabelImagesDetail } from '@features/labels/domain/types';
+import type { LabelTypeInfo } from '@features/labels/domain/imageTypes';
 
 // Label types from AIMS
 export interface AIMSLabel {
@@ -23,49 +24,9 @@ export interface AIMSLabel {
     height?: number;
 }
 
-export interface Label {
-    id: string;
-    storeId: string;
-    code: string;
-    macAddress?: string;
-    type: string;
-    width: number;
-    height: number;
-    status: 'AVAILABLE' | 'ASSIGNED' | 'OFFLINE';
-    battery?: number;
-    signal?: number;
-    assignedToId?: string;
-    assignedToType?: 'SPACE' | 'PERSON' | 'CONFERENCE_ROOM';
-    lastSeen?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
 export interface LabelsResponse {
     data: AIMSLabel[];
     total: number;
-}
-
-export interface LabelResponse {
-    data: Label;
-}
-
-export interface LabelImage {
-    imageUrl?: string;
-    base64?: string;
-    page?: number;
-    width?: number;
-    height?: number;
-}
-
-// Query parameters
-export interface ListLabelsParams {
-    storeId: string;
-    page?: number;
-    limit?: number;
-    search?: string;
-    status?: 'AVAILABLE' | 'ASSIGNED' | 'OFFLINE';
-    type?: string;
 }
 
 // API functions
@@ -153,6 +114,56 @@ export const labelsApi = {
         });
         return response.data;
     },
-};
 
-export default labelsApi;
+    /**
+     * Get label type/hardware info (dimensions, color type, etc.)
+     */
+    async getLabelTypeInfo(storeId: string, labelCode: string): Promise<{ data: LabelTypeInfo }> {
+        const response = await api.get<{ data: LabelTypeInfo }>('/labels/type-info', {
+            params: { storeId, labelCode },
+        });
+        return response.data;
+    },
+
+    /**
+     * Get dithered preview of an image from AIMS
+     */
+    async getDitherPreview(
+        storeId: string,
+        labelCode: string,
+        image: string,
+        optAlgType?: number,
+    ): Promise<{ data: any }> {
+        const response = await api.post<{ data: any }>('/labels/dither-preview', {
+            storeId,
+            labelCode,
+            image,
+            optAlgType,
+        });
+        return response.data;
+    },
+
+    /**
+     * Push an image to a label
+     */
+    async pushImage(
+        storeId: string,
+        labelCode: string,
+        image: string,
+        page = 1,
+        frontPage = 1,
+        dithering = true,
+        optAlgType?: number,
+    ): Promise<{ success: boolean; data: any }> {
+        const response = await api.post<{ success: boolean; data: any }>('/labels/image-push', {
+            storeId,
+            labelCode,
+            image,
+            page,
+            frontPage,
+            dithering,
+            optAlgType,
+        });
+        return response.data;
+    },
+};

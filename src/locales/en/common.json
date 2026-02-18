@@ -11,7 +11,6 @@
         "people": "People",
         "conference": "Conference Rooms",
         "labels": "Labels",
-        "imageLabels": "Image Labels",
         "sync": "Synchronization"
     },
     "common": {
@@ -75,7 +74,8 @@
         "firstName": "First Name",
         "lastName": "Last Name",
         "phone": "Phone",
-        "never": "Never"
+        "never": "Never",
+        "refresh": "Refresh"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -180,7 +180,7 @@
     "conference": {
         "title": "Conference Rooms",
         "manage": "Manage meeting rooms and schedules",
-        "addRoom": "Add Room",
+        "addRoom": "Add Conference Room",
         "editRoom": "Edit Room",
         "deleteRoom": "Delete Room",
         "roomName": "Room Name",
@@ -693,7 +693,10 @@
             "activeLabel": "Store is active",
             "saveError": "Failed to save store",
             "overrideCompanyFeatures": "Override Company Features",
-            "inheritingFromCompany": "Inheriting features from company defaults"
+            "inheritingFromCompany": "Inheriting features from company defaults",
+            "overrideLogos": "Override Company Logos",
+            "storeLogosInfo": "Upload logos specific to this store. These override company-level logos.",
+            "logo": "Logo"
         }
     },
     "errors": {
@@ -1194,6 +1197,7 @@
         "linkNew": "Link Label",
         "search": "Search labels or articles...",
         "filterLinkedOnly": "Show linked only",
+        "showImagePreviews": "Show image previews",
         "totalCount": "{{count}} labels",
         "totalCountShort": "labels",
         "noLabels": "No labels found",
@@ -1221,16 +1225,21 @@
             "activePage": "Active Page",
             "current": "Current Images",
             "previous": "Previous Images",
-            "dualSided": "Dual-Sided"
+            "dualSided": "Dual-Sided",
+            "altLabel": "Label {{code}}",
+            "altPage": "Page {{index}}"
         },
         "link": {
             "title": "Link Label to Article",
             "labelCode": "Label Code",
             "labelCodeHelp": "Enter label code or scan barcode",
+            "labelCodeExample": "e.g., 03704160B297",
             "articleId": "Article ID (Product)",
             "articleIdHelp": "Enter article/product ID or scan barcode",
+            "articleIdExample": "e.g., SPACE-001",
             "templateName": "Template Name (Optional)",
             "templateNameHelp": "Leave empty to use default template",
+            "templateNameExample": "e.g., DEFAULT",
             "linkButton": "Link Label",
             "button": "Link",
             "labelRequired": "Label code is required",
@@ -1258,7 +1267,11 @@
             "manualInstructions": "Enter the code manually",
             "scan": "Scan",
             "scanLabel": "Scan Label Code",
-            "scanArticle": "Scan Article ID"
+            "scanArticle": "Scan Article ID",
+            "ariaInputType": "scan input type",
+            "ariaExternalScanner": "external scanner",
+            "ariaCamera": "camera",
+            "ariaManualInput": "manual input"
         }
     },
     "imageLabels": {
@@ -1289,7 +1302,9 @@
             "pushButton": "Push to Label",
             "pushSuccess": "Image pushed to label successfully!",
             "scanLabel": "Scan Label Code",
-            "acceptedFormats": "PNG, JPEG, BMP"
+            "acceptedFormats": "PNG, JPEG, BMP",
+            "altDitheredPreview": "Dithered preview",
+            "altResizedPreview": "Resized preview"
         }
     }
 }

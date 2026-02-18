@@ -132,5 +132,3 @@ export const conferenceApi = {
         return response.data;
     },
 };
-
-export default conferenceApi;

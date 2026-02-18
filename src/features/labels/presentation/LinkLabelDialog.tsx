@@ -13,6 +13,7 @@ import {
     Autocomplete,
     CircularProgress,
     useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import {
     QrCodeScanner as ScanIcon,
@@ -51,6 +52,7 @@ export function LinkLabelDialog({
 }: LinkLabelDialogProps) {
     const { t } = useTranslation();
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isRtl = theme.direction === 'rtl';
     const { activeStoreId } = useAuthStore();
     
@@ -150,7 +152,7 @@ export function LinkLabelDialog({
 
     return (
         <>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography variant="h6">
@@ -176,7 +178,7 @@ export function LinkLabelDialog({
                                 label={t('labels.link.labelCode', 'Label Code')}
                                 value={labelCode}
                                 onChange={(e) => setLabelCode(e.target.value)}
-                                placeholder="e.g., 03704160B297"
+                                placeholder={t('labels.link.labelCodeExample', 'e.g., 03704160B297')}
                                 fullWidth
                                 required
                                 disabled={isSubmitting}
@@ -217,7 +219,7 @@ export function LinkLabelDialog({
                                     <TextField
                                         {...params}
                                         label={t('labels.link.articleId', 'Article ID (Product)')}
-                                        placeholder="e.g., SPACE-001"
+                                        placeholder={t('labels.link.articleIdExample', 'e.g., SPACE-001')}
                                         required
                                         InputProps={{
                                             ...params.InputProps,
@@ -266,7 +268,7 @@ export function LinkLabelDialog({
                             label={t('labels.link.templateName', 'Template Name (Optional)')}
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
-                            placeholder="e.g., DEFAULT"
+                            placeholder={t('labels.link.templateNameExample', 'e.g., DEFAULT')}
                             fullWidth
                             disabled={isSubmitting}
                             helperText={t('labels.link.templateNameHelp', 'Leave empty to use default template')}

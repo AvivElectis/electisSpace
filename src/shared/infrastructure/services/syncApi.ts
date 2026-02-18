@@ -172,5 +172,3 @@ export const syncApi = {
         await api.post('/sync/disconnect', { storeId });
     },
 };
-
-export default syncApi;

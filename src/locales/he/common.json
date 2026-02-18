@@ -11,7 +11,6 @@
         "people": "אנשים",
         "conference": "חדרי ישיבות",
         "labels": "תגיות",
-        "imageLabels": "שיוך תמונה לתגית",
         "sync": "סינכרון"
     },
     "common": {
@@ -78,7 +77,8 @@
         "firstName": "שם פרטי",
         "lastName": "שם משפחה",
         "phone": "טלפון",
-        "never": "אף פעם"
+        "never": "אף פעם",
+        "refresh": "רענן"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -130,7 +130,7 @@
         "linkLabel": "קשר תגית",
         "addSpace": "הוסף חלל",
         "addPerson": "הוסף אדם",
-        "addRoom": "הוסף חדר",
+        "addRoom": "הוסף חדר דיונים",
         "syncNow": "סנכרן כעת",
         "applicationInfo": "מידע על האפליקציה",
         "spaceType": "סוג חלל",
@@ -186,7 +186,7 @@
     "conference": {
         "title": "חדרי ישיבות",
         "manage": "נהל חדרי פגישות ולוחות זמנים",
-        "addRoom": "הוסף חדר",
+        "addRoom": "הוסף חדר דיונים",
         "editRoom": "ערוך חדר",
         "deleteRoom": "מחק חדר",
         "roomName": "שם חדר",
@@ -704,7 +704,10 @@
             "activeLabel": "החנות פעילה",
             "saveError": "שמירת החנות נכשלה",
             "overrideCompanyFeatures": "דריסת תכונות החברה",
-            "inheritingFromCompany": "יורש תכונות מברירות המחדל של החברה"
+            "inheritingFromCompany": "יורש תכונות מברירות המחדל של החברה",
+            "overrideLogos": "דריסת לוגואים של החברה",
+            "storeLogosInfo": "העלאת לוגואים ייחודיים לסניף זה. אלו ידרסו את לוגואי החברה.",
+            "logo": "לוגו"
         }
     },
     "errors": {
@@ -1209,6 +1212,7 @@
         "linkNew": "קשר תגית",
         "search": "חפש תגיות או מוצרים...",
         "filterLinkedOnly": "הצג מקושרים בלבד",
+        "showImagePreviews": "הצג תצוגה מקדימה של תמונות",
         "totalCount": "{{count}} תגיות",
         "totalCountShort": "תגיות",
         "noLabels": "לא נמצאו תגיות",
@@ -1236,16 +1240,21 @@
             "activePage": "עמוד פעיל",
             "current": "תמונות נוכחיות",
             "previous": "תמונות קודמות",
-            "dualSided": "דו-צדדי"
+            "dualSided": "דו-צדדי",
+            "altLabel": "תגית {{code}}",
+            "altPage": "עמוד {{index}}"
         },
         "link": {
             "title": "קשר תגית למוצר",
             "labelCode": "קוד תגית",
             "labelCodeHelp": "הזן קוד תגית או סרוק ברקוד",
+            "labelCodeExample": "לדוגמה, 03704160B297",
             "articleId": "מזהה מוצר",
             "articleIdHelp": "הזן מזהה מוצר או סרוק ברקוד",
+            "articleIdExample": "לדוגמה, SPACE-001",
             "templateName": "שם תבנית (אופציונלי)",
             "templateNameHelp": "השאר ריק לשימוש בתבנית ברירת מחדל",
+            "templateNameExample": "לדוגמה, DEFAULT",
             "linkButton": "קשר תגית",
             "button": "קשר",
             "labelRequired": "קוד תגית הוא שדה חובה",
@@ -1273,7 +1282,11 @@
             "manualInstructions": "הזן את הקוד ידנית",
             "scan": "סרוק",
             "scanLabel": "סרוק קוד תגית",
-            "scanArticle": "סרוק מזהה מוצר"
+            "scanArticle": "סרוק מזהה מוצר",
+            "ariaInputType": "סוג קלט סריקה",
+            "ariaExternalScanner": "סורק חיצוני",
+            "ariaCamera": "מצלמה",
+            "ariaManualInput": "קלט ידני"
         }
     },
     "imageLabels": {
@@ -1304,7 +1317,9 @@
             "pushButton": "שלח לתגית",
             "pushSuccess": "התמונה נשלחה לתגית בהצלחה!",
             "scanLabel": "סרוק קוד תגית",
-            "acceptedFormats": "PNG, JPEG, BMP"
+            "acceptedFormats": "PNG, JPEG, BMP",
+            "altDitheredPreview": "תצוגה מקדימה מעובדת",
+            "altResizedPreview": "תצוגה מקדימה מוקטנת"
         }
     }
 }

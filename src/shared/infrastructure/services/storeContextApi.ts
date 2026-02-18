@@ -90,5 +90,3 @@ export const storeContextApi = {
         return company?.stores.find(s => s.id === context.activeStoreId) || null;
     },
 };
-
-export default storeContextApi;
