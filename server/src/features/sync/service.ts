@@ -23,11 +23,16 @@ import type { Prisma } from '@prisma/client';
 // Helpers
 // ======================
 
+const isPlatformAdmin = (user: SyncUserContext): boolean =>
+    user.globalRole === 'PLATFORM_ADMIN';
+
 const getUserStoreIds = (user: SyncUserContext): string[] => {
     return user.stores?.map(s => s.id) || [];
 };
 
-const validateStoreAccess = (storeId: string, storeIds: string[]): void => {
+const validateStoreAccess = (storeId: string, user: SyncUserContext): void => {
+    if (isPlatformAdmin(user)) return; // Platform admins can access any store
+    const storeIds = getUserStoreIds(user);
     if (!storeIds.includes(storeId)) {
         throw new Error('FORBIDDEN');
     }
@@ -42,11 +47,9 @@ export const syncService = {
      * Get sync status
      */
     async getStatus(user: SyncUserContext, queryStoreId?: string): Promise<SyncStatusResponse> {
-        const storeIds = getUserStoreIds(user);
-        
-        let targetStoreIds = storeIds;
+        let targetStoreIds = getUserStoreIds(user);
         if (queryStoreId) {
-            validateStoreAccess(queryStoreId, storeIds);
+            validateStoreAccess(queryStoreId, user);
             targetStoreIds = [queryStoreId];
         }
 
@@ -76,8 +79,7 @@ export const syncService = {
      * Trigger sync (legacy endpoint)
      */
     async triggerSync(input: TriggerSyncInput, user: SyncUserContext): Promise<TriggerSyncResponse> {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(input.storeId, storeIds);
+        validateStoreAccess(input.storeId, user);
 
         // Check store exists and has AIMS config
         const storeConfig = await aimsGateway.getStoreConfig(input.storeId);
@@ -144,10 +146,7 @@ export const syncService = {
 
         // Validate user has access to the store this job belongs to
         if (user) {
-            const storeIds = getUserStoreIds(user);
-            if (storeIds.length > 0 && !storeIds.includes(job.storeId)) {
-                throw new Error('FORBIDDEN');
-            }
+            validateStoreAccess(job.storeId, user);
         }
 
         return {
@@ -165,12 +164,11 @@ export const syncService = {
      * List queue items
      */
     async listQueue(user: SyncUserContext, queryStoreId?: string, status?: string) {
-        const storeIds = getUserStoreIds(user);
-        
-        if (queryStoreId && !storeIds.includes(queryStoreId)) {
-            throw new Error('FORBIDDEN');
+        if (queryStoreId) {
+            validateStoreAccess(queryStoreId, user);
         }
 
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
         return syncRepository.listQueueItems(storeIds, queryStoreId, status);
     },
 
@@ -178,8 +176,8 @@ export const syncService = {
      * Retry failed item
      */
     async retryItem(id: string, user: SyncUserContext): Promise<{ message: string; error?: string }> {
-        const storeIds = getUserStoreIds(user);
-        
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
         const item = await syncRepository.getFailedItem(id, storeIds);
         if (!item) {
             throw new Error('NOT_FOUND');
@@ -197,8 +195,7 @@ export const syncService = {
      * Pull from AIMS
      */
     async pullFromAims(storeId: string, user: SyncUserContext): Promise<PullSyncResponse> {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(storeId, storeIds);
+        validateStoreAccess(storeId, user);
 
         const store = await syncRepository.getStore(storeId);
         if (!store) {
@@ -279,8 +276,7 @@ export const syncService = {
      * Push to AIMS
      */
     async pushToAims(storeId: string, user: SyncUserContext): Promise<PushSyncResponse> {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(storeId, storeIds);
+        validateStoreAccess(storeId, user);
 
         const store = await syncRepository.getStore(storeId);
         if (!store) {
@@ -315,8 +311,7 @@ export const syncService = {
      * Get store sync status
      */
     async getStoreStatus(storeId: string, user: SyncUserContext): Promise<StoreSyncStatusResponse> {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(storeId, storeIds);
+        validateStoreAccess(storeId, user);
 
         const store = await syncRepository.getStore(storeId);
         if (!store) {
@@ -352,8 +347,7 @@ export const syncService = {
      * Retry specific failed item for store
      */
     async retryStoreItem(storeId: string, itemId: string, user: SyncUserContext): Promise<{ message: string; error?: string }> {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(storeId, storeIds);
+        validateStoreAccess(storeId, user);
 
         const item = await syncRepository.getFailedItemForStore(itemId, storeId);
         if (!item) {

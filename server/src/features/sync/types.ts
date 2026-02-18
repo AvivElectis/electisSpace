@@ -110,5 +110,6 @@ export interface StoreSyncStatusResponse {
 
 export interface SyncUserContext {
     id: string;
+    globalRole?: string | null;
     stores?: Array<{ id: string }>;
 }

@@ -87,12 +87,12 @@ export const syncRepository = {
     /**
      * List queue items
      */
-    async listQueueItems(storeIds: string[], storeId?: string, status?: string) {
+    async listQueueItems(storeIds: string[] | undefined, storeId?: string, status?: string) {
         const whereClause: any = {};
-        
+
         if (storeId) {
             whereClause.storeId = storeId;
-        } else {
+        } else if (storeIds) {
             whereClause.storeId = { in: storeIds };
         }
         
@@ -113,14 +113,12 @@ export const syncRepository = {
     /**
      * Get failed item by ID
      */
-    async getFailedItem(id: string, storeIds: string[]) {
-        return prisma.syncQueueItem.findFirst({
-            where: {
-                id,
-                storeId: { in: storeIds },
-                status: 'FAILED',
-            },
-        });
+    async getFailedItem(id: string, storeIds: string[] | undefined) {
+        const where: any = { id, status: 'FAILED' };
+        if (storeIds) {
+            where.storeId = { in: storeIds };
+        }
+        return prisma.syncQueueItem.findFirst({ where });
     },
 
     /**
