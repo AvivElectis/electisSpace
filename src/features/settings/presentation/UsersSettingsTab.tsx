@@ -160,6 +160,7 @@ export function UsersSettingsTab() {
         switch (role) {
             case 'PLATFORM_ADMIN': return 'secondary';
             case 'COMPANY_ADMIN': return 'primary';
+            case 'VIEWER': return 'default';
             case 'STORE_ADMIN': return 'error';
             case 'STORE_MANAGER': return 'warning';
             case 'STORE_EMPLOYEE': return 'info';
@@ -268,14 +269,17 @@ export function UsersSettingsTab() {
                                 </TableRow>
                             ) : (
                                 users.map((user) => {
-                                    // Compute display role from highest available: globalRole > companyRole > storeRole
+                                    // Compute display role: globalRole > COMPANY_ADMIN > storeRole > companyRole > fallback
                                     const firstStore = user.stores?.[0];
                                     const firstCompany = user.companies?.[0];
+                                    const companyRole = firstCompany?.role;
                                     const userRole = user.globalRole
-                                        || (firstCompany?.role === 'COMPANY_ADMIN' ? 'COMPANY_ADMIN' : null)
+                                        || (companyRole === 'COMPANY_ADMIN' ? 'COMPANY_ADMIN' : null)
                                         || firstStore?.role
+                                        || companyRole // company VIEWER (no stores)
                                         || 'STORE_VIEWER';
-                                    const userFeatures = (user.globalRole === 'PLATFORM_ADMIN' || firstCompany?.role === 'COMPANY_ADMIN')
+                                    const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || companyRole === 'COMPANY_ADMIN';
+                                    const userFeatures = isAdminLevel
                                         ? ['dashboard', 'spaces', 'conference', 'people']
                                         : (firstStore?.features || ['dashboard']);
                                     const canElevate = isPlatformAdmin && 
