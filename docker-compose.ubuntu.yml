@@ -71,7 +71,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=postgresql://postgres:6556@global-postgres:5432/electisspace_prod?schema=public
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@global-postgres:5432/electisspace_prod?schema=public
       - REDIS_URL=redis://redis:6379
     depends_on:
       redis:

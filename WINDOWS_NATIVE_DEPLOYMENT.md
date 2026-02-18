@@ -367,7 +367,7 @@ nginx.exe -s reload
 
 4. **Login:**
    - Email: `admin@electis.co.il`
-   - Password: `Kzvd24nr!!`
+   - Password: *(set in server .env — ADMIN_PASSWORD)*
 
 ---
 
