@@ -2,7 +2,7 @@
 # electisSpace — Production Docker Compose
 # ============================================================
 # Usage:
-#   1. Copy .env.production.example to .env.production and fill in secrets
+#   1. Copy server/.env.example to server/.env.production and fill in secrets
 #   2. docker compose -f docker-compose.prod.yml build
 #   3. docker compose -f docker-compose.prod.yml up -d
 #
@@ -62,7 +62,7 @@ services:
       dockerfile: Dockerfile
     container_name: electisspace-server
     env_file:
-      - .env.production
+      - server/.env.production
     environment:
       - NODE_ENV=production
       - PORT=3000
