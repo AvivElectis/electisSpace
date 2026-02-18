@@ -747,9 +747,9 @@ export function LabelsPage() {
                                         textTransform: 'none',
                                         fontWeight: 700,
                                         px: 4,
-                                        py: 2,
-                                        fontSize: '1.2rem',
-                                        minHeight: 60,
+                                        py: 2.5,
+                                        fontSize: '1.3rem',
+                                        minHeight: 72,
                                         boxShadow: (theme: any) =>
                                             `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
                                     }}
@@ -782,9 +782,9 @@ export function LabelsPage() {
                                         textTransform: 'none',
                                         fontWeight: 700,
                                         px: 4,
-                                        py: 2,
-                                        fontSize: '1.2rem',
-                                        minHeight: 60,
+                                        py: 2.5,
+                                        fontSize: '1.3rem',
+                                        minHeight: 72,
                                         borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
                                         bgcolor: (theme: any) => alpha(theme.palette.background.paper, 0.85),
                                         backdropFilter: 'blur(12px)',
@@ -807,8 +807,9 @@ export function LabelsPage() {
                             sx={{
                                 transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                 transform: speedDialOpen ? 'rotate(45deg)' : 'none',
-                                width: 64,
-                                height: 64,
+                                width: 72,
+                                height: 72,
+                                '& .MuiSvgIcon-root': { fontSize: '2rem' },
                             }}
                         >
                             {speedDialOpen ? <CloseIcon /> : <AddIcon />}
