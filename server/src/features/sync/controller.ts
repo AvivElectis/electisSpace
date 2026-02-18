@@ -17,6 +17,7 @@ import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js
 function getUserContext(req: Request): SyncUserContext {
     return {
         id: req.user!.id,
+        globalRole: req.user?.globalRole,
         stores: req.user?.stores?.map(s => ({ id: s.id })),
     };
 }
@@ -211,7 +212,7 @@ export const syncController = {
 
             const user = getUserContext(req);
             const storeIds = user.stores?.map(s => s.id) || [];
-            if (!storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
+            if (user.globalRole !== 'PLATFORM_ADMIN' && !storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
 
             const start = Date.now();
             const connected = await aimsGateway.checkHealth(storeId);
@@ -234,7 +235,7 @@ export const syncController = {
 
             const user = getUserContext(req);
             const storeIds = user.stores?.map(s => s.id) || [];
-            if (!storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
+            if (user.globalRole !== 'PLATFORM_ADMIN' && !storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
 
             const storeConfig = await aimsGateway.getStoreConfig(storeId);
             if (!storeConfig) {
@@ -261,7 +262,7 @@ export const syncController = {
 
             const user = getUserContext(req);
             const storeIds = user.stores?.map(s => s.id) || [];
-            if (!storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
+            if (user.globalRole !== 'PLATFORM_ADMIN' && !storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
 
             const storeConfig = await aimsGateway.getStoreConfig(storeId);
             if (storeConfig) {
