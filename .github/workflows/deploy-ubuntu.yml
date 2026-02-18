@@ -30,11 +30,15 @@ jobs:
             git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/AvivElectis/electisSpace.git"
             git pull origin main
 
+            echo "=== Cleaning up old client-build container ==="
+            docker rm -f electisspace-client-build 2>/dev/null || true
+            docker volume rm electisspace-frontend-dist 2>/dev/null || true
+
             echo "=== Building containers ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml build
 
             echo "=== Restarting services ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --remove-orphans
 
             echo "=== Running migrations ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml exec -T server npx prisma migrate deploy
