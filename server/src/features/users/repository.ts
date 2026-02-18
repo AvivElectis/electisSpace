@@ -31,6 +31,20 @@ export const userRepository = {
                 isActive: true,
                 lastLogin: true,
                 createdAt: true,
+                userCompanies: {
+                    select: {
+                        companyId: true,
+                        role: true,
+                        allStoresAccess: true,
+                        company: {
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true,
+                            }
+                        }
+                    }
+                },
                 userStores: {
                     select: {
                         id: true,

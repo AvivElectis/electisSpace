@@ -9,6 +9,14 @@ export interface UserStoreAssignment {
     features: string[];
 }
 
+export interface UserCompanyAssignment {
+    id: string;
+    code: string;
+    name: string;
+    role: 'COMPANY_ADMIN' | 'VIEWER';
+    allStoresAccess: boolean;
+}
+
 export interface User {
     id: string;
     email: string;
@@ -18,6 +26,7 @@ export interface User {
     isActive: boolean;
     lastLogin: string | null;
     createdAt: string;
+    companies?: UserCompanyAssignment[];
     stores: UserStoreAssignment[];
 }
 
