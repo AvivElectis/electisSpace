@@ -199,14 +199,18 @@ export const authService = {
     },
 
     /**
-     * Update user's active company/store context
+     * Update user's active company/store context.
+     * The PATCH endpoint only returns { activeCompanyId, activeStoreId },
+     * so we follow up with /auth/me to get the full user object.
      */
     updateContext: async (activeCompanyId?: string | null, activeStoreId?: string | null): Promise<{ user: User }> => {
-        const response = await api.patch<{ user: User }>('/users/me/context', {
+        await api.patch('/users/me/context', {
             activeCompanyId,
             activeStoreId,
         });
-        return response.data;
+        // Fetch full user object after context update
+        const meResponse = await api.get<{ user: User }>('/auth/me');
+        return meResponse.data;
     },
 
     /**
