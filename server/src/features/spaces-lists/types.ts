@@ -35,5 +35,6 @@ export type UpdateSpacesListInput = z.infer<typeof updateSpacesListSchema>;
 
 export interface ListsUserContext {
     id: string;
+    globalRole?: string | null;
     stores?: Array<{ id: string }>;
 }

@@ -13,6 +13,7 @@ import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 function getUserContext(req: Request): ConferenceUserContext {
     return {
         userId: req.user?.id || '',
+        globalRole: req.user?.globalRole,
         storeIds: req.user?.stores?.map((s) => s.id) || [],
     };
 }
