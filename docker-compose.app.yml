@@ -1,8 +1,8 @@
 # ============================================================
 # electisSpace — Application Layer (Ubuntu Production)
 # ============================================================
-# Client build + Server, all on global-network.
-# Server serves both API and static frontend (no nginx).
+# Single server container: builds frontend + API in one image.
+# No separate client container, no shared volume.
 # NPM handles SSL termination and proxies to port 3071.
 #
 # Usage:
@@ -13,28 +13,12 @@
 services:
 
   # ======================
-  # Client — Frontend Build (runs once, exits)
-  # ======================
-  client:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VITE_BASE_PATH: /
-    container_name: electisspace-client-build
-    volumes:
-      - frontend_dist:/output
-    entrypoint: ["sh", "-c", "cp -r /dist/* /output/ && echo 'Frontend files copied to volume'"]
-    networks:
-      - global-network
-
-  # ======================
   # Server — Node.js API + Static Frontend
   # ======================
   server:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     container_name: electisspace-server
     ports:
       - "127.0.0.1:3071:3000"
@@ -45,11 +29,7 @@ services:
       - PORT=3000
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@global-postgres:5432/electisspace_prod?schema=public
       - REDIS_URL=redis://electisspace-redis:6379
-    volumes:
-      - frontend_dist:/app/public:ro
     depends_on:
-      client:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
@@ -61,10 +41,6 @@ services:
     restart: unless-stopped
     networks:
       - global-network
-
-volumes:
-  frontend_dist:
-    name: electisspace-frontend-dist
 
 networks:
   global-network:
