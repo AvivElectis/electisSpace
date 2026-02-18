@@ -47,6 +47,7 @@ export type ToggleMeetingDTO = z.infer<typeof toggleMeetingSchema>;
 
 export interface ConferenceUserContext {
     userId: string;
+    globalRole?: string | null;
     storeIds: string[];
 }
 

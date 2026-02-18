@@ -49,5 +49,6 @@ export type UpdatePeopleListInput = z.infer<typeof updatePeopleListSchema>;
 
 export interface ListsUserContext {
     id: string;
+    globalRole?: string | null;
     stores?: Array<{ id: string }>;
 }

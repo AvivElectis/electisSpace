@@ -1,6 +1,6 @@
 /**
  * Spaces Feature - Service
- * 
+ *
  * @description Business logic for spaces management.
  */
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
@@ -12,15 +12,19 @@ const isPlatformAdmin = (user: SpacesUserContext): boolean => user.globalRole ==
 
 const getUserStoreIds = (user: SpacesUserContext): string[] => user.stores?.map(s => s.id) || [];
 
-const validateStoreAccess = (storeId: string, storeIds: string[], user: SpacesUserContext): void => {
+const getEffectiveStoreIds = (user: SpacesUserContext): string[] | undefined =>
+    isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
+const validateStoreAccess = (storeId: string, user: SpacesUserContext): void => {
     if (isPlatformAdmin(user)) return;
+    const storeIds = getUserStoreIds(user);
     if (!storeIds.includes(storeId)) throw new Error('FORBIDDEN');
 };
 
 export const spacesService = {
     async list(filters: ListSpacesFilters, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
-        if (filters.storeId) validateStoreAccess(filters.storeId, storeIds, user);
+        if (filters.storeId) validateStoreAccess(filters.storeId, user);
+        const storeIds = getEffectiveStoreIds(user);
 
         const skip = (filters.page - 1) * filters.limit;
         const { spaces, total } = await spacesRepository.list(storeIds, filters, skip, filters.limit);
@@ -32,15 +36,14 @@ export const spacesService = {
     },
 
     async getById(id: string, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
+        const storeIds = getEffectiveStoreIds(user);
         const space = await spacesRepository.getById(id, storeIds);
         if (!space) throw new Error('NOT_FOUND');
         return space;
     },
 
     async create(input: CreateSpaceInput, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(input.storeId, storeIds, user);
+        validateStoreAccess(input.storeId, user);
 
         const existing = await spacesRepository.findByExternalId(input.storeId, input.externalId);
         if (existing) throw new Error('CONFLICT');
@@ -61,7 +64,7 @@ export const spacesService = {
     },
 
     async update(id: string, input: UpdateSpaceInput, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
+        const storeIds = getEffectiveStoreIds(user);
         const existing = await spacesRepository.findByIdWithAccess(id, storeIds);
         if (!existing) throw new Error('NOT_FOUND');
 
@@ -80,7 +83,7 @@ export const spacesService = {
     },
 
     async delete(id: string, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
+        const storeIds = getEffectiveStoreIds(user);
         const existing = await spacesRepository.findByIdWithAccess(id, storeIds);
         if (!existing) throw new Error('NOT_FOUND');
 
@@ -89,7 +92,7 @@ export const spacesService = {
     },
 
     async assignLabel(id: string, labelCode: string, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
+        const storeIds = getEffectiveStoreIds(user);
         const existing = await spacesRepository.findByIdWithAccess(id, storeIds);
         if (!existing) throw new Error('NOT_FOUND');
 
@@ -102,8 +105,7 @@ export const spacesService = {
     },
 
     async forceSync(storeId: string | undefined, user: SpacesUserContext) {
-        const storeIds = getUserStoreIds(user);
-        if (storeId && !isPlatformAdmin(user) && !storeIds.includes(storeId)) throw new Error('FORBIDDEN');
+        if (storeId) validateStoreAccess(storeId, user);
         return { message: 'Sync queued - use /sync/stores/:storeId/push to push changes' };
     },
 };

@@ -17,6 +17,7 @@ import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 function getUserContext(req: Request): PeopleUserContext {
     return {
         id: req.user!.id,
+        globalRole: req.user?.globalRole,
         stores: req.user?.stores?.map(s => ({ id: s.id })),
     };
 }

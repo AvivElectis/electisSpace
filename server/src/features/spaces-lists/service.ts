@@ -4,11 +4,16 @@
 import { spacesListsRepository } from './repository.js';
 import type { ListsUserContext, CreateSpacesListInput, UpdateSpacesListInput } from './types.js';
 
+const isPlatformAdmin = (user: ListsUserContext): boolean =>
+    user.globalRole === 'PLATFORM_ADMIN';
+
 const getUserStoreIds = (user: ListsUserContext): string[] => {
     return user.stores?.map(s => s.id) || [];
 };
 
-const validateStoreAccess = (storeId: string, storeIds: string[]): void => {
+const validateStoreAccess = (storeId: string, user: ListsUserContext): void => {
+    if (isPlatformAdmin(user)) return;
+    const storeIds = getUserStoreIds(user);
     if (!storeIds.includes(storeId)) {
         throw new Error('FORBIDDEN');
     }
@@ -16,10 +21,10 @@ const validateStoreAccess = (storeId: string, storeIds: string[]): void => {
 
 export const spacesListsService = {
     async list(user: ListsUserContext, storeId?: string) {
-        const storeIds = getUserStoreIds(user);
         if (storeId) {
-            validateStoreAccess(storeId, storeIds);
+            validateStoreAccess(storeId, user);
         }
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
         const lists = await spacesListsRepository.list(storeIds, storeId);
         return lists.map(l => ({
             ...l,
@@ -33,14 +38,12 @@ export const spacesListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
         return list;
     },
 
     async create(user: ListsUserContext, input: CreateSpacesListInput) {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(input.storeId, storeIds);
+        validateStoreAccess(input.storeId, user);
 
         // Enforce unique name per store
         const existing = await spacesListsRepository.findByStoreAndName(input.storeId, input.name.trim());
@@ -61,8 +64,7 @@ export const spacesListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
 
         if (input.name && input.name.trim() !== list.name) {
             const existing = await spacesListsRepository.findByStoreAndName(list.storeId, input.name.trim());
@@ -87,8 +89,7 @@ export const spacesListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
 
         return spacesListsRepository.delete(id);
     },

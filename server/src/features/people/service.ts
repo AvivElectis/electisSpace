@@ -19,11 +19,16 @@ import type { Prisma } from '@prisma/client';
 // Helpers
 // ======================
 
+const isPlatformAdmin = (user: PeopleUserContext): boolean =>
+    user.globalRole === 'PLATFORM_ADMIN';
+
 const getUserStoreIds = (user: PeopleUserContext): string[] => {
     return user.stores?.map(s => s.id) || [];
 };
 
-const validateStoreAccess = (storeId: string, storeIds: string[]): void => {
+const validateStoreAccess = (storeId: string, user: PeopleUserContext): void => {
+    if (isPlatformAdmin(user)) return;
+    const storeIds = getUserStoreIds(user);
     if (!storeIds.includes(storeId)) {
         throw new Error('FORBIDDEN');
     }
@@ -38,12 +43,11 @@ export const peopleService = {
      * List people
      */
     async list(filters: ListPeopleFilters, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        
         // Validate store access if specific store requested
         if (filters.storeId) {
-            validateStoreAccess(filters.storeId, storeIds);
+            validateStoreAccess(filters.storeId, user);
         }
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
 
         const skip = (filters.page - 1) * filters.limit;
         const { people, total } = await peopleRepository.list(
@@ -73,8 +77,8 @@ export const peopleService = {
      * Get person by ID
      */
     async getById(id: string, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
         const person = await peopleRepository.getById(id, storeIds);
         if (!person) {
             throw new Error('NOT_FOUND');
@@ -87,8 +91,7 @@ export const peopleService = {
      * Create person
      */
     async create(input: CreatePersonInput, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(input.storeId, storeIds);
+        validateStoreAccess(input.storeId, user);
 
         // Generate virtual space ID (POOL-XXXX)
         const count = await peopleRepository.countInStore(input.storeId);
@@ -112,8 +115,8 @@ export const peopleService = {
      * Update person
      */
     async update(id: string, input: UpdatePersonInput, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
         const existing = await peopleRepository.findByIdWithAccess(id, storeIds);
         if (!existing) {
             throw new Error('NOT_FOUND');
@@ -138,8 +141,8 @@ export const peopleService = {
      * Delete person
      */
     async delete(id: string, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
         const existing = await peopleRepository.findByIdWithAccess(id, storeIds);
         if (!existing) {
             throw new Error('NOT_FOUND');
@@ -162,8 +165,8 @@ export const peopleService = {
      * Assign person to space
      */
     async assignToSpace(personId: string, spaceId: string, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
         const person = await peopleRepository.findByIdWithAccess(personId, storeIds);
         if (!person) {
             throw new Error('PERSON_NOT_FOUND');
@@ -210,8 +213,8 @@ export const peopleService = {
      * Unassign person from space
      */
     async unassignFromSpace(personId: string, user: PeopleUserContext) {
-        const storeIds = getUserStoreIds(user);
-        
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
+
         const person = await peopleRepository.findByIdWithAccess(personId, storeIds);
         if (!person) {
             throw new Error('NOT_FOUND');
@@ -243,11 +246,10 @@ export const peopleService = {
      * List people lists
      */
     async listPeopleLists(user: PeopleUserContext, storeId?: string) {
-        const storeIds = getUserStoreIds(user);
-        
         if (storeId) {
-            validateStoreAccess(storeId, storeIds);
+            validateStoreAccess(storeId, user);
         }
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
 
         return peopleRepository.listPeopleLists(storeIds, storeId);
     },
@@ -265,8 +267,7 @@ export const peopleService = {
         previousTotal: number,
         user: PeopleUserContext
     ) {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(storeId, storeIds);
+        validateStoreAccess(storeId, user);
 
         console.log(`[PeopleService] provisionSlots: storeId=${storeId}, total=${totalSpaces}, previous=${previousTotal}`);
 

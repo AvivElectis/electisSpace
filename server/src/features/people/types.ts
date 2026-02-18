@@ -87,5 +87,6 @@ export interface ImportResponse {
 
 export interface PeopleUserContext {
     id: string;
+    globalRole?: string | null;
     stores?: Array<{ id: string }>;
 }

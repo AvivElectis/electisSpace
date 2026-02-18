@@ -15,7 +15,7 @@ export const peopleRepository = {
      * List people with filters
      */
     async list(
-        storeIds: string[],
+        storeIds: string[] | undefined,
         filters: {
             storeId?: string;
             search?: string;
@@ -25,9 +25,12 @@ export const peopleRepository = {
         skip: number,
         take: number
     ) {
-        const where: Prisma.PersonWhereInput = {
-            storeId: filters.storeId ? filters.storeId : { in: storeIds },
-        };
+        const where: Prisma.PersonWhereInput = {};
+        if (filters.storeId) {
+            where.storeId = filters.storeId;
+        } else if (storeIds) {
+            where.storeId = { in: storeIds };
+        }
 
         if (filters.search) {
             // Search in JSON data fields and externalId
@@ -68,12 +71,11 @@ export const peopleRepository = {
     /**
      * Get person by ID with store access check
      */
-    async getById(id: string, storeIds: string[]) {
+    async getById(id: string, storeIds: string[] | undefined) {
+        const where: any = { id };
+        if (storeIds) where.storeId = { in: storeIds };
         return prisma.person.findFirst({
-            where: {
-                id,
-                storeId: { in: storeIds },
-            },
+            where,
             include: {
                 listMemberships: {
                     include: { list: true },
@@ -112,13 +114,10 @@ export const peopleRepository = {
     /**
      * Find person by ID with store access check
      */
-    async findByIdWithAccess(id: string, storeIds: string[]) {
-        return prisma.person.findFirst({
-            where: {
-                id,
-                storeId: { in: storeIds },
-            },
-        });
+    async findByIdWithAccess(id: string, storeIds: string[] | undefined) {
+        const where: any = { id };
+        if (storeIds) where.storeId = { in: storeIds };
+        return prisma.person.findFirst({ where });
     },
 
     /**
@@ -171,11 +170,15 @@ export const peopleRepository = {
     /**
      * List people lists
      */
-    async listPeopleLists(storeIds: string[], storeId?: string) {
+    async listPeopleLists(storeIds: string[] | undefined, storeId?: string) {
+        const where: any = {};
+        if (storeId) {
+            where.storeId = storeId;
+        } else if (storeIds) {
+            where.storeId = { in: storeIds };
+        }
         return prisma.peopleList.findMany({
-            where: {
-                storeId: storeId ? storeId : { in: storeIds },
-            },
+            where,
             include: {
                 _count: { select: { memberships: true } },
                 store: { select: { name: true, code: true } }
