@@ -214,6 +214,7 @@ export function LoginPage() {
                         <form onSubmit={handleSubmit}>
                             <TextField
                                 fullWidth
+                                name="email"
                                 label={t('login.email', 'Email Address')}
                                 type="email"
                                 value={email}
@@ -231,6 +232,7 @@ export function LoginPage() {
                             <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, mb: 4 }}>
                                 <TextField
                                     fullWidth
+                                    name="password"
                                     label={t('login.password', 'Password')}
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
