@@ -123,10 +123,10 @@ app.use('/health', healthRoutes);
 // ======================
 const apiRouter = express.Router();
 
+apiRouter.use('/health', healthRoutes);  // Health check (no auth) — must be before root-mounted routes
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/companies', companyRoutes);
-apiRouter.use('/', storeRoutes); // Store routes mounted at root for /companies/:companyId/stores and /stores/:id
 apiRouter.use('/spaces', spaceRoutes);
 apiRouter.use('/people', peopleRoutes);
 apiRouter.use('/conference', conferenceRoutes);
@@ -136,8 +136,8 @@ apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/labels', labelsRoutes);
 apiRouter.use('/people-lists', peopleListsRoutes);
 apiRouter.use('/spaces-lists', spacesListsRoutes);
+apiRouter.use('/', storeRoutes); // Store routes mounted at root — MUST be after named routes (applies authenticate globally)
 apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
-apiRouter.use('/health', healthRoutes);  // Also mount health inside API for proxy access
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
 
