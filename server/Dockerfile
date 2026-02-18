@@ -1,25 +1,44 @@
-# Build stage
-FROM node:20-alpine AS builder
+# ============================================
+# electisSpace — Combined Build
+# ============================================
+# Multi-stage: builds frontend + server in one image.
+# Build context must be the project root (context: .)
+# ============================================
+
+# Stage 1: Build frontend (React/Vite)
+FROM node:20-alpine AS frontend
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install dependencies
 RUN npm ci
 
-# Generate Prisma client
-RUN npx prisma generate
+COPY src/ ./src/
+COPY public/ ./public/
+COPY index.html tsconfig*.json vite.config.ts ./
 
-# Copy source code
-COPY . .
-
-# Build TypeScript
+ARG VITE_BASE_PATH=/
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 RUN npm run build
 
-# Production stage
+# Stage 2: Build server (TypeScript)
+FROM node:20-alpine AS server-builder
+
+WORKDIR /app
+
+COPY server/package*.json ./
+COPY server/prisma ./prisma/
+
+RUN npm ci
+RUN npx prisma generate
+
+COPY server/prisma.config.ts ./prisma.config.ts
+COPY server/tsconfig.json ./
+COPY server/src ./src/
+
+RUN npm run build
+
+# Stage 3: Production runtime
 FROM node:20-alpine AS production
 
 WORKDIR /app
@@ -32,19 +51,22 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 # Copy package files
-COPY package*.json ./
+COPY server/package*.json ./
 
 # Install production dependencies only
 RUN npm ci --only=production
 
 # Copy Prisma schema, config, and generated client
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=server-builder /app/prisma ./prisma
+COPY --from=server-builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=server-builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=server-builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy built application
-COPY --from=builder /app/dist ./dist
+# Copy built server
+COPY --from=server-builder /app/dist ./dist
+
+# Copy built frontend
+COPY --from=frontend /app/dist ./public
 
 # Change ownership
 RUN chown -R nodejs:nodejs /app
