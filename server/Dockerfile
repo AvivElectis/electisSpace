@@ -1,27 +1,11 @@
 # ============================================
-# electisSpace — Combined Build
+# electisSpace — Server (API Only)
 # ============================================
-# Multi-stage: builds frontend + server in one image.
+# Multi-stage: builds Express API.
 # Build context must be the project root (context: .)
 # ============================================
 
-# Stage 1: Build frontend (React/Vite)
-FROM node:20-alpine AS frontend
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY src/ ./src/
-COPY public/ ./public/
-COPY index.html tsconfig*.json vite.config.ts ./
-
-ARG VITE_BASE_PATH=/
-ENV VITE_BASE_PATH=${VITE_BASE_PATH}
-RUN npm run build
-
-# Stage 2: Build server (TypeScript)
+# Stage 1: Build server (TypeScript)
 FROM node:20-alpine AS server-builder
 
 WORKDIR /app
@@ -38,7 +22,7 @@ COPY server/src ./src/
 
 RUN npm run build
 
-# Stage 3: Production runtime
+# Stage 2: Production runtime
 FROM node:20-alpine AS production
 
 WORKDIR /app
@@ -64,9 +48,6 @@ COPY --from=server-builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy built server
 COPY --from=server-builder /app/dist ./dist
-
-# Copy built frontend
-COPY --from=frontend /app/dist ./public
 
 # Change ownership
 RUN chown -R nodejs:nodejs /app
