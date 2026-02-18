@@ -28,7 +28,7 @@ export function LoginPage() {
     const navigate = useNavigate();
     const theme = useTheme();
     const isRtl = theme.direction === 'rtl';
-    const { login, verify2FA, resendCode, isLoading, error, clearError, pendingEmail } = useAuthStore();
+    const { login, verify2FA, resendCode, isLoading, error, clearError, pendingEmail, isAuthenticated, isInitialized } = useAuthStore();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -36,6 +36,13 @@ export function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
     const autoSubmitRef = useRef(false);
+
+    // Redirect to dashboard if already authenticated
+    useEffect(() => {
+        if (isAuthenticated && isInitialized) {
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, isInitialized, navigate]);
 
     // Auto-submit OTP when 6 digits are entered
     useEffect(() => {

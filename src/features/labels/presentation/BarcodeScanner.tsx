@@ -48,10 +48,13 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
     const [value, setValue] = useState('');
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [isCameraReady, setIsCameraReady] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const scannerInputRef = useRef<HTMLInputElement>(null);
+    const detectorRef = useRef<any>(null);
+    const animFrameRef = useRef<number>(0);
 
     // Buffer for external scanner input (they type fast)
     const scanBufferRef = useRef('');
@@ -84,12 +87,68 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
 
     // Stop camera
     const stopCamera = useCallback(() => {
+        if (animFrameRef.current) {
+            cancelAnimationFrame(animFrameRef.current);
+            animFrameRef.current = 0;
+        }
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
         }
         setIsCameraReady(false);
+        setIsScanning(false);
     }, []);
+
+    // Real-time barcode detection loop using native BarcodeDetector API
+    const startDetection = useCallback(() => {
+        if (!('BarcodeDetector' in window)) {
+            setCameraError(t('labels.scanner.noBarcodeDetector', 'Barcode detection not supported in this browser. Please use Manual mode.'));
+            return;
+        }
+
+        try {
+            detectorRef.current = new (window as any).BarcodeDetector({
+                formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'code_39'],
+            });
+        } catch (e: any) {
+            logger.error('BarcodeScanner', 'BarcodeDetector init failed', { error: e.message });
+            setCameraError(t('labels.scanner.noBarcodeDetector', 'Barcode detection not supported in this browser. Please use Manual mode.'));
+            return;
+        }
+
+        setIsScanning(true);
+        let detecting = false;
+
+        const detect = async () => {
+            if (!videoRef.current || !detectorRef.current || videoRef.current.readyState < 2) {
+                animFrameRef.current = requestAnimationFrame(detect);
+                return;
+            }
+
+            if (detecting) {
+                animFrameRef.current = requestAnimationFrame(detect);
+                return;
+            }
+
+            detecting = true;
+            try {
+                const barcodes = await detectorRef.current.detect(videoRef.current);
+                if (barcodes.length > 0) {
+                    const code = barcodes[0].rawValue;
+                    logger.info('BarcodeScanner', 'Barcode detected', { value: code });
+                    onScan(code);
+                    onClose();
+                    return; // Stop the loop
+                }
+            } catch (e: any) {
+                // Detection can fail on individual frames — just continue
+            }
+            detecting = false;
+            animFrameRef.current = requestAnimationFrame(detect);
+        };
+
+        animFrameRef.current = requestAnimationFrame(detect);
+    }, [onScan, onClose, t]);
 
     // Handle input type change
     const handleInputTypeChange = (_: React.MouseEvent<HTMLElement>, newType: ScanInputType | null) => {
@@ -101,17 +160,6 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
             }
         }
     };
-
-    // Handle camera capture (simplified - in production use a barcode library like zxing-js)
-    const handleCameraCapture = useCallback(async () => {
-        // For now, prompt user to enter code manually after viewing
-        // In production, integrate with @zxing/library for real barcode scanning
-        const code = window.prompt(t('labels.scanner.enterCodeFromCamera', 'Enter the code you see:'));
-        if (code) {
-            onScan(code.trim());
-            onClose();
-        }
-    }, [onScan, onClose, t]);
 
     // Handle external scanner input
     // External scanners act like keyboards and type very fast, usually ending with Enter
@@ -133,7 +181,7 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
     const handleScannerInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
         setValue(newValue);
-        
+
         // Add to buffer
         scanBufferRef.current = newValue;
 
@@ -179,6 +227,13 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
             stopCamera();
         };
     }, [open, inputType, startCamera, stopCamera]);
+
+    // Start barcode detection when camera is ready
+    useEffect(() => {
+        if (isCameraReady && inputType === 'camera' && open) {
+            startDetection();
+        }
+    }, [isCameraReady, inputType, open, startDetection]);
 
     // Cleanup on close
     useEffect(() => {
@@ -281,9 +336,9 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                                     sx={{
                                         position: 'relative',
                                         width: '100%',
-                                        maxWidth: 400,
+                                        ...(!isMobile && { maxWidth: 400 }),
                                         mx: 'auto',
-                                        aspectRatio: '4/3',
+                                        aspectRatio: isMobile ? '3/4' : '4/3',
                                         bgcolor: 'black',
                                         borderRadius: 2,
                                         overflow: 'hidden',
@@ -318,22 +373,22 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                                             top: '50%',
                                             left: '50%',
                                             transform: 'translate(-50%, -50%)',
-                                            width: '60%',
+                                            width: isMobile ? '80%' : '60%',
                                             height: '30%',
                                             border: '2px solid',
-                                            borderColor: 'success.main',
+                                            borderColor: isScanning ? 'success.main' : 'grey.500',
                                             borderRadius: 1,
                                         }}
                                     />
                                 </Box>
-                                <Button
-                                    variant="contained"
-                                    onClick={handleCameraCapture}
-                                    disabled={!isCameraReady}
-                                    sx={{ mt: 2 }}
-                                >
-                                    {t('labels.scanner.capture', 'Capture')}
-                                </Button>
+                                {isScanning && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 2 }}>
+                                        <CircularProgress size={16} />
+                                        <Typography variant="body2" color="text.secondary">
+                                            {t('labels.scanner.scanning', 'Scanning...')}
+                                        </Typography>
+                                    </Box>
+                                )}
                                 <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
                                     {t('labels.scanner.cameraHint', 'Position the barcode in the green area')}
                                 </Typography>

@@ -45,7 +45,19 @@ app.use(requestIdMiddleware);
 // ======================
 // Security Middleware
 // ======================
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+            mediaSrc: ["'self'", "blob:"],
+        },
+    },
+}));
 app.use(
     cors({
         origin: config.corsOrigins,
