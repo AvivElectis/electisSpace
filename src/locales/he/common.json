@@ -3,7 +3,8 @@
         "title": "אלקטיס ספייס",
         "subtitle": "מערכת ניהול ESL",
         "loadingApplication": "טוען את האפליקציה...",
-        "restoringSession": "משחזר את ההפעלה..."
+        "restoringSession": "משחזר את ההפעלה...",
+        "switchingStore": "מחליף חנות..."
     },
     "navigation": {
         "dashboard": "לוח בקרה",

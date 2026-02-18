@@ -35,6 +35,7 @@ function AuthWatchdogWrapper({ children }: { children: React.ReactNode }) {
 function App() {
   const { t, i18n } = useTranslation();
   const isAppReady = useAuthStore((state) => state.isAppReady);
+  const isSwitchingStore = useAuthStore((state) => state.isSwitchingStore);
 
   // Log app initialization
   useEffect(() => {
@@ -68,7 +69,7 @@ function App() {
         <CustomTitleBar />
         <HashRouter>
           <AuthWatchdogWrapper>
-            {!isAppReady ? (
+            {!isAppReady || isSwitchingStore ? (
               <Box
                 display="flex"
                 flexDirection="column"
@@ -79,7 +80,9 @@ function App() {
               >
                 <CircularProgress size={60} />
                 <Typography variant="h6" color="text.secondary">
-                  {t('app.loadingApplication', 'Loading application...')}
+                  {isSwitchingStore
+                    ? t('app.switchingStore', 'Switching store...')
+                    : t('app.loadingApplication', 'Loading application...')}
                 </Typography>
               </Box>
             ) : (

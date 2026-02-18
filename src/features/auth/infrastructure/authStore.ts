@@ -150,6 +150,7 @@ interface AuthState {
     lastValidation: number | null; // Timestamp of last session validation
     isInitialized: boolean; // Whether session restore has been attempted
     isAppReady: boolean; // Whether app is fully initialized (auth + settings loaded)
+    isSwitchingStore: boolean; // True while store/company switch is in progress
 
     // Derived context (from user)
     activeCompanyId: string | null;
@@ -192,6 +193,7 @@ export const useAuthStore = create<AuthState>()(
                 activeStoreId: null,
                 isInitialized: false,
                 isAppReady: false,
+                isSwitchingStore: false,
 
                 // Actions
                 login: async (credentials: AuthCredentials): Promise<boolean> => {
@@ -392,6 +394,7 @@ export const useAuthStore = create<AuthState>()(
 
                 // Context switching actions
                 setActiveCompany: async (companyId: string | null): Promise<void> => {
+                    set({ isSwitchingStore: true }, false, 'setActiveCompany/start');
                     try {
                         const response = await authService.updateContext(companyId, null);
                         const { user } = response;
@@ -418,10 +421,13 @@ export const useAuthStore = create<AuthState>()(
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch company');
                         set({ error: message }, false, 'setActiveCompany/error');
+                    } finally {
+                        set({ isSwitchingStore: false }, false, 'setActiveCompany/done');
                     }
                 },
 
                 setActiveStore: async (storeId: string | null): Promise<void> => {
+                    set({ isSwitchingStore: true }, false, 'setActiveStore/start');
                     try {
                         const response = await authService.updateContext(undefined, storeId);
                         const { user } = response;
@@ -446,28 +452,31 @@ export const useAuthStore = create<AuthState>()(
                             logger.warn('AuthStore', 'Failed to clear data stores on store switch', { error: e instanceof Error ? e.message : String(e) });
                         }
 
-                        // Fetch settings for the new store and auto-connect to SOLUM
-                        if (storeId) {
-                            if (currentCompanyId) {
-                                // Settings must load first so autoConnect doesn't get overwritten
-                                settingsStore.fetchSettingsFromServer(storeId, currentCompanyId)
-                                    .then(() => autoConnectToSolum(storeId))
-                                    .catch((error) => {
-                                        logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error instanceof Error ? error.message : String(error) });
-                                    });
-                            } else {
-                                autoConnectToSolum(storeId).catch((error) => {
-                                    logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error instanceof Error ? error.message : String(error) });
-                                });
+                        // AWAIT settings + SOLUM connect (was fire-and-forget before)
+                        if (storeId && currentCompanyId) {
+                            try {
+                                await settingsStore.fetchSettingsFromServer(storeId, currentCompanyId);
+                                await autoConnectToSolum(storeId);
+                            } catch (error) {
+                                logger.warn('AuthStore', 'Settings/SOLUM load on store switch failed', { error: error instanceof Error ? error.message : String(error) });
+                            }
+                        } else if (storeId) {
+                            try {
+                                await autoConnectToSolum(storeId);
+                            } catch (error) {
+                                logger.warn('AuthStore', 'Auto SOLUM connect on store switch failed', { error: error instanceof Error ? error.message : String(error) });
                             }
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch store');
                         set({ error: message }, false, 'setActiveStore/error');
+                    } finally {
+                        set({ isSwitchingStore: false }, false, 'setActiveStore/done');
                     }
                 },
 
                 setActiveContext: async (companyId: string | null, storeId: string | null): Promise<void> => {
+                    set({ isSwitchingStore: true }, false, 'setActiveContext/start');
                     try {
                         const response = await authService.updateContext(companyId, storeId);
                         const { user } = response;
@@ -492,17 +501,20 @@ export const useAuthStore = create<AuthState>()(
                             logger.warn('AuthStore', 'Failed to clear data stores on context switch', { error: e instanceof Error ? e.message : String(e) });
                         }
 
-                        // Fetch settings first, then auto-connect to SOLUM
+                        // AWAIT settings + SOLUM connect
                         if (storeId && companyId) {
-                            settingsStore.fetchSettingsFromServer(storeId, companyId)
-                                .then(() => autoConnectToSolum(storeId))
-                                .catch((error) => {
-                                    logger.warn('AuthStore', 'Auto SOLUM connect on context switch failed', { error: error instanceof Error ? error.message : String(error) });
-                                });
+                            try {
+                                await settingsStore.fetchSettingsFromServer(storeId, companyId);
+                                await autoConnectToSolum(storeId);
+                            } catch (error) {
+                                logger.warn('AuthStore', 'Settings/SOLUM load on context switch failed', { error: error instanceof Error ? error.message : String(error) });
+                            }
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch context');
                         set({ error: message }, false, 'setActiveContext/error');
+                    } finally {
+                        set({ isSwitchingStore: false }, false, 'setActiveContext/done');
                     }
                 },
 
