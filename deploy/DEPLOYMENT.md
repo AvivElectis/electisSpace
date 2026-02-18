@@ -99,7 +99,19 @@ echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)"
 echo "ENCRYPTION_KEY=$(openssl rand -hex 16)"
 ```
 
-> Note: `DATABASE_URL` and `REDIS_URL` are set in `docker-compose.ubuntu.yml`, not in the env file.
+**Set the PostgreSQL password** (used by docker-compose for DATABASE_URL):
+
+```bash
+export POSTGRES_PASSWORD="your_global_postgres_password"
+```
+
+Or create a `.env` file in the project root:
+
+```bash
+echo "POSTGRES_PASSWORD=your_global_postgres_password" > .env
+```
+
+> Note: `DATABASE_URL` and `REDIS_URL` are set in `docker-compose.ubuntu.yml`, not in the server env file.
 
 ## Step 5: Build and start
 

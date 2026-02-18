@@ -37,6 +37,10 @@ deploy/*
 !deploy/server.env.example
 !deploy/DEPLOYMENT.md
 
+# Database backups (contain data - never commit)
+**/_local_backups/
+*.sql.bak
+
 # Test credentials (contain secrets - never commit)
 TEST_CREDENTIALS.txt
 

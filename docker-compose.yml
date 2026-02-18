@@ -66,7 +66,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - DATABASE_URL=postgresql://postgres:postgres_dev@db:5432/electisspace_dev
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres_dev}@db:5432/electisspace_dev
       - REDIS_URL=redis://redis:6379
     depends_on:
       db:
@@ -91,7 +91,7 @@ services:
     container_name: electisspace-db-dev
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres_dev
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres_dev}
       - POSTGRES_DB=electisspace_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
