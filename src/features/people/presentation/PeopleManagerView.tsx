@@ -533,9 +533,13 @@ export function PeopleManagerView() {
                         bottom: 24,
                         right: 24,
                         zIndex: 1050,
+                        height: 64,
+                        px: 3,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
                     }}
                 >
-                    <AddIcon sx={{ mr: 1 }} />
+                    <AddIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
                     {t('people.addPerson')}
                 </Fab>
             )}

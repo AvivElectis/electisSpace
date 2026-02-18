@@ -718,9 +718,18 @@ export function SpacesManagementView() {
                     color="primary"
                     variant="extended"
                     onClick={handleAdd}
-                    sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1050 }}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        zIndex: 1050,
+                        height: 64,
+                        px: 3,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                    }}
                 >
-                    <AddIcon sx={{ mr: 1 }} />
+                    <AddIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
                     {getLabel('add')}
                 </Fab>
             )}
