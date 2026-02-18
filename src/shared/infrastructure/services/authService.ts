@@ -13,7 +13,6 @@ export interface CompanyFeatures {
     conferenceEnabled: boolean;
     simpleConferenceMode: boolean;
     labelsEnabled: boolean;
-    imageLabelsEnabled: boolean;
 }
 
 export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
@@ -22,7 +21,6 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: false,
-    imageLabelsEnabled: false,
 };
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
@@ -256,5 +254,3 @@ export const authService = {
         refreshToken: tokenManager.getRefreshToken(),
     }),
 };
-
-export default authService;

@@ -135,13 +135,34 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         borderRadius: '10px',
                         padding: '10px 20px',
                         minHeight: '44px',
-                        minWidth: '100px',
-                        marginInline: '8px',
+                        minWidth: '88px',
+                        marginInline: '4px',
                         fontWeight: 500,
                         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                         '&:active': {
                             transform: 'scale(0.97)',
                         },
+                        '@media (max-width: 600px)': {
+                            padding: '8px 14px',
+                            minWidth: '72px',
+                            marginInline: '2px',
+                            fontSize: '0.8125rem',
+                        },
+                    },
+                    sizeSmall: {
+                        padding: '6px 12px',
+                        minHeight: '36px',
+                        minWidth: '64px',
+                        fontSize: '0.8125rem',
+                        '@media (max-width: 600px)': {
+                            minHeight: '40px',
+                            padding: '6px 10px',
+                        },
+                    },
+                    sizeLarge: {
+                        padding: '12px 24px',
+                        minHeight: '48px',
+                        fontSize: '1rem',
                     },
                     startIcon: {
                         paddingInlineEnd: '8px',
@@ -290,6 +311,9 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         borderRadius: '20px',
                         boxShadow: '0px 12px 40px rgba(0, 0, 0, 0.12), 0px 12px 24px rgba(0, 0, 0, 0.08)',
                     },
+                    paperFullScreen: {
+                        borderRadius: 0,
+                    },
                 },
             },
             MuiIconButton: {
@@ -301,6 +325,11 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         },
                         '&:active': {
                             transform: 'scale(0.96)',
+                        },
+                    },
+                    sizeMedium: {
+                        '@media (max-width: 600px)': {
+                            padding: '10px', // Larger touch target on mobile
                         },
                     },
                 },
@@ -336,6 +365,32 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         },
                         '&:hover': {
                             fontWeight: 600,
+                        },
+                        '@media (max-width: 900px)': {
+                            fontSize: '0.875rem',
+                            padding: '10px 8px',
+                            gap: 4,
+                            minHeight: '44px',
+                        },
+                    },
+                },
+            },
+            MuiTablePagination: {
+                styleOverrides: {
+                    root: {
+                        '@media (max-width: 600px)': {
+                            '& .MuiTablePagination-toolbar': {
+                                paddingLeft: 4,
+                                paddingRight: 4,
+                                flexWrap: 'wrap',
+                                justifyContent: 'center',
+                            },
+                            '& .MuiTablePagination-selectLabel': {
+                                display: 'none',
+                            },
+                            '& .MuiTablePagination-displayedRows': {
+                                fontSize: '0.75rem',
+                            },
                         },
                     },
                 },

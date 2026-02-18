@@ -15,6 +15,8 @@ import {
     ImageList,
     ImageListItem,
     ImageListItemBar,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import {
     Image as ImageIcon,
@@ -112,7 +114,7 @@ function ImageGrid({ images }: { images: LabelImage[] }) {
                     >
                         <img
                             src={image.content}
-                            alt={`Page ${image.index}`}
+                            alt={t('labels.images.altPage', 'Page {{index}}', { index: image.index })}
                             loading="lazy"
                             style={{
                                 width: '100%',
@@ -163,6 +165,8 @@ export function LabelImagesDialog({
     error,
 }: LabelImagesDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [tabValue, setTabValue] = useState(0);
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -170,7 +174,7 @@ export function LabelImagesDialog({
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <ImageIcon />

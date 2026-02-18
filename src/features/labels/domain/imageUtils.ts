@@ -3,7 +3,7 @@
  * Canvas-based resize only — dithering is handled server-side by AIMS.
  */
 
-import type { FitMode } from './types';
+import type { FitMode } from './imageTypes';
 
 /**
  * Load an image file into an HTMLImageElement

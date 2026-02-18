@@ -142,5 +142,3 @@ export const spacesApi = {
         return response.data;
     },
 };
-
-export default spacesApi;

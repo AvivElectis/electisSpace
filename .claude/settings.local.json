@@ -41,7 +41,8 @@
       "Bash(find:*)",
       "Bash(npx vitest:*)",
       "Bash(git stash:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(openssl rand:*)"
     ]
   }
 }

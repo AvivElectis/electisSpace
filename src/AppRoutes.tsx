@@ -24,9 +24,6 @@ const PeopleManagerView = lazy(() =>
 const LabelsPage = lazy(() =>
     import('@features/labels/presentation/LabelsPage').then(m => ({ default: m.LabelsPage }))
 );
-const ImageLabelsPage = lazy(() =>
-    import('@features/imageLabels/presentation/ImageLabelsPage').then(m => ({ default: m.ImageLabelsPage }))
-);
 const NotFoundPage = lazy(() =>
     import('@shared/presentation/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
 );
@@ -73,7 +70,6 @@ export function AppRoutes() {
             <Route path="/conference" element={<ProtectedRoute><ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/image-labels" element={<ProtectedRoute><ProtectedFeature feature="imageLabels" fallback={<Navigate to="/" replace />}><SuspenseRoute><ImageLabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );

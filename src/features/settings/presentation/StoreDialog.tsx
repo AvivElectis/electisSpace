@@ -24,10 +24,16 @@ import {
     InputLabel,
     Select,
     MenuItem,
+    Card,
+    CardContent,
+    CardActions,
+    IconButton,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import { useState, useEffect } from 'react';
+import UploadIcon from '@mui/icons-material/Upload';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     companyService,
@@ -35,6 +41,9 @@ import {
     type CreateStoreDto,
     type UpdateStoreDto,
 } from '@shared/infrastructure/services/companyService';
+import { settingsService } from '@shared/infrastructure/services/settingsService';
+import type { LogoConfig } from '../domain/types';
+import { MAX_LOGO_SIZE, ALLOWED_LOGO_FORMATS } from '../domain/types';
 import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
 import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
@@ -93,6 +102,14 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
     const [storeFeatures, setStoreFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
     const [storeSpaceType, setStoreSpaceType] = useState<SpaceType>('office');
 
+    // Store logo overrides
+    const [logoOverrideEnabled, setLogoOverrideEnabled] = useState(false);
+    const [storeLogo1, setStoreLogo1] = useState<string | undefined>(undefined);
+    const [storeLogo2, setStoreLogo2] = useState<string | undefined>(undefined);
+    const [logoError, setLogoError] = useState<string | null>(null);
+    const logoInput1 = useRef<HTMLInputElement>(null);
+    const logoInput2 = useRef<HTMLInputElement>(null);
+
     // Initialize form when dialog opens
     useEffect(() => {
         if (open) {
@@ -114,6 +131,24 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
                     setStoreSpaceType('office');
                 }
+                // Fetch store settings to check for logo overrides
+                settingsService.getStoreSettings(store.id).then((res) => {
+                    const settings = res.settings as Record<string, unknown>;
+                    const override = settings?.storeLogoOverride as LogoConfig | undefined;
+                    if (override && (override.logo1 || override.logo2)) {
+                        setLogoOverrideEnabled(true);
+                        setStoreLogo1(override.logo1);
+                        setStoreLogo2(override.logo2);
+                    } else {
+                        setLogoOverrideEnabled(false);
+                        setStoreLogo1(undefined);
+                        setStoreLogo2(undefined);
+                    }
+                }).catch(() => {
+                    setLogoOverrideEnabled(false);
+                    setStoreLogo1(undefined);
+                    setStoreLogo2(undefined);
+                });
             } else {
                 // Create mode
                 setName('');
@@ -125,9 +160,13 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                 setOverrideEnabled(false);
                 setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
                 setStoreSpaceType('office');
+                setLogoOverrideEnabled(false);
+                setStoreLogo1(undefined);
+                setStoreLogo2(undefined);
             }
             setError(null);
             setCodeError(null);
+            setLogoError(null);
         }
     }, [open, store]);
 
@@ -186,6 +225,26 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
         });
     };
 
+    // Handle logo file upload for store override
+    const handleLogoUpload = (logoIndex: 1 | 2, file: File) => {
+        setLogoError(null);
+        if (!ALLOWED_LOGO_FORMATS.includes(file.type)) {
+            setLogoError('Only PNG and JPEG formats are allowed');
+            return;
+        }
+        if (file.size > MAX_LOGO_SIZE) {
+            setLogoError(`File size must be less than ${MAX_LOGO_SIZE / 1024 / 1024}MB`);
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target?.result as string;
+            if (logoIndex === 1) setStoreLogo1(base64);
+            else setStoreLogo2(base64);
+        };
+        reader.readAsDataURL(file);
+    };
+
     // Handle submit
     const handleSubmit = async () => {
         if (!isValid()) return;
@@ -206,6 +265,18 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                 };
                 console.log('[StoreDialog] Updating store:', store.id, updateData);
                 await companyService.updateStore(store.id, updateData);
+
+                // Save logo override to store settings
+                const logoOverride: LogoConfig | undefined = logoOverrideEnabled
+                    ? { ...(storeLogo1 ? { logo1: storeLogo1 } : {}), ...(storeLogo2 ? { logo2: storeLogo2 } : {}) }
+                    : undefined;
+                // Fetch current store settings, then merge storeLogoOverride
+                const current = await settingsService.getStoreSettings(store.id);
+                const currentSettings = (current.settings || {}) as Record<string, unknown>;
+                await settingsService.updateStoreSettings(store.id, {
+                    ...currentSettings,
+                    storeLogoOverride: logoOverride,
+                } as Partial<import('../domain/types').SettingsData>);
             } else {
                 // Create store
                 const createData: CreateStoreDto = {
@@ -234,7 +305,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
         <Dialog 
             open={open} 
             onClose={submitting ? undefined : onClose}
-            maxWidth="xs"
+            maxWidth="sm"
             fullWidth
             PaperProps={{
                 sx: { maxHeight: '90vh' }
@@ -442,10 +513,92 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                         control={<Switch checked={storeFeatures.labelsEnabled} onChange={(e) => handleStoreFeatureToggle('labelsEnabled', e.target.checked)} size="small" />}
                                         label={t('labels.title')}
                                     />
-                                    <FormControlLabel
-                                        control={<Switch checked={storeFeatures.imageLabelsEnabled} onChange={(e) => handleStoreFeatureToggle('imageLabelsEnabled', e.target.checked)} size="small" />}
-                                        label={t('navigation.imageLabels')}
+                                </Box>
+                            )}
+                        </>
+                    )}
+
+                    {/* Logo Override Section (edit mode only) */}
+                    {isEdit && (
+                        <>
+                            <Divider sx={{ my: 1 }} />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={logoOverrideEnabled}
+                                        onChange={(e) => setLogoOverrideEnabled(e.target.checked)}
                                     />
+                                }
+                                label={t('settings.stores.overrideLogos')}
+                            />
+                            {logoOverrideEnabled && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 1 }}>
+                                    <Alert severity="info" sx={{ py: 0.5 }}>
+                                        {t('settings.stores.storeLogosInfo')}
+                                    </Alert>
+                                    {logoError && (
+                                        <Alert severity="error" sx={{ py: 0.5 }} onClose={() => setLogoError(null)}>
+                                            {logoError}
+                                        </Alert>
+                                    )}
+                                    {/* Logo 1 */}
+                                    <Card variant="outlined">
+                                        <CardContent sx={{ pb: 0 }}>
+                                            <Typography variant="subtitle2">{t('settings.stores.logo')} 1</Typography>
+                                            {storeLogo1 ? (
+                                                <Box
+                                                    component="img"
+                                                    src={storeLogo1}
+                                                    alt="Logo 1"
+                                                    sx={{ width: '100%', maxHeight: 120, objectFit: 'contain', bgcolor: 'background.default', borderRadius: 1, p: 1, mt: 1 }}
+                                                />
+                                            ) : (
+                                                <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', borderRadius: 1, border: '2px dashed', borderColor: 'divider', mt: 1 }}>
+                                                    <Typography variant="body2" color="text.secondary">No logo</Typography>
+                                                </Box>
+                                            )}
+                                        </CardContent>
+                                        <CardActions>
+                                            <input ref={logoInput1} type="file" accept={ALLOWED_LOGO_FORMATS.join(',')} style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(1, f); e.target.value = ''; }} />
+                                            <Button size="small" startIcon={<UploadIcon />} onClick={() => logoInput1.current?.click()}>
+                                                {storeLogo1 ? t('common.edit') : t('settings.uploadLogo')}
+                                            </Button>
+                                            {storeLogo1 && (
+                                                <IconButton size="small" color="error" onClick={() => setStoreLogo1(undefined)}>
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            )}
+                                        </CardActions>
+                                    </Card>
+                                    {/* Logo 2 */}
+                                    <Card variant="outlined">
+                                        <CardContent sx={{ pb: 0 }}>
+                                            <Typography variant="subtitle2">{t('settings.stores.logo')} 2</Typography>
+                                            {storeLogo2 ? (
+                                                <Box
+                                                    component="img"
+                                                    src={storeLogo2}
+                                                    alt="Logo 2"
+                                                    sx={{ width: '100%', maxHeight: 120, objectFit: 'contain', bgcolor: 'background.default', borderRadius: 1, p: 1, mt: 1 }}
+                                                />
+                                            ) : (
+                                                <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', borderRadius: 1, border: '2px dashed', borderColor: 'divider', mt: 1 }}>
+                                                    <Typography variant="body2" color="text.secondary">No logo</Typography>
+                                                </Box>
+                                            )}
+                                        </CardContent>
+                                        <CardActions>
+                                            <input ref={logoInput2} type="file" accept={ALLOWED_LOGO_FORMATS.join(',')} style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(2, f); e.target.value = ''; }} />
+                                            <Button size="small" startIcon={<UploadIcon />} onClick={() => logoInput2.current?.click()}>
+                                                {storeLogo2 ? t('common.edit') : t('settings.uploadLogo')}
+                                            </Button>
+                                            {storeLogo2 && (
+                                                <IconButton size="small" color="error" onClick={() => setStoreLogo2(undefined)}>
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            )}
+                                        </CardActions>
+                                    </Card>
                                 </Box>
                             )}
                         </>

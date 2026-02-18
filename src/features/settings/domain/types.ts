@@ -58,6 +58,9 @@ export interface SettingsData {
     // Logo configuration
     logos: LogoConfig;
 
+    // Store-level logo override (overrides company logos when set)
+    storeLogoOverride?: LogoConfig;
+
     // Auto-sync settings
     autoSyncEnabled: boolean;
     autoSyncInterval: number;  // in seconds
