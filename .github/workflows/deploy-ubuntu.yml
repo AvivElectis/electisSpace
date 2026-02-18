@@ -15,15 +15,19 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: GH_PAT
           script: |
             set -e
             cd ~/electisSpace
 
             echo "=== Pulling latest code ==="
+            git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/AvivElectis/electisSpace.git"
             git pull origin main
 
             echo "=== Building containers ==="
