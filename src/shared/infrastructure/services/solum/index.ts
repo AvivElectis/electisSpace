@@ -14,20 +14,18 @@ export {
 } from './authService';
 
 // Article services
-export { 
+export {
     fetchArticles,
-    fetchArticleDetails,
     pushArticles,
     putArticles,
-    deleteArticles 
+    deleteArticles
 } from './articlesService';
 
 // Label services
-export { 
+export {
     getLabels,
     assignLabel,
     updateLabelPage,
-    getLabelDetail 
 } from './labelsService';
 
 // Store services

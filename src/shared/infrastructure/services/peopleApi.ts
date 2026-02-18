@@ -258,5 +258,3 @@ export const peopleApi = {
         },
     },
 };
-
-export default peopleApi;

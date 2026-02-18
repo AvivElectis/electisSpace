@@ -16,6 +16,8 @@ import {
     TableRow,
     Paper,
     LinearProgress,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -34,6 +36,8 @@ interface CSVUploadDialogProps {
  */
 export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const settings = useSettingsStore((state) => state.settings);
     const peopleController = usePeopleController();
 
@@ -156,7 +160,7 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
     const expectedColumns = getExpectedColumns();
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 <Box display="flex" alignItems="center" gap={1}>
                     <UploadFileIcon />

@@ -97,7 +97,7 @@ export const storeService = {
                 peopleCount: s._count.people,
                 conferenceRoomCount: s._count.conferenceRooms,
                 userRole: s.userStores[0]?.role || (allStoresAccess ? 'COMPANY_WIDE_ACCESS' : null),
-                userFeatures: (s.userStores[0]?.features as string[]) || (allStoresAccess ? ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels', 'imageLabels'] : []),
+                userFeatures: (s.userStores[0]?.features as string[]) || (allStoresAccess ? ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels'] : []),
                 createdAt: s.createdAt,
                 updatedAt: s.updatedAt,
             }));

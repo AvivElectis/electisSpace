@@ -12,6 +12,8 @@ import {
     CircularProgress,
     ToggleButton,
     ToggleButtonGroup,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import {
     CameraAlt as CameraIcon,
@@ -40,6 +42,8 @@ interface BarcodeScannerProps {
  */
 export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: BarcodeScannerProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [inputType, setInputType] = useState<ScanInputType>('scanner');
     const [value, setValue] = useState('');
     const [cameraError, setCameraError] = useState<string | null>(null);
@@ -189,7 +193,7 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
     }, [open, stopCamera]);
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="h6">
@@ -208,18 +212,18 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                         value={inputType}
                         exclusive
                         onChange={handleInputTypeChange}
-                        aria-label="scan input type"
+                        aria-label={t('labels.scanner.ariaInputType', 'scan input type')}
                         dir="ltr"
                     >
-                        <ToggleButton value="scanner" aria-label="external scanner" sx={{ gap: 1 }}>
+                        <ToggleButton value="scanner" aria-label={t('labels.scanner.ariaExternalScanner', 'external scanner')} sx={{ gap: 1 }}>
                             <ScannerIcon />
                             {t('labels.scanner.externalScanner', 'Scanner')}
                         </ToggleButton>
-                        <ToggleButton value="camera" aria-label="camera" sx={{ gap: 1 }}>
+                        <ToggleButton value="camera" aria-label={t('labels.scanner.ariaCamera', 'camera')} sx={{ gap: 1 }}>
                             <CameraIcon />
                             {t('labels.scanner.camera', 'Camera')}
                         </ToggleButton>
-                        <ToggleButton value="manual" aria-label="manual input" sx={{ gap: 1 }}>
+                        <ToggleButton value="manual" aria-label={t('labels.scanner.ariaManualInput', 'manual input')} sx={{ gap: 1 }}>
                             <KeyboardIcon />
                             {t('labels.scanner.manual', 'Manual')}
                         </ToggleButton>

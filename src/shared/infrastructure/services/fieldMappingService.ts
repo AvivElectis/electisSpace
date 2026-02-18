@@ -127,5 +127,3 @@ export const fieldMappingService = {
         return response.data;
     },
 };
-
-export default fieldMappingService;

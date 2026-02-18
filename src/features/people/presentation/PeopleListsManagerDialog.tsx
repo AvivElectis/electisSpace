@@ -16,6 +16,8 @@ import {
     Chip,
     CircularProgress,
     Alert,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -38,6 +40,8 @@ interface PeopleListsManagerDialogProps {
  */
 export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const peopleStore = usePeopleStore();
     const activeStoreId = useAuthStore(state => state.activeStoreId);
     const activeListId = usePeopleStore((state) => state.activeListId);
@@ -149,7 +153,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 <Box display="flex" alignItems="center" gap={1}>
                     <ListAltIcon />

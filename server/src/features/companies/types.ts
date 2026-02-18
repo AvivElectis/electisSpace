@@ -32,7 +32,6 @@ export const companyFeaturesSchema = z.object({
     conferenceEnabled: z.boolean(),
     simpleConferenceMode: z.boolean(),
     labelsEnabled: z.boolean(),
-    imageLabelsEnabled: z.boolean(),
 }).refine(
     (data) => !(data.spacesEnabled && data.peopleEnabled),
     { message: 'Spaces and People cannot both be enabled' }

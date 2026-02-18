@@ -318,5 +318,3 @@ export const companyService = {
         return response.data;
     },
 };
-
-export default companyService;

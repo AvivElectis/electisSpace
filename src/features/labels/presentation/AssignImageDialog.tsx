@@ -15,6 +15,8 @@ import {
     CircularProgress,
     Alert,
     Stack,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -23,10 +25,10 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
-import { imageLabelsApi } from '@shared/infrastructure/services/imageLabelsApi';
+import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 import { loadImage, resizeImage, canvasToBase64 } from '../domain/imageUtils';
-import type { LabelTypeInfo, FitMode } from '../domain/types';
-import { BarcodeScanner } from '@features/labels/presentation/BarcodeScanner';
+import type { LabelTypeInfo, FitMode } from '../domain/imageTypes';
+import { BarcodeScanner } from './BarcodeScanner';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface AssignImageDialogProps {
@@ -38,6 +40,8 @@ interface AssignImageDialogProps {
 
 export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }: AssignImageDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { activeStoreId } = useAuthStore();
 
     // State
@@ -88,7 +92,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setDitherPreview(null);
 
         try {
-            const response = await imageLabelsApi.getLabelTypeInfo(activeStoreId, code.trim());
+            const response = await labelsApi.getLabelTypeInfo(activeStoreId, code.trim());
             setTypeInfo(response.data);
         } catch (error: any) {
             logger.error('AssignImageDialog', 'Failed to fetch type info', { error: error.message });
@@ -121,7 +125,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setDitherPreview(null);
 
         try {
-            const response = await imageLabelsApi.getDitherPreview(activeStoreId, code, base64);
+            const response = await labelsApi.getDitherPreview(activeStoreId, code, base64);
             // AIMS returns the dithered image in responseMessage or as a direct image field
             const previewData = response.data?.responseMessage || response.data?.image || response.data;
             if (typeof previewData === 'string') {
@@ -186,7 +190,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setPushSuccess(false);
 
         try {
-            await imageLabelsApi.pushImage(activeStoreId, labelCode.trim(), resizedBase64);
+            await labelsApi.pushImage(activeStoreId, labelCode.trim(), resizedBase64);
             setPushSuccess(true);
             logger.info('AssignImageDialog', 'Image pushed successfully', { labelCode });
             onSuccess?.();
@@ -222,7 +226,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
 
     return (
         <>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography variant="h6">
@@ -394,7 +398,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                                                 <Box
                                                     component="img"
                                                     src={`data:image/png;base64,${ditherPreview}`}
-                                                    alt="Dithered preview"
+                                                    alt={t('imageLabels.dialog.altDitheredPreview', 'Dithered preview')}
                                                     sx={{
                                                         maxWidth: '100%',
                                                         border: '2px solid',
@@ -412,7 +416,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                                                 <Box
                                                     component="img"
                                                     src={`data:image/png;base64,${resizedBase64}`}
-                                                    alt="Resized preview"
+                                                    alt={t('imageLabels.dialog.altResizedPreview', 'Resized preview')}
                                                     sx={{
                                                         maxWidth: '100%',
                                                         border: '2px solid',

@@ -25,10 +25,12 @@ import {
     Card,
     CardContent,
     Stack,
-    Fab,
     Badge,
     Collapse,
+    Fab,
+    ClickAwayListener,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
     Search as SearchIcon,
     Refresh as RefreshIcon,
@@ -37,6 +39,8 @@ import {
     Add as AddIcon,
     SignalCellularAlt as SignalIcon,
     Battery0Bar as BatteryIcon,
+    Image as ImageIcon,
+    Close as CloseIcon,
 } from '@mui/icons-material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +49,7 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { LinkLabelDialog } from './LinkLabelDialog';
 import { LabelImagesDialog } from './LabelImagesDialog';
 import { LabelImagePreview } from './LabelImagePreview';
+import { AssignImageDialog } from './AssignImageDialog';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { logger } from '@shared/infrastructure/services/logger';
 
@@ -60,7 +65,7 @@ export function LabelsPage() {
     const isRtl = i18n.language === 'he';
     const { activeStoreId, isAppReady } = useAuthStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
-    
+
     const {
         labels,
         isLoading,
@@ -90,11 +95,21 @@ export function LabelsPage() {
     const [linkDialogOpen, setLinkDialogOpen] = useState(false);
     const [selectedLabelCode, setSelectedLabelCode] = useState('');
 
+    // Assign Image dialog
+    const [assignImageDialogOpen, setAssignImageDialogOpen] = useState(false);
+    const [assignImageLabelCode, setAssignImageLabelCode] = useState('');
+
     // Images dialog
     const [imagesDialogOpen, setImagesDialogOpen] = useState(false);
     const [imagesLabelCode, setImagesLabelCode] = useState('');
 
     const [filtersOpen, setFiltersOpen] = useState(false);
+
+    // Image preview toggle (off by default)
+    const [showImagePreviews, setShowImagePreviews] = useState(false);
+
+    // Mobile SpeedDial
+    const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
     // Check if AIMS is configured (via server)
     const isSolumConfigured = !!activeStoreId && (aimsConfigured || !error);
@@ -147,6 +162,11 @@ export function LabelsPage() {
     const handleOpenLinkDialog = (labelCode = '') => {
         setSelectedLabelCode(labelCode);
         setLinkDialogOpen(true);
+    };
+
+    const handleOpenAssignImageDialog = (labelCode = '') => {
+        setAssignImageLabelCode(labelCode);
+        setAssignImageDialogOpen(true);
     };
 
     const handleOpenImagesDialog = async (labelCode: string) => {
@@ -203,6 +223,9 @@ export function LabelsPage() {
         }
     };
 
+    // Column count for table (dynamic based on image preview toggle)
+    const colSpan = showImagePreviews ? 8 : 7;
+
     // Not configured view
     if (!activeStoreId) {
         return (
@@ -246,11 +269,13 @@ export function LabelsPage() {
                                 <Typography variant="body2" fontFamily="monospace" fontWeight={700} sx={{ fontSize: '0.85rem' }}>
                                     {label.labelCode}
                                 </Typography>
-                                <LabelImagePreview
-                                    labelCode={label.labelCode}
-                                    storeId={activeStoreId!}
-                                    onClick={() => handleOpenImagesDialog(label.labelCode)}
-                                />
+                                {showImagePreviews && (
+                                    <LabelImagePreview
+                                        labelCode={label.labelCode}
+                                        storeId={activeStoreId!}
+                                        onClick={() => handleOpenImagesDialog(label.labelCode)}
+                                    />
+                                )}
                             </Stack>
                             <Stack direction="row" gap={0}>
                                 {isLinked ? (
@@ -347,6 +372,20 @@ export function LabelsPage() {
                     >
                         {t('labels.linkNew', 'Link Label')}
                     </Button>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        size={isMobile ? 'small' : 'large'}
+                        startIcon={<ImageIcon />}
+                        onClick={() => handleOpenAssignImageDialog()}
+                        sx={{
+                            fontSize: { xs: '0.8rem', md: '1.25rem' },
+                            whiteSpace: 'nowrap',
+                            display: { xs: 'none', md: 'inline-flex' },
+                        }}
+                    >
+                        {t('imageLabels.assignImage', 'Assign Image')}
+                    </Button>
                     <Tooltip title={t('common.refresh', 'Refresh')}>
                         <IconButton
                             onClick={handleRefresh}
@@ -421,6 +460,20 @@ export function LabelsPage() {
                                     </Typography>
                                 }
                             />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={showImagePreviews}
+                                        onChange={(e) => setShowImagePreviews(e.target.checked)}
+                                        size="small"
+                                    />
+                                }
+                                label={
+                                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                        {t('labels.showImagePreviews', 'Show image previews')}
+                                    </Typography>
+                                }
+                            />
                         </Stack>
                     </Collapse>
                 </Box>
@@ -457,6 +510,20 @@ export function LabelsPage() {
                                 label={
                                     <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                                         {t('labels.filterLinkedOnly', 'Show linked only')}
+                                    </Typography>
+                                }
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={showImagePreviews}
+                                        onChange={(e) => setShowImagePreviews(e.target.checked)}
+                                        size="medium"
+                                    />
+                                }
+                                label={
+                                    <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                        {t('labels.showImagePreviews', 'Show image previews')}
                                     </Typography>
                                 }
                             />
@@ -505,8 +572,8 @@ export function LabelsPage() {
             ) : (
                 /* Desktop Table View */
                 <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-                    <TableContainer sx={{ maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}>
-                        <Table stickyHeader sx={{ minWidth: 900 }}>
+                    <TableContainer sx={{ maxHeight: { sm: 'calc(100vh - 350px)', md: 'calc(100vh - 320px)' }, overflow: 'auto' }}>
+                        <Table stickyHeader sx={{ minWidth: 750 }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.labelCode', 'Label Code')}</TableCell>
@@ -515,20 +582,22 @@ export function LabelsPage() {
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.signal', 'Signal')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.battery', 'Battery')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.status', 'Status')}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.images', 'Images')}</TableCell>
+                                    {showImagePreviews && (
+                                        <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.images', 'Images')}</TableCell>
+                                    )}
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.actions', 'Actions')}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {isLoading && !paginatedLabels.length ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={colSpan} align="center" sx={{ py: 4 }}>
                                             <CircularProgress />
                                         </TableCell>
                                     </TableRow>
                                 ) : paginatedLabels.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={colSpan} align="center" sx={{ py: 4 }}>
                                             <Typography color="text.secondary">
                                                 {t('labels.noLabels', 'No labels found')}
                                             </Typography>
@@ -593,13 +662,15 @@ export function LabelsPage() {
                                                     <Typography variant="body2" color="text.secondary">-</Typography>
                                                 )}
                                             </TableCell>
-                                            <TableCell sx={{ textAlign: isRtl ? 'right' : 'left', py: 0.5, px: 1 }}>
-                                                <LabelImagePreview
-                                                    labelCode={label.labelCode}
-                                                    storeId={activeStoreId!}
-                                                    onClick={() => handleOpenImagesDialog(label.labelCode)}
-                                                />
-                                            </TableCell>
+                                            {showImagePreviews && (
+                                                <TableCell sx={{ textAlign: isRtl ? 'right' : 'left', py: 0.5, px: 1 }}>
+                                                    <LabelImagePreview
+                                                        labelCode={label.labelCode}
+                                                        storeId={activeStoreId!}
+                                                        onClick={() => handleOpenImagesDialog(label.labelCode)}
+                                                    />
+                                                </TableCell>
+                                            )}
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left', py: 0.5, px: 1 }}>
                                                 <Stack direction="row" gap={0.5} justifyContent={!isRtl ? 'flex-end' : 'flex-start'}>
                                                     {label.articleId ? (
@@ -646,17 +717,104 @@ export function LabelsPage() {
                 </Paper>
             )}
 
-            {/* Mobile FAB — Link Label */}
+            {/* Mobile FAB — Link Label + Assign Image (dashboard-style stacked buttons) */}
             {isMobile && (
-                <Fab
-                    color="primary"
-                    variant="extended"
-                    onClick={() => handleOpenLinkDialog()}
-                    sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1050 }}
-                >
-                    <AddIcon sx={{ mr: 1 }} />
-                    {t('labels.linkNew', 'Link Label')}
-                </Fab>
+                <ClickAwayListener onClickAway={() => speedDialOpen && setSpeedDialOpen(false)}>
+                    <Box sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, insetInlineStart: { xs: 16, sm: 24 }, zIndex: 1050, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        {/* Staggered action buttons */}
+                        <Stack direction="column" spacing={1.5} sx={{ mb: 1.5, alignItems: 'stretch' }}>
+                            {/* Link Label — primary, top button */}
+                            <Box
+                                sx={{
+                                    opacity: speedDialOpen ? 1 : 0,
+                                    transform: speedDialOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
+                                    transition: speedDialOpen
+                                        ? 'opacity 0.2s ease 0ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) 0ms'
+                                        : 'opacity 0.15s ease 40ms, transform 0.15s ease 40ms',
+                                    pointerEvents: speedDialOpen ? 'auto' : 'none',
+                                }}
+                            >
+                                <Button
+                                    variant="contained"
+                                    fullWidth
+                                    startIcon={<LinkIcon sx={{ fontSize: '1.5rem !important' }} />}
+                                    onClick={() => {
+                                        setSpeedDialOpen(false);
+                                        handleOpenLinkDialog();
+                                    }}
+                                    sx={{
+                                        borderRadius: 3,
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        px: 4,
+                                        py: 2,
+                                        fontSize: '1.2rem',
+                                        minHeight: 60,
+                                        boxShadow: (theme: any) =>
+                                            `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                                    }}
+                                >
+                                    {t('labels.linkNew', 'Link Label')}
+                                </Button>
+                            </Box>
+
+                            {/* Assign Image — secondary, closer to FAB */}
+                            <Box
+                                sx={{
+                                    opacity: speedDialOpen ? 1 : 0,
+                                    transform: speedDialOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
+                                    transition: speedDialOpen
+                                        ? 'opacity 0.2s ease 60ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) 60ms'
+                                        : 'opacity 0.15s ease 0ms, transform 0.15s ease 0ms',
+                                    pointerEvents: speedDialOpen ? 'auto' : 'none',
+                                }}
+                            >
+                                <Button
+                                    variant="outlined"
+                                    fullWidth
+                                    startIcon={<ImageIcon sx={{ fontSize: '1.5rem !important' }} />}
+                                    onClick={() => {
+                                        setSpeedDialOpen(false);
+                                        handleOpenAssignImageDialog();
+                                    }}
+                                    sx={{
+                                        borderRadius: 3,
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        px: 4,
+                                        py: 2,
+                                        fontSize: '1.2rem',
+                                        minHeight: 60,
+                                        borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
+                                        bgcolor: (theme: any) => alpha(theme.palette.background.paper, 0.85),
+                                        backdropFilter: 'blur(12px)',
+                                        '&:hover': {
+                                            bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
+                                            borderColor: 'primary.main',
+                                        },
+                                    }}
+                                >
+                                    {t('imageLabels.assignImage', 'Assign Image')}
+                                </Button>
+                            </Box>
+                        </Stack>
+
+                        {/* FAB trigger */}
+                        <Fab
+                            color="primary"
+                            size="large"
+                            onClick={() => setSpeedDialOpen((prev) => !prev)}
+                            sx={{
+                                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transform: speedDialOpen ? 'rotate(45deg)' : 'none',
+                                width: 64,
+                                height: 64,
+                            }}
+                        >
+                            {speedDialOpen ? <CloseIcon /> : <AddIcon />}
+                        </Fab>
+                    </Box>
+                </ClickAwayListener>
             )}
 
             {/* Link Dialog */}
@@ -665,6 +823,13 @@ export function LabelsPage() {
                 onClose={() => setLinkDialogOpen(false)}
                 onLink={handleLink}
                 initialLabelCode={selectedLabelCode}
+            />
+
+            {/* Assign Image Dialog */}
+            <AssignImageDialog
+                open={assignImageDialogOpen}
+                onClose={() => setAssignImageDialogOpen(false)}
+                initialLabelCode={assignImageLabelCode}
             />
 
             {/* Images Dialog */}

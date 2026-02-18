@@ -10,6 +10,8 @@ import {
     Alert,
     Typography,
     CircularProgress,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +30,8 @@ interface SaveListDialogProps {
  */
 export function SaveListDialog({ open, onClose }: SaveListDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { saveCurrentSpacesAsList } = useListsController();
     const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export function SaveListDialog({ open, onClose }: SaveListDialogProps) {
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
             <DialogTitle>
                 <Box display="flex" alignItems="center" gap={1}>
                     <SaveIcon />

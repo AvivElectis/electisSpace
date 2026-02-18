@@ -49,30 +49,30 @@ export function QuickActionsPanel({
         callback();
     };
 
-    // Actions ordered bottom-to-top (first = closest to FAB)
+    // Actions ordered top-to-bottom (first = farthest from FAB, top of stack)
     const actions = [
         {
-            key: 'conference',
-            variant: 'outlined' as const,
-            icon: <GroupsIcon />,
-            label: t('conference.addRoom'),
-            onClick: onAddConferenceRoom,
+            key: 'linkLabel',
+            variant: 'contained' as const,
+            icon: <LinkIcon sx={{ fontSize: '1.5rem !important' }} />,
+            label: t('dashboard.linkLabel', 'Link Label'),
+            onClick: onLinkLabel,
         },
         {
             key: 'addSpace',
             variant: 'outlined' as const,
-            icon: <AddIcon />,
+            icon: <AddIcon sx={{ fontSize: '1.5rem !important' }} />,
             label: isPeopleManagerMode
                 ? t('dashboard.addPerson', 'Add Person')
                 : t('dashboard.addSpace', 'Add Space'),
             onClick: onAddSpace,
         },
         {
-            key: 'linkLabel',
-            variant: 'contained' as const,
-            icon: <LinkIcon />,
-            label: t('dashboard.linkLabel', 'Link Label'),
-            onClick: onLinkLabel,
+            key: 'conference',
+            variant: 'outlined' as const,
+            icon: <GroupsIcon sx={{ fontSize: '1.5rem !important' }} />,
+            label: t('conference.addRoom'),
+            onClick: onAddConferenceRoom,
         },
     ];
 
@@ -81,7 +81,7 @@ export function QuickActionsPanel({
             <ClickAwayListener onClickAway={() => open && setOpen(false)}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     {/* Staggered action buttons */}
-                    <Stack direction="column" spacing={1.5} sx={{ mb: 1.5 }}>
+                    <Stack direction="column" spacing={1.5} sx={{ mb: 1.5, alignItems: 'stretch' }}>
                         {actions.map((action, index) => (
                             <Box
                                 key={action.key}
@@ -102,11 +102,11 @@ export function QuickActionsPanel({
                                     sx={{
                                         borderRadius: 3,
                                         textTransform: 'none',
-                                        fontWeight: action.variant === 'contained' ? 600 : 500,
+                                        fontWeight: 700,
                                         px: 4,
-                                        py: action.variant === 'contained' ? 1.5 : 1.3,
-                                        fontSize: action.variant === 'contained' ? '1rem' : '0.95rem',
-                                        whiteSpace: 'nowrap',
+                                        py: 2,
+                                        fontSize: '1.2rem',
+                                        minHeight: 60,
                                         ...(action.variant === 'contained'
                                             ? {
                                                   boxShadow: (theme: any) =>
@@ -137,6 +137,8 @@ export function QuickActionsPanel({
                         sx={{
                             transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             transform: open ? 'rotate(45deg)' : 'none',
+                            width: 64,
+                            height: 64,
                         }}
                     >
                         {open ? <CloseIcon /> : <AddIcon />}

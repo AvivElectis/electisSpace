@@ -10,7 +10,6 @@ const routeImports: Record<string, () => Promise<unknown>> = {
     '/people': () => import('@features/people/presentation/PeopleManagerView'),
     '/conference': () => import('@features/conference/presentation/ConferencePage'),
     '/labels': () => import('@features/labels/presentation/LabelsPage'),
-    '/image-labels': () => import('@features/imageLabels/presentation/ImageLabelsPage'),
 };
 
 // Track which routes have been prefetched

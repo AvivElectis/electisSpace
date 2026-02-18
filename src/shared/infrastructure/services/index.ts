@@ -59,12 +59,7 @@ export type {
 
 // Labels API
 export { labelsApi } from './labelsApi';
-export type { 
-    Label, 
-    LabelsResponse, 
-    LabelResponse, 
-    ListLabelsParams,
-} from './labelsApi';
+export type { LabelsResponse } from './labelsApi';
 
 // Store Context API
 export { storeContextApi } from './storeContextApi';

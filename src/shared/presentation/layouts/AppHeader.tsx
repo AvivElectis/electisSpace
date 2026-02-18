@@ -98,7 +98,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         onClick={onMenuClick}
                         sx={{ display: { xs: 'flex', md: 'none' }, mx: .5 }}
                     >
-                        <MenuIcon sx={{ fontSize: '40px', padding: 0, borderRadius: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }} />
+                        <MenuIcon sx={{ fontSize: { xs: 32, sm: 40 }, padding: 0, borderRadius: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }} />
                     </IconButton>
                 )}
 

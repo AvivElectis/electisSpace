@@ -122,7 +122,7 @@ export function LabelImagePreview({
                     <Box
                         component="img"
                         src={imageUrl}
-                        alt={`Label ${labelCode}`}
+                        alt={t('labels.images.altLabel', 'Label {{code}}', { code: labelCode })}
                         loading="lazy"
                         sx={{
                             width: size,

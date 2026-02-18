@@ -163,6 +163,15 @@ export const useSettingsStore = create<SettingsStore>()(
                             if (companySettings.logos) {
                                 updates.logos = companySettings.logos;
                             }
+                            // Store-level logo override takes priority over company logos
+                            if (serverSettings.storeLogoOverride) {
+                                const override = serverSettings.storeLogoOverride as LogoConfig;
+                                updates.logos = {
+                                    ...(updates.logos || {}),
+                                    ...(override.logo1 ? { logo1: override.logo1 } : {}),
+                                    ...(override.logo2 ? { logo2: override.logo2 } : {}),
+                                };
+                            }
                             if (companySettings.csvConfig) {
                                 updates.csvConfig = {
                                     ...(updates.csvConfig || {}),

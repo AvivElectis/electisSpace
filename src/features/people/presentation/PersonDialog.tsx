@@ -8,6 +8,8 @@ import {
     Stack,
     Typography,
     Divider,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +32,8 @@ interface PersonDialogProps {
  */
 export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
     const { t, i18n } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const settings = useSettingsStore((state) => state.settings);
     const peopleController = usePeopleController();
@@ -219,11 +223,12 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
 
     return (
         <>
-            <Dialog 
-                open={open} 
-                onClose={onClose} 
-                maxWidth="sm" 
+            <Dialog
+                open={open}
+                onClose={onClose}
+                maxWidth="sm"
                 fullWidth
+                fullScreen={isMobile}
                 dir={isRtl ? 'rtl' : 'ltr'}
             >
                 <DialogTitle sx={{ textAlign: isRtl ? 'right' : 'left' }}>

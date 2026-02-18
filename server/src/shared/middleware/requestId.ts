@@ -37,12 +37,4 @@ export const requestIdMiddleware = (req: Request, res: Response, next: NextFunct
     next();
 };
 
-/**
- * Get request ID from request object
- * Returns 'unknown' if not available
- */
-export const getRequestId = (req: Request): string => {
-    return req.requestId || 'unknown';
-};
-
 export default requestIdMiddleware;
