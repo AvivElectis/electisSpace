@@ -99,7 +99,7 @@ export const authController = {
                 httpOnly: true,
                 secure: config.isProd,
                 sameSite: 'lax',
-                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                maxAge: 180 * 24 * 60 * 60 * 1000, // 180 days
             });
 
             // Strip refreshToken from response body (it's already in HttpOnly cookie)
@@ -177,7 +177,7 @@ export const authController = {
                 httpOnly: true,
                 secure: config.isProd,
                 sameSite: 'lax',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                maxAge: 180 * 24 * 60 * 60 * 1000, // 180 days
             });
 
             res.json(result);
