@@ -1,0 +1,43 @@
+name: Deploy to Ubuntu Server
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/workflows/release.yml'
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd /opt/electisSpace
+
+            echo "=== Pulling latest code ==="
+            git pull origin main
+
+            echo "=== Building containers ==="
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml build
+
+            echo "=== Restarting services ==="
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d
+
+            echo "=== Running migrations ==="
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml exec -T server npx prisma migrate deploy
+
+            echo "=== Health check ==="
+            sleep 10
+            curl -f http://localhost:3071/health || echo "Health check failed"
+
+            echo "=== Deployment complete ==="
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml ps

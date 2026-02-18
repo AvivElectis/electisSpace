@@ -1,0 +1,35 @@
+# ============================================================
+# electisSpace — Infrastructure Layer (Ubuntu Production)
+# ============================================================
+# Started once, rarely touched. Provides Redis cache.
+# PostgreSQL is external (global-postgres on global-network).
+#
+# Usage:
+#   docker compose -f docker-compose.infra.yml up -d
+# ============================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: electisspace-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6381:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - global-network
+
+volumes:
+  redis_data:
+    name: electisspace-redis-data
+
+networks:
+  global-network:
+    external: true
