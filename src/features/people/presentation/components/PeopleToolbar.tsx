@@ -1,4 +1,4 @@
-import { Box, Typography, Button, Stack, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, Button, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,7 @@ interface PeopleToolbarProps {
 }
 
 /**
- * PeopleToolbar - Header section with title and primary actions
+ * PeopleToolbar - Header section with title and primary actions below it
  * Active list name is shown in PeopleListPanel instead.
  */
 export function PeopleToolbar({
@@ -21,14 +21,9 @@ export function PeopleToolbar({
     const { t } = useTranslation();
 
     return (
-        <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            gap={1}
-            sx={{ mb: { xs: 2, sm: 3 } }}
-        >
-            <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+            {/* Title row */}
+            <Box sx={{ mb: 1 }}>
                 <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                     {t('people.title')}
                 </Typography>
@@ -36,36 +31,35 @@ export function PeopleToolbar({
                     {t('people.total')} - {totalPeople}
                 </Typography>
             </Box>
-            <Stack direction="row" gap={{ xs: 0.5, sm: 2 }} flexShrink={0}>
-                {/* Add Person — hidden on mobile (replaced by FAB) */}
+
+            {/* Action buttons row — under the header */}
+            <Stack direction="row" gap={1.5} flexWrap="wrap">
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={onAddPerson}
-                    size="small"
-                    sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
+                    sx={{
+                        whiteSpace: 'nowrap',
+                        display: { xs: 'none', md: 'inline-flex' },
+                        minHeight: 44,
+                        px: 3,
+                    }}
                 >
                     {t('people.addPerson')}
                 </Button>
                 <Button
-                    variant="text"
+                    variant="outlined"
                     startIcon={<UploadFileIcon />}
                     onClick={onUploadCSV}
-                    size="small"
-                    sx={{ whiteSpace: 'nowrap', display: { xs: 'none', sm: 'inline-flex' } }}
+                    sx={{
+                        whiteSpace: 'nowrap',
+                        minHeight: { xs: 44, md: 44 },
+                        px: { xs: 2, sm: 3 },
+                    }}
                 >
                     {t('people.uploadCSV')}
                 </Button>
-                <Tooltip title={t('people.uploadCSV')}>
-                    <IconButton
-                        onClick={onUploadCSV}
-                        size="small"
-                        sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
-                    >
-                        <UploadFileIcon />
-                    </IconButton>
-                </Tooltip>
             </Stack>
-        </Stack>
+        </Box>
     );
 }
