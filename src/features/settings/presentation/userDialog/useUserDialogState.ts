@@ -458,6 +458,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                     lastName: lastName.trim() || undefined,
                     phone: phone.trim() || undefined,
                     password,
+                    isCompanyAdmin: companyRole === 'COMPANY_ADMIN',
                     allStoresAccess,
                 };
 

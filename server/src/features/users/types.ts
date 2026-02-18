@@ -60,6 +60,7 @@ export const createUserSchema = z.object({
     phone: z.string().max(50).optional().nullable(),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     company: companyRefSchema,
+    isCompanyAdmin: z.boolean().default(false),
     allStoresAccess: z.boolean().default(false),
     stores: z.array(storeRefSchema).optional(),
 }).refine(
@@ -160,6 +161,14 @@ export interface UserCompanyInfo {
     isCompanyAdmin: boolean;
 }
 
+export interface UserCompanyListInfo {
+    id: string;
+    code: string;
+    name: string;
+    role: CompanyRole;
+    allStoresAccess: boolean;
+}
+
 export interface UserListItem {
     id: string;
     email: string;
@@ -169,6 +178,7 @@ export interface UserListItem {
     isActive: boolean;
     lastLogin: Date | null;
     createdAt: Date;
+    companies: UserCompanyListInfo[];
     stores: UserStoreInfo[];
 }
 

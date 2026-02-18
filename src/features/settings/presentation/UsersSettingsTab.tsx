@@ -159,6 +159,7 @@ export function UsersSettingsTab() {
     const getRoleColor = (role: string) => {
         switch (role) {
             case 'PLATFORM_ADMIN': return 'secondary';
+            case 'COMPANY_ADMIN': return 'primary';
             case 'STORE_ADMIN': return 'error';
             case 'STORE_MANAGER': return 'warning';
             case 'STORE_EMPLOYEE': return 'info';
@@ -267,11 +268,15 @@ export function UsersSettingsTab() {
                                 </TableRow>
                             ) : (
                                 users.map((user) => {
-                                    // Get first store's role and features, or use globalRole for platform admins
+                                    // Compute display role from highest available: globalRole > companyRole > storeRole
                                     const firstStore = user.stores?.[0];
-                                    const userRole = user.globalRole || firstStore?.role || 'STORE_VIEWER';
-                                    const userFeatures = user.globalRole === 'PLATFORM_ADMIN' 
-                                        ? ['dashboard', 'spaces', 'conference', 'people'] // Platform admins have all features
+                                    const firstCompany = user.companies?.[0];
+                                    const userRole = user.globalRole
+                                        || (firstCompany?.role === 'COMPANY_ADMIN' ? 'COMPANY_ADMIN' : null)
+                                        || firstStore?.role
+                                        || 'STORE_VIEWER';
+                                    const userFeatures = (user.globalRole === 'PLATFORM_ADMIN' || firstCompany?.role === 'COMPANY_ADMIN')
+                                        ? ['dashboard', 'spaces', 'conference', 'people']
                                         : (firstStore?.features || ['dashboard']);
                                     const canElevate = isPlatformAdmin && 
                                         user.globalRole !== 'PLATFORM_ADMIN' && 
