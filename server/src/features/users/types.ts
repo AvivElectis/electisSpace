@@ -68,8 +68,8 @@ export const createUserSchema = z.object({
 );
 
 export const updateUserSchema = z.object({
-    firstName: z.string().max(100).optional(),
-    lastName: z.string().max(100).optional(),
+    firstName: z.string().max(100).nullish(),
+    lastName: z.string().max(100).nullish(),
     isActive: z.boolean().optional(),
     password: z.string().min(8, 'Password must be at least 8 characters').max(128).optional(),
 });
