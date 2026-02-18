@@ -3,7 +3,7 @@
  * Provides app installability and basic offline caching of app shell.
  */
 
-const CACHE_NAME = 'electis-space-v1';
+const CACHE_NAME = 'electis-space-v2';
 
 // Cache app shell on install
 self.addEventListener('install', (event) => {

@@ -51,6 +51,16 @@ export class ErrorBoundary extends Component<Props, State> {
             timestamp: new Date().toISOString(),
         });
 
+        // Auto-reload once on stale chunk errors (e.g. after redeployment)
+        if (this.isChunkLoadError(error)) {
+            const lastReload = sessionStorage.getItem('chunk_error_reload');
+            if (!lastReload || Date.now() - parseInt(lastReload, 10) > 10_000) {
+                sessionStorage.setItem('chunk_error_reload', String(Date.now()));
+                window.location.reload();
+                return;
+            }
+        }
+
         // Update state with error info
         this.setState({ errorInfo });
 
@@ -58,6 +68,16 @@ export class ErrorBoundary extends Component<Props, State> {
         if (this.props.onError) {
             this.props.onError(error, errorInfo);
         }
+    }
+
+    /** Detect chunk/module load failures caused by stale deployments */
+    private isChunkLoadError(error: Error): boolean {
+        const msg = error.message;
+        return (
+            msg.includes('Failed to fetch dynamically imported module') ||
+            msg.includes('Loading chunk') ||
+            msg.includes('Loading CSS chunk')
+        );
     }
 
     handleReload = (): void => {
