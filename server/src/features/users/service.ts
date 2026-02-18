@@ -273,6 +273,7 @@ export const userService = {
             const managedStoreIds = (user.stores || [])
                 .filter(s => s.role === 'STORE_ADMIN')
                 .map(s => s.id);
+            const isCurrentUserCompanyAdmin = managedCompanyIds.length > 0;
 
             if (managedCompanyIds.length === 0 && managedStoreIds.length === 0) {
                 return {
@@ -281,12 +282,23 @@ export const userService = {
                 };
             }
 
+            // Non-platform-admins never see platform admins
+            where.globalRole = null;
+
+            // Store admins (who are NOT company admins) should not see company admins
+            if (!isCurrentUserCompanyAdmin) {
+                where.userCompanies = {
+                    ...where.userCompanies,
+                    none: { role: 'COMPANY_ADMIN' },
+                };
+            }
+
             // Apply storeId/companyId filter if specified
             if (storeId) {
                 where.userStores = { some: { storeId } };
             } else if (companyId) {
                 if (managedCompanyIds.includes(companyId)) {
-                    where.userCompanies = { some: { companyId } };
+                    where.userCompanies = { ...where.userCompanies, some: { companyId } };
                 } else {
                     return { data: [], pagination: { page, limit, total: 0, totalPages: 0 } };
                 }
@@ -325,6 +337,13 @@ export const userService = {
             isActive: u.isActive,
             lastLogin: u.lastLogin,
             createdAt: u.createdAt,
+            companies: u.userCompanies.map(uc => ({
+                id: uc.company.id,
+                code: uc.company.code,
+                name: uc.company.name,
+                role: uc.role,
+                allStoresAccess: uc.allStoresAccess,
+            })),
             stores: u.userStores.map(us => ({
                 id: us.storeId,
                 name: us.store.name,
@@ -478,7 +497,7 @@ export const userService = {
                         create: {
                             companyId,
                             allStoresAccess: data.allStoresAccess,
-                            role: 'VIEWER',
+                            role: data.isCompanyAdmin ? 'COMPANY_ADMIN' : 'VIEWER',
                         },
                     },
                     userStores: data.allStoresAccess ? undefined : {
