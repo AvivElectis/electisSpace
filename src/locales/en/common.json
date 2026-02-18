@@ -3,7 +3,8 @@
         "title": "electis Space",
         "subtitle": "ESL Management System",
         "loadingApplication": "Loading application...",
-        "restoringSession": "Restoring session..."
+        "restoringSession": "Restoring session...",
+        "switchingStore": "Switching store..."
     },
     "navigation": {
         "dashboard": "Dashboard",

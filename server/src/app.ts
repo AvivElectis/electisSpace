@@ -35,7 +35,7 @@ const app = express();
 // ======================
 // Trust Proxy (for nginx reverse proxy)
 // ======================
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // ======================
 // Request ID (for log correlation)
