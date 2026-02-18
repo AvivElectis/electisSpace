@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -145,17 +146,19 @@ app.use(`/api/${config.apiVersion}`, apiRouter);
 // ======================
 if (!config.isDev) {
     const publicDir = path.resolve('public');
-    app.use(express.static(publicDir, {
-        maxAge: '1y',
-        immutable: true,
-        index: false,
-    }));
-    // SPA fallback: serve index.html for any unmatched GET
-    app.get('*', (_req, res) => {
-        res.sendFile(path.join(publicDir, 'index.html'), {
-            headers: { 'Cache-Control': 'no-cache' },
+    if (fs.existsSync(publicDir)) {
+        app.use(express.static(publicDir, {
+            maxAge: '1y',
+            immutable: true,
+            index: false,
+        }));
+        // SPA fallback: serve index.html for any unmatched GET
+        app.get('*', (_req, res) => {
+            res.sendFile(path.join(publicDir, 'index.html'), {
+                headers: { 'Cache-Control': 'no-cache' },
+            });
         });
-    });
+    }
 }
 
 // ======================
