@@ -85,6 +85,23 @@ const parseEnv = () => {
 
 export const env = parseEnv();
 
+/**
+ * Parse a JWT-style duration string (e.g. "180d", "7d", "24h", "15m") to milliseconds.
+ */
+function parseDurationMs(duration: string): number {
+    const match = duration.match(/^(\d+)(ms|s|m|h|d)$/);
+    if (!match) return 7 * 24 * 60 * 60 * 1000; // fallback 7 days
+    const value = parseInt(match[1], 10);
+    switch (match[2]) {
+        case 'ms': return value;
+        case 's': return value * 1000;
+        case 'm': return value * 60 * 1000;
+        case 'h': return value * 60 * 60 * 1000;
+        case 'd': return value * 24 * 60 * 60 * 1000;
+        default: return 7 * 24 * 60 * 60 * 1000;
+    }
+}
+
 // Derived configuration
 export const config = {
     // Server
@@ -107,6 +124,7 @@ export const config = {
         refreshSecret: env.JWT_REFRESH_SECRET,
         accessExpiresIn: env.JWT_ACCESS_EXPIRES_IN,
         refreshExpiresIn: env.JWT_REFRESH_EXPIRES_IN,
+        refreshExpiresInMs: parseDurationMs(env.JWT_REFRESH_EXPIRES_IN),
     },
 
     // Encryption

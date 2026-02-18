@@ -244,8 +244,7 @@ export const authService = {
 
         // Hash refresh token for storage
         const tokenHash = await bcrypt.hash(refreshToken, 10);
-        const tokenExpiresAt = new Date();
-        tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 180);
+        const tokenExpiresAt = new Date(Date.now() + config.jwt.refreshExpiresInMs);
 
         // Execute transaction
         try {
@@ -336,8 +335,7 @@ export const authService = {
 
         // Store new refresh token
         const tokenHash = await bcrypt.hash(newRefreshToken, 10);
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 180);
+        const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresInMs);
         await authRepository.createRefreshToken(user.id, tokenHash, expiresAt);
 
         return {
