@@ -268,14 +268,16 @@ export function UsersSettingsTab() {
                                 </TableRow>
                             ) : (
                                 users.map((user) => {
-                                    // Compute display role from highest available: globalRole > companyRole > storeRole
+                                    // Compute display role: globalRole > companyRole > storeRole
                                     const firstStore = user.stores?.[0];
                                     const firstCompany = user.companies?.[0];
+                                    const companyRole = firstCompany?.role; // 'COMPANY_ADMIN' | 'VIEWER' | undefined
                                     const userRole = user.globalRole
-                                        || (firstCompany?.role === 'COMPANY_ADMIN' ? 'COMPANY_ADMIN' : null)
+                                        || companyRole
                                         || firstStore?.role
                                         || 'STORE_VIEWER';
-                                    const userFeatures = (user.globalRole === 'PLATFORM_ADMIN' || firstCompany?.role === 'COMPANY_ADMIN')
+                                    const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || companyRole === 'COMPANY_ADMIN';
+                                    const userFeatures = isAdminLevel
                                         ? ['dashboard', 'spaces', 'conference', 'people']
                                         : (firstStore?.features || ['dashboard']);
                                     const canElevate = isPlatformAdmin && 
