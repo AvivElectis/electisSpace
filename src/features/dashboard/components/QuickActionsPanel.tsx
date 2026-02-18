@@ -104,9 +104,9 @@ export function QuickActionsPanel({
                                         textTransform: 'none',
                                         fontWeight: 700,
                                         px: 4,
-                                        py: 2,
-                                        fontSize: '1.2rem',
-                                        minHeight: 60,
+                                        py: 2.5,
+                                        fontSize: '1.3rem',
+                                        minHeight: 72,
                                         ...(action.variant === 'contained'
                                             ? {
                                                   boxShadow: (theme: any) =>
@@ -137,8 +137,9 @@ export function QuickActionsPanel({
                         sx={{
                             transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             transform: open ? 'rotate(45deg)' : 'none',
-                            width: 64,
-                            height: 64,
+                            width: 72,
+                            height: 72,
+                            '& .MuiSvgIcon-root': { fontSize: '2rem' },
                         }}
                     >
                         {open ? <CloseIcon /> : <AddIcon />}
