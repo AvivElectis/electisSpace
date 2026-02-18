@@ -2,7 +2,7 @@
 # electisSpace — Development Docker Compose (Full Stack)
 # ============================================================
 # Usage:
-#   1. Copy server/.env.development.example to server/.env.development
+#   1. Copy server/.env.example to server/.env.development and fill in values
 #   2. docker compose build
 #   3. docker compose up -d
 #
@@ -62,7 +62,7 @@ services:
       dockerfile: Dockerfile
     container_name: electisspace-server-dev
     env_file:
-      - .env.development
+      - server/.env.development
     environment:
       - NODE_ENV=development
       - PORT=3000

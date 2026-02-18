@@ -1,13 +1,10 @@
 # Environment files (contain secrets - never commit)
 .env
-.env.local
-.env.*.local
-.env.development
-.env.production
-
-# Keep example files
+.env.*
 !.env.example
-!.env.*.example
+
+# Keep example files in subdirs (server/.env.example)
+!**/.env.example
 
 # Logs
 logs
