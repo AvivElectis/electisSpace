@@ -223,27 +223,23 @@ export class SolumService {
     async fetchArticles(config: SolumConfig, token: string, page = 0, size = 100): Promise<AimsArticle[]> {
         if (!config.storeCode) throw new Error('Store code required');
 
-        const url = this.buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
 
         return this.withRetry('fetchArticles', async () => {
-            try {
-                const response = await this.client.get(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-                // Handle empty response
-                if (!response.data) return [];
+            // Handle empty response / 204
+            if (!response.data || response.status === 204) return [];
 
-                // Handle 204 No Content
-                if (response.status === 204) return [];
+            const data = response.data;
 
-                const data = response.data;
-                return Array.isArray(data) ? data : (data.articleList || data.content || data.data || []);
-            } catch (error: any) {
-                // Handle 204 treated as error by some clients/axios
-                if (error.response?.status === 204) return [];
-                throw new Error(`Fetch articles failed: ${error.message}`);
-            }
+            // AIMS wraps responses in responseMessage — unwrap if present
+            const payload = data.responseMessage ?? data;
+
+            if (Array.isArray(payload)) return payload;
+            return payload.articleList || payload.content || payload.data || [];
         });
     }
 
@@ -334,20 +330,17 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/labels?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
 
         return this.withRetry('fetchLabels', async () => {
-            try {
-                const response = await this.client.get(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-                if (!response.data) return [];
-                if (response.status === 204) return [];
+            if (!response.data || response.status === 204) return [];
 
-                const data = response.data;
-                return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
-            } catch (error: any) {
-                if (error.response?.status === 204) return [];
-                throw new Error(`Fetch labels failed: ${error.message}`);
-            }
+            const data = response.data;
+            const payload = data.responseMessage ?? data;
+
+            if (Array.isArray(payload)) return payload;
+            return payload.labelList || payload.content || payload.data || [];
         });
     }
 
@@ -384,17 +377,16 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/labels/unassigned?company=${config.companyName}&store=${config.storeCode}`);
 
         return this.withRetry('fetchUnassignedLabels', async () => {
-            try {
-                const response = await this.client.get(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-                if (!response.data) return [];
-                const data = response.data;
-                return Array.isArray(data) ? data : (data.labelList || data.content || data.data || []);
-            } catch (error: any) {
-                throw new Error(`Fetch unassigned labels failed: ${error.message}`);
-            }
+            if (!response.data) return [];
+            const data = response.data;
+            const payload = data.responseMessage ?? data;
+
+            if (Array.isArray(payload)) return payload;
+            return payload.labelList || payload.content || payload.data || [];
         });
     }
 
@@ -494,20 +486,17 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/store?company=${config.companyName}`);
 
         return this.withRetry('fetchStores', async () => {
-            try {
-                const response = await this.client.get(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-                if (!response.data) return [];
-                if (response.status === 204) return [];
+            if (!response.data || response.status === 204) return [];
 
-                const data = response.data;
-                return Array.isArray(data) ? data : (data.stores || data.content || data.data || []);
-            } catch (error: any) {
-                if (error.response?.status === 204) return [];
-                throw new Error(`Fetch stores failed: ${error.message}`);
-            }
+            const data = response.data;
+            const payload = data.responseMessage ?? data;
+
+            if (Array.isArray(payload)) return payload;
+            return payload.stores || payload.content || payload.data || [];
         });
     }
 
