@@ -4,11 +4,15 @@
 import { prisma } from '../../config/index.js';
 
 export const spacesListsRepository = {
-    async list(storeIds: string[], storeId?: string) {
+    async list(storeIds: string[] | undefined, storeId?: string) {
+        const where: any = {};
+        if (storeId) {
+            where.storeId = storeId;
+        } else if (storeIds) {
+            where.storeId = { in: storeIds };
+        }
         return prisma.spacesList.findMany({
-            where: {
-                storeId: storeId ? storeId : { in: storeIds },
-            },
+            where,
             select: {
                 id: true,
                 storeId: true,

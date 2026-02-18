@@ -64,5 +64,6 @@ export type DitherPreviewDTO = z.infer<typeof ditherPreviewSchema>;
 
 export interface LabelsUserContext {
     userId: string;
+    globalRole?: string | null;
     storeIds: string[];
 }

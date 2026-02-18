@@ -10,6 +10,23 @@ import type {
 } from './types.js';
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+const isPlatformAdmin = (ctx: ConferenceUserContext): boolean =>
+    ctx.globalRole === 'PLATFORM_ADMIN';
+
+const getEffectiveStoreIds = (ctx: ConferenceUserContext): string[] | undefined =>
+    isPlatformAdmin(ctx) ? undefined : ctx.storeIds;
+
+const validateStoreAccess = (storeId: string, ctx: ConferenceUserContext): void => {
+    if (isPlatformAdmin(ctx)) return;
+    if (!ctx.storeIds.includes(storeId)) {
+        throw 'STORE_ACCESS_DENIED';
+    }
+};
+
+// ============================================================================
 // Conference Service - Business Logic
 // ============================================================================
 
@@ -18,14 +35,14 @@ export const conferenceService = {
      * List conference rooms for user's accessible stores
      */
     async list(userContext: ConferenceUserContext, filters: ListRoomsFilters) {
-        const { storeIds } = userContext;
         const { storeId: filterStoreId } = filters;
 
         // Validate store access if filtering by specific store
-        if (filterStoreId && !storeIds.includes(filterStoreId)) {
-            throw 'STORE_ACCESS_DENIED';
+        if (filterStoreId) {
+            validateStoreAccess(filterStoreId, userContext);
         }
 
+        const storeIds = getEffectiveStoreIds(userContext);
         const rooms = await conferenceRepository.list(storeIds, filterStoreId);
 
         // Calculate stats
@@ -43,7 +60,7 @@ export const conferenceService = {
      * Get a conference room by ID
      */
     async getById(userContext: ConferenceUserContext, roomId: string) {
-        const { storeIds } = userContext;
+        const storeIds = getEffectiveStoreIds(userContext);
         const room = await conferenceRepository.getByIdWithAccess(roomId, storeIds);
 
         if (!room) {
@@ -57,12 +74,8 @@ export const conferenceService = {
      * Create a new conference room
      */
     async create(userContext: ConferenceUserContext, data: CreateRoomDTO) {
-        const { storeIds } = userContext;
-
         // Check user has access to the target store
-        if (!storeIds.includes(data.storeId)) {
-            throw 'STORE_ACCESS_DENIED';
-        }
+        validateStoreAccess(data.storeId, userContext);
 
         // Check external ID uniqueness within store
         const existing = await conferenceRepository.findByExternalId(data.storeId, data.externalId);
@@ -82,8 +95,7 @@ export const conferenceService = {
      * Update a conference room
      */
     async update(userContext: ConferenceUserContext, roomId: string, data: UpdateRoomDTO) {
-        const { storeIds } = userContext;
-
+        const storeIds = getEffectiveStoreIds(userContext);
         const existing = await conferenceRepository.getByIdWithAccess(roomId, storeIds);
         if (!existing) {
             throw 'NOT_FOUND';
@@ -101,8 +113,7 @@ export const conferenceService = {
      * Delete a conference room
      */
     async delete(userContext: ConferenceUserContext, roomId: string) {
-        const { storeIds } = userContext;
-
+        const storeIds = getEffectiveStoreIds(userContext);
         const existing = await conferenceRepository.getByIdWithAccess(roomId, storeIds);
         if (!existing) {
             throw 'NOT_FOUND';
@@ -118,8 +129,7 @@ export const conferenceService = {
      * Toggle meeting status on a conference room
      */
     async toggleMeeting(userContext: ConferenceUserContext, roomId: string, meetingData: ToggleMeetingDTO) {
-        const { storeIds } = userContext;
-
+        const storeIds = getEffectiveStoreIds(userContext);
         const existing = await conferenceRepository.getByIdWithAccess(roomId, storeIds);
         if (!existing) {
             throw 'NOT_FOUND';
@@ -140,8 +150,7 @@ export const conferenceService = {
      * Request ESL page flip for a room
      */
     async flipPage(userContext: ConferenceUserContext, roomId: string) {
-        const { storeIds } = userContext;
-
+        const storeIds = getEffectiveStoreIds(userContext);
         const existing = await conferenceRepository.getByIdWithAccess(roomId, storeIds);
         if (!existing) {
             throw 'NOT_FOUND';

@@ -19,6 +19,7 @@ import { badRequest, forbidden } from '../../shared/middleware/index.js';
 function getUserContext(req: Request): LabelsUserContext {
     return {
         userId: req.user?.id || '',
+        globalRole: req.user?.globalRole,
         storeIds: req.user?.stores?.map((s) => s.id) || [],
     };
 }

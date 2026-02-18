@@ -11,8 +11,9 @@ import type {
 // Authorization Helpers
 // ============================================================================
 
-function validateStoreAccess(storeId: string, storeIds: string[]): void {
-    if (!storeIds.includes(storeId)) {
+function validateStoreAccess(storeId: string, ctx: LabelsUserContext): void {
+    if (ctx.globalRole === 'PLATFORM_ADMIN') return;
+    if (!ctx.storeIds.includes(storeId)) {
         throw 'FORBIDDEN';
     }
 }
@@ -33,7 +34,7 @@ export const labelsService = {
      * Fetch all labels for a store
      */
     async list(userContext: LabelsUserContext, storeId: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
         const labels = await aimsGateway.fetchLabels(storeId);
@@ -44,7 +45,7 @@ export const labelsService = {
      * Fetch unassigned (available) labels for a store
      */
     async listUnassigned(userContext: LabelsUserContext, storeId: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
         const labels = await aimsGateway.fetchUnassignedLabels(storeId);
@@ -55,7 +56,7 @@ export const labelsService = {
      * Fetch images for a specific label
      */
     async getLabelImages(userContext: LabelsUserContext, storeId: string, labelCode: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
         return aimsGateway.fetchLabelImages(storeId, labelCode);
@@ -65,7 +66,7 @@ export const labelsService = {
      * Link a label to an article
      */
     async linkLabel(userContext: LabelsUserContext, data: LinkLabelDTO) {
-        validateStoreAccess(data.storeId, userContext.storeIds);
+        validateStoreAccess(data.storeId, userContext);
         await ensureAimsConfigured(data.storeId);
 
         return aimsGateway.linkLabel(data.storeId, data.labelCode, data.articleId, data.templateName);
@@ -75,7 +76,7 @@ export const labelsService = {
      * Unlink a label from its article
      */
     async unlinkLabel(userContext: LabelsUserContext, data: UnlinkLabelDTO) {
-        validateStoreAccess(data.storeId, userContext.storeIds);
+        validateStoreAccess(data.storeId, userContext);
         await ensureAimsConfigured(data.storeId);
 
         return aimsGateway.unlinkLabel(data.storeId, data.labelCode);
@@ -85,7 +86,7 @@ export const labelsService = {
      * Make a label flash for identification
      */
     async blinkLabel(userContext: LabelsUserContext, storeId: string, labelCode: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
         return aimsGateway.blinkLabel(storeId, labelCode);
@@ -95,7 +96,7 @@ export const labelsService = {
      * Fetch label type/hardware info
      */
     async getLabelTypeInfo(userContext: LabelsUserContext, storeId: string, labelCode: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
         return aimsGateway.fetchLabelTypeInfo(storeId, labelCode);
@@ -105,7 +106,7 @@ export const labelsService = {
      * Get dithered preview of an image from AIMS
      */
     async getDitherPreview(userContext: LabelsUserContext, data: DitherPreviewDTO) {
-        validateStoreAccess(data.storeId, userContext.storeIds);
+        validateStoreAccess(data.storeId, userContext);
         await ensureAimsConfigured(data.storeId);
 
         return aimsGateway.fetchDitherPreview(data.storeId, data.labelCode, {
@@ -118,7 +119,7 @@ export const labelsService = {
      * Push an image to a label
      */
     async pushImage(userContext: LabelsUserContext, data: ImagePushDTO) {
-        validateStoreAccess(data.storeId, userContext.storeIds);
+        validateStoreAccess(data.storeId, userContext);
         await ensureAimsConfigured(data.storeId);
 
         return aimsGateway.pushLabelImage(data.storeId, {
@@ -135,7 +136,7 @@ export const labelsService = {
      * Check if AIMS is configured and connected for a store
      */
     async getStatus(userContext: LabelsUserContext, storeId: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
 
         const storeConfig = await aimsGateway.getStoreConfig(storeId);
         const isConnected = storeConfig ? await aimsGateway.checkHealth(storeId) : false;
@@ -150,7 +151,7 @@ export const labelsService = {
      * Fetch articles for linking labels
      */
     async getArticles(userContext: LabelsUserContext, storeId: string) {
-        validateStoreAccess(storeId, userContext.storeIds);
+        validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
         const articles = await aimsGateway.pullArticles(storeId);

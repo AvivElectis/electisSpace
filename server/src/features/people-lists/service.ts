@@ -8,11 +8,16 @@ import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 import type { ListsUserContext, CreatePeopleListInput, UpdatePeopleListInput } from './types.js';
 import type { Prisma, SyncStatus } from '@prisma/client';
 
+const isPlatformAdmin = (user: ListsUserContext): boolean =>
+    user.globalRole === 'PLATFORM_ADMIN';
+
 const getUserStoreIds = (user: ListsUserContext): string[] => {
     return user.stores?.map(s => s.id) || [];
 };
 
-const validateStoreAccess = (storeId: string, storeIds: string[]): void => {
+const validateStoreAccess = (storeId: string, user: ListsUserContext): void => {
+    if (isPlatformAdmin(user)) return;
+    const storeIds = getUserStoreIds(user);
     if (!storeIds.includes(storeId)) {
         throw new Error('FORBIDDEN');
     }
@@ -23,10 +28,10 @@ export const peopleListsService = {
      * List all people lists for accessible stores
      */
     async list(user: ListsUserContext, storeId?: string) {
-        const storeIds = getUserStoreIds(user);
         if (storeId) {
-            validateStoreAccess(storeId, storeIds);
+            validateStoreAccess(storeId, user);
         }
+        const storeIds = isPlatformAdmin(user) ? undefined : getUserStoreIds(user);
         const lists = await peopleListsRepository.list(storeIds, storeId);
         return lists.map(l => {
             const contentArr = l.content;
@@ -44,8 +49,7 @@ export const peopleListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
         return list;
     },
 
@@ -54,8 +58,7 @@ export const peopleListsService = {
      * Enforces unique name per store
      */
     async create(user: ListsUserContext, input: CreatePeopleListInput) {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(input.storeId, storeIds);
+        validateStoreAccess(input.storeId, user);
 
         // Enforce unique name per store
         const existing = await peopleListsRepository.findByStoreAndName(input.storeId, input.name);
@@ -83,8 +86,7 @@ export const peopleListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
 
         // If renaming, check uniqueness
         if (input.name && input.name.trim() !== list.name) {
@@ -114,8 +116,7 @@ export const peopleListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
 
         return peopleListsRepository.delete(id);
     },
@@ -139,8 +140,7 @@ export const peopleListsService = {
         if (!list) {
             throw new Error('NOT_FOUND');
         }
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(list.storeId, storeIds);
+        validateStoreAccess(list.storeId, user);
 
         const storeId = list.storeId;
         const snapshotContent = Array.isArray(list.content) ? (list.content as any[]) : [];
@@ -281,8 +281,7 @@ export const peopleListsService = {
      * People remain in the DB as-is (current table continues without list tracking).
      */
     async freeList(user: ListsUserContext, storeId: string, sseClientId?: string) {
-        const storeIds = getUserStoreIds(user);
-        validateStoreAccess(storeId, storeIds);
+        validateStoreAccess(storeId, user);
 
         // Broadcast to all SSE clients for this store
         sseManager.broadcastToStore(storeId, {

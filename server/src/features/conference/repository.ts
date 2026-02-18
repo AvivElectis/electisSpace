@@ -9,10 +9,13 @@ export const conferenceRepository = {
     /**
      * List rooms by store IDs with optional filter
      */
-    async list(storeIds: string[], filterStoreId?: string) {
-        const where: { storeId: string | { in: string[] } } = filterStoreId
-            ? { storeId: filterStoreId }
-            : { storeId: { in: storeIds } };
+    async list(storeIds: string[] | undefined, filterStoreId?: string) {
+        const where: any = {};
+        if (filterStoreId) {
+            where.storeId = filterStoreId;
+        } else if (storeIds) {
+            where.storeId = { in: storeIds };
+        }
 
         return prisma.conferenceRoom.findMany({
             where,
@@ -28,12 +31,11 @@ export const conferenceRepository = {
     /**
      * Get a room by ID within accessible stores
      */
-    async getByIdWithAccess(roomId: string, storeIds: string[]) {
+    async getByIdWithAccess(roomId: string, storeIds: string[] | undefined) {
+        const where: any = { id: roomId };
+        if (storeIds) where.storeId = { in: storeIds };
         return prisma.conferenceRoom.findFirst({
-            where: {
-                id: roomId,
-                storeId: { in: storeIds },
-            },
+            where,
             include: {
                 store: {
                     select: { name: true, code: true },

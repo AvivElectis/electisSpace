@@ -8,14 +8,17 @@ import { Prisma, SyncStatus } from '@prisma/client';
 
 export const spacesRepository = {
     async list(
-        storeIds: string[],
+        storeIds: string[] | undefined,
         filters: { storeId?: string; search?: string; hasLabel?: string; syncStatus?: string },
         skip: number,
         take: number
     ) {
-        const where: Prisma.SpaceWhereInput = {
-            storeId: filters.storeId ? filters.storeId : { in: storeIds },
-        };
+        const where: Prisma.SpaceWhereInput = {};
+        if (filters.storeId) {
+            where.storeId = filters.storeId;
+        } else if (storeIds) {
+            where.storeId = { in: storeIds };
+        }
 
         if (filters.search) {
             where.OR = [{ externalId: { contains: filters.search, mode: 'insensitive' } }];
@@ -37,9 +40,11 @@ export const spacesRepository = {
         return { spaces, total };
     },
 
-    async getById(id: string, storeIds: string[]) {
+    async getById(id: string, storeIds: string[] | undefined) {
+        const where: any = { id };
+        if (storeIds) where.storeId = { in: storeIds };
         return prisma.space.findFirst({
-            where: { id, storeId: { in: storeIds } },
+            where,
             include: {
                 store: { select: { name: true, code: true } },
             },
@@ -50,8 +55,10 @@ export const spacesRepository = {
         return prisma.space.findFirst({ where: { storeId, externalId } });
     },
 
-    async findByIdWithAccess(id: string, storeIds: string[]) {
-        return prisma.space.findFirst({ where: { id, storeId: { in: storeIds } } });
+    async findByIdWithAccess(id: string, storeIds: string[] | undefined) {
+        const where: any = { id };
+        if (storeIds) where.storeId = { in: storeIds };
+        return prisma.space.findFirst({ where });
     },
 
     async create(data: {
