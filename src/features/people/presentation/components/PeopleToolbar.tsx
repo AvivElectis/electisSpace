@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 interface PeopleToolbarProps {
     totalPeople: number;
+    canEdit: boolean;
     onAddPerson: () => void;
     onUploadCSV: () => void;
 }
@@ -15,6 +16,7 @@ interface PeopleToolbarProps {
  */
 export function PeopleToolbar({
     totalPeople,
+    canEdit,
     onAddPerson,
     onUploadCSV,
 }: PeopleToolbarProps) {
@@ -38,6 +40,7 @@ export function PeopleToolbar({
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={onAddPerson}
+                    disabled={!canEdit}
                     sx={{
                         whiteSpace: 'nowrap',
                         display: { xs: 'none', md: 'inline-flex' },
@@ -51,6 +54,7 @@ export function PeopleToolbar({
                     variant="outlined"
                     startIcon={<UploadFileIcon />}
                     onClick={onUploadCSV}
+                    disabled={!canEdit}
                     sx={{
                         whiteSpace: 'nowrap',
                         minHeight: { xs: 44, md: 44 },

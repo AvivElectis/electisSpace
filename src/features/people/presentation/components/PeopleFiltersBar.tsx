@@ -10,6 +10,7 @@ interface PeopleFiltersBarProps {
     onSearchChange: (value: string) => void;
     assignmentFilter: 'all' | 'assigned' | 'unassigned';
     onAssignmentFilterChange: (value: 'all' | 'assigned' | 'unassigned') => void;
+    canEdit?: boolean;
     onCancelAllAssignments?: () => void;
     assignedCount?: number;
 }
@@ -24,6 +25,7 @@ export function PeopleFiltersBar({
     onSearchChange,
     assignmentFilter,
     onAssignmentFilterChange,
+    canEdit = true,
     onCancelAllAssignments,
     assignedCount = 0,
 }: PeopleFiltersBarProps) {
@@ -55,7 +57,7 @@ export function PeopleFiltersBar({
                                 <IconButton
                                     color="error"
                                     onClick={onCancelAllAssignments}
-                                    disabled={assignedCount === 0}
+                                    disabled={!canEdit || assignedCount === 0}
                                 >
                                     <CancelIcon />
                                 </IconButton>
