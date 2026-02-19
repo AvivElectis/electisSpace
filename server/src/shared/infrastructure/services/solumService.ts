@@ -94,6 +94,18 @@ export class SolumService {
     }
 
     /**
+     * Unwrap AIMS response envelope.
+     * AIMS responses come as { responseCode, responseMessage, articleList/labelList/... }
+     * where responseMessage can be either an object (the actual payload) or a plain
+     * string like "SUCCESS".  When it's a string we must fall back to the top-level
+     * object to find the list property.
+     */
+    private unwrap(data: any): any {
+        const payload = data.responseMessage ?? data;
+        return (typeof payload === 'string' || payload == null) ? data : payload;
+    }
+
+    /**
      * Execute an HTTP request with automatic retry for transient failures
      */
     private async withRetry<T>(
@@ -233,13 +245,10 @@ export class SolumService {
             // Handle empty response / 204
             if (!response.data || response.status === 204) return [];
 
-            const data = response.data;
+            const source = this.unwrap(response.data);
 
-            // AIMS wraps responses in responseMessage — unwrap if present
-            const payload = data.responseMessage ?? data;
-
-            if (Array.isArray(payload)) return payload;
-            return payload.articleList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.articleList || source.content || source.data || [];
         });
     }
 
@@ -337,30 +346,10 @@ export class SolumService {
 
             if (!response.data || response.status === 204) return [];
 
-            const data = response.data;
+            const source = this.unwrap(response.data);
 
-            // Debug: log response shape on first page to diagnose parsing
-            if (page === 0) {
-                const topKeys = Object.keys(data);
-                const rmType = data.responseMessage == null ? 'null' : Array.isArray(data.responseMessage) ? 'array' : typeof data.responseMessage;
-                const sample = data.responseMessage && typeof data.responseMessage === 'object' && !Array.isArray(data.responseMessage)
-                    ? Object.keys(data.responseMessage).slice(0, 10)
-                    : null;
-                console.log(`[SoluM] fetchArticleInfo response shape: topKeys=${JSON.stringify(topKeys)}, responseMessage type=${rmType}${sample ? `, rmKeys=${JSON.stringify(sample)}` : ''}`);
-            }
-
-            const payload = data.responseMessage ?? data;
-
-            if (Array.isArray(payload)) return payload;
-            const articles = payload.articleList || payload.content || payload.data || [];
-
-            // Debug: log first article sample to verify assignedLabel presence
-            if (page === 0 && articles.length > 0) {
-                const s = articles[0];
-                console.log(`[SoluM] fetchArticleInfo sample article: articleId=${s.articleId}, assignedLabel=${JSON.stringify(s.assignedLabel)}, keys=${Object.keys(s).join(',')}`);
-            }
-
-            return articles;
+            if (Array.isArray(source)) return source;
+            return source.articleList || source.content || source.data || [];
         });
     }
 
@@ -400,11 +389,10 @@ export class SolumService {
 
             if (!response.data || response.status === 204) return [];
 
-            const data = response.data;
-            const payload = data.responseMessage ?? data;
+            const source = this.unwrap(response.data);
 
-            if (Array.isArray(payload)) return payload;
-            return payload.labelList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.labelList || source.content || source.data || [];
         });
     }
 
@@ -446,11 +434,10 @@ export class SolumService {
             });
 
             if (!response.data) return [];
-            const data = response.data;
-            const payload = data.responseMessage ?? data;
+            const source = this.unwrap(response.data);
 
-            if (Array.isArray(payload)) return payload;
-            return payload.labelList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.labelList || source.content || source.data || [];
         });
     }
 
@@ -556,11 +543,10 @@ export class SolumService {
 
             if (!response.data || response.status === 204) return [];
 
-            const data = response.data;
-            const payload = data.responseMessage ?? data;
+            const source = this.unwrap(response.data);
 
-            if (Array.isArray(payload)) return payload;
-            return payload.stores || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.stores || source.content || source.data || [];
         });
     }
 
