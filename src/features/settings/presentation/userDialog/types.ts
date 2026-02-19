@@ -3,7 +3,7 @@
  */
 import type { StoreAssignmentData } from '../StoreAssignment';
 
-export const COMPANY_ROLES = ['VIEWER', 'COMPANY_ADMIN'] as const;
+export const COMPANY_ROLES = ['VIEWER', 'STORE_VIEWER', 'STORE_ADMIN', 'COMPANY_ADMIN'] as const;
 export type CompanyRole = typeof COMPANY_ROLES[number];
 
 export interface UserData {
@@ -21,7 +21,6 @@ export interface UserData {
     companies?: Array<{
         company: { id: string; name: string; code: string };
         role: CompanyRole;
-        allStoresAccess: boolean;
     }>;
     stores?: Array<{
         store: { id: string; name: string; code: string; companyId: string };

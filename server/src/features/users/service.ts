@@ -7,6 +7,7 @@
 import bcrypt from 'bcrypt';
 import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
 import { prisma } from '../../config/index.js';
+import { invalidateUserCache } from '../../shared/middleware/index.js';
 import { userRepository } from './repository.js';
 import type {
     UserContext,
@@ -29,6 +30,17 @@ import type {
 } from './types.js';
 
 // ======================
+// Role Helpers
+// ======================
+
+const ALL_STORES_ROLES: CompanyRole[] = ['SUPER_USER', 'COMPANY_ADMIN', 'STORE_ADMIN'];
+
+/** Derive allStoresAccess from a CompanyRole */
+function derivesAllStoresAccess(role: CompanyRole): boolean {
+    return ALL_STORES_ROLES.includes(role);
+}
+
+// ======================
 // Authorization Helpers
 // ======================
 
@@ -38,7 +50,7 @@ export function isPlatformAdmin(user: UserContext): boolean {
 
 export async function isCompanyAdmin(userId: string, companyId: string): Promise<boolean> {
     const userCompany = await userRepository.findUserCompany(userId, companyId);
-    return userCompany?.role === 'COMPANY_ADMIN';
+    return userCompany?.role === 'COMPANY_ADMIN' || userCompany?.role === 'SUPER_USER';
 }
 
 export async function canManageCompany(user: UserContext, companyId: string): Promise<boolean> {
@@ -69,7 +81,7 @@ export async function canManageStoreOrCompany(user: UserContext, storeId: string
 export async function canManageUserViaCompany(currentUser: UserContext, targetUserId: string): Promise<boolean> {
     if (isPlatformAdmin(currentUser)) return true;
     const managedCompanyIds = (currentUser.companies || [])
-        .filter(c => c.role === 'COMPANY_ADMIN')
+        .filter(c => c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER')
         .map(c => c.id);
     if (managedCompanyIds.length === 0) return false;
     const targetCompanies = await userRepository.getUserCompanies(targetUserId);
@@ -266,9 +278,9 @@ export const userService = {
                 where.userCompanies = { some: { companyId } };
             }
         } else {
-            // Determine managed companies (company admin) and stores (store admin)
+            // Determine managed companies (company admin / super user) and stores (store admin)
             const managedCompanyIds = (user.companies || [])
-                .filter(c => c.role === 'COMPANY_ADMIN')
+                .filter(c => c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER')
                 .map(c => c.id);
             const managedStoreIds = (user.stores || [])
                 .filter(s => s.role === 'STORE_ADMIN')
@@ -328,30 +340,73 @@ export const userService = {
             userRepository.count(where),
         ]);
 
-        const data: UserListItem[] = users.map(u => ({
-            id: u.id,
-            email: u.email,
-            firstName: u.firstName,
-            lastName: u.lastName,
-            globalRole: u.globalRole,
-            isActive: u.isActive,
-            lastLogin: u.lastLogin,
-            createdAt: u.createdAt,
-            companies: u.userCompanies.map(uc => ({
-                id: uc.company.id,
-                code: uc.company.code,
-                name: uc.company.name,
-                role: uc.role,
-                allStoresAccess: uc.allStoresAccess,
-            })),
-            stores: u.userStores.map(us => ({
+        // Expand stores for users with allStoresAccess
+        const allStoresCompanyIds = new Set<string>();
+        for (const u of users) {
+            for (const uc of u.userCompanies) {
+                if (uc.allStoresAccess) {
+                    allStoresCompanyIds.add(uc.company.id);
+                }
+            }
+        }
+        const companyStoresMap = new Map<string, Array<{ id: string; name: string; code: string; companyId: string }>>();
+        if (allStoresCompanyIds.size > 0) {
+            const companyStores = await userRepository.findStoresByCompanyIds([...allStoresCompanyIds]);
+            for (const store of companyStores) {
+                const arr = companyStoresMap.get(store.companyId) || [];
+                arr.push(store);
+                companyStoresMap.set(store.companyId, arr);
+            }
+        }
+
+        const allFeatures = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels'];
+
+        const data: UserListItem[] = users.map(u => {
+            const explicitStores = u.userStores.map(us => ({
                 id: us.storeId,
                 name: us.store.name,
                 code: us.store.code,
                 role: us.role,
                 features: us.features as string[],
-            })),
-        }));
+            }));
+
+            // Merge missing stores for allStoresAccess companies
+            const explicitStoreIds = new Set(explicitStores.map(s => s.id));
+            const expandedStores = [...explicitStores];
+            for (const uc of u.userCompanies) {
+                if (!uc.allStoresAccess) continue;
+                const stores = companyStoresMap.get(uc.company.id) || [];
+                for (const store of stores) {
+                    if (explicitStoreIds.has(store.id)) continue;
+                    expandedStores.push({
+                        id: store.id,
+                        name: store.name,
+                        code: store.code,
+                        role: 'STORE_ADMIN' as any,
+                        features: allFeatures,
+                    });
+                }
+            }
+
+            return {
+                id: u.id,
+                email: u.email,
+                firstName: u.firstName,
+                lastName: u.lastName,
+                globalRole: u.globalRole,
+                isActive: u.isActive,
+                lastLogin: u.lastLogin,
+                createdAt: u.createdAt,
+                companies: u.userCompanies.map(uc => ({
+                    id: uc.company.id,
+                    code: uc.company.code,
+                    name: uc.company.name,
+                    role: uc.role,
+                    allStoresAccess: uc.allStoresAccess,
+                })),
+                stores: expandedStores,
+            };
+        });
 
         return {
             data,
@@ -448,10 +503,14 @@ export const userService = {
                 companyId = newCompany.id;
             }
 
+            // Derive allStoresAccess from companyRole
+            const role = data.companyRole as CompanyRole;
+            const allStoresAccess = derivesAllStoresAccess(role);
+
             // Resolve stores
             const storeAssignments: Array<{ storeId: string; role: StoreRole; features: string[] }> = [];
 
-            if (!data.allStoresAccess && data.stores) {
+            if (!allStoresAccess && data.stores) {
                 for (const storeRef of data.stores) {
                     if (storeRef.type === 'existing') {
                         const store = await tx.store.findUnique({ where: { id: storeRef.id } });
@@ -496,11 +555,11 @@ export const userService = {
                     userCompanies: {
                         create: {
                             companyId,
-                            allStoresAccess: data.allStoresAccess,
-                            role: data.isCompanyAdmin ? 'COMPANY_ADMIN' : 'VIEWER',
+                            allStoresAccess,
+                            role,
                         },
                     },
-                    userStores: data.allStoresAccess ? undefined : {
+                    userStores: allStoresAccess ? undefined : {
                         create: storeAssignments.map(sa => ({
                             storeId: sa.storeId,
                             role: sa.role,
@@ -586,10 +645,12 @@ export const userService = {
             throw new Error('CANNOT_DEMOTE_SELF');
         }
 
-        return userRepository.updateUserStore(userId, storeId, {
+        const result = await userRepository.updateUserStore(userId, storeId, {
             ...(data.role && { role: data.role as StoreRole }),
             ...(data.features && { features: data.features }),
         });
+        invalidateUserCache(userId);
+        return result;
     },
 
     /**
@@ -609,12 +670,14 @@ export const userService = {
         const existing = await userRepository.findUserStore(userId, storeId);
         if (existing) throw new Error('ALREADY_ASSIGNED');
 
-        return userRepository.createUserStore({
+        const result = await userRepository.createUserStore({
             userId,
             storeId,
             role: role as StoreRole,
             features,
         });
+        invalidateUserCache(userId);
+        return result;
     },
 
     /**
@@ -633,6 +696,7 @@ export const userService = {
         if (!userStore) throw new Error('USER_STORE_NOT_FOUND');
 
         await userRepository.deleteUserStore(userId, storeId);
+        invalidateUserCache(userId);
     },
 
     /**
@@ -700,7 +764,7 @@ export const userService = {
                 name: uc.company.name,
                 location: uc.company.location,
                 allStoresAccess: uc.allStoresAccess,
-                isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
+                isCompanyAdmin: uc.role === 'COMPANY_ADMIN' || uc.role === 'SUPER_USER',
             })),
         };
     },
@@ -748,17 +812,21 @@ export const userService = {
             });
             if (existing) throw new Error('ALREADY_ASSIGNED');
 
-            return tx.userCompany.create({
+            const assignRole = data.companyRole as CompanyRole;
+            const result = await tx.userCompany.create({
                 data: {
                     userId,
                     companyId,
-                    allStoresAccess: data.allStoresAccess,
-                    role: data.isCompanyAdmin ? 'COMPANY_ADMIN' : 'VIEWER',
+                    allStoresAccess: derivesAllStoresAccess(assignRole),
+                    role: assignRole,
                 },
                 include: {
                     company: { select: { id: true, code: true, name: true, location: true } },
                 },
             });
+
+            invalidateUserCache(userId);
+            return result;
         });
     },
 
@@ -769,16 +837,22 @@ export const userService = {
         if (!isPlatformAdmin(currentUser)) {
             const canManage = await isCompanyAdmin(currentUser.id, companyId);
             if (!canManage) throw new Error('FORBIDDEN');
-            if (data.isCompanyAdmin === true) throw new Error('FORBIDDEN_GRANT_ADMIN');
+            if (data.companyRole === 'COMPANY_ADMIN') throw new Error('FORBIDDEN_GRANT_ADMIN');
         }
 
         const existing = await userRepository.findUserCompany(userId, companyId);
         if (!existing) throw new Error('USER_COMPANY_NOT_FOUND');
 
-        return userRepository.updateUserCompany(userId, companyId, {
-            ...(data.allStoresAccess !== undefined && { allStoresAccess: data.allStoresAccess }),
-            ...(data.isCompanyAdmin !== undefined && { role: data.isCompanyAdmin ? 'COMPANY_ADMIN' : 'VIEWER' }),
-        });
+        const updateData: { role?: CompanyRole; allStoresAccess?: boolean } = {};
+        if (data.companyRole) {
+            const newRole = data.companyRole as CompanyRole;
+            updateData.role = newRole;
+            updateData.allStoresAccess = derivesAllStoresAccess(newRole);
+        }
+
+        const result = await userRepository.updateUserCompany(userId, companyId, updateData);
+        invalidateUserCache(userId);
+        return result;
     },
 
     /**
@@ -799,6 +873,7 @@ export const userService = {
         if (!existing) throw new Error('USER_COMPANY_NOT_FOUND');
 
         await userRepository.deleteUserCompanyWithCascade(userId, companyId);
+        invalidateUserCache(userId);
     },
 
     /**
@@ -817,7 +892,7 @@ export const userService = {
                     code: uc.company.code,
                     name: uc.company.name,
                     allStoresAccess: uc.allStoresAccess,
-                    isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
+                    isCompanyAdmin: uc.role === 'COMPANY_ADMIN' || uc.role === 'SUPER_USER',
                 };
             }
         }
@@ -844,7 +919,7 @@ export const userService = {
                 code: uc.company.code,
                 name: uc.company.name,
                 allStoresAccess: uc.allStoresAccess,
-                isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
+                isCompanyAdmin: uc.role === 'COMPANY_ADMIN' || uc.role === 'SUPER_USER',
             })),
             availableStores: user.userStores.map(us => ({
                 id: us.storeId,
