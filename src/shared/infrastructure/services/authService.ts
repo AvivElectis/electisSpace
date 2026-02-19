@@ -41,7 +41,7 @@ export interface Company {
     id: string;
     name: string;
     code: string;
-    role: 'COMPANY_ADMIN' | 'VIEWER';
+    role: 'SUPER_USER' | 'COMPANY_ADMIN' | 'STORE_ADMIN' | 'STORE_VIEWER' | 'VIEWER';
     allStoresAccess: boolean;
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;

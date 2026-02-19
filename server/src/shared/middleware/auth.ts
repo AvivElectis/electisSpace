@@ -255,11 +255,18 @@ export const requirePermission = (resource: Resource, action: Action) => {
         }
 
         // Check if any store role has the required permission
-        const hasPermission = req.user.stores.some(s => {
+        let hasPermission = req.user.stores.some(s => {
             const permissions = STORE_ROLE_PERMISSIONS[s.role];
             const resourcePermissions = permissions[resource] || [];
             return resourcePermissions.includes(action);
         });
+
+        // Fallback: check if user has allStoresAccess via company role (STORE_ADMIN-level permissions)
+        if (!hasPermission) {
+            hasPermission = req.user.companies.some(c =>
+                c.allStoresAccess && (STORE_ROLE_PERMISSIONS['STORE_ADMIN'][resource]?.includes(action) ?? false)
+            );
+        }
 
         if (!hasPermission) {
             next(forbidden(`Permission denied: ${action} on ${resource}`));

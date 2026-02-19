@@ -569,6 +569,17 @@ export const userRepository = {
         });
     },
 
+    /**
+     * Batch-fetch active stores for multiple companies (for allStoresAccess expansion)
+     */
+    async findStoresByCompanyIds(companyIds: string[]) {
+        if (companyIds.length === 0) return [];
+        return prisma.store.findMany({
+            where: { companyId: { in: companyIds }, isActive: true },
+            select: { id: true, name: true, code: true, companyId: true },
+        });
+    },
+
     // ======================
     // Elevation Operations
     // ======================

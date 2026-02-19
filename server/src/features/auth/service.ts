@@ -170,6 +170,7 @@ export const authService = {
         const companies = user.userCompanies.map(uc => ({
             id: uc.companyId,
             role: uc.role,
+            allStoresAccess: uc.allStoresAccess,
         }));
 
         const accessToken = jwt.sign(

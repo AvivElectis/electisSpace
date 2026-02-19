@@ -52,6 +52,9 @@ export const storeRefSchema = z.discriminatedUnion('type', [
     }),
 ]);
 
+// Company roles that grant all-stores access
+const ALL_STORES_COMPANY_ROLES = ['SUPER_USER', 'COMPANY_ADMIN', 'STORE_ADMIN'] as const;
+
 // Create user with company/store
 export const createUserSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -60,12 +63,11 @@ export const createUserSchema = z.object({
     phone: z.string().max(50).optional().nullable(),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     company: companyRefSchema,
-    isCompanyAdmin: z.boolean().default(false),
-    allStoresAccess: z.boolean().default(false),
+    companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).default('VIEWER'),
     stores: z.array(storeRefSchema).optional(),
 }).refine(
-    (data) => data.allStoresAccess || (data.stores && data.stores.length > 0),
-    { message: 'Either allStoresAccess must be true or at least one store must be specified', path: ['stores'] }
+    (data) => ALL_STORES_COMPANY_ROLES.includes(data.companyRole as any) || (data.stores && data.stores.length > 0),
+    { message: 'Per-store roles require at least one store assignment', path: ['stores'] }
 );
 
 export const updateUserSchema = z.object({
@@ -97,13 +99,11 @@ export const elevateUserSchema = z.object({
 
 export const assignUserToCompanySchema = z.object({
     company: companyRefSchema,
-    allStoresAccess: z.boolean().default(false),
-    isCompanyAdmin: z.boolean().default(false),
+    companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).default('VIEWER'),
 });
 
 export const updateUserCompanySchema = z.object({
-    allStoresAccess: z.boolean().optional(),
-    isCompanyAdmin: z.boolean().optional(),
+    companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).optional(),
 });
 
 export const updateContextSchema = z.object({
