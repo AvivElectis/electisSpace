@@ -1,4 +1,5 @@
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
+import type { AimsLabel } from '../../shared/infrastructure/services/aims.types.js';
 import type {
     LabelsUserContext,
     LinkLabelDTO,
@@ -31,14 +32,50 @@ async function ensureAimsConfigured(storeId: string): Promise<void> {
 
 export const labelsService = {
     /**
-     * Fetch all labels for a store
+     * Fetch all labels for a store.
+     * Merges basic labels (has articleList) with unassigned labels (has signal/battery details)
+     * to produce a unified list with both assignment info and hardware details.
      */
     async list(userContext: LabelsUserContext, storeId: string) {
         validateStoreAccess(storeId, userContext);
         await ensureAimsConfigured(storeId);
 
-        const labels = await aimsGateway.fetchLabels(storeId);
-        return { labels, total: labels.length };
+        // Fetch both endpoints in parallel
+        const [basicLabels, unassignedLabels] = await Promise.all([
+            aimsGateway.fetchLabels(storeId),
+            aimsGateway.fetchUnassignedLabels(storeId).catch(() => [] as AimsLabel[]),
+        ]);
+
+        // Build lookup of unassigned labels
+        const unassignedMap = new Map<string, AimsLabel>();
+        for (const label of unassignedLabels) {
+            unassignedMap.set(label.labelCode, label);
+        }
+
+        // Merge: unassigned labels get richer details; assigned labels keep articleList
+        const mergedLabels: AimsLabel[] = [];
+        const seenLabels = new Set<string>();
+
+        for (const basic of basicLabels) {
+            seenLabels.add(basic.labelCode);
+            const unassigned = unassignedMap.get(basic.labelCode);
+            if (unassigned) {
+                // Unassigned — use detailed data but preserve articleList from basic
+                mergedLabels.push({ ...unassigned, articleList: basic.articleList });
+            } else {
+                // Assigned — keep basic info (has articleList/articleId)
+                mergedLabels.push(basic);
+            }
+        }
+
+        // Add any unassigned labels not in basic list
+        for (const label of unassignedLabels) {
+            if (!seenLabels.has(label.labelCode)) {
+                mergedLabels.push(label);
+            }
+        }
+
+        return { labels: mergedLabels, total: mergedLabels.length };
     },
 
     /**

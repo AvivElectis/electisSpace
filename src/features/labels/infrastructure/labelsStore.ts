@@ -45,10 +45,10 @@ interface LabelsState {
 function transformLabels(aimsLabels: AIMSLabel[]): LabelArticleLink[] {
     return aimsLabels.map(label => ({
         labelCode: label.labelCode,
-        articleId: (label as any).articleList?.[0]?.articleId || label.articleId || '',
-        articleName: (label as any).articleList?.[0]?.articleName || label.articleName,
-        signal: (label as any).signal || label.signalQuality,
-        battery: label.battery,
+        articleId: label.articleList?.[0]?.articleId || label.articleId || '',
+        articleName: label.articleList?.[0]?.articleName || label.articleName,
+        signal: label.signal != null ? String(label.signal) : label.signalQuality,
+        battery: label.battery != null ? String(label.battery) : undefined,
         status: label.status,
     }));
 }

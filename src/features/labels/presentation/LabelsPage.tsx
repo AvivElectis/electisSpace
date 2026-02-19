@@ -360,29 +360,17 @@ export function LabelsPage() {
                 <Stack direction="row" gap={1}>
                     <Button
                         variant="contained"
-                        color="primary"
-                        size={isMobile ? 'small' : 'large'}
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenLinkDialog()}
-                        sx={{
-                            fontSize: { xs: '0.8rem', md: '1.25rem' },
-                            whiteSpace: 'nowrap',
-                            display: { xs: 'none', md: 'inline-flex' },
-                        }}
+                        sx={{ display: { xs: 'none', md: 'inline-flex' } }}
                     >
                         {t('labels.linkNew', 'Link Label')}
                     </Button>
                     <Button
                         variant="outlined"
-                        color="primary"
-                        size={isMobile ? 'small' : 'large'}
                         startIcon={<ImageIcon />}
                         onClick={() => handleOpenAssignImageDialog()}
-                        sx={{
-                            fontSize: { xs: '0.8rem', md: '1.25rem' },
-                            whiteSpace: 'nowrap',
-                            display: { xs: 'none', md: 'inline-flex' },
-                        }}
+                        sx={{ display: { xs: 'none', md: 'inline-flex' } }}
                     >
                         {t('imageLabels.assignImage', 'Assign Image')}
                     </Button>
@@ -396,7 +384,7 @@ export function LabelsPage() {
                         </IconButton>
                     </Tooltip>
                     <Button
-                        variant="outlined"
+                        variant="text"
                         startIcon={<RefreshIcon />}
                         onClick={handleRefresh}
                         disabled={isLoading}
