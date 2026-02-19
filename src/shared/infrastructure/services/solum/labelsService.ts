@@ -15,11 +15,12 @@ export interface AimsLabel {
     labelMac?: string;
     gatewayMac?: string;
     firmwareVersion?: string;
-    signal?: string;
-    battery?: string;
+    signal?: string | number;
+    battery?: string | number;
     networkStatus?: string;
     status?: string;
     labelType?: string;
+    type?: string;
     articleList?: Array<{
         articleId: string;
         articleName?: string;

@@ -1,6 +1,6 @@
 import { Box, Typography, Grid, Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo, lazy, Suspense, useCallback } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense, useCallback } from 'react';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -40,7 +40,7 @@ export function DashboardPage() {
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
     const { syncState } = useSyncContext();
-    const { activeStoreId } = useAuthStore();
+    const { activeStoreId, isAppReady } = useAuthStore();
 
     // Controllers
     const spaceController = useSpaceController({
@@ -53,6 +53,19 @@ export function DashboardPage() {
         solumToken: settingsController.settings.solumConfig?.tokens?.accessToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
+
+    // People store (before useEffect so fetchPeople is available)
+    const peopleStore = usePeopleStore();
+
+    // Fetch all data from server on mount / store switch so dashboard shows real counts
+    useEffect(() => {
+        if (isAppReady && activeStoreId) {
+            spaceController.fetchSpaces();
+            conferenceController.fetchRooms();
+            peopleStore.fetchPeople();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAppReady, activeStoreId]);
 
     // Stats - Spaces
     const totalSpaces = spaceController.spaces.length;
@@ -67,7 +80,6 @@ export function DashboardPage() {
     const availableRooms = totalRooms - occupiedRooms;
 
     // Stats - People Manager
-    const peopleStore = usePeopleStore();
     const settings = useSettingsStore((state) => state.settings);
     const isPeopleManagerMode = settings.peopleManagerEnabled === true;
     const totalPeople = peopleStore.people.length;
