@@ -137,7 +137,7 @@ export const useSettingsStore = create<SettingsStore>()(
                     try {
                         // Fetch store settings, company settings, field mappings, and article format in parallel
                         const [settingsResponse, companySettingsResponse, fieldMappingsResponse, articleFormatResponse] = await Promise.all([
-                            settingsService.getStoreSettings(storeId),
+                            settingsService.getStoreSettings(storeId).catch(() => ({ settings: {} })),
                             settingsService.getCompanySettings(companyId).catch(() => ({ settings: {} })),
                             fieldMappingService.getFieldMappings(companyId).catch(() => ({ fieldMappings: null })),
                             fieldMappingService.getArticleFormat(companyId).catch(() => ({ articleFormat: null })),

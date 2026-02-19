@@ -112,4 +112,5 @@ export interface SyncUserContext {
     id: string;
     globalRole?: string | null;
     stores?: Array<{ id: string }>;
+    companies?: Array<{ id: string; allStoresAccess?: boolean }>;
 }
