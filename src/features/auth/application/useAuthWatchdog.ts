@@ -19,12 +19,12 @@ const MIN_VALIDATION_INTERVAL_MS = 30 * 1000;
 export const useAuthWatchdog = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated, validateSession, lastValidation, logout } = useAuthStore();
+    const { isAuthenticated, validateSession, lastValidation, logout, isSwitchingStore } = useAuthStore();
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const performValidation = useCallback(async () => {
-        // Skip validation if not authenticated or on login page
-        if (!isAuthenticated || location.pathname === '/login') {
+        // Skip validation if not authenticated, on login page, or during store switch
+        if (!isAuthenticated || location.pathname === '/login' || isSwitchingStore) {
             return;
         }
 
@@ -46,7 +46,7 @@ export const useAuthWatchdog = () => {
         } else {
             logger.debug('AuthWatchdog', 'Session valid');
         }
-    }, [isAuthenticated, validateSession, lastValidation, logout, navigate, location.pathname]);
+    }, [isAuthenticated, validateSession, lastValidation, logout, navigate, location.pathname, isSwitchingStore]);
 
     // Set up periodic validation
     useEffect(() => {

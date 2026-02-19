@@ -396,10 +396,10 @@ export const useAuthStore = create<AuthState>()(
                 setActiveCompany: async (companyId: string | null): Promise<void> => {
                     set({ isSwitchingStore: true }, false, 'setActiveCompany/start');
                     try {
-                        const response = await authService.updateContext(companyId, null);
-                        const { user } = response;
+                        await authService.updateContext(companyId, null);
+                        const currentUser = get().user;
                         set({
-                            user,
+                            user: currentUser ? { ...currentUser, activeCompanyId: companyId, activeStoreId: null } : null,
                             activeCompanyId: companyId,
                             activeStoreId: null, // Reset store when company changes
                         }, false, 'setActiveCompany');
@@ -429,10 +429,10 @@ export const useAuthStore = create<AuthState>()(
                 setActiveStore: async (storeId: string | null): Promise<void> => {
                     set({ isSwitchingStore: true }, false, 'setActiveStore/start');
                     try {
-                        const response = await authService.updateContext(undefined, storeId);
-                        const { user } = response;
+                        await authService.updateContext(undefined, storeId);
+                        const currentUser = get().user;
                         set({
-                            user,
+                            user: currentUser ? { ...currentUser, activeStoreId: storeId } : null,
                             activeStoreId: storeId,
                         }, false, 'setActiveStore');
 
@@ -478,10 +478,10 @@ export const useAuthStore = create<AuthState>()(
                 setActiveContext: async (companyId: string | null, storeId: string | null): Promise<void> => {
                     set({ isSwitchingStore: true }, false, 'setActiveContext/start');
                     try {
-                        const response = await authService.updateContext(companyId, storeId);
-                        const { user } = response;
+                        await authService.updateContext(companyId, storeId);
+                        const currentUser = get().user;
                         set({
-                            user,
+                            user: currentUser ? { ...currentUser, activeCompanyId: companyId, activeStoreId: storeId } : null,
                             activeCompanyId: companyId,
                             activeStoreId: storeId,
                         }, false, 'setActiveContext');

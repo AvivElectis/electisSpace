@@ -201,8 +201,8 @@ export const authService = {
     /**
      * Update user's active company/store context
      */
-    updateContext: async (activeCompanyId?: string | null, activeStoreId?: string | null): Promise<{ user: User }> => {
-        const response = await api.patch<{ user: User }>('/users/me/context', {
+    updateContext: async (activeCompanyId?: string | null, activeStoreId?: string | null): Promise<{ activeCompanyId: string | null; activeStoreId: string | null }> => {
+        const response = await api.patch<{ activeCompanyId: string | null; activeStoreId: string | null }>('/users/me/context', {
             activeCompanyId,
             activeStoreId,
         });
