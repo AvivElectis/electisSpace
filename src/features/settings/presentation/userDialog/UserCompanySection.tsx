@@ -72,10 +72,10 @@ export function UserCompanySection({
                                         {t(`roles.${role.toLowerCase()}`)}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
-                                        {role === 'COMPANY_ADMIN'
-                                            ? t('settings.users.companyAdminDesc')
-                                            : t('settings.users.viewerDesc')
-                                        }
+                                        {role === 'COMPANY_ADMIN' && t('settings.users.companyAdminDesc')}
+                                        {role === 'STORE_ADMIN' && t('settings.users.storeAdminDesc')}
+                                        {role === 'STORE_VIEWER' && t('settings.users.storeViewerDesc')}
+                                        {role === 'VIEWER' && t('settings.users.viewerDesc')}
                                     </Typography>
                                 </Box>
                             </MenuItem>

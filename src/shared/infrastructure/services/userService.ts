@@ -4,7 +4,7 @@ import api from './apiClient';
 export interface UserStoreAssignment {
     id: string;
     name: string;
-    storeNumber: string;
+    code: string;
     role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
     features: string[];
 }
@@ -13,7 +13,7 @@ export interface UserCompanyAssignment {
     id: string;
     code: string;
     name: string;
-    role: 'COMPANY_ADMIN' | 'VIEWER';
+    role: 'SUPER_USER' | 'COMPANY_ADMIN' | 'STORE_ADMIN' | 'STORE_VIEWER' | 'VIEWER';
     allStoresAccess: boolean;
 }
 
