@@ -56,10 +56,10 @@ function transformLabels(aimsLabels: AimsLabel[]): LabelArticleLink[] {
         labelCode: label.labelCode,
         articleId: label.articleList?.[0]?.articleId || '',
         articleName: label.articleList?.[0]?.articleName,
-        signal: label.signal,
-        battery: label.battery,
+        signal: label.signal != null ? String(label.signal) : undefined,
+        battery: label.battery != null ? String(label.battery) : undefined,
         status: label.status,
-        labelType: label.labelType,
+        labelType: label.type || label.labelType,
     }));
 }
 

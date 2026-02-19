@@ -1,6 +1,6 @@
 {
     "name": "electisspace-server",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "description": "electisSpace Backend Server - Node.js API with PostgreSQL",
     "main": "dist/server.js",
     "scripts": {

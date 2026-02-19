@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0] - 2026-02-19
+
+### Added
+- **Granular store roles** — expanded CompanyRole enum with `STORE_ADMIN` and `STORE_VIEWER` for fine-grained per-store access control
+- **PWA install support** — browser password manager compatibility and installable Progressive Web App
+- **Direct AIMS label fetching** — labels page fetches directly from AIMS for faster, more reliable data
+- **Label status colors** — status column in labels table now displays colored chips (NORMAL, UPDATED, PROCESSING, ERROR)
+- **Dashboard per-feature label counts** — Spaces and Conference cards show assigned labels count individually
+- **Native barcode scanner** — support for hardware barcode scanners in label management
+
+### Changed
+- Client version bumped to 2.3.0, server to 2.2.0
+- **STORE_ADMIN is now per-store only** — Store Admin no longer receives automatic access to all stores; explicit store assignments are required. Company Admin retains all-stores access
+- Labels enabled by default for all stores with viewer read-only enforcement
+- Split client and server into separate Docker containers for independent scaling
+- Renamed "Conference Rooms" to "Conference" in navigation
+- Label size column now correctly displays AIMS label type (e.g., "2.9 inch")
+- Improved labels UX — larger previews, chip padding, mobile layout, smart background refresh
+
+### Fixed
+- **Dashboard counts showing 0** — dashboard now fetches spaces, conference rooms, and people from server on mount instead of relying on navigation to other pages first
+- **Label size column empty** — fixed AIMS field mapping (`type` → `labelType`)
+- **Company admin allStoresAccess** — fixed bug where company admins couldn't see company-level data
+- Conference rooms and spaces now correctly scoped to active store
+- Space assignment check scoped to person's store
+- Conference rooms no longer persisted to localStorage (always fresh from server)
+- Role display priority corrected for company admins in users table
+- User dialog crash on edit, SW CSP font blocking
+- Health endpoint 401, stale chunk recovery, SW cache versioning
+- Token/cookie expiry alignment (refresh token extended to 180 days)
+- Store switching no longer logs out user; shows loading screen during transition
+- Platform admin access to all feature services and sync endpoints
+
+### Infrastructure
+- Split Docker Compose into infra + app, removed nginx container
+- Ubuntu server deployment with external PostgreSQL
+- Removed hardcoded passwords and tracked secrets from repository
+- Consolidated environment files and deploy scripts
+
+---
+
 ## [2.2.0] - 2026-02-17
 
 ### Added
