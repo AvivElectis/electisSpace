@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Client version bumped to 2.3.0, server to 2.2.0
-- **STORE_ADMIN is now per-store only** — Store Admin no longer receives automatic access to all stores; explicit store assignments are required. Company Admin retains all-stores access
+- **STORE_ADMIN is now per-store only** — Store Manager no longer receives automatic access to all stores; explicit store assignments are required. Company Admin retains all-stores access
+- Renamed "Platform Admin" → "App Admin" and "Store Admin" → "Store Manager" in UI
+- Simplified store role selector to Store Manager / Store Viewer only
 - Labels enabled by default for all stores with viewer read-only enforcement
 - Split client and server into separate Docker containers for independent scaling
 - Renamed "Conference Rooms" to "Conference" in navigation

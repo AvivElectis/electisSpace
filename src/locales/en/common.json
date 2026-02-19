@@ -506,20 +506,20 @@
             "searchPlaceholder": "Search users...",
             "companyFilter": "Company",
             "noSearchResults": "No users match your search",
-            "elevate": "Elevate to Platform Admin",
-            "elevateTitle": "Elevate to Platform Admin",
+            "elevate": "Elevate to App Admin",
+            "elevateTitle": "Elevate to App Admin",
             "elevateWarning": "You are about to grant PLATFORM_ADMIN privileges to this user. This action cannot be easily undone.",
             "elevateError": "Failed to elevate user",
-            "elevateConfirm": "I understand and want to grant Platform Admin privileges to this user",
+            "elevateConfirm": "I understand and want to grant App Admin privileges to this user",
             "elevateButton": "Elevate User",
             "userToElevate": "User to elevate",
-            "platformAdminPrivileges": "Platform Admin privileges include:",
+            "platformAdminPrivileges": "App Admin privileges include:",
             "privilege": {
                 "companies": "Create and manage all companies",
                 "companiesDesc": "Full control over company settings and AIMS configuration",
                 "users": "Manage all users across all companies",
                 "usersDesc": "Assign users to any company or store, change roles",
-                "elevate": "Elevate other users to Platform Admin",
+                "elevate": "Elevate other users to App Admin",
                 "elevateDesc": "Grant highest-level access to other users"
             },
             "saveError": "Failed to save user",
@@ -529,7 +529,7 @@
             "storeAssignments": "Store Assignments",
             "companyRole": "Company Role",
             "companyAdminDesc": "Can manage stores and users in this company",
-            "storeAdminDesc": "Admin access to all stores without company management",
+            "storeAdminDesc": "Manager access to assigned stores",
             "storeViewerDesc": "View-only access to assigned stores",
             "viewerDesc": "View-only access to company data",
             "steps": {
@@ -567,11 +567,11 @@
             "memberSince": "Member Since",
             "assignments": "Company & Store Access",
             "roles": {
-                "platformAdmin": "Platform Admin",
+                "platformAdmin": "App Admin",
                 "superUser": "Super User",
                 "companyAdmin": "Company Admin",
                 "viewer": "Viewer",
-                "storeAdmin": "Store Admin",
+                "storeAdmin": "Store Manager",
                 "storeManager": "Store Manager",
                 "storeEmployee": "Store Employee",
                 "storeViewer": "Store Viewer"
@@ -1035,7 +1035,7 @@
             "companyAddress": "30 Sheshet HaYamim St., Bnei Brak",
             "companyName": "Company Name",
             "companyId": "Company ID",
-            "releaseNotesContent": "v2.3.0 — Roles, Labels & Infrastructure\n• Store Admin is now per-store only — explicit store assignments required. Company Admin retains all-stores access\n• Dashboard shows per-feature assigned label counts for Spaces and Conference\n• Label size column now correctly displays AIMS label type\n• Label status column shows colored status chips\n• Labels fetched directly from AIMS for faster data\n• PWA install support with browser password manager compatibility\n• Split Docker deployment into separate client/server containers\n• Fixed company admin allStoresAccess, store-scoped data, and token alignment\n\nv2.2.0 — Store Switching & Mobile UX\n• Live store switching — changing stores now refreshes all data instantly, no re-login needed\n• Auto-sync on store switch — AIMS sync triggers automatically when switching stores\n• Mobile-friendly buttons — larger touch targets for all action buttons on mobile devices\n• Speed dial improvements — tapping outside the dashboard quick-actions now closes the menu\n• Removed Image Labels from navigation and Labels from company feature toggles"
+            "releaseNotesContent": "v2.3.0 — Roles, Labels & Infrastructure\n• Store Manager is now per-store only — explicit store assignments required. Company Admin retains all-stores access\n• Dashboard shows per-feature assigned label counts for Spaces and Conference\n• Label size column now correctly displays AIMS label type\n• Label status column shows colored status chips\n• Labels fetched directly from AIMS for faster data\n• PWA install support with browser password manager compatibility\n• Split Docker deployment into separate client/server containers\n• Fixed company admin allStoresAccess, store-scoped data, and token alignment\n\nv2.2.0 — Store Switching & Mobile UX\n• Live store switching — changing stores now refreshes all data instantly, no re-login needed\n• Auto-sync on store switch — AIMS sync triggers automatically when switching stores\n• Mobile-friendly buttons — larger touch targets for all action buttons on mobile devices\n• Speed dial improvements — tapping outside the dashboard quick-actions now closes the menu\n• Removed Image Labels from navigation and Labels from company feature toggles"
         },
         "gettingStarted": {
             "welcome": {
@@ -1048,11 +1048,11 @@
             },
             "firstSetup": {
                 "title": "Initial Setup",
-                "content": "Getting started is quick. Here's how to set up your system for the first time:\n1. Log In: Use the credentials provided by your administrator. If this is a fresh installation, a default Platform Admin account is created during setup.\n2. Create a Company: Go to Settings > Companies tab and click 'Create Company'. Enter your SoluM AIMS credentials (cluster, username, password) and the wizard will connect to AIMS and let you select your store.\n3. Invite Users: In Settings > Users tab, create accounts for your team members. Assign appropriate roles (see Roles & Permissions below).\n4. Configure Your Store: Once connected, your article format is automatically fetched from AIMS. Spaces and labels will begin syncing.\n5. Choose Your Mode: Under your store settings, decide whether to use Spaces mode (default) or People Manager mode.\nThat's it — you're ready to manage your labels!"
+                "content": "Getting started is quick. Here's how to set up your system for the first time:\n1. Log In: Use the credentials provided by your administrator. If this is a fresh installation, a default App Admin account is created during setup.\n2. Create a Company: Go to Settings > Companies tab and click 'Create Company'. Enter your SoluM AIMS credentials (cluster, username, password) and the wizard will connect to AIMS and let you select your store.\n3. Invite Users: In Settings > Users tab, create accounts for your team members. Assign appropriate roles (see Roles & Permissions below).\n4. Configure Your Store: Once connected, your article format is automatically fetched from AIMS. Spaces and labels will begin syncing.\n5. Choose Your Mode: Under your store settings, decide whether to use Spaces mode (default) or People Manager mode.\nThat's it — you're ready to manage your labels!"
             },
             "roles": {
                 "title": "Roles & Permissions",
-                "content": "electis Space uses a role-based access system with multiple levels:\n• Platform Admin: Full access to everything. Can create companies, manage all users, and configure the entire platform. Typically reserved for IT administrators.\n• Company Admin: Manages a specific company and all its stores. Has automatic access to every store in the company. Can create stores, manage users, and configure AIMS connections.\n• Store Admin: Manages specific assigned stores. Can edit spaces, people, conference rooms, and configure store-level settings. Must be explicitly assigned to each store.\n• Store Viewer: Read-only access to assigned stores. Can view data but cannot make changes.\n• Viewer: Basic read-only access within the assigned company.\nEach user is assigned to a company and one or more stores. You can only see and manage data for stores you have access to. Role assignment is done by admins in Settings > Users."
+                "content": "electis Space uses a role-based access system with multiple levels:\n• App Admin: Full access to everything. Can create companies, manage all users, and configure the entire platform. Typically reserved for IT administrators.\n• Company Admin: Manages a specific company and all its stores. Has automatic access to every store in the company. Can create stores, manage users, and configure AIMS connections.\n• Store Manager: Manages specific assigned stores. Can edit spaces, people, conference rooms, and configure store-level settings. Must be explicitly assigned to each store.\n• Store Viewer: Read-only access to assigned stores. Can view data but cannot make changes.\n• Viewer: Basic read-only access within the assigned company.\nEach user is assigned to a company and one or more stores. You can only see and manage data for stores you have access to. Role assignment is done by admins in Settings > Users."
             }
         },
         "spaces": {
@@ -1126,7 +1126,7 @@
         "settings": {
             "overview": {
                 "title": "Settings Overview",
-                "content": "Access Settings by clicking the gear icon in the top-right corner. Available settings depend on your role:\nSettings Sections:\n• Companies: Create and manage companies (Platform Admin only). Each company has its own AIMS connection.\n• Users: Manage user accounts and role assignments.\n• Stores: Configure store-level settings, sync preferences, and display options.\n• Field Mapping: Configure how your data fields map to AIMS article fields.\n• System Logs: View detailed application logs for troubleshooting.\nQuick Reference:\n• Only Platform Admins and Company Admins can access company and user management.\n• Store Admins can modify store settings and field mappings.\n• Regular Users have limited access to settings."
+                "content": "Access Settings by clicking the gear icon in the top-right corner. Available settings depend on your role:\nSettings Sections:\n• Companies: Create and manage companies (App Admin only). Each company has its own AIMS connection.\n• Users: Manage user accounts and role assignments.\n• Stores: Configure store-level settings, sync preferences, and display options.\n• Field Mapping: Configure how your data fields map to AIMS article fields.\n• System Logs: View detailed application logs for troubleshooting.\nQuick Reference:\n• Only App Admins and Company Admins can access company and user management.\n• Store Managers can modify store settings and field mappings.\n• Regular Users have limited access to settings."
             },
             "companies": {
                 "title": "Companies & Stores",
@@ -1134,7 +1134,7 @@
             },
             "users": {
                 "title": "Users & Roles",
-                "content": "Manage who can access the system and what they can do.\nCreating a User:\n1. Go to Settings > Users and click 'Add User'.\n2. Fill in the user's email, first name, last name, and initial password.\n3. Select a role: Company Admin, Store Admin, Store Viewer, or Viewer.\n4. Assign the user to a company.\n5. For Store Admin and Store Viewer roles, assign specific stores the user can access.\n6. Company Admin users automatically get access to all stores in the company.\n7. Click 'Create' — the user can now log in.\nManaging Users:\n• Edit any user's details, role, or store assignments from the Users tab.\n• Toggle a user's active status to disable their account without deleting it.\n• Reset passwords or update email addresses as needed.\n• Platform Admins can see and manage all users. Company Admins can only manage users within their company.\nBest Practices:\n• Follow the principle of least privilege — assign the minimum role needed for each person's responsibilities.\n• Use Company Admin for department managers who need to configure their own stores.\n• Use Store Admin for on-site managers who handle day-to-day label operations in specific stores."
+                "content": "Manage who can access the system and what they can do.\nCreating a User:\n1. Go to Settings > Users and click 'Add User'.\n2. Fill in the user's email, first name, last name, and initial password.\n3. Select a role: Company Admin, Store Manager, Store Viewer, or Viewer.\n4. Assign the user to a company.\n5. For Store Manager and Store Viewer roles, assign specific stores the user can access.\n6. Company Admin users automatically get access to all stores in the company.\n7. Click 'Create' — the user can now log in.\nManaging Users:\n• Edit any user's details, role, or store assignments from the Users tab.\n• Toggle a user's active status to disable their account without deleting it.\n• Reset passwords or update email addresses as needed.\n• App Admins can see and manage all users. Company Admins can only manage users within their company.\nBest Practices:\n• Follow the principle of least privilege — assign the minimum role needed for each person's responsibilities.\n• Use Company Admin for department managers who need to configure their own stores.\n• Use Store Manager for on-site managers who handle day-to-day label operations in specific stores."
             },
             "aimsConfig": {
                 "title": "AIMS Configuration",
@@ -1181,11 +1181,11 @@
         "manager": "Manager",
         "viewer": "Viewer",
         "company_admin": "Company Admin",
-        "store_admin": "Store Admin",
+        "store_admin": "Store Manager",
         "store_manager": "Store Manager",
         "store_employee": "Store Employee",
         "store_viewer": "Store Viewer",
-        "platform_admin": "Platform Admin",
+        "platform_admin": "App Admin",
         "super_user": "Super User"
     },
     "validation": {

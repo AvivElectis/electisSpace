@@ -39,7 +39,7 @@ const AVAILABLE_FEATURES = [
 ] as const;
 
 // Store roles (from lowest to highest privilege)
-const STORE_ROLES = ['STORE_VIEWER', 'STORE_EMPLOYEE', 'STORE_MANAGER', 'STORE_ADMIN'] as const;
+const STORE_ROLES = ['STORE_VIEWER', 'STORE_ADMIN'] as const;
 type StoreRole = typeof STORE_ROLES[number];
 
 // Company roles
@@ -140,7 +140,7 @@ export function StoreAssignment({
         if (!store) return;
 
         // Use all features for elevated roles
-        const effectiveFeatures = (defaultRole === 'STORE_MANAGER' || defaultRole === 'STORE_ADMIN')
+        const effectiveFeatures = (defaultRole === 'STORE_ADMIN')
             ? [...ALL_FEATURES]
             : [...defaultFeatures];
 
@@ -166,7 +166,7 @@ export function StoreAssignment({
             safeAssignments.map(a => {
                 if (a.storeId !== storeId) return a;
                 // Auto-enable all features for manager/admin roles
-                const features = (role === 'STORE_MANAGER' || role === 'STORE_ADMIN')
+                const features = (role === 'STORE_ADMIN')
                     ? [...ALL_FEATURES]
                     : a.features;
                 return { ...a, role, features };
