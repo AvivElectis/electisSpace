@@ -46,6 +46,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import { useTranslation } from 'react-i18next';
 import { useLabelsStore } from '../infrastructure/labelsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { LinkLabelDialog } from './LinkLabelDialog';
 import { LabelImagesDialog } from './LabelImagesDialog';
 import { LabelImagePreview } from './LabelImagePreview';
@@ -64,6 +65,8 @@ export function LabelsPage() {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isRtl = i18n.language === 'he';
     const { activeStoreId, isAppReady } = useAuthStore();
+    const { hasStoreRole } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE');
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const {
@@ -282,6 +285,7 @@ export function LabelsPage() {
                                     <IconButton
                                         size="medium"
                                         color="error"
+                                        disabled={!canEdit}
                                         onClick={() => handleUnlink(label.labelCode)}
                                     >
                                         <UnlinkIcon />
@@ -290,6 +294,7 @@ export function LabelsPage() {
                                     <IconButton
                                         size="medium"
                                         color="primary"
+                                        disabled={!canEdit}
                                         onClick={() => handleOpenLinkDialog(label.labelCode)}
                                     >
                                         <LinkIcon />
@@ -361,6 +366,7 @@ export function LabelsPage() {
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
+                        disabled={!canEdit}
                         onClick={() => handleOpenLinkDialog()}
                         sx={{ display: { xs: 'none', md: 'inline-flex' } }}
                     >
@@ -369,6 +375,7 @@ export function LabelsPage() {
                     <Button
                         variant="outlined"
                         startIcon={<ImageIcon />}
+                        disabled={!canEdit}
                         onClick={() => handleOpenAssignImageDialog()}
                         sx={{ display: { xs: 'none', md: 'inline-flex' } }}
                     >
@@ -663,23 +670,29 @@ export function LabelsPage() {
                                                 <Stack direction="row" gap={0.5} justifyContent={!isRtl ? 'flex-end' : 'flex-start'}>
                                                     {label.articleId ? (
                                                         <Tooltip title={t('labels.unlink.button', 'Unlink')}>
+                                                            <span>
                                                             <IconButton
                                                                 size="small"
                                                                 color="error"
+                                                                disabled={!canEdit}
                                                                 onClick={() => handleUnlink(label.labelCode)}
                                                             >
                                                                 <UnlinkIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                     ) : (
                                                         <Tooltip title={t('labels.link.button', 'Link')}>
+                                                            <span>
                                                             <IconButton
                                                                 size="small"
                                                                 color="primary"
+                                                                disabled={!canEdit}
                                                                 onClick={() => handleOpenLinkDialog(label.labelCode)}
                                                             >
                                                                 <LinkIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                     )}
                                                 </Stack>
@@ -791,6 +804,7 @@ export function LabelsPage() {
                         <Fab
                             color="primary"
                             size="large"
+                            disabled={!canEdit}
                             onClick={() => setSpeedDialOpen((prev) => !prev)}
                             sx={{
                                 transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
