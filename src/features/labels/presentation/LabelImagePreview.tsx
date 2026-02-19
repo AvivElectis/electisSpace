@@ -7,7 +7,9 @@ import {
 } from '@mui/material';
 import { Image as ImageIcon, BrokenImage as BrokenImageIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { labelsApi } from '@shared/infrastructure/services/labelsApi';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { withAimsTokenRefresh } from '@shared/infrastructure/services/aimsTokenManager';
+import { getLabelImages } from '@shared/infrastructure/services/solum/labelsService';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface LabelImagePreviewProps {
@@ -17,19 +19,26 @@ interface LabelImagePreviewProps {
     size?: number;
 }
 
+/** Module-level cache: labelCode → { content, fetchedAt } */
+const imageCache = new Map<string, { content: string; fetchedAt: number }>();
+
 /**
  * Lazy-loaded label image preview component
  * Uses IntersectionObserver to only load images when visible in viewport
- * Uses server API for image fetching
+ * Fetches directly from AIMS with caching — only updates if image content changed
  */
 export function LabelImagePreview({
     labelCode,
     storeId,
     onClick,
-    size = 56,
+    size = 80,
 }: LabelImagePreviewProps) {
     const { t } = useTranslation();
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(() => {
+        // Initialize from cache if available
+        const cached = imageCache.get(labelCode);
+        return cached?.content ?? null;
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
@@ -47,7 +56,7 @@ export function LabelImagePreview({
                 });
             },
             {
-                rootMargin: '100px', // Start loading slightly before entering viewport
+                rootMargin: '100px',
                 threshold: 0.1,
             }
         );
@@ -59,32 +68,40 @@ export function LabelImagePreview({
         return () => observer.disconnect();
     }, []);
 
-    // Fetch image when visible via server API
+    // Fetch image directly from AIMS with caching
     const fetchImage = useCallback(async () => {
-        if (!storeId) {
-            return;
-        }
+        const solumConfig = useSettingsStore.getState().settings.solumConfig;
+        if (!solumConfig?.isConnected) return;
 
         setIsLoading(true);
         setHasError(false);
 
         try {
-            const response = await labelsApi.getImages(storeId, labelCode);
+            const data = await withAimsTokenRefresh(async (token) => {
+                return getLabelImages(solumConfig, solumConfig.storeNumber, token, labelCode);
+            });
 
-            // Get the first image from currentImage array
-            if (response.data?.currentImage && response.data.currentImage.length > 0) {
-                const firstImage = response.data.currentImage[0];
-                if (firstImage?.content) {
-                    setImageUrl(firstImage.content);
+            if (data?.currentImage && data.currentImage.length > 0) {
+                const content = data.currentImage[0]?.content;
+                if (content) {
+                    const cached = imageCache.get(labelCode);
+                    // Only update state if content actually changed
+                    if (!cached || cached.content !== content) {
+                        imageCache.set(labelCode, { content, fetchedAt: Date.now() });
+                        setImageUrl(content);
+                    } else if (!imageUrl) {
+                        // First render with cached content
+                        setImageUrl(content);
+                    }
                 }
             }
         } catch (error: any) {
             logger.debug('LabelImagePreview', 'Failed to load image', { labelCode, error: error.message });
-            setHasError(true);
+            if (!imageUrl) setHasError(true);
         } finally {
             setIsLoading(false);
         }
-    }, [labelCode, storeId]);
+    }, [labelCode, imageUrl]);
 
     // Trigger fetch when visible
     useEffect(() => {
@@ -110,7 +127,7 @@ export function LabelImagePreview({
             }}
             onClick={handleClick}
         >
-            {isLoading ? (
+            {isLoading && !imageUrl ? (
                 <Skeleton
                     variant="rectangular"
                     width={size}

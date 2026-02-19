@@ -140,6 +140,7 @@ function ImageGrid({ images }: { images: LabelImage[] }) {
                                     size="small"
                                     color={getStateColor(image.state)}
                                     variant="outlined"
+                                    sx={{ p: 1, px: 2 }}
                                 />
                             </Box>
                         }
@@ -181,7 +182,7 @@ export function LabelImagesDialog({
                     <Typography variant="h6">
                         {t('labels.images.title', 'Label Images')}
                     </Typography>
-                    <Chip label={labelCode} variant="outlined" size="small" sx={{ fontFamily: 'monospace' }} />
+                    <Chip label={labelCode} variant="outlined" size="small" sx={{ fontFamily: 'monospace', p: 1, px: 2 }} />
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
@@ -203,12 +204,14 @@ export function LabelImagesDialog({
                                 label={`${imagesData.width} × ${imagesData.height} px`}
                                 size="small"
                                 variant="outlined"
+                                sx={{ p: 1, px: 2 }}
                             />
                             <Chip
                                 label={`${t('labels.images.activePage', 'Active Page')}: ${imagesData.activePage}`}
                                 size="small"
                                 color="primary"
                                 variant="outlined"
+                                sx={{ p: 1, px: 2 }}
                             />
                             {imagesData.isDualSidedLabel && (
                                 <Chip
@@ -216,6 +219,7 @@ export function LabelImagesDialog({
                                     size="small"
                                     color="secondary"
                                     variant="outlined"
+                                    sx={{ p: 1, px: 2 }}
                                 />
                             )}
                         </Box>
