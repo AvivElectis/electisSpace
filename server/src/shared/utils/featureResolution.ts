@@ -24,7 +24,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     peopleEnabled: true,
     conferenceEnabled: true,
     simpleConferenceMode: false,
-    labelsEnabled: false,
+    labelsEnabled: true,
 };
 
 export const DEFAULT_SPACE_TYPE: SpaceType = 'office';

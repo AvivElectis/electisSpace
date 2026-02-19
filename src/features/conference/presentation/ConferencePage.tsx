@@ -40,6 +40,7 @@ import { useConferenceController } from '../application/useConferenceController'
 import { useBackendSyncContext } from '@features/sync/application/SyncContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
@@ -56,6 +57,8 @@ export function ConferencePage() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const { settings } = useSettingsStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const { hasStoreRole } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE');
 
     // Get SoluM access token if available
     const solumToken = settings.solumConfig?.tokens?.accessToken;
@@ -230,6 +233,7 @@ export function ConferencePage() {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleAdd}
+                    disabled={!canEdit}
                     sx={{ minWidth: { xs: '100%', sm: '140px' }, display: { xs: 'none', md: 'inline-flex' } }}
                 >
                     {t('conference.addRoom')}
@@ -456,14 +460,18 @@ export function ConferencePage() {
                                                     )}
                                                     <Stack direction="row" gap={1} justifyContent="flex-end">
                                                         <Tooltip title={t('common.edit')}>
-                                                            <IconButton size="medium" color="primary" onClick={() => handleEdit(room)}>
+                                                            <span>
+                                                            <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => handleEdit(room)}>
                                                                 <EditIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                         <Tooltip title={t('common.delete')}>
-                                                            <IconButton size="medium" color="error" onClick={() => handleDelete(room.id)}>
+                                                            <span>
+                                                            <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => handleDelete(room.id)}>
                                                                 <DeleteIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                     </Stack>
                                                 </Box>
@@ -524,14 +532,18 @@ export function ConferencePage() {
                                                 )}
                                                 <Stack direction="row" gap={1} justifyContent="flex-end" onClick={(e) => e.stopPropagation()}>
                                                     <Tooltip title={t('common.edit')}>
-                                                        <IconButton size="small" color="primary" onClick={() => handleEdit(room)}>
+                                                        <span>
+                                                        <IconButton size="small" color="primary" disabled={!canEdit} onClick={() => handleEdit(room)}>
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
+                                                        </span>
                                                     </Tooltip>
                                                     <Tooltip title={t('common.delete')}>
-                                                        <IconButton size="small" color="error" onClick={() => handleDelete(room.id)}>
+                                                        <span>
+                                                        <IconButton size="small" color="error" disabled={!canEdit} onClick={() => handleDelete(room.id)}>
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
+                                                        </span>
                                                     </Tooltip>
                                                 </Stack>
                                             </Stack>
@@ -549,6 +561,7 @@ export function ConferencePage() {
                     color="primary"
                     variant="extended"
                     onClick={handleAdd}
+                    disabled={!canEdit}
                     sx={{
                         position: 'fixed',
                         bottom: 24,
@@ -637,6 +650,7 @@ export function ConferencePage() {
                             <Button
                                 variant="contained"
                                 startIcon={<EditIcon />}
+                                disabled={!canEdit}
                                 onClick={() => handleEdit(selectedRoom)}
                             >
                                 {t('conference.editRoomButton')}
