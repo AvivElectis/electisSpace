@@ -3,6 +3,7 @@ import { persist, devtools } from 'zustand/middleware';
 import type { Space } from '@shared/domain/types';
 import type { SpacesList } from '../domain/types';
 import { spacesApi } from './spacesApi';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 export interface SpacesStore {
     // State
@@ -93,7 +94,8 @@ export const useSpacesStore = create<SpacesStore>()(
                 fetchSpaces: async () => {
                     set({ isLoading: true, error: null }, false, 'fetchSpaces/start');
                     try {
-                        const { spaces } = await spacesApi.getAll();
+                        const storeId = useAuthStore.getState().activeStoreId;
+                        const { spaces } = await spacesApi.getAll(storeId ? { storeId } : undefined);
                         set({ spaces, isLoading: false }, false, 'fetchSpaces/success');
                     } catch (error) {
                         const message = error instanceof Error ? error.message : 'Failed to fetch spaces';
