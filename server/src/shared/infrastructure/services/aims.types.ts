@@ -31,11 +31,14 @@ export interface AimsLabel {
     labelCode: string;
     articleId?: string;
     article_id?: string;
+    articleList?: Array<{ articleId: string; articleName?: string }>;
+    articleName?: string;
     status?: string;
     type?: string;
     templateName?: string;
     signal?: number;
-    battery?: number;
+    signalQuality?: string;
+    battery?: number | string;
     [key: string]: unknown;
 }
 
