@@ -11,7 +11,6 @@ interface Props {
     companyId: string;
     isCreatingCompany: boolean;
     companyRole: CompanyRole;
-    allStoresAccess: boolean;
     assignments: StoreAssignmentData[];
     onAssignmentsChange: (assignments: StoreAssignmentData[]) => void;
     isEdit: boolean;
@@ -21,7 +20,6 @@ interface Props {
 
 export function UserStoreSection({
     companyId, isCreatingCompany, companyRole,
-    allStoresAccess,
     assignments, onAssignmentsChange,
     isEdit, isEditing, companyEnabledFeatures,
 }: Props) {
@@ -35,8 +33,6 @@ export function UserStoreSection({
             <StoreAssignment
                 companyId={isCreatingCompany ? '' : companyId}
                 companyRole={companyRole}
-                allStoresAccess={allStoresAccess}
-                onAllStoresAccessChange={() => {}}
                 assignments={assignments}
                 onAssignmentsChange={onAssignmentsChange}
                 disabled={isEdit && !isEditing}
