@@ -86,7 +86,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
     // Check if user is platform admin or has store admin role
     const isPlatformAdmin = user?.globalRole === 'PLATFORM_ADMIN';
-    const isAdmin = isPlatformAdmin || 
+    const isCompanyAdmin = user?.companies?.some(c => c.role === 'COMPANY_ADMIN');
+    const isAdmin = isPlatformAdmin || isCompanyAdmin ||
         user?.stores?.some(s => s.role === 'STORE_ADMIN');
 
     // Define tab configuration type
@@ -113,7 +114,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             panel: <UsersSettingsTab />
         });
     }
-    if (isPlatformAdmin) {
+    if (isPlatformAdmin || isCompanyAdmin) {
         adminTabs.push({
             label: t('settings.companies.title'),
             panel: <CompaniesTab />

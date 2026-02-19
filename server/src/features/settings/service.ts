@@ -54,17 +54,28 @@ export const settingsService = {
             };
         }
 
-        // Regular user - check access
+        // Regular user - check access via UserStore or allStoresAccess
         const userStore = await settingsRepository.getUserStoreAccess(user.id, storeId);
-        if (!userStore) {
+        if (userStore) {
+            return {
+                storeId: userStore.store.id,
+                storeName: userStore.store.name,
+                storeCode: userStore.store.code,
+                settings: (userStore.store.settings as Record<string, any>) || {},
+            };
+        }
+
+        // Fallback: check allStoresAccess via company
+        const store = await settingsRepository.checkAllStoresAccess(user.id, storeId);
+        if (!store) {
             throw new Error('STORE_NOT_FOUND_OR_DENIED');
         }
 
         return {
-            storeId: userStore.store.id,
-            storeName: userStore.store.name,
-            storeCode: userStore.store.code,
-            settings: (userStore.store.settings as Record<string, any>) || {},
+            storeId: store.id,
+            storeName: store.name,
+            storeCode: store.code,
+            settings: (store.settings as Record<string, any>) || {},
         };
     },
 
@@ -94,14 +105,18 @@ export const settingsService = {
 
         // Regular user - check access and role
         const userStore = await settingsRepository.getUserStoreAccess(user.id, storeId);
-        if (!userStore) {
-            throw new Error('STORE_NOT_FOUND_OR_DENIED');
-        }
-
-        // Check if user has permission to update settings (STORE_ADMIN or STORE_MANAGER)
-        const allowedRoles = ['STORE_ADMIN', 'STORE_MANAGER'];
-        if (!allowedRoles.includes(userStore.role)) {
-            throw new Error('FORBIDDEN');
+        if (userStore) {
+            // Check if user has permission to update settings (STORE_ADMIN or STORE_MANAGER)
+            const allowedRoles = ['STORE_ADMIN', 'STORE_MANAGER'];
+            if (!allowedRoles.includes(userStore.role)) {
+                throw new Error('FORBIDDEN');
+            }
+        } else {
+            // Fallback: check allStoresAccess via company (implies STORE_ADMIN)
+            const store = await settingsRepository.checkAllStoresAccess(user.id, storeId);
+            if (!store) {
+                throw new Error('STORE_NOT_FOUND_OR_DENIED');
+            }
         }
 
         const updatedStore = await settingsRepository.updateStoreSettings(storeId, settings);

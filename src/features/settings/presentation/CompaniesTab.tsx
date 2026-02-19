@@ -50,7 +50,7 @@ const StoresDialog = lazy(() => import('./StoresDialog'));
  */
 export function CompaniesTab() {
     const { t } = useTranslation();
-    const { isPlatformAdmin } = useAuthContext();
+    const { isPlatformAdmin, isCompanyAdmin } = useAuthContext();
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // State
@@ -103,7 +103,7 @@ export function CompaniesTab() {
     }, [searchQuery]);
 
     // Check authorization (after all hooks to avoid Rules of Hooks violation)
-    if (!isPlatformAdmin) {
+    if (!isPlatformAdmin && !isCompanyAdmin) {
         return (
             <Alert severity="error" sx={{ m: 2 }}>
                 {t('settings.companies.unauthorizedAccess', 'You do not have permission to manage companies.')}
@@ -211,15 +211,17 @@ export function CompaniesTab() {
                         sx={{ minWidth: { xs: '100%', sm: 200 } }}
                     />
 
-                    {/* Add Button */}
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAdd}
-                        sx={{ whiteSpace: 'nowrap' }}
-                    >
-                        {t('settings.companies.addCompany')}
-                    </Button>
+                    {/* Add Button - platform admins only */}
+                    {isPlatformAdmin && (
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={handleAdd}
+                            sx={{ whiteSpace: 'nowrap' }}
+                        >
+                            {t('settings.companies.addCompany')}
+                        </Button>
+                    )}
                 </Stack>
             </Stack>
 
@@ -342,15 +344,17 @@ export function CompaniesTab() {
                                                         <EditIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title={t('common.delete')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleDelete(company)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                {isPlatformAdmin && (
+                                                    <Tooltip title={t('common.delete')}>
+                                                        <IconButton
+                                                            size="small"
+                                                            color="error"
+                                                            onClick={() => handleDelete(company)}
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
                                             </Stack>
                                         </TableCell>
                                     </TableRow>
