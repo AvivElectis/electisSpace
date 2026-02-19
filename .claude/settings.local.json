@@ -42,7 +42,10 @@
       "Bash(npx vitest:*)",
       "Bash(git stash:*)",
       "Bash(npm run build:*)",
-      "Bash(openssl rand:*)"
+      "Bash(openssl rand:*)",
+      "Bash(git commit:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh pr:*)"
     ]
   }
 }
