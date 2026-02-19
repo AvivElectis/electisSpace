@@ -257,80 +257,85 @@ export function LabelsPage() {
         return (
             <Card
                 key={`${label.labelCode}-${label.articleId}-${index}`}
+                variant="outlined"
                 sx={{
-                    mb: 1,
+                    mb: 0.75,
                     borderRadius: 2,
                     borderInlineStart: '4px solid',
                     borderColor: isLinked ? 'primary.main' : 'grey.300',
                 }}
             >
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Stack gap={1}>
-                        {/* Row 1: Label code + image preview + actions */}
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Stack direction="row" alignItems="center" gap={1}>
-                                <Typography variant="body2" fontFamily="monospace" fontWeight={700} sx={{ fontSize: '0.85rem' }}>
-                                    {label.labelCode}
-                                </Typography>
-                                {showImagePreviews && (
-                                    <LabelImagePreview
-                                        labelCode={label.labelCode}
-                                        storeId={activeStoreId!}
-                                        onClick={() => handleOpenImagesDialog(label.labelCode)}
-                                    />
-                                )}
-                            </Stack>
-                            <Stack direction="row" gap={0}>
-                                {isLinked ? (
-                                    <IconButton
-                                        size="medium"
-                                        color="error"
-                                        disabled={!canEdit}
-                                        onClick={() => handleUnlink(label.labelCode)}
-                                    >
-                                        <UnlinkIcon />
-                                    </IconButton>
-                                ) : (
-                                    <IconButton
-                                        size="medium"
-                                        color="primary"
-                                        disabled={!canEdit}
-                                        onClick={() => handleOpenLinkDialog(label.labelCode)}
-                                    >
-                                        <LinkIcon />
-                                    </IconButton>
-                                )}
-                            </Stack>
-                        </Stack>
-
-                        {/* Row 2: Article info + status chips (compact) */}
-                        <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="center">
+                    {/* Row 1: Label code + image preview + action */}
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography variant="body2" fontFamily="monospace" fontWeight={700} sx={{ fontSize: '0.85rem' }}>
+                            {label.labelCode}
+                        </Typography>
+                        <Stack direction="row" alignItems="center" gap={0.5}>
+                            {showImagePreviews && (
+                                <LabelImagePreview
+                                    labelCode={label.labelCode}
+                                    storeId={activeStoreId!}
+                                    onClick={() => handleOpenImagesDialog(label.labelCode)}
+                                />
+                            )}
                             {isLinked ? (
+                                <IconButton
+                                    size="medium"
+                                    color="error"
+                                    disabled={!canEdit}
+                                    onClick={() => handleUnlink(label.labelCode)}
+                                >
+                                    <UnlinkIcon />
+                                </IconButton>
+                            ) : (
+                                <IconButton
+                                    size="medium"
+                                    color="primary"
+                                    disabled={!canEdit}
+                                    onClick={() => handleOpenLinkDialog(label.labelCode)}
+                                >
+                                    <LinkIcon />
+                                </IconButton>
+                            )}
+                        </Stack>
+                    </Stack>
+
+                    {/* Row 2: Article info */}
+                    <Stack direction="row" alignItems="center" gap={0.5} sx={{ mt: 0.75 }}>
+                        {isLinked ? (
+                            <>
                                 <Chip
                                     label={label.articleId}
                                     size="small"
                                     icon={<LinkIcon />}
                                     variant="outlined"
                                     color="primary"
-                                    sx={{ height: 24, fontSize: '0.75rem' }}
+                                    sx={{ height: 24, fontSize: '0.75rem', px: 0.5 }}
                                 />
-                            ) : (
-                                <Typography variant="caption" color="text.secondary">
-                                    {t('labels.notLinked', 'Not linked')}
-                                </Typography>
-                            )}
-                            {label.articleName && (
-                                <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 120 }}>
-                                    {label.articleName}
-                                </Typography>
-                            )}
+                                {label.articleName && (
+                                    <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                        {label.articleName}
+                                    </Typography>
+                                )}
+                            </>
+                        ) : (
+                            <Typography variant="caption" color="text.disabled">
+                                {t('labels.notLinked', 'Not linked')}
+                            </Typography>
+                        )}
+                    </Stack>
+
+                    {/* Row 3: Status chips */}
+                    {(label.signal || label.battery || label.status) && (
+                        <Stack direction="row" gap={0.5} alignItems="center" sx={{ mt: 0.75 }}>
                             {label.signal && (
                                 <Chip
                                     icon={<SignalIcon />}
                                     label={label.signal}
                                     size="small"
                                     color={getSignalColor(label.signal) as any}
-                                    sx={{ height: 22, fontSize: '0.65rem', '& .MuiChip-icon': { fontSize: 14 } }}
+                                    sx={{ height: 24, fontSize: '0.7rem', p: 1, px: 2, '& .MuiChip-icon': { fontSize: 14 } }}
                                 />
                             )}
                             {label.battery && (
@@ -339,11 +344,18 @@ export function LabelsPage() {
                                     label={label.battery}
                                     size="small"
                                     color={getBatteryColor(label.battery) as any}
-                                    sx={{ height: 22, fontSize: '0.65rem', '& .MuiChip-icon': { fontSize: 14 } }}
+                                    sx={{ height: 24, fontSize: '0.7rem', p: 1, px: 2, '& .MuiChip-icon': { fontSize: 14 } }}
+                                />
+                            )}
+                            {label.status && (
+                                <Chip
+                                    label={label.status}
+                                    size="small"
+                                    sx={{ height: 24, fontSize: '0.7rem', p: 1, px: 2 }}
                                 />
                             )}
                         </Stack>
-                    </Stack>
+                    )}
                 </CardContent>
             </Card>
         );
@@ -629,7 +641,7 @@ export function LabelsPage() {
                                                         label={label.signal}
                                                         size="small"
                                                         color={getSignalColor(label.signal) as any}
-                                                        sx={{ p: 1 }}
+                                                        sx={{ p: 1, px: 2 }}
                                                     />
                                                 ) : (
                                                     <Typography variant="body2" color="text.secondary">-</Typography>
@@ -642,7 +654,7 @@ export function LabelsPage() {
                                                         label={label.battery}
                                                         size="small"
                                                         color={getBatteryColor(label.battery) as any}
-                                                        sx={{ p: 1 }}
+                                                        sx={{ p: 1, px: 2 }}
                                                     />
                                                 ) : (
                                                     <Typography variant="body2" color="text.secondary">-</Typography>
@@ -650,7 +662,7 @@ export function LabelsPage() {
                                             </TableCell>
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left' }}>
                                                 {label.status ? (
-                                                    <Chip label={label.status} size="small" sx={{ p: 1 }} />
+                                                    <Chip label={label.status} size="small" sx={{ p: 1, px: 2 }} />
                                                 ) : (
                                                     <Typography variant="body2" color="text.secondary">-</Typography>
                                                 )}
