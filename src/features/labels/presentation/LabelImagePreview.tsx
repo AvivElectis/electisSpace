@@ -29,7 +29,7 @@ const imageCache = new Map<string, { content: string; fetchedAt: number }>();
  */
 export function LabelImagePreview({
     labelCode,
-    storeId,
+    storeId: _storeId,
     onClick,
     size = 80,
 }: LabelImagePreviewProps) {
