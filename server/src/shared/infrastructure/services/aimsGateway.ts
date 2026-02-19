@@ -12,7 +12,7 @@
 import { prisma } from '../../../config/index.js';
 import { config as appConfig } from '../../../config/index.js';
 import { solumService, type SolumConfig, type SolumTokens, type ArticleFormat } from './solumService.js';
-import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
+import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
 import { decrypt } from '../../utils/encryption.js';
 
 interface AIMSCredentials {
@@ -340,6 +340,31 @@ export class AIMSGateway {
                     const newToken = await this.getToken(storeConfig.companyId);
                     await solumService.deleteArticles(config, newToken, articleIds);
                     return;
+                }
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Pull article info from AIMS for a store (includes assignedLabel data)
+     * Uses the /config/article/info endpoint which returns assignedLabel arrays
+     */
+    async pullArticleInfo(storeId: string): Promise<AimsArticleInfo[]> {
+        const { token, config } = await this.getTokenForStore(storeId);
+
+        try {
+            return await solumService.fetchAllArticleInfo(config, token);
+        } catch (error: any) {
+            // If authentication error, invalidate cache and retry once
+            const msg = error.message || '';
+            const status = error.response?.status;
+            if (status === 401 || status === 403 || msg.includes('401') || msg.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await solumService.fetchAllArticleInfo(config, newToken);
                 }
             }
             throw error;
