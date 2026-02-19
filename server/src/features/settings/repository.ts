@@ -111,4 +111,21 @@ export const settingsRepository = {
             select: { id: true },
         });
     },
+
+    /**
+     * Check if a user has allStoresAccess for the company that owns a given store.
+     * Returns the store (with company) if access is granted, null otherwise.
+     */
+    async checkAllStoresAccess(userId: string, storeId: string) {
+        const store = await prisma.store.findUnique({
+            where: { id: storeId },
+            select: { id: true, name: true, code: true, companyId: true, settings: true },
+        });
+        if (!store) return null;
+
+        const uc = await prisma.userCompany.findFirst({
+            where: { userId, companyId: store.companyId, allStoresAccess: true },
+        });
+        return uc ? store : null;
+    },
 };

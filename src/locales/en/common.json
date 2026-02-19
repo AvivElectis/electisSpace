@@ -110,6 +110,8 @@
         "connection_refused": "Cannot connect to server. Please try again later.",
         "server_error": "Server error. Please try again later.",
         "auth_rate_limited": "Too many login attempts. Please wait a moment and try again.",
+        "twofa_rate_limited": "Too many verification attempts. Please wait a few minutes and try again.",
+        "reset_rate_limited": "Too many password reset requests. Please try again later.",
         "unknown": "An unexpected error occurred"
     },
     "dashboard": {

@@ -7,20 +7,21 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticate, authorize } from '../../shared/middleware/index.js';
 import { authController } from './controller.js';
+import { config } from '../../config/index.js';
 
 const router = Router();
 
 // ======================
-// Rate Limiters
+// Rate Limiters (configurable via env vars)
 // ======================
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,
+    windowMs: config.authRateLimit.windowMs,
+    max: config.authRateLimit.max,
     message: {
         error: {
             code: 'AUTH_RATE_LIMITED',
-            message: 'Too many authentication attempts. Please try again in 15 minutes.',
+            message: 'Too many authentication attempts. Please try again later.',
         },
     },
     standardHeaders: true,
@@ -33,12 +34,12 @@ const authLimiter = rateLimit({
 });
 
 const twoFALimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 3,
+    windowMs: config.twofaRateLimit.windowMs,
+    max: config.twofaRateLimit.max,
     message: {
         error: {
             code: 'TWOFA_RATE_LIMITED',
-            message: 'Too many verification attempts. Please try again in 5 minutes.',
+            message: 'Too many verification attempts. Please try again later.',
         },
     },
     standardHeaders: true,
@@ -51,8 +52,8 @@ const twoFALimiter = rateLimit({
 });
 
 const passwordResetLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3,
+    windowMs: config.resetRateLimit.windowMs,
+    max: config.resetRateLimit.max,
     message: {
         error: {
             code: 'RESET_RATE_LIMITED',
