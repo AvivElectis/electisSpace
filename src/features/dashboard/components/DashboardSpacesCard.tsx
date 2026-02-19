@@ -15,6 +15,7 @@ interface DashboardSpacesCardProps {
     totalSpaces: number;
     spacesWithLabels: number;
     spacesWithoutLabels: number;
+    assignedLabelsCount: number;
     onAddSpace: () => void;
     hideAddButton?: boolean;
 }
@@ -28,6 +29,7 @@ export function DashboardSpacesCard({
     totalSpaces,
     spacesWithLabels,
     spacesWithoutLabels,
+    assignedLabelsCount,
     onAddSpace,
     hideAddButton,
 }: DashboardSpacesCardProps) {
@@ -100,6 +102,16 @@ export function DashboardSpacesCard({
                                 </Typography>
                                 <Typography variant="h5" fontWeight={500} color="warning.main">
                                     {spacesWithoutLabels}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                        <Grid size={{ xs: 6 }}>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    {t('dashboard.assignedLabels')}
+                                </Typography>
+                                <Typography variant="h5" fontWeight={500} color="info.main">
+                                    {assignedLabelsCount}
                                 </Typography>
                             </Box>
                         </Grid>
