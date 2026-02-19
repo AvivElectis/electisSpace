@@ -77,19 +77,17 @@ export function DashboardPage() {
 
     // Calculate assigned labels dynamically from actual data
     // Count total assigned labels from assignedLabels arrays (from AIMS article fetch)
-    const assignedLabelsCount = useMemo(() => {
-        // Count all labels from spaces
-        const spaceLabelsCount = spaceController.spaces.reduce(
-            (count, s) => count + (s.assignedLabels?.length || 0),
-            0
-        );
-        // Count all labels from conference rooms
-        const conferenceLabelsCount = conferenceController.conferenceRooms.reduce(
-            (count, r) => count + (r.assignedLabels?.length || 0),
-            0
-        );
-        return spaceLabelsCount + conferenceLabelsCount;
-    }, [spaceController.spaces, conferenceController.conferenceRooms]);
+    const spacesAssignedLabelsCount = useMemo(() =>
+        spaceController.spaces.reduce((count, s) => count + (s.assignedLabels?.length || 0), 0),
+        [spaceController.spaces]
+    );
+
+    const conferenceAssignedLabelsCount = useMemo(() =>
+        conferenceController.conferenceRooms.reduce((count, r) => count + (r.assignedLabels?.length || 0), 0),
+        [conferenceController.conferenceRooms]
+    );
+
+    const assignedLabelsCount = spacesAssignedLabelsCount + conferenceAssignedLabelsCount;
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
@@ -146,6 +144,7 @@ export function DashboardPage() {
                             totalSpaces={totalSpaces}
                             spacesWithLabels={spacesWithLabels}
                             spacesWithoutLabels={spacesWithoutLabels}
+                            assignedLabelsCount={spacesAssignedLabelsCount}
                             onAddSpace={() => setSpaceDialogOpen(true)}
                             hideAddButton={isMobile}
                         />
@@ -172,6 +171,7 @@ export function DashboardPage() {
                         totalRooms={totalRooms}
                         roomsWithLabels={roomsWithLabels}
                         roomsWithoutLabels={roomsWithoutLabels}
+                        assignedLabelsCount={conferenceAssignedLabelsCount}
                         availableRooms={availableRooms}
                         occupiedRooms={occupiedRooms}
                         onAddRoom={() => setConferenceDialogOpen(true)}

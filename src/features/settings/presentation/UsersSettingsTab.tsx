@@ -274,10 +274,9 @@ export function UsersSettingsTab() {
                                     const firstCompany = user.companies?.[0];
                                     const companyRole = firstCompany?.role;
                                     const isAdminCompanyRole = companyRole === 'COMPANY_ADMIN' || companyRole === 'SUPER_USER';
-                                    const isAllStoresRole = isAdminCompanyRole || companyRole === 'STORE_ADMIN';
+                                    const isAllStoresRole = isAdminCompanyRole;
                                     const userRole = user.globalRole
                                         || (isAdminCompanyRole ? 'COMPANY_ADMIN' : null)
-                                        || (companyRole === 'STORE_ADMIN' ? 'STORE_ADMIN' : null)
                                         || firstStore?.role
                                         || companyRole
                                         || 'STORE_VIEWER';

@@ -9,6 +9,7 @@ interface DashboardConferenceCardProps {
     totalRooms: number;
     roomsWithLabels: number;
     roomsWithoutLabels: number;
+    assignedLabelsCount: number;
     availableRooms: number;
     occupiedRooms: number;
     onAddRoom: () => void;
@@ -22,6 +23,7 @@ export function DashboardConferenceCard({
     totalRooms,
     roomsWithLabels,
     roomsWithoutLabels,
+    assignedLabelsCount,
     availableRooms,
     occupiedRooms,
     onAddRoom,
@@ -79,6 +81,16 @@ export function DashboardConferenceCard({
                                 </Typography>
                                 <Typography variant="h5" fontWeight={500} color="warning.main">
                                     {roomsWithoutLabels}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                        <Grid size={{ xs: 6 }}>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    {t('dashboard.assignedLabels')}
+                                </Typography>
+                                <Typography variant="h5" fontWeight={500} color="info.main">
+                                    {assignedLabelsCount}
                                 </Typography>
                             </Box>
                         </Grid>

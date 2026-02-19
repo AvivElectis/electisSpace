@@ -33,7 +33,7 @@ import type {
 // Role Helpers
 // ======================
 
-const ALL_STORES_ROLES: CompanyRole[] = ['SUPER_USER', 'COMPANY_ADMIN', 'STORE_ADMIN'];
+const ALL_STORES_ROLES: CompanyRole[] = ['SUPER_USER', 'COMPANY_ADMIN'];
 
 /** Derive allStoresAccess from a CompanyRole */
 function derivesAllStoresAccess(role: CompanyRole): boolean {
