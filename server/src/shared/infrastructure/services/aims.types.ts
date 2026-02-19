@@ -24,6 +24,19 @@ export interface AimsArticle {
     [key: string]: unknown;
 }
 
+/** Article info from the config/article/info endpoint (includes assignedLabel) */
+export interface AimsArticleInfo {
+    store: string;
+    articleId: string;
+    articleName: string;
+    nfcUrl?: string;
+    data?: Record<string, string>;
+    generateDate?: string;
+    lastModified?: string;
+    assignedLabel: string[];
+    [key: string]: unknown;
+}
+
 // ─── Label Types ────────────────────────────────────────────────────────────
 
 /** Label info returned from AIMS list endpoints */
