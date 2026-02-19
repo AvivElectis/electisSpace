@@ -236,10 +236,13 @@ export class SolumService {
             const data = response.data;
 
             // AIMS wraps responses in responseMessage — unwrap if present
+            // But responseMessage can be a string (e.g. "SUCCESS"), in which case
+            // the actual data (articleList) is at the top level of the response
             const payload = data.responseMessage ?? data;
+            const source = (typeof payload === 'string' || payload == null) ? data : payload;
 
-            if (Array.isArray(payload)) return payload;
-            return payload.articleList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.articleList || source.content || source.data || [];
         });
     }
 
@@ -339,25 +342,18 @@ export class SolumService {
 
             const data = response.data;
 
-            // Debug: log response shape on first page to diagnose parsing
-            if (page === 0) {
-                const topKeys = Object.keys(data);
-                const rmType = data.responseMessage == null ? 'null' : Array.isArray(data.responseMessage) ? 'array' : typeof data.responseMessage;
-                const sample = data.responseMessage && typeof data.responseMessage === 'object' && !Array.isArray(data.responseMessage)
-                    ? Object.keys(data.responseMessage).slice(0, 10)
-                    : null;
-                console.log(`[SoluM] fetchArticleInfo response shape: topKeys=${JSON.stringify(topKeys)}, responseMessage type=${rmType}${sample ? `, rmKeys=${JSON.stringify(sample)}` : ''}`);
-            }
-
             const payload = data.responseMessage ?? data;
+            const source = (typeof payload === 'string' || payload == null) ? data : payload;
 
-            if (Array.isArray(payload)) return payload;
-            const articles = payload.articleList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            const articles = source.articleList || source.content || source.data || [];
 
-            // Debug: log first article sample to verify assignedLabel presence
+            // Debug: log on first page
             if (page === 0 && articles.length > 0) {
                 const s = articles[0];
-                console.log(`[SoluM] fetchArticleInfo sample article: articleId=${s.articleId}, assignedLabel=${JSON.stringify(s.assignedLabel)}, keys=${Object.keys(s).join(',')}`);
+                console.log(`[SoluM] fetchArticleInfo: ${articles.length} articles, sample: articleId=${s.articleId}, assignedLabel=${JSON.stringify(s.assignedLabel)}, keys=${Object.keys(s).join(',')}`);
+            } else if (page === 0) {
+                console.log(`[SoluM] fetchArticleInfo: 0 articles returned`);
             }
 
             return articles;
@@ -402,9 +398,10 @@ export class SolumService {
 
             const data = response.data;
             const payload = data.responseMessage ?? data;
+            const source = (typeof payload === 'string' || payload == null) ? data : payload;
 
-            if (Array.isArray(payload)) return payload;
-            return payload.labelList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.labelList || source.content || source.data || [];
         });
     }
 
@@ -448,9 +445,10 @@ export class SolumService {
             if (!response.data) return [];
             const data = response.data;
             const payload = data.responseMessage ?? data;
+            const source = (typeof payload === 'string' || payload == null) ? data : payload;
 
-            if (Array.isArray(payload)) return payload;
-            return payload.labelList || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.labelList || source.content || source.data || [];
         });
     }
 
@@ -558,9 +556,10 @@ export class SolumService {
 
             const data = response.data;
             const payload = data.responseMessage ?? data;
+            const source = (typeof payload === 'string' || payload == null) ? data : payload;
 
-            if (Array.isArray(payload)) return payload;
-            return payload.stores || payload.content || payload.data || [];
+            if (Array.isArray(source)) return source;
+            return source.stores || source.content || source.data || [];
         });
     }
 
