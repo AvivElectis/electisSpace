@@ -338,10 +338,29 @@ export class SolumService {
             if (!response.data || response.status === 204) return [];
 
             const data = response.data;
+
+            // Debug: log response shape on first page to diagnose parsing
+            if (page === 0) {
+                const topKeys = Object.keys(data);
+                const rmType = data.responseMessage == null ? 'null' : Array.isArray(data.responseMessage) ? 'array' : typeof data.responseMessage;
+                const sample = data.responseMessage && typeof data.responseMessage === 'object' && !Array.isArray(data.responseMessage)
+                    ? Object.keys(data.responseMessage).slice(0, 10)
+                    : null;
+                console.log(`[SoluM] fetchArticleInfo response shape: topKeys=${JSON.stringify(topKeys)}, responseMessage type=${rmType}${sample ? `, rmKeys=${JSON.stringify(sample)}` : ''}`);
+            }
+
             const payload = data.responseMessage ?? data;
 
             if (Array.isArray(payload)) return payload;
-            return payload.articleList || payload.content || payload.data || [];
+            const articles = payload.articleList || payload.content || payload.data || [];
+
+            // Debug: log first article sample to verify assignedLabel presence
+            if (page === 0 && articles.length > 0) {
+                const sample = articles[0];
+                console.log(`[SoluM] fetchArticleInfo sample article: articleId=${sample.articleId}, assignedLabel=${JSON.stringify(sample.assignedLabel)}, keys=${Object.keys(sample).join(',')}`);
+            }
+
+            return articles;
         });
     }
 
