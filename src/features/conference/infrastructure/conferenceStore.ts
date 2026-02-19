@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { conferenceApi } from './conferenceApi';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 interface ConferenceStore {
     // State
@@ -89,7 +90,8 @@ export const useConferenceStore = create<ConferenceStore>()(
                 fetchRooms: async () => {
                     set({ isLoading: true, error: null }, false, 'fetchRooms/start');
                     try {
-                        const { rooms } = await conferenceApi.getAll();
+                        const storeId = useAuthStore.getState().activeStoreId;
+                        const { rooms } = await conferenceApi.getAll(storeId ? { storeId } : undefined);
                         set({ conferenceRooms: rooms, isLoading: false }, false, 'fetchRooms/success');
                     } catch (error) {
                         const message = error instanceof Error ? error.message : 'Failed to fetch rooms';
