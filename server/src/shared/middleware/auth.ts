@@ -151,20 +151,47 @@ export const authenticate = async (
         }
 
         // Build user context
+        const stores: StoreAccess[] = user.userStores.map(us => ({
+            id: us.storeId,
+            role: us.role,
+            companyId: us.store.companyId,
+        }));
+
+        const companies: CompanyAccess[] = user.userCompanies.map(uc => ({
+            id: uc.companyId,
+            role: uc.role,
+            allStoresAccess: uc.allStoresAccess,
+        }));
+
+        // For companies where user has allStoresAccess, expand into stores array
+        // so all downstream services that check req.user.stores work correctly.
+        const allStoresCompanyIds = companies
+            .filter(c => c.allStoresAccess)
+            .map(c => c.id);
+
+        if (allStoresCompanyIds.length > 0) {
+            const existingStoreIds = new Set(stores.map(s => s.id));
+            const companyStores = await prisma.store.findMany({
+                where: { companyId: { in: allStoresCompanyIds }, isActive: true },
+                select: { id: true, companyId: true },
+            });
+            for (const cs of companyStores) {
+                if (!existingStoreIds.has(cs.id)) {
+                    stores.push({
+                        id: cs.id,
+                        role: 'STORE_ADMIN' as StoreRole,
+                        companyId: cs.companyId,
+                    });
+                }
+            }
+        }
+
         const userContext: UserContext = {
             id: user.id,
             email: user.email,
             globalRole: user.globalRole,
-            stores: user.userStores.map(us => ({
-                id: us.storeId,
-                role: us.role,
-                companyId: us.store.companyId,
-            })),
-            companies: user.userCompanies.map(uc => ({
-                id: uc.companyId,
-                role: uc.role,
-                allStoresAccess: uc.allStoresAccess,
-            })),
+            stores,
+            companies,
         };
 
         // Cache and attach to request

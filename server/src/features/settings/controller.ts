@@ -17,6 +17,7 @@ function getUserContext(req: Request): SettingsUserContext {
     return {
         id: req.user!.id,
         globalRole: req.user!.globalRole ?? null,
+        companies: req.user!.companies,
     };
 }
 
