@@ -192,8 +192,9 @@ export const userController = {
                     id: uc.companyId,
                     code: uc.company.code,
                     name: uc.company.name,
+                    role: uc.role,
                     allStoresAccess: uc.allStoresAccess,
-                    isCompanyAdmin: uc.role === 'COMPANY_ADMIN',
+                    isCompanyAdmin: uc.role === 'COMPANY_ADMIN' || uc.role === 'SUPER_USER',
                 })),
                 stores: user.userStores.map((us: any) => ({
                     id: us.storeId,
@@ -420,8 +421,9 @@ export const userController = {
                 code: result.company.code,
                 name: result.company.name,
                 location: result.company.location,
+                role: result.role,
                 allStoresAccess: result.allStoresAccess,
-                isCompanyAdmin: result.role === 'COMPANY_ADMIN',
+                isCompanyAdmin: result.role === 'COMPANY_ADMIN' || result.role === 'SUPER_USER',
             });
         } catch (error: any) {
             if (error.message === 'USER_NOT_FOUND') return next(notFound('User'));
@@ -455,8 +457,9 @@ export const userController = {
                 companyId: updated.companyId,
                 code: updated.company.code,
                 name: updated.company.name,
+                role: updated.role,
                 allStoresAccess: updated.allStoresAccess,
-                isCompanyAdmin: updated.role === 'COMPANY_ADMIN',
+                isCompanyAdmin: updated.role === 'COMPANY_ADMIN' || updated.role === 'SUPER_USER',
             });
         } catch (error: any) {
             if (error.message === 'FORBIDDEN') return next(forbidden('You do not have permission to update this assignment'));

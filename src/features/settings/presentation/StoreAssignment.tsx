@@ -9,14 +9,13 @@ import {
     Box,
     Typography,
     FormControl,
-    FormControlLabel,
     InputLabel,
     Select,
     MenuItem,
     Checkbox,
     FormGroup,
     FormLabel,
-    Switch,
+    FormControlLabel,
     Alert,
     CircularProgress,
     Chip,
@@ -44,7 +43,7 @@ const STORE_ROLES = ['STORE_VIEWER', 'STORE_EMPLOYEE', 'STORE_MANAGER', 'STORE_A
 type StoreRole = typeof STORE_ROLES[number];
 
 // Company roles
-const COMPANY_ROLES = ['VIEWER', 'COMPANY_ADMIN'] as const;
+const COMPANY_ROLES = ['VIEWER', 'STORE_VIEWER', 'STORE_ADMIN', 'COMPANY_ADMIN'] as const;
 type CompanyRole = typeof COMPANY_ROLES[number];
 
 /** Store assignment data */
@@ -201,15 +200,6 @@ export function StoreAssignment({
         );
     };
 
-    // Handle all stores access toggle
-    const handleAllStoresToggle = (checked: boolean) => {
-        onAllStoresAccessChange(checked);
-        if (checked) {
-            // Clear individual assignments when granting all stores access
-            onAssignmentsChange([]);
-        }
-    };
-
     if (loading) {
         return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 2 }}>
@@ -245,28 +235,13 @@ export function StoreAssignment({
         );
     }
 
+    // Derive allStoresAccess from company role
+    const isAllStoresRole = companyRole === 'COMPANY_ADMIN' || companyRole === 'STORE_ADMIN';
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* All Stores Access Toggle */}
-            {companyRole === 'COMPANY_ADMIN' && (
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={allStoresAccess}
-                            onChange={(e) => handleAllStoresToggle(e.target.checked)}
-                            disabled={disabled}
-                        />
-                    }
-                    label={
-                        <Typography variant="body2">
-                            {t('settings.users.allStoresAccess', 'Access to all stores in company')}
-                        </Typography>
-                    }
-                />
-            )}
-
             {/* Individual Store Assignments */}
-            {!allStoresAccess && (
+            {!isAllStoresRole && (
                 <>
                     {/* Add Store Selector */}
                     {availableStores.length > 0 && (
@@ -404,9 +379,9 @@ export function StoreAssignment({
             )}
 
             {/* All Stores Access Info */}
-            {allStoresAccess && (
+            {isAllStoresRole && (
                 <Alert severity="success">
-                    {t('settings.users.allStoresAccessInfo', 
+                    {t('settings.users.allStoresAccessInfo',
                         'User will have access to all current and future stores in this company.')}
                 </Alert>
             )}

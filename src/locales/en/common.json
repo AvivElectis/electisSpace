@@ -527,6 +527,8 @@
             "storeAssignments": "Store Assignments",
             "companyRole": "Company Role",
             "companyAdminDesc": "Can manage stores and users in this company",
+            "storeAdminDesc": "Admin access to all stores without company management",
+            "storeViewerDesc": "View-only access to assigned stores",
             "viewerDesc": "View-only access to company data",
             "steps": {
                 "basicInfo": "Basic Info",
@@ -1181,7 +1183,8 @@
         "store_manager": "Store Manager",
         "store_employee": "Store Employee",
         "store_viewer": "Store Viewer",
-        "platform_admin": "Platform Admin"
+        "platform_admin": "Platform Admin",
+        "super_user": "Super User"
     },
     "validation": {
         "required": "{{field}} is required",
