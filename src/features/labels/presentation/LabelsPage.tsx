@@ -231,6 +231,17 @@ export function LabelsPage() {
         }
     };
 
+    const getStatusColor = (status?: string) => {
+        switch (status?.toUpperCase()) {
+            case 'NORMAL': return 'success';
+            case 'UPDATED': return 'info';
+            case 'PROCESSING': return 'warning';
+            case 'ERROR': return 'error';
+            case 'TIMEOUT': return 'error';
+            default: return 'default';
+        }
+    };
+
     // Column count for table (dynamic based on image preview toggle)
     const colSpan = showImagePreviews ? 9 : 8;
 
@@ -678,7 +689,7 @@ export function LabelsPage() {
                                             </TableCell>
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left' }}>
                                                 {label.status ? (
-                                                    <Chip label={label.status} size="small" sx={{ p: 1, px: 2 }} />
+                                                    <Chip label={label.status} size="small" color={getStatusColor(label.status) as any} sx={{ p: 1, px: 2 }} />
                                                 ) : (
                                                     <Typography variant="body2" color="text.secondary">-</Typography>
                                                 )}
