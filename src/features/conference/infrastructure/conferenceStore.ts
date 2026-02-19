@@ -177,10 +177,20 @@ export const useConferenceStore = create<ConferenceStore>()(
             }),
             {
                 name: 'conference-store',
-                partialize: (state) => ({
-                    conferenceRooms: state.conferenceRooms,
-                    // Don't persist loading/error states
+                version: 2,
+                partialize: () => ({
+                    // Do NOT persist conferenceRooms — always fresh-fetch from server.
+                    // Persisting causes stale rooms from a previous store to flash
+                    // when switching stores (especially for multi-store users).
                 }),
+                migrate: (persistedState: unknown, version: number) => {
+                    const state = persistedState as Record<string, unknown>;
+                    if (version < 2) {
+                        // Strip stale conference rooms from old localStorage data
+                        delete state.conferenceRooms;
+                    }
+                    return state as any;
+                },
             }
         ),
         { name: 'ConferenceStore' }
