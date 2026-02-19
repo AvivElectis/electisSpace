@@ -13,6 +13,7 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
 
 // Lazy load dialogs - not needed on initial render
@@ -47,6 +48,8 @@ export function PeopleManagerView() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const settings = useSettingsStore((state) => state.settings);
     const { getLabel } = useSpaceTypeLabels();
+    const { hasStoreRole } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE');
 
     // Helper for translations with space type
     const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
@@ -463,6 +466,7 @@ export function PeopleManagerView() {
             {/* Header Section */}
             <PeopleToolbar
                 totalPeople={people.length}
+                canEdit={canEdit}
                 onAddPerson={handleAdd}
                 onUploadCSV={() => setCSVUploadOpen(true)}
             />
@@ -474,6 +478,7 @@ export function PeopleManagerView() {
                 availableSpaces={availableSpaces}
                 assignedCount={assignedCount}
                 unassignedCount={unassignedCount}
+                canEdit={canEdit}
                 onTotalSpacesChange={peopleController.setTotalSpaces}
             />
 
@@ -489,6 +494,7 @@ export function PeopleManagerView() {
                 onSearchChange={setSearchQuery}
                 assignmentFilter={assignmentFilter}
                 onAssignmentFilterChange={setAssignmentFilter}
+                canEdit={canEdit}
                 onCancelAllAssignments={handleCancelAllAssignments}
                 assignedCount={assignedCount}
             />
@@ -496,6 +502,7 @@ export function PeopleManagerView() {
             {/* Bulk Actions */}
             <PeopleBulkActionsBar
                 selectedCount={selectedIds.size}
+                canEdit={canEdit}
                 onBulkAssign={handleBulkAssign}
                 onCancelAllAssignments={handleCancelAllAssignments}
                 onRemoveSelected={handleRemoveSelectedPeople}
@@ -512,6 +519,7 @@ export function PeopleManagerView() {
                 sortConfig={sortConfig}
                 searchQuery={searchQuery}
                 assignmentFilter={assignmentFilter}
+                canEdit={canEdit}
                 onSelectAll={handleSelectAll}
                 onSelectOne={handleSelectOne}
                 onSort={handleSort}
@@ -528,6 +536,7 @@ export function PeopleManagerView() {
                     color="primary"
                     variant="extended"
                     onClick={handleAdd}
+                    disabled={!canEdit}
                     sx={{
                         position: 'fixed',
                         bottom: 24,

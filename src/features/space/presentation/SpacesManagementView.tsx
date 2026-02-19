@@ -44,6 +44,7 @@ import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('./SpaceDialog').then(m => ({ default: m.SpaceDialog })));
@@ -96,6 +97,7 @@ interface SpacesDesktopTableProps {
     nameFieldKey?: string;
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null;
     searchQuery: string;
+    canEdit: boolean;
     onSort: (key: string) => void;
     onEdit: (space: Space) => void;
     onDelete: (id: string) => void;
@@ -103,7 +105,7 @@ interface SpacesDesktopTableProps {
 
 function SpacesDesktopTable({
     spaces, isFetching, visibleFields, nameFieldKey,
-    sortConfig, searchQuery, onSort, onEdit, onDelete,
+    sortConfig, searchQuery, canEdit, onSort, onEdit, onDelete,
 }: SpacesDesktopTableProps) {
     const { t, i18n } = useTranslation();
     const { getLabel } = useSpaceTypeLabels();
@@ -146,14 +148,18 @@ function SpacesDesktopTable({
                 <Box sx={{ ...cellSx, width: 100, flexShrink: 0 }}>
                     <Stack direction="row" gap={0.5} justifyContent="center">
                         <Tooltip title={t('common.edit')}>
-                            <IconButton size="small" color="primary" onClick={() => onEdit(space)}>
+                            <span>
+                            <IconButton size="small" color="primary" disabled={!canEdit} onClick={() => onEdit(space)}>
                                 <EditIcon fontSize="small" />
                             </IconButton>
+                            </span>
                         </Tooltip>
                         <Tooltip title={t('common.delete')}>
-                            <IconButton size="small" color="error" onClick={() => onDelete(space.id)}>
+                            <span>
+                            <IconButton size="small" color="error" disabled={!canEdit} onClick={() => onDelete(space.id)}>
                                 <DeleteIcon fontSize="small" />
                             </IconButton>
+                            </span>
                         </Tooltip>
                     </Stack>
                 </Box>
@@ -301,6 +307,8 @@ export function SpacesManagementView() {
     });
 
     const { getLabel } = useSpaceTypeLabels();
+    const { hasStoreRole } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE');
 
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -495,6 +503,7 @@ export function SpacesManagementView() {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleAdd}
+                    disabled={!canEdit}
                     size="small"
                     sx={{ flexShrink: 0, whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
                 >
@@ -679,14 +688,18 @@ export function SpacesManagementView() {
                                                     </Typography>
                                                     <Stack direction="row" gap={1} justifyContent="flex-end">
                                                         <Tooltip title={t('common.edit')}>
-                                                            <IconButton size="medium" color="primary" onClick={() => handleEdit(space)}>
+                                                            <span>
+                                                            <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => handleEdit(space)}>
                                                                 <EditIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                         <Tooltip title={t('common.delete')}>
-                                                            <IconButton size="medium" color="error" onClick={() => handleDelete(space.id)}>
+                                                            <span>
+                                                            <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => handleDelete(space.id)}>
                                                                 <DeleteIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                     </Stack>
                                                 </Box>
@@ -707,6 +720,7 @@ export function SpacesManagementView() {
                     nameFieldKey={nameFieldKey}
                     sortConfig={sortConfig}
                     searchQuery={searchQuery}
+                    canEdit={canEdit}
                     onSort={handleSort}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -718,6 +732,7 @@ export function SpacesManagementView() {
                     color="primary"
                     variant="extended"
                     onClick={handleAdd}
+                    disabled={!canEdit}
                     sx={{
                         position: 'fixed',
                         bottom: 24,
