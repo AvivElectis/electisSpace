@@ -326,9 +326,8 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // 5. Sync assignedLabels from AIMS articles back to DB
-        // AIMS articles carry `assignedLabel` arrays — store them on Space / ConferenceRoom
-        await this.syncAssignedLabels(storeId, aimsArticles);
+        // 5. Sync assignedLabels from AIMS article info endpoint + post-sync validation
+        await this.syncAssignedLabels(storeId, expectedMap);
 
         // 6. Update store last sync timestamp
         await prisma.store.update({
@@ -339,34 +338,77 @@ export class AimsSyncReconciliationJob {
         return result;
     }
 
-    // ───── assigned labels sync ─────
+    // ───── assigned labels sync + validation ─────
 
     /**
-     * Extract assignedLabel arrays from AIMS articles and persist to Space / ConferenceRoom.
+     * Fetch article info from AIMS (which includes assignedLabel) and persist to DB.
+     * Also performs post-sync validation: compares article info against expectedMap to
+     * detect discrepancies (informational logging only — next reconcile fixes them).
+     *
      * Conference articles use a "C" prefix on their articleId (e.g. "C12").
      */
-    private async syncAssignedLabels(storeId: string, aimsArticles: AimsArticle[]): Promise<void> {
-        for (const article of aimsArticles) {
-            const artId = article.articleId || article.article_id;
-            if (!artId) continue;
+    private async syncAssignedLabels(storeId: string, expectedMap: Map<string, AimsArticle>): Promise<void> {
+        try {
+            const articleInfoList = await aimsGateway.pullArticleInfo(storeId);
 
-            const raw = (article as any).assignedLabel;
-            const labels: string[] = Array.isArray(raw) ? raw : [];
+            // --- Sync assignedLabels to DB ---
+            for (const info of articleInfoList) {
+                const artId = info.articleId;
+                if (!artId) continue;
 
-            if (artId.startsWith('C')) {
-                // Conference room (articleId = "C" + externalId)
-                const externalId = artId.slice(1);
-                await prisma.conferenceRoom.updateMany({
-                    where: { storeId, externalId },
-                    data: { assignedLabels: labels },
-                });
-            } else {
-                // Space (articleId = externalId)
-                await prisma.space.updateMany({
-                    where: { storeId, externalId: artId },
-                    data: { assignedLabels: labels },
-                });
+                const labels: string[] = Array.isArray(info.assignedLabel) ? info.assignedLabel : [];
+
+                if (artId.startsWith('C')) {
+                    // Conference room (articleId = "C" + externalId)
+                    const externalId = artId.slice(1);
+                    await prisma.conferenceRoom.updateMany({
+                        where: { storeId, externalId },
+                        data: { assignedLabels: labels },
+                    });
+                } else {
+                    // Space (articleId = externalId)
+                    await prisma.space.updateMany({
+                        where: { storeId, externalId: artId },
+                        data: { assignedLabels: labels },
+                    });
+                }
             }
+
+            // --- Post-sync validation (informational only) ---
+            const aimsInfoMap = new Map<string, typeof articleInfoList[number]>();
+            for (const info of articleInfoList) {
+                if (info.articleId) aimsInfoMap.set(info.articleId, info);
+            }
+
+            const missingInAims: string[] = [];
+            for (const artId of expectedMap.keys()) {
+                if (!aimsInfoMap.has(artId)) {
+                    missingInAims.push(artId);
+                }
+            }
+
+            const extraInAims: string[] = [];
+            for (const artId of aimsInfoMap.keys()) {
+                if (!expectedMap.has(artId)) {
+                    extraInAims.push(artId);
+                }
+            }
+
+            if (missingInAims.length > 0) {
+                console.warn(
+                    `[AimsReconcile] Validation: ${missingInAims.length} expected article(s) missing from AIMS article info ` +
+                    `(push may have failed): ${missingInAims.slice(0, 10).join(', ')}${missingInAims.length > 10 ? '...' : ''}`
+                );
+            }
+            if (extraInAims.length > 0) {
+                console.warn(
+                    `[AimsReconcile] Validation: ${extraInAims.length} unexpected article(s) found in AIMS article info ` +
+                    `(should have been deleted): ${extraInAims.slice(0, 10).join(', ')}${extraInAims.length > 10 ? '...' : ''}`
+                );
+            }
+        } catch (error: any) {
+            // Non-fatal — don't break the reconcile cycle
+            console.error(`[AimsReconcile] Failed to sync assignedLabels from article info: ${error.message}`);
         }
     }
 

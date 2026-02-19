@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import type { AimsArticle, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
+import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
 
 // Types definition (replicating needed parts from shared/domain/types)
 export interface SolumConfig {
@@ -317,6 +317,51 @@ export class SolumService {
                 throw new Error(`Delete articles failed: ${error.message}`);
             }
         });
+    }
+
+    // ============== Article Info Operations ==============
+
+    /**
+     * Fetch article info (includes assignedLabel) for a single page
+     * Endpoint: GET /common/api/v2/common/config/article/info?company=X&store=Y&page=P&size=S
+     */
+    async fetchArticleInfo(config: SolumConfig, token: string, page = 0, size = 500): Promise<AimsArticleInfo[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+
+        const url = this.buildUrl(config, `/common/api/v2/common/config/article/info?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+
+        return this.withRetry('fetchArticleInfo', async () => {
+            const response = await this.client.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.data || response.status === 204) return [];
+
+            const data = response.data;
+            const payload = data.responseMessage ?? data;
+
+            if (Array.isArray(payload)) return payload;
+            return payload.articleList || payload.content || payload.data || [];
+        });
+    }
+
+    /**
+     * Fetch all article info with pagination (size=500 per page)
+     */
+    async fetchAllArticleInfo(config: SolumConfig, token: string): Promise<AimsArticleInfo[]> {
+        const allArticles: AimsArticleInfo[] = [];
+        let page = 0;
+        const size = 500;
+
+        while (page < 100) { // Safety limit
+            const articles = await this.fetchArticleInfo(config, token, page, size);
+            if (!articles || articles.length === 0) break;
+            allArticles.push(...articles);
+            if (articles.length < size) break; // Last page
+            page++;
+        }
+
+        return allArticles;
     }
 
     // ============== Label Operations ==============
