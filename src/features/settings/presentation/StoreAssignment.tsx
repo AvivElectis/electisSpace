@@ -230,7 +230,7 @@ export function StoreAssignment({
     }
 
     // Derive allStoresAccess from company role
-    const isAllStoresRole = companyRole === 'COMPANY_ADMIN' || companyRole === 'STORE_ADMIN';
+    const isAllStoresRole = companyRole === 'COMPANY_ADMIN';
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

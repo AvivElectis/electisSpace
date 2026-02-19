@@ -163,8 +163,8 @@ model UserCompany {
 
 enum CompanyRole {
   SUPER_USER     // For PLATFORM_ADMIN - full access without restrictions
-  COMPANY_ADMIN  // Can manage company settings, users, stores
-  STORE_ADMIN    // All-stores admin without company management
+  COMPANY_ADMIN  // Can manage company settings, users, stores, all-stores access
+  STORE_ADMIN    // Per-store admin (needs explicit store assignments)
   STORE_VIEWER   // Per-store view-only access
   VIEWER         // Read-only access
 }
