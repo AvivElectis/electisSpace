@@ -54,9 +54,17 @@ const envSchema = z.object({
     // CORS
     CORS_ORIGINS: z.string().default('https://localhost:3000'),
 
-    // Rate Limiting
+    // Rate Limiting (global)
     RATE_LIMIT_WINDOW_MS: z.string().default('60000').transform(Number),
     RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform(Number),
+
+    // Rate Limiting (auth-specific)
+    AUTH_RATE_LIMIT_MAX: z.string().default('10').transform(Number),
+    AUTH_RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform(Number),
+    TWOFA_RATE_LIMIT_MAX: z.string().default('5').transform(Number),
+    TWOFA_RATE_LIMIT_WINDOW_MS: z.string().default('300000').transform(Number),
+    RESET_RATE_LIMIT_MAX: z.string().default('3').transform(Number),
+    RESET_RATE_LIMIT_WINDOW_MS: z.string().default('3600000').transform(Number),
 
     // Logging
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -137,6 +145,20 @@ export const config = {
     rateLimit: {
         windowMs: env.RATE_LIMIT_WINDOW_MS,
         max: env.RATE_LIMIT_MAX_REQUESTS,
+    },
+
+    // Auth Rate Limiting
+    authRateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX,
+        windowMs: env.AUTH_RATE_LIMIT_WINDOW_MS,
+    },
+    twofaRateLimit: {
+        max: env.TWOFA_RATE_LIMIT_MAX,
+        windowMs: env.TWOFA_RATE_LIMIT_WINDOW_MS,
+    },
+    resetRateLimit: {
+        max: env.RESET_RATE_LIMIT_MAX,
+        windowMs: env.RESET_RATE_LIMIT_WINDOW_MS,
     },
 
     // Logging

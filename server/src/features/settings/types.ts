@@ -147,4 +147,5 @@ export interface UpdateSuccessResponse {
 export interface SettingsUserContext {
     id: string;
     globalRole: string | null;
+    companies?: Array<{ id: string; allStoresAccess?: boolean }>;
 }

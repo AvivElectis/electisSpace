@@ -19,7 +19,18 @@ function getUserContext(req: Request): SyncUserContext {
         id: req.user!.id,
         globalRole: req.user?.globalRole,
         stores: req.user?.stores?.map(s => ({ id: s.id })),
+        companies: req.user?.companies,
     };
+}
+
+/** Check if user has access to a store via stores array or allStoresAccess */
+function hasStoreAccess(req: Request, storeId: string): boolean {
+    if (req.user?.globalRole === 'PLATFORM_ADMIN') return true;
+    if (req.user?.stores?.some(s => s.id === storeId)) return true;
+    // allStoresAccess users have stores expanded in auth middleware,
+    // but check companies as a safety net
+    if (req.user?.companies?.some(c => c.allStoresAccess)) return true;
+    return false;
 }
 
 // ======================
@@ -210,9 +221,7 @@ export const syncController = {
             const storeId = req.query.storeId as string;
             if (!storeId) return next(badRequest('storeId is required'));
 
-            const user = getUserContext(req);
-            const storeIds = user.stores?.map(s => s.id) || [];
-            if (user.globalRole !== 'PLATFORM_ADMIN' && !storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
+            if (!hasStoreAccess(req, storeId)) return next(forbidden('Access denied to this store'));
 
             const start = Date.now();
             const connected = await aimsGateway.checkHealth(storeId);
@@ -233,9 +242,7 @@ export const syncController = {
             const { storeId } = req.body;
             if (!storeId) return next(badRequest('storeId is required'));
 
-            const user = getUserContext(req);
-            const storeIds = user.stores?.map(s => s.id) || [];
-            if (user.globalRole !== 'PLATFORM_ADMIN' && !storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
+            if (!hasStoreAccess(req, storeId)) return next(forbidden('Access denied to this store'));
 
             const storeConfig = await aimsGateway.getStoreConfig(storeId);
             if (!storeConfig) {
@@ -260,9 +267,7 @@ export const syncController = {
             const { storeId } = req.body;
             if (!storeId) return next(badRequest('storeId is required'));
 
-            const user = getUserContext(req);
-            const storeIds = user.stores?.map(s => s.id) || [];
-            if (user.globalRole !== 'PLATFORM_ADMIN' && !storeIds.includes(storeId)) return next(forbidden('Access denied to this store'));
+            if (!hasStoreAccess(req, storeId)) return next(forbidden('Access denied to this store'));
 
             const storeConfig = await aimsGateway.getStoreConfig(storeId);
             if (storeConfig) {
