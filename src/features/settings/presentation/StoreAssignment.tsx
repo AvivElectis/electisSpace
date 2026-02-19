@@ -60,10 +60,6 @@ interface StoreAssignmentProps {
     companyId: string;
     /** Company role determines some defaults */
     companyRole: CompanyRole;
-    /** Whether user has access to all stores */
-    allStoresAccess: boolean;
-    /** Callback when all stores access changes */
-    onAllStoresAccessChange: (allStores: boolean) => void;
     /** Current store assignments */
     assignments: StoreAssignmentData[];
     /** Callback when assignments change */
@@ -81,8 +77,6 @@ interface StoreAssignmentProps {
 export function StoreAssignment({
     companyId,
     companyRole,
-    allStoresAccess,
-    onAllStoresAccessChange,
     assignments,
     onAssignmentsChange,
     disabled = false,
