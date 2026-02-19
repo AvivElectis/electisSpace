@@ -133,7 +133,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                     const firstCompanyAssignment = data.companies?.[0];
                     if (firstCompanyAssignment) {
                         setSelectedCompanyId(firstCompanyAssignment.company.id);
-                        setCompanyRole(firstCompanyAssignment.role);
+                        setCompanyRole(firstCompanyAssignment.role === 'SUPER_USER' ? 'COMPANY_ADMIN' : firstCompanyAssignment.role);
                     }
 
                     const userStoreAssignments: StoreAssignmentData[] = (data.stores || [])
@@ -195,7 +195,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 const firstCompanyAssignment = userToUse.companies?.[0];
                 if (firstCompanyAssignment) {
                     setSelectedCompanyId(firstCompanyAssignment.company.id);
-                    setCompanyRole(firstCompanyAssignment.role);
+                    setCompanyRole(firstCompanyAssignment.role === 'SUPER_USER' ? 'COMPANY_ADMIN' : firstCompanyAssignment.role);
                 }
 
                 const userStoreAssignments: StoreAssignmentData[] = (userToUse.stores || [])
@@ -402,7 +402,6 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 // Handle company assignment
                 const userWithCompanies = fetchedUserData || user;
                 const existingCompanyAssignment = userWithCompanies.companies?.find(c => c.company.id === companyId);
-                const hasAnyCompanyAssignment = userWithCompanies.companies && userWithCompanies.companies.length > 0;
 
                 if (companyId) {
                     if (existingCompanyAssignment) {
