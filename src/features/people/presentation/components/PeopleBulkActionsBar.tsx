@@ -8,6 +8,7 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 
 interface PeopleBulkActionsBarProps {
     selectedCount: number;
+    canEdit?: boolean;
     onBulkAssign: () => void;
     onCancelAllAssignments: () => void;
     onRemoveSelected: () => void;
@@ -21,6 +22,7 @@ interface PeopleBulkActionsBarProps {
  */
 export function PeopleBulkActionsBar({
     selectedCount,
+    canEdit = true,
     onBulkAssign,
     onCancelAllAssignments,
     onRemoveSelected,
@@ -57,22 +59,26 @@ export function PeopleBulkActionsBar({
                         {isMobile ? (
                             <>
                                 <Tooltip title={tWithSpaceType('people.autoAssignSpaces')}>
-                                    <IconButton size="small" color="primary" onClick={onBulkAssign}>
+                                    <span>
+                                    <IconButton size="small" color="primary" disabled={!canEdit} onClick={onBulkAssign}>
                                         <AutoAwesomeIcon fontSize="small" />
                                     </IconButton>
+                                    </span>
                                 </Tooltip>
                                 <Tooltip title={t('people.removeSelectedPeople')}>
-                                    <IconButton size="small" color="error" onClick={onRemoveSelected}>
+                                    <span>
+                                    <IconButton size="small" color="error" disabled={!canEdit} onClick={onRemoveSelected}>
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
+                                    </span>
                                 </Tooltip>
                             </>
                         ) : (
                             <>
-                                <Button size="small" startIcon={<AutoAwesomeIcon />} onClick={onBulkAssign}>
+                                <Button size="small" startIcon={<AutoAwesomeIcon />} disabled={!canEdit} onClick={onBulkAssign}>
                                     {tWithSpaceType('people.autoAssignSpaces')}
                                 </Button>
-                                <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={onRemoveSelected}>
+                                <Button size="small" color="error" startIcon={<DeleteIcon />} disabled={!canEdit} onClick={onRemoveSelected}>
                                     {t('people.removeSelectedPeople')}
                                 </Button>
                             </>
@@ -90,7 +96,7 @@ export function PeopleBulkActionsBar({
                     color="error"
                     startIcon={<CancelIcon />}
                     onClick={onCancelAllAssignments}
-                    disabled={assignedCount === 0}
+                    disabled={!canEdit || assignedCount === 0}
                     size="small"
                 >
                     {t('people.cancelAllAssignments')}

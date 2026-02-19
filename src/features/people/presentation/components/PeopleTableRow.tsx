@@ -46,6 +46,7 @@ interface PeopleTableRowProps {
     visibleFields: VisibleField[];
     nameFieldKey?: string;
     isSelected: boolean;
+    canEdit?: boolean;
     translations: PeopleTableTranslations;
     style?: React.CSSProperties; // react-window absolute positioning
     onSelect: (id: string, checked: boolean) => void;
@@ -73,6 +74,7 @@ function PeopleTableRowComponent({
     visibleFields,
     nameFieldKey,
     isSelected,
+    canEdit = true,
     translations,
     style,
     onSelect,
@@ -247,27 +249,35 @@ function PeopleTableRowComponent({
                 <Stack direction="row" gap={0.5} justifyContent="flex-start">
                     {!person.assignedSpaceId && (
                         <Tooltip title={translations.assignSpace}>
-                            <IconButton size="small" color="success" onClick={handleAssignSpace}>
+                            <span>
+                            <IconButton size="small" color="success" disabled={!canEdit} onClick={handleAssignSpace}>
                                 <AssignmentIcon fontSize="small" />
                             </IconButton>
+                            </span>
                         </Tooltip>
                     )}
                     {person.assignedSpaceId && (
                         <Tooltip title={translations.unassignSpace}>
-                            <IconButton size="small" color="warning" onClick={handleUnassignSpace}>
+                            <span>
+                            <IconButton size="small" color="warning" disabled={!canEdit} onClick={handleUnassignSpace}>
                                 <PersonRemoveIcon fontSize="small" />
                             </IconButton>
+                            </span>
                         </Tooltip>
                     )}
                     <Tooltip title={translations.edit}>
-                        <IconButton size="small" color="primary" onClick={handleEdit}>
+                        <span>
+                        <IconButton size="small" color="primary" disabled={!canEdit} onClick={handleEdit}>
                             <EditIcon fontSize="small" />
                         </IconButton>
+                        </span>
                     </Tooltip>
                     <Tooltip title={translations.delete}>
-                        <IconButton size="small" color="error" onClick={handleDelete}>
+                        <span>
+                        <IconButton size="small" color="error" disabled={!canEdit} onClick={handleDelete}>
                             <DeleteIcon fontSize="small" />
                         </IconButton>
+                        </span>
                     </Tooltip>
                 </Stack>
             </Box>
@@ -280,6 +290,7 @@ function arePropsEqual(prevProps: PeopleTableRowProps, nextProps: PeopleTableRow
     return (
         prevProps.index === nextProps.index &&
         prevProps.isSelected === nextProps.isSelected &&
+        prevProps.canEdit === nextProps.canEdit &&
         prevProps.person.id === nextProps.person.id &&
         prevProps.person.assignedSpaceId === nextProps.person.assignedSpaceId &&
         prevProps.person.virtualSpaceId === nextProps.person.virtualSpaceId &&

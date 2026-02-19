@@ -11,6 +11,7 @@ interface PeopleStatsPanelProps {
     availableSpaces: number;
     assignedCount: number;
     unassignedCount: number;
+    canEdit?: boolean;
     onTotalSpacesChange: (value: number) => void;
 }
 
@@ -23,6 +24,7 @@ export function PeopleStatsPanel({
     availableSpaces,
     assignedCount,
     unassignedCount,
+    canEdit = true,
     onTotalSpacesChange,
 }: PeopleStatsPanelProps) {
     const { t } = useTranslation();
@@ -92,6 +94,7 @@ export function PeopleStatsPanel({
                                 size="small"
                                 value={totalSpaces}
                                 onChange={(e) => onTotalSpacesChange(Number(e.target.value))}
+                                disabled={!canEdit}
                                 sx={{
                                     width: 80,
                                     '& .MuiInputBase-input': { px: 1, py: 0.5, fontSize: '0.875rem' },
@@ -126,6 +129,7 @@ export function PeopleStatsPanel({
                         size="small"
                         value={totalSpaces}
                         onChange={(e) => onTotalSpacesChange(Number(e.target.value))}
+                        disabled={!canEdit}
                         sx={{
                             width: 'fit-content',
                             '& .MuiInputBase-input': { px: 1.5, py: 1, fontSize: '1rem' },

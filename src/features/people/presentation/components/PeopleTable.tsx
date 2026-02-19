@@ -46,6 +46,7 @@ interface PeopleTableProps {
     sortConfig: SortConfig | null;
     searchQuery: string;
     assignmentFilter: 'all' | 'assigned' | 'unassigned';
+    canEdit?: boolean;
     onSelectAll: (checked: boolean) => void;
     onSelectOne: (id: string, checked: boolean) => void;
     onSort: (key: string) => void;
@@ -94,6 +95,7 @@ export function PeopleTable({
     sortConfig,
     searchQuery,
     assignmentFilter,
+    canEdit = true,
     onSelectAll,
     onSelectOne,
     onSort,
@@ -149,6 +151,7 @@ export function PeopleTable({
                 visibleFields={visibleFields}
                 nameFieldKey={nameFieldKey}
                 isSelected={selectedIds.has(person.id)}
+                canEdit={canEdit}
                 translations={rowTranslations}
                 style={style}
                 onSelect={onSelectOne}
@@ -158,7 +161,7 @@ export function PeopleTable({
                 onUnassignSpace={onUnassignSpace}
             />
         );
-    }, [people, visibleFields, nameFieldKey, selectedIds, rowTranslations, onSelectOne, onEdit, onDelete, onAssignSpace, onUnassignSpace]);
+    }, [people, visibleFields, nameFieldKey, selectedIds, canEdit, rowTranslations, onSelectOne, onEdit, onDelete, onAssignSpace, onUnassignSpace]);
 
     // Expanded card state for mobile tap-to-expand
     const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
@@ -283,27 +286,35 @@ export function PeopleTable({
                                                     <Stack direction="row" gap={1}>
                                                         {!person.assignedSpaceId && (
                                                             <Tooltip title={tWithSpaceType('people.assignSpace')}>
-                                                                <IconButton size="medium" color="success" onClick={() => onAssignSpace(person)}>
+                                                                <span>
+                                                                <IconButton size="medium" color="success" disabled={!canEdit} onClick={() => onAssignSpace(person)}>
                                                                     <AssignmentIcon />
                                                                 </IconButton>
+                                                                </span>
                                                             </Tooltip>
                                                         )}
                                                         {person.assignedSpaceId && (
                                                             <Tooltip title={tWithSpaceType('people.unassignSpace')}>
-                                                                <IconButton size="medium" color="warning" onClick={() => onUnassignSpace(person)}>
+                                                                <span>
+                                                                <IconButton size="medium" color="warning" disabled={!canEdit} onClick={() => onUnassignSpace(person)}>
                                                                     <PersonRemoveIcon />
                                                                 </IconButton>
+                                                                </span>
                                                             </Tooltip>
                                                         )}
                                                         <Tooltip title={t('common.edit')}>
-                                                            <IconButton size="medium" color="primary" onClick={() => onEdit(person)}>
+                                                            <span>
+                                                            <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => onEdit(person)}>
                                                                 <EditIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                         <Tooltip title={t('common.delete')}>
-                                                            <IconButton size="medium" color="error" onClick={() => onDelete(person.id)}>
+                                                            <span>
+                                                            <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => onDelete(person.id)}>
                                                                 <DeleteIcon />
                                                             </IconButton>
+                                                            </span>
                                                         </Tooltip>
                                                     </Stack>
                                                 </Stack>
