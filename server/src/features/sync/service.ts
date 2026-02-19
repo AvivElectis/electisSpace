@@ -33,9 +33,11 @@ const getUserStoreIds = (user: SyncUserContext): string[] => {
 const validateStoreAccess = (storeId: string, user: SyncUserContext): void => {
     if (isPlatformAdmin(user)) return; // Platform admins can access any store
     const storeIds = getUserStoreIds(user);
-    if (!storeIds.includes(storeId)) {
-        throw new Error('FORBIDDEN');
-    }
+    if (storeIds.includes(storeId)) return;
+    // Safety net: allStoresAccess users have stores expanded in auth middleware,
+    // but check companies as a defense-in-depth fallback
+    if (user.companies?.some(c => c.allStoresAccess)) return;
+    throw new Error('FORBIDDEN');
 };
 
 // ======================
