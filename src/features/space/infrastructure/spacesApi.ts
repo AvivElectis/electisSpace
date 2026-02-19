@@ -54,6 +54,7 @@ interface SpacesQueryParams {
     limit?: number;
     search?: string;
     hasLabel?: boolean;
+    storeId?: string;
 }
 
 // Spaces API service
