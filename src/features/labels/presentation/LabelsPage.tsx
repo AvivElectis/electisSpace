@@ -108,8 +108,8 @@ export function LabelsPage() {
 
     const [filtersOpen, setFiltersOpen] = useState(false);
 
-    // Image preview toggle (off by default)
-    const [showImagePreviews, setShowImagePreviews] = useState(false);
+    // Image preview toggle (on by default)
+    const [showImagePreviews, setShowImagePreviews] = useState(true);
 
     // Mobile SpeedDial
     const [speedDialOpen, setSpeedDialOpen] = useState(false);
@@ -493,39 +493,37 @@ export function LabelsPage() {
                                 ),
                             }}
                         />
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: 'auto' }}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={filterLinkedOnly}
-                                        onChange={(e) => setFilterLinkedOnly(e.target.checked)}
-                                        size="medium"
-                                    />
-                                }
-                                label={
-                                    <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                                        {t('labels.filterLinkedOnly', 'Show linked only')}
-                                    </Typography>
-                                }
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={showImagePreviews}
-                                        onChange={(e) => setShowImagePreviews(e.target.checked)}
-                                        size="medium"
-                                    />
-                                }
-                                label={
-                                    <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                                        {t('labels.showImagePreviews', 'Show image previews')}
-                                    </Typography>
-                                }
-                            />
-                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', fontSize: '0.875rem' }}>
-                                {filteredLabels.length} {t('labels.totalCountShort', 'labels')}
-                            </Typography>
-                        </Stack>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={filterLinkedOnly}
+                                    onChange={(e) => setFilterLinkedOnly(e.target.checked)}
+                                    size="medium"
+                                />
+                            }
+                            label={
+                                <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                    {t('labels.filterLinkedOnly', 'Show linked only')}
+                                </Typography>
+                            }
+                        />
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={showImagePreviews}
+                                    onChange={(e) => setShowImagePreviews(e.target.checked)}
+                                    size="medium"
+                                />
+                            }
+                            label={
+                                <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                    {t('labels.showImagePreviews', 'Show image previews')}
+                                </Typography>
+                            }
+                        />
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', fontSize: '0.875rem' }}>
+                            {filteredLabels.length} {t('labels.totalCountShort', 'labels')}
+                        </Typography>
                     </Stack>
                 </Paper>
             )}
