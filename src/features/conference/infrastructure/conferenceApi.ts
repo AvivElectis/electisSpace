@@ -62,8 +62,8 @@ export const conferenceApi = {
     /**
      * Get all conference rooms with stats
      */
-    getAll: async (): Promise<{ rooms: ConferenceRoom[]; stats: ConferenceStatsResponse['stats'] }> => {
-        const response = await api.get<ConferenceStatsResponse>('/conference');
+    getAll: async (params?: { storeId?: string }): Promise<{ rooms: ConferenceRoom[]; stats: ConferenceStatsResponse['stats'] }> => {
+        const response = await api.get<ConferenceStatsResponse>('/conference', { params });
         return {
             rooms: response.data.data.map(transformRoom),
             stats: response.data.stats,
