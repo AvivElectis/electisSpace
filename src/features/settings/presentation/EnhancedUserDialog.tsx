@@ -146,7 +146,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                         isCreatingCompany={state.isCreatingCompany}
                                         companyRole={state.companyRole}
                                         allStoresAccess={state.allStoresAccess}
-                                        onAllStoresAccessChange={state.setAllStoresAccess}
+
                                         assignments={state.storeAssignments}
                                         onAssignmentsChange={state.setStoreAssignments}
                                         isEdit={state.isEdit}
@@ -288,7 +288,6 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                         isCreatingCompany={state.isCreatingCompany}
                         companyRole={state.companyRole}
                         allStoresAccess={state.allStoresAccess}
-                        onAllStoresAccessChange={state.setAllStoresAccess}
                         assignments={state.storeAssignments}
                         onAssignmentsChange={state.setStoreAssignments}
                         isEdit={state.isEdit}

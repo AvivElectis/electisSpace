@@ -16,7 +16,10 @@ const STORE_ROLE_HIERARCHY: Record<Store['role'], number> = {
 };
 
 const COMPANY_ROLE_HIERARCHY: Record<Company['role'], number> = {
-    'COMPANY_ADMIN': 2,
+    'SUPER_USER': 4,
+    'COMPANY_ADMIN': 3,
+    'STORE_ADMIN': 2,
+    'STORE_VIEWER': 1,
     'VIEWER': 1,
 };
 
@@ -38,7 +41,7 @@ export function isCompanyAdmin(user: User | null, companyId: string): boolean {
     if (isPlatformAdmin(user)) return true;
     
     const company = user.companies.find(c => c.id === companyId);
-    return company?.role === 'COMPANY_ADMIN';
+    return company?.role === 'COMPANY_ADMIN' || company?.role === 'SUPER_USER';
 }
 
 /**
@@ -248,8 +251,8 @@ export function canManageUsers(user: User | null, targetCompanyId?: string): boo
         return isCompanyAdmin(user, targetCompanyId);
     }
     
-    // Can manage users in any company they admin
-    return user.companies.some(c => c.role === 'COMPANY_ADMIN');
+    // Can manage users in any company they admin (COMPANY_ADMIN or SUPER_USER)
+    return user.companies.some(c => c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER');
 }
 
 /**
@@ -291,9 +294,12 @@ export function getHighestRole(user: User | null): string {
     if (!user) return 'Guest';
     if (isPlatformAdmin(user)) return 'Platform Admin';
     
-    const hasCompanyAdmin = user.companies.some(c => c.role === 'COMPANY_ADMIN');
+    const hasCompanyAdmin = user.companies.some(c => c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER');
     if (hasCompanyAdmin) return 'Company Admin';
-    
+
+    const hasCompanyStoreAdmin = user.companies.some(c => c.role === 'STORE_ADMIN');
+    if (hasCompanyStoreAdmin) return 'Store Admin';
+
     const hasStoreAdmin = user.stores.some(s => s.role === 'STORE_ADMIN');
     if (hasStoreAdmin) return 'Store Admin';
     

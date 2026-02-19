@@ -269,16 +269,19 @@ export function UsersSettingsTab() {
                                 </TableRow>
                             ) : (
                                 users.map((user) => {
-                                    // Compute display role: globalRole > COMPANY_ADMIN > storeRole > companyRole > fallback
+                                    // Compute display role: globalRole > COMPANY_ADMIN/SUPER_USER > STORE_ADMIN > storeRole > companyRole > fallback
                                     const firstStore = user.stores?.[0];
                                     const firstCompany = user.companies?.[0];
                                     const companyRole = firstCompany?.role;
+                                    const isAdminCompanyRole = companyRole === 'COMPANY_ADMIN' || companyRole === 'SUPER_USER';
+                                    const isAllStoresRole = isAdminCompanyRole || companyRole === 'STORE_ADMIN';
                                     const userRole = user.globalRole
-                                        || (companyRole === 'COMPANY_ADMIN' ? 'COMPANY_ADMIN' : null)
+                                        || (isAdminCompanyRole ? 'COMPANY_ADMIN' : null)
+                                        || (companyRole === 'STORE_ADMIN' ? 'STORE_ADMIN' : null)
                                         || firstStore?.role
-                                        || companyRole // company VIEWER (no stores)
+                                        || companyRole
                                         || 'STORE_VIEWER';
-                                    const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || companyRole === 'COMPANY_ADMIN';
+                                    const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || isAllStoresRole;
                                     const userFeatures = isAdminLevel
                                         ? ['dashboard', 'spaces', 'conference', 'people']
                                         : (firstStore?.features || ['dashboard']);
