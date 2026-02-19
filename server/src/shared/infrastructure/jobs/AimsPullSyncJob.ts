@@ -351,6 +351,12 @@ export class AimsSyncReconciliationJob {
         try {
             const articleInfoList = await aimsGateway.pullArticleInfo(storeId);
 
+            const withLabels = articleInfoList.filter(a => Array.isArray(a.assignedLabel) && a.assignedLabel.length > 0);
+            console.log(
+                `[AimsReconcile] Article info: fetched ${articleInfoList.length} articles, ` +
+                `${withLabels.length} have assignedLabel(s)`
+            );
+
             // --- Sync assignedLabels to DB ---
             for (const info of articleInfoList) {
                 const artId = info.articleId;
