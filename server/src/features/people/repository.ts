@@ -156,15 +156,17 @@ export const peopleRepository = {
     },
 
     /**
-     * Check if space is assigned to another person
+     * Check if space is assigned to another person within the same store
      */
-    async isSpaceAssigned(spaceId: string, excludePersonId: string) {
-        return prisma.person.findFirst({
-            where: {
-                assignedSpaceId: spaceId,
-                id: { not: excludePersonId },
-            },
-        });
+    async isSpaceAssigned(spaceId: string, excludePersonId: string, storeId?: string) {
+        const where: any = {
+            assignedSpaceId: spaceId,
+            id: { not: excludePersonId },
+        };
+        if (storeId) {
+            where.storeId = storeId;
+        }
+        return prisma.person.findFirst({ where });
     },
 
     /**

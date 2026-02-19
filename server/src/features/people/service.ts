@@ -172,8 +172,8 @@ export const peopleService = {
             throw new Error('PERSON_NOT_FOUND');
         }
 
-        // Check if this slot is already assigned to a different person
-        const alreadyAssigned = await peopleRepository.isSpaceAssigned(spaceId, personId);
+        // Check if this slot is already assigned to a different person in the same store
+        const alreadyAssigned = await peopleRepository.isSpaceAssigned(spaceId, personId, person.storeId);
         if (alreadyAssigned) {
             throw new Error('SPACE_ALREADY_ASSIGNED');
         }
