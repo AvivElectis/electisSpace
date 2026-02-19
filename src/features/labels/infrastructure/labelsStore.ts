@@ -59,6 +59,7 @@ function transformLabels(aimsLabels: AimsLabel[]): LabelArticleLink[] {
         signal: label.signal,
         battery: label.battery,
         status: label.status,
+        labelType: label.labelType,
     }));
 }
 
@@ -76,7 +77,8 @@ function labelsChanged(prev: LabelArticleLink[], next: LabelArticleLink[]): bool
             a.articleName !== b.articleName ||
             a.signal !== b.signal ||
             a.battery !== b.battery ||
-            a.status !== b.status
+            a.status !== b.status ||
+            a.labelType !== b.labelType
         ) return true;
     }
     return false;
@@ -137,7 +139,14 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
         try {
             const ctx = getSolumContext();
             if (!ctx) {
-                set({ error: 'Not connected to AIMS', isLoading: false });
+                // On first load, don't show error — AIMS connection may still be initializing.
+                // The page will re-trigger fetch when solumConfig.isConnected changes.
+                if (isFirstLoad) {
+                    logger.info('LabelsStore', 'AIMS not connected yet, waiting for connection');
+                    set({ isLoading: false });
+                } else {
+                    set({ error: 'Not connected to AIMS', isLoading: false });
+                }
                 return;
             }
 

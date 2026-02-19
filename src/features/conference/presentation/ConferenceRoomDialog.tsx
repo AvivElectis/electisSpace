@@ -113,6 +113,7 @@ export function ConferenceRoomDialog({
 
             const roomData: Partial<ConferenceRoom> = {
                 id: finalId,
+                roomName,
                 hasMeeting,
                 meetingName: hasMeeting ? meetingName : '',
                 startTime: hasMeeting ? startTime : '',

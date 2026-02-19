@@ -47,6 +47,7 @@ import { useTranslation } from 'react-i18next';
 import { useLabelsStore } from '../infrastructure/labelsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { LinkLabelDialog } from './LinkLabelDialog';
 import { LabelImagesDialog } from './LabelImagesDialog';
 import { LabelImagePreview } from './LabelImagePreview';
@@ -67,6 +68,7 @@ export function LabelsPage() {
     const { activeStoreId, isAppReady } = useAuthStore();
     const { hasStoreRole } = useAuthContext();
     const canEdit = hasStoreRole('STORE_EMPLOYEE');
+    const solumConnected = useSettingsStore(state => !!state.settings.solumConfig?.isConnected);
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const {
@@ -146,15 +148,18 @@ export function LabelsPage() {
         return filteredLabels.slice(start, start + rowsPerPage);
     }, [filteredLabels, page, rowsPerPage]);
 
-    // Check AIMS status and fetch labels when app is ready
+    // Fetch labels when app is ready and AIMS is connected
+    // solumConnected in deps ensures auto-retry when AIMS connection arrives after page mount
     useEffect(() => {
         if (isAppReady && activeStoreId) {
             checkAimsStatus(activeStoreId);
-            fetchLabels(activeStoreId);
+            if (solumConnected) {
+                fetchLabels(activeStoreId);
+            }
         }
         // checkAimsStatus and fetchLabels are Zustand store actions (stable references)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady, activeStoreId]);
+    }, [isAppReady, activeStoreId, solumConnected]);
 
     const handleRefresh = () => {
         if (activeStoreId) {
@@ -227,7 +232,7 @@ export function LabelsPage() {
     };
 
     // Column count for table (dynamic based on image preview toggle)
-    const colSpan = showImagePreviews ? 8 : 7;
+    const colSpan = showImagePreviews ? 9 : 8;
 
     // Not configured view
     if (!activeStoreId) {
@@ -266,11 +271,16 @@ export function LabelsPage() {
                 }}
             >
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    {/* Row 1: Label code + image preview + action */}
+                    {/* Row 1: Label code + type + image preview + action */}
                     <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Typography variant="body2" fontFamily="monospace" fontWeight={700} sx={{ fontSize: '0.85rem' }}>
-                            {label.labelCode}
-                        </Typography>
+                        <Stack direction="row" alignItems="center" gap={0.75}>
+                            <Typography variant="body2" fontFamily="monospace" fontWeight={700} sx={{ fontSize: '0.85rem' }}>
+                                {label.labelCode}
+                            </Typography>
+                            {label.labelType && (
+                                <Chip label={label.labelType} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
+                            )}
+                        </Stack>
                         <Stack direction="row" alignItems="center" gap={0.5}>
                             {showImagePreviews && (
                                 <LabelImagePreview
@@ -582,6 +592,7 @@ export function LabelsPage() {
                             <TableHead>
                                 <TableRow>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.labelCode', 'Label Code')}</TableCell>
+                                    <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.labelType', 'Size')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.articleId', 'Article ID')}</TableCell>
                                     <TableCell sx={{ fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.articleName', 'Article Name')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.signal', 'Signal')}</TableCell>
@@ -614,6 +625,11 @@ export function LabelsPage() {
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left' }}>
                                                 <Typography variant="body2" fontFamily="monospace">
                                                     {label.labelCode}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ textAlign: isRtl ? 'right' : 'left' }}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {label.labelType || '-'}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left' }}>
