@@ -292,22 +292,22 @@ export function canTriggerSync(user: User | null, storeId: string): boolean {
  */
 export function getHighestRole(user: User | null): string {
     if (!user) return 'Guest';
-    if (isPlatformAdmin(user)) return 'Platform Admin';
-    
+    if (isPlatformAdmin(user)) return 'App Admin';
+
     const hasCompanyAdmin = user.companies.some(c => c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER');
     if (hasCompanyAdmin) return 'Company Admin';
 
     const hasCompanyStoreAdmin = user.companies.some(c => c.role === 'STORE_ADMIN');
-    if (hasCompanyStoreAdmin) return 'Store Admin';
+    if (hasCompanyStoreAdmin) return 'Store Manager';
 
     const hasStoreAdmin = user.stores.some(s => s.role === 'STORE_ADMIN');
-    if (hasStoreAdmin) return 'Store Admin';
-    
+    if (hasStoreAdmin) return 'Store Manager';
+
     const hasStoreManager = user.stores.some(s => s.role === 'STORE_MANAGER');
     if (hasStoreManager) return 'Store Manager';
-    
+
     const hasStoreEmployee = user.stores.some(s => s.role === 'STORE_EMPLOYEE');
-    if (hasStoreEmployee) return 'Store Employee';
+    if (hasStoreEmployee) return 'Store Viewer';
     
     return 'Viewer';
 }
