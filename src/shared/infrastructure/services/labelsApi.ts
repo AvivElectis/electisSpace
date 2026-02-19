@@ -12,12 +12,14 @@ import type { LabelTypeInfo } from '@features/labels/domain/imageTypes';
 // Label types from AIMS
 export interface AIMSLabel {
     labelCode: string;
-    articleId: string;
+    articleId?: string;
     articleName?: string;
+    articleList?: Array<{ articleId: string; articleName?: string }>;
     linkType?: string;
     status?: string;
+    signal?: number | string;
     signalQuality?: string;
-    battery?: string;
+    battery?: number | string;
     lastUpdated?: string;
     model?: string;
     width?: number;
