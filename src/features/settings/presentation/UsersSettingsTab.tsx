@@ -306,6 +306,7 @@ export function UsersSettingsTab() {
                                                 <Chip
                                                     label={t(`roles.${userRole.toLowerCase()}`)}
                                                     color={getRoleColor(userRole) as any}
+                                                    variant='filled'
                                                     size="small"
                                                     sx={{ p: 1 }}
                                                 />
