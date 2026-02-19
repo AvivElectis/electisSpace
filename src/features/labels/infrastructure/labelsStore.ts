@@ -63,6 +63,26 @@ function transformLabels(aimsLabels: AimsLabel[]): LabelArticleLink[] {
 }
 
 /**
+ * Check if two label arrays have meaningful differences.
+ * Compares by labelCode, articleId, signal, battery, status.
+ */
+function labelsChanged(prev: LabelArticleLink[], next: LabelArticleLink[]): boolean {
+    if (prev.length !== next.length) return true;
+    for (let i = 0; i < prev.length; i++) {
+        const a = prev[i], b = next[i];
+        if (
+            a.labelCode !== b.labelCode ||
+            a.articleId !== b.articleId ||
+            a.articleName !== b.articleName ||
+            a.signal !== b.signal ||
+            a.battery !== b.battery ||
+            a.status !== b.status
+        ) return true;
+    }
+    return false;
+}
+
+/**
  * Get the SoluM config and store number from settingsStore
  */
 function getSolumContext() {
@@ -105,8 +125,14 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
     },
 
     // Fetch all labels directly from AIMS
+    // First load shows spinner; subsequent fetches run in background and only update if data changed
     fetchLabels: async (_storeId) => {
-        set({ isLoading: true, error: null });
+        const currentLabels = get().labels;
+        const isFirstLoad = currentLabels.length === 0;
+
+        if (isFirstLoad) {
+            set({ isLoading: true, error: null });
+        }
 
         try {
             const ctx = getSolumContext();
@@ -115,7 +141,10 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
                 return;
             }
 
-            logger.info('LabelsStore', 'Fetching labels directly from AIMS', { storeNumber: ctx.storeNumber });
+            logger.info('LabelsStore', 'Fetching labels directly from AIMS', {
+                storeNumber: ctx.storeNumber,
+                background: !isFirstLoad,
+            });
 
             const aimsLabels = await withAimsTokenRefresh(async (token) => {
                 return getAllLabels(ctx.config, ctx.storeNumber, token);
@@ -123,11 +152,22 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
 
             const links = transformLabels(aimsLabels);
 
-            set({ labels: links, isLoading: false, aimsConfigured: true, aimsConnected: true });
-            logger.info('LabelsStore', 'Labels fetched from AIMS', { count: links.length });
+            // Only update state if data actually changed
+            if (isFirstLoad || labelsChanged(currentLabels, links)) {
+                set({ labels: links, isLoading: false, aimsConfigured: true, aimsConnected: true });
+                logger.info('LabelsStore', 'Labels updated from AIMS', { count: links.length, changed: true });
+            } else {
+                set({ isLoading: false, aimsConfigured: true, aimsConnected: true });
+                logger.info('LabelsStore', 'Labels unchanged, skipping update', { count: links.length });
+            }
         } catch (error: any) {
             logger.error('LabelsStore', 'Failed to fetch labels from AIMS', { error: error.message });
-            set({ error: error.message, isLoading: false });
+            // On background refresh, don't overwrite existing data with error
+            if (isFirstLoad) {
+                set({ error: error.message, isLoading: false });
+            } else {
+                set({ isLoading: false });
+            }
         }
     },
 
