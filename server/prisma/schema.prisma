@@ -300,20 +300,21 @@ model Person {
   assignedSpaceId String?    @map("assigned_space_id")
   
   // Dynamic data fields
-  data         Json       @default("{}")
-  
+  data            Json       @default("{}")
+  assignedLabels  String[]   @default([]) @map("assigned_labels")
+
   // Sync status
   syncStatus   SyncStatus @default(PENDING) @map("sync_status")
   lastSyncedAt DateTime?  @map("last_synced_at")
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
   store           Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   listMemberships PeopleListMembership[]
-  
+
   @@index([storeId])
   @@index([assignedSpaceId])
   @@index([externalId])

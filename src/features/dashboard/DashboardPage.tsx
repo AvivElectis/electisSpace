@@ -94,6 +94,11 @@ export function DashboardPage() {
         [spaceController.spaces]
     );
 
+    const peopleAssignedLabelsCount = useMemo(() =>
+        peopleStore.people.reduce((count, p) => count + (p.assignedLabels?.length || 0), 0),
+        [peopleStore.people]
+    );
+
     const conferenceAssignedLabelsCount = useMemo(() =>
         conferenceController.conferenceRooms.reduce((count, r) => count + (r.assignedLabels?.length || 0), 0),
         [conferenceController.conferenceRooms]
@@ -168,7 +173,7 @@ export function DashboardPage() {
                             totalPeople={totalPeople}
                             assignedPeople={assignedPeople}
                             unassignedPeople={unassignedPeople}
-                            assignedLabelsCount={spacesAssignedLabelsCount}
+                            assignedLabelsCount={peopleAssignedLabelsCount}
                             savedLists={savedLists}
                             activeListName={peopleStore.activeListName}
                         />
