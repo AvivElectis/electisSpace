@@ -67,7 +67,7 @@ export function buildPersonArticle(
     const mapping = format?.mappingInfo;
 
     const nameKey = mapping?.articleName;
-    const articleName = (nameKey && data[nameKey]) ? String(data[nameKey]) : (data.name || data.NAME || 'Person');
+    const articleName = (nameKey && data[nameKey]) ? String(data[nameKey]) : (data.name || data.NAME || '');
 
     const nfcKey = mapping?.nfcUrl;
     const nfcUrl = (nfcKey && data[nfcKey]) ? String(data[nfcKey]) : '';

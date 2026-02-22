@@ -35,10 +35,7 @@
 | `server/Dockerfile` | API container |
 | `client/nginx.conf` | Internal Nginx configuration |
 | `docker-compose.app.yml` | Application container orchestration |
-| `docker-compose.infra.yml` | Infrastructure container orchestration (Redis, Loki, Promtail, Grafana) |
-| `infra/loki-config.yml` | Loki single-process configuration |
-| `infra/promtail-config.yml` | Promtail Docker log scraping + JSON pipeline |
-| `infra/grafana-datasources.yml` | Grafana auto-provisioned Loki datasource |
+| `docker-compose.infra.yml` | Infrastructure container orchestration (Redis) |
 | `ecosystem.config.cjs` | PM2 process manager config (Windows) |
 
 ---
