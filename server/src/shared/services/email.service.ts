@@ -5,11 +5,11 @@ import { appLogger } from '../infrastructure/services/appLogger.js';
 // Email transporter configuration
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: 'ex.electis.co.il',
-    port: 25,
+    host: process.env.EXCHANGE_HOST || 'localhost',
+    port: Number(process.env.EXCHANGE_PORT) || 25,
     secure: false, // False for port 25/587
     auth: {
-      user: process.env.POWER_USER || 'maagar/aviv',
+      user: process.env.POWER_USER || '',
       pass: process.env.EXCHANGE_PASSWORD || '',
     },
     tls: {
