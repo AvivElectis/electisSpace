@@ -7,6 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { config, prisma } from '../../config/index.js';
 import { badRequest, unauthorized } from '../../shared/middleware/index.js';
 import { authService } from './service.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
     loginSchema,
     verify2FASchema,
@@ -408,7 +409,7 @@ export const authController = {
                 expiresAt: Date.now() + 3600000, // 1 hour
             });
         } catch (error: any) {
-            console.error('[Auth] AIMS token refresh failed:', error.message);
+            appLogger.error('Auth', `AIMS token refresh failed: ${error.message}`);
             next(error);
         }
     },

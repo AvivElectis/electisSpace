@@ -14,6 +14,7 @@ import { config as appConfig } from '../../../config/index.js';
 import { solumService, type SolumConfig, type SolumTokens, type ArticleFormat } from './solumService.js';
 import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
 import { decrypt } from '../../utils/encryption.js';
+import { appLogger } from './appLogger.js';
 
 interface AIMSCredentials {
     baseUrl: string;
@@ -71,7 +72,7 @@ async function loginWithRetry(config: SolumConfig): Promise<SolumTokens> {
             const is5xx = (status >= 500 && status < 600) || /\b5\d{2}\b/.test(msg);
             if (attempt < LOGIN_MAX_RETRIES && (is429 || is5xx)) {
                 const delay = LOGIN_BASE_DELAY * Math.pow(2, attempt) * (0.8 + Math.random() * 0.4);
-                console.warn(`[AIMS Gateway] login failed (attempt ${attempt + 1}/${LOGIN_MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms: ${msg}`);
+                appLogger.warn('AimsGateway', `login failed (attempt ${attempt + 1}/${LOGIN_MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms: ${msg}`);
                 await sleep(delay);
                 continue;
             }
@@ -108,7 +109,7 @@ export class AIMSGateway {
         try {
             password = decrypt(company.aimsPasswordEnc, appConfig.encryptionKey);
         } catch (error) {
-            console.error(`[AIMS Gateway] Failed to decrypt password for company ${companyId}:`, error);
+            appLogger.error('AimsGateway', `Failed to decrypt password for company ${companyId}`, { error });
             return null;
         }
 
@@ -154,7 +155,7 @@ export class AIMSGateway {
         try {
             password = decrypt(company.aimsPasswordEnc, appConfig.encryptionKey);
         } catch (error) {
-            console.error(`[AIMS Gateway] Failed to decrypt password for store ${storeId}:`, error);
+            appLogger.error('AimsGateway', `Failed to decrypt password for store ${storeId}`, { error });
             return null;
         }
 
@@ -256,7 +257,7 @@ export class AIMSGateway {
                 page++;
             }
 
-            console.log(`[AIMS Gateway] Pulled ${allArticles.length} articles from AIMS for store ${storeId} (${page + 1} pages)`);
+            appLogger.info('AimsGateway', `Pulled ${allArticles.length} articles from AIMS for store ${storeId} (${page + 1} pages)`);
             return allArticles;
         };
 
@@ -295,7 +296,7 @@ export class AIMSGateway {
         }
 
         if (batches.length > 1) {
-            console.log(`[AIMS Gateway] Pushing ${articles.length} articles in ${batches.length} batches of up to ${AIMS_BATCH_SIZE}`);
+            appLogger.info('AimsGateway', `Pushing ${articles.length} articles in ${batches.length} batches of up to ${AIMS_BATCH_SIZE}`);
         }
 
         for (let idx = 0; idx < batches.length; idx++) {
@@ -403,7 +404,7 @@ export class AIMSGateway {
                 return format;
             }
         } catch (error) {
-            console.error(`[AIMS Gateway] Failed to read article format from DB for company ${companyId}:`, error);
+            appLogger.error('AimsGateway', `Failed to read article format from DB for company ${companyId}`, { error });
         }
 
         // 3. Fetch from AIMS live
@@ -411,7 +412,7 @@ export class AIMSGateway {
         try {
             const format = await solumService.fetchArticleFormat(storeConfig.config, token);
             formatCache.set(companyId, { format, fetchedAt: Date.now() });
-            console.log(`[AIMS Gateway] Cached article format for company ${companyId}: ${format.articleData?.length || 0} data fields`);
+            appLogger.info('AimsGateway', `Cached article format for company ${companyId}: ${format.articleData?.length || 0} data fields`);
 
             // Save to DB for future use (best-effort)
             try {
@@ -424,9 +425,9 @@ export class AIMSGateway {
                     where: { id: companyId },
                     data: { settings: { ...existingSettings, solumArticleFormat: format } as any },
                 });
-                console.log(`[AIMS Gateway] Saved article format to DB for company ${companyId}`);
+                appLogger.info('AimsGateway', `Saved article format to DB for company ${companyId}`);
             } catch (dbError) {
-                console.error(`[AIMS Gateway] Failed to save article format to DB:`, dbError);
+                appLogger.error('AimsGateway', 'Failed to save article format to DB', { error: dbError });
             }
 
             return format;

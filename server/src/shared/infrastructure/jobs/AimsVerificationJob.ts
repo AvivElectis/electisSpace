@@ -13,6 +13,7 @@
 import { prisma } from '../../../config/index.js';
 import { aimsGateway } from '../services/aimsGateway.js';
 import { syncQueueService } from '../services/syncQueueService.js';
+import { appLogger } from '../services/appLogger.js';
 
 // Default verification interval: 5 minutes
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
@@ -44,11 +45,11 @@ export class AimsVerificationJob {
      */
     start(intervalMs = DEFAULT_INTERVAL_MS): void {
         if (this.intervalId) {
-            console.log('[AimsVerify] Job already running');
+            appLogger.info('AimsVerify', 'Job already running');
             return;
         }
 
-        console.log(`[AimsVerify] Starting verification job with ${intervalMs}ms interval`);
+        appLogger.info('AimsVerify', `Starting verification job with ${intervalMs}ms interval`);
         this.intervalId = setInterval(() => this.tick(), intervalMs);
         
         // Run initial verification after a short delay
@@ -62,7 +63,7 @@ export class AimsVerificationJob {
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
-            console.log('[AimsVerify] Job stopped');
+            appLogger.info('AimsVerify', 'Job stopped');
         }
     }
 
@@ -71,7 +72,7 @@ export class AimsVerificationJob {
      */
     private async tick(): Promise<void> {
         if (this.isRunning) {
-            console.log('[AimsVerify] Previous tick still running, skipping');
+            appLogger.info('AimsVerify', 'Previous tick still running, skipping');
             return;
         }
 
@@ -82,13 +83,13 @@ export class AimsVerificationJob {
             // Log summary
             const driftStores = results.filter(r => !r.verified && !r.error);
             if (driftStores.length > 0) {
-                console.log(`[AimsVerify] Drift detected in ${driftStores.length} stores:`);
+                appLogger.warn('AimsVerify', `Drift detected in ${driftStores.length} stores`);
                 for (const result of driftStores) {
-                    console.log(`  - ${result.storeName}: ${result.missingInAims.length} missing in AIMS, ${result.extraInAims.length} extra in AIMS`);
+                    appLogger.warn('AimsVerify', `${result.storeName}: ${result.missingInAims.length} missing in AIMS, ${result.extraInAims.length} extra in AIMS`);
                 }
             }
         } catch (error) {
-            console.error('[AimsVerify] Tick error:', error);
+            appLogger.error('AimsVerify', 'Tick error', { error });
         } finally {
             this.isRunning = false;
         }
@@ -111,7 +112,7 @@ export class AimsVerificationJob {
             },
         });
 
-        console.log(`[AimsVerify] Verifying ${stores.length} stores`);
+        appLogger.info('AimsVerify', `Verifying ${stores.length} stores`);
 
         for (const store of stores) {
             try {
@@ -124,7 +125,7 @@ export class AimsVerificationJob {
                     for (const entityId of peopleResult.missingInAims.slice(0, 10)) { // Limit to 10 at a time
                         await syncQueueService.queueUpdate(store.id, 'person', entityId, { verificationResync: true });
                     }
-                    console.log(`[AimsVerify] Queued ${Math.min(peopleResult.missingInAims.length, 10)} people for re-sync in ${store.name || store.code}`);
+                    appLogger.info('AimsVerify', `Queued ${Math.min(peopleResult.missingInAims.length, 10)} people for re-sync in ${store.name || store.code}`);
                 }
             } catch (error: any) {
                 results.push({
@@ -138,7 +139,7 @@ export class AimsVerificationJob {
                     verified: false,
                     error: error.message,
                 });
-                console.error(`[AimsVerify] Failed to verify store ${store.name || store.code}:`, error.message);
+                appLogger.error('AimsVerify', `Failed to verify store ${store.name || store.code}`, { error: error.message });
             }
         }
 

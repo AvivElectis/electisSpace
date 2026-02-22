@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { config } from '../../config/index.js';
+import { appLogger } from '../infrastructure/services/appLogger.js';
 
 // Custom error class
 export class AppError extends Error {
@@ -32,7 +33,7 @@ export const errorHandler = (
     res: Response,
     _next: NextFunction
 ): void => {
-    console.error('Error:', err);
+    appLogger.error('ErrorHandler', err.message, { stack: err.stack });
 
     const response: ErrorResponse = {
         error: {

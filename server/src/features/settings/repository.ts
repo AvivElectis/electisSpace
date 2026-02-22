@@ -35,13 +35,19 @@ export const settingsRepository = {
     },
 
     /**
-     * Update store settings
+     * Update store settings (deep-merge with existing, same as company settings)
      */
     async updateStoreSettings(storeId: string, settings: Record<string, any>) {
+        const store = await prisma.store.findUnique({
+            where: { id: storeId },
+            select: { settings: true },
+        });
+        const existingSettings = (store?.settings as Record<string, any>) || {};
+        const mergedSettings = { ...existingSettings, ...settings };
         return prisma.store.update({
             where: { id: storeId },
             data: {
-                settings,
+                settings: mergedSettings,
                 updatedAt: new Date(),
             },
         });

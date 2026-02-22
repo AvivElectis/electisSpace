@@ -6,6 +6,7 @@
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
 import { buildPersonArticle, buildEmptySlotArticle } from '../../shared/infrastructure/services/articleBuilder.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import { peopleRepository } from './repository.js';
 import type {
     PeopleUserContext,
@@ -180,9 +181,9 @@ export const peopleService = {
 
         // If person had a previous space, push an empty slot article for the old space
         // (keeps the slot visible in AIMS with empty fields instead of deleting it)
-        console.log(`[PeopleService] assignToSpace: personId=${personId}, newSpaceId=${spaceId}, oldSpaceId=${person.assignedSpaceId ?? 'null'}`);
+        appLogger.info('PeopleService', `assignToSpace: personId=${personId}, newSpaceId=${spaceId}, oldSpaceId=${person.assignedSpaceId ?? 'null'}`);
         if (person.assignedSpaceId && person.assignedSpaceId !== spaceId) {
-            console.log(`[PeopleService] Queuing empty slot for old space ${person.assignedSpaceId} before assigning to ${spaceId}`);
+            appLogger.info('PeopleService', `Queuing empty slot for old space ${person.assignedSpaceId} before assigning to ${spaceId}`);
             await syncQueueService.queueUpdate(
                 person.storeId,
                 'empty_slot',
@@ -190,7 +191,7 @@ export const peopleService = {
                 { slotId: person.assignedSpaceId }
             );
         } else if (!person.assignedSpaceId) {
-            console.log(`[PeopleService] No previous space (person was unassigned)`);
+            appLogger.debug('PeopleService', 'No previous space (person was unassigned)');
         }
 
         const updated = await peopleRepository.update(personId, {
@@ -221,9 +222,9 @@ export const peopleService = {
         }
 
         // Push an empty slot article instead of deleting (keeps the slot in AIMS with empty fields)
-        console.log(`[PeopleService] unassignFromSpace: personId=${personId}, currentSpaceId=${person.assignedSpaceId ?? 'null'}`);
+        appLogger.info('PeopleService', `unassignFromSpace: personId=${personId}, currentSpaceId=${person.assignedSpaceId ?? 'null'}`);
         if (person.assignedSpaceId) {
-            console.log(`[PeopleService] Queuing empty slot for space ${person.assignedSpaceId} (unassign)`);
+            appLogger.info('PeopleService', `Queuing empty slot for space ${person.assignedSpaceId} (unassign)`);
             await syncQueueService.queueUpdate(
                 person.storeId,
                 'empty_slot',
@@ -231,7 +232,7 @@ export const peopleService = {
                 { slotId: person.assignedSpaceId }
             );
         } else {
-            console.log(`[PeopleService] Person already has no space, skipping`);
+            appLogger.debug('PeopleService', 'Person already has no space, skipping');
         }
 
         const updated = await peopleRepository.update(personId, {
@@ -269,14 +270,14 @@ export const peopleService = {
     ) {
         validateStoreAccess(storeId, user);
 
-        console.log(`[PeopleService] provisionSlots: storeId=${storeId}, total=${totalSpaces}, previous=${previousTotal}`);
+        appLogger.info('PeopleService', `provisionSlots: storeId=${storeId}, total=${totalSpaces}, previous=${previousTotal}`);
 
         // Fetch article format for this store
         let format = null;
         try {
             format = await aimsGateway.fetchArticleFormat(storeId);
         } catch (error: any) {
-            console.warn(`[PeopleService] Could not fetch article format: ${error.message}`);
+            appLogger.warn('PeopleService', `Could not fetch article format: ${error.message}`);
         }
 
         // Fetch global field assignments
@@ -333,7 +334,7 @@ export const peopleService = {
         // Push all articles to AIMS
         if (articles.length > 0) {
             await aimsGateway.pushArticles(storeId, articles);
-            console.log(`[PeopleService] Pushed ${articles.length} slot articles to AIMS`);
+            appLogger.info('PeopleService', `Pushed ${articles.length} slot articles to AIMS`);
         }
 
         // If totalSpaces decreased, delete excess slot articles from AIMS
@@ -344,7 +345,7 @@ export const peopleService = {
             }
             if (excessIds.length > 0) {
                 await aimsGateway.deleteArticles(storeId, excessIds);
-                console.log(`[PeopleService] Deleted ${excessIds.length} excess slot articles from AIMS`);
+                appLogger.info('PeopleService', `Deleted ${excessIds.length} excess slot articles from AIMS`);
             }
         }
 

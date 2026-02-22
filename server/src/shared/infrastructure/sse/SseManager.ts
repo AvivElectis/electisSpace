@@ -13,6 +13,7 @@
  *   conference:changed — conference room was modified (create/update/delete/toggle)
  */
 import { Response } from 'express';
+import { appLogger } from '../services/appLogger.js';
 
 export interface SseClient {
     id: string;       // unique connection ID
@@ -43,19 +44,19 @@ class SseManager {
     addClient(client: SseClient): boolean {
         // Enforce total connection limit
         if (this.clients.size >= MAX_TOTAL_CONNECTIONS) {
-            console.warn(`[SSE] Total connection limit reached (${MAX_TOTAL_CONNECTIONS}), rejecting client ${client.id}`);
+            appLogger.warn('SSE', `Total connection limit reached (${MAX_TOTAL_CONNECTIONS}), rejecting client ${client.id}`);
             return false;
         }
 
         // Enforce per-store connection limit
         const storeCount = this.getStoreClientCount(client.storeId);
         if (storeCount >= MAX_CONNECTIONS_PER_STORE) {
-            console.warn(`[SSE] Store ${client.storeId} connection limit reached (${MAX_CONNECTIONS_PER_STORE}), rejecting client ${client.id}`);
+            appLogger.warn('SSE', `Store ${client.storeId} connection limit reached (${MAX_CONNECTIONS_PER_STORE}), rejecting client ${client.id}`);
             return false;
         }
 
         this.clients.set(client.id, client);
-        console.log(`[SSE] Client connected: ${client.id} (store=${client.storeId}, user=${client.userId}). Total: ${this.clients.size}`);
+        appLogger.info('SSE', `Client connected: ${client.id} (store=${client.storeId}, user=${client.userId}). Total: ${this.clients.size}`);
 
         // Send initial connection confirmation
         this.sendToClient(client, {
@@ -72,7 +73,7 @@ class SseManager {
      */
     removeClient(clientId: string): void {
         this.clients.delete(clientId);
-        console.log(`[SSE] Client disconnected: ${clientId}. Total: ${this.clients.size}`);
+        appLogger.info('SSE', `Client disconnected: ${clientId}. Total: ${this.clients.size}`);
     }
 
     /**
@@ -93,7 +94,7 @@ class SseManager {
                 sent++;
             }
         }
-        console.log(`[SSE] Broadcast ${event.type} to store ${storeId}: ${sent} clients`);
+        appLogger.info('SSE', `Broadcast ${event.type} to store ${storeId}: ${sent} clients`);
     }
 
     /**
@@ -112,7 +113,7 @@ class SseManager {
             client.res.write(`data: ${JSON.stringify(data)}\n\n`);
         } catch (err) {
             // Connection broken — clean up
-            console.warn(`[SSE] Failed to send to client ${client.id}, removing`);
+            appLogger.warn('SSE', `Failed to send to client ${client.id}, removing`);
             this.removeClient(client.id);
         }
     }

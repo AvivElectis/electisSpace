@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '../../../config/index.js';
+import { appLogger } from './appLogger.js';
 
 export interface SyncErrorLog {
     storeId: string;
@@ -40,11 +41,11 @@ export const syncErrorLogger = {
                 },
             });
             
-            console.error(`[SyncError] ${error.entityType}/${error.entityId} (${error.action}): ${error.errorMessage}`);
+            appLogger.error('SyncErrorLogger', `${error.entityType}/${error.entityId} (${error.action}): ${error.errorMessage}`);
         } catch (logError) {
             // Don't let logging errors propagate
-            console.error('[SyncErrorLogger] Failed to log error:', logError);
-            console.error('[SyncErrorLogger] Original error:', error);
+            appLogger.error('SyncErrorLogger', 'Failed to log error', { error: String(logError) });
+            appLogger.error('SyncErrorLogger', 'Original error', { entityType: error.entityType, entityId: error.entityId, action: error.action, message: error.errorMessage });
         }
     },
 
@@ -96,7 +97,7 @@ export const syncErrorLogger = {
             },
         });
         
-        console.log(`[SyncErrorLogger] Cleaned up ${result.count} old sync error logs`);
+        appLogger.info('SyncErrorLogger', `Cleaned up ${result.count} old sync error logs`);
         return result.count;
     },
 };

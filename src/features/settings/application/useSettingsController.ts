@@ -282,9 +282,12 @@ export function useSettingsController() {
             const base64 = await fileToBase64(file);
             updateLogo(logoIndex, base64);
 
+            // Trigger server save so logo persists at company level
+            debouncedSaveToServer();
+
             logger.info('SettingsController', 'Logo uploaded successfully', { logoIndex });
         },
-        [updateLogo]
+        [updateLogo, debouncedSaveToServer]
     );
 
     /**
@@ -294,8 +297,11 @@ export function useSettingsController() {
         (logoIndex: 1 | 2): void => {
             logger.info('SettingsController', 'Removing logo', { logoIndex });
             deleteLogo(logoIndex);
+
+            // Trigger server save so deletion persists
+            debouncedSaveToServer();
         },
-        [deleteLogo]
+        [deleteLogo, debouncedSaveToServer]
     );
 
     /**

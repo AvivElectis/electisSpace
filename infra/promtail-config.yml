@@ -1,0 +1,47 @@
+# Promtail Configuration — electisSpace
+# Scrapes Docker container logs and ships them to Loki.
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ── Docker container logs ──────────────────────────────────
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: electisspace
+          __path__: /var/lib/docker/containers/**/*.log
+
+    pipeline_stages:
+      # Docker JSON log driver wraps each line in {"log":"...","stream":"...","time":"..."}
+      - docker: {}
+
+      # Try to parse JSON-structured log lines from the server
+      - json:
+          expressions:
+            level: level
+            component: component
+            service: service
+            message: message
+            request_id: requestId
+          source: output
+
+      # Map parsed fields to Loki labels for filtering
+      - labels:
+          level:
+          component:
+          service:
+
+      # Set timestamp from log entry if available
+      - timestamp:
+          source: time
+          format: RFC3339Nano
