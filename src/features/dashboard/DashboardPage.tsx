@@ -201,6 +201,9 @@ export function DashboardPage() {
 
             </Grid>
 
+            {/* Bottom spacer so content isn't hidden behind the fixed FAB on mobile */}
+            {isMobile && <Box sx={{ height: 104 }} />}
+
             {/* Floating Quick Actions — liquid glass box, opposite side of sync indicator */}
             <Box sx={{
                 position: 'fixed',

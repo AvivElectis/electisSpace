@@ -82,7 +82,7 @@ export function DashboardSpacesCard({
                         <Typography variant="h2" fontWeight={700} color="primary.main">
                             {totalSpaces}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="subtitle2" color="text.secondary">
                             {t('dashboard.totalSpaces')}
                         </Typography>
                     </Box>
@@ -90,10 +90,10 @@ export function DashboardSpacesCard({
                     {/* Progress bar — label coverage */}
                     <Stack gap={0.5} sx={{ mb: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="subtitle2" color="text.secondary">
                                 {t('dashboard.labelCoverage', { count: spacesWithLabels, total: totalSpaces })}
                             </Typography>
-                            <Typography variant="caption" fontWeight={600} color="text.secondary">
+                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
                                 {coveragePercent}%
                             </Typography>
                         </Stack>

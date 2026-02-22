@@ -61,7 +61,7 @@ export function DashboardConferenceCard({
                         <Typography variant="h2" fontWeight={700} color="primary.main">
                             {totalRooms}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="subtitle2" color="text.secondary">
                             {t('dashboard.totalRooms')}
                         </Typography>
                     </Box>
@@ -69,10 +69,10 @@ export function DashboardConferenceCard({
                     {/* Progress bar — availability */}
                     <Stack gap={0.5} sx={{ mb: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="subtitle2" color="text.secondary">
                                 {t('dashboard.availability', { count: availableRooms, total: totalRooms })}
                             </Typography>
-                            <Typography variant="caption" fontWeight={600} color="text.secondary">
+                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
                                 {availabilityPercent}%
                             </Typography>
                         </Stack>

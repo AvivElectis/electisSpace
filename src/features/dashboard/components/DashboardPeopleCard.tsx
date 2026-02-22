@@ -60,7 +60,7 @@ export function DashboardPeopleCard({
                         <Typography variant="h2" fontWeight={700} color="primary.main">
                             {totalPeople}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="subtitle2" color="text.secondary">
                             {t('people.total')}
                         </Typography>
                     </Box>
@@ -68,10 +68,10 @@ export function DashboardPeopleCard({
                     {/* Progress bar */}
                     <Stack gap={0.5} sx={{ mb: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="subtitle2" color="text.secondary">
                                 {t('dashboard.assignedProgress', { count: assignedPeople, total: totalPeople })}
                             </Typography>
-                            <Typography variant="caption" fontWeight={600} color="text.secondary">
+                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
                                 {assignedPercent}%
                             </Typography>
                         </Stack>
