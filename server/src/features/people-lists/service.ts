@@ -189,7 +189,7 @@ export const peopleListsService = {
 
             newPeopleData.push({
                 virtualSpaceId: vsId,
-                data: { ...cleanData, ...globalFieldAssignments },
+                data: { ...globalFieldAssignments, ...cleanData },
                 assignedSpaceId,
             });
             if (assignedSpaceId) {

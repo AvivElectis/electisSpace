@@ -117,16 +117,13 @@ export function parsePeopleCSV(
             continue;
         }
 
-        // Build data object from row (without ID field)
-        const data: Record<string, string> = {};
+        // Build data object: start with global defaults, then overlay CSV row values
+        // so per-person CSV data always wins over global constants
+        const data: Record<string, string> = { ...globalFields };
         for (let j = 0; j < csvColumnsWithoutId.length; j++) {
             const fieldKey = csvColumnsWithoutId[j];
-            data[fieldKey] = row[j] || '';
-        }
-
-        // Apply global field assignments (company-wide constants like NFC_URL)
-        if (globalFields) {
-            Object.assign(data, globalFields);
+            const value = row[j] || '';
+            if (value) data[fieldKey] = value;
         }
 
         // Generate stable UUID for cross-device sync
@@ -315,16 +312,16 @@ export function buildArticleData(person: Person, mappingConfig?: SolumMappingCon
     // This ensures People Mode people are saved to their POOL article in AIMS
     const effectiveArticleId = person.virtualSpaceId || person.assignedSpaceId || person.id;
 
-    // Build the data object with all fields
-    const data: Record<string, any> = {};
+    // Build the data object: global defaults first, then person data on top
+    // so per-person values always win over global constants
+    const data: Record<string, any> = { ...globalFields };
 
-    // First, copy all person data fields
+    // Overlay person data fields (takes priority over globals)
     Object.entries(person.data).forEach(([key, value]) => {
-        data[key] = value;
+        if (value !== undefined && value !== null && value !== '') {
+            data[key] = value;
+        }
     });
-
-    // Apply global field assignments
-    Object.assign(data, globalFields);
 
     // The article ID field in the data object - use the effective article ID
     const articleIdField = mappingInfo?.articleId;
