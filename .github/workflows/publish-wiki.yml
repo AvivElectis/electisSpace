@@ -1,0 +1,49 @@
+name: Publish Wiki
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/wiki/**'
+
+jobs:
+  publish-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish wiki pages
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          # Configure git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Try to clone existing wiki, or initialize a new one
+          if git clone "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.wiki.git" /tmp/wiki 2>/dev/null; then
+            echo "Wiki repo cloned successfully"
+          else
+            echo "Wiki repo does not exist yet, initializing..."
+            mkdir -p /tmp/wiki
+            cd /tmp/wiki
+            git init
+            git remote add origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.wiki.git"
+          fi
+
+          # Copy wiki source files
+          cp docs/wiki/*.md /tmp/wiki/
+
+          # Commit and push
+          cd /tmp/wiki
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to wiki"
+          else
+            git commit -m "Update wiki pages from docs/wiki"
+            git branch -M master
+            git push -u origin master --force
+            echo "Wiki published successfully!"
+          fi
