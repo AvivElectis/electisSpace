@@ -1,7 +1,8 @@
 # ============================================================
 # electisSpace — Infrastructure Layer (Ubuntu Production)
 # ============================================================
-# Started once, rarely touched. Provides Redis cache.
+# Started once, rarely touched. Provides Redis cache and
+# observability stack (Loki + Promtail + Grafana).
 # PostgreSQL is external (global-postgres on global-network).
 #
 # Usage:
@@ -26,9 +27,67 @@ services:
     networks:
       - global-network
 
+  # ── Observability ─────────────────────────────────────────
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: electisspace-loki
+    command: -config.file=/etc/loki/loki-config.yml
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./infra/loki-config.yml:/etc/loki/loki-config.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - global-network
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: electisspace-promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./infra/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - global-network
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: electisspace-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-electisspace}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3200:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - global-network
+
 volumes:
   redis_data:
     name: electisspace-redis-data
+  loki_data:
+    name: electisspace-loki-data
+  grafana_data:
+    name: electisspace-grafana-data
 
 networks:
   global-network:
