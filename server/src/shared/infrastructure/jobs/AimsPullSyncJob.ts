@@ -47,6 +47,7 @@ export interface ReconcileStoreResult {
     pushed: number;    // articles created/updated in AIMS
     deleted: number;   // stale articles removed from AIMS
     unchanged: number; // articles already in sync
+    repaired: number;  // articles re-pushed after post-sync validation found them missing
     totalExpected: number;
     totalInAims: number;
     error?: string;
@@ -90,10 +91,11 @@ export class AimsSyncReconciliationJob {
             for (const r of results) {
                 if (!r.success) {
                     console.warn(`[AimsReconcile] ${r.storeName}: ERROR – ${r.error}`);
-                } else if (r.pushed > 0 || r.deleted > 0) {
+                } else if (r.pushed > 0 || r.deleted > 0 || r.repaired > 0) {
                     console.log(
                         `[AimsReconcile] ${r.storeName} (${r.mode}): ` +
-                        `pushed ${r.pushed}, deleted ${r.deleted}, unchanged ${r.unchanged} ` +
+                        `pushed ${r.pushed}, deleted ${r.deleted}, unchanged ${r.unchanged}` +
+                        `${r.repaired > 0 ? `, repaired ${r.repaired}` : ''} ` +
                         `(expected ${r.totalExpected}, aims had ${r.totalInAims})`
                     );
                 }
@@ -141,7 +143,7 @@ export class AimsSyncReconciliationJob {
                     storeName: store.name || store.code,
                     mode: 'spaces',
                     success: false,
-                    pushed: 0, deleted: 0, unchanged: 0,
+                    pushed: 0, deleted: 0, unchanged: 0, repaired: 0,
                     totalExpected: 0, totalInAims: 0,
                     error: error.message,
                 });
@@ -192,7 +194,7 @@ export class AimsSyncReconciliationJob {
         const result: ReconcileStoreResult = {
             storeId, storeName, mode,
             success: true,
-            pushed: 0, deleted: 0, unchanged: 0,
+            pushed: 0, deleted: 0, unchanged: 0, repaired: 0,
             totalExpected: 0, totalInAims: 0,
         };
 
@@ -347,7 +349,27 @@ export class AimsSyncReconciliationJob {
         }
 
         // 5. Sync assignedLabels from AIMS article info endpoint + post-sync validation
-        await this.syncAssignedLabels(storeId, expectedMap, isPeopleMode);
+        //    If validation finds articles missing from AIMS (push didn't land), re-push them.
+        const { missingIds } = await this.syncAssignedLabels(storeId, expectedMap, isPeopleMode);
+
+        if (missingIds.length > 0) {
+            const toRepair = missingIds
+                .map(id => expectedMap.get(id))
+                .filter((a): a is AimsArticle => a !== undefined);
+
+            if (toRepair.length > 0) {
+                try {
+                    await aimsGateway.pushArticles(storeId, toRepair);
+                    result.repaired = toRepair.length;
+                    console.warn(
+                        `[AimsReconcile] Repaired ${toRepair.length} article(s) missing from AIMS for ${storeName}: ` +
+                        `${missingIds.slice(0, 10).join(', ')}${missingIds.length > 10 ? '...' : ''}`
+                    );
+                } catch (error: any) {
+                    console.error(`[AimsReconcile] Repair push failed for ${storeName}: ${error.message}`);
+                }
+            }
+        }
 
         // 6. Update store last sync timestamp
         await prisma.store.update({
@@ -368,7 +390,11 @@ export class AimsSyncReconciliationJob {
      * Mode-aware: in people mode, syncs to Person records (not Space).
      * Conference articles use a "C" prefix on their articleId (e.g. "C12").
      */
-    private async syncAssignedLabels(storeId: string, expectedMap: Map<string, AimsArticle>, isPeopleMode: boolean): Promise<void> {
+    private async syncAssignedLabels(
+        storeId: string,
+        expectedMap: Map<string, AimsArticle>,
+        isPeopleMode: boolean,
+    ): Promise<{ missingIds: string[] }> {
         try {
             const articleInfoList = await aimsGateway.pullArticleInfo(storeId);
 
@@ -434,8 +460,8 @@ export class AimsSyncReconciliationJob {
 
             if (missingInAims.length > 0) {
                 console.warn(
-                    `[AimsReconcile] Validation: ${missingInAims.length} expected article(s) missing from AIMS article info ` +
-                    `(push may have failed): ${missingInAims.slice(0, 10).join(', ')}${missingInAims.length > 10 ? '...' : ''}`
+                    `[AimsReconcile] Validation: ${missingInAims.length} expected article(s) missing from AIMS ` +
+                    `(will attempt repair): ${missingInAims.slice(0, 10).join(', ')}${missingInAims.length > 10 ? '...' : ''}`
                 );
             }
             if (extraInAims.length > 0) {
@@ -444,9 +470,12 @@ export class AimsSyncReconciliationJob {
                     `(should have been deleted): ${extraInAims.slice(0, 10).join(', ')}${extraInAims.length > 10 ? '...' : ''}`
                 );
             }
+
+            return { missingIds: missingInAims };
         } catch (error: any) {
             // Non-fatal — don't break the reconcile cycle
             console.error(`[AimsReconcile] Failed to sync assignedLabels from article info: ${error.message}`);
+            return { missingIds: [] };
         }
     }
 
