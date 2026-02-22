@@ -99,8 +99,6 @@ export function DashboardPage() {
         [conferenceController.conferenceRooms]
     );
 
-    const assignedLabelsCount = spacesAssignedLabelsCount + conferenceAssignedLabelsCount;
-
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
     const [conferenceDialogOpen, setConferenceDialogOpen] = useState(false);
