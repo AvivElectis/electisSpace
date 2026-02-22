@@ -17,30 +17,35 @@ jobs:
       - name: Publish wiki pages
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
         run: |
+          set -e
+
           # Configure git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Debug: list what's in docs/wiki
+          # Save the workspace directory
+          WORKSPACE="$(pwd)"
+
           echo "=== Files in docs/wiki ==="
-          ls -la docs/wiki/
+          ls -la "${WORKSPACE}/docs/wiki/"
 
           # Try to clone existing wiki, or initialize a new one
-          if git clone "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.wiki.git" /tmp/wiki 2>/dev/null; then
+          if git clone "https://x-access-token:${GH_PAT}@github.com/${REPO}.wiki.git" /tmp/wiki 2>/dev/null; then
             echo "Wiki repo cloned successfully"
           else
             echo "Wiki repo does not exist yet, initializing..."
             mkdir -p /tmp/wiki
             cd /tmp/wiki
             git init
-            git remote add origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.wiki.git"
+            git remote add origin "https://x-access-token:${GH_PAT}@github.com/${REPO}.wiki.git"
           fi
 
-          # Copy wiki source files (use find to handle special characters)
-          find docs/wiki -name '*.md' -exec cp {} /tmp/wiki/ \;
+          # Copy wiki source files from workspace (use absolute paths)
+          find "${WORKSPACE}/docs/wiki" -name '*.md' -exec cp {} /tmp/wiki/ \;
 
-          echo "=== Files in /tmp/wiki ==="
+          echo "=== Files copied to /tmp/wiki ==="
           ls -la /tmp/wiki/
 
           # Commit and push
