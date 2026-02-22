@@ -1,6 +1,6 @@
 /**
  * Companies Settings Tab
- * 
+ *
  * @description Tab for managing companies. Only visible to PLATFORM_ADMIN users.
  * Displays a list of companies with options to create, edit, and delete.
  * Includes company details, AIMS configuration status, and store counts.
@@ -24,7 +24,12 @@ import {
     Tooltip,
     TextField,
     InputAdornment,
-    Alert
+    Alert,
+    useMediaQuery,
+    useTheme,
+    Card,
+    CardContent,
+    Divider
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -52,6 +57,9 @@ export function CompaniesTab() {
     const { t } = useTranslation();
     const { isPlatformAdmin, isCompanyAdmin } = useAuthContext();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // State
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -183,9 +191,9 @@ export function CompaniesTab() {
     return (
         <Box>
             {/* Header */}
-            <Stack 
-                direction={{ xs: 'column', sm: 'row' }} 
-                justifyContent="space-between" 
+            <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
                 alignItems={{ xs: 'stretch', sm: 'center' }}
                 gap={2}
                 sx={{ mb: 2 }}
@@ -232,163 +240,269 @@ export function CompaniesTab() {
                 </Alert>
             )}
 
-            {/* Companies Table */}
-            <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-                <TableContainer sx={{ maxHeight: { xs: 400, md: 500 } }}>
-                    <Table stickyHeader size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ minWidth: 80 }}>{t('settings.companies.code')}</TableCell>
-                                <TableCell sx={{ minWidth: 120 }}>{t('settings.companies.name')}</TableCell>
-                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.companies.location')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 80 }}>{t('settings.companies.stores')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 60, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.companies.aimsStatus')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 80 }}>{t('settings.companies.status')}</TableCell>
-                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.companies.created')}</TableCell>
-                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                                        <CircularProgress size={32} />
-                                    </TableCell>
-                                </TableRow>
-                            ) : companies.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                                        <Typography color="text.secondary">
-                                            {searchQuery
-                                                ? t('settings.companies.noSearchResults')
-                                                : t('settings.companies.noCompanies')}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                companies.map((company) => (
-                                    <TableRow key={company.id} hover>
-                                        <TableCell>
-                                            <Chip 
-                                                label={company.code} 
-                                                size="small" 
-                                                variant="outlined"
-                                                sx={{ p: 1, fontFamily: 'monospace', fontWeight: 'bold' }}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" fontWeight="medium" noWrap>
-                                                {company.name}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                            <Typography variant="body2" color="text.secondary" noWrap>
-                                                {company.location || '—'}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell align="center">
+            {/* Companies Table / Mobile Cards */}
+            {isMobile ? (
+                <>
+                    {/* Mobile Card View */}
+                    {loading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                            <CircularProgress size={32} />
+                        </Box>
+                    ) : companies.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 4 }}>
+                            <Typography color="text.secondary">
+                                {searchQuery
+                                    ? t('settings.companies.noSearchResults')
+                                    : t('settings.companies.noCompanies')}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        companies.map((company) => (
+                            <Card key={company.id} sx={{ mb: 1.5, overflow: 'hidden' }}>
+                                <Box sx={{ height: 3, background: company.isActive ? `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.success.light})` : theme.palette.grey[300] }} />
+                                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                    {/* Header: Company Code + Name + Actions */}
+                                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Chip label={company.code} size="small" variant="outlined" sx={{ px: 1.5, fontFamily: 'monospace', fontWeight: 'bold' }} />
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mt: 0.5 }}>{company.name}</Typography>
+                                            {company.location && <Typography variant="caption" color="text.secondary">{company.location}</Typography>}
+                                        </Box>
+                                        <Stack direction="row" gap={0.5}>
                                             <Tooltip title={t('settings.companies.manageStores')}>
-                                                <Chip
-                                                    icon={<StoreIcon fontSize="small" />}
-                                                    label={company.storeCount ?? company._count?.stores ?? 0}
-                                                    size="small"
-                                                    onClick={() => handleManageStores(company)}
-                                                    sx={{ p: 1, cursor: 'pointer' }}
-                                                />
+                                                <IconButton size="small" onClick={() => handleManageStores(company)}>
+                                                    <StoreIcon fontSize="small" />
+                                                </IconButton>
                                             </Tooltip>
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                                            <Tooltip
-                                                title={company.aimsConfigured
-                                                    ? t('settings.companies.aimsConfigured')
-                                                    : t('settings.companies.aimsNotConfigured')}
-                                            >
-                                                {company.aimsConfigured ? (
-                                                    <CloudIcon color="success" fontSize="small" />
-                                                ) : (
-                                                    <CloudOffIcon color="disabled" fontSize="small" />
-                                                )}
+                                            <Tooltip title={t('common.edit')}>
+                                                <IconButton size="small" onClick={() => handleEdit(company)}>
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
                                             </Tooltip>
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <Chip
-                                                label={company.isActive
-                                                    ? t('common.active')
-                                                    : t('common.inactive')}
-                                                size="small"
-                                                color={company.isActive ? 'success' : 'default'}
-                                                variant={company.isActive ? 'filled' : 'outlined'}
-                                                sx={{ p: 1 }}
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {formatDate(company.createdAt)}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            <Stack direction="row" gap={0.5} justifyContent="flex-end">
-                                                <Tooltip title={t('settings.companies.manageStores')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleManageStores(company)}
-                                                    >
-                                                        <StoreIcon fontSize="small" />
+                                            {isPlatformAdmin && (
+                                                <Tooltip title={t('common.delete')}>
+                                                    <IconButton size="small" color="error" onClick={() => handleDelete(company)}>
+                                                        <DeleteIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title={t('common.edit')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleEdit(company)}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                {isPlatformAdmin && (
-                                                    <Tooltip title={t('common.delete')}>
-                                                        <IconButton
-                                                            size="small"
-                                                            color="error"
-                                                            onClick={() => handleDelete(company)}
-                                                        >
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                            </Stack>
+                                            )}
+                                        </Stack>
+                                    </Stack>
+                                    <Divider sx={{ my: 1.5 }} />
+                                    {/* Details Row */}
+                                    <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
+                                        <Chip
+                                            icon={<StoreIcon fontSize="small" />}
+                                            label={company.storeCount ?? company._count?.stores ?? 0}
+                                            size="small"
+                                            onClick={() => handleManageStores(company)}
+                                            sx={{ px: 1.5, cursor: 'pointer' }}
+                                        />
+                                        <Tooltip title={company.aimsConfigured ? t('settings.companies.aimsConfigured') : t('settings.companies.aimsNotConfigured')}>
+                                            {company.aimsConfigured ? (
+                                                <CloudIcon color="success" fontSize="small" />
+                                            ) : (
+                                                <CloudOffIcon color="disabled" fontSize="small" />
+                                            )}
+                                        </Tooltip>
+                                        <Chip
+                                            label={company.isActive ? t('common.active') : t('common.inactive')}
+                                            size="small"
+                                            color={company.isActive ? 'success' : 'default'}
+                                            variant={company.isActive ? 'filled' : 'outlined'}
+                                            sx={{ px: 1.5 }}
+                                        />
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
+
+                    {/* Mobile Pagination */}
+                    <Paper sx={{ borderRadius: 3 }}>
+                        <TablePagination
+                            component="div"
+                            count={total}
+                            page={page}
+                            onPageChange={(_, newPage) => setPage(newPage)}
+                            rowsPerPage={limit}
+                            onRowsPerPageChange={(e) => {
+                                setLimit(parseInt(e.target.value, 10));
+                                setPage(0);
+                            }}
+                            rowsPerPageOptions={[5, 10, 25, 50]}
+                            labelRowsPerPage=""
+                            sx={{
+                                '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                                    margin: 0,
+                                },
+                                '.MuiTablePagination-toolbar': {
+                                    flexWrap: 'wrap',
+                                    justifyContent: 'center',
+                                    gap: 1,
+                                },
+                            }}
+                        />
+                    </Paper>
+                </>
+            ) : (
+                <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                    <TableContainer sx={{ maxHeight: { xs: 400, md: 500 } }}>
+                        <Table stickyHeader size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ minWidth: 80 }}>{t('settings.companies.code')}</TableCell>
+                                    <TableCell sx={{ minWidth: 120 }}>{t('settings.companies.name')}</TableCell>
+                                    <TableCell sx={{ minWidth: 100, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.companies.location')}</TableCell>
+                                    <TableCell align="center" sx={{ minWidth: 80 }}>{t('settings.companies.stores')}</TableCell>
+                                    <TableCell align="center" sx={{ minWidth: 60, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.companies.aimsStatus')}</TableCell>
+                                    <TableCell align="center" sx={{ minWidth: 80 }}>{t('settings.companies.status')}</TableCell>
+                                    <TableCell sx={{ minWidth: 100, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.companies.created')}</TableCell>
+                                    <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                            <CircularProgress size={32} />
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                                ) : companies.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                            <Typography color="text.secondary">
+                                                {searchQuery
+                                                    ? t('settings.companies.noSearchResults')
+                                                    : t('settings.companies.noCompanies')}
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    companies.map((company) => (
+                                        <TableRow key={company.id} hover>
+                                            <TableCell>
+                                                <Chip
+                                                    label={company.code}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ p: 1, px: 1.5, fontFamily: 'monospace', fontWeight: 'bold' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" fontWeight="medium" noWrap>
+                                                    {company.name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                                                <Typography variant="body2" color="text.secondary" noWrap>
+                                                    {company.location || '—'}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Tooltip title={t('settings.companies.manageStores')}>
+                                                    <Chip
+                                                        icon={<StoreIcon fontSize="small" />}
+                                                        label={company.storeCount ?? company._count?.stores ?? 0}
+                                                        size="small"
+                                                        onClick={() => handleManageStores(company)}
+                                                        sx={{ p: 1, px: 1.5, cursor: 'pointer' }}
+                                                    />
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                                                <Tooltip
+                                                    title={company.aimsConfigured
+                                                        ? t('settings.companies.aimsConfigured')
+                                                        : t('settings.companies.aimsNotConfigured')}
+                                                >
+                                                    {company.aimsConfigured ? (
+                                                        <CloudIcon color="success" fontSize="small" />
+                                                    ) : (
+                                                        <CloudOffIcon color="disabled" fontSize="small" />
+                                                    )}
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Chip
+                                                    label={company.isActive
+                                                        ? t('common.active')
+                                                        : t('common.inactive')}
+                                                    size="small"
+                                                    color={company.isActive ? 'success' : 'default'}
+                                                    variant={company.isActive ? 'filled' : 'outlined'}
+                                                    sx={{ p: 1, px: 1.5 }}
+                                                />
+                                            </TableCell>
+                                            <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {formatDate(company.createdAt)}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    <Tooltip title={t('settings.companies.manageStores')}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleManageStores(company)}
+                                                        >
+                                                            <StoreIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title={t('common.edit')}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleEdit(company)}
+                                                        >
+                                                            <EditIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    {isPlatformAdmin && (
+                                                        <Tooltip title={t('common.delete')}>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={() => handleDelete(company)}
+                                                            >
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                </Stack>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
 
-                {/* Pagination */}
-                <TablePagination
-                    component="div"
-                    count={total}
-                    page={page}
-                    onPageChange={(_, newPage) => setPage(newPage)}
-                    rowsPerPage={limit}
-                    onRowsPerPageChange={(e) => {
-                        setLimit(parseInt(e.target.value, 10));
-                        setPage(0);
-                    }}
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    labelRowsPerPage={t('common.rowsPerPage')}
-                    sx={{
-                        '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-                            margin: 0,
-                        },
-                        '.MuiTablePagination-toolbar': {
-                            flexWrap: 'wrap',
-                            justifyContent: 'center',
-                            gap: 1,
-                        },
-                    }}
-                />
-            </Paper>
+                    {/* Pagination */}
+                    <TablePagination
+                        component="div"
+                        count={total}
+                        page={page}
+                        onPageChange={(_, newPage) => setPage(newPage)}
+                        rowsPerPage={limit}
+                        onRowsPerPageChange={(e) => {
+                            setLimit(parseInt(e.target.value, 10));
+                            setPage(0);
+                        }}
+                        rowsPerPageOptions={[5, 10, 25, 50]}
+                        labelRowsPerPage={t('common.rowsPerPage')}
+                        sx={{
+                            '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                                margin: 0,
+                            },
+                            '.MuiTablePagination-toolbar': {
+                                flexWrap: 'wrap',
+                                justifyContent: 'center',
+                                gap: 1,
+                            },
+                        }}
+                    />
+                </Paper>
+            )}
 
             {/* Confirm Dialog */}
             <ConfirmDialog />

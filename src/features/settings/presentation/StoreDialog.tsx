@@ -28,6 +28,8 @@ import {
     CardContent,
     CardActions,
     IconButton,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -79,6 +81,8 @@ interface StoreDialogProps {
 
 export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isEdit = !!store;
 
     // State
@@ -302,13 +306,14 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
     };
 
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={submitting ? undefined : onClose}
             maxWidth="sm"
             fullWidth
+            fullScreen={isMobile}
             PaperProps={{
-                sx: { maxHeight: '90vh' }
+                sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined }
             }}
         >
             <DialogTitle>
