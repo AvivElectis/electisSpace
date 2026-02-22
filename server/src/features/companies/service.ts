@@ -9,6 +9,7 @@ import { companyRepository } from './repository.js';
 import { encrypt } from '../../shared/utils/encryption.js';
 import { config } from '../../config/index.js';
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
     DEFAULT_COMPANY_FEATURES,
     DEFAULT_SPACE_TYPE,
@@ -373,30 +374,30 @@ export const companyService = {
      * Test AIMS connection for a company
      */
     async testAimsConnection(id: string) {
-        console.log(`[Company Service] Testing AIMS connection for company ${id}`);
+        appLogger.info('CompanyService', `Testing AIMS connection for company ${id}`);
         
         // First check if company has AIMS config
         const credentials = await aimsGateway.getCredentials(id);
         if (!credentials) {
-            console.log(`[Company Service] No AIMS credentials found for company ${id}`);
+            appLogger.info('CompanyService', `No AIMS credentials found for company ${id}`);
             return {
                 connected: false,
                 error: 'No AIMS configuration found. Please configure AIMS credentials first.',
             };
         }
 
-        console.log(`[Company Service] Found credentials - baseUrl: ${credentials.baseUrl}, username: ${credentials.username}`);
+        appLogger.debug('CompanyService', `Found credentials - baseUrl: ${credentials.baseUrl}, username: ${credentials.username}`);
 
         try {
             const connected = await aimsGateway.checkCompanyHealth(id);
-            console.log(`[Company Service] AIMS health check result: ${connected}`);
+            appLogger.info('CompanyService', `AIMS health check result: ${connected}`);
             
             return {
                 connected,
                 error: connected ? null : 'Failed to connect to AIMS server. Please check your credentials.',
             };
         } catch (error: any) {
-            console.error(`[Company Service] AIMS connection test failed:`, error);
+            appLogger.error('CompanyService', 'AIMS connection test failed', { error: String(error) });
             return {
                 connected: false,
                 error: error.message || 'Unknown error connecting to AIMS',
@@ -436,7 +437,7 @@ export const companyService = {
                 })),
             };
         } catch (error: any) {
-            console.error('[Company Service] Failed to fetch AIMS stores:', error);
+            appLogger.error('CompanyService', 'Failed to fetch AIMS stores', { error: String(error) });
             return {
                 success: false,
                 stores: [],
@@ -457,7 +458,7 @@ export const companyService = {
         
         // Warn about cascading deletes
         if (company._count.stores > 0) {
-            console.warn(`Deleting company ${company.code} with ${company._count.stores} stores`);
+            appLogger.warn('CompanyService', `Deleting company ${company.code} with ${company._count.stores} stores`);
         }
         
         await companyRepository.delete(id);

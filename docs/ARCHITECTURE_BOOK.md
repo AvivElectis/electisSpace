@@ -1,6 +1,6 @@
 # electisSpace Architecture Book
 
-> **Version:** 2.3.0
+> **Version:** 2.4.0
 > **Last updated:** 2026-02-22
 > **Audience:** Senior engineers, DevOps, technical onboarding
 > **Maintainer:** Aviv Ben Waiss &lt;aviv@electis.co.il&gt;
@@ -129,7 +129,8 @@ electisSpace/
   ├── android/                  # Capacitor Android project
   ├── deploy/                   # Deployment configs and env files
   ├── docker-compose.app.yml    # Application containers
-  ├── docker-compose.infra.yml  # Infrastructure containers (Redis)
+  ├── docker-compose.infra.yml  # Infrastructure containers (Redis, Loki, Promtail, Grafana)
+  ├── infra/                    # Observability config (loki, promtail, grafana)
   ├── e2e/                      # Playwright E2E tests
   └── docs/                     # Documentation
 ```
@@ -382,7 +383,7 @@ graph LR
     CORS --> BODYPARSE[Body Parser<br/>JSON 10MB limit]
     BODYPARSE --> COOKIE[Cookie Parser]
     COOKIE --> COMPRESS[Compression<br/>SSE excluded]
-    COMPRESS --> MORGAN[Morgan Logger]
+    COMPRESS --> MORGAN[Morgan Logger<br/>JSON via appLogger]
     MORGAN --> RATELIMIT[Rate Limiter<br/>100/min]
     RATELIMIT --> ROUTES[API Routes]
     ROUTES --> NOTFOUND[404 Handler]
@@ -393,6 +394,7 @@ Key middleware decisions:
 - **Compression** explicitly excludes `text/event-stream` responses to avoid SSE buffering.
 - **Rate limiting** applies globally at 100 requests per minute per IP, with additional per-endpoint limiters on auth routes.
 - **Request IDs** are generated and logged for cross-service correlation.
+- **Morgan** outputs structured JSON via `appLogger` (not plain text), enabling Loki-based HTTP request analysis.
 
 ### 3.3 Feature Module Pattern (Server)
 
@@ -436,6 +438,7 @@ All routes are versioned under `/api/v1/`:
 | `/sync` | Synchronization | Yes | Pull, push, full sync, queue management |
 | `/people-lists` | People Lists | Yes | CRUD, membership management |
 | `/spaces-lists` | Spaces Lists | Yes | CRUD, snapshot content |
+| `/logs` | Server Logs | PLATFORM_ADMIN | In-memory log buffer, stats, clear |
 | `/admin` | Platform Admin | PLATFORM_ADMIN | User management, system operations |
 | `/health` | Health Check | No | Server status |
 | `/stores/:storeId/events` | SSE | Yes | Real-time event stream |
@@ -453,6 +456,7 @@ graph TB
         CACHE[Redis Cache<br/>Graceful fallback<br/>TTL-based]
         ARTICLE[Article Builder<br/>Space/Person/Conference<br/>Format mapping]
         ENCRYPT[Encryption<br/>AES encrypt/decrypt]
+        LOGGER[App Logger<br/>Structured JSON output<br/>Ring buffer for /logs API]
     end
 
     SYNCP --> AIMS
@@ -509,6 +513,20 @@ Manages Server-Sent Events connections per store:
 - **Originator Exclusion** -- The client that triggered a change can be excluded from the broadcast.
 - **Keep-Alive** -- 30-second ping to prevent connection timeout.
 - **Event Types**: `people:changed`, `list:loaded`, `list:freed`, `list:updated`, `conference:changed`.
+
+#### App Logger (`appLogger.ts`)
+
+A structured JSON logging service that replaces all `console.*` calls across the server runtime:
+
+- **Structured Output** -- Emits one JSON object per line to stdout/stderr for Promtail ingestion into Grafana Loki.
+- **Log Levels** -- `debug`, `info`, `warn`, `error` — configurable via `LOG_LEVEL` env var.
+- **Component Tagging** -- Every log entry includes a `component` field (e.g., `AimsGateway`, `SyncQueue`, `SSE`) for filtering.
+- **Ring Buffer** -- Retains the last 2,000 entries in memory, exposed via the `/logs` API for live admin dashboards.
+- **Context-Aware Children** -- `appLogger.withContext({ requestId, userId, storeId })` returns a child logger that enriches every entry with request context.
+- **Performance Timers** -- `startTimer()` / `endTimer()` and `measureAsync()` for structured duration tracking.
+- **Stats API** -- `getStats()` returns aggregated counts by level and component.
+
+All server features, jobs, and middleware use `appLogger` exclusively — `console.*` is reserved only for pre-boot bootstrap code (server.ts, env.ts, redis.ts).
 
 ### 3.6 Configuration & Environment
 
@@ -957,6 +975,9 @@ graph TB
     subgraph "global-network (Docker external network)"
         subgraph "docker-compose.infra.yml"
             REDIS[electisspace-redis<br/>Redis 7 Alpine<br/>Port: 6381->6379<br/>AOF persistence]
+            LOKI[Loki<br/>Log aggregation<br/>Port: 3100]
+            PROMTAIL[Promtail<br/>Docker log scraper<br/>JSON pipeline]
+            GRAFANA[Grafana<br/>Dashboards<br/>Port: 3200->3000]
         end
 
         subgraph "docker-compose.app.yml"
@@ -965,7 +986,6 @@ graph TB
         end
 
         PG[global-postgres<br/>PostgreSQL<br/>External service]
-        GRAFANA[Grafana<br/>Monitoring<br/>External service]
     end
 
     CLIENT -->|/api/*| SERVER
@@ -973,6 +993,9 @@ graph TB
     CLIENT -->|SSE /stores/*/events| SERVER
     SERVER --> PG
     SERVER --> REDIS
+    PROMTAIL -->|scrape container logs| SERVER
+    PROMTAIL --> LOKI
+    GRAFANA --> LOKI
     GRAFANA --> PG
 ```
 
@@ -1108,8 +1131,27 @@ docker logs electisspace-server --tail=100 -f
 | Redis | `redis-cli ping` | 10s | -- |
 | Express API | `GET /health` | 30s | 40s |
 | Nginx Client | `GET /` | 30s | 10s |
+| Loki | `GET /ready` | 30s | 30s |
+| Grafana | `GET /api/health` | 30s | 30s |
 
-### 6.8 Multi-Platform Support
+### 6.8 Observability Stack (Loki + Promtail + Grafana)
+
+```mermaid
+graph LR
+    SERVER[Express API<br/>JSON logs to stdout] -->|Docker log driver| PROMTAIL[Promtail<br/>Scrape container logs]
+    PROMTAIL -->|Push| LOKI[Loki<br/>Log aggregation<br/>30-day retention]
+    LOKI -->|Query via LogQL| GRAFANA[Grafana<br/>Dashboards + Explore]
+```
+
+The server emits **structured JSON** log lines (via `appLogger`) to stdout/stderr. Docker captures these as container logs, and Promtail scrapes them:
+
+1. **Promtail** (`infra/promtail-config.yml`) -- Scrapes Docker container logs via `/var/lib/docker/containers`. Uses a JSON parsing pipeline stage to extract structured fields (`level`, `component`, `service`, `message`).
+2. **Loki** (`infra/loki-config.yml`) -- Single-process mode with 30-day retention. Stores index and chunks in `/loki/data`.
+3. **Grafana** (`infra/grafana-datasources.yml`) -- Auto-provisioned with Loki as the default datasource. Accessible on port 3200.
+
+In addition to the Loki pipeline, the server exposes an in-memory log API (`GET /api/v1/logs`) that serves the last 2,000 log entries directly from the `appLogger` ring buffer — useful for quick diagnostics without Grafana.
+
+### 6.9 Multi-Platform Support
 
 ```mermaid
 graph TB
@@ -1234,7 +1276,7 @@ graph TB
 
 ### 7.4 Permission Matrix
 
-The `requirePermission(resource, action)` middleware enforces fine-grained permissions:
+The `requirePermission(resource, action)` middleware enforces fine-grained store-level permissions, while `requireGlobalRole(...roles)` enforces global-level role checks (e.g., restricting the `/logs` API to `PLATFORM_ADMIN`):
 
 | Resource | STORE_ADMIN | STORE_MANAGER | STORE_EMPLOYEE | STORE_VIEWER |
 |----------|:-----------:|:-------------:|:--------------:|:------------:|
@@ -1288,7 +1330,9 @@ graph LR
     EXPAND --> SETCACHE[Cache for 60s<br/>max 500 entries]
     SETCACHE --> ATTACH
     ATTACH --> PERM[requirePermission<br/>resource + action check]
+    ATTACH --> GLOBAL[requireGlobalRole<br/>global role check]
     PERM --> HANDLER[Route Handler]
+    GLOBAL --> HANDLER
 ```
 
 The auth middleware uses a 60-second in-memory cache (max 500 entries) to reduce database queries. The cache is invalidated when user roles or store assignments change.
@@ -1409,12 +1453,14 @@ Audit logs are store-scoped and indexed by `(entityType, entityId)` and `(create
 | `server/src/config/redis.ts` | Redis client singleton |
 | `server/src/config/database.ts` | Prisma client configuration |
 | `server/prisma/schema.prisma` | Database schema definition |
-| `server/src/shared/middleware/auth.ts` | JWT auth + RBAC middleware |
+| `server/src/shared/middleware/auth.ts` | JWT auth + RBAC middleware (authenticate, requirePermission, requireGlobalRole) |
 | `server/src/shared/infrastructure/services/aimsGateway.ts` | AIMS API client with caching |
 | `server/src/shared/infrastructure/services/syncQueueService.ts` | Sync queue helper |
 | `server/src/shared/infrastructure/services/articleBuilder.ts` | AIMS article construction |
 | `server/src/shared/infrastructure/services/solumService.ts` | Low-level AIMS HTTP client |
 | `server/src/shared/infrastructure/services/redisCache.ts` | Redis cache wrapper |
+| `server/src/shared/infrastructure/services/appLogger.ts` | Structured JSON logger (singleton) |
+| `server/src/features/logs/routes.ts` | Log buffer API (admin-only) |
 | `server/src/shared/infrastructure/jobs/SyncQueueProcessor.ts` | Background sync processor |
 | `server/src/shared/infrastructure/jobs/AimsPullSyncJob.ts` | Periodic reconciliation job |
 | `server/src/shared/infrastructure/sse/SseManager.ts` | SSE connection manager |
@@ -1434,7 +1480,10 @@ Audit logs are store-scoped and indexed by `(entityType, entityId)` and `(create
 | `server/Dockerfile` | API container |
 | `client/nginx.conf` | Internal Nginx configuration |
 | `docker-compose.app.yml` | Application container orchestration |
-| `docker-compose.infra.yml` | Infrastructure container orchestration |
+| `docker-compose.infra.yml` | Infrastructure container orchestration (Redis, Loki, Promtail, Grafana) |
+| `infra/loki-config.yml` | Loki single-process configuration |
+| `infra/promtail-config.yml` | Promtail Docker log scraping + JSON pipeline |
+| `infra/grafana-datasources.yml` | Grafana auto-provisioned Loki datasource |
 | `ecosystem.config.cjs` | PM2 process manager config (Windows) |
 
 ---

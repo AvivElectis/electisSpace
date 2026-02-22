@@ -5,6 +5,7 @@
  */
 import { GlobalRole } from '@prisma/client';
 import { settingsRepository } from './repository.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import type {
     SettingsUserContext,
     StoreSettingsResponse,
@@ -338,7 +339,7 @@ export const settingsService = {
             // Save to DB for future use
             const updatedSettings = { ...settings, solumArticleFormat: format };
             await settingsRepository.updateCompanySettings(companyId, updatedSettings);
-            console.log(`[Settings] Article format fetched from AIMS and saved to DB for company ${companyId}`);
+            appLogger.info('Settings', `Article format fetched from AIMS and saved to DB for company ${companyId}`);
 
             return {
                 companyId: company.id,
@@ -346,7 +347,7 @@ export const settingsService = {
                 source: 'aims',
             };
         } catch (error: any) {
-            console.error(`[Settings] Failed to fetch article format from AIMS for company ${companyId}:`, error.message);
+            appLogger.error('Settings', `Failed to fetch article format from AIMS for company ${companyId}: ${error.message}`);
             throw new Error('AIMS_FORMAT_FETCH_FAILED');
         }
     },
@@ -388,7 +389,7 @@ export const settingsService = {
         };
 
         const updatedCompany = await settingsRepository.updateCompanySettings(companyId, updatedSettings);
-        console.log(`[Settings] Article format saved to DB for company ${companyId}`);
+        appLogger.info('Settings', `Article format saved to DB for company ${companyId}`);
 
         // 2. Push to AIMS (best-effort — DB is the source of truth)
         try {
@@ -404,12 +405,12 @@ export const settingsService = {
                         const token = await gateway.getToken(companyId);
                         const { solumService } = await import('../../shared/infrastructure/services/solumService.js');
                         await solumService.saveArticleFormat(storeConfig.config, token, articleFormat);
-                        console.log(`[Settings] Article format pushed to AIMS for company ${companyId}`);
+                        appLogger.info('Settings', `Article format pushed to AIMS for company ${companyId}`);
                     }
                 }
             }
         } catch (error: any) {
-            console.error(`[Settings] Failed to push article format to AIMS (DB saved OK):`, error.message);
+            appLogger.error('Settings', `Failed to push article format to AIMS (DB saved OK): ${error.message}`);
             // Don't throw — DB is the source of truth
         }
 
@@ -456,7 +457,7 @@ export const settingsService = {
      * Test AIMS connection for a company
      */
     async testAimsConnection(companyId: string, user: SettingsUserContext): Promise<AimsTestResponse> {
-        console.log(`[AIMS Test] Testing connection for company ${companyId}`);
+        appLogger.info('Settings', `Testing AIMS connection for company ${companyId}`);
         
         // Platform admin or company admin can test connection
         let company;
@@ -468,19 +469,20 @@ export const settingsService = {
         }
 
         if (!company) {
-            console.log(`[AIMS Test] Company not found or access denied: ${companyId}`);
+            appLogger.info('Settings', `Company not found or access denied: ${companyId}`);
             throw new Error('COMPANY_NOT_FOUND_OR_DENIED');
         }
 
-        console.log(`[AIMS Test] Company found: ${company.code}`);
-        console.log(`[AIMS Test] aimsBaseUrl: ${company.aimsBaseUrl}`);
-        console.log(`[AIMS Test] aimsUsername: ${company.aimsUsername}`);
-        console.log(`[AIMS Test] aimsPasswordEnc exists: ${!!company.aimsPasswordEnc}`);
-        console.log(`[AIMS Test] aimsCluster: ${company.aimsCluster}`);
+        appLogger.debug('Settings', `Company found: ${company.code}`, {
+            aimsBaseUrl: company.aimsBaseUrl,
+            aimsUsername: company.aimsUsername,
+            aimsPasswordEncExists: !!company.aimsPasswordEnc,
+            aimsCluster: company.aimsCluster,
+        });
 
         // Check if AIMS is configured
         if (!company.aimsBaseUrl || !company.aimsUsername || !company.aimsPasswordEnc) {
-            console.log(`[AIMS Test] AIMS credentials not fully configured`);
+            appLogger.info('Settings', 'AIMS credentials not fully configured');
             return {
                 success: false,
                 message: 'AIMS credentials not configured',
@@ -494,15 +496,15 @@ export const settingsService = {
             const { config } = await import('../../config/index.js');
             const { solumService } = await import('../../shared/infrastructure/services/solumService.js');
 
-            console.log(`[AIMS Test] Decrypting password...`);
+            appLogger.debug('Settings', 'Decrypting password...');
             
             // Decrypt password
             let password: string;
             try {
                 password = decrypt(company.aimsPasswordEnc, config.encryptionKey);
-                console.log(`[AIMS Test] Password decrypted successfully, length: ${password.length}`);
+                appLogger.debug('Settings', `Password decrypted successfully, length: ${password.length}`);
             } catch (error) {
-                console.error('[AIMS Test] Failed to decrypt password:', error);
+                appLogger.error('Settings', 'Failed to decrypt password', { error: String(error) });
                 return {
                     success: false,
                     message: 'Failed to decrypt stored credentials',
@@ -519,7 +521,7 @@ export const settingsService = {
                 password,
             };
 
-            console.log(`[AIMS Test] Testing connection with config:`, {
+            appLogger.debug('Settings', 'Testing connection with config', {
                 baseUrl: solumConfig.baseUrl,
                 cluster: solumConfig.cluster,
                 companyName: solumConfig.companyName,
@@ -529,7 +531,7 @@ export const settingsService = {
 
             // Test health endpoint
             const isHealthy = await solumService.checkHealth(solumConfig);
-            console.log(`[AIMS Test] Health check result: ${isHealthy}`);
+            appLogger.info('Settings', `Health check result: ${isHealthy}`);
             
             if (isHealthy) {
                 return {
@@ -545,7 +547,7 @@ export const settingsService = {
                 };
             }
         } catch (error: any) {
-            console.error('[AIMS Test] Connection test failed:', error);
+            appLogger.error('Settings', 'Connection test failed', { error: String(error) });
             return {
                 success: false,
                 message: error.message || 'Connection test failed',
