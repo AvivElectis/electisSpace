@@ -315,7 +315,23 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        if (toDelete.length > 0) {
+        // Mass-deletion safeguard: if we're about to delete a large portion of AIMS
+        // articles while expected is very small, something is likely wrong (e.g., people
+        // mode flag lost, DB query returned empty). Refuse to delete and log an error.
+        const MIN_DELETION_THRESHOLD = 5;
+        if (
+            toDelete.length >= MIN_DELETION_THRESHOLD &&
+            aimsMap.size > 0 &&
+            toDelete.length > aimsMap.size * 0.5
+        ) {
+            console.error(
+                `[AimsReconcile] SAFETY: Refusing to delete ${toDelete.length} of ${aimsMap.size} AIMS articles ` +
+                `for ${storeName} (${mode}). Expected map has ${expectedMap.size} articles. ` +
+                `This looks like a data issue — skipping deletion to protect existing articles. ` +
+                `IDs that would have been deleted: ${toDelete.slice(0, 20).join(', ')}${toDelete.length > 20 ? '...' : ''}`
+            );
+            result.error = `Safety: refused mass deletion of ${toDelete.length}/${aimsMap.size} articles`;
+        } else if (toDelete.length > 0) {
             try {
                 await aimsGateway.deleteArticles(storeId, toDelete);
                 result.deleted = toDelete.length;
@@ -327,7 +343,7 @@ export class AimsSyncReconciliationJob {
         }
 
         // 5. Sync assignedLabels from AIMS article info endpoint + post-sync validation
-        await this.syncAssignedLabels(storeId, expectedMap);
+        await this.syncAssignedLabels(storeId, expectedMap, isPeopleMode);
 
         // 6. Update store last sync timestamp
         await prisma.store.update({
@@ -345,9 +361,10 @@ export class AimsSyncReconciliationJob {
      * Also performs post-sync validation: compares article info against expectedMap to
      * detect discrepancies (informational logging only — next reconcile fixes them).
      *
+     * Mode-aware: in people mode, syncs to Person records (not Space).
      * Conference articles use a "C" prefix on their articleId (e.g. "C12").
      */
-    private async syncAssignedLabels(storeId: string, expectedMap: Map<string, AimsArticle>): Promise<void> {
+    private async syncAssignedLabels(storeId: string, expectedMap: Map<string, AimsArticle>, isPeopleMode: boolean): Promise<void> {
         try {
             const articleInfoList = await aimsGateway.pullArticleInfo(storeId);
 
@@ -362,7 +379,10 @@ export class AimsSyncReconciliationJob {
                 const artId = info.articleId;
                 if (!artId) continue;
 
-                const labels: string[] = Array.isArray(info.assignedLabel) ? info.assignedLabel : [];
+                // Only sync when AIMS actually returned label data (array).
+                // If the field is missing/undefined, skip — don't overwrite DB with empty.
+                if (!Array.isArray(info.assignedLabel)) continue;
+                const labels: string[] = info.assignedLabel;
 
                 if (artId.startsWith('C')) {
                     // Conference room (articleId = "C" + externalId)
@@ -371,8 +391,14 @@ export class AimsSyncReconciliationJob {
                         where: { storeId, externalId },
                         data: { assignedLabels: labels },
                     });
+                } else if (isPeopleMode) {
+                    // People mode: article IDs are slot numbers → sync to Person records
+                    await prisma.person.updateMany({
+                        where: { storeId, assignedSpaceId: artId },
+                        data: { assignedLabels: labels },
+                    });
                 } else {
-                    // Space (articleId = externalId)
+                    // Spaces mode: article IDs are space externalIds → sync to Space records
                     await prisma.space.updateMany({
                         where: { storeId, externalId: artId },
                         data: { assignedLabels: labels },
