@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1] - 2026-02-22
+
+### Fixed
+- **People with no name show empty string in AIMS** — `buildPersonArticle()` now uses `''` instead of `'Person'` as the fallback articleName, consistent with empty slot behavior
+- **Auth session persistence when localStorage is cleared** — `useSessionRestore` now always attempts cookie-based token refresh regardless of localStorage state; added explicit `path: '/'` to refresh token cookies
+- **Dashboard People card label count** — People card now shows only `spacesAssignedLabelsCount` instead of the combined spaces+conference total
+
+### Changed
+- **Removed app-specific observability stack** — Loki, Promtail, and Grafana services removed from `docker-compose.infra.yml`; observability now handled by the global-infra grafana-agent which auto-discovers all Docker container logs
+
+### Removed
+- `infra/loki-config.yml`, `infra/promtail-config.yml`, `infra/grafana-datasources.yml` — replaced by global-infra stack
+
+---
+
 ## [2.4.0] - 2026-02-22
 
 ### Added
