@@ -12,6 +12,7 @@ interface ServerPerson {
     virtualSpaceId: string;
     externalId: string | null;
     assignedSpaceId: string | null;
+    assignedLabels?: string[];
     data: Record<string, unknown>;
     syncStatus: 'PENDING' | 'SYNCED' | 'ERROR';
     syncError: string | null;
@@ -40,6 +41,8 @@ function transformPerson(serverPerson: ServerPerson): Person {
         virtualSpaceId: serverPerson.virtualSpaceId,
         data: stringData,
         assignedSpaceId: serverPerson.assignedSpaceId || undefined,
+        assignedLabels: Array.isArray(serverPerson.assignedLabels) && serverPerson.assignedLabels.length > 0
+            ? serverPerson.assignedLabels : undefined,
         aimsSyncStatus: serverPerson.syncStatus === 'PENDING' ? 'pending' :
             serverPerson.syncStatus === 'SYNCED' ? 'synced' : 'error',
         lastSyncedAt: serverPerson.updatedAt,
