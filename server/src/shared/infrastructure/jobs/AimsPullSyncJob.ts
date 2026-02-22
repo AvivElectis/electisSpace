@@ -162,16 +162,6 @@ export class AimsSyncReconciliationJob {
     }): Promise<ReconcileStoreResult> {
         const storeId = store.id;
         const storeName = store.name || store.code;
-        const settings = (store.settings ?? {}) as Record<string, any>;
-        const isPeopleMode = settings.peopleManagerEnabled === true;
-        const mode: 'people' | 'spaces' = isPeopleMode ? 'people' : 'spaces';
-
-        const result: ReconcileStoreResult = {
-            storeId, storeName, mode,
-            success: true,
-            pushed: 0, deleted: 0, unchanged: 0,
-            totalExpected: 0, totalInAims: 0,
-        };
 
         // 0. Fetch company settings ONCE with Redis caching (eliminates N+1 queries)
         const cacheKey = `company-settings:${store.companyId}`;
@@ -191,6 +181,20 @@ export class AimsSyncReconciliationJob {
         } catch (error: any) {
             console.warn(`[AimsReconcile] Could not fetch company settings for ${storeName}: ${error.message}`);
         }
+
+        // peopleManagerEnabled is a company-level setting (saved via /settings/company endpoint),
+        // NOT a store-level setting. Read from companySettings, fall back to store.settings.
+        const isPeopleMode =
+            companySettings.peopleManagerEnabled === true ||
+            ((store.settings ?? {}) as Record<string, any>).peopleManagerEnabled === true;
+        const mode: 'people' | 'spaces' = isPeopleMode ? 'people' : 'spaces';
+
+        const result: ReconcileStoreResult = {
+            storeId, storeName, mode,
+            success: true,
+            pushed: 0, deleted: 0, unchanged: 0,
+            totalExpected: 0, totalInAims: 0,
+        };
 
         // Extract needed config from company settings
         const mappingConfig = companySettings.solumMappingConfig || {};
