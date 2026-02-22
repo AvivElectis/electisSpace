@@ -27,6 +27,7 @@ import {
     Stack,
     Badge,
     Collapse,
+    Divider,
     Fab,
     ClickAwayListener,
 } from '@mui/material';
@@ -267,96 +268,183 @@ export function LabelsPage() {
         );
     }
 
-    // Mobile card view for a single label
+    // Mobile card view for a single label — enterprise-grade responsive card
     const MobileLabelCard = ({ label, index }: { label: typeof paginatedLabels[0]; index: number }) => {
         const isLinked = !!label.articleId;
         return (
             <Card
                 key={`${label.labelCode}-${label.articleId}-${index}`}
-                variant="outlined"
                 sx={{
-                    mb: 0.75,
-                    borderRadius: 2,
-                    borderInlineStart: '4px solid',
-                    borderColor: isLinked ? 'primary.main' : 'grey.300',
+                    mb: 1.5,
+                    overflow: 'hidden',
                 }}
             >
-                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    {/* Row 1: Label code + type + image preview + action */}
-                    <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Stack direction="row" alignItems="center" gap={0.75}>
-                            <Typography variant="body2" fontFamily="monospace" fontWeight={700} sx={{ fontSize: '0.85rem' }}>
+                {/* Gradient accent bar at top */}
+                <Box
+                    sx={{
+                        height: 3,
+                        background: isLinked
+                            ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`
+                            : theme.palette.grey[300],
+                    }}
+                />
+
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    {/* Header: Label Code + Type + Template + Action */}
+                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                                fontFamily="monospace"
+                                fontWeight={700}
+                                sx={{
+                                    fontSize: '0.95rem',
+                                    letterSpacing: '0.02em',
+                                    color: 'text.primary',
+                                    wordBreak: 'break-all',
+                                }}
+                            >
                                 {label.labelCode}
                             </Typography>
-                            {label.labelType && (
-                                <Chip label={label.labelType} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
-                            )}
-                        </Stack>
-                        <Stack direction="row" alignItems="center" gap={0.5}>
-                            {showImagePreviews && (
-                                <LabelImagePreview
-                                    labelCode={label.labelCode}
-                                    storeId={activeStoreId!}
-                                    onClick={() => handleOpenImagesDialog(label.labelCode)}
-                                />
-                            )}
-                            {isLinked ? (
-                                <IconButton
-                                    size="medium"
-                                    color="error"
-                                    disabled={!canEdit}
-                                    onClick={() => handleUnlink(label.labelCode)}
-                                >
-                                    <UnlinkIcon />
-                                </IconButton>
-                            ) : (
-                                <IconButton
-                                    size="medium"
-                                    color="primary"
-                                    disabled={!canEdit}
-                                    onClick={() => handleOpenLinkDialog(label.labelCode)}
-                                >
-                                    <LinkIcon />
-                                </IconButton>
-                            )}
-                        </Stack>
+                            <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap" sx={{ mt: 0.5 }}>
+                                {label.labelType && (
+                                    <Chip
+                                        label={label.labelType}
+                                        size="small"
+                                        sx={{
+                                            height: 22,
+                                            fontSize: '0.7rem',
+                                            fontWeight: 600,
+                                            bgcolor: alpha(theme.palette.info.main, 0.08),
+                                            color: 'info.dark',
+                                        }}
+                                    />
+                                )}
+                                {label.templateName && (
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        noWrap
+                                        sx={{ fontSize: '0.7rem', maxWidth: 150 }}
+                                    >
+                                        {label.templateName}
+                                    </Typography>
+                                )}
+                            </Stack>
+                        </Box>
+                        {isLinked ? (
+                            <Tooltip title={t('labels.unlink.button', 'Unlink')}>
+                                <span>
+                                    <IconButton
+                                        size="medium"
+                                        color="error"
+                                        disabled={!canEdit}
+                                        onClick={() => handleUnlink(label.labelCode)}
+                                    >
+                                        <UnlinkIcon />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        ) : (
+                            <Tooltip title={t('labels.link.button', 'Link')}>
+                                <span>
+                                    <IconButton
+                                        size="medium"
+                                        color="primary"
+                                        disabled={!canEdit}
+                                        onClick={() => handleOpenLinkDialog(label.labelCode)}
+                                    >
+                                        <LinkIcon />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        )}
                     </Stack>
 
-                    {/* Row 2: Article info */}
-                    <Stack direction="row" alignItems="center" gap={0.5} sx={{ mt: 0.75 }}>
+                    {/* Image Preview — dedicated framed area */}
+                    {showImagePreviews && (
+                        <Box
+                            sx={{
+                                mt: 1.5,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                p: 1.5,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.grey[500], 0.04),
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                minHeight: 100,
+                            }}
+                        >
+                            <LabelImagePreview
+                                labelCode={label.labelCode}
+                                storeId={activeStoreId!}
+                                onClick={() => handleOpenImagesDialog(label.labelCode)}
+                                size={120}
+                            />
+                        </Box>
+                    )}
+
+                    {/* Article Info Section */}
+                    <Divider sx={{ my: 1.5 }} />
+                    <Box>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontWeight={600}
+                            sx={{
+                                textTransform: 'uppercase',
+                                fontSize: '0.65rem',
+                                letterSpacing: '0.08em',
+                            }}
+                        >
+                            {t('labels.table.articleId', 'Article')}
+                        </Typography>
                         {isLinked ? (
-                            <>
+                            <Stack gap={0.5} sx={{ mt: 0.5 }}>
                                 <Chip
                                     label={label.articleId}
                                     size="small"
                                     icon={<LinkIcon />}
                                     variant="outlined"
                                     color="primary"
-                                    sx={{ height: 24, fontSize: '0.75rem', px: 0.5 }}
+                                    sx={{ height: 26, fontSize: '0.8rem', alignSelf: 'flex-start' }}
                                 />
                                 {label.articleName && (
-                                    <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ fontSize: '0.85rem' }}
+                                    >
                                         {label.articleName}
                                     </Typography>
                                 )}
-                            </>
+                            </Stack>
                         ) : (
-                            <Typography variant="caption" color="text.disabled">
+                            <Typography
+                                variant="body2"
+                                color="text.disabled"
+                                sx={{ mt: 0.5, fontStyle: 'italic' }}
+                            >
                                 {t('labels.notLinked', 'Not linked')}
                             </Typography>
                         )}
-                    </Stack>
+                    </Box>
 
-                    {/* Row 3: Status chips */}
+                    {/* Status Chips */}
                     {(label.signal || label.battery || label.status) && (
-                        <Stack direction="row" gap={0.5} alignItems="center" sx={{ mt: 0.75 }}>
+                        <Stack direction="row" gap={0.75} flexWrap="wrap" sx={{ mt: 1.5 }}>
                             {label.signal && (
                                 <Chip
                                     icon={<SignalIcon />}
                                     label={label.signal}
                                     size="small"
                                     color={getSignalColor(label.signal) as any}
-                                    sx={{ height: 24, fontSize: '0.7rem', p: 1, px: 2, '& .MuiChip-icon': { fontSize: 14 } }}
+                                    sx={{
+                                        height: 28,
+                                        fontSize: '0.75rem',
+                                        '& .MuiChip-icon': { fontSize: 16 },
+                                    }}
                                 />
                             )}
                             {label.battery && (
@@ -365,14 +453,22 @@ export function LabelsPage() {
                                     label={label.battery}
                                     size="small"
                                     color={getBatteryColor(label.battery) as any}
-                                    sx={{ height: 24, fontSize: '0.7rem', p: 1, px: 2, '& .MuiChip-icon': { fontSize: 14 } }}
+                                    sx={{
+                                        height: 28,
+                                        fontSize: '0.75rem',
+                                        '& .MuiChip-icon': { fontSize: 16 },
+                                    }}
                                 />
                             )}
                             {label.status && (
                                 <Chip
                                     label={label.status}
                                     size="small"
-                                    sx={{ height: 24, fontSize: '0.7rem', p: 1, px: 2 }}
+                                    color={getStatusColor(label.status) as any}
+                                    sx={{
+                                        height: 28,
+                                        fontSize: '0.75rem',
+                                    }}
                                 />
                             )}
                         </Stack>
@@ -444,22 +540,38 @@ export function LabelsPage() {
 
             {/* Filters */}
             {isMobile ? (
-                <Box sx={{ mb: 2 }}>
+                <Paper
+                    variant="outlined"
+                    sx={{
+                        mb: 2,
+                        p: 1.5,
+                        borderRadius: 3,
+                        borderColor: 'divider',
+                    }}
+                >
                     <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <IconButton
+                        <Button
+                            size="small"
+                            startIcon={
+                                <Badge badgeContent={(searchQuery ? 1 : 0) + (filterLinkedOnly ? 1 : 0)} color="primary">
+                                    <FilterListIcon />
+                                </Badge>
+                            }
                             onClick={() => setFiltersOpen(!filtersOpen)}
-                            color={(searchQuery || filterLinkedOnly) ? 'primary' : 'default'}
+                            color={(searchQuery || filterLinkedOnly) ? 'primary' : 'inherit'}
+                            sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.85rem' }}
                         >
-                            <Badge badgeContent={(searchQuery ? 1 : 0) + (filterLinkedOnly ? 1 : 0)} color="primary">
-                                <FilterListIcon />
-                            </Badge>
-                        </IconButton>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                            {filteredLabels.length} {t('labels.totalCountShort', 'labels')}
-                        </Typography>
+                            {t('common.filters', 'Filters')}
+                        </Button>
+                        <Chip
+                            label={`${filteredLabels.length} ${t('labels.totalCountShort', 'labels')}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 24, fontSize: '0.75rem', fontWeight: 500 }}
+                        />
                     </Stack>
                     <Collapse in={filtersOpen}>
-                        <Stack gap={1.5} sx={{ mt: 1 }}>
+                        <Stack gap={1.5} sx={{ mt: 1.5 }}>
                             <TextField
                                 placeholder={t('labels.search', 'Search labels or articles...')}
                                 value={searchQuery}
@@ -474,37 +586,39 @@ export function LabelsPage() {
                                     ),
                                 }}
                             />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={filterLinkedOnly}
-                                        onChange={(e) => setFilterLinkedOnly(e.target.checked)}
-                                        size="small"
-                                    />
-                                }
-                                label={
-                                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                        {t('labels.filterLinkedOnly', 'Show linked only')}
-                                    </Typography>
-                                }
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={showImagePreviews}
-                                        onChange={(e) => setShowImagePreviews(e.target.checked)}
-                                        size="small"
-                                    />
-                                }
-                                label={
-                                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                        {t('labels.showImagePreviews', 'Show image previews')}
-                                    </Typography>
-                                }
-                            />
+                            <Stack direction="row" gap={1} flexWrap="wrap">
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={filterLinkedOnly}
+                                            onChange={(e) => setFilterLinkedOnly(e.target.checked)}
+                                            size="small"
+                                        />
+                                    }
+                                    label={
+                                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                            {t('labels.filterLinkedOnly', 'Show linked only')}
+                                        </Typography>
+                                    }
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={showImagePreviews}
+                                            onChange={(e) => setShowImagePreviews(e.target.checked)}
+                                            size="small"
+                                        />
+                                    }
+                                    label={
+                                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                            {t('labels.showImagePreviews', 'Show image previews')}
+                                        </Typography>
+                                    }
+                                />
+                            </Stack>
                         </Stack>
                     </Collapse>
-                </Box>
+                </Paper>
             ) : (
                 <Paper sx={{ p: 2, mb: 2 }}>
                     <Stack
@@ -566,34 +680,68 @@ export function LabelsPage() {
                 /* Mobile Card View */
                 <Box>
                     {isLoading && !paginatedLabels.length ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                            <CircularProgress />
-                        </Box>
+                        <Stack alignItems="center" gap={2} sx={{ py: 6 }}>
+                            <CircularProgress size={36} />
+                            <Typography variant="body2" color="text.secondary">
+                                {t('labels.loading', 'Loading labels...')}
+                            </Typography>
+                        </Stack>
                     ) : paginatedLabels.length === 0 ? (
-                        <Box sx={{ textAlign: 'center', py: 4 }}>
-                            <Typography color="text.secondary">
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                textAlign: 'center',
+                                py: 6,
+                                px: 3,
+                                borderRadius: 3,
+                                borderStyle: 'dashed',
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <ImageIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                            <Typography color="text.secondary" fontWeight={500}>
                                 {t('labels.noLabels', 'No labels found')}
                             </Typography>
-                        </Box>
+                            {searchQuery && (
+                                <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block' }}>
+                                    {t('labels.tryDifferentSearch', 'Try a different search term')}
+                                </Typography>
+                            )}
+                        </Paper>
                     ) : (
-                        paginatedLabels.map((label, index) => (
-                            <MobileLabelCard key={`${label.labelCode}-${label.articleId}-${index}`} label={label} index={index} />
-                        ))
+                        <Stack gap={0}>
+                            {paginatedLabels.map((label, index) => (
+                                <MobileLabelCard key={`${label.labelCode}-${label.articleId}-${index}`} label={label} index={index} />
+                            ))}
+                        </Stack>
                     )}
-                    <TablePagination
-                        component="div"
-                        count={filteredLabels.length}
-                        page={page}
-                        onPageChange={(_, newPage) => setPage(newPage)}
-                        rowsPerPage={rowsPerPage}
-                        onRowsPerPageChange={(e) => {
-                            setRowsPerPage(parseInt(e.target.value, 10));
-                            setPage(0);
-                        }}
-                        rowsPerPageOptions={[10, 25, 50, 100]}
-                        labelRowsPerPage=""
-                        sx={{ borderTop: '1px solid', borderColor: 'divider', '& .MuiTablePagination-toolbar': { minHeight: 48, px: 0.5 } }}
-                    />
+                    {filteredLabels.length > 0 && (
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                mt: 1,
+                                borderRadius: 3,
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <TablePagination
+                                component="div"
+                                count={filteredLabels.length}
+                                page={page}
+                                onPageChange={(_, newPage) => setPage(newPage)}
+                                rowsPerPage={rowsPerPage}
+                                onRowsPerPageChange={(e) => {
+                                    setRowsPerPage(parseInt(e.target.value, 10));
+                                    setPage(0);
+                                }}
+                                rowsPerPageOptions={[10, 25, 50, 100]}
+                                labelRowsPerPage=""
+                                sx={{
+                                    '& .MuiTablePagination-toolbar': { minHeight: 48, px: 1.5 },
+                                }}
+                            />
+                        </Paper>
+                    )}
                 </Box>
             ) : (
                 /* Desktop Table View */
