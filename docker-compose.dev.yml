@@ -1,0 +1,97 @@
+# ============================================================
+# electisSpace — Development (all-in-one)
+# ============================================================
+# Includes PostgreSQL + Redis + API server in a single stack
+# with an internal network (no external dependencies).
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d --build
+#   docker compose -f docker-compose.dev.yml down
+# ============================================================
+
+services:
+
+  # ======================
+  # PostgreSQL
+  # ======================
+  postgres:
+    image: postgres:16-alpine
+    container_name: electisspace-dev-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev
+      POSTGRES_DB: electisspace_dev
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  # ======================
+  # Redis
+  # ======================
+  redis:
+    image: redis:7-alpine
+    container_name: electisspace-dev-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - dev_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  # ======================
+  # Server — Node.js API
+  # ======================
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: electisspace-dev-api
+    env_file:
+      - server/.env.development
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres_dev@postgres:5432/electisspace_dev?schema=public
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+volumes:
+  dev_pgdata:
+    name: electisspace-dev-pgdata
+  dev_redis_data:
+    name: electisspace-dev-redis-data
+
+networks:
+  dev-network:
+    name: electisspace-dev-network

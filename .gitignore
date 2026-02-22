@@ -51,3 +51,4 @@ TEST_CREDENTIALS.txt
 
 .claude/settings.local.json
 nul
+replacements.txt
