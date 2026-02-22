@@ -37,13 +37,17 @@ deploy/*
 !deploy/server.env.example
 !deploy/DEPLOYMENT.md
 
-# Database backups (contain data - never commit)
+# Database backups and migration dumps (contain data - never commit)
 **/_local_backups/
 *.sql.bak
+*.sql
+!server/prisma/migrations/**/*.sql
+
+# Nginx configs (contain infrastructure details)
+solum_co_il*.conf
 
 # Test credentials (contain secrets - never commit)
 TEST_CREDENTIALS.txt
 
 .claude/settings.local.json
 nul
-migration_20260212_main_windows.sql

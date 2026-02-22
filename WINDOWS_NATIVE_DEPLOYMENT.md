@@ -67,12 +67,12 @@
 
    **Important:** Use the same password from your `.env.production` file:
    ```
-   POSTGRES_PASSWORD=CI8/JQgBuJrUV/B45bsUE9qpALOnWrxI
+   POSTGRES_PASSWORD=<your_postgres_password_from_env>
    ```
 
 5. **Update .env.production DATABASE_URL:**
    ```env
-   DATABASE_URL=postgresql://electis:CI8/JQgBuJrUV/B45bsUE9qpALOnWrxI@localhost:5432/electisspace_prod
+   DATABASE_URL=postgresql://electis:<your_postgres_password>@localhost:5432/electisspace_prod
    ```
 
 ---

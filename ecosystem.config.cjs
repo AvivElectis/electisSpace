@@ -6,8 +6,8 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 4000,
-      DATABASE_URL: 'postgresql://electis:CI8%2FJQgBuJrUV%2FB45bsUE9qpALOnWrxI@localhost:5432/electisspace_prod',
-      REDIS_URL: 'redis://localhost:6379'
+      DATABASE_URL: process.env.DATABASE_URL,
+      REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379'
     },
     instances: 1,
     exec_mode: 'fork',
