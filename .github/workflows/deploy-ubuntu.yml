@@ -30,11 +30,12 @@ jobs:
             git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/AvivElectis/electisSpace.git"
             git pull origin main
 
-            echo "=== Building containers ==="
+            echo "=== Building app containers ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml build
 
-            echo "=== Restarting services ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --remove-orphans
+            echo "=== Starting core services (Redis + App) ==="
+            docker compose -f docker-compose.infra.yml up -d redis
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d server client
 
             echo "=== Running migrations ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml exec -T server npx prisma migrate deploy
@@ -42,6 +43,9 @@ jobs:
             echo "=== Health check ==="
             sleep 10
             curl -f http://localhost:3071/health || echo "Health check failed"
+
+            echo "=== Starting observability stack (non-blocking) ==="
+            docker compose -f docker-compose.infra.yml up -d loki promtail grafana || echo "WARNING: Observability stack failed to start (non-critical)"
 
             echo "=== Deployment complete ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml ps
