@@ -99,7 +99,11 @@ export function DashboardPage() {
         [conferenceController.conferenceRooms]
     );
 
-    const assignedLabelsCount = spacesAssignedLabelsCount + conferenceAssignedLabelsCount;
+    // People Manager: count assigned labels from people records (synced from AIMS article info)
+    const peopleAssignedLabelsCount = useMemo(() =>
+        peopleStore.people.reduce((count, p) => count + (p.assignedLabels?.length || 0), 0),
+        [peopleStore.people]
+    );
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
@@ -170,7 +174,7 @@ export function DashboardPage() {
                             totalPeople={totalPeople}
                             assignedPeople={assignedPeople}
                             unassignedPeople={unassignedPeople}
-                            assignedLabelsCount={assignedLabelsCount}
+                            assignedLabelsCount={peopleAssignedLabelsCount}
                             savedLists={savedLists}
                             activeListName={peopleStore.activeListName}
                         />

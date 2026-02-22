@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2026-02-22
+
+### Added
+- **People-specific assigned label counts** — dashboard People card now shows labels assigned to person articles from AIMS instead of combined spaces+conference count
+- **Server-side structured logger (appLogger)** — JSON-structured logging service with in-memory ring buffer, context-aware child loggers, and performance timing helpers
+- **Logs API endpoint** — `GET/DELETE /api/v1/logs` and `GET /api/v1/logs/stats` for platform admins to query server logs
+- **Grafana + Loki observability stack** — Loki for log aggregation, Promtail for Docker log scraping, Grafana dashboards with auto-provisioned Loki datasource
+- **Architecture Book** — comprehensive 7-chapter production-grade architecture documentation with Mermaid.js diagrams covering HLD, LLD, data management, system flows, infrastructure, and security
+
+### Changed
+- Client version bumped to 2.4.0, server to 2.3.0
+- **Store settings now deep-merge** — `updateStoreSettings` repository method now merges with existing settings instead of replacing, preventing accidental data loss (fixes logo override issue)
+- HTTP request logging now uses structured JSON format via appLogger instead of plain-text Morgan output
+- Docker infrastructure expanded with Loki, Promtail, and Grafana services in `docker-compose.infra.yml`
+
+### Fixed
+- **Dashboard People label count showing 2 instead of 25** — people feature now tracks `assignedLabels` per person via AIMS article info sync; dashboard computes people-specific count
+- **Logos not saved at company level** — `uploadLogo` and `removeLogo` controller methods now trigger debounced server save; store settings merge prevents overwriting `storeLogoOverride`
+- **Person model missing assignedLabels** — added `labelCode` and `assignedLabels` columns to Person model; AIMS sync job now writes labels to Person records matching `assignedSpaceId`
+- **Store logo override lost on auto-save** — store settings repository changed from replace to merge behavior, preserving `storeLogoOverride` across concurrent saves
+
+### Infrastructure
+- Added `infra/` directory with Loki, Promtail, and Grafana configuration files
+- SQL migration for Person table (`label_code`, `assigned_labels` columns)
+
+---
+
 ## [2.3.0] - 2026-02-19
 
 ### Added

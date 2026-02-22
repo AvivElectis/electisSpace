@@ -59,6 +59,7 @@ export interface PersonResponse {
     data: Record<string, any>;
     storeId: string;
     assignedSpaceId: string | null;
+    assignedLabels: string[];
     store?: { name: string; code: string };
     syncStatus: string;
     lastSyncedAt: Date | null;

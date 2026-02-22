@@ -298,7 +298,9 @@ model Person {
   externalId      String?    @map("external_id") @db.VarChar(50)
   virtualSpaceId  String?    @map("virtual_space_id") @db.VarChar(50)
   assignedSpaceId String?    @map("assigned_space_id")
-  
+  labelCode       String?    @map("label_code") @db.VarChar(50)
+  assignedLabels  String[]   @default([]) @map("assigned_labels")
+
   // Dynamic data fields
   data         Json       @default("{}")
   

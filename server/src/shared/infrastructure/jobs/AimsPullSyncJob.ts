@@ -377,6 +377,12 @@ export class AimsSyncReconciliationJob {
                         where: { storeId, externalId: artId },
                         data: { assignedLabels: labels },
                     });
+                    // People Manager: also sync labels to Person records
+                    // In people mode, article IDs are slot numbers matching person.assignedSpaceId
+                    await prisma.person.updateMany({
+                        where: { storeId, assignedSpaceId: artId },
+                        data: { assignedLabels: labels },
+                    });
                 }
             }
 
