@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import juice from 'juice';
+import { appLogger } from '../infrastructure/services/appLogger.js';
 
 // Email transporter configuration
 const createTransporter = () => {
@@ -183,15 +184,15 @@ export class EmailService {
     const mailOptions = createMailOptions(email, subject, html);
 
     if (process.env.NODE_ENV === 'test') {
-      console.log(`[TEST] Email sent to ${email} with code ${code}`);
+      appLogger.info('Email', `[TEST] Email sent to ${email} with code ${code}`);
       return;
     }
 
     try {
       await transporter.sendMail(mailOptions);
-      console.log(`2FA email sent to ${email}`);
+      appLogger.info('Email', `2FA email sent to ${email}`);
     } catch (error) {
-      console.error('Error sending 2FA email:', error);
+      appLogger.error('Email', 'Error sending 2FA email', { error: String(error) });
       // Don't throw to prevent login blocking on email failure in some cases
     }
   }
@@ -287,7 +288,7 @@ export class EmailService {
       await transporter.verify();
       return true;
     } catch (error) {
-      console.error('Email service connection failed:', error);
+      appLogger.error('Email', 'Email service connection failed', { error: String(error) });
       return false;
     }
   }

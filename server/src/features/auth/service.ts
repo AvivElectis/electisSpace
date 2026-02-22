@@ -11,6 +11,7 @@ import { CodeType, GlobalRole } from '@prisma/client';
 import { config } from '../../config/index.js';
 import { authRepository } from './repository.js';
 import { EmailService } from '../../shared/services/email.service.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
     extractCompanyFeatures,
     extractSpaceType,
@@ -291,7 +292,7 @@ export const authService = {
         try {
             await EmailService.send2FACode(email, code, user.firstName || undefined);
         } catch (error) {
-            console.error('Failed to send 2FA email:', error);
+            appLogger.error('Auth', 'Failed to send 2FA email', { error: String(error) });
         }
     },
 
@@ -379,7 +380,7 @@ export const authService = {
         try {
             await EmailService.sendPasswordResetCode(email, code, user.firstName || undefined);
         } catch (error) {
-            console.error('Failed to send password reset email:', error);
+            appLogger.error('Auth', 'Failed to send password reset email', { error: String(error) });
         }
     },
 
@@ -414,7 +415,7 @@ export const authService = {
         try {
             await EmailService.sendPasswordChangedConfirmation(email, user.firstName || undefined);
         } catch (error) {
-            console.error('Failed to send password changed email:', error);
+            appLogger.error('Auth', 'Failed to send password changed email', { error: String(error) });
         }
     },
 
@@ -469,7 +470,7 @@ export const authService = {
                     );
                 }
             } catch (error) {
-                console.error('Failed to send password reset email:', error);
+                appLogger.error('Auth', 'Failed to send password reset notification email', { error: String(error) });
             }
         }
 
@@ -500,7 +501,7 @@ export const authService = {
         try {
             await EmailService.sendPasswordChangedConfirmation(user.email, user.firstName || undefined);
         } catch (error) {
-            console.error('Failed to send password changed email:', error);
+            appLogger.error('Auth', 'Failed to send password changed email', { error: String(error) });
         }
     },
 
