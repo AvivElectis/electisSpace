@@ -145,7 +145,10 @@
         "managePeople": "Manage People",
         "totalLabels": "Total Labels",
         "assignedLabels": "Assigned Labels",
-        "savedLists": "{{count}} Saved Lists"
+        "savedLists": "{{count}} Saved Lists",
+        "assignedProgress": "{{count}} of {{total}} assigned",
+        "labelCoverage": "{{count}} of {{total}} with labels",
+        "availability": "{{count}} of {{total}} available"
     },
     "spaces": {
         "title": "Spaces",
@@ -1035,7 +1038,7 @@
             "companyAddress": "30 Sheshet HaYamim St., Bnei Brak",
             "companyName": "Company Name",
             "companyId": "Company ID",
-            "releaseNotesContent": "v2.4.0 — Labels Fix, Logger & Observability\n• Dashboard People card now shows correct per-person assigned labels count (was showing 2 instead of 25)\n• Logos now persist correctly at company level and store override level\n• Server-side structured logger with JSON output for Grafana Loki integration\n• New Logs API endpoint for platform admins to query server logs\n• Grafana + Loki + Promtail observability stack added to infrastructure\n• Store settings now deep-merge to prevent data loss on concurrent saves\n• Comprehensive Architecture Book documentation (7 chapters with Mermaid diagrams)\n\nv2.3.0 — Roles, Labels & Infrastructure\n• Store Manager is now per-store only — explicit store assignments required\n• Dashboard shows per-feature assigned label counts for Spaces and Conference\n• Labels fetched directly from AIMS for faster data\n• PWA install support with browser password manager compatibility\n• Split Docker deployment into separate client/server containers\n• Fixed company admin allStoresAccess, store-scoped data, and token alignment"
+            "releaseNotesContent": "v2.5.0 — Mobile Dashboard UX Overhaul\n• Mobile-first dashboard redesign with tighter spacing and larger hero numbers\n• LinearProgress coverage bars — assignment ratio, label coverage, room availability\n• Colored stat tiles with accent borders for instant data scanning\n• Tappable card headers navigate directly to feature pages\n• Mobile-specific loading skeleton matches new layout\n• Desktop layout remains completely unchanged\n\nv2.4.0 — Labels Fix, Logger & Observability\n• Dashboard People card now shows correct per-person assigned labels count (was showing 2 instead of 25)\n• Logos now persist correctly at company level and store override level\n• Server-side structured logger with JSON output for Grafana Loki integration\n• New Logs API endpoint for platform admins to query server logs\n• Grafana + Loki + Promtail observability stack added to infrastructure\n• Store settings now deep-merge to prevent data loss on concurrent saves\n• Comprehensive Architecture Book documentation (7 chapters with Mermaid diagrams)"
         },
         "gettingStarted": {
             "welcome": {

@@ -5,3 +5,4 @@ export { DashboardConferenceCard } from './DashboardConferenceCard';
 export { DashboardPeopleCard } from './DashboardPeopleCard';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { QuickActionsPanel } from './QuickActionsPanel';
+export { MobileStatTile } from './MobileStatTile';

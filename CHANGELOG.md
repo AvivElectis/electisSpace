@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] - 2026-02-22
+
+### Added
+- **Mobile dashboard UX overhaul** — mobile-first redesign with tighter spacing, large hero numbers (h2/700wt), LinearProgress coverage bars, and colored stat tiles with accent borders
+- **MobileStatTile component** — new shared reusable component for colored stat tiles with tinted background and left-border accent
+- **Tappable card headers on mobile** — each dashboard card header is now tappable and navigates to the corresponding page (spaces, people, conference)
+- **Progress bars per card** — People card shows assignment ratio, Spaces card shows label coverage, Conference card shows room availability
+- **Mobile-specific skeleton** — loading skeleton matches the new mobile layout with hero placeholder, progress bar, and 3-col tile row
+
+### Changed
+- Client version bumped to 2.5.0
+- Dashboard grid spacing reduced on mobile (`xs: 1.5` vs `md: 3`) for tighter layout
+- "Manage People" button and add buttons hidden on mobile (redundant with QuickActionsPanel FAB)
+- Desktop layout remains completely unchanged
+
+---
+
 ## [2.4.1] - 2026-02-22
 
 ### Fixed
