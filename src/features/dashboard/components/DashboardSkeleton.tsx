@@ -1,10 +1,66 @@
 import { Box, Card, CardContent, Skeleton, Stack, Grid } from '@mui/material';
 
+interface DashboardSkeletonProps {
+    isMobile?: boolean;
+}
+
+function MobileCardSkeleton() {
+    return (
+        <Card>
+            <CardContent sx={{ p: 2 }}>
+                {/* Header */}
+                <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                    <Skeleton variant="circular" width={24} height={24} />
+                    <Skeleton variant="text" width={120} height={24} />
+                </Stack>
+
+                {/* Hero number */}
+                <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, mb: 2 }}>
+                    <Skeleton variant="text" width={80} height={56} />
+                    <Skeleton variant="text" width={100} height={20} />
+                </Box>
+
+                {/* Progress bar */}
+                <Stack gap={0.5} sx={{ mb: 2 }}>
+                    <Stack direction="row" justifyContent="space-between">
+                        <Skeleton variant="text" width={140} height={16} />
+                        <Skeleton variant="text" width={30} height={16} />
+                    </Stack>
+                    <Skeleton variant="rectangular" width="100%" height={8} sx={{ borderRadius: 4 }} />
+                </Stack>
+
+                {/* Stat tiles */}
+                <Stack direction="row" gap={1}>
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} variant="rectangular" sx={{ flex: 1, height: 56, borderRadius: 1 }} />
+                    ))}
+                </Stack>
+            </CardContent>
+        </Card>
+    );
+}
+
 /**
  * DashboardSkeleton - Loading placeholder for dashboard cards
  * Shows animated skeletons while data is being fetched
  */
-export function DashboardSkeleton() {
+export function DashboardSkeleton({ isMobile }: DashboardSkeletonProps) {
+    if (isMobile) {
+        return (
+            <Box>
+                {/* Header Skeleton */}
+                <Box sx={{ mb: 1 }}>
+                    <Skeleton variant="text" width={160} height={32} />
+                </Box>
+
+                <Stack gap={1.5}>
+                    <MobileCardSkeleton />
+                    <MobileCardSkeleton />
+                </Stack>
+            </Box>
+        );
+    }
+
     return (
         <Box>
             {/* Header Skeleton */}

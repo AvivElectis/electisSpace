@@ -76,7 +76,7 @@ graph TB
 | **settings** | `/features/settings` | `settingsStore` | Company/store settings, SoluM config, user management |
 | **sync** | `/features/sync` | `syncStore` | Sync status, manual trigger, queue monitoring |
 | **lists** | `/features/lists` | `listsStore` | People & spaces lists management |
-| **dashboard** | `/features/dashboard` | -- | Overview cards, status widgets |
+| **dashboard** | `/features/dashboard` | -- | Overview cards, status widgets, mobile-optimized layout with progress bars and stat tiles |
 | **import-export** | `/features/import-export` | -- | CSV import/export for spaces and people |
 | **update** | `/features/update` | `updateStore` | Electron auto-update management |
 | **configuration** | `/features/configuration` | -- | App configuration wizard |
