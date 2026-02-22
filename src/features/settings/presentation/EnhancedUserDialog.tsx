@@ -25,6 +25,7 @@ import {
     Step,
     StepLabel,
     useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +49,7 @@ interface EnhancedUserDialogProps {
 export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = false }: EnhancedUserDialogProps) {
     const { t } = useTranslation();
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isRtl = theme.direction === 'rtl';
 
     const state = useUserDialogState({ open, onClose, onSave, user, profileMode });
@@ -60,7 +62,8 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                 onClose={state.submitting ? undefined : onClose}
                 maxWidth="sm"
                 fullWidth
-                PaperProps={{ sx: { maxHeight: '90vh' } }}
+                fullScreen={isMobile}
+                PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined } }}
             >
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <PersonIcon />
@@ -205,7 +208,8 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
             onClose={state.submitting ? undefined : onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{ sx: { maxHeight: '90vh' } }}
+            fullScreen={isMobile}
+            PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined } }}
         >
             <DialogTitle>
                 {t('settings.users.addUser')}

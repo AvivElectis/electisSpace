@@ -398,7 +398,7 @@ export function LabelsPage() {
                                 letterSpacing: '0.08em',
                             }}
                         >
-                            {t('labels.table.articleId', 'Article')}
+                            {t('labels.table.articleId', 'Article ID')}
                         </Typography>
                         {isLinked ? (
                             <Stack gap={0.5} sx={{ mt: 0.5 }}>
@@ -442,6 +442,7 @@ export function LabelsPage() {
                                     color={getSignalColor(label.signal) as any}
                                     sx={{
                                         height: 28,
+                                        px: 1,
                                         fontSize: '0.75rem',
                                         '& .MuiChip-icon': { fontSize: 16 },
                                     }}
@@ -455,6 +456,7 @@ export function LabelsPage() {
                                     color={getBatteryColor(label.battery) as any}
                                     sx={{
                                         height: 28,
+                                        px: 1,
                                         fontSize: '0.75rem',
                                         '& .MuiChip-icon': { fontSize: 16 },
                                     }}
@@ -467,6 +469,7 @@ export function LabelsPage() {
                                     color={getStatusColor(label.status) as any}
                                     sx={{
                                         height: 28,
+                                        px: 1,
                                         fontSize: '0.75rem',
                                     }}
                                 />
@@ -550,19 +553,15 @@ export function LabelsPage() {
                     }}
                 >
                     <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Button
+                        <IconButton
                             size="small"
-                            startIcon={
-                                <Badge badgeContent={(searchQuery ? 1 : 0) + (filterLinkedOnly ? 1 : 0)} color="primary">
-                                    <FilterListIcon />
-                                </Badge>
-                            }
                             onClick={() => setFiltersOpen(!filtersOpen)}
-                            color={(searchQuery || filterLinkedOnly) ? 'primary' : 'inherit'}
-                            sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.85rem' }}
+                            color={(searchQuery || filterLinkedOnly) ? 'primary' : 'default'}
                         >
-                            {t('common.filters', 'Filters')}
-                        </Button>
+                            <Badge badgeContent={(searchQuery ? 1 : 0) + (filterLinkedOnly ? 1 : 0)} color="primary">
+                                <FilterListIcon />
+                            </Badge>
+                        </IconButton>
                         <Chip
                             label={`${filteredLabels.length} ${t('labels.totalCountShort', 'labels')}`}
                             size="small"
