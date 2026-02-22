@@ -1,6 +1,6 @@
 /**
  * Stores Dialog
- * 
+ *
  * @description Dialog for managing stores within a company.
  * Lists all stores with options to add, edit, and delete.
  * Displays store details including sync status and entity counts.
@@ -23,8 +23,14 @@ import {
     CircularProgress,
     Stack,
     Tooltip,
-    Alert
+    Alert,
+    useMediaQuery,
+    Card,
+    CardContent,
+    Box,
+    Divider
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -53,6 +59,8 @@ interface StoresDialogProps {
 export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
     const { t } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // State
     const [stores, setStores] = useState<CompanyStore[]>([]);
@@ -100,9 +108,9 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
     };
 
     const handleDelete = async (store: CompanyStore) => {
-        const entityCount = 
-            (store.spaceCount ?? store._count?.spaces ?? 0) + 
-            (store.peopleCount ?? store._count?.people ?? 0) + 
+        const entityCount =
+            (store.spaceCount ?? store._count?.spaces ?? 0) +
+            (store.peopleCount ?? store._count?.people ?? 0) +
             (store.conferenceRoomCount ?? store._count?.conferenceRooms ?? 0);
 
         const confirmMessage = entityCount > 0
@@ -153,19 +161,20 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
     };
 
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={onClose}
             maxWidth="md"
             fullWidth
+            fullScreen={isMobile}
             PaperProps={{
-                sx: { maxHeight: '90vh' }
+                sx: { maxHeight: '90vh', borderRadius: isMobile ? 0 : undefined }
             }}
         >
             <DialogTitle sx={{ pb: 1 }}>
-                <Stack 
-                    direction={{ xs: 'column', sm: 'row' }} 
-                    alignItems={{ xs: 'flex-start', sm: 'center' }} 
+                <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
                     gap={1}
                     flexWrap="wrap"
                 >
@@ -188,9 +197,9 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                 )}
 
                 {/* Header with Add Button */}
-                <Stack 
+                <Stack
                     direction={{ xs: 'column', sm: 'row' }}
-                    justifyContent="space-between" 
+                    justifyContent="space-between"
                     alignItems={{ xs: 'stretch', sm: 'center' }}
                     gap={1}
                     sx={{ mb: 2 }}
@@ -209,134 +218,183 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                     </Button>
                 </Stack>
 
-                {/* Stores Table */}
-                <TableContainer sx={{ maxHeight: { xs: 300, sm: 400 } }}>
-                    <Table size="small" stickyHeader>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ minWidth: 80 }}>{t('settings.stores.code')}</TableCell>
-                                <TableCell sx={{ minWidth: 120 }}>{t('settings.stores.name')}</TableCell>
-                                <TableCell sx={{ minWidth: 100, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.stores.timezone')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 60 }}>{t('settings.stores.syncStatus')}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 150, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.stores.entities')}</TableCell>
-                                <TableCell sx={{ minWidth: 150, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.stores.lastSync')}</TableCell>
-                                <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading ? (
+                {/* Mobile Cards View */}
+                {isMobile ? (
+                    loading ? (
+                        <Stack alignItems="center" gap={2} sx={{ py: 4 }}>
+                            <CircularProgress size={32} />
+                        </Stack>
+                    ) : safeStores.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 4 }}>
+                            <Typography color="text.secondary">
+                                {t('settings.stores.noStores')}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        safeStores.map((store) => (
+                            <Card key={store.id} sx={{ mb: 1.5, overflow: 'hidden' }}>
+                                <Box sx={{ height: 3, background: store.syncEnabled ? `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.success.light})` : theme.palette.grey[300] }} />
+                                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Chip label={store.code} size="small" variant="outlined" sx={{ px: 1.5, fontFamily: 'monospace' }} />
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mt: 0.5 }}>{store.name}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{store.timezone}</Typography>
+                                        </Box>
+                                        <Stack direction="row" gap={0.5}>
+                                            <Tooltip title={t('common.edit')}><IconButton size="small" onClick={() => handleEdit(store)}><EditIcon fontSize="small" /></IconButton></Tooltip>
+                                            <Tooltip title={t('common.delete')}><IconButton size="small" color="error" onClick={() => handleDelete(store)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+                                        </Stack>
+                                    </Stack>
+                                    <Divider sx={{ my: 1.5 }} />
+                                    <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
+                                        <Tooltip title={store.syncEnabled ? t('settings.stores.syncEnabled') : t('settings.stores.syncDisabled')}>
+                                            {store.syncEnabled ? <SyncIcon color="success" fontSize="small" /> : <SyncDisabledIcon color="disabled" fontSize="small" />}
+                                        </Tooltip>
+                                        <Chip label={`🏷️ ${store.spaceCount ?? store._count?.spaces ?? 0}`} size="small" variant="outlined" sx={{ px: 1.5 }} />
+                                        <Chip label={`👥 ${store.peopleCount ?? store._count?.people ?? 0}`} size="small" variant="outlined" sx={{ px: 1.5 }} />
+                                        <Chip label={`🎤 ${store.conferenceRoomCount ?? store._count?.conferenceRooms ?? 0}`} size="small" variant="outlined" sx={{ px: 1.5 }} />
+                                    </Stack>
+                                    {store.lastAimsSyncAt && (
+                                        <Stack direction="row" alignItems="center" gap={0.5} sx={{ mt: 1 }}>
+                                            <AccessTimeIcon fontSize="small" color="action" />
+                                            <Typography variant="caption" color="text.secondary">{formatDate(store.lastAimsSyncAt)}</Typography>
+                                        </Stack>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ))
+                    )
+                ) : (
+                    /* Desktop Stores Table */
+                    <TableContainer sx={{ maxHeight: { xs: 300, sm: 400 } }}>
+                        <Table size="small" stickyHeader>
+                            <TableHead>
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <CircularProgress size={32} />
-                                    </TableCell>
+                                    <TableCell sx={{ minWidth: 80 }}>{t('settings.stores.code')}</TableCell>
+                                    <TableCell sx={{ minWidth: 120 }}>{t('settings.stores.name')}</TableCell>
+                                    <TableCell sx={{ minWidth: 100, display: { xs: 'none', sm: 'table-cell' } }}>{t('settings.stores.timezone')}</TableCell>
+                                    <TableCell align="center" sx={{ minWidth: 60 }}>{t('settings.stores.syncStatus')}</TableCell>
+                                    <TableCell align="center" sx={{ minWidth: 150, display: { xs: 'none', md: 'table-cell' } }}>{t('settings.stores.entities')}</TableCell>
+                                    <TableCell sx={{ minWidth: 150, display: { xs: 'none', lg: 'table-cell' } }}>{t('settings.stores.lastSync')}</TableCell>
+                                    <TableCell align="right" sx={{ minWidth: 100 }}>{t('common.actions')}</TableCell>
                                 </TableRow>
-                            ) : safeStores.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <Typography color="text.secondary">
-                                            {t('settings.stores.noStores')}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                safeStores.map((store) => (
-                                    <TableRow key={store.id} hover>
-                                        <TableCell>
-                                            <Chip 
-                                                label={store.code} 
-                                                size="small" 
-                                                variant="outlined"
-                                                sx={{ fontFamily: 'monospace' }}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: { xs: 100, sm: 150 } }}>
-                                                {store.name}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                                            <Typography variant="body2" color="text.secondary" noWrap>
-                                                {store.timezone}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <Tooltip
-                                                title={store.syncEnabled
-                                                    ? t('settings.stores.syncEnabled')
-                                                    : t('settings.stores.syncDisabled')}
-                                            >
-                                                {store.syncEnabled ? (
-                                                    <SyncIcon color="success" fontSize="small" />
-                                                ) : (
-                                                    <SyncDisabledIcon color="disabled" fontSize="small" />
-                                                )}
-                                            </Tooltip>
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                            <Stack 
-                                                direction="row" 
-                                                gap={0.5} 
-                                                justifyContent="center"
-                                                flexWrap="wrap"
-                                            >
-                                                <Tooltip title={t('settings.stores.spaces')}>
-                                                    <Chip 
-                                                        label={`🏷️ ${store.spaceCount ?? store._count?.spaces ?? 0}`} 
-                                                        size="small" 
-                                                        variant="outlined"
-                                                    />
-                                                </Tooltip>
-                                                <Tooltip title={t('settings.stores.people')}>
-                                                    <Chip 
-                                                        label={`👥 ${store.peopleCount ?? store._count?.people ?? 0}`} 
-                                                        size="small" 
-                                                        variant="outlined"
-                                                    />
-                                                </Tooltip>
-                                                <Tooltip title={t('settings.stores.conferenceRooms')}>
-                                                    <Chip 
-                                                        label={`🎤 ${store.conferenceRoomCount ?? store._count?.conferenceRooms ?? 0}`} 
-                                                        size="small" 
-                                                        variant="outlined"
-                                                    />
-                                                </Tooltip>
-                                            </Stack>
-                                        </TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                                            <Stack direction="row" alignItems="center" gap={0.5}>
-                                                <AccessTimeIcon fontSize="small" color="action" />
-                                                <Typography variant="body2" color="text.secondary" noWrap>
-                                                    {formatDate(store.lastAimsSyncAt)}
-                                                </Typography>
-                                            </Stack>
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            <Stack direction="row" gap={0.5} justifyContent="flex-end">
-                                                <Tooltip title={t('common.edit')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleEdit(store)}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title={t('common.delete')}>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleDelete(store)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Stack>
+                            </TableHead>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                                            <CircularProgress size={32} />
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                                ) : safeStores.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                                            <Typography color="text.secondary">
+                                                {t('settings.stores.noStores')}
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    safeStores.map((store) => (
+                                        <TableRow key={store.id} hover>
+                                            <TableCell>
+                                                <Chip
+                                                    label={store.code}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ fontFamily: 'monospace' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: { xs: 100, sm: 150 } }}>
+                                                    {store.name}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                                                <Typography variant="body2" color="text.secondary" noWrap>
+                                                    {store.timezone}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Tooltip
+                                                    title={store.syncEnabled
+                                                        ? t('settings.stores.syncEnabled')
+                                                        : t('settings.stores.syncDisabled')}
+                                                >
+                                                    {store.syncEnabled ? (
+                                                        <SyncIcon color="success" fontSize="small" />
+                                                    ) : (
+                                                        <SyncDisabledIcon color="disabled" fontSize="small" />
+                                                    )}
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                                                <Stack
+                                                    direction="row"
+                                                    gap={0.5}
+                                                    justifyContent="center"
+                                                    flexWrap="wrap"
+                                                >
+                                                    <Tooltip title={t('settings.stores.spaces')}>
+                                                        <Chip
+                                                            label={`🏷️ ${store.spaceCount ?? store._count?.spaces ?? 0}`}
+                                                            size="small"
+                                                            variant="outlined"
+                                                        />
+                                                    </Tooltip>
+                                                    <Tooltip title={t('settings.stores.people')}>
+                                                        <Chip
+                                                            label={`👥 ${store.peopleCount ?? store._count?.people ?? 0}`}
+                                                            size="small"
+                                                            variant="outlined"
+                                                        />
+                                                    </Tooltip>
+                                                    <Tooltip title={t('settings.stores.conferenceRooms')}>
+                                                        <Chip
+                                                            label={`🎤 ${store.conferenceRoomCount ?? store._count?.conferenceRooms ?? 0}`}
+                                                            size="small"
+                                                            variant="outlined"
+                                                        />
+                                                    </Tooltip>
+                                                </Stack>
+                                            </TableCell>
+                                            <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                                                <Stack direction="row" alignItems="center" gap={0.5}>
+                                                    <AccessTimeIcon fontSize="small" color="action" />
+                                                    <Typography variant="body2" color="text.secondary" noWrap>
+                                                        {formatDate(store.lastAimsSyncAt)}
+                                                    </Typography>
+                                                </Stack>
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    <Tooltip title={t('common.edit')}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleEdit(store)}
+                                                        >
+                                                            <EditIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title={t('common.delete')}>
+                                                        <IconButton
+                                                            size="small"
+                                                            color="error"
+                                                            onClick={() => handleDelete(store)}
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2 }}>

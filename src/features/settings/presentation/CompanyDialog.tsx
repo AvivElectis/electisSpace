@@ -11,7 +11,7 @@
  * - EditCompanyTabs: edit mode tab layout
  * - CreateCompanyWizard: create mode wizard steps
  */
-import { Dialog } from '@mui/material';
+import { Dialog, useMediaQuery, useTheme } from '@mui/material';
 import { useCompanyDialogState } from './companyDialog/useCompanyDialogState';
 import { EditCompanyTabs } from './companyDialog/EditCompanyTabs';
 import { CreateCompanyWizard } from './companyDialog/CreateCompanyWizard';
@@ -25,6 +25,8 @@ interface CompanyDialogProps {
 }
 
 export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogProps) {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const state = useCompanyDialogState({ open, onSave, company });
 
     return (
@@ -33,7 +35,8 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
             onClose={state.submitting || state.connecting ? undefined : onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{ sx: { maxHeight: '90vh' } }}
+            fullScreen={isMobile}
+            PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined } }}
         >
             {state.isEdit
                 ? <EditCompanyTabs state={state} onClose={onClose} />

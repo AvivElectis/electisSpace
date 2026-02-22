@@ -20,7 +20,9 @@ import {
     ListItemIcon,
     ListItemText,
     Checkbox,
-    FormControlLabel
+    FormControlLabel,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -41,6 +43,8 @@ interface ElevateUserDialogProps {
 
 export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUserDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // State
     const [submitting, setSubmitting] = useState(false);
@@ -82,14 +86,15 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
         : user.email;
 
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={submitting ? undefined : onClose}
             maxWidth="sm"
             fullWidth
+            fullScreen={isMobile}
             TransitionProps={{ onEnter: handleEnter }}
             PaperProps={{
-                sx: { maxHeight: '90vh' }
+                sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined }
             }}
         >
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
