@@ -392,9 +392,11 @@ export class AimsSyncReconciliationJob {
                         data: { assignedLabels: labels },
                     });
                 } else if (isPeopleMode) {
-                    // People mode: article IDs are slot numbers → sync to Person records
-                    await prisma.person.updateMany({
-                        where: { storeId, assignedSpaceId: artId },
+                    // People mode: article IDs are slot numbers (= person.assignedSpaceId).
+                    // Person model has no assignedLabels column — store in the Space record
+                    // that matches this slot so labels are still tracked for the store.
+                    await prisma.space.updateMany({
+                        where: { storeId, externalId: artId },
                         data: { assignedLabels: labels },
                     });
                 } else {
