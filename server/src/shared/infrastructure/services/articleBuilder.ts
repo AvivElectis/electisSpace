@@ -61,9 +61,9 @@ export function buildPersonArticle(
 ): AimsArticle | null {
     if (!person.assignedSpaceId) return null;
 
-    // Merge global field assignments into person data — global fields are company-wide
-    // constants (e.g., NFC_URL) that apply to every article
-    const data = { ...(person.data ?? {}), ...(globalFieldAssignments ?? {}) } as Record<string, any>;
+    // Merge global field assignments as DEFAULTS, then overlay person data.
+    // Person-specific values (e.g., ITEM_NAME) must never be overwritten by globals.
+    const data = { ...(globalFieldAssignments ?? {}), ...(person.data ?? {}) } as Record<string, any>;
     const mapping = format?.mappingInfo;
 
     const nameKey = mapping?.articleName;
