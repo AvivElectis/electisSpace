@@ -10,6 +10,7 @@
  */
 
 import { prisma } from '../../../config/index.js';
+import { appLogger } from '../services/appLogger.js';
 import { aimsGateway } from '../services/aimsGateway.js';
 import { cacheGet, cacheSet } from '../services/redisCache.js';
 import {
@@ -62,11 +63,11 @@ export class SyncQueueProcessor {
      */
     start(intervalMs = 10000): void {
         if (this.intervalId) {
-            console.log('[SyncQueue] Processor already running');
+            appLogger.info('SyncQueue', 'Processor already running');
             return;
         }
 
-        console.log(`[SyncQueue] Starting processor with ${intervalMs}ms interval`);
+        appLogger.info('SyncQueue', `Starting processor with ${intervalMs}ms interval`);
         this.intervalId = setInterval(() => this.tick(), intervalMs);
 
         // Run immediately
@@ -80,7 +81,7 @@ export class SyncQueueProcessor {
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
-            console.log('[SyncQueue] Processor stopped');
+            appLogger.info('SyncQueue', 'Processor stopped');
         }
     }
 
@@ -89,7 +90,7 @@ export class SyncQueueProcessor {
      */
     private async tick(): Promise<void> {
         if (this.isRunning) {
-            console.log('[SyncQueue] Previous tick still running, skipping');
+            appLogger.debug('SyncQueue', 'Previous tick still running, skipping');
             return;
         }
 
@@ -97,10 +98,10 @@ export class SyncQueueProcessor {
         try {
             const result = await this.processPendingItems();
             if (result.processed > 0) {
-                console.log(`[SyncQueue] Processed ${result.processed} items: ${result.succeeded} succeeded, ${result.failed} failed`);
+                appLogger.info('SyncQueue', `Processed ${result.processed} items: ${result.succeeded} succeeded, ${result.failed} failed`);
             }
         } catch (error) {
-            console.error('[SyncQueue] Tick error:', error);
+            appLogger.error('SyncQueue', 'Tick error', { error });
         } finally {
             this.isRunning = false;
         }
@@ -270,7 +271,7 @@ export class SyncQueueProcessor {
 
             case 'SYNC_FULL':
                 // Full sync is handled separately by sync routes
-                console.log(`[SyncQueue] Full sync requested for store ${storeId}`);
+                appLogger.info('SyncQueue', `Full sync requested for store ${storeId}`);
                 break;
 
             default:
@@ -318,7 +319,7 @@ export class SyncQueueProcessor {
                     : null,
             };
         } catch (error: any) {
-            console.warn(`[SyncQueue] Could not fetch company settings for store ${storeId}: ${error.message}`);
+            appLogger.warn('SyncQueue', `Could not fetch company settings for store ${storeId}: ${error.message}`);
             return { globalFieldAssignments: undefined, conferenceMapping: null };
         }
     }
@@ -338,7 +339,7 @@ export class SyncQueueProcessor {
         try {
             format = await aimsGateway.fetchArticleFormat(storeId);
         } catch (error: any) {
-            console.warn(`[SyncQueue] Could not fetch article format for store ${storeId}: ${error.message}`);
+            appLogger.warn('SyncQueue', `Could not fetch article format for store ${storeId}: ${error.message}`);
         }
 
         // Build article data based on entity type
@@ -347,7 +348,7 @@ export class SyncQueueProcessor {
         if (!article) {
             // For person entities, null means unassigned - skip (nothing to push to AIMS)
             if (entityType === 'person') {
-                console.log(`[SyncQueue] Person ${entityId} is not assigned to a space - skipping AIMS push`);
+                appLogger.info('SyncQueue', `Person ${entityId} is not assigned to a space - skipping AIMS push`);
                 return;
             }
             throw new Error(`Failed to build article for ${entityType}/${entityId}`);
@@ -378,7 +379,7 @@ export class SyncQueueProcessor {
         
         if (!externalId) {
             // Entity might already be deleted, treat as success
-            console.log(`[SyncQueue] No external ID for ${entityType}/${entityId}, skipping AIMS delete`);
+            appLogger.info('SyncQueue', `No external ID for ${entityType}/${entityId}, skipping AIMS delete`);
             return;
         }
 
@@ -413,7 +414,7 @@ export class SyncQueueProcessor {
                 if (!person) return null;
 
                 if (!person.assignedSpaceId) {
-                    console.log(`[SyncQueue] Skipping unassigned person ${entityId} - not pushed to AIMS`);
+                    appLogger.info('SyncQueue', `Skipping unassigned person ${entityId} - not pushed to AIMS`);
                     return null;
                 }
 
@@ -435,7 +436,7 @@ export class SyncQueueProcessor {
             }
 
             default:
-                console.warn(`[SyncQueue] Unknown entity type: ${entityType}`);
+                appLogger.warn('SyncQueue', `Unknown entity type: ${entityType}`);
                 return null;
         }
     }
@@ -510,7 +511,7 @@ export class SyncQueueProcessor {
             }
         } catch (error) {
             // Entity might have been deleted, ignore
-            console.log(`[SyncQueue] Could not update sync status for ${entityType}/${entityId}`);
+            appLogger.debug('SyncQueue', `Could not update sync status for ${entityType}/${entityId}`);
         }
     }
 

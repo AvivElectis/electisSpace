@@ -204,6 +204,23 @@ export const authenticate = async (
     }
 };
 
+// Global-role authorization middleware
+export const requireGlobalRole = (...allowedRoles: GlobalRole[]) => {
+    return (req: Request, _res: Response, next: NextFunction): void => {
+        if (!req.user) {
+            next(unauthorized('Authentication required'));
+            return;
+        }
+
+        if (!req.user.globalRole || !allowedRoles.includes(req.user.globalRole)) {
+            next(forbidden('Insufficient global role'));
+            return;
+        }
+
+        next();
+    };
+};
+
 // Role-based authorization middleware (for backward compatibility)
 export const authorize = (...allowedRoles: string[]) => {
     return (req: Request, _res: Response, next: NextFunction): void => {

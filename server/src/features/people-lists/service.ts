@@ -5,6 +5,7 @@ import { prisma } from '../../config/index.js';
 import { peopleListsRepository } from './repository.js';
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import type { ListsUserContext, CreatePeopleListInput, UpdatePeopleListInput } from './types.js';
 import type { Prisma, SyncStatus } from '@prisma/client';
 
@@ -264,7 +265,7 @@ export const peopleListsService = {
             excludeClientId: sseClientId,
         });
 
-        console.log(`[PeopleListsService] List loaded: ${list.name} (${createdPeople.length} people) for store ${storeId}`);
+        appLogger.info('PeopleListsService', `List loaded: ${list.name} (${createdPeople.length} people) for store ${storeId}`);
 
         return {
             list: {
@@ -293,7 +294,7 @@ export const peopleListsService = {
             excludeClientId: sseClientId,
         });
 
-        console.log(`[PeopleListsService] List freed for store ${storeId}`);
+        appLogger.info('PeopleListsService', `List freed for store ${storeId}`);
         return { success: true };
     },
 };

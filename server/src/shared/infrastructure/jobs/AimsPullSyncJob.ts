@@ -29,6 +29,7 @@ import {
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
 import type { AimsArticle } from '../services/aims.types.js';
+import { appLogger } from '../services/appLogger.js';
 
 // Cache TTL for company settings (60 seconds — matches reconciliation interval)
 const COMPANY_SETTINGS_TTL = 60;
@@ -64,10 +65,10 @@ export class AimsSyncReconciliationJob {
 
     start(intervalMs = DEFAULT_INTERVAL_MS): void {
         if (this.intervalId) {
-            console.log('[AimsPullSync] Job already running');
+            appLogger.info('AimsPullSync', 'Job already running');
             return;
         }
-        console.log(`[AimsPullSync] Starting pull sync job with ${intervalMs / 1000}s interval`);
+        appLogger.info('AimsPullSync', `Starting pull sync job with ${intervalMs / 1000}s interval`);
         this.intervalId = setInterval(() => this.tick(), intervalMs);
         setTimeout(() => this.tick(), INITIAL_DELAY_MS);
     }
@@ -76,7 +77,7 @@ export class AimsSyncReconciliationJob {
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
-            console.log('[AimsPullSync] Job stopped');
+            appLogger.info('AimsPullSync', 'Job stopped');
         }
     }
 
@@ -90,18 +91,13 @@ export class AimsSyncReconciliationJob {
 
             for (const r of results) {
                 if (!r.success) {
-                    console.warn(`[AimsReconcile] ${r.storeName}: ERROR – ${r.error}`);
+                    appLogger.warn('AimsReconcile', `${r.storeName}: ERROR – ${r.error}`);
                 } else if (r.pushed > 0 || r.deleted > 0 || r.repaired > 0) {
-                    console.log(
-                        `[AimsReconcile] ${r.storeName} (${r.mode}): ` +
-                        `pushed ${r.pushed}, deleted ${r.deleted}, unchanged ${r.unchanged}` +
-                        `${r.repaired > 0 ? `, repaired ${r.repaired}` : ''} ` +
-                        `(expected ${r.totalExpected}, aims had ${r.totalInAims})`
-                    );
+                    appLogger.info('AimsReconcile', `${r.storeName} (${r.mode}): pushed ${r.pushed}, deleted ${r.deleted}, unchanged ${r.unchanged}${r.repaired > 0 ? `, repaired ${r.repaired}` : ''} (expected ${r.totalExpected}, aims had ${r.totalInAims})`);
                 }
             }
         } catch (error) {
-            console.error('[AimsReconcile] Tick error:', error);
+            appLogger.error('AimsReconcile', 'Tick error', { error: error instanceof Error ? error.message : String(error) });
         } finally {
             this.isRunning = false;
         }
@@ -181,7 +177,7 @@ export class AimsSyncReconciliationJob {
                 await cacheSet(cacheKey, companySettings, COMPANY_SETTINGS_TTL);
             }
         } catch (error: any) {
-            console.warn(`[AimsReconcile] Could not fetch company settings for ${storeName}: ${error.message}`);
+            appLogger.warn('AimsReconcile', `Could not fetch company settings for ${storeName}: ${error.message}`);
         }
 
         // peopleManagerEnabled is a company-level setting (saved via /settings/company endpoint),
@@ -213,7 +209,7 @@ export class AimsSyncReconciliationJob {
         try {
             format = await aimsGateway.fetchArticleFormat(storeId);
         } catch (error: any) {
-            console.warn(`[AimsReconcile] Could not fetch article format for ${storeName}: ${error.message}. Articles will be sent without format mapping.`);
+            appLogger.warn('AimsReconcile', `Could not fetch article format for ${storeName}: ${error.message}. Articles will be sent without format mapping.`);
         }
 
         // 1. Build expected article map  { articleId → articlePayload }
@@ -314,7 +310,7 @@ export class AimsSyncReconciliationJob {
                 await aimsGateway.pushArticles(storeId, toPush);
                 result.pushed = toPush.length;
             } catch (error: any) {
-                console.error(`[AimsReconcile] Push failed for ${storeName}: ${error.message}`);
+                appLogger.error('AimsReconcile', `Push failed for ${storeName}: ${error.message}`);
                 result.success = false;
                 result.error = `Push failed: ${error.message}`;
                 return result;
@@ -330,19 +326,14 @@ export class AimsSyncReconciliationJob {
             aimsMap.size > 0 &&
             toDelete.length > aimsMap.size * 0.5
         ) {
-            console.error(
-                `[AimsReconcile] SAFETY: Refusing to delete ${toDelete.length} of ${aimsMap.size} AIMS articles ` +
-                `for ${storeName} (${mode}). Expected map has ${expectedMap.size} articles. ` +
-                `This looks like a data issue — skipping deletion to protect existing articles. ` +
-                `IDs that would have been deleted: ${toDelete.slice(0, 20).join(', ')}${toDelete.length > 20 ? '...' : ''}`
-            );
+            appLogger.error('AimsReconcile', `SAFETY: Refusing to delete ${toDelete.length} of ${aimsMap.size} AIMS articles for ${storeName} (${mode}). Expected map has ${expectedMap.size} articles. This looks like a data issue — skipping deletion to protect existing articles.`, { ids: toDelete.slice(0, 20) });
             result.error = `Safety: refused mass deletion of ${toDelete.length}/${aimsMap.size} articles`;
         } else if (toDelete.length > 0) {
             try {
                 await aimsGateway.deleteArticles(storeId, toDelete);
                 result.deleted = toDelete.length;
             } catch (error: any) {
-                console.error(`[AimsReconcile] Delete failed for ${storeName}: ${error.message}`);
+                appLogger.error('AimsReconcile', `Delete failed for ${storeName}: ${error.message}`);
                 // Non-fatal — we still pushed successfully
                 result.error = `Delete failed (${toDelete.length} stale articles): ${error.message}`;
             }
@@ -361,12 +352,9 @@ export class AimsSyncReconciliationJob {
                 try {
                     await aimsGateway.pushArticles(storeId, toRepair);
                     result.repaired = toRepair.length;
-                    console.warn(
-                        `[AimsReconcile] Repaired ${toRepair.length} article(s) missing from AIMS for ${storeName}: ` +
-                        `${missingIds.slice(0, 10).join(', ')}${missingIds.length > 10 ? '...' : ''}`
-                    );
+                    appLogger.warn('AimsReconcile', `Repaired ${toRepair.length} article(s) missing from AIMS for ${storeName}: ${missingIds.slice(0, 10).join(', ')}${missingIds.length > 10 ? '...' : ''}`);
                 } catch (error: any) {
-                    console.error(`[AimsReconcile] Repair push failed for ${storeName}: ${error.message}`);
+                    appLogger.error('AimsReconcile', `Repair push failed for ${storeName}: ${error.message}`);
                 }
             }
         }
@@ -399,10 +387,7 @@ export class AimsSyncReconciliationJob {
             const articleInfoList = await aimsGateway.pullArticleInfo(storeId);
 
             const withLabels = articleInfoList.filter(a => Array.isArray(a.assignedLabel) && a.assignedLabel.length > 0);
-            console.log(
-                `[AimsReconcile] Article info: fetched ${articleInfoList.length} articles, ` +
-                `${withLabels.length} have assignedLabel(s)`
-            );
+            appLogger.info('AimsReconcile', `Article info: fetched ${articleInfoList.length} articles, ${withLabels.length} have assignedLabel(s)`);
 
             // --- Sync assignedLabels to DB ---
             for (const info of articleInfoList) {
@@ -459,22 +444,16 @@ export class AimsSyncReconciliationJob {
             }
 
             if (missingInAims.length > 0) {
-                console.warn(
-                    `[AimsReconcile] Validation: ${missingInAims.length} expected article(s) missing from AIMS ` +
-                    `(will attempt repair): ${missingInAims.slice(0, 10).join(', ')}${missingInAims.length > 10 ? '...' : ''}`
-                );
+                appLogger.warn('AimsReconcile', `Validation: ${missingInAims.length} expected article(s) missing from AIMS (will attempt repair): ${missingInAims.slice(0, 10).join(', ')}${missingInAims.length > 10 ? '...' : ''}`);
             }
             if (extraInAims.length > 0) {
-                console.warn(
-                    `[AimsReconcile] Validation: ${extraInAims.length} unexpected article(s) found in AIMS article info ` +
-                    `(should have been deleted): ${extraInAims.slice(0, 10).join(', ')}${extraInAims.length > 10 ? '...' : ''}`
-                );
+                appLogger.warn('AimsReconcile', `Validation: ${extraInAims.length} unexpected article(s) found in AIMS article info (should have been deleted): ${extraInAims.slice(0, 10).join(', ')}${extraInAims.length > 10 ? '...' : ''}`);
             }
 
             return { missingIds: missingInAims };
         } catch (error: any) {
             // Non-fatal — don't break the reconcile cycle
-            console.error(`[AimsReconcile] Failed to sync assignedLabels from article info: ${error.message}`);
+            appLogger.error('AimsReconcile', `Failed to sync assignedLabels from article info: ${error.message}`);
             return { missingIds: [] };
         }
     }

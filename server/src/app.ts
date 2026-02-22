@@ -29,6 +29,8 @@ import labelsRoutes from './features/labels/routes.js';
 import peopleListsRoutes from './features/people-lists/routes.js';
 import spacesListsRoutes from './features/spaces-lists/routes.js';
 import storeEventsRoutes from './features/stores/events.routes.js';
+import logsRoutes from './features/logs/routes.js';
+import { appLogger } from './shared/infrastructure/services/appLogger.js';
 
 // Create Express app
 const app = express();
@@ -99,16 +101,29 @@ app.use(compression({
 }));
 
 // ======================
-// Logging
+// Logging — structured JSON via appLogger + morgan for HTTP requests
 // ======================
-if (config.isDev) {
-    // Include request ID in dev logs
-    morgan.token('request-id', (req: express.Request) => req.requestId || '-');
-    app.use(morgan(':method :url :status :response-time ms - :request-id'));
-} else {
-    morgan.token('request-id', (req: express.Request) => req.requestId || '-');
-    app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :request-id'));
-}
+morgan.token('request-id', (req: express.Request) => req.requestId || '-');
+app.use(morgan(
+    (tokens, req, res) => {
+        // Pipe HTTP request logs through the structured logger
+        const status = parseInt(tokens.status(req, res) || '0', 10);
+        const responseTime = parseFloat(tokens['response-time'](req, res) || '0');
+        const method = tokens.method(req, res) || '';
+        const url = tokens.url(req, res) || '';
+        const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+        appLogger[level]('HTTP', `${method} ${url} ${status}`, {
+            method,
+            url,
+            status,
+            responseTimeMs: responseTime,
+            requestId: tokens['request-id'](req, res) || undefined,
+            contentLength: tokens.res(req, res, 'content-length') || undefined,
+            userAgent: tokens['user-agent'](req, res) || undefined,
+        } as any);
+        return null; // suppress default morgan output
+    }
+));
 
 // ======================
 // Rate Limiting
@@ -151,6 +166,7 @@ apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/labels', labelsRoutes);
 apiRouter.use('/people-lists', peopleListsRoutes);
 apiRouter.use('/spaces-lists', spacesListsRoutes);
+apiRouter.use('/logs', logsRoutes);
 apiRouter.use('/', storeRoutes); // Store routes mounted at root — MUST be after named routes (applies authenticate globally)
 apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
 
