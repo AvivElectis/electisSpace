@@ -7,14 +7,16 @@ graph TB
     subgraph "global-network (Docker external network)"
         subgraph "docker-compose.infra.yml"
             REDIS[electisspace-redis<br/>Redis 7 Alpine<br/>Port: 6381->6379<br/>AOF persistence]
-            LOKI[Loki<br/>Log aggregation<br/>Port: 3100]
-            PROMTAIL[Promtail<br/>Docker log scraper<br/>JSON pipeline]
-            GRAFANA[Grafana<br/>Dashboards<br/>Port: 3200->3000]
         end
 
         subgraph "docker-compose.app.yml"
             CLIENT[electisspace-server<br/>Nginx Alpine<br/>Port: 3071->3000]
             SERVER[electisspace-api<br/>Node.js 20 Alpine<br/>Internal port 3000]
+        end
+
+        subgraph "global-infra (external)"
+            AGENT[grafana-agent<br/>Auto-discovers Docker logs]
+            GRAFANA_GLOBAL[global-grafana<br/>Port: 3002]
         end
 
         PG[global-postgres<br/>PostgreSQL<br/>External service]
@@ -25,10 +27,8 @@ graph TB
     CLIENT -->|SSE /stores/*/events| SERVER
     SERVER --> PG
     SERVER --> REDIS
-    PROMTAIL -->|scrape container logs| SERVER
-    PROMTAIL --> LOKI
-    GRAFANA --> LOKI
-    GRAFANA --> PG
+    AGENT -->|scrape container logs| SERVER
+    AGENT -->|push to cloud Loki| GRAFANA_GLOBAL
 ```
 
 ### 6.2 Container Build Strategy
@@ -163,25 +163,23 @@ docker logs electisspace-server --tail=100 -f
 | Redis | `redis-cli ping` | 10s | -- |
 | Express API | `GET /health` | 30s | 40s |
 | Nginx Client | `GET /` | 30s | 10s |
-| Loki | `GET /ready` | 30s | 30s |
-| Grafana | `GET /api/health` | 30s | 30s |
 
-### 6.8 Observability Stack (Loki + Promtail + Grafana)
+### 6.8 Observability (Global Infrastructure)
 
 ```mermaid
 graph LR
-    SERVER[Express API<br/>JSON logs to stdout] -->|Docker log driver| PROMTAIL[Promtail<br/>Scrape container logs]
-    PROMTAIL -->|Push| LOKI[Loki<br/>Log aggregation<br/>30-day retention]
-    LOKI -->|Query via LogQL| GRAFANA[Grafana<br/>Dashboards + Explore]
+    SERVER[Express API<br/>JSON logs to stdout] -->|Docker log driver| AGENT[grafana-agent<br/>Auto-discovers all<br/>Docker containers]
+    AGENT -->|Push to cloud Loki| GRAFANA[global-grafana<br/>Port 3002<br/>Dashboards + Explore]
 ```
 
-The server emits **structured JSON** log lines (via `appLogger`) to stdout/stderr. Docker captures these as container logs, and Promtail scrapes them:
+The server emits **structured JSON** log lines (via `appLogger`) to stdout/stderr. Observability is handled by the **global-infra** stack at `/opt/global-infra/`:
 
-1. **Promtail** (`infra/promtail-config.yml`) -- Scrapes Docker container logs via `/var/lib/docker/containers`. Uses a JSON parsing pipeline stage to extract structured fields (`level`, `component`, `service`, `message`).
-2. **Loki** (`infra/loki-config.yml`) -- Single-process mode with 30-day retention. Stores index and chunks in `/loki/data`.
-3. **Grafana** (`infra/grafana-datasources.yml`) -- Auto-provisioned with Loki as the default datasource. Accessible on port 3200.
+1. **grafana-agent** -- Auto-discovers all Docker container logs on the host and forwards them to the cloud Loki endpoint. No per-app configuration required.
+2. **global-grafana** (port 3002) -- Centralized dashboards for all applications on the server, including electisSpace.
 
-In addition to the Loki pipeline, the server exposes an in-memory log API (`GET /api/v1/logs`) that serves the last 2,000 log entries directly from the `appLogger` ring buffer — useful for quick diagnostics without Grafana.
+The electisSpace `docker-compose.infra.yml` only contains Redis. The app-specific Loki/Promtail/Grafana stack was removed in v2.4.0 since the global-infra agent already collects all container logs.
+
+In addition to the centralized pipeline, the server exposes an in-memory log API (`GET /api/v1/logs`) that serves the last 2,000 log entries directly from the `appLogger` ring buffer — useful for quick diagnostics without Grafana.
 
 ### 6.9 Multi-Platform Support
 

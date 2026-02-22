@@ -16,7 +16,7 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { logger } from '../../../shared/infrastructure/services/logger';
 
 export const useSessionRestore = () => {
-    const { user, setUser, isInitialized, setInitialized, setAppReady } = useAuthStore();
+    const { setUser, isInitialized, setInitialized, setAppReady } = useAuthStore();
 
     const restoreSession = useCallback(async () => {
         // Skip if already initialized
@@ -33,74 +33,75 @@ export const useSessionRestore = () => {
             return;
         }
 
-        // If we have a persisted user, try to restore the session
-        if (user) {
-            logger.info('SessionRestore', 'Found persisted user, attempting to restore session');
-            
-            try {
-                // Try to refresh the token using httpOnly cookie
-                const result = await authService.refreshToken();
-                
-                if (result.accessToken) {
-                    logger.info('SessionRestore', 'Session restored successfully');
-                    // Validate the session by calling /me to get fresh user data
-                    try {
-                        const { user: freshUser } = await authService.me();
-                        setUser(freshUser);
+        // Always attempt cookie-based refresh, even if localStorage user is missing.
+        // The httpOnly refresh cookie may still be valid after localStorage is cleared.
+        logger.info('SessionRestore', 'Attempting cookie-based session restore');
 
-                        // CRITICAL: Await settings fetch before marking app as ready
-                        const activeStoreId = freshUser.activeStoreId || freshUser.stores?.[0]?.id;
-                        const activeCompanyId = freshUser.activeCompanyId || freshUser.companies?.[0]?.id;
-                        if (activeStoreId && activeCompanyId) {
-                            try {
-                                // Fetch settings sequentially (must complete before app is ready)
-                                await useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId);
-                                logger.info('SessionRestore', 'Settings loaded successfully');
+        try {
+            // Try to refresh the token using httpOnly cookie
+            const result = await authService.refreshToken();
 
-                                // Auto-connect to SOLUM (non-blocking)
-                                const { reconnectToSolum } = useAuthStore.getState();
-                                reconnectToSolum().catch((err) => {
-                                    logger.warn('SessionRestore', 'Auto SOLUM connect after restore failed', {
-                                        error: err instanceof Error ? err.message : String(err),
-                                    });
-                                });
+            if (result.accessToken) {
+                logger.info('SessionRestore', 'Session restored successfully');
+                // Validate the session by calling /me to get fresh user data
+                try {
+                    const { user: freshUser } = await authService.me();
+                    setUser(freshUser);
 
-                                // Mark app as ready only after settings are loaded
-                                setAppReady(true);
-                                logger.info('SessionRestore', 'Session and settings restored successfully');
-                            } catch (err) {
-                                logger.error('SessionRestore', 'Failed to fetch settings', {
+                    // CRITICAL: Await settings fetch before marking app as ready
+                    const activeStoreId = freshUser.activeStoreId || freshUser.stores?.[0]?.id;
+                    const activeCompanyId = freshUser.activeCompanyId || freshUser.companies?.[0]?.id;
+                    if (activeStoreId && activeCompanyId) {
+                        try {
+                            // Fetch settings sequentially (must complete before app is ready)
+                            await useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId);
+                            logger.info('SessionRestore', 'Settings loaded successfully');
+
+                            // Auto-connect to SOLUM (non-blocking)
+                            const { reconnectToSolum } = useAuthStore.getState();
+                            reconnectToSolum().catch((err) => {
+                                logger.warn('SessionRestore', 'Auto SOLUM connect after restore failed', {
                                     error: err instanceof Error ? err.message : String(err),
                                 });
-                                // On settings fetch failure, still mark as ready to prevent infinite loading
-                                setAppReady(true);
-                            }
-                        } else {
-                            // No active store/company - mark as ready anyway
-                            logger.warn('SessionRestore', 'No active store or company, skipping settings fetch');
+                            });
+
+                            // Mark app as ready only after settings are loaded
+                            setAppReady(true);
+                            logger.info('SessionRestore', 'Session and settings restored successfully');
+                        } catch (err) {
+                            logger.error('SessionRestore', 'Failed to fetch settings', {
+                                error: err instanceof Error ? err.message : String(err),
+                            });
+                            // On settings fetch failure, still mark as ready to prevent infinite loading
                             setAppReady(true);
                         }
-                    } catch {
-                        // Token refresh worked but /me failed - use existing user data
-                        logger.warn('SessionRestore', 'Could not fetch fresh user data, using cached');
-                        setAppReady(true); // Still mark as ready to prevent infinite loading
+                    } else {
+                        // No active store/company - mark as ready anyway
+                        logger.warn('SessionRestore', 'No active store or company, skipping settings fetch');
+                        setAppReady(true);
                     }
+                } catch {
+                    // Token refresh worked but /me failed - use existing user data
+                    logger.warn('SessionRestore', 'Could not fetch fresh user data, using cached');
+                    setAppReady(true); // Still mark as ready to prevent infinite loading
                 }
-            } catch (error) {
-                // Refresh token is invalid or expired - clear the session
-                logger.warn('SessionRestore', 'Session restoration failed, clearing auth state', {
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                });
+            } else {
+                // No access token returned — show login
+                logger.debug('SessionRestore', 'No access token from refresh, showing login');
                 setUser(null);
-                setAppReady(true); // Allow login screen to show
+                setAppReady(true);
             }
-        } else {
-            logger.debug('SessionRestore', 'No persisted user found');
-            setAppReady(true); // No user to restore, show login screen
+        } catch (error) {
+            // Refresh cookie is invalid or expired - clear the session and show login
+            logger.debug('SessionRestore', 'Cookie refresh failed, showing login', {
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+            setUser(null);
+            setAppReady(true);
         }
 
         setInitialized(true);
-    }, [user, setUser, isInitialized, setInitialized, setAppReady]);
+    }, [setUser, isInitialized, setInitialized, setAppReady]);
 
     useEffect(() => {
         restoreSession();

@@ -101,6 +101,7 @@ export const authController = {
                 secure: config.isProd,
                 sameSite: 'lax',
                 maxAge: config.jwt.refreshExpiresInMs,
+                path: '/',
             });
 
             // Strip refreshToken from response body (it's already in HttpOnly cookie)
@@ -179,6 +180,7 @@ export const authController = {
                 secure: config.isProd,
                 sameSite: 'lax',
                 maxAge: config.jwt.refreshExpiresInMs,
+                path: '/',
             });
 
             res.json(result);

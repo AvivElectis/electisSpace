@@ -170,7 +170,7 @@ export function DashboardPage() {
                             totalPeople={totalPeople}
                             assignedPeople={assignedPeople}
                             unassignedPeople={unassignedPeople}
-                            assignedLabelsCount={assignedLabelsCount}
+                            assignedLabelsCount={spacesAssignedLabelsCount}
                             savedLists={savedLists}
                             activeListName={peopleStore.activeListName}
                         />
