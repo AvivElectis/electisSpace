@@ -134,7 +134,7 @@ export function DashboardPage() {
     const isInitialLoading = syncState.status === 'syncing' && !syncState.lastSync;
 
     if (isInitialLoading) {
-        return <DashboardSkeleton />;
+        return <DashboardSkeleton isMobile={isMobile} />;
     }
 
     return (
@@ -151,7 +151,7 @@ export function DashboardPage() {
                 </Box>
             </Stack>
 
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 1.5, md: 3 }}>
                 {/* Spaces Area - Only show when People Manager mode is OFF */}
                 {!isPeopleManagerMode && (
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -164,6 +164,7 @@ export function DashboardPage() {
                             assignedLabelsCount={spacesAssignedLabelsCount}
                             onAddSpace={() => setSpaceDialogOpen(true)}
                             hideAddButton={isMobile}
+                            isMobile={isMobile}
                         />
                     </Grid>
                 )}
@@ -178,6 +179,7 @@ export function DashboardPage() {
                             assignedLabelsCount={peopleAssignedLabelsCount}
                             savedLists={savedLists}
                             activeListName={peopleStore.activeListName}
+                            isMobile={isMobile}
                         />
                     </Grid>
                 )}
@@ -193,6 +195,7 @@ export function DashboardPage() {
                         occupiedRooms={occupiedRooms}
                         onAddRoom={() => setConferenceDialogOpen(true)}
                         hideAddButton={isMobile}
+                        isMobile={isMobile}
                     />
                 </Grid>
 
