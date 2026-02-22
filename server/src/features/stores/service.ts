@@ -5,6 +5,7 @@
  */
 import { GlobalRole, CompanyRole, StoreRole } from '@prisma/client';
 import { storeRepository, companyRepository, userCompanyRepository } from './repository.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import type { StoreUserContext, CreateStoreInput, UpdateStoreInput, StoreResponse, StoreListResponse, CodeValidationResponse } from './types.js';
 import { storeCodeSchema } from './types.js';
 import {
@@ -290,7 +291,7 @@ export const storeService = {
         // Warn about cascading deletes
         const totalEntities = store._count.spaces + store._count.people + store._count.conferenceRooms;
         if (totalEntities > 0) {
-            console.warn(`Deleting store ${store.code} with ${totalEntities} entities`);
+            appLogger.warn('StoreService', `Deleting store ${store.code} with ${totalEntities} entities`);
         }
         
         await storeRepository.delete(id);

@@ -7,20 +7,12 @@
 
 import { Router, type Request, type Response } from 'express';
 import { GlobalRole } from '@prisma/client';
-import { authenticate } from '../../shared/middleware/auth.js';
-import { forbidden } from '../../shared/middleware/errorHandler.js';
+import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 
 const router = Router();
 
-/** Inline guard: only PLATFORM_ADMIN */
-function requirePlatformAdmin(req: Request, res: Response, next: Function): void {
-    if (req.user?.globalRole !== GlobalRole.PLATFORM_ADMIN) {
-        next(forbidden('Platform admin access required'));
-        return;
-    }
-    next();
-}
+const adminOnly = requireGlobalRole(GlobalRole.PLATFORM_ADMIN);
 
 /**
  * GET /logs
@@ -31,7 +23,7 @@ function requirePlatformAdmin(req: Request, res: Response, next: Function): void
  *   component — filter by component name
  *   limit     — max entries to return (default 200)
  */
-router.get('/', authenticate, requirePlatformAdmin, (req: Request, res: Response) => {
+router.get('/', authenticate, adminOnly, (req: Request, res: Response) => {
     const { level, component, limit } = req.query;
     const logs = appLogger.getLogs({
         level: level as any,
@@ -45,7 +37,7 @@ router.get('/', authenticate, requirePlatformAdmin, (req: Request, res: Response
  * GET /logs/stats
  * Get aggregated log statistics.
  */
-router.get('/stats', authenticate, requirePlatformAdmin, (_req: Request, res: Response) => {
+router.get('/stats', authenticate, adminOnly, (_req: Request, res: Response) => {
     res.json(appLogger.getStats());
 });
 
@@ -53,7 +45,7 @@ router.get('/stats', authenticate, requirePlatformAdmin, (_req: Request, res: Re
  * DELETE /logs
  * Clear the in-memory log buffer.
  */
-router.delete('/', authenticate, requirePlatformAdmin, (_req: Request, res: Response) => {
+router.delete('/', authenticate, adminOnly, (_req: Request, res: Response) => {
     appLogger.clearBuffer();
     res.json({ message: 'Log buffer cleared' });
 });

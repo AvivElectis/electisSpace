@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
+import { appLogger } from './appLogger.js';
 
 // Types definition (replicating needed parts from shared/domain/types)
 export interface SolumConfig {
@@ -133,7 +134,7 @@ export class SolumService {
                 // Check if this is a retryable error
                 if (attempt < MAX_RETRIES && isRetryableError(error)) {
                     const delay = getRetryDelay(attempt);
-                    console.warn(`[SoluM] ${operation} failed (attempt ${attempt + 1}/${MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms:`, error.message);
+                    appLogger.warn('SoluM', `${operation} failed (attempt ${attempt + 1}/${MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms`, { error: error.message });
                     await sleep(delay);
                     continue;
                 }
