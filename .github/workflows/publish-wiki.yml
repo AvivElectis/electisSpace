@@ -21,41 +21,24 @@ jobs:
         run: |
           set -e
 
-          # Configure git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Save the workspace directory
           WORKSPACE="$(pwd)"
 
-          echo "=== Files in docs/wiki ==="
-          ls -la "${WORKSPACE}/docs/wiki/"
+          # Clone the existing wiki repo
+          git clone "https://x-access-token:${GH_PAT}@github.com/${REPO}.wiki.git" /tmp/wiki
 
-          # Try to clone existing wiki, or initialize a new one
-          if git clone "https://x-access-token:${GH_PAT}@github.com/${REPO}.wiki.git" /tmp/wiki 2>/dev/null; then
-            echo "Wiki repo cloned successfully"
-          else
-            echo "Wiki repo does not exist yet, initializing..."
-            mkdir -p /tmp/wiki
-            cd /tmp/wiki
-            git init
-            git remote add origin "https://x-access-token:${GH_PAT}@github.com/${REPO}.wiki.git"
-          fi
-
-          # Copy wiki source files from workspace (use absolute paths)
+          # Copy wiki source files from workspace
           find "${WORKSPACE}/docs/wiki" -name '*.md' -exec cp {} /tmp/wiki/ \;
 
-          echo "=== Files copied to /tmp/wiki ==="
-          ls -la /tmp/wiki/
-
-          # Commit and push
+          # Commit and push changes
           cd /tmp/wiki
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to wiki"
           else
             git commit -m "Update wiki pages from docs/wiki"
-            git branch -M master
-            git push -u origin master --force
+            git push origin master
             echo "Wiki published successfully!"
           fi
