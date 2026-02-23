@@ -5,7 +5,7 @@
  */
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { authenticate, authorize } from '../../shared/middleware/index.js';
+import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
 import { authController } from './controller.js';
 import { config } from '../../config/index.js';
 
@@ -121,7 +121,7 @@ router.get('/store-connection-info', authenticate, authController.storeConnectio
 router.post(
     '/admin/reset-password',
     authenticate,
-    authorize('PLATFORM_ADMIN'),
+    requireGlobalRole('PLATFORM_ADMIN'),
     authController.adminResetPassword
 );
 
