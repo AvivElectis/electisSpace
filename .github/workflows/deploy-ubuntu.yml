@@ -37,6 +37,7 @@ jobs:
             docker compose -f docker-compose.infra.yml up -d redis
 
             echo "=== Running migrations (before server start) ==="
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate resolve --rolled-back 20260223000000_add_store_status_and_user_suspension 2>/dev/null || true
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate deploy
 
             echo "=== Starting core services ==="
