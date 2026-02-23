@@ -11,6 +11,9 @@
 - [[Chapter 7 — Security, Auth & Access Control]]
 - [[Chapter 8 — Auth & AIMS Management Plan]]
 
+### Release Planning
+- [[Release Plan v2.6.0]]
+
 ### Reference
 - [[Appendix A — Glossary]]
 - [[Appendix B — Environment Variables]]
