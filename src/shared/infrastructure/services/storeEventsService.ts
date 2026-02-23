@@ -60,17 +60,15 @@ export function connectToStoreEvents(
     const token = tokenManager.getAccessToken();
     const url = `${API_BASE_URL}/stores/${storeId}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
-    console.log('[StoreEventsService] Connecting to SSE:', { url: url.replace(/token=[^&]+/, 'token=***'), storeId });
+    if (isDev) console.debug('[StoreEventsService] Connecting to SSE:', { url: url.replace(/token=[^&]+/, 'token=***'), storeId });
 
     eventSource = new EventSource(url, { withCredentials: true });
 
     eventSource.onmessage = (e) => {
         try {
             const data: StoreEvent = JSON.parse(e.data);
-            console.log('[StoreEventsService] SSE message received:', data.type, data);
             if (data.type === 'connected') {
                 clientId = data.clientId || null;
-                console.log('[StoreEventsService] SSE connected, clientId:', clientId);
             }
             onEvent(data);
         } catch (err) {
@@ -85,7 +83,7 @@ export function connectToStoreEvents(
     };
 
     eventSource.onopen = () => {
-        console.log('[StoreEventsService] SSE connection opened');
+        if (isDev) console.debug('[StoreEventsService] SSE connection opened');
     };
 
     return {

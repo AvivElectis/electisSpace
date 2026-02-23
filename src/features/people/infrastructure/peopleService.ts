@@ -544,8 +544,6 @@ export async function postBulkAssignmentsWithMetadata(
     token: string,
     mappingConfig?: SolumMappingConfig
 ): Promise<void> {
-    console.log('[postBulkAssignmentsWithMetadata] Starting with', people.length, 'people');
-    
     logger.info('PeopleService', 'Posting bulk assignments with metadata to AIMS', { 
         count: people.length,
         withListData: people.filter(p => p.listMemberships?.length).length 
@@ -554,15 +552,8 @@ export async function postBulkAssignmentsWithMetadata(
     // Build article data with metadata (includes __PERSON_UUID__, __VIRTUAL_SPACE__, _LIST_MEMBERSHIPS_)
     const articles = people.map(person => buildArticleDataWithMetadata(person, mappingConfig));
     
-    console.log('[postBulkAssignmentsWithMetadata] Built', articles.length, 'articles');
-    if (articles.length > 0) {
-        console.log('[postBulkAssignmentsWithMetadata] Sample article:', JSON.stringify(articles[0], null, 2));
-    }
-
     // Push all articles to AIMS in one batch using POST
-    console.log('[postBulkAssignmentsWithMetadata] Pushing to AIMS...');
     await pushArticles(config, config.storeNumber, token, articles);
-    console.log('[postBulkAssignmentsWithMetadata] Push completed');
 
     logger.info('PeopleService', 'Bulk assignments with metadata posted successfully', { count: people.length });
 }
