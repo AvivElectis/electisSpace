@@ -91,6 +91,26 @@ router.post('/forgot-password', passwordResetLimiter, authController.forgotPassw
 // POST /auth/reset-password - Reset password with code
 router.post('/reset-password', passwordResetLimiter, authController.resetPassword);
 
+// POST /auth/device-auth - Authenticate with device token
+const deviceAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+        error: {
+            code: 'DEVICE_AUTH_RATE_LIMITED',
+            message: 'Too many device authentication attempts. Please try again later.',
+        },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        const deviceId = req.body?.deviceId || '';
+        const ip = req.ip || req.socket.remoteAddress || 'unknown';
+        return `device:${ip}:${deviceId}`;
+    },
+});
+router.post('/device-auth', deviceAuthLimiter, authController.deviceAuth);
+
 // POST /auth/logout - Logout
 router.post('/logout', authController.logout);
 
@@ -103,6 +123,11 @@ router.get('/me', authenticate, authController.me);
 
 // POST /auth/change-password - Change password
 router.post('/change-password', authenticate, authController.changePassword);
+
+// Device management (authenticated)
+router.get('/devices', authenticate, authController.listDevices);
+router.delete('/devices/:id', authenticate, authController.revokeDevice);
+router.delete('/devices', authenticate, authController.revokeAllDevices);
 
 // POST /auth/solum-connect - Get SOLUM connection config
 router.post('/solum-connect', authenticate, authController.solumConnect);

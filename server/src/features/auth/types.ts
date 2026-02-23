@@ -54,6 +54,19 @@ export const solumConnectSchema = z.object({
     storeId: z.string().uuid('Invalid store ID'),
 });
 
+export const deviceAuthSchema = z.object({
+    deviceToken: z.string().min(1, 'Device token is required'),
+    deviceId: z.string().min(1, 'Device ID is required'),
+});
+
+export const verify2FAWithDeviceSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    code: z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must contain only digits'),
+    deviceId: z.string().optional(),
+    deviceName: z.string().optional(),
+    platform: z.string().optional(),
+});
+
 // ======================
 // DTOs - Inputs
 // ======================
@@ -149,6 +162,23 @@ export interface SolumConnectResponse {
     tokens: {
         accessToken: string;
     };
+}
+
+export interface DeviceTokenResponse {
+    accessToken: string;
+    expiresIn: number;
+    user: UserInfo;
+}
+
+export interface DeviceInfo {
+    id: string;
+    deviceId: string;
+    deviceName: string | null;
+    platform: string | null;
+    lastUsedAt: Date;
+    lastIp: string | null;
+    createdAt: Date;
+    current?: boolean;
 }
 
 // ======================

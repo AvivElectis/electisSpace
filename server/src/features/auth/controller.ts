@@ -10,7 +10,7 @@ import { authService } from './service.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
     loginSchema,
-    verify2FASchema,
+    verify2FAWithDeviceSchema,
     resendCodeSchema,
     forgotPasswordSchema,
     resetPasswordSchema,
@@ -18,6 +18,7 @@ import {
     refreshSchema,
     changePasswordSchema,
     solumConnectSchema,
+    deviceAuthSchema,
 } from './types.js';
 
 // ======================
@@ -89,15 +90,13 @@ export const authController = {
      */
     async verify2FA(req: Request, res: Response, next: NextFunction) {
         try {
-            const validation = verify2FASchema.safeParse(req.body);
+            const validation = verify2FAWithDeviceSchema.safeParse(req.body);
             if (!validation.success) {
                 throw badRequest(validation.error.errors[0].message);
             }
 
-            const result = await authService.verify2FA(
-                validation.data.email,
-                validation.data.code
-            );
+            const { email, code, deviceId, deviceName, platform } = validation.data;
+            const result = await authService.verify2FA(email, code);
 
             // Set refresh token as HttpOnly cookie
             res.cookie('refreshToken', result.refreshToken, {
@@ -108,9 +107,24 @@ export const authController = {
                 path: '/',
             });
 
+            // If client requested a device token, create one
+            let deviceToken: string | undefined;
+            if (deviceId) {
+                try {
+                    const ip = req.ip || req.socket.remoteAddress;
+                    deviceToken = await authService.createDeviceToken(
+                        result.user.id,
+                        { deviceId, deviceName, platform },
+                        ip
+                    );
+                } catch {
+                    // Non-critical — log but continue
+                }
+            }
+
             // Strip refreshToken from response body (it's already in HttpOnly cookie)
             const { refreshToken: _rt, ...safeResult } = result;
-            res.json(safeResult);
+            res.json({ ...safeResult, ...(deviceToken ? { deviceToken } : {}) });
         } catch (error: any) {
             if (error.message === 'INVALID_CODE') {
                 return res.status(401).json({
@@ -329,6 +343,95 @@ export const authController = {
             if (error.message === 'INVALID_PASSWORD') {
                 return next(badRequest('Current password is incorrect'));
             }
+            next(error);
+        }
+    },
+
+    /**
+     * POST /auth/device-auth
+     * Authenticate using a device token (no 2FA required)
+     */
+    async deviceAuth(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = deviceAuthSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const { deviceToken, deviceId } = validation.data;
+            const ip = req.ip || req.socket.remoteAddress;
+
+            const result = await authService.authenticateWithDeviceToken(deviceToken, deviceId, ip);
+
+            // Set a refresh token cookie for normal session flow
+            const tokenPair = await authService.generateTokens(result.user.id);
+
+            res.cookie('refreshToken', tokenPair.refreshToken, {
+                httpOnly: true,
+                secure: config.isProd,
+                sameSite: 'lax',
+                maxAge: config.jwt.refreshExpiresInMs,
+                path: '/',
+            });
+
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'INVALID_DEVICE_TOKEN') {
+                return res.status(401).json({
+                    error: { code: 'INVALID_DEVICE_TOKEN', message: 'Invalid or expired device token' },
+                });
+            }
+            if (error.message === 'USER_NOT_FOUND') {
+                return res.status(401).json({
+                    error: { code: 'USER_NOT_FOUND', message: 'User not found or inactive' },
+                });
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * GET /auth/devices - List active device tokens
+     */
+    async listDevices(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user!.id;
+            const devices = await authService.listDeviceTokens(userId);
+            res.json({ devices });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    /**
+     * DELETE /auth/devices/:id - Revoke a specific device token
+     */
+    async revokeDevice(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user!.id;
+            const tokenId = req.params.id as string;
+            if (!tokenId) throw badRequest('Device token ID is required');
+            await authService.revokeDeviceToken(tokenId, userId);
+            res.status(204).send();
+        } catch (error: any) {
+            if (error.message === 'TOKEN_NOT_FOUND') {
+                return res.status(404).json({
+                    error: { code: 'TOKEN_NOT_FOUND', message: 'Device token not found' },
+                });
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * DELETE /auth/devices - Revoke all device tokens
+     */
+    async revokeAllDevices(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user!.id;
+            await authService.revokeAllDeviceTokens(userId);
+            res.status(204).send();
+        } catch (error) {
             next(error);
         }
     },

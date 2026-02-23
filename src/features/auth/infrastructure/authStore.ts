@@ -231,7 +231,22 @@ export const useAuthStore = create<AuthState>()(
 
                     set({ isLoading: true, error: null }, false, 'verify2FA/start');
                     try {
-                        const response = await authService.verify2FA({ email, code });
+                        // Get device info for persistent auth
+                        let deviceId: string | undefined;
+                        let deviceName: string | undefined;
+                        let platform: string | undefined;
+                        try {
+                            const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+                            deviceId = await deviceTokenStorage.getDeviceId();
+                            deviceName = deviceTokenStorage.getDeviceName();
+                            platform = deviceTokenStorage.getPlatform();
+                        } catch { /* not available */ }
+
+                        const response = await authService.verify2FA({
+                            email,
+                            code,
+                            ...(deviceId ? { deviceId, deviceName, platform } : {}),
+                        });
                         const { user } = response;
                         
                         // Set active context from user or default to first company/store
@@ -300,6 +315,11 @@ export const useAuthStore = create<AuthState>()(
                     set({ isLoading: true }, false, 'logout/start');
                     try {
                         await authService.logout();
+                        // Clear device token on explicit logout
+                        try {
+                            const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+                            await deviceTokenStorage.removeDeviceToken();
+                        } catch { /* ignore */ }
                     } finally {
                         set({
                             user: null,
