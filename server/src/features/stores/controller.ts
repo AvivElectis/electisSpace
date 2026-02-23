@@ -146,4 +146,68 @@ export const storeController = {
             next(error);
         }
     },
+
+    /**
+     * PATCH /stores/:id/status
+     * Update store status
+     */
+    async updateStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+            const { status, note } = req.body;
+            const user = getUserContext(req);
+
+            if (!['ACTIVE', 'MAINTENANCE', 'OFFLINE', 'ARCHIVED'].includes(status)) {
+                throw badRequest('Invalid status. Must be ACTIVE, MAINTENANCE, OFFLINE, or ARCHIVED');
+            }
+
+            const result = await storeService.updateStatus(id, status, note, user);
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions'));
+            next(error);
+        }
+    },
+
+    /**
+     * POST /stores/:id/transfer
+     * Transfer store to another company (Platform Admin only)
+     */
+    async transfer(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+            const { targetCompanyId } = req.body;
+
+            if (!targetCompanyId) {
+                throw badRequest('targetCompanyId is required');
+            }
+
+            const result = await storeService.transfer(id, targetCompanyId);
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
+            if (error.message === 'COMPANY_NOT_FOUND') return next(notFound('Target company'));
+            if (error.message === 'SAME_COMPANY') return next(badRequest('Store already belongs to this company'));
+            next(error);
+        }
+    },
+
+    /**
+     * POST /stores/:id/archive
+     * Archive a store
+     */
+    async archive(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+            const user = getUserContext(req);
+
+            const result = await storeService.updateStatus(id, 'ARCHIVED', 'Archived', user);
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions'));
+            next(error);
+        }
+    },
 };

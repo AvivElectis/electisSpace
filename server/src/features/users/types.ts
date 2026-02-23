@@ -106,6 +106,34 @@ export const updateUserCompanySchema = z.object({
     companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).optional(),
 });
 
+// Suspend user
+export const suspendUserSchema = z.object({
+    reason: z.string().min(1).max(500),
+});
+
+// Reactivate user  
+export const reactivateUserSchema = z.object({
+    note: z.string().max(500).optional(),
+});
+
+// Bulk deactivate
+export const bulkDeactivateSchema = z.object({
+    userIds: z.array(z.string().uuid()).min(1).max(50),
+    reason: z.string().min(1).max(500).optional(),
+});
+
+// Bulk activate
+export const bulkActivateSchema = z.object({
+    userIds: z.array(z.string().uuid()).min(1).max(50),
+});
+
+// Bulk role change
+export const bulkChangeRoleSchema = z.object({
+    userIds: z.array(z.string().uuid()).min(1).max(50),
+    storeId: z.string().uuid(),
+    role: z.enum(['STORE_ADMIN', 'STORE_MANAGER', 'STORE_EMPLOYEE', 'STORE_VIEWER']),
+});
+
 export const updateContextSchema = z.object({
     activeCompanyId: z.string().uuid().nullable().optional(),
     activeStoreId: z.string().uuid().nullable().optional(),
@@ -123,6 +151,10 @@ export type ElevateUserDto = z.infer<typeof elevateUserSchema>;
 export type AssignUserToCompanyDto = z.infer<typeof assignUserToCompanySchema>;
 export type UpdateUserCompanyDto = z.infer<typeof updateUserCompanySchema>;
 export type UpdateContextDto = z.infer<typeof updateContextSchema>;
+export type SuspendUserDto = z.infer<typeof suspendUserSchema>;
+export type BulkDeactivateDto = z.infer<typeof bulkDeactivateSchema>;
+export type BulkActivateDto = z.infer<typeof bulkActivateSchema>;
+export type BulkChangeRoleDto = z.infer<typeof bulkChangeRoleSchema>;
 export type CompanyRef = z.infer<typeof companyRefSchema>;
 export type StoreRef = z.infer<typeof storeRefSchema>;
 

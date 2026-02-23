@@ -247,7 +247,7 @@ export const authorize = (...allowedRoles: string[]) => {
 };
 
 // Permission-based authorization
-type Resource = 'spaces' | 'people' | 'conference' | 'settings' | 'users' | 'audit' | 'sync' | 'labels';
+type Resource = 'spaces' | 'people' | 'conference' | 'settings' | 'users' | 'audit' | 'sync' | 'labels' | 'stores' | 'companies';
 type Action = 'create' | 'read' | 'update' | 'delete' | 'import' | 'assign' | 'toggle' | 'trigger' | 'view' | 'manage';
 
 const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[]>>> = {
@@ -260,6 +260,8 @@ const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[
         audit: ['read'],
         sync: ['trigger', 'view'],
         labels: ['view', 'manage'],
+        stores: ['read', 'update', 'delete', 'manage'],
+        companies: ['read'],
     },
     STORE_MANAGER: {
         spaces: ['create', 'read', 'update', 'delete'],

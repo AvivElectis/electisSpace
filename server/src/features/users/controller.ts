@@ -15,6 +15,11 @@ import {
     assignUserToCompanySchema,
     updateUserCompanySchema,
     updateContextSchema,
+    suspendUserSchema,
+    reactivateUserSchema,
+    bulkDeactivateSchema,
+    bulkActivateSchema,
+    bulkChangeRoleSchema,
     AVAILABLE_FEATURES,
 } from './types.js';
 import type { UserContext } from './types.js';
@@ -526,6 +531,112 @@ export const userController = {
             if (error.message === 'FORBIDDEN_COMPANY') return next(forbidden('You do not have access to this company'));
             if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
             if (error.message === 'FORBIDDEN_STORE') return next(forbidden('You do not have access to this store'));
+            next(error);
+        }
+    },
+
+    /**
+     * POST /users/:id/suspend
+     */
+    async suspend(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = suspendUserSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const result = await userService.suspend(
+                req.params.id,
+                validation.data.reason,
+                getUserContext(req),
+            );
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'USER_NOT_FOUND') return next(notFound('User'));
+            if (error.message === 'CANNOT_SUSPEND_SELF') return next(badRequest('Cannot suspend yourself'));
+            if (error.message === 'ALREADY_SUSPENDED') return next(badRequest('User is already suspended'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions'));
+            next(error);
+        }
+    },
+
+    /**
+     * POST /users/:id/reactivate
+     */
+    async reactivate(req: Request, res: Response, next: NextFunction) {
+        try {
+            const result = await userService.reactivate(
+                req.params.id,
+                getUserContext(req),
+            );
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'USER_NOT_FOUND') return next(notFound('User'));
+            if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions'));
+            next(error);
+        }
+    },
+
+    /**
+     * POST /users/bulk/deactivate
+     */
+    async bulkDeactivate(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = bulkDeactivateSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const result = await userService.bulkDeactivate(
+                validation.data.userIds,
+                validation.data.reason,
+                getUserContext(req),
+            );
+            res.json(result);
+        } catch (error: any) {
+            next(error);
+        }
+    },
+
+    /**
+     * POST /users/bulk/activate
+     */
+    async bulkActivate(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = bulkActivateSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const result = await userService.bulkActivate(
+                validation.data.userIds,
+                getUserContext(req),
+            );
+            res.json(result);
+        } catch (error: any) {
+            next(error);
+        }
+    },
+
+    /**
+     * POST /users/bulk/role
+     */
+    async bulkChangeRole(req: Request, res: Response, next: NextFunction) {
+        try {
+            const validation = bulkChangeRoleSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const result = await userService.bulkChangeRole(
+                validation.data.userIds,
+                validation.data.storeId,
+                validation.data.role,
+                getUserContext(req),
+            );
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Insufficient permissions'));
             next(error);
         }
     },

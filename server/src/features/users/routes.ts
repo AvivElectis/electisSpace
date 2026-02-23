@@ -4,7 +4,7 @@
  * @description Thin route definitions for user management.
  */
 import { Router } from 'express';
-import { authenticate } from '../../shared/middleware/index.js';
+import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
 import { userController } from './controller.js';
 
 const router = Router();
@@ -42,6 +42,19 @@ router.get('/features', userController.getFeatures);
 router.get('/check-email', userController.checkEmail);
 
 // ======================
+// Bulk Operations (must be before /:id routes)
+// ======================
+
+// Bulk deactivate users
+router.post('/bulk/deactivate', userController.bulkDeactivate);
+
+// Bulk activate users
+router.post('/bulk/activate', userController.bulkActivate);
+
+// Bulk change store role
+router.post('/bulk/role', userController.bulkChangeRole);
+
+// ======================
 // User Management Routes
 // ======================
 
@@ -64,8 +77,14 @@ router.delete('/:id', userController.delete);
 // User Role Elevation
 // ======================
 
-// Elevate user role
-router.post('/:id/elevate', userController.elevate);
+// Elevate user role (Platform Admin only)
+router.post('/:id/elevate', requireGlobalRole('PLATFORM_ADMIN'), userController.elevate);
+
+// Suspend user
+router.post('/:id/suspend', userController.suspend);
+
+// Reactivate user
+router.post('/:id/reactivate', userController.reactivate);
 
 // ======================
 // User-Store Routes

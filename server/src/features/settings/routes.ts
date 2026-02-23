@@ -4,7 +4,7 @@
  * @description Thin route definitions for settings management.
  */
 import { Router } from 'express';
-import { authenticate } from '../../shared/middleware/index.js';
+import { authenticate, requirePermission } from '../../shared/middleware/index.js';
 import { settingsController } from './controller.js';
 
 const router = Router();
@@ -20,7 +20,7 @@ router.use(authenticate);
 router.get('/store/:storeId', settingsController.getStoreSettings);
 
 // Update store settings
-router.put('/store/:storeId', settingsController.updateStoreSettings);
+router.put('/store/:storeId', requirePermission('settings', 'update'), settingsController.updateStoreSettings);
 
 // ======================
 // Company Settings
