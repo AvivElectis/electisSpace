@@ -4,7 +4,7 @@
  * @description Thin route definitions for store management.
  */
 import { Router } from 'express';
-import { authenticate } from '../../shared/middleware/index.js';
+import { authenticate, requirePermission, requireGlobalRole } from '../../shared/middleware/index.js';
 import { storeController } from './controller.js';
 
 const router = Router();
@@ -37,5 +37,18 @@ router.patch('/stores/:id', storeController.update);
 
 // Delete store
 router.delete('/stores/:id', storeController.delete);
+
+// ======================
+// Store Status & Transfer Routes
+// ======================
+
+// Update store status
+router.patch('/stores/:id/status', storeController.updateStatus);
+
+// Transfer store to another company (Platform Admin only)
+router.post('/stores/:id/transfer', requireGlobalRole('PLATFORM_ADMIN'), storeController.transfer);
+
+// Archive store
+router.post('/stores/:id/archive', storeController.archive);
 
 export default router;

@@ -57,9 +57,15 @@ model Store {
   // Store-specific settings
   settings    Json     @default("{}")
   timezone    String   @default("UTC") @db.VarChar(50)
+  locale      String   @default("en") @db.VarChar(10)
   syncEnabled Boolean  @default(true) @map("sync_enabled")
   lastAimsSyncAt DateTime? @map("last_aims_sync_at")
   isActive    Boolean  @default(true) @map("is_active")
+  
+  // Store status
+  status          StoreStatus @default(ACTIVE)
+  statusChangedAt DateTime?   @map("status_changed_at")
+  statusNote      String?     @map("status_note") @db.VarChar(500)
   
   // Timestamps
   createdAt   DateTime @default(now()) @map("created_at")
@@ -111,6 +117,11 @@ model User {
   // Password management
   passwordChangedAt DateTime? @map("password_changed_at")
   passwordResetRequired Boolean @default(false) @map("password_reset_required")
+  
+  // Suspension tracking
+  suspendedAt     DateTime? @map("suspended_at")
+  suspendedReason String?   @map("suspended_reason") @db.VarChar(500)
+  suspendedById   String?   @map("suspended_by_id")
   
   // User preferences (JSON)
   preferences  Json        @default("{}")  // UI preferences, notifications, etc.
@@ -504,4 +515,11 @@ enum QueueStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum StoreStatus {
+  ACTIVE
+  MAINTENANCE
+  OFFLINE
+  ARCHIVED
 }
