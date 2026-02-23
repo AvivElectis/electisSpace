@@ -5,6 +5,7 @@
  * Shows release notes and platform-specific instructions.
  */
 
+import DOMPurify from 'dompurify';
 import {
     Dialog,
     DialogTitle,
@@ -120,7 +121,7 @@ export function UpdateDialog({
                                     borderColor: 'divider',
                                 },
                             }}
-                            dangerouslySetInnerHTML={{ __html: updateInfo.releaseNotes }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(updateInfo.releaseNotes) }}
                         />
                     ) : (
                         <Typography variant="body2" color="text.secondary">

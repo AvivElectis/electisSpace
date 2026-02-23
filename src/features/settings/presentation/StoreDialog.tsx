@@ -267,7 +267,6 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     storeFeatures: overrideEnabled ? storeFeatures : null,
                     storeSpaceType: overrideEnabled ? storeSpaceType : null,
                 };
-                console.log('[StoreDialog] Updating store:', store.id, updateData);
                 await companyService.updateStore(store.id, updateData);
 
                 // Save logo override to store settings
@@ -289,12 +288,9 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     timezone,
                     syncEnabled
                 };
-                console.log('[StoreDialog] Creating store for company:', companyId, createData);
                 const result = await companyService.createStore(companyId, createData);
-                console.log('[StoreDialog] Create result:', result);
             }
 
-            console.log('[StoreDialog] Calling onSave callback');
             onSave();
         } catch (err: any) {
             console.error('[StoreDialog] Failed to save store:', err);
