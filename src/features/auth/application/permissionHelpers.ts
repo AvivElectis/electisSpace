@@ -24,7 +24,7 @@ const COMPANY_ROLE_HIERARCHY: Record<Company['role'], number> = {
 };
 
 // Feature names
-export type Feature = 'dashboard' | 'spaces' | 'conference' | 'people' | 'sync' | 'settings' | 'labels';
+export type Feature = 'dashboard' | 'spaces' | 'conference' | 'people' | 'sync' | 'settings' | 'labels' | 'rewards';
 
 /**
  * Check if user is a Platform Admin
@@ -122,6 +122,7 @@ export function isFeatureEnabled(features: CompanyFeatures | undefined | null, f
         case 'people': return features.peopleEnabled;
         case 'conference': return features.conferenceEnabled;
         case 'labels': return features.labelsEnabled;
+        case 'rewards': return features.rewardsModeEnabled;
         default: return true;
     }
 }

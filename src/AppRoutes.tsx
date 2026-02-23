@@ -27,6 +27,9 @@ const LabelsPage = lazy(() =>
 const AuditLogPage = lazy(() =>
     import('@features/audit-log/presentation/AuditLogPage').then(m => ({ default: m.AuditLogPage }))
 );
+const RewardsPage = lazy(() =>
+    import('@features/rewards/presentation/RewardsPage').then(m => ({ default: m.RewardsPage }))
+);
 const NotFoundPage = lazy(() =>
     import('@shared/presentation/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
 );
@@ -74,6 +77,7 @@ export function AppRoutes() {
             <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/audit-log" element={<ProtectedRoute><SuspenseRoute><AuditLogPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/rewards" element={<ProtectedRoute><ProtectedFeature feature="rewards" fallback={<Navigate to="/" replace />}><SuspenseRoute><RewardsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );

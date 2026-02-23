@@ -81,6 +81,7 @@ model Store {
   spacesLists     SpacesList[]
   auditLogs       AuditLog[]
   syncQueue       SyncQueueItem[]
+  rewardsCampaigns RewardsCampaign[]
   
   @@unique([companyId, code])
   @@index([companyId])
@@ -500,8 +501,67 @@ model SyncQueueItem {
 }
 
 // ======================
+// Rewards Campaigns (Promotional ESL Content)
+// ======================
+model RewardsCampaign {
+  id            String   @id @default(uuid())
+  storeId       String   @map("store_id")
+  
+  // Campaign Identity
+  name          String   @db.VarChar(200)
+  nameHe        String?  @map("name_he") @db.VarChar(200)  // Hebrew name
+  description   String?  @db.Text
+  
+  // Campaign Status & Schedule
+  status        CampaignStatus @default(DRAFT)
+  startDate     DateTime?      @map("start_date")
+  endDate       DateTime?      @map("end_date")
+  
+  // Promotion Details
+  templateKey   String?  @map("template_key") @db.VarChar(50)
+  discountType  DiscountType? @map("discount_type")
+  discountValue Decimal? @map("discount_value") @db.Decimal(10, 2)
+  
+  // Assigned Labels
+  labelCodes    String[] @map("label_codes")  // ESL codes in this campaign
+  
+  // Campaign Management
+  priority      Int      @default(0)
+  metadata      Json     @default("{}")
+  createdBy     String?  @map("created_by")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@index([storeId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("rewards_campaigns")
+}
+
+// ======================
 // Enums
 // ======================
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  BUY_X_GET_Y
+  LOYALTY_POINTS
+}
 
 enum SyncStatus {
   PENDING

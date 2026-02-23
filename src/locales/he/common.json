@@ -12,6 +12,7 @@
         "people": "אנשים",
         "conference": "חדרי ישיבות",
         "labels": "תגיות",
+        "rewards": "מבצעים",
         "sync": "סינכרון"
     },
     "common": {
@@ -1330,6 +1331,52 @@
             "acceptedFormats": "PNG, JPEG, BMP",
             "altDitheredPreview": "תצוגה מקדימה מעובדת",
             "altResizedPreview": "תצוגה מקדימה מוקטנת"
+        }
+    },
+    "rewards": {
+        "title": "מצב מבצעים",
+        "createCampaign": "יצירת קמפיין",
+        "editCampaign": "עריכת קמפיין",
+        "campaignName": "שם הקמפיין",
+        "campaignNameHe": "שם הקמפיין (עברית)",
+        "description": "תיאור",
+        "startDate": "תאריך התחלה",
+        "endDate": "תאריך סיום",
+        "template": "תבנית מבצע",
+        "discountValue": "ערך הנחה",
+        "labelCodes": "קודי תגיות (ESL)",
+        "labelCodesHelp": "קודי ESL מופרדים בפסיקים לשיוך לקמפיין זה",
+        "labelsCount": "{{count}} תגיות",
+        "priorityHelp": "קמפיינים בעדיפות גבוהה יותר דורסים קמפיינים בעדיפות נמוכה על תגיות משותפות",
+        "confirmDelete": "האם אתה בטוח שברצונך למחוק קמפיין זה?",
+        "selectStore": "בחר חנות לניהול קמפייני מבצעים",
+        "noCampaigns": "אין עדיין קמפיינים. צור את קמפיין המבצעים הראשון שלך!",
+        "noMatchingCampaigns": "אין קמפיינים התואמים את המסננים",
+        "filterByStatus": "סנן לפי סטטוס",
+        "status": {
+            "DRAFT": "טיוטה",
+            "SCHEDULED": "מתוזמן",
+            "ACTIVE": "פעיל",
+            "PAUSED": "מושהה",
+            "COMPLETED": "הושלם",
+            "CANCELLED": "בוטל"
+        },
+        "discountType": {
+            "label": "סוג הנחה",
+            "PERCENTAGE": "אחוז הנחה",
+            "FIXED_AMOUNT": "הנחה קבועה",
+            "BUY_X_GET_Y": "קנה X קבל Y",
+            "LOYALTY_POINTS": "נקודות מועדון"
+        },
+        "actions": {
+            "activate": "הפעל קמפיין",
+            "pause": "השהה קמפיין",
+            "complete": "השלם קמפיין"
+        },
+        "analytics": {
+            "total": "סה\"כ קמפיינים",
+            "active": "פעילים",
+            "labelsInRewards": "תגיות במבצעים"
         }
     }
 }

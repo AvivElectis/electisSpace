@@ -203,6 +203,15 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             }
                             label={t('labels.title')}
                         />
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={state.companyFeatures.rewardsModeEnabled}
+                                    onChange={(e) => state.handleFeatureToggle('rewardsModeEnabled', e.target.checked)}
+                                />
+                            }
+                            label={t('rewards.title')}
+                        />
                     </Box>
                 </TabPanel>
 
