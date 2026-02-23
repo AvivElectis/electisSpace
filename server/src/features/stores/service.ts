@@ -4,6 +4,7 @@
  * @description Business logic for store management.
  */
 import { GlobalRole, CompanyRole, StoreRole } from '@prisma/client';
+import { prisma } from '../../config/index.js';
 import { storeRepository, companyRepository, userCompanyRepository } from './repository.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import type { StoreUserContext, CreateStoreInput, UpdateStoreInput, StoreResponse, StoreListResponse, CodeValidationResponse } from './types.js';
@@ -303,5 +304,71 @@ export const storeService = {
             deletedPeople: store._count.people,
             deletedConferenceRooms: store._count.conferenceRooms,
         };
+    },
+
+    /**
+     * Update store status
+     */
+    async updateStatus(id: string, status: string, note: string | undefined, user: StoreUserContext) {
+        const store = await storeRepository.findById(id);
+        if (!store) throw new Error('STORE_NOT_FOUND');
+        if (!canManageCompany(user, store.companyId) && !canManageStore(user, id)) {
+            throw new Error('FORBIDDEN');
+        }
+
+        const isActive = status === 'ACTIVE';
+        const updated = await prisma.store.update({
+            where: { id },
+            data: {
+                status: status as any,
+                statusChangedAt: new Date(),
+                statusNote: note || null,
+                isActive: status !== 'ARCHIVED' ? undefined : false,
+            },
+            select: { id: true, code: true, name: true, status: true, statusChangedAt: true, statusNote: true, isActive: true },
+        });
+
+        return updated;
+    },
+
+    /**
+     * Transfer store to another company (Platform Admin only — route-level guard)
+     */
+    async transfer(id: string, targetCompanyId: string) {
+        const store = await storeRepository.findById(id);
+        if (!store) throw new Error('STORE_NOT_FOUND');
+
+        const targetCompany = await companyRepository.findById(targetCompanyId);
+        if (!targetCompany) throw new Error('COMPANY_NOT_FOUND');
+
+        if (store.companyId === targetCompanyId) throw new Error('SAME_COMPANY');
+
+        // Move store and clean up user-store assignments from old company users
+        const updated = await prisma.$transaction(async (tx) => {
+            // Remove user-store assignments for users not in target company
+            const storeUsers = await tx.userStore.findMany({
+                where: { storeId: id },
+                select: { userId: true },
+            });
+
+            for (const su of storeUsers) {
+                const inTargetCompany = await tx.userCompany.findUnique({
+                    where: { userId_companyId: { userId: su.userId, companyId: targetCompanyId } },
+                });
+                if (!inTargetCompany) {
+                    await tx.userStore.delete({
+                        where: { userId_storeId: { userId: su.userId, storeId: id } },
+                    });
+                }
+            }
+
+            return tx.store.update({
+                where: { id },
+                data: { companyId: targetCompanyId },
+                select: { id: true, code: true, name: true, companyId: true },
+            });
+        });
+
+        return updated;
     },
 };

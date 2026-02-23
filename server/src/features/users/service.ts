@@ -19,6 +19,10 @@ import type {
     AssignUserToCompanyDto,
     UpdateUserCompanyDto,
     UpdateContextDto,
+    SuspendUserDto,
+    BulkDeactivateDto,
+    BulkActivateDto,
+    BulkChangeRoleDto,
     CompanyRef,
     StoreRef,
     UserListItem,
@@ -963,5 +967,179 @@ export const userService = {
             ...(data.activeCompanyId !== undefined && { activeCompanyId: data.activeCompanyId }),
             ...(data.activeStoreId !== undefined && { activeStoreId: data.activeStoreId }),
         });
+    },
+
+    /**
+     * Suspend a user with reason
+     */
+    async suspend(userId: string, reason: string, currentUser: UserContext) {
+        if (userId === currentUser.id) {
+            throw new Error('CANNOT_SUSPEND_SELF');
+        }
+
+        const existing = await userRepository.findWithStores(userId);
+        if (!existing) throw new Error('USER_NOT_FOUND');
+        if (!existing.isActive) throw new Error('ALREADY_SUSPENDED');
+
+        if (!isPlatformAdmin(currentUser)) {
+            const canManage = await canManageUserViaCompany(currentUser, userId);
+            if (!canManage) throw new Error('FORBIDDEN');
+        }
+
+        const result = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                isActive: false,
+                suspendedAt: new Date(),
+                suspendedReason: reason,
+                suspendedById: currentUser.id,
+            },
+            select: { id: true, email: true, isActive: true, suspendedAt: true, suspendedReason: true },
+        });
+
+        invalidateUserCache(userId);
+        return result;
+    },
+
+    /**
+     * Reactivate a suspended user
+     */
+    async reactivate(userId: string, currentUser: UserContext) {
+        const existing = await userRepository.findById(userId);
+        if (!existing) throw new Error('USER_NOT_FOUND');
+
+        if (!isPlatformAdmin(currentUser)) {
+            const canManage = await canManageUserViaCompany(currentUser, userId);
+            if (!canManage) throw new Error('FORBIDDEN');
+        }
+
+        const result = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                isActive: true,
+                suspendedAt: null,
+                suspendedReason: null,
+                suspendedById: null,
+                failedLoginAttempts: 0,
+                lockedUntil: null,
+            },
+            select: { id: true, email: true, isActive: true },
+        });
+
+        invalidateUserCache(userId);
+        return result;
+    },
+
+    /**
+     * Bulk deactivate users
+     */
+    async bulkDeactivate(userIds: string[], reason: string | undefined, currentUser: UserContext) {
+        const results = { succeeded: 0, failed: 0, skipped: [] as string[] };
+
+        for (const userId of userIds) {
+            if (userId === currentUser.id) {
+                results.skipped.push(userId);
+                results.failed++;
+                continue;
+            }
+
+            try {
+                const canManage = isPlatformAdmin(currentUser) || await canManageUserViaCompany(currentUser, userId);
+                if (!canManage) {
+                    results.skipped.push(userId);
+                    results.failed++;
+                    continue;
+                }
+
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: {
+                        isActive: false,
+                        suspendedAt: new Date(),
+                        suspendedReason: reason || 'Bulk deactivation',
+                        suspendedById: currentUser.id,
+                    },
+                });
+                invalidateUserCache(userId);
+                results.succeeded++;
+            } catch {
+                results.failed++;
+                results.skipped.push(userId);
+            }
+        }
+
+        return results;
+    },
+
+    /**
+     * Bulk activate users
+     */
+    async bulkActivate(userIds: string[], currentUser: UserContext) {
+        const results = { succeeded: 0, failed: 0, skipped: [] as string[] };
+
+        for (const userId of userIds) {
+            try {
+                const canManage = isPlatformAdmin(currentUser) || await canManageUserViaCompany(currentUser, userId);
+                if (!canManage) {
+                    results.skipped.push(userId);
+                    results.failed++;
+                    continue;
+                }
+
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: {
+                        isActive: true,
+                        suspendedAt: null,
+                        suspendedReason: null,
+                        suspendedById: null,
+                    },
+                });
+                invalidateUserCache(userId);
+                results.succeeded++;
+            } catch {
+                results.failed++;
+                results.skipped.push(userId);
+            }
+        }
+
+        return results;
+    },
+
+    /**
+     * Bulk change store role
+     */
+    async bulkChangeRole(userIds: string[], storeId: string, role: string, currentUser: UserContext) {
+        if (!await canManageStoreOrCompany(currentUser, storeId)) {
+            throw new Error('FORBIDDEN');
+        }
+
+        const results = { succeeded: 0, failed: 0, skipped: [] as string[] };
+
+        for (const userId of userIds) {
+            if (userId === currentUser.id) {
+                results.skipped.push(userId);
+                results.failed++;
+                continue;
+            }
+
+            try {
+                const userStore = await userRepository.findUserStore(userId, storeId);
+                if (!userStore) {
+                    results.skipped.push(userId);
+                    results.failed++;
+                    continue;
+                }
+
+                await userRepository.updateUserStore(userId, storeId, { role: role as StoreRole });
+                invalidateUserCache(userId);
+                results.succeeded++;
+            } catch {
+                results.failed++;
+                results.skipped.push(userId);
+            }
+        }
+
+        return results;
     },
 };

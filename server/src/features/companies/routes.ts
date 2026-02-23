@@ -5,7 +5,7 @@
  * All business logic lives in service.ts, all data access in repository.ts.
  */
 import { Router } from 'express';
-import { authenticate } from '../../shared/middleware/index.js';
+import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
 import { companyController } from './controller.js';
 
 const router = Router();
@@ -45,7 +45,7 @@ router.get('/:id', companyController.getById);
  * POST /companies
  * Create a new company (Platform Admin only)
  */
-router.post('/', companyController.create);
+router.post('/', requireGlobalRole('PLATFORM_ADMIN'), companyController.create);
 
 /**
  * PATCH /companies/:id
@@ -69,6 +69,6 @@ router.post('/:id/aims/test', companyController.testAimsConnection);
  * DELETE /companies/:id
  * Delete a company (Platform Admin only)
  */
-router.delete('/:id', companyController.delete);
+router.delete('/:id', requireGlobalRole('PLATFORM_ADMIN'), companyController.delete);
 
 export default router;
