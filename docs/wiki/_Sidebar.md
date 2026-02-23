@@ -9,6 +9,7 @@
 - [[Chapter 5 — Integration & Synchronization]]
 - [[Chapter 6 — Infrastructure & Deployment]]
 - [[Chapter 7 — Security, Auth & Access Control]]
+- [[Chapter 8 — Auth & AIMS Management Plan]]
 
 ### Reference
 - [[Appendix A — Glossary]]
