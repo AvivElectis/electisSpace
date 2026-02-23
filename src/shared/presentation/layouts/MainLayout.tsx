@@ -22,6 +22,12 @@ import { prefetchRoute, prefetchAllRoutes } from '../utils/routePrefetch';
 import { StoreRequiredGuard } from '@features/auth/presentation/StoreRequiredGuard';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useCommandPalette } from '@features/quick-actions/application/useCommandPalette';
+
+// Lazy load CommandPalette
+const CommandPalette = lazy(() =>
+    import('../../../features/quick-actions/presentation/CommandPalette').then(m => ({ default: m.CommandPalette }))
+);
 
 // Lazy load SettingsDialog - not needed on initial render
 const SettingsDialog = lazy(() => 
@@ -73,6 +79,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [manualOpen, setManualOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const commandPalette = useCommandPalette();
     const { syncState, setWorkingMode } = useSyncStore();
     const { canAccessFeature, isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
@@ -397,6 +404,17 @@ export function MainLayout({ children }: MainLayoutProps) {
                             onClose={() => setProfileOpen(false)}
                             onSave={() => setProfileOpen(false)}
                             profileMode={true}
+                        />
+                    </Suspense>
+                )}
+
+                {/* Command Palette - Ctrl+K quick actions */}
+                {commandPalette.isOpen && (
+                    <Suspense fallback={null}>
+                        <CommandPalette
+                            open={commandPalette.isOpen}
+                            onClose={commandPalette.close}
+                            onSettingsClick={() => { commandPalette.close(); setSettingsOpen(true); }}
                         />
                     </Suspense>
                 )}
