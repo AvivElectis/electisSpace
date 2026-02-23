@@ -546,7 +546,7 @@ export const userController = {
             }
 
             const result = await userService.suspend(
-                req.params.id,
+                req.params.id as string,
                 validation.data.reason,
                 getUserContext(req),
             );
@@ -566,7 +566,7 @@ export const userController = {
     async reactivate(req: Request, res: Response, next: NextFunction) {
         try {
             const result = await userService.reactivate(
-                req.params.id,
+                req.params.id as string,
                 getUserContext(req),
             );
             res.json(result);
