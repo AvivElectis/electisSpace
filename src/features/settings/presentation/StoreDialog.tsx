@@ -288,7 +288,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     timezone,
                     syncEnabled
                 };
-                const result = await companyService.createStore(companyId, createData);
+                await companyService.createStore(companyId, createData);
             }
 
             onSave();
