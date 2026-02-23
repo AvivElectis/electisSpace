@@ -693,6 +693,72 @@ export class AIMSGateway {
             throw error;
         }
     }
+    // ─── Gateway Management ────────────────────────────────────────────────
+
+    private async withTokenRetry<T>(storeId: string, fn: (token: string, config: SolumConfig) => Promise<T>): Promise<T> {
+        const { token, config } = await this.getTokenForStore(storeId);
+        try {
+            return await fn(token, config);
+        } catch (error: any) {
+            if (error.message?.includes('401') || error.message?.includes('403')) {
+                const storeConfig = await this.getStoreConfig(storeId);
+                if (storeConfig) {
+                    this.invalidateToken(storeConfig.companyId);
+                    const newToken = await this.getToken(storeConfig.companyId);
+                    return await fn(newToken, config);
+                }
+            }
+            throw error;
+        }
+    }
+
+    async fetchGateways(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGateways(config, token));
+    }
+
+    async fetchGatewayDetail(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayDetail(config, token, gatewayMac));
+    }
+
+    async fetchFloatingGateways(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchFloatingGateways(config, token));
+    }
+
+    async registerGateway(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.registerGateway(config, token, gatewayMac));
+    }
+
+    async deregisterGateways(storeId: string, gatewayMacs: string[]) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.deregisterGateways(config, token, gatewayMacs));
+    }
+
+    async rebootGateway(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.rebootGateway(config, token, gatewayMac));
+    }
+
+    async fetchGatewayDebugReport(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayDebugReport(config, token, gatewayMac));
+    }
+
+    async fetchLabelStatusHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelStatusHistory(config, token, labelCode, page, size));
+    }
+
+    async fetchBatchHistory(storeId: string, params?: { page?: number; size?: number; fromDate?: string; toDate?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchBatchHistory(config, token, params));
+    }
+
+    async fetchBatchDetail(storeId: string, batchName: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchBatchDetail(config, token, batchName));
+    }
+
+    async fetchBatchErrors(storeId: string, batchId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchBatchErrors(config, token, batchId));
+    }
+
+    async fetchArticleUpdateHistory(storeId: string, articleId: string, page = 0, size = 50) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistory(config, token, articleId, page, size));
+    }
 }
 
 // Singleton instance
