@@ -193,7 +193,7 @@ export class EmailService {
       appLogger.info('Email', `2FA email sent to ${email}`);
     } catch (error) {
       appLogger.error('Email', 'Error sending 2FA email', { error: String(error) });
-      // Don't throw to prevent login blocking on email failure in some cases
+      throw error;
     }
   }
 
