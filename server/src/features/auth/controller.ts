@@ -67,7 +67,11 @@ export const authController = {
                     }
                 });
             }
-            if (error.message?.includes('Failed to send') || error.message?.includes('ECONNREFUSED')) {
+            if (error.code === 'ESOCKET' || error.code === 'ECONNECTION' || error.code === 'EAUTH' ||
+                error.message?.includes('ECONNREFUSED') || error.message?.includes('ETIMEDOUT') ||
+                error.message?.includes('ENOTFOUND') || error.message?.includes('Failed to send') ||
+                error.message?.includes('getaddrinfo') || error.message?.includes('connect EHOSTUNREACH')) {
+                appLogger.error('Auth', 'Email service unavailable during login', { error: String(error) });
                 return res.status(503).json({
                     error: {
                         code: 'EMAIL_SERVICE_ERROR',

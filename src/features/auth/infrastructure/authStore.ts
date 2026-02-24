@@ -260,10 +260,12 @@ export const useAuthStore = create<AuthState>()(
                             } catch (error) {
                                 logger.warn('AuthStore', 'Settings fetch after login failed', { error: error instanceof Error ? error.message : String(error) });
                             }
-                            // Auto-connect to SOLUM (non-blocking)
-                            autoConnectToSolum(activeStoreId).catch((error) => {
+                            // Auto-connect to SOLUM (blocking to avoid race with dashboard sync check)
+                            try {
+                                await autoConnectToSolum(activeStoreId);
+                            } catch (error) {
                                 logger.warn('AuthStore', 'Auto SOLUM connect failed (will use manual connect)', { error: error instanceof Error ? error.message : String(error) });
-                            });
+                            }
                         }
 
                         return true;
