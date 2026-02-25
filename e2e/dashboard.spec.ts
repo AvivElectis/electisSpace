@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/test-fixtures';
 import { DashboardPage } from './fixtures/pageObjects';
-import { waitForAppReady, setupCleanEnvironment } from './fixtures/helpers';
+import { waitForAppReady } from './fixtures/helpers';
 import { VIEWPORTS } from './fixtures/test-data';
 
 test.describe('Dashboard Page', () => {
@@ -82,18 +82,23 @@ test.describe('Dashboard Page', () => {
     test.describe('Responsive Design', () => {
         test('should be responsive on mobile viewport', async ({ page }) => {
             await page.setViewportSize(VIEWPORTS.mobile);
-            await page.waitForLoadState('networkidle');
+            await waitForAppReady(page);
 
-            const heading = page.getByRole('heading', { level: 1 });
-            await expect(heading).toBeVisible();
+            // On mobile, the hamburger menu should be visible
+            const menuButton = page.locator('[aria-label="menu"]');
+            await expect(menuButton).toBeVisible();
         });
 
         test('should be responsive on tablet viewport', async ({ page }) => {
             await page.setViewportSize(VIEWPORTS.tablet);
-            await page.waitForLoadState('networkidle');
+            await waitForAppReady(page);
 
-            const heading = page.getByRole('heading', { level: 1 });
-            await expect(heading).toBeVisible();
+            // Tablet may show either tabs or menu
+            const tablist = page.locator('[role="tablist"]');
+            const menuButton = page.locator('[aria-label="menu"]');
+            const tabsVisible = await tablist.isVisible().catch(() => false);
+            const menuVisible = await menuButton.isVisible().catch(() => false);
+            expect(tabsVisible || menuVisible).toBe(true);
         });
 
         test('should show mobile menu on small screens', async ({ page }) => {
@@ -145,7 +150,7 @@ test.describe('Language Switching', () => {
         const initialDir = await page.locator('html').getAttribute('dir');
 
         // Navigate to another page
-        await page.goto('/spaces');
+        await page.goto('/#/spaces');
         await waitForAppReady(page);
 
         const newDir = await page.locator('html').getAttribute('dir');

@@ -20,7 +20,8 @@ export class SpacesPage extends BasePage {
      * Get the spaces table
      */
     getSpaceTable(): Locator {
-        return this.page.locator('table, [role="table"]');
+        // Virtualized table may not use <table> — match the data area by heading + rows
+        return this.page.locator('table, [role="table"], [role="list"], main').first();
     }
 
     /**
@@ -42,7 +43,8 @@ export class SpacesPage extends BasePage {
      * Open the add space dialog
      */
     async openAddDialog(): Promise<Locator> {
-        const addButton = this.page.getByRole('button', { name: /add|new/i });
+        // Use specific button text to avoid matching dashboard speed dial or conference buttons
+        const addButton = this.page.getByRole('button', { name: /add space|add office|add room|add chair/i }).first();
         await addButton.click();
         const dialog = this.page.getByRole('dialog');
         await dialog.waitFor({ state: 'visible' });

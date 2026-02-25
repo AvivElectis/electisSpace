@@ -6,12 +6,53 @@ import { TIMEOUTS } from './test-data';
  */
 
 /**
- * Wait for the application to be fully ready
+ * Intercept the refresh token API to bypass token rotation.
+ *
+ * The server revokes old refresh tokens on each refresh (token rotation).
+ * With parallel Playwright workers sharing the same storageState, only the
+ * first worker's refresh succeeds — all others get TOKEN_NOT_FOUND.
+ *
+ * This helper intercepts the refresh call and returns the cached access token
+ * from auth setup, allowing all workers to authenticate independently.
+ */
+export async function setupAuthBypass(page: Page) {
+    await page.route('**/api/v1/auth/refresh', async (route) => {
+        const token = await page.evaluate(() => localStorage.getItem('_e2eAccessToken'));
+        if (token) {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    accessToken: token,
+                    refreshToken: 'e2e-mock-refresh-token',
+                    expiresIn: 900,
+                }),
+            });
+        } else {
+            // No cached token — let it through (auth setup or unauthenticated tests)
+            await route.continue();
+        }
+    });
+}
+
+/**
+ * Wait for the application to be fully ready.
+ *
+ * The app shows a full-page "Loading application..." screen while
+ * useSessionRestore completes (isAppReady=false). Once ready, it renders
+ * MainLayout. On desktop the header tablist is visible; on mobile a
+ * hamburger menu button is shown instead.
  */
 export async function waitForAppReady(page: Page) {
-    await page.waitForLoadState('networkidle');
-    // Wait for React to hydrate
-    await page.waitForTimeout(TIMEOUTS.medium);
+    await page.waitForLoadState('domcontentloaded');
+    // Wait for either desktop tablist OR mobile menu button (both render after isAppReady=true)
+    // Use Promise.race because .first() picks DOM order which may select a hidden element
+    await Promise.race([
+        page.locator('[role="tablist"]').waitFor({ state: 'visible', timeout: 30000 }),
+        page.locator('[aria-label="menu"]').waitFor({ state: 'visible', timeout: 30000 }),
+    ]).catch(() => {});
+    // Brief settle time for remaining React state updates / route resolution
+    await page.waitForTimeout(TIMEOUTS.long);
 }
 
 /**
