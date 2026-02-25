@@ -25,7 +25,8 @@ export class SettingsDialog {
      * Close the settings dialog
      */
     async close() {
-        const closeButton = this.page.getByRole('button', { name: /close|cancel/i });
+        // Use the X button (aria-label="close") inside the dialog
+        const closeButton = this.getDialog().locator('button[aria-label="close"]');
         if (await closeButton.isVisible()) {
             await closeButton.click();
             await this.page.waitForTimeout(300);
@@ -40,26 +41,27 @@ export class SettingsDialog {
     }
 
     /**
-     * Select a tab by name or index
+     * Select a tab by name or index (scoped to dialog)
      */
     async selectTab(tabName: string) {
-        const tab = this.page.locator(`[role="tab"]:has-text("${tabName}")`);
+        const dialog = this.getDialog();
+        const tab = dialog.locator(`[role="tab"]:has-text("${tabName}")`);
         await tab.click();
         await this.page.waitForTimeout(300);
     }
 
     /**
-     * Get all tabs
+     * Get all tabs (scoped to dialog)
      */
     getTabs(): Locator {
-        return this.page.locator('[role="tab"]');
+        return this.getDialog().locator('[role="tab"]');
     }
 
     /**
-     * Get the selected tab
+     * Get the selected tab (scoped to dialog)
      */
     getSelectedTab(): Locator {
-        return this.page.locator('[role="tab"][aria-selected="true"]');
+        return this.getDialog().locator('[role="tab"][aria-selected="true"]');
     }
 
     /**

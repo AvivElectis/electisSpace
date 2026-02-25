@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Device auth API** — `POST /auth/device-auth`, `GET /auth/devices`, `DELETE /auth/devices/:id`, `DELETE /auth/devices`
 - **Rate limiter** on device-auth endpoint (10 req/15min per IP+device)
 - **Prisma migration** `20260224000002_add_device_tokens` for device token storage
+- **Comprehensive E2E test suite** — 120 Playwright tests covering auth, dashboard, spaces, people, conference rooms, settings, navigation, responsive design, and RTL layout (#75)
+- **E2E test infrastructure** — page object model (BasePage, DashboardPage, SpacesPage, ConferencePage, PeoplePage, SettingsDialog), auth bypass for parallel workers, shared helpers and test fixtures
+- **Auth setup project** — Playwright setup project that authenticates once and shares state across all test workers
 
 ### Changed
 - Client version bumped to 2.6.0, server to 2.4.0
@@ -32,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Device token storage reliability — localStorage fallback prevents lost device IDs when IndexedDB unavailable
 - Silent error swallowing in device token creation — server now logs errors properly
 - "Invalid Date" in device cards when `expiresAt` is null/undefined
+- **E2E HashRouter compatibility** — all navigation uses `/#/` prefix matching the app's HashRouter
+- **E2E mobile viewport handling** — `waitForAppReady()` detects both desktop tablist and mobile hamburger menu via `Promise.race`
+- **E2E auth stability** — replaced `networkidle` with `domcontentloaded` + explicit waits; reduced workers to 4 to avoid server overload
+- **GitGuardian false positive** — extracted inline test passwords in `auth.types.test.ts` into named constants with `pragma: allowlist`
 
 ---
 

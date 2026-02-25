@@ -193,6 +193,7 @@ describe('Dashboard Components', () => {
             totalRooms: 10,
             roomsWithLabels: 8,
             roomsWithoutLabels: 2,
+            assignedLabelsCount: 5,
             availableRooms: 6,
             occupiedRooms: 4,
             onAddRoom: vi.fn(),
@@ -201,8 +202,8 @@ describe('Dashboard Components', () => {
         it('should render conference title', () => {
             render(<DashboardConferenceCard {...defaultConferenceProps} />);
 
-            // Conference title from translations
-            expect(screen.getByText(/conference/i)).toBeInTheDocument();
+            // Conference title from translations - multiple elements may match
+            expect(screen.getAllByText(/conference/i).length).toBeGreaterThanOrEqual(1);
         });
 
         it('should display total rooms count', () => {

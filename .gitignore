@@ -48,6 +48,14 @@ solum_co_il*.conf
 
 # Test credentials (contain secrets - never commit)
 TEST_CREDENTIALS.txt
+replacements.txt
+
+# E2E test auth state (contains tokens - never commit)
+e2e/.auth/
+
+# Playwright test results
+test-results/
+playwright-report/
 
 # Playwright / Vitest test artifacts
 e2e/.auth/

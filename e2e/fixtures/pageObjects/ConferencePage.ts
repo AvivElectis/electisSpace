@@ -42,7 +42,8 @@ export class ConferencePage extends BasePage {
      * Open the add room dialog
      */
     async openAddDialog(): Promise<Locator> {
-        const addButton = this.page.getByRole('button', { name: /add|new/i });
+        // Conference page may have multiple "Add Conference Room" buttons (page + speed dial)
+        const addButton = this.page.getByRole('button', { name: /add conference room/i }).first();
         await addButton.click();
         const dialog = this.page.getByRole('dialog');
         await dialog.waitFor({ state: 'visible' });
@@ -63,42 +64,43 @@ export class ConferencePage extends BasePage {
         const dialog = this.page.getByRole('dialog');
 
         if (data.id) {
-            const idInput = dialog.locator('input[name="id"], #room-id');
+            // MUI TextField: match by label text (e.g. "Room ID *")
+            const idInput = dialog.getByLabel(/room id/i);
             if (await idInput.isVisible()) {
                 await idInput.fill(data.id);
             }
         }
 
         if (data.roomName) {
-            const nameInput = dialog.locator('input[name="roomName"], #room-name');
+            const nameInput = dialog.getByLabel(/room name/i);
             if (await nameInput.isVisible()) {
                 await nameInput.fill(data.roomName);
             }
         }
 
         if (data.meetingName) {
-            const meetingInput = dialog.locator('input[name="meetingName"], #meeting-name');
+            const meetingInput = dialog.getByLabel(/meeting name/i);
             if (await meetingInput.isVisible()) {
                 await meetingInput.fill(data.meetingName);
             }
         }
 
         if (data.startTime) {
-            const startInput = dialog.locator('input[name="startTime"], #start-time');
+            const startInput = dialog.getByLabel(/start time/i);
             if (await startInput.isVisible()) {
                 await startInput.fill(data.startTime);
             }
         }
 
         if (data.endTime) {
-            const endInput = dialog.locator('input[name="endTime"], #end-time');
+            const endInput = dialog.getByLabel(/end time/i);
             if (await endInput.isVisible()) {
                 await endInput.fill(data.endTime);
             }
         }
 
         if (data.participants) {
-            const participantsInput = dialog.locator('input[name="participants"], #participants, textarea[name="participants"]');
+            const participantsInput = dialog.getByLabel(/participants/i);
             if (await participantsInput.isVisible()) {
                 await participantsInput.fill(data.participants);
             }
