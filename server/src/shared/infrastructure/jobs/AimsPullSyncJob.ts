@@ -28,7 +28,7 @@ import {
     type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
-import type { AimsArticle } from '../services/aims.types.js';
+import type { AimsArticle, AimsArticleInfo } from '../services/aims.types.js';
 import { appLogger } from '../services/appLogger.js';
 
 // Cache TTL for company settings (60 seconds — matches reconciliation interval)
@@ -262,10 +262,14 @@ export class AimsSyncReconciliationJob {
 
         result.totalExpected = expectedMap.size;
 
-        // 2. Fetch current AIMS articles
+        // 2. Fetch current AIMS articles via article info endpoint
+        //    (includes `data` sub-object — the basic /articles endpoint does NOT)
+        let aimsArticleInfos: AimsArticleInfo[];
         let aimsArticles: AimsArticle[];
         try {
-            aimsArticles = await aimsGateway.pullArticles(storeId);
+            aimsArticleInfos = await aimsGateway.pullArticleInfo(storeId);
+            // AimsArticleInfo is a superset of AimsArticle (same shape + assignedLabel)
+            aimsArticles = aimsArticleInfos as unknown as AimsArticle[];
         } catch (error: any) {
             result.success = false;
             result.error = `Failed to fetch AIMS articles: ${error.message}`;
@@ -282,7 +286,6 @@ export class AimsSyncReconciliationJob {
         // 3. Diff
         const toPush: AimsArticle[] = [];   // create or update in AIMS
         const toDelete: string[] = []; // remove from AIMS
-        let firstUpdateReason = '';   // diagnostic: why first article needs update
 
         // Articles that should exist
         for (const [artId, article] of expectedMap) {
@@ -293,22 +296,6 @@ export class AimsSyncReconciliationJob {
             } else if (articleNeedsUpdate(article, aimsArticle)) {
                 // Changed → update (AIMS upserts on push)
                 toPush.push(article);
-                // Log a diagnostic for the first update to help debug constant re-pushing
-                if (!firstUpdateReason) {
-                    const eData = article.data ?? {};
-                    const aData = aimsArticle.data ?? {};
-                    const flat = aimsArticle as Record<string, unknown>;
-                    const diffs: string[] = [];
-                    if ((article.articleName || '') !== (aimsArticle.articleName || aimsArticle.article_name || '')) {
-                        diffs.push(`articleName: "${article.articleName}" vs "${aimsArticle.articleName || aimsArticle.article_name}"`);
-                    }
-                    for (const [k, v] of Object.entries(eData)) {
-                        const ev = String(v ?? '');
-                        const av = String(aData[k] ?? flat[k] ?? '');
-                        if (ev !== av) diffs.push(`data.${k}: "${ev.slice(0, 40)}" vs "${av.slice(0, 40)}"`);
-                    }
-                    firstUpdateReason = `artId=${artId}: ${diffs.slice(0, 3).join('; ')}${!aimsArticle.data ? ' [aims.data is missing]' : ''}`;
-                }
             } else {
                 result.unchanged++;
             }
@@ -319,11 +306,6 @@ export class AimsSyncReconciliationJob {
             if (!expectedMap.has(aimsId)) {
                 toDelete.push(aimsId);
             }
-        }
-
-        // Log diagnostic if all articles need update (indicates comparison issue)
-        if (toPush.length > 0 && result.unchanged === 0 && aimsMap.size > 0 && firstUpdateReason) {
-            appLogger.debug('AimsReconcile', `All ${toPush.length} articles need update for ${storeName}. Sample: ${firstUpdateReason}`);
         }
 
         // 4. Execute (pushArticles already handles batching in groups of 500)
@@ -361,9 +343,13 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // 5. Sync assignedLabels from AIMS article info endpoint + post-sync validation
+        // 5. Sync assignedLabels using the already-fetched article info + post-sync validation
         //    If validation finds articles missing from AIMS (push didn't land), re-push them.
-        const { missingIds } = await this.syncAssignedLabels(storeId, expectedMap, isPeopleMode);
+        //    Re-fetch article info after push to get updated assignedLabel data.
+        const postPushInfos = toPush.length > 0
+            ? await aimsGateway.pullArticleInfo(storeId).catch(() => aimsArticleInfos)
+            : aimsArticleInfos;
+        const { missingIds } = await this.syncAssignedLabels(storeId, expectedMap, isPeopleMode, postPushInfos);
 
         if (missingIds.length > 0) {
             const toRepair = missingIds
@@ -393,7 +379,7 @@ export class AimsSyncReconciliationJob {
     // ───── assigned labels sync + validation ─────
 
     /**
-     * Fetch article info from AIMS (which includes assignedLabel) and persist to DB.
+     * Sync assignedLabel data from AIMS article info to DB records.
      * Also performs post-sync validation: compares article info against expectedMap to
      * detect discrepancies (informational logging only — next reconcile fixes them).
      *
@@ -404,9 +390,10 @@ export class AimsSyncReconciliationJob {
         storeId: string,
         expectedMap: Map<string, AimsArticle>,
         isPeopleMode: boolean,
+        prefetchedInfos?: AimsArticleInfo[],
     ): Promise<{ missingIds: string[] }> {
         try {
-            const articleInfoList = await aimsGateway.pullArticleInfo(storeId);
+            const articleInfoList = prefetchedInfos ?? await aimsGateway.pullArticleInfo(storeId);
 
             const withLabels = articleInfoList.filter(a => Array.isArray(a.assignedLabel) && a.assignedLabel.length > 0);
             appLogger.info('AimsReconcile', `Article info: fetched ${articleInfoList.length} articles, ${withLabels.length} have assignedLabel(s)`);
