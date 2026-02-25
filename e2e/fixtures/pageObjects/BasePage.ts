@@ -1,10 +1,12 @@
 import { Page, Locator } from '@playwright/test';
+import { setupAuthBypass } from '../helpers';
 
 /**
  * Base Page Object - Common methods for all pages
  */
 export class BasePage {
     readonly page: Page;
+    private _authBypassInstalled = false;
 
     constructor(page: Page) {
         this.page = page;
@@ -14,7 +16,13 @@ export class BasePage {
      * Navigate to a specific path
      */
     async goto(path: string = '/') {
-        await this.page.goto(path);
+        if (!this._authBypassInstalled) {
+            await setupAuthBypass(this.page);
+            this._authBypassInstalled = true;
+        }
+        // App uses HashRouter — paths must include the hash prefix
+        const hashPath = path.startsWith('/#') ? path : `/#${path}`;
+        await this.page.goto(hashPath);
         await this.waitForReady();
     }
 
@@ -22,7 +30,12 @@ export class BasePage {
      * Wait for the page to be fully loaded
      */
     async waitForReady() {
-        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        // Wait for either desktop tablist OR mobile menu button (both render after isAppReady=true)
+        await Promise.race([
+            this.page.locator('[role="tablist"]').waitFor({ state: 'visible', timeout: 30000 }),
+            this.page.locator('[aria-label="menu"]').waitFor({ state: 'visible', timeout: 30000 }),
+        ]).catch(() => {});
     }
 
     /**
@@ -74,15 +87,33 @@ export class BasePage {
     }
 
     /**
-     * Navigate using sidebar
+     * Navigate using header tabs or sidebar
      */
     async navigateTo(pageName: 'dashboard' | 'spaces' | 'people' | 'conference' | 'sync') {
-        const navItem = this.page.getByRole('link', { name: new RegExp(pageName, 'i') });
-        if (await navItem.isVisible()) {
+        // Map page names to possible tab labels (translations may differ)
+        const labelMap: Record<string, RegExp> = {
+            dashboard: /dashboard/i,
+            spaces: /spaces|offices/i,
+            people: /people/i,
+            conference: /conference/i,
+            sync: /sync/i,
+        };
+        const pattern = labelMap[pageName] || new RegExp(pageName, 'i');
+
+        // Try header tab navigation first (the primary nav on desktop)
+        const tab = this.page.getByRole('tab', { name: pattern });
+        if (await tab.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await tab.click();
+            await this.waitForReady();
+            return;
+        }
+
+        // Fall back to sidebar link/button
+        const navItem = this.page.getByRole('link', { name: pattern });
+        if (await navItem.isVisible({ timeout: 2000 }).catch(() => false)) {
             await navItem.click();
         } else {
-            // Try button variant for navigation
-            const navButton = this.page.getByRole('button', { name: new RegExp(pageName, 'i') });
+            const navButton = this.page.getByRole('button', { name: pattern });
             await navButton.click();
         }
         await this.waitForReady();

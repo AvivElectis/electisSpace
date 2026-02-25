@@ -198,3 +198,49 @@ graph TB
 - **Web**: Standard SPA served by Nginx.
 - **Electron**: Wraps the SPA in a Chromium window with native features (file system, auto-update via GitHub releases, custom title bar).
 - **Capacitor**: Wraps the SPA in a WebView for Android with native plugins (file system, network, preferences).
+
+### 6.8 Testing Infrastructure
+
+#### Server Unit Tests (Vitest)
+
+Server-side tests live in `server/src/**/__tests__/` and run with Vitest (`server/vitest.config.ts`):
+
+- **Auth service** — login, 2FA, token refresh, password reset, logout
+- **Auth validation schemas** — Zod schema validation for all auth DTOs
+- **Auth middleware** — authenticate, authorize, requireGlobalRole, requirePermission
+- **Error handler** — AppError class, factory helpers, middleware
+- **Feature resolution** — company/store feature extraction and override chain
+- **Labels service** — AIMS integration, access control, label merging
+- **Users service** — isPlatformAdmin, canManageCompany authorization
+
+Run: `cd server && npx vitest run`
+
+#### Client Unit Tests (Vitest)
+
+Client-side tests live alongside components in `src/**/__tests__/` or `*.test.tsx`:
+
+- **Auth store** — Zustand login flow, verify2FA, logout state
+- **Labels store** — search, filter, scanner state
+
+Run: `npx vitest run`
+
+#### E2E Tests (Playwright)
+
+121 Playwright tests in `e2e/` covering auth, dashboard, spaces, people, conference rooms, settings, navigation, responsive design, and RTL layout.
+
+**Architecture:**
+- **Page Object Model** — `e2e/fixtures/pageObjects/` (BasePage, DashboardPage, SpacesPage, ConferencePage, PeoplePage, SettingsDialog)
+- **Auth setup project** — `e2e/auth.setup.ts` authenticates once and shares browser state across workers
+- **Auth bypass** — `setupAuthBypass()` intercepts `/api/v1/auth/refresh` to handle token rotation in parallel workers
+- **Helpers** — `e2e/fixtures/helpers.ts` provides `waitForAppReady()`, `waitForTableData()`, `waitForDialogClose()`
+
+**Key patterns:**
+- HashRouter requires `/#/` prefix on all URLs (e.g. `page.goto('/#/spaces')`)
+- Mobile viewport uses `Promise.race` between `[role="tablist"]` and `[aria-label="menu"]`
+- MUI form inputs use `getByLabel()` instead of `input[name=...]` (TextFields lack name attributes)
+- Spaces table uses custom flexbox/react-window (no `<table>` or `[role="row"]`)
+- 4 parallel workers max to avoid overwhelming the dev server
+
+**Config:** `playwright.config.ts` — 3 projects (setup → auth → chromium), 60s timeout, 4 workers.
+
+Run: `npx playwright test`

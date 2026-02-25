@@ -306,7 +306,7 @@ describe('Permission System', () => {
                 role: 'PLATFORM_ADMIN',
                 companies: [createMockCompany({ role: 'VIEWER' })],
             });
-            expect(getHighestRole(user)).toBe('Platform Admin');
+            expect(getHighestRole(user)).toBe('App Admin');
         });
 
         it('should return Company Admin for company admin', () => {
