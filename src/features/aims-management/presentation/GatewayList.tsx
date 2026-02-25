@@ -1,0 +1,136 @@
+/**
+ * Gateway List Component
+ * 
+ * Displays gateways in a table with status indicators.
+ */
+
+import { useEffect } from 'react';
+import {
+    Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Paper, Typography, Chip, IconButton, Tooltip, CircularProgress, Alert, Button,
+} from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import InfoIcon from '@mui/icons-material/Info';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useTranslation } from 'react-i18next';
+import { useGateways } from '../application/useGateways';
+import { useGatewayManagement } from '../application/useGatewayManagement';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
+
+interface GatewayListProps {
+    storeId: string;
+    onSelectGateway?: (mac: string) => void;
+}
+
+export function GatewayList({ storeId, onSelectGateway }: GatewayListProps) {
+    const { t } = useTranslation();
+    const { hasStoreRole } = useAuthContext();
+    const canManage = hasStoreRole('STORE_ADMIN');
+
+    const { gateways, gatewaysLoading, gatewaysError, fetchGateways } = useGateways(storeId);
+    const { rebootGateway, deregisterGateways, loading: actionLoading } = useGatewayManagement(storeId);
+
+    useEffect(() => { fetchGateways(); }, [fetchGateways]);
+
+    const handleReboot = async (mac: string) => {
+        if (!confirm(t('aims.confirmReboot', 'Reboot this gateway?'))) return;
+        await rebootGateway(mac);
+        fetchGateways(true);
+    };
+
+    const handleDeregister = async (mac: string) => {
+        if (!confirm(t('aims.confirmDeregister', 'Deregister this gateway?'))) return;
+        await deregisterGateways([mac]);
+        fetchGateways(true);
+    };
+
+    if (gatewaysLoading && gateways.length === 0) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+    }
+
+    if (gatewaysError) {
+        return <Alert severity="error" action={<Button onClick={() => fetchGateways(true)}>{t('common.retry', 'Retry')}</Button>}>{gatewaysError}</Alert>;
+    }
+
+    const onlineCount = gateways.filter((g: any) => g.status === 'ONLINE' || g.status === 'online').length;
+
+    return (
+        <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle1">
+                    {t('aims.gateways', 'Gateways')} ({onlineCount}/{gateways.length} {t('aims.online', 'online')})
+                </Typography>
+                <Tooltip title={t('common.refresh', 'Refresh')}>
+                    <IconButton onClick={() => fetchGateways(true)} disabled={gatewaysLoading}>
+                        <RefreshIcon />
+                    </IconButton>
+                </Tooltip>
+            </Box>
+
+            {gateways.length === 0 ? (
+                <Alert severity="info">{t('aims.noGateways', 'No gateways found for this store.')}</Alert>
+            ) : (
+                <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>{t('aims.macAddress', 'MAC Address')}</TableCell>
+                                <TableCell>{t('aims.ipAddress', 'IP')}</TableCell>
+                                <TableCell>{t('aims.status', 'Status')}</TableCell>
+                                <TableCell>{t('aims.model', 'Model')}</TableCell>
+                                <TableCell>{t('aims.firmware', 'Firmware')}</TableCell>
+                                <TableCell align="right">{t('aims.labels', 'Labels')}</TableCell>
+                                <TableCell align="right">{t('aims.actions', 'Actions')}</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {gateways.map((gw: any) => {
+                                const mac = gw.mac || gw.macAddress || gw.gatewayId || '';
+                                const isOnline = gw.status === 'ONLINE' || gw.status === 'online';
+                                return (
+                                    <TableRow key={mac} hover>
+                                        <TableCell><Typography variant="body2" fontFamily="monospace">{mac}</Typography></TableCell>
+                                        <TableCell>{gw.ip || gw.ipAddress || '—'}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={isOnline ? t('aims.online', 'Online') : t('aims.offline', 'Offline')}
+                                                color={isOnline ? 'success' : 'error'} 
+                                                size="small" 
+                                                variant="outlined"
+                                            />
+                                        </TableCell>
+                                        <TableCell>{gw.model || '—'}</TableCell>
+                                        <TableCell>{gw.firmwareVersion || '—'}</TableCell>
+                                        <TableCell align="right">{gw.connectedLabelCount ?? '—'}</TableCell>
+                                        <TableCell align="right">
+                                            <Tooltip title={t('aims.viewDetails', 'View Details')}>
+                                                <IconButton size="small" onClick={() => onSelectGateway?.(mac)}>
+                                                    <InfoIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            {canManage && (
+                                                <>
+                                                    <Tooltip title={t('aims.reboot', 'Reboot')}>
+                                                        <IconButton size="small" onClick={() => handleReboot(mac)} disabled={actionLoading}>
+                                                            <RestartAltIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title={t('aims.deregister', 'Deregister')}>
+                                                        <IconButton size="small" onClick={() => handleDeregister(mac)} disabled={actionLoading} color="error">
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+        </Box>
+    );
+}

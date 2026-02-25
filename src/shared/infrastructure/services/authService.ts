@@ -13,6 +13,7 @@ export interface CompanyFeatures {
     conferenceEnabled: boolean;
     simpleConferenceMode: boolean;
     labelsEnabled: boolean;
+    aimsManagementEnabled: boolean;
 }
 
 export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
@@ -21,6 +22,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: true,
+    aimsManagementEnabled: true,
 };
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';

@@ -203,6 +203,16 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             }
                             label={t('labels.title')}
                         />
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={state.companyFeatures.aimsManagementEnabled}
+                                    onChange={(e) => state.handleFeatureToggle('aimsManagementEnabled', e.target.checked)}
+                                />
+                            }
+                            label={t('settings.companies.aimsManagement', 'AIMS Management')}
+                        />
                     </Box>
                 </TabPanel>
 

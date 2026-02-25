@@ -628,6 +628,125 @@ export class SolumService {
             }
         });
     }
+    // ─── Gateway Operations ─────────────────────────────────────────────────
+
+    async fetchGateways(config: SolumConfig, token: string): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchGateways', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    async fetchGatewayDetail(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/detail?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('fetchGatewayDetail', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
+
+    async fetchFloatingGateways(config: SolumConfig, token: string): Promise<any[]> {
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/floating?company=${config.companyName}`);
+        return this.withRetry('fetchFloatingGateways', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    async registerGateway(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway`);
+        return this.withRetry('registerGateway', async () => {
+            const response = await this.client.post(url, {
+                company: config.companyName,
+                store: config.storeCode,
+                gateway: gatewayMac,
+            }, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data;
+        });
+    }
+
+    async deregisterGateways(config: SolumConfig, token: string, gatewayMacs: string[]): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway?company=${config.companyName}&store=${config.storeCode}&gateways=${gatewayMacs.join(',')}`);
+        return this.withRetry('deregisterGateways', async () => {
+            const response = await this.client.delete(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data;
+        });
+    }
+
+    async rebootGateway(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('rebootGateway', async () => {
+            const response = await this.client.patch(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data;
+        });
+    }
+
+    async fetchGatewayDebugReport(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/debug/info?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('fetchGatewayDebugReport', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
+
+    // ─── Label History ──────────────────────────────────────────────────────
+
+    async fetchLabelStatusHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/status/history?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLabelStatusHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
+
+    // ─── Article / Batch History ────────────────────────────────────────────
+
+    async fetchBatchHistory(config: SolumConfig, token: string, params: { page?: number; size?: number; fromDate?: string; toDate?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 20, fromDate, toDate } = params;
+        let url = this.buildUrl(config, `/common/api/v2/common/articles/history?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        if (fromDate) url += `&fromDate=${fromDate}`;
+        if (toDate) url += `&toDate=${toDate}`;
+        return this.withRetry('fetchBatchHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
+
+    async fetchBatchDetail(config: SolumConfig, token: string, batchName: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/history/detail?company=${config.companyName}&store=${config.storeCode}&name=${encodeURIComponent(batchName)}`);
+        return this.withRetry('fetchBatchDetail', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
+
+    async fetchBatchErrors(config: SolumConfig, token: string, batchId: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/validationerror/logs?company=${config.companyName}&store=${config.storeCode}&batchId=${batchId}`);
+        return this.withRetry('fetchBatchErrors', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
+
+    async fetchArticleUpdateHistory(config: SolumConfig, token: string, articleId: string, page = 0, size = 50): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/update/history?company=${config.companyName}&store=${config.storeCode}&article=${encodeURIComponent(articleId)}&page=${page}&size=${size}`);
+        return this.withRetry('fetchArticleUpdateHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? {};
+        });
+    }
 }
 
 export const solumService = new SolumService();

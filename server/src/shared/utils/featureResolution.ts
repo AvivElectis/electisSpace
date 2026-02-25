@@ -15,6 +15,7 @@ export interface CompanyFeatures {
     conferenceEnabled: boolean;
     simpleConferenceMode: boolean;
     labelsEnabled: boolean;
+    aimsManagementEnabled: boolean;
 }
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
@@ -25,6 +26,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: true,
+    aimsManagementEnabled: true,
 };
 
 export const DEFAULT_SPACE_TYPE: SpaceType = 'office';
@@ -55,13 +57,16 @@ export function resolveEffectiveSpaceType(
     return companySpaceType ?? DEFAULT_SPACE_TYPE;
 }
 
-/** All features enabled — used for backward compatibility when no features are configured */
+/** All features enabled — used for backward compatibility when no features are configured.
+ *  spacesEnabled defaults to true (legacy mode), peopleEnabled to false
+ *  because the Zod schema enforces mutual exclusivity. */
 export const ALL_FEATURES_ENABLED: CompanyFeatures = {
     spacesEnabled: true,
-    peopleEnabled: true,
+    peopleEnabled: false,
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: true,
+    aimsManagementEnabled: true,
 };
 
 /**
@@ -70,7 +75,16 @@ export const ALL_FEATURES_ENABLED: CompanyFeatures = {
  * (old companies without feature config should have all features enabled).
  */
 export function extractCompanyFeatures(settings: Record<string, unknown> | null | undefined): CompanyFeatures {
-    if (!settings || !settings.companyFeatures) return ALL_FEATURES_ENABLED;
+    if (!settings || !settings.companyFeatures) {
+        // Check legacy peopleManagerEnabled flag so the returned features respect
+        // the mutual exclusivity constraint (spaces XOR people).
+        const isPeopleMode = settings?.peopleManagerEnabled === true;
+        return {
+            ...ALL_FEATURES_ENABLED,
+            spacesEnabled: !isPeopleMode,
+            peopleEnabled: isPeopleMode,
+        };
+    }
     const f = settings.companyFeatures as Partial<CompanyFeatures>;
     return {
         spacesEnabled: f.spacesEnabled ?? DEFAULT_COMPANY_FEATURES.spacesEnabled,
@@ -78,6 +92,7 @@ export function extractCompanyFeatures(settings: Record<string, unknown> | null 
         conferenceEnabled: f.conferenceEnabled ?? DEFAULT_COMPANY_FEATURES.conferenceEnabled,
         simpleConferenceMode: f.simpleConferenceMode ?? DEFAULT_COMPANY_FEATURES.simpleConferenceMode,
         labelsEnabled: f.labelsEnabled ?? DEFAULT_COMPANY_FEATURES.labelsEnabled,
+        aimsManagementEnabled: f.aimsManagementEnabled ?? true,
     };
 }
 
