@@ -4,6 +4,7 @@
  * @description HTTP request/response handling for authentication endpoints.
  */
 import type { Request, Response, NextFunction } from 'express';
+import dns from 'dns';
 import { config, prisma } from '../../config/index.js';
 import { badRequest, unauthorized } from '../../shared/middleware/index.js';
 import { authService } from './service.js';
@@ -96,6 +97,7 @@ export const authController = {
             }
 
             const { email, code, deviceId, deviceName, platform } = validation.data;
+            appLogger.info('Auth', 'verify2FA request', { email, hasDeviceId: !!deviceId, deviceId, deviceName, platform });
             const result = await authService.verify2FA(email, code);
 
             // Set refresh token as HttpOnly cookie
@@ -112,13 +114,31 @@ export const authController = {
             if (deviceId) {
                 try {
                     const ip = req.ip || req.socket.remoteAddress;
+
+                    // Try to resolve hostname from IP via reverse DNS
+                    let resolvedName = deviceName;
+                    if (ip && (!deviceName || /^(Windows PC|Mac|Linux|Unknown Device)/.test(deviceName))) {
+                        try {
+                            const cleanIp = ip.replace(/^::ffff:/, '');
+                            const hostnames = await dns.promises.reverse(cleanIp);
+                            if (hostnames.length > 0) {
+                                // Use short hostname (before first dot) + browser suffix if present
+                                const shortHost = hostnames[0].split('.')[0];
+                                const browserSuffix = deviceName?.includes(' — ') ? deviceName.split(' — ').pop() : '';
+                                resolvedName = browserSuffix ? `${shortHost} — ${browserSuffix}` : shortHost;
+                            }
+                        } catch {
+                            // Reverse DNS failed — keep client-provided name
+                        }
+                    }
+
                     deviceToken = await authService.createDeviceToken(
                         result.user.id,
-                        { deviceId, deviceName, platform },
+                        { deviceId, deviceName: resolvedName, platform },
                         ip
                     );
-                } catch {
-                    // Non-critical — log but continue
+                } catch (err) {
+                    appLogger.error('Auth', 'Failed to create device token', { error: String(err), deviceId, userId: result.user.id });
                 }
             }
 

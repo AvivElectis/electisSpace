@@ -26,7 +26,6 @@ const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ defaul
 const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
 const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
 const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
-const DevicesTab = lazy(() => import('./DevicesTab').then(m => ({ default: m.default })));
 const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default: m.LogsViewerTab })));
 const UnlockDialog = lazy(() => import('./UnlockDialog').then(m => ({ default: m.UnlockDialog })));
 const UsersSettingsTab = lazy(() => import('./UsersSettingsTab').then(m => ({ default: m.UsersSettingsTab })));
@@ -105,7 +104,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         { label: t('settings.solumSettings'), panel: <SolumSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.logoSettings'), panel: <LogoSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
         { label: t('settings.securitySettings'), panel: <SecuritySettingsTab isPasswordProtected={settingsController.isPasswordProtected} isLocked={settingsController.isLocked} settings={settingsController.settings} onSetPassword={(password) => settingsController.setPassword(password)} onLock={() => settingsController.lock()} onUnlock={(password) => settingsController.unlock(password)} onUpdate={(updates) => settingsController.updateSettings(updates)} /> },
-        { label: t('settings.devices.title', 'Devices'), panel: <DevicesTab /> },
     ];
 
     // Build tabs array immutably - add admin tabs before LogViewer

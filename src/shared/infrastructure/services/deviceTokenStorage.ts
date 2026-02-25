@@ -45,11 +45,13 @@ export const deviceTokenStorage = {
                 return value;
             }
             await initIdb();
-            if (!idbGet) return null;
-            return (await idbGet(DEVICE_TOKEN_KEY)) ?? null;
+            let token: string | null = null;
+            if (idbGet) token = (await idbGet(DEVICE_TOKEN_KEY)) ?? null;
+            if (!token) token = localStorage.getItem(DEVICE_TOKEN_KEY);
+            return token;
         } catch (err) {
             logger.warn('DeviceTokenStorage', 'Failed to get device token', { error: String(err) });
-            return null;
+            return localStorage.getItem(DEVICE_TOKEN_KEY);
         }
     },
 
@@ -62,8 +64,10 @@ export const deviceTokenStorage = {
             }
             await initIdb();
             if (idbSet) await idbSet(DEVICE_TOKEN_KEY, token);
+            localStorage.setItem(DEVICE_TOKEN_KEY, token);
         } catch (err) {
             logger.warn('DeviceTokenStorage', 'Failed to set device token', { error: String(err) });
+            localStorage.setItem(DEVICE_TOKEN_KEY, token);
         }
     },
 
@@ -76,8 +80,10 @@ export const deviceTokenStorage = {
             }
             await initIdb();
             if (idbDel) await idbDel(DEVICE_TOKEN_KEY);
+            localStorage.removeItem(DEVICE_TOKEN_KEY);
         } catch (err) {
             logger.warn('DeviceTokenStorage', 'Failed to remove device token', { error: String(err) });
+            localStorage.removeItem(DEVICE_TOKEN_KEY);
         }
     },
 
@@ -90,20 +96,34 @@ export const deviceTokenStorage = {
                 deviceId = value;
             } else {
                 await initIdb();
-                if (idbGet) deviceId = (await idbGet(DEVICE_ID_KEY)) ?? null;
+                if (idbGet) {
+                    deviceId = (await idbGet(DEVICE_ID_KEY)) ?? null;
+                }
+                // Fallback: check localStorage if IDB didn't have it
+                if (!deviceId) {
+                    deviceId = localStorage.getItem(DEVICE_ID_KEY);
+                }
             }
             if (!deviceId) {
                 deviceId = crypto.randomUUID();
                 if (isNative) {
                     const prefs = await getNativePreferences();
                     await prefs.set({ key: DEVICE_ID_KEY, value: deviceId });
-                } else if (idbSet) {
-                    await idbSet(DEVICE_ID_KEY, deviceId);
+                } else {
+                    // Store in both IDB and localStorage for reliability
+                    if (idbSet) await idbSet(DEVICE_ID_KEY, deviceId);
+                    localStorage.setItem(DEVICE_ID_KEY, deviceId);
                 }
             }
             return deviceId;
         } catch {
-            return crypto.randomUUID();
+            // Last resort: use localStorage only
+            let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+            if (!deviceId) {
+                deviceId = crypto.randomUUID();
+                localStorage.setItem(DEVICE_ID_KEY, deviceId);
+            }
+            return deviceId;
         }
     },
 
@@ -116,12 +136,33 @@ export const deviceTokenStorage = {
 
     getDeviceName(): string {
         const ua = navigator.userAgent;
-        if (/iPhone/.test(ua)) return 'iPhone';
-        if (/iPad/.test(ua)) return 'iPad';
-        if (/Android/.test(ua)) return 'Android Device';
-        if (/Mac/.test(ua)) return 'Mac';
-        if (/Windows/.test(ua)) return 'Windows PC';
-        if (/Linux/.test(ua)) return 'Linux';
-        return 'Unknown Device';
+        const browser = /Edg\//.test(ua) ? 'Edge'
+            : /Chrome\//.test(ua) ? 'Chrome'
+            : /Firefox\//.test(ua) ? 'Firefox'
+            : /Safari\//.test(ua) ? 'Safari'
+            : '';
+
+        let os = 'Unknown Device';
+        if (/iPhone/.test(ua)) os = 'iPhone';
+        else if (/iPad/.test(ua)) os = 'iPad';
+        else if (/Android/.test(ua)) os = 'Android';
+        else if (/Mac/.test(ua)) os = 'Mac';
+        else if (/Windows/.test(ua)) os = 'Windows PC';
+        else if (/Linux/.test(ua)) os = 'Linux';
+
+        // The server will try reverse DNS to resolve the real hostname.
+        // Client sends OS + browser as a fallback name.
+        return [os, browser].filter(Boolean).join(' — ');
+    },
+
+    /** Get the real OS hostname (Electron only) */
+    async getHostname(): Promise<string | null> {
+        try {
+            const electronAPI = (window as any).electronAPI;
+            if (electronAPI?.getHostname) {
+                return await electronAPI.getHostname();
+            }
+        } catch { /* not in Electron */ }
+        return null;
     },
 };

@@ -616,6 +616,7 @@ export const authService = {
             lastUsedAt: t.lastUsedAt,
             lastIp: t.lastIp,
             createdAt: t.createdAt,
+            expiresAt: t.expiresAt,
         }));
     },
 

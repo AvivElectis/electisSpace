@@ -103,6 +103,7 @@ export interface DeviceInfo {
     lastUsedAt: string;
     lastIp: string | null;
     createdAt: string;
+    expiresAt: string;
     current?: boolean;
 }
 

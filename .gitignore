@@ -49,5 +49,16 @@ solum_co_il*.conf
 # Test credentials (contain secrets - never commit)
 TEST_CREDENTIALS.txt
 
+# Playwright / Vitest test artifacts
+e2e/.auth/
+test-results/
+playwright-report/
+
+# Claude Code local settings (user-specific permissions)
 .claude/settings.local.json
+
+# Windows null device artifact
 nul
+
+# Misc temp files
+replacements.txt

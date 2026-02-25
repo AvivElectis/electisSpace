@@ -15,6 +15,8 @@ import {
     IconButton,
     ToggleButton,
     ToggleButtonGroup,
+    FormControlLabel,
+    Checkbox,
     useTheme,
     alpha,
 } from '@mui/material';
@@ -35,6 +37,7 @@ export function LoginPage() {
     const [verificationCode, setVerificationCode] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
+    const [trustDevice, setTrustDevice] = useState(false);
     const autoSubmitRef = useRef(false);
 
     // Redirect to dashboard if already authenticated
@@ -49,14 +52,14 @@ export function LoginPage() {
         if (verificationCode.length === 6 && showVerification && !isLoading && !autoSubmitRef.current) {
             autoSubmitRef.current = true;
             clearError();
-            verify2FA(verificationCode).then((success) => {
+            verify2FA(verificationCode, trustDevice).then((success) => {
                 if (success) {
                     navigate('/');
                 }
                 autoSubmitRef.current = false;
             });
         }
-    }, [verificationCode, showVerification, isLoading, verify2FA, clearError, navigate]);
+    }, [verificationCode, showVerification, isLoading, verify2FA, clearError, navigate, trustDevice]);
 
     // Reset autoSubmitRef when verification code changes to less than 6
     useEffect(() => {
@@ -79,7 +82,7 @@ export function LoginPage() {
         e.preventDefault();
         clearError();
 
-        const success = await verify2FA(verificationCode);
+        const success = await verify2FA(verificationCode, trustDevice);
         if (success) {
             navigate('/');
         }
@@ -236,7 +239,7 @@ export function LoginPage() {
                                 }}
                             />
 
-                            <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, mb: 4 }}>
+                            <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, mb: 2 }}>
                                 <TextField
                                     fullWidth
                                     name="password"
@@ -269,6 +272,27 @@ export function LoginPage() {
                                     {showPassword ? <VisibilityOff /> : <Visibility />}
                                 </IconButton>
                             </Box>
+
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={trustDevice}
+                                        onChange={(e) => setTrustDevice(e.target.checked)}
+                                        size="small"
+                                    />
+                                }
+                                label={
+                                    <Box>
+                                        <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                                            {t('login.trustDeviceLabel', 'Trust this device')}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                                            {t('login.trustDeviceHint', 'Skip verification next time')}
+                                        </Typography>
+                                    </Box>
+                                }
+                                sx={{ mb: 2, ml: 0, alignItems: 'flex-start' }}
+                            />
 
                             <Button
                                 type="submit"
