@@ -4,3 +4,4 @@
 export * from './pageObjects';
 export * from './test-data';
 export * from './helpers';
+export * from './test-fixtures';

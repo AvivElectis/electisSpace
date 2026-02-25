@@ -52,10 +52,11 @@ export class DashboardPage extends BasePage {
     }
 
     /**
-     * Navigate to spaces via card button
+     * Navigate to spaces via card button ("To Offices" / "To Spaces" etc.)
      */
     async navigateToSpaces() {
-        const toSpacesButton = this.page.getByRole('button', { name: /spaces|rooms|chairs|to spaces/i });
+        // "To Offices" / "To Spaces" / "To Chairs" (NOT "To Rooms" which is for conference)
+        const toSpacesButton = this.page.getByRole('button', { name: /to offices|to spaces|to chairs/i });
         await toSpacesButton.click();
         await this.waitForReady();
     }
@@ -64,16 +65,16 @@ export class DashboardPage extends BasePage {
      * Navigate to people via card button
      */
     async navigateToPeople() {
-        const toPeopleButton = this.page.getByRole('button', { name: /people|to people/i });
+        const toPeopleButton = this.page.getByRole('button', { name: /to people|people/i });
         await toPeopleButton.click();
         await this.waitForReady();
     }
 
     /**
-     * Navigate to conference via card button
+     * Navigate to conference via card button ("To Rooms")
      */
     async navigateToConference() {
-        const toConferenceButton = this.page.getByRole('button', { name: /conference|meeting|to conference/i });
+        const toConferenceButton = this.page.getByRole('button', { name: /to rooms|to conference/i });
         await toConferenceButton.click();
         await this.waitForReady();
     }

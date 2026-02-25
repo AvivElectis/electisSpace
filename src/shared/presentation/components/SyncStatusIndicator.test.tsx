@@ -1,7 +1,7 @@
 /**
  * SyncStatusIndicator Component Tests
  * Phase 10.27 - Deep Testing System
- * 
+ *
  * Tests sync/connection status indicator with popover
  */
 
@@ -25,11 +25,18 @@ vi.mock('react-i18next', () => ({
                 'sync.lastSync': 'Last sync',
                 'sync.mode': 'Mode',
                 'sync.solumMode': 'SoluM Mode',
+                'sync.manualSync': 'Manual Sync',
             };
             return translations[key] || key;
         },
     }),
 }));
+
+// Helper to click the status badge (the Paper element)
+function clickBadge(container: HTMLElement) {
+    const badge = container.querySelector('.MuiPaper-root');
+    if (badge) fireEvent.click(badge);
+}
 
 describe('SyncStatusIndicator Component', () => {
     beforeEach(() => {
@@ -37,29 +44,44 @@ describe('SyncStatusIndicator Component', () => {
     });
 
     describe('status display', () => {
-        it('should render connected status', () => {
-            render(<SyncStatusIndicator status="connected" />);
+        it('should render connected status', async () => {
+            const { container } = render(<SyncStatusIndicator status="connected" />);
 
-            expect(screen.getByText('Connected')).toBeInTheDocument();
+            expect(screen.getByTestId('CheckCircleRoundedIcon')).toBeInTheDocument();
+            clickBadge(container);
+            await waitFor(() => {
+                expect(screen.getByText('Connected')).toBeInTheDocument();
+            });
         });
 
-        it('should render disconnected status', () => {
-            render(<SyncStatusIndicator status="disconnected" />);
+        it('should render disconnected status', async () => {
+            const { container } = render(<SyncStatusIndicator status="disconnected" />);
 
-            expect(screen.getByText('Disconnected')).toBeInTheDocument();
+            expect(screen.getByTestId('CloudOffRoundedIcon')).toBeInTheDocument();
+            clickBadge(container);
+            await waitFor(() => {
+                expect(screen.getByText('Disconnected')).toBeInTheDocument();
+            });
         });
 
-        it('should render syncing status', () => {
-            render(<SyncStatusIndicator status="syncing" />);
+        it('should render syncing status', async () => {
+            const { container } = render(<SyncStatusIndicator status="syncing" />);
 
-            // "Syncing" appears in both label and caption initially
-            expect(screen.getAllByText('Syncing').length).toBeGreaterThanOrEqual(1);
+            expect(screen.getByRole('progressbar')).toBeInTheDocument();
+            clickBadge(container);
+            await waitFor(() => {
+                expect(screen.getAllByText('Syncing').length).toBeGreaterThanOrEqual(1);
+            });
         });
 
-        it('should render error status', () => {
-            render(<SyncStatusIndicator status="error" />);
+        it('should render error status', async () => {
+            const { container } = render(<SyncStatusIndicator status="error" />);
 
-            expect(screen.getByText('Error')).toBeInTheDocument();
+            expect(screen.getByTestId('ErrorRoundedIcon')).toBeInTheDocument();
+            clickBadge(container);
+            await waitFor(() => {
+                expect(screen.getByText('Error')).toBeInTheDocument();
+            });
         });
     });
 
@@ -91,14 +113,14 @@ describe('SyncStatusIndicator Component', () => {
 
     describe('popover interaction', () => {
         it('should open popover when clicked', async () => {
-            render(
+            const { container } = render(
                 <SyncStatusIndicator
                     status="connected"
                     lastSyncTime="2024-01-15 10:30"
                 />
             );
 
-            fireEvent.click(screen.getByText('Connected'));
+            clickBadge(container);
 
             await waitFor(() => {
                 expect(screen.getByRole('presentation')).toBeInTheDocument();
@@ -106,14 +128,14 @@ describe('SyncStatusIndicator Component', () => {
         });
 
         it('should show sync time in popover', async () => {
-            render(
+            const { container } = render(
                 <SyncStatusIndicator
                     status="connected"
                     lastSyncTime="2024-01-15 10:30"
                 />
             );
 
-            fireEvent.click(screen.getByText('Connected'));
+            clickBadge(container);
 
             await waitFor(() => {
                 expect(screen.getByText('2024-01-15 10:30')).toBeInTheDocument();
@@ -121,14 +143,14 @@ describe('SyncStatusIndicator Component', () => {
         });
 
         it('should show error message in popover when status is error', async () => {
-            render(
+            const { container } = render(
                 <SyncStatusIndicator
                     status="error"
                     errorMessage="Connection timeout"
                 />
             );
 
-            fireEvent.click(screen.getByText('Error'));
+            clickBadge(container);
 
             await waitFor(() => {
                 expect(screen.getByText('Connection timeout')).toBeInTheDocument();
@@ -138,14 +160,14 @@ describe('SyncStatusIndicator Component', () => {
 
     describe('sync button', () => {
         it('should show sync button in popover', async () => {
-            render(
+            const { container } = render(
                 <SyncStatusIndicator
                     status="connected"
                     onSyncClick={() => {}}
                 />
             );
 
-            fireEvent.click(screen.getByText('Connected'));
+            clickBadge(container);
 
             await waitFor(() => {
                 expect(screen.getByRole('button', { name: /sync/i })).toBeInTheDocument();
@@ -154,14 +176,14 @@ describe('SyncStatusIndicator Component', () => {
 
         it('should call onSyncClick when sync button clicked', async () => {
             const onSyncClick = vi.fn();
-            render(
+            const { container } = render(
                 <SyncStatusIndicator
                     status="connected"
                     onSyncClick={onSyncClick}
                 />
             );
 
-            fireEvent.click(screen.getByText('Connected'));
+            clickBadge(container);
 
             await waitFor(() => {
                 expect(screen.getByRole('button', { name: /sync/i })).toBeInTheDocument();
@@ -173,9 +195,9 @@ describe('SyncStatusIndicator Component', () => {
         });
 
         it('should not show sync button if onSyncClick not provided', async () => {
-            render(<SyncStatusIndicator status="connected" />);
+            const { container } = render(<SyncStatusIndicator status="connected" />);
 
-            fireEvent.click(screen.getByText('Connected'));
+            clickBadge(container);
 
             await waitFor(() => {
                 expect(screen.getByRole('presentation')).toBeInTheDocument();
@@ -198,12 +220,9 @@ describe('SyncStatusIndicator Component', () => {
 
         statusDescriptions.forEach(({ status, description }) => {
             it(`should show "${description}" for ${status} status`, async () => {
-                render(<SyncStatusIndicator status={status} />);
+                const { container } = render(<SyncStatusIndicator status={status} />);
 
-                const label = status.charAt(0).toUpperCase() + status.slice(1);
-                // Use getAllByText for syncing status which shows "Syncing" in both label and caption
-                const elements = screen.getAllByText(label);
-                fireEvent.click(elements[0]);
+                clickBadge(container);
 
                 await waitFor(() => {
                     expect(screen.getByText(description)).toBeInTheDocument();
