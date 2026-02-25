@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"Trust this device" checkbox** on login form — opt-in device trust with two-line label (EN + HE)
 - **Trusted Devices management** in Security & Devices settings tab — view, revoke individual, or revoke all devices
 - **Device cards (MUI)** — redesigned with platform icons, OS chip, detail rows (IP address, connected date, last active, expiry), RTL support
-- **Server-side reverse DNS** — resolves real machine hostname from client IP for meaningful device names
+- **Client-side device naming** — uses UA-based OS + browser names for web clients, Electron IPC hostname for desktop
 - **Electron hostname support** — `os.hostname()` exposed via IPC for desktop app real machine names
 - **Device auth API** — `POST /auth/device-auth`, `GET /auth/devices`, `DELETE /auth/devices/:id`, `DELETE /auth/devices`
 - **Rate limiter** on device-auth endpoint (10 req/15min per IP+device)
@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Revoking current device or all devices triggers automatic logout
 
 ### Fixed
+- **Session persistence** — 401 interceptor incorrectly treated `/auth/me` as an auth-flow endpoint, skipping token refresh after the 15-min access token expired and forcing logout; changed to explicit allowlist of auth-flow paths
+- **Device name display** — removed server-side reverse DNS lookup that resolved to proxy/container hostnames (e.g. "global-npm") instead of client device names; now uses client-provided names directly (Electron hostname via IPC, or UA-based "Windows PC — Chrome")
 - Device token storage reliability — localStorage fallback prevents lost device IDs when IndexedDB unavailable
 - Silent error swallowing in device token creation — server now logs errors properly
 - "Invalid Date" in device cards when `expiresAt` is null/undefined
