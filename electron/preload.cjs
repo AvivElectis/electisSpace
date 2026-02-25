@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     getPlatformInfo: () => ipcRenderer.invoke('get-platform-info'),
 
+    getHostname: () => ipcRenderer.invoke('get-hostname'),
+
     /**
    * Auto-Update APIs
    */

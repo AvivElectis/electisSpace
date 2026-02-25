@@ -157,6 +157,32 @@ api.interceptors.response.use(
                 }
                 return api(originalRequest);
             } catch (refreshError) {
+                // Cookie refresh failed — try device token as last resort
+                try {
+                    const { deviceTokenStorage } = await import('./deviceTokenStorage');
+                    const deviceToken = await deviceTokenStorage.getDeviceToken();
+                    const deviceId = await deviceTokenStorage.getDeviceId();
+
+                    if (deviceToken && deviceId) {
+                        const deviceResponse = await axios.post(
+                            `${API_BASE_URL}/auth/device-auth`,
+                            { deviceToken, deviceId },
+                            { withCredentials: true }
+                        );
+
+                        const { accessToken } = deviceResponse.data;
+                        tokenManager.setAccessToken(accessToken);
+                        processQueue(null, accessToken);
+
+                        if (originalRequest.headers) {
+                            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                        }
+                        return api(originalRequest);
+                    }
+                } catch {
+                    // Device token also failed
+                }
+
                 processQueue(refreshError, null);
                 tokenManager.clearTokens();
 

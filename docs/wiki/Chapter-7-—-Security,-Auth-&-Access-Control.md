@@ -47,6 +47,13 @@ graph TB
         RT_USE[Used for: Access token renewal]
     end
 
+    subgraph "Device Token"
+        DT_STORE[Stored in: IndexedDB + localStorage<br/>+ hashed in DB]
+        DT_LIFE[Lifetime: 90d web / 365d mobile]
+        DT_USE[Used for: Session restore<br/>without 2FA]
+        DT_OPT[Opt-in: "Trust this device" checkbox]
+    end
+
     subgraph "Verification Code"
         VC_STORE[Stored in: DB]
         VC_LIFE[Lifetime: 5 minutes]
@@ -60,7 +67,47 @@ Security properties:
 - **Refresh tokens** use httpOnly cookies (invisible to JavaScript) with hashed storage in the database.
 - **Verification codes** are single-use, time-limited, and rate-limited per IP+email combination.
 
-### 7.3 Role-Based Access Control (RBAC)
+### 7.3 Device-Based Auth Tokens
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant Client as React SPA
+    participant Server as Express API
+    participant DB as PostgreSQL
+
+    User->>Client: Login + check "Trust this device"
+    Client->>Server: POST /auth/verify-2fa<br/>{email, code, deviceId, deviceName, platform}
+    Server->>DB: Verify 2FA code
+    Server->>Server: Resolve hostname via reverse DNS
+    Server->>DB: Create DeviceToken (hashed, 90d web / 365d mobile)
+    Server-->>Client: {accessToken, deviceToken}
+    Client->>Client: Store deviceToken in IndexedDB + localStorage
+
+    Note over User,Client: Later — session expired, cookie cleared
+
+    Client->>Server: POST /auth/device-auth<br/>{deviceToken, deviceId}
+    Server->>DB: Verify token hash + expiry
+    Server->>DB: Update lastUsedAt, lastIp
+    Server-->>Client: {accessToken} — session restored
+```
+
+**Device Token Properties:**
+- Stored in `device_tokens` table with bcrypt-hashed token, device metadata, and IP
+- Web tokens expire after 90 days; mobile (iOS/Android) after 365 days
+- Client stores raw token in IndexedDB (via idb-keyval) with localStorage fallback
+- Rate limited: 10 requests per 15 minutes per IP+device combination
+- Server resolves real hostname via reverse DNS on client IP at creation time
+- Electron desktop exposes `os.hostname()` via IPC for accurate machine names
+
+**Management UI:**
+- "Trust this device" opt-in checkbox on login form (not on 2FA screen)
+- Trusted Devices section in Settings → Security & Devices tab
+- Device cards show: hostname, platform, OS, IP, connected date, last active, expiry
+- Revoking current device triggers immediate logout
+- Full RTL support for Hebrew locale
+
+### 7.4 Role-Based Access Control (RBAC)
 
 ```mermaid
 graph TB
@@ -101,7 +148,7 @@ graph TB
     style SV fill:#95a5a6,color:#fff
 ```
 
-### 7.4 Permission Matrix
+### 7.5 Permission Matrix
 
 The `requirePermission(resource, action)` middleware enforces fine-grained store-level permissions, while `requireGlobalRole(...roles)` enforces global-level role checks (e.g., restricting the `/logs` API to `PLATFORM_ADMIN`):
 
@@ -135,7 +182,7 @@ The `requirePermission(resource, action)` middleware enforces fine-grained store
 
 Users with `allStoresAccess` on their `UserCompany` record receive `STORE_ADMIN`-level permissions across all stores in that company.
 
-### 7.5 Feature-Level Access Control
+### 7.6 Feature-Level Access Control
 
 Beyond role-based permissions, the `UserStore.features` JSON array controls which frontend pages a user can access:
 
@@ -145,7 +192,7 @@ Beyond role-based permissions, the `UserStore.features` JSON array controls whic
 
 The `<ProtectedFeature feature="spaces">` component checks this array and renders a redirect if the user lacks the feature permission.
 
-### 7.6 Auth Middleware Pipeline
+### 7.7 Auth Middleware Pipeline
 
 ```mermaid
 graph LR
@@ -166,7 +213,7 @@ The auth middleware uses a 60-second in-memory cache (max 500 entries) to reduce
 
 SSE endpoints accept the token as a query parameter (`?token=...`) since `EventSource` does not support custom headers.
 
-### 7.7 Rate Limiting Strategy
+### 7.8 Rate Limiting Strategy
 
 | Endpoint | Window | Max Requests | Key |
 |----------|--------|-------------|-----|
@@ -174,10 +221,11 @@ SSE endpoints accept the token as a query parameter (`?token=...`) since `EventS
 | Login (`/auth/login`) | 15min | 10 | IP + email |
 | 2FA Verify (`/auth/verify-2fa`) | 5min | 5 | IP + email |
 | Password Reset | 1hr | 3 | IP + email |
+| Device Auth (`/auth/device-auth`) | 15min | 10 | IP + deviceId |
 
 All rate limits are configurable via environment variables.
 
-### 7.8 Security Middleware Stack
+### 7.9 Security Middleware Stack
 
 | Middleware | Purpose |
 |-----------|---------|
@@ -192,7 +240,7 @@ All rate limits are configurable via environment variables.
 | **Non-root Container** | Server runs as UID 1001 inside Docker |
 | **dumb-init** | Proper signal forwarding in containers |
 
-### 7.9 AIMS Credential Security
+### 7.10 AIMS Credential Security
 
 AIMS API passwords are encrypted at rest using AES encryption:
 
@@ -205,7 +253,7 @@ User provides AIMS password (plaintext)
 
 The `ENCRYPTION_KEY` (32+ characters) is provided via environment variable and never stored in the database.
 
-### 7.10 Audit Logging
+### 7.11 Audit Logging
 
 All significant operations are recorded in the `audit_logs` table:
 

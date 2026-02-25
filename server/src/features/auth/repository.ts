@@ -276,6 +276,63 @@ export const authRepository = {
     },
 
     // ======================
+    // Device Tokens
+    // ======================
+
+    async createDeviceToken(data: {
+        userId: string;
+        tokenHash: string;
+        deviceId: string;
+        deviceName?: string;
+        platform?: string;
+        lastIp?: string;
+        expiresAt: Date;
+    }) {
+        return prisma.deviceToken.create({ data });
+    },
+
+    async findUserDeviceTokens(userId: string) {
+        return prisma.deviceToken.findMany({
+            where: { userId, revoked: false, expiresAt: { gt: new Date() } },
+            orderBy: { lastUsedAt: 'desc' },
+        });
+    },
+
+    async findDeviceTokensByDeviceId(deviceId: string) {
+        return prisma.deviceToken.findMany({
+            where: { deviceId, revoked: false, expiresAt: { gt: new Date() } },
+        });
+    },
+
+    async updateDeviceTokenLastUsed(tokenId: string, lastIp?: string) {
+        return prisma.deviceToken.update({
+            where: { id: tokenId },
+            data: { lastUsedAt: new Date(), ...(lastIp ? { lastIp } : {}) },
+        });
+    },
+
+    async revokeDeviceToken(tokenId: string) {
+        return prisma.deviceToken.update({
+            where: { id: tokenId },
+            data: { revoked: true },
+        });
+    },
+
+    async revokeAllDeviceTokens(userId: string) {
+        return prisma.deviceToken.updateMany({
+            where: { userId, revoked: false },
+            data: { revoked: true },
+        });
+    },
+
+    async revokeDeviceTokensByDeviceId(userId: string, deviceId: string) {
+        return prisma.deviceToken.updateMany({
+            where: { userId, deviceId, revoked: false },
+            data: { revoked: true },
+        });
+    },
+
+    // ======================
     // All-Stores Access Queries
     // ======================
 

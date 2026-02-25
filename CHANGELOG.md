@@ -7,14 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [2.6.0] - 2026-02-25
 
 ### Added
+- **Device-based auth tokens** — persistent authentication tokens per device, eliminating forced re-login on mobile browsers
+- **"Trust this device" checkbox** on login form — opt-in device trust with two-line label (EN + HE)
+- **Trusted Devices management** in Security & Devices settings tab — view, revoke individual, or revoke all devices
+- **Device cards (MUI)** — redesigned with platform icons, OS chip, detail rows (IP address, connected date, last active, expiry), RTL support
+- **Server-side reverse DNS** — resolves real machine hostname from client IP for meaningful device names
+- **Electron hostname support** — `os.hostname()` exposed via IPC for desktop app real machine names
+- **Device auth API** — `POST /auth/device-auth`, `GET /auth/devices`, `DELETE /auth/devices/:id`, `DELETE /auth/devices`
+- **Rate limiter** on device-auth endpoint (10 req/15min per IP+device)
+- **Prisma migration** `20260224000002_add_device_tokens` for device token storage
 - **Comprehensive E2E test suite** — 120 Playwright tests covering auth, dashboard, spaces, people, conference rooms, settings, navigation, responsive design, and RTL layout (#75)
 - **E2E test infrastructure** — page object model (BasePage, DashboardPage, SpacesPage, ConferencePage, PeoplePage, SettingsDialog), auth bypass for parallel workers, shared helpers and test fixtures
 - **Auth setup project** — Playwright setup project that authenticates once and shares state across all test workers
 
+### Changed
+- Client version bumped to 2.6.0, server to 2.4.0
+- "Security Settings" tab renamed to **"Security & Devices"** / **"אבטחה ומכשירים"**
+- DevicesTab removed as separate tab — functionality merged into SecuritySettingsTab
+- `verify2FA` now accepts optional `trustDevice` parameter — device info only sent when user opts in
+- `deviceTokenStorage` now uses IndexedDB with localStorage fallback for reliability
+- Revoking current device or all devices triggers automatic logout
+
 ### Fixed
+- Device token storage reliability — localStorage fallback prevents lost device IDs when IndexedDB unavailable
+- Silent error swallowing in device token creation — server now logs errors properly
+- "Invalid Date" in device cards when `expiresAt` is null/undefined
 - **E2E HashRouter compatibility** — all navigation uses `/#/` prefix matching the app's HashRouter
 - **E2E mobile viewport handling** — `waitForAppReady()` detects both desktop tablist and mobile hamburger menu via `Promise.race`
 - **E2E auth stability** — replaced `networkidle` with `domcontentloaded` + explicit waits; reduced workers to 4 to avoid server overload

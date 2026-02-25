@@ -247,13 +247,21 @@ ipcMain.handle('get-app-version', () => {
 
 // Get platform info
 ipcMain.handle('get-platform-info', () => {
+    const os = require('os');
     return {
         platform: process.platform,
         arch: process.arch,
         version: process.version,
         electron: process.versions.electron,
         chrome: process.versions.chrome,
+        hostname: os.hostname(),
     };
+});
+
+// Get hostname
+ipcMain.handle('get-hostname', () => {
+    const os = require('os');
+    return os.hostname();
 });
 
 /**
