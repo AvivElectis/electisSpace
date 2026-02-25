@@ -131,3 +131,119 @@ export interface AimsApiResponse {
     responseMessage?: unknown;
     [key: string]: unknown;
 }
+
+// ─── Gateway Types ──────────────────────────────────────────────────────────
+
+/** Gateway info from AIMS list endpoint */
+export interface AimsGateway {
+    gatewayId?: string;
+    mac?: string;
+    macAddress?: string;
+    ip?: string;
+    ipAddress?: string;
+    model?: string;
+    status?: string;
+    firmwareVersion?: string;
+    connectedLabelCount?: number;
+    lastConnectedAt?: string;
+    [key: string]: unknown;
+}
+
+/** Gateway detail from AIMS detail endpoint */
+export interface AimsGatewayDetail extends AimsGateway {
+    serialNumber?: string;
+    networkType?: string;
+    apName?: string;
+    channel?: number;
+    txPower?: number;
+    temperature?: number;
+    uptime?: number;
+    [key: string]: unknown;
+}
+
+/** Gateway debug report */
+export interface AimsGatewayDebugReport {
+    gateway?: string;
+    status?: string;
+    debugInfo?: Record<string, unknown>;
+    [key: string]: unknown;
+}
+
+// ─── Label History Types ────────────────────────────────────────────────────
+
+/** Label status history entry */
+export interface AimsLabelStatusHistoryEntry {
+    labelCode?: string;
+    status?: string;
+    timestamp?: string;
+    gateway?: string;
+    signal?: number;
+    battery?: number | string;
+    [key: string]: unknown;
+}
+
+/** Label status history response */
+export interface AimsLabelStatusHistory {
+    content?: AimsLabelStatusHistoryEntry[];
+    totalElements?: number;
+    totalPages?: number;
+    [key: string]: unknown;
+}
+
+// ─── Batch / Article History Types ──────────────────────────────────────────
+
+/** Batch history entry */
+export interface AimsBatchHistoryEntry {
+    batchName?: string;
+    timestamp?: string;
+    totalArticles?: number;
+    successCount?: number;
+    failCount?: number;
+    status?: string;
+    [key: string]: unknown;
+}
+
+/** Batch history response */
+export interface AimsBatchHistory {
+    content?: AimsBatchHistoryEntry[];
+    totalElements?: number;
+    totalPages?: number;
+    [key: string]: unknown;
+}
+
+/** Batch detail with per-label status */
+export interface AimsBatchDetail {
+    batchName?: string;
+    labels?: Array<{
+        labelCode?: string;
+        articleId?: string;
+        status?: string;
+        timestamp?: string;
+        [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+}
+
+/** Batch validation errors */
+export interface AimsBatchErrors {
+    errors?: Array<{
+        articleId?: string;
+        errorMessage?: string;
+        [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+}
+
+/** Article update history */
+export interface AimsArticleUpdateHistory {
+    content?: Array<{
+        articleId?: string;
+        updateTime?: string;
+        status?: string;
+        labelCode?: string;
+        [key: string]: unknown;
+    }>;
+    totalElements?: number;
+    totalPages?: number;
+    [key: string]: unknown;
+}

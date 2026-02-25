@@ -30,6 +30,7 @@ import peopleListsRoutes from './features/people-lists/routes.js';
 import spacesListsRoutes from './features/spaces-lists/routes.js';
 import storeEventsRoutes from './features/stores/events.routes.js';
 import logsRoutes from './features/logs/routes.js';
+import aimsManagementRoutes from './features/aims-management/routes.js';
 import { appLogger } from './shared/infrastructure/services/appLogger.js';
 
 // Create Express app
@@ -167,6 +168,7 @@ apiRouter.use('/labels', labelsRoutes);
 apiRouter.use('/people-lists', peopleListsRoutes);
 apiRouter.use('/spaces-lists', spacesListsRoutes);
 apiRouter.use('/logs', logsRoutes);
+apiRouter.use('/aims', aimsManagementRoutes);
 apiRouter.use('/', storeRoutes); // Store routes mounted at root — MUST be after named routes (applies authenticate globally)
 apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
 
