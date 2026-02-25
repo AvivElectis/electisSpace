@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Comprehensive E2E test suite** — 120 Playwright tests covering auth, dashboard, spaces, people, conference rooms, settings, navigation, responsive design, and RTL layout (#75)
+- **E2E test infrastructure** — page object model (BasePage, DashboardPage, SpacesPage, ConferencePage, PeoplePage, SettingsDialog), auth bypass for parallel workers, shared helpers and test fixtures
+- **Auth setup project** — Playwright setup project that authenticates once and shares state across all test workers
+
+### Fixed
+- **E2E HashRouter compatibility** — all navigation uses `/#/` prefix matching the app's HashRouter
+- **E2E mobile viewport handling** — `waitForAppReady()` detects both desktop tablist and mobile hamburger menu via `Promise.race`
+- **E2E auth stability** — replaced `networkidle` with `domcontentloaded` + explicit waits; reduced workers to 4 to avoid server overload
+- **GitGuardian false positive** — extracted inline test passwords in `auth.types.test.ts` into named constants with `pragma: allowlist`
+
+---
+
 ## [2.5.0] - 2026-02-22
 
 ### Added
