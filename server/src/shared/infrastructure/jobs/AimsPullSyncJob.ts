@@ -276,6 +276,15 @@ export class AimsSyncReconciliationJob {
             return result;
         }
 
+        // Diagnostic: log what pullArticleInfo returned
+        if (aimsArticles.length > 0) {
+            const sample = aimsArticles[0];
+            const sampleKeys = Object.keys(sample).join(', ');
+            appLogger.info('AimsReconcile', `${storeName}: pullArticleInfo returned ${aimsArticles.length} articles. Sample keys: [${sampleKeys}], articleId=${JSON.stringify(sample.articleId)}, article_id=${JSON.stringify(sample.article_id)}`);
+        } else {
+            appLogger.info('AimsReconcile', `${storeName}: pullArticleInfo returned 0 articles`);
+        }
+
         const aimsMap = new Map<string, AimsArticle>();
         for (const a of aimsArticles) {
             const id = a.articleId || a.article_id;
