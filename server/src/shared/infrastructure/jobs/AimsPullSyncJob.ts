@@ -279,13 +279,14 @@ export class AimsSyncReconciliationJob {
         const aimsMap = new Map<string, AimsArticle>();
         for (const a of aimsArticles) {
             const id = a.articleId || a.article_id;
-            if (id) aimsMap.set(id, a);
+            if (id) aimsMap.set(String(id), a);
         }
         result.totalInAims = aimsMap.size;
 
         // 3. Diff
         const toPush: AimsArticle[] = [];   // create or update in AIMS
         const toDelete: string[] = []; // remove from AIMS
+        const pushReasons: string[] = [];   // diagnostic: why each article is pushed
 
         // Articles that should exist
         for (const [artId, article] of expectedMap) {
@@ -293,9 +294,11 @@ export class AimsSyncReconciliationJob {
             if (!aimsArticle) {
                 // Missing → push
                 toPush.push(article);
+                if (pushReasons.length < 5) pushReasons.push(`${artId}: missing`);
             } else if (articleNeedsUpdate(article, aimsArticle)) {
                 // Changed → update (AIMS upserts on push)
                 toPush.push(article);
+                if (pushReasons.length < 5) pushReasons.push(`${artId}: changed`);
             } else {
                 result.unchanged++;
             }
@@ -306,6 +309,13 @@ export class AimsSyncReconciliationJob {
             if (!expectedMap.has(aimsId)) {
                 toDelete.push(aimsId);
             }
+        }
+
+        // Diagnostic logging when changes are detected
+        if (toPush.length > 0 || toDelete.length > 0) {
+            const expectedIds = [...expectedMap.keys()].slice(0, 5).join(', ');
+            const aimsIds = [...aimsMap.keys()].slice(0, 5).join(', ');
+            appLogger.info('AimsReconcile', `${storeName} diff: push ${toPush.length}, delete ${toDelete.length}, unchanged ${result.unchanged}. Expected IDs (sample): [${expectedIds}], AIMS IDs (sample): [${aimsIds}]. Reasons: ${pushReasons.join('; ') || 'none'}`);
         }
 
         // 4. Execute (pushArticles already handles batching in groups of 500)
@@ -400,7 +410,7 @@ export class AimsSyncReconciliationJob {
 
             // --- Sync assignedLabels to DB ---
             for (const info of articleInfoList) {
-                const artId = info.articleId;
+                const artId = info.articleId != null ? String(info.articleId) : null;
                 if (!artId) continue;
 
                 // Only sync when AIMS actually returned label data (array).
@@ -433,7 +443,7 @@ export class AimsSyncReconciliationJob {
             // --- Post-sync validation (informational only) ---
             const aimsInfoMap = new Map<string, typeof articleInfoList[number]>();
             for (const info of articleInfoList) {
-                if (info.articleId) aimsInfoMap.set(info.articleId, info);
+                if (info.articleId) aimsInfoMap.set(String(info.articleId), info);
             }
 
             const missingInAims: string[] = [];
