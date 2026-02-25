@@ -118,8 +118,11 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        // Don't try to refresh for auth endpoints (login, verify-2fa, etc.)
-        const isAuthEndpoint = originalRequest.url?.includes('/auth/');
+        // Don't try to refresh for auth-flow endpoints (login, verify-2fa, refresh, etc.)
+        // Note: /auth/me, /auth/devices, /auth/change-password etc. are regular
+        // authenticated endpoints that SHOULD trigger token refresh on 401.
+        const authFlowPaths = ['/auth/login', '/auth/verify-2fa', '/auth/refresh', '/auth/device-auth', '/auth/resend-code', '/auth/forgot-password', '/auth/reset-password'];
+        const isAuthEndpoint = authFlowPaths.some(p => originalRequest.url?.includes(p));
         
         // Handle 401 Unauthorized - only for non-auth endpoints
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
