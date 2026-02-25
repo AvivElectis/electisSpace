@@ -206,6 +206,9 @@ function buildArticle(
 /**
  * Compare an expected article against what AIMS currently has.
  * Returns true if it needs to be re-pushed.
+ *
+ * AIMS may return data fields either inside a `data` sub-object or as
+ * top-level properties on the article (flat format).  We check both.
  */
 export function articleNeedsUpdate(expected: AimsArticle, aims: AimsArticle): boolean {
     // Compare article name
@@ -214,8 +217,13 @@ export function articleNeedsUpdate(expected: AimsArticle, aims: AimsArticle): bo
     // Compare data objects: check every key in expected.data
     const eData = expected.data ?? {};
     const aData = aims.data ?? {};
+    // AIMS sometimes returns fields flat (top-level) instead of nested in `data`
+    const aimsFlat = aims as Record<string, unknown>;
     for (const [key, val] of Object.entries(eData)) {
-        if ((val ?? '') !== (aData[key] ?? '')) return true;
+        const expectedVal = String(val ?? '');
+        // Check nested data first, then fall back to top-level flat field
+        const aimsVal = String(aData[key] ?? aimsFlat[key] ?? '');
+        if (expectedVal !== aimsVal) return true;
     }
 
     return false;

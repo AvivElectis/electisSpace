@@ -10,8 +10,8 @@ import {
 } from '../featureResolution.js';
 
 describe('resolveEffectiveFeatures', () => {
-    const companyF: CompanyFeatures = { spacesEnabled: true, peopleEnabled: true, conferenceEnabled: false, simpleConferenceMode: false, labelsEnabled: true };
-    const storeF: CompanyFeatures = { spacesEnabled: false, peopleEnabled: true, conferenceEnabled: true, simpleConferenceMode: true, labelsEnabled: false };
+    const companyF: CompanyFeatures = { spacesEnabled: true, peopleEnabled: true, conferenceEnabled: false, simpleConferenceMode: false, labelsEnabled: true, aimsManagementEnabled: true };
+    const storeF: CompanyFeatures = { spacesEnabled: false, peopleEnabled: true, conferenceEnabled: true, simpleConferenceMode: true, labelsEnabled: false, aimsManagementEnabled: false };
 
     it('should return store features when provided', () => { expect(resolveEffectiveFeatures(companyF, storeF)).toEqual(storeF); });
     it('should return company features when no store override', () => { expect(resolveEffectiveFeatures(companyF, null)).toEqual(companyF); });
@@ -26,6 +26,16 @@ describe('resolveEffectiveSpaceType', () => {
 
 describe('extractCompanyFeatures', () => {
     it('should return ALL_FEATURES_ENABLED for null', () => { expect(extractCompanyFeatures(null)).toEqual(ALL_FEATURES_ENABLED); });
+    it('should respect peopleManagerEnabled legacy flag', () => {
+        const r = extractCompanyFeatures({ peopleManagerEnabled: true });
+        expect(r.spacesEnabled).toBe(false);
+        expect(r.peopleEnabled).toBe(true);
+    });
+    it('should default to spaces mode when no features and no legacy flag', () => {
+        const r = extractCompanyFeatures({});
+        expect(r.spacesEnabled).toBe(true);
+        expect(r.peopleEnabled).toBe(false);
+    });
     it('should extract from settings', () => {
         const r = extractCompanyFeatures({ companyFeatures: { spacesEnabled: false } });
         expect(r.spacesEnabled).toBe(false);

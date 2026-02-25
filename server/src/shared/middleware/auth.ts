@@ -260,7 +260,6 @@ const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[
         audit: ['read'],
         sync: ['trigger', 'view'],
         labels: ['view', 'manage'],
-<<<<<<< HEAD
         stores: ['read', 'update', 'delete', 'manage'],
         companies: ['read'],
         'aims-management': ['view', 'manage'],
