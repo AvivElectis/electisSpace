@@ -29,14 +29,13 @@ Every task MUST follow this workflow:
 ### GraphQL IDs for gh api
 ```
 Project:  PVT_kwHOC2mF1s4BP2ar
-Status:   PVTSSF_lAHOC2mF1s4BP2arzsrTCCg
-Priority: PVTSSF_lAHOC2mF1s4BP2arzsrTCCw
-Type:     PVTSSF_lAHOC2mF1s4BP2arzsrTCC4
+Status:   PVTSSF_lAHOC2mF1s4BP2arzg-I748
+  Options: Todo (f75ad846) / In Progress (47fc9ee4) / Done (98236657)
+Priority: PVTSSF_lAHOC2mF1s4BP2arzg-I76c
+  Options: High (c8b9a08e) / Medium (38f731c0) / Low (6699439f)
+Type:     PVTSSF_lAHOC2mF1s4BP2arzg-I77w
+  Options: Bug (6f285e6c) / Feature (ae61764a) / Enhancement (76068ce7) / Chore (820911a8) / Docs (d9710f6d)
 ```
-
-Status options: `Todo` / `In Progress` / `Done`
-Priority options: `P0 - Critical` / `P1 - High` / `P2 - Medium` / `P3 - Low`
-Type options: `Feature` / `Bug` / `Chore` / `Docs`
 
 ## CHANGELOG.md
 - Follow Keep a Changelog format (keepachangelog.com)
