@@ -262,27 +262,27 @@ export class AimsSyncReconciliationJob {
 
         result.totalExpected = expectedMap.size;
 
-        // 2. Fetch current AIMS articles via article info endpoint
-        //    (includes `data` sub-object — the basic /articles endpoint does NOT)
-        let aimsArticleInfos: AimsArticleInfo[];
+        // 2. Fetch current AIMS articles
+        //    Try article info endpoint first (has `data` sub-object for comparison).
+        //    If it returns 0 articles, fall back to the basic /articles endpoint
+        //    which is more reliable but lacks nested `data`.
+        let aimsArticleInfos: AimsArticleInfo[] = [];
         let aimsArticles: AimsArticle[];
         try {
             aimsArticleInfos = await aimsGateway.pullArticleInfo(storeId);
-            // AimsArticleInfo is a superset of AimsArticle (same shape + assignedLabel)
-            aimsArticles = aimsArticleInfos as unknown as AimsArticle[];
+            if (aimsArticleInfos.length > 0) {
+                aimsArticles = aimsArticleInfos as unknown as AimsArticle[];
+            } else {
+                // Article info returned empty — fall back to basic articles endpoint
+                aimsArticles = await aimsGateway.pullArticles(storeId);
+                if (aimsArticles.length > 0) {
+                    appLogger.info('AimsReconcile', `${storeName}: articleInfo returned 0 but /articles returned ${aimsArticles.length} — using basic endpoint`);
+                }
+            }
         } catch (error: any) {
             result.success = false;
             result.error = `Failed to fetch AIMS articles: ${error.message}`;
             return result;
-        }
-
-        // Diagnostic: log what pullArticleInfo returned
-        if (aimsArticles.length > 0) {
-            const sample = aimsArticles[0];
-            const sampleKeys = Object.keys(sample).join(', ');
-            appLogger.info('AimsReconcile', `${storeName}: pullArticleInfo returned ${aimsArticles.length} articles. Sample keys: [${sampleKeys}], articleId=${JSON.stringify(sample.articleId)}, article_id=${JSON.stringify(sample.article_id)}`);
-        } else {
-            appLogger.info('AimsReconcile', `${storeName}: pullArticleInfo returned 0 articles`);
         }
 
         const aimsMap = new Map<string, AimsArticle>();

@@ -349,22 +349,8 @@ export class SolumService {
 
             const source = this.unwrap(response.data);
 
-            let result: AimsArticleInfo[];
-            if (Array.isArray(source)) {
-                result = source;
-            } else {
-                result = source.articleList || source.content || source.data || [];
-            }
-
-            // Diagnostic: log raw response shape when no articles are found
-            if (result.length === 0 && response.data) {
-                const rawKeys = Object.keys(response.data).join(', ');
-                const sourceType = Array.isArray(source) ? 'array' : typeof source;
-                const sourceKeys = source && typeof source === 'object' && !Array.isArray(source) ? Object.keys(source).join(', ') : 'N/A';
-                appLogger.warn('SoluM', `fetchArticleInfo(${config.storeCode}, page=${page}): 0 articles. Raw keys: [${rawKeys}], unwrapped type: ${sourceType}, unwrapped keys: [${sourceKeys}], responseCode: ${response.data.responseCode}`);
-            }
-
-            return result;
+            if (Array.isArray(source)) return source;
+            return source.articleList || source.content || source.data || [];
         });
     }
 
