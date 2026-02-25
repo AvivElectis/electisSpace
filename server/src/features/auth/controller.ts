@@ -4,7 +4,6 @@
  * @description HTTP request/response handling for authentication endpoints.
  */
 import type { Request, Response, NextFunction } from 'express';
-import dns from 'dns';
 import { config, prisma } from '../../config/index.js';
 import { badRequest, unauthorized } from '../../shared/middleware/index.js';
 import { authService } from './service.js';
@@ -115,22 +114,12 @@ export const authController = {
                 try {
                     const ip = req.ip || req.socket.remoteAddress;
 
-                    // Try to resolve hostname from IP via reverse DNS
-                    let resolvedName = deviceName;
-                    if (ip && (!deviceName || /^(Windows PC|Mac|Linux|Unknown Device)/.test(deviceName))) {
-                        try {
-                            const cleanIp = ip.replace(/^::ffff:/, '');
-                            const hostnames = await dns.promises.reverse(cleanIp);
-                            if (hostnames.length > 0) {
-                                // Use short hostname (before first dot) + browser suffix if present
-                                const shortHost = hostnames[0].split('.')[0];
-                                const browserSuffix = deviceName?.includes(' — ') ? deviceName.split(' — ').pop() : '';
-                                resolvedName = browserSuffix ? `${shortHost} — ${browserSuffix}` : shortHost;
-                            }
-                        } catch {
-                            // Reverse DNS failed — keep client-provided name
-                        }
-                    }
+                    // Use client-provided device name directly.
+                    // Electron clients already resolve the real hostname via IPC.
+                    // For web clients, the UA-based name (e.g. "Windows PC — Chrome")
+                    // is more descriptive than reverse DNS which often resolves to
+                    // server/container hostnames (e.g. "global-npm") behind proxies.
+                    const resolvedName = deviceName;
 
                     deviceToken = await authService.createDeviceToken(
                         result.user.id,

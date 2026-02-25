@@ -67,6 +67,8 @@ Security properties:
 - **Refresh tokens** use httpOnly cookies (invisible to JavaScript) with hashed storage in the database.
 - **Verification codes** are single-use, time-limited, and rate-limited per IP+email combination.
 
+**Token refresh interceptor:** The client axios interceptor auto-refreshes on 401 responses, except for auth-flow endpoints (`/auth/login`, `/auth/verify-2fa`, `/auth/refresh`, `/auth/device-auth`, `/auth/resend-code`, `/auth/forgot-password`, `/auth/reset-password`). All other `/auth/*` endpoints (e.g. `/auth/me`, `/auth/devices`) are treated as regular authenticated endpoints and trigger token refresh normally.
+
 ### 7.3 Device-Based Auth Tokens
 
 ```mermaid
@@ -79,7 +81,6 @@ sequenceDiagram
     User->>Client: Login + check "Trust this device"
     Client->>Server: POST /auth/verify-2fa<br/>{email, code, deviceId, deviceName, platform}
     Server->>DB: Verify 2FA code
-    Server->>Server: Resolve hostname via reverse DNS
     Server->>DB: Create DeviceToken (hashed, 90d web / 365d mobile)
     Server-->>Client: {accessToken, deviceToken}
     Client->>Client: Store deviceToken in IndexedDB + localStorage
@@ -97,8 +98,8 @@ sequenceDiagram
 - Web tokens expire after 90 days; mobile (iOS/Android) after 365 days
 - Client stores raw token in IndexedDB (via idb-keyval) with localStorage fallback
 - Rate limited: 10 requests per 15 minutes per IP+device combination
-- Server resolves real hostname via reverse DNS on client IP at creation time
-- Electron desktop exposes `os.hostname()` via IPC for accurate machine names
+- Device name comes from the client: Electron uses `os.hostname()` via IPC; web clients send UA-based names (e.g. "Windows PC — Chrome")
+- Server uses client-provided names directly (reverse DNS was removed as it resolved to proxy/container hostnames behind nginx)
 
 **Management UI:**
 - "Trust this device" opt-in checkbox on login form (not on 2FA screen)
