@@ -207,22 +207,23 @@ function buildArticle(
  * Compare an expected article against what AIMS currently has.
  * Returns true if it needs to be re-pushed.
  *
- * AIMS may return data fields either inside a `data` sub-object or as
- * top-level properties on the article (flat format).  We check both.
+ * NOTE: The caller must fetch from the article info endpoint
+ * (/config/article/info) which returns `data` fields.
+ * The basic articles endpoint (/articles) does NOT return data.
  */
 export function articleNeedsUpdate(expected: AimsArticle, aims: AimsArticle): boolean {
     // Compare article name
     if ((expected.articleName || '') !== (aims.articleName || aims.article_name || '')) return true;
 
-    // Compare data objects: check every key in expected.data
+    // Compare nfcUrl (AIMS returns empty string or undefined for empty)
+    if ((expected.nfcUrl || '') !== (aims.nfcUrl ?? '')) return true;
+
+    // Compare data fields (requires article info endpoint response)
     const eData = expected.data ?? {};
     const aData = aims.data ?? {};
-    // AIMS sometimes returns fields flat (top-level) instead of nested in `data`
-    const aimsFlat = aims as Record<string, unknown>;
     for (const [key, val] of Object.entries(eData)) {
         const expectedVal = String(val ?? '');
-        // Check nested data first, then fall back to top-level flat field
-        const aimsVal = String(aData[key] ?? aimsFlat[key] ?? '');
+        const aimsVal = String(aData[key] ?? '');
         if (expectedVal !== aimsVal) return true;
     }
 
