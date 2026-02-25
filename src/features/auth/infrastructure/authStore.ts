@@ -158,7 +158,7 @@ interface AuthState {
 
     // Actions
     login: (credentials: AuthCredentials) => Promise<boolean>;
-    verify2FA: (code: string) => Promise<boolean>;
+    verify2FA: (code: string, trustDevice?: boolean) => Promise<boolean>;
     resendCode: () => Promise<void>;
     logout: () => Promise<void>;
     setUser: (user: User | null) => void;
@@ -222,7 +222,7 @@ export const useAuthStore = create<AuthState>()(
                     }
                 },
 
-                verify2FA: async (code: string): Promise<boolean> => {
+                verify2FA: async (code: string, trustDevice?: boolean): Promise<boolean> => {
                     const email = get().pendingEmail;
                     if (!email) {
                         set({ error: 'No pending verification' });
@@ -231,7 +231,37 @@ export const useAuthStore = create<AuthState>()(
 
                     set({ isLoading: true, error: null }, false, 'verify2FA/start');
                     try {
-                        const response = await authService.verify2FA({ email, code });
+                        // Get device info for persistent auth (only if user opted in)
+                        let deviceId: string | undefined;
+                        let deviceName: string | undefined;
+                        let platform: string | undefined;
+                        if (trustDevice) {
+                            try {
+                                const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+                                deviceId = await deviceTokenStorage.getDeviceId();
+                                platform = deviceTokenStorage.getPlatform();
+
+                                // Try Electron hostname first, fall back to UA-based name
+                                const hostname = await deviceTokenStorage.getHostname();
+                                if (hostname) {
+                                    const ua = navigator.userAgent;
+                                    const browser = /Edg\//.test(ua) ? 'Edge'
+                                        : /Chrome\//.test(ua) ? 'Chrome'
+                                        : /Firefox\//.test(ua) ? 'Firefox'
+                                        : /Safari\//.test(ua) ? 'Safari'
+                                        : '';
+                                    deviceName = browser ? `${hostname} — ${browser}` : hostname;
+                                } else {
+                                    deviceName = deviceTokenStorage.getDeviceName();
+                                }
+                            } catch { /* not available */ }
+                        }
+
+                        const response = await authService.verify2FA({
+                            email,
+                            code,
+                            ...(deviceId ? { deviceId, deviceName, platform } : {}),
+                        });
                         const { user } = response;
                         
                         // Set active context from user or default to first company/store
@@ -300,6 +330,11 @@ export const useAuthStore = create<AuthState>()(
                     set({ isLoading: true }, false, 'logout/start');
                     try {
                         await authService.logout();
+                        // Clear device token on explicit logout
+                        try {
+                            const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+                            await deviceTokenStorage.removeDeviceToken();
+                        } catch { /* ignore */ }
                     } finally {
                         set({
                             user: null,

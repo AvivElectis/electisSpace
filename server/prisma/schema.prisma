@@ -134,6 +134,7 @@ model User {
   userCompanies      UserCompany[]
   userStores         UserStore[]
   refreshTokens      RefreshToken[]
+  deviceTokens       DeviceToken[]
   verificationCodes  VerificationCode[]
   auditLogs          AuditLog[]
   createdSpaces      Space[]        @relation("SpaceCreatedBy")
@@ -233,6 +234,31 @@ model RefreshToken {
   @@index([tokenHash])
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ======================
+// Device Tokens (persistent mobile auth)
+// ======================
+model DeviceToken {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  tokenHash    String   @map("token_hash") @db.VarChar(255)
+  deviceId     String   @map("device_id") @db.VarChar(255)
+  deviceName   String?  @map("device_name") @db.VarChar(255)
+  platform     String?  @db.VarChar(50)
+  lastUsedAt   DateTime @map("last_used_at") @default(now())
+  lastIp       String?  @map("last_ip") @db.VarChar(45)
+  expiresAt    DateTime @map("expires_at")
+  revoked      Boolean  @default(false)
+
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([deviceId])
+  @@map("device_tokens")
 }
 
 // ======================

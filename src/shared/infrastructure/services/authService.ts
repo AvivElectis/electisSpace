@@ -95,6 +95,18 @@ export interface SolumConnectResponse {
     };
 }
 
+export interface DeviceInfo {
+    id: string;
+    deviceId: string;
+    deviceName: string | null;
+    platform: string | null;
+    lastUsedAt: string;
+    lastIp: string | null;
+    createdAt: string;
+    expiresAt: string;
+    current?: boolean;
+}
+
 export interface StoreConnectionInfo {
     storeId: string;
     storeName: string;
@@ -118,13 +130,24 @@ export const authService = {
 
     /**
      * Login Step 2: Verify 2FA code and get tokens
-     * Note: The refresh token is set as httpOnly cookie by the server
+     * Optionally requests a device token for persistent auth
      */
-    verify2FA: async (credentials: Verify2FACredentials): Promise<LoginResponse> => {
-        const response = await api.post<LoginResponse>('/auth/verify-2fa', credentials);
-        const { accessToken } = response.data;
-        // Only store access token in memory - refresh token is in httpOnly cookie
+    verify2FA: async (credentials: Verify2FACredentials & {
+        deviceId?: string;
+        deviceName?: string;
+        platform?: string;
+    }): Promise<LoginResponse & { deviceToken?: string }> => {
+        const response = await api.post<LoginResponse & { deviceToken?: string }>('/auth/verify-2fa', credentials);
+        const { accessToken, deviceToken } = response.data;
         tokenManager.setAccessToken(accessToken);
+
+        // Persist device token if returned
+        if (deviceToken) {
+            import('./deviceTokenStorage').then(({ deviceTokenStorage }) => {
+                deviceTokenStorage.setDeviceToken(deviceToken).catch(() => {});
+            }).catch(() => {});
+        }
+
         return response.data;
     },
 
@@ -241,6 +264,38 @@ export const authService = {
             params: { storeId },
         });
         return response.data;
+    },
+
+    /**
+     * Authenticate with device token (no 2FA required)
+     */
+    deviceAuth: async (deviceToken: string, deviceId: string): Promise<LoginResponse> => {
+        const response = await api.post<LoginResponse>('/auth/device-auth', { deviceToken, deviceId });
+        const { accessToken } = response.data;
+        tokenManager.setAccessToken(accessToken);
+        return response.data;
+    },
+
+    /**
+     * List active device tokens
+     */
+    listDevices: async (): Promise<{ devices: DeviceInfo[] }> => {
+        const response = await api.get<{ devices: DeviceInfo[] }>('/auth/devices');
+        return response.data;
+    },
+
+    /**
+     * Revoke a specific device token
+     */
+    revokeDevice: async (tokenId: string): Promise<void> => {
+        await api.delete(`/auth/devices/${tokenId}`);
+    },
+
+    /**
+     * Revoke all device tokens
+     */
+    revokeAllDevices: async (): Promise<void> => {
+        await api.delete('/auth/devices');
     },
 
     /**

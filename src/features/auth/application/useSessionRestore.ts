@@ -92,10 +92,47 @@ export const useSessionRestore = () => {
                 setAppReady(true);
             }
         } catch (error) {
-            // Refresh cookie is invalid or expired - clear the session and show login
-            logger.debug('SessionRestore', 'Cookie refresh failed, showing login', {
-                error: error instanceof Error ? error.message : 'Unknown error'
-            });
+            // Refresh cookie is invalid or expired — try device token auth
+            logger.debug('SessionRestore', 'Cookie refresh failed, trying device token');
+
+            try {
+                const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+                const deviceToken = await deviceTokenStorage.getDeviceToken();
+                const deviceId = await deviceTokenStorage.getDeviceId();
+
+                if (deviceToken && deviceId) {
+                    logger.info('SessionRestore', 'Attempting device token auth');
+                    const result = await authService.deviceAuth(deviceToken, deviceId);
+
+                    if (result.accessToken) {
+                        logger.info('SessionRestore', 'Device token auth successful');
+                        try {
+                            const { user: freshUser } = await authService.me();
+                            setUser(freshUser);
+
+                            const activeStoreId = freshUser.activeStoreId || freshUser.stores?.[0]?.id;
+                            const activeCompanyId = freshUser.activeCompanyId || freshUser.companies?.[0]?.id;
+                            if (activeStoreId && activeCompanyId) {
+                                try {
+                                    await useSettingsStore.getState().fetchSettingsFromServer(activeStoreId, activeCompanyId);
+                                    const { reconnectToSolum } = useAuthStore.getState();
+                                    reconnectToSolum().catch(() => {});
+                                } catch { /* continue */ }
+                            }
+                        } catch { /* continue */ }
+
+                        setAppReady(true);
+                        setInitialized(true);
+                        return;
+                    }
+                }
+            } catch (deviceErr) {
+                logger.debug('SessionRestore', 'Device token auth failed', {
+                    error: deviceErr instanceof Error ? deviceErr.message : 'Unknown',
+                });
+            }
+
+            // All auth methods failed — show login
             setUser(null);
             setAppReady(true);
         }

@@ -20,6 +20,7 @@ import {
     resolveEffectiveFeatures,
     resolveEffectiveSpaceType,
 } from '../../shared/utils/featureResolution.js';
+import crypto from 'crypto';
 import type {
     TokenPair,
     TokenResponse,
@@ -32,6 +33,8 @@ import type {
     MeResponse,
     AdminResetResponse,
     SolumConnectResponse,
+    DeviceTokenResponse,
+    DeviceInfo,
 } from './types.js';
 
 // ======================
@@ -517,6 +520,104 @@ export const authService = {
         } catch {
             // Token invalid, nothing to revoke
         }
+    },
+
+    /**
+     * Create a device token for persistent auth
+     */
+    async createDeviceToken(
+        userId: string,
+        deviceInfo: { deviceId: string; deviceName?: string; platform?: string },
+        ip?: string
+    ): Promise<string> {
+        const rawToken = crypto.randomBytes(48).toString('base64url');
+        const tokenHash = await bcrypt.hash(rawToken, 10);
+
+        const isMobile = deviceInfo.platform === 'ios' || deviceInfo.platform === 'android';
+        const expiresMs = isMobile ? 365 * 24 * 60 * 60 * 1000 : 90 * 24 * 60 * 60 * 1000;
+        const expiresAt = new Date(Date.now() + expiresMs);
+
+        // Revoke existing tokens for this device
+        await authRepository.revokeDeviceTokensByDeviceId(userId, deviceInfo.deviceId);
+
+        await authRepository.createDeviceToken({
+            userId,
+            tokenHash,
+            deviceId: deviceInfo.deviceId,
+            deviceName: deviceInfo.deviceName,
+            platform: deviceInfo.platform,
+            lastIp: ip,
+            expiresAt,
+        });
+
+        return rawToken;
+    },
+
+    /**
+     * Authenticate with a device token
+     */
+    async authenticateWithDeviceToken(
+        rawToken: string,
+        deviceId: string,
+        ip?: string
+    ): Promise<DeviceTokenResponse> {
+        const deviceTokens = await authRepository.findDeviceTokensByDeviceId(deviceId);
+        if (deviceTokens.length === 0) throw new Error('INVALID_DEVICE_TOKEN');
+
+        let matchingToken = null;
+        for (const dt of deviceTokens) {
+            if (await bcrypt.compare(rawToken, dt.tokenHash)) {
+                matchingToken = dt;
+                break;
+            }
+        }
+        if (!matchingToken) throw new Error('INVALID_DEVICE_TOKEN');
+
+        const user = await authRepository.findUserWithRelations(matchingToken.userId);
+        if (!user || !user.isActive) throw new Error('USER_NOT_FOUND');
+
+        await authRepository.updateDeviceTokenLastUsed(matchingToken.id, ip);
+
+        const { accessToken } = await this.generateTokens(user.id);
+
+        return {
+            accessToken,
+            expiresIn: 900,
+            user: await mapUserToInfo(user),
+        };
+    },
+
+    /**
+     * Revoke a specific device token
+     */
+    async revokeDeviceToken(tokenId: string, userId: string): Promise<void> {
+        const tokens = await authRepository.findUserDeviceTokens(userId);
+        if (!tokens.find(t => t.id === tokenId)) throw new Error('TOKEN_NOT_FOUND');
+        await authRepository.revokeDeviceToken(tokenId);
+    },
+
+    /**
+     * Revoke all device tokens for a user
+     */
+    async revokeAllDeviceTokens(userId: string): Promise<void> {
+        await authRepository.revokeAllDeviceTokens(userId);
+    },
+
+    /**
+     * List active device tokens for a user
+     */
+    async listDeviceTokens(userId: string): Promise<DeviceInfo[]> {
+        const tokens = await authRepository.findUserDeviceTokens(userId);
+        return tokens.map(t => ({
+            id: t.id,
+            deviceId: t.deviceId,
+            deviceName: t.deviceName,
+            platform: t.platform,
+            lastUsedAt: t.lastUsedAt,
+            lastIp: t.lastIp,
+            createdAt: t.createdAt,
+            expiresAt: t.expiresAt,
+        }));
     },
 
     /**
