@@ -83,7 +83,7 @@ const getDeviceOS = (deviceName: string | null | undefined): string | null => {
     return null;
 };
 
-const formatRelativeDate = (dateStr: string, t: (key: string, fallback?: string) => string): string => {
+const formatRelativeDate = (dateStr: string, t: (key: string, defaultValue: string) => string): string => {
     try {
         const now = new Date();
         const date = new Date(dateStr);
@@ -113,7 +113,7 @@ export function SecuritySettingsTab({
     onUnlock,
     onUpdate,
 }: SecuritySettingsTabProps) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
