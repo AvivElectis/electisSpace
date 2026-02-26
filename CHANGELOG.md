@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Link label 500 error** — structured AIMS error handling with descriptive messages instead of generic 500
 - **Store assignment 400 error** — replaced StoreRole enum validation with roleId-based system
 - **npm updated to latest stable** in CI and production deploy
+- **Role display in user management** — users now show correct DB-backed role name instead of blank/fallback
+- **Hebrew translations for roles** — distinct Hebrew names for Admin (מנהלן) vs Manager (מנהל), permission matrix resources and actions translated
+- **Zod roleId validation** — changed from `.uuid()` to `.min(1)` since default role IDs are deterministic strings
 
 ---
 
