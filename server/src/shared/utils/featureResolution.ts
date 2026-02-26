@@ -26,7 +26,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: true,
-    aimsManagementEnabled: true,
+    aimsManagementEnabled: false,
 };
 
 export const DEFAULT_SPACE_TYPE: SpaceType = 'office';
@@ -66,7 +66,7 @@ export const ALL_FEATURES_ENABLED: CompanyFeatures = {
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: true,
-    aimsManagementEnabled: true,
+    aimsManagementEnabled: false,
 };
 
 /**
@@ -92,7 +92,7 @@ export function extractCompanyFeatures(settings: Record<string, unknown> | null 
         conferenceEnabled: f.conferenceEnabled ?? DEFAULT_COMPANY_FEATURES.conferenceEnabled,
         simpleConferenceMode: f.simpleConferenceMode ?? DEFAULT_COMPANY_FEATURES.simpleConferenceMode,
         labelsEnabled: f.labelsEnabled ?? DEFAULT_COMPANY_FEATURES.labelsEnabled,
-        aimsManagementEnabled: f.aimsManagementEnabled ?? true,
+        aimsManagementEnabled: f.aimsManagementEnabled ?? false,
     };
 }
 
