@@ -1330,7 +1330,12 @@
             "button": "Link",
             "labelRequired": "Label code is required",
             "articleRequired": "Article ID is required",
-            "error": "Failed to link label"
+            "error": "Failed to link label",
+            "linkFailed": "Failed to link label",
+            "linkFailedWhitelist": "Label not whitelisted. Auto-whitelist failed.",
+            "linkFailedNotFound": "Label not found in AIMS",
+            "linkFailedAlreadyLinked": "Label is already linked to another article",
+            "linkFailedAims": "AIMS service error. Please try again later."
         },
         "unlink": {
             "confirmTitle": "Unlink Label",

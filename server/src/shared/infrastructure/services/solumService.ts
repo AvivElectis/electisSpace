@@ -610,6 +610,37 @@ export class SolumService {
     }
 
     /**
+     * Whitelist a label in AIMS
+     */
+    async whitelistLabel(
+        config: SolumConfig,
+        token: string,
+        labelCode: string
+    ): Promise<AimsApiResponse> {
+        if (!config.storeCode) {
+            throw new Error('Store code is required for whitelist');
+        }
+
+        const url = this.buildUrl(
+            config,
+            `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}`
+        );
+
+        return this.withRetry('whitelistLabel', async () => {
+            try {
+                const response = await this.client.post(url, {
+                    labelList: [labelCode],
+                }, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Whitelist label failed: ${error.response?.data?.responseMessage || error.message}`);
+            }
+        });
+    }
+
+    /**
      * Blink/flash a label for identification
      */
     async blinkLabel(config: SolumConfig, token: string, labelCode: string): Promise<AimsApiResponse> {

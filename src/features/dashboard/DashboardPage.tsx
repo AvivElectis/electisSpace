@@ -121,8 +121,17 @@ export function DashboardPage() {
     // Link label handler - uses server API with company credentials
     const handleLinkLabel = useCallback(async (labelCode: string, articleId: string, templateName?: string) => {
         if (!activeStoreId) return;
-        
-        await labelsApi.link(activeStoreId, labelCode, articleId, templateName);
+
+        try {
+            await labelsApi.link(activeStoreId, labelCode, articleId, templateName);
+        } catch (error: any) {
+            // Extract the server error message from the axios response
+            const serverMessage = error.response?.data?.error?.message
+                || error.response?.data?.message
+                || error.message
+                || 'Failed to link label';
+            throw new Error(serverMessage);
+        }
     }, [activeStoreId]);
 
     // Extract space type for icons

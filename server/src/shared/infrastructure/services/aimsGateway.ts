@@ -16,6 +16,20 @@ import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStor
 import { decrypt } from '../../utils/encryption.js';
 import { appLogger } from './appLogger.js';
 
+export class AimsOperationError extends Error {
+    public responseCode: string;
+    public responseMessage: string;
+    public statusCode: number;
+
+    constructor(message: string, responseCode: string, responseMessage: string, statusCode: number = 502) {
+        super(message);
+        this.name = 'AimsOperationError';
+        this.responseCode = responseCode;
+        this.responseMessage = responseMessage;
+        this.statusCode = statusCode;
+    }
+}
+
 interface AIMSCredentials {
     baseUrl: string;
     cluster?: string;
@@ -570,23 +584,112 @@ export class AIMSGateway {
 
     /**
      * Link label to article
+     * Handles AIMS response body errors, auto-whitelist on whitelist-related errors,
+     * and token refresh on 401/403.
      */
     async linkLabel(storeId: string, labelCode: string, articleId: string, templateName?: string): Promise<AimsApiResponse> {
         const { token, config } = await this.getTokenForStore(storeId);
-        
-        try {
-            return await solumService.linkLabel(config, token, labelCode, articleId, templateName);
-        } catch (error: any) {
-            if (error.message?.includes('401') || error.message?.includes('403')) {
-                const storeConfig = await this.getStoreConfig(storeId);
-                if (storeConfig) {
-                    this.invalidateToken(storeConfig.companyId);
-                    const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.linkLabel(config, newToken, labelCode, articleId, templateName);
+
+        const attemptLink = async (currentToken: string): Promise<AimsApiResponse> => {
+            try {
+                const result = await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
+
+                // Check AIMS response body for non-success responseCode
+                const responseCode = result?.responseCode || '';
+                const responseMessage = typeof result?.responseMessage === 'string' ? result.responseMessage : '';
+
+                if (responseCode && responseCode !== '0000' && responseCode.toUpperCase() !== 'SUCCESS') {
+                    const combinedMsg = `${responseCode}: ${responseMessage}`;
+
+                    // Auto-whitelist on whitelist-related errors
+                    if (responseMessage.toLowerCase().includes('whitelist') || responseCode.toLowerCase().includes('whitelist')) {
+                        appLogger.warn('AimsGateway', `Link label failed due to whitelist issue, attempting auto-whitelist for ${labelCode}`, { responseCode, responseMessage });
+                        try {
+                            await solumService.whitelistLabel(config, currentToken, labelCode);
+                            appLogger.info('AimsGateway', `Auto-whitelist succeeded for ${labelCode}, retrying link`);
+                            // Retry link after whitelist
+                            const retryResult = await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
+                            const retryCode = retryResult?.responseCode || '';
+                            const retryMsg = typeof retryResult?.responseMessage === 'string' ? retryResult.responseMessage : '';
+                            if (retryCode && retryCode !== '0000' && retryCode.toUpperCase() !== 'SUCCESS') {
+                                throw new AimsOperationError(
+                                    `Link label failed after whitelist: ${retryCode}: ${retryMsg}`,
+                                    retryCode,
+                                    retryMsg,
+                                    502
+                                );
+                            }
+                            return retryResult;
+                        } catch (whitelistError: any) {
+                            if (whitelistError instanceof AimsOperationError) throw whitelistError;
+                            appLogger.error('AimsGateway', `Auto-whitelist failed for ${labelCode}`, { error: whitelistError.message });
+                            throw new AimsOperationError(
+                                `Label not whitelisted. Auto-whitelist failed: ${whitelistError.message}`,
+                                responseCode,
+                                responseMessage,
+                                502
+                            );
+                        }
+                    }
+
+                    // Map other common AIMS errors
+                    appLogger.error('AimsGateway', `Link label AIMS error: ${combinedMsg}`, { labelCode, articleId, responseCode, responseMessage });
+                    throw new AimsOperationError(
+                        `AIMS link label failed: ${combinedMsg}`,
+                        responseCode,
+                        responseMessage,
+                        502
+                    );
                 }
+
+                return result;
+            } catch (error: any) {
+                // Re-throw AimsOperationError as-is
+                if (error instanceof AimsOperationError) throw error;
+
+                const msg = error.message || '';
+                const status = error.response?.status;
+
+                // Check if the error message or HTTP status indicates whitelist issue
+                if (msg.toLowerCase().includes('whitelist')) {
+                    appLogger.warn('AimsGateway', `Link label error contains whitelist reference, attempting auto-whitelist for ${labelCode}`, { error: msg });
+                    try {
+                        await solumService.whitelistLabel(config, currentToken, labelCode);
+                        appLogger.info('AimsGateway', `Auto-whitelist succeeded for ${labelCode}, retrying link`);
+                        return await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
+                    } catch (whitelistError: any) {
+                        if (whitelistError instanceof AimsOperationError) throw whitelistError;
+                        throw new AimsOperationError(
+                            `Label not whitelisted. Auto-whitelist failed: ${whitelistError.message}`,
+                            'WHITELIST_ERROR',
+                            whitelistError.message,
+                            502
+                        );
+                    }
+                }
+
+                // Token refresh on 401/403
+                if (status === 401 || status === 403 || msg.includes('401') || msg.includes('403')) {
+                    const storeConfig = await this.getStoreConfig(storeId);
+                    if (storeConfig) {
+                        this.invalidateToken(storeConfig.companyId);
+                        const newToken = await this.getToken(storeConfig.companyId);
+                        return await solumService.linkLabel(config, newToken, labelCode, articleId, templateName);
+                    }
+                }
+
+                // Wrap unexpected errors with context
+                appLogger.error('AimsGateway', `Link label unexpected error for ${labelCode} -> ${articleId}`, { error: msg, status });
+                throw new AimsOperationError(
+                    msg || 'AIMS service error',
+                    'UNKNOWN',
+                    msg,
+                    status && status >= 400 && status < 600 ? status : 502
+                );
             }
-            throw error;
-        }
+        };
+
+        return attemptLink(token);
     }
 
     /**
