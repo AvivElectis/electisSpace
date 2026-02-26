@@ -14,6 +14,49 @@ import { useLabelsStore } from '@features/labels/infrastructure/labelsStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import { AxiosError } from 'axios';
 
+// Result type for session validation
+export interface ValidationResult {
+    valid: boolean;
+    networkError: boolean;
+}
+
+// Helper to detect network errors (vs auth errors)
+const isNetworkError = (error: unknown): boolean => {
+    // Browser reports offline
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return true;
+    }
+
+    if (error instanceof AxiosError) {
+        // Axios network error codes
+        if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+            return true;
+        }
+        // No response received at all (network-level failure)
+        if (!error.response && (
+            error.message?.includes('Network Error') ||
+            error.message?.includes('timeout') ||
+            error.message?.includes('Failed to fetch')
+        )) {
+            return true;
+        }
+    }
+
+    if (error instanceof Error) {
+        const msg = error.message;
+        if (
+            msg.includes('Network Error') ||
+            msg.includes('ERR_NETWORK') ||
+            msg.includes('Failed to fetch') ||
+            msg.includes('timeout')
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
 // Error code type for login errors
 type AuthErrorCode = 
     | 'INVALID_CREDENTIALS'
@@ -165,7 +208,7 @@ interface AuthState {
     setError: (error: string | null) => void;
     checkAuth: () => void;
     clearError: () => void;
-    validateSession: () => Promise<boolean>;
+    validateSession: () => Promise<ValidationResult>;
     setInitialized: (initialized: boolean) => void;
     setAppReady: (ready: boolean) => void;
 
@@ -380,7 +423,7 @@ export const useAuthStore = create<AuthState>()(
                     }
                 },
 
-                validateSession: async (): Promise<boolean> => {
+                validateSession: async (): Promise<ValidationResult> => {
                     const hasToken = !!tokenManager.getAccessToken();
                     if (!hasToken) {
                         set({
@@ -390,7 +433,7 @@ export const useAuthStore = create<AuthState>()(
                             activeCompanyId: null,
                             activeStoreId: null,
                         }, false, 'validateSession/noToken');
-                        return false;
+                        return { valid: false, networkError: false };
                     }
 
                     try {
@@ -399,7 +442,7 @@ export const useAuthStore = create<AuthState>()(
                         const { user } = response;
                         const activeCompanyId = user.activeCompanyId || user.companies?.[0]?.id || null;
                         const activeStoreId = user.activeStoreId || user.stores?.[0]?.id || null;
-                        
+
                         set({
                             user,
                             isAuthenticated: true,
@@ -407,9 +450,15 @@ export const useAuthStore = create<AuthState>()(
                             activeCompanyId,
                             activeStoreId,
                         }, false, 'validateSession/success');
-                        return true;
-                    } catch {
-                        // Session is invalid, clear auth state
+                        return { valid: true, networkError: false };
+                    } catch (error) {
+                        // Distinguish network errors from actual auth failures
+                        if (isNetworkError(error)) {
+                            logger.warn('AuthStore', 'Network error during session validation, preserving auth state');
+                            return { valid: false, networkError: true };
+                        }
+
+                        // Auth truly failed — clear auth state
                         set({
                             isAuthenticated: false,
                             user: null,
@@ -417,7 +466,7 @@ export const useAuthStore = create<AuthState>()(
                             activeCompanyId: null,
                             activeStoreId: null,
                         }, false, 'validateSession/failed');
-                        return false;
+                        return { valid: false, networkError: false };
                     }
                 },
 
