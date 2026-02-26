@@ -40,14 +40,14 @@ export const storeRefSchema = z.discriminatedUnion('type', [
     z.object({
         type: z.literal('existing'),
         id: z.string().uuid(),
-        roleId: z.string().uuid().default('role-viewer'),
+        roleId: z.string().min(1).default('role-viewer'),
         features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
     }),
     z.object({
         type: z.literal('new'),
         code: z.string().regex(STORE_CODE_REGEX, 'Store code must be numeric'),
         name: z.string().min(1).max(200),
-        roleId: z.string().uuid().default('role-viewer'),
+        roleId: z.string().min(1).default('role-viewer'),
         features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
     }),
 ]);
@@ -78,14 +78,14 @@ export const updateUserSchema = z.object({
 });
 
 export const updateUserStoreSchema = z.object({
-    roleId: z.string().uuid().optional(),
+    roleId: z.string().min(1).optional(),
     features: z.array(z.enum(AVAILABLE_FEATURES)).optional(),
 });
 
 export const assignUserToStoreSchema = z.object({
     userId: z.string().uuid(),
     storeId: z.string().uuid(),
-    roleId: z.string().uuid().default('role-viewer'),
+    roleId: z.string().min(1).default('role-viewer'),
     features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
 });
 
@@ -131,7 +131,7 @@ export const bulkActivateSchema = z.object({
 export const bulkChangeRoleSchema = z.object({
     userIds: z.array(z.string().uuid()).min(1).max(50),
     storeId: z.string().uuid(),
-    roleId: z.string().uuid(),
+    roleId: z.string().min(1),
 });
 
 export const updateContextSchema = z.object({

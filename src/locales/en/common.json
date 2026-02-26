@@ -59,7 +59,9 @@
         "people": "People",
         "conference": "Conference Rooms",
         "labels": "Labels",
-        "sync": "Synchronization"
+        "sync": "Synchronization",
+        "aims-management": "AIMS Management",
+        "settings": "Settings"
     },
     "common": {
         "save": "Save",
@@ -1278,6 +1280,7 @@
     "roles": {
         "admin": "Admin",
         "manager": "Manager",
+        "employee": "Employee",
         "viewer": "Viewer",
         "company_admin": "Company Admin",
         "store_admin": "Store Manager",
@@ -1286,6 +1289,36 @@
         "store_viewer": "Store Viewer",
         "platform_admin": "App Admin",
         "super_user": "Super User"
+    },
+    "permissions": {
+        "resources": {
+            "spaces": "Spaces",
+            "people": "People",
+            "conference": "Conference",
+            "settings": "Settings",
+            "users": "Users",
+            "audit": "Audit",
+            "sync": "Sync",
+            "labels": "Labels",
+            "stores": "Stores",
+            "companies": "Companies",
+            "aims-management": "AIMS Management"
+        },
+        "actions": {
+            "view": "View",
+            "create": "Create",
+            "edit": "Edit",
+            "delete": "Delete",
+            "import": "Import",
+            "assign": "Assign",
+            "toggle": "Toggle",
+            "trigger": "Trigger",
+            "manage": "Manage",
+            "link": "Link",
+            "unlink": "Unlink",
+            "read": "Read",
+            "update": "Update"
+        }
     },
     "validation": {
         "required": "{{field}} is required",

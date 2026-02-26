@@ -161,7 +161,7 @@ export function StoreAssignment({
     const getRoleDisplayName = useCallback((roleId: string | undefined, legacyRole: string): string => {
         if (roleId) {
             const role = roles.find(r => r.id === roleId);
-            if (role) return role.name;
+            if (role) return t(`roles.${role.name.toLowerCase()}`, role.name);
         }
         // Fallback to legacy role translation
         return t(`roles.${legacyRole.toLowerCase()}`, legacyRole);
@@ -362,7 +362,7 @@ export function StoreAssignment({
                                             {roles.length > 0 ? (
                                                 roles.map(role => (
                                                     <MenuItem key={role.id} value={role.id}>
-                                                        {role.name}
+                                                        {t(`roles.${role.name.toLowerCase()}`, role.name)}
                                                     </MenuItem>
                                                 ))
                                             ) : (

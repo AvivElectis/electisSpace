@@ -59,7 +59,9 @@
         "people": "אנשים",
         "conference": "חדרי ישיבות",
         "labels": "תגיות",
-        "sync": "סינכרון"
+        "sync": "סינכרון",
+        "aims-management": "ניהול AIMS",
+        "settings": "הגדרות"
     },
     "common": {
         "save": "שמור",
@@ -1291,8 +1293,9 @@
         }
     },
     "roles": {
-        "admin": "מנהל",
+        "admin": "מנהלן",
         "manager": "מנהל",
+        "employee": "עובד",
         "viewer": "צופה",
         "company_admin": "מנהל חברה",
         "store_admin": "מנהל חנות",
@@ -1301,6 +1304,36 @@
         "store_viewer": "צופה חנות",
         "platform_admin": "מנהל אפליקציה",
         "super_user": "משתמש על"
+    },
+    "permissions": {
+        "resources": {
+            "spaces": "חללים",
+            "people": "אנשים",
+            "conference": "ישיבות",
+            "settings": "הגדרות",
+            "users": "משתמשים",
+            "audit": "ביקורת",
+            "sync": "סינכרון",
+            "labels": "תגיות",
+            "stores": "חנויות",
+            "companies": "חברות",
+            "aims-management": "ניהול AIMS"
+        },
+        "actions": {
+            "view": "צפייה",
+            "create": "יצירה",
+            "edit": "עריכה",
+            "delete": "מחיקה",
+            "import": "ייבוא",
+            "assign": "שיוך",
+            "toggle": "הפעלה",
+            "trigger": "הפעלה",
+            "manage": "ניהול",
+            "link": "קישור",
+            "unlink": "ניתוק",
+            "read": "קריאה",
+            "update": "עדכון"
+        }
     },
     "validation": {
         "required": "{{field}} הוא שדה חובה",

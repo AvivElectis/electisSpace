@@ -246,7 +246,7 @@ export function StoreRequiredGuard({ children }: StoreRequiredGuardProps) {
                                                 {store.name}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary">
-                                                {t('auth.storeCode', 'Code')}: {store.code} &middot; {store.role}
+                                                {t('auth.storeCode', 'Code')}: {store.code} &middot; {t(`roles.${store.roleId?.replace('role-', '') || 'viewer'}`)}
                                             </Typography>
                                         </Box>
                                     </Button>

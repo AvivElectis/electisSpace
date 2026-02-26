@@ -28,7 +28,9 @@ export interface UserData {
     }>;
     stores?: Array<{
         store: { id: string; name: string; code: string; companyId: string };
-        role: string;
+        roleId: string;
+        /** @deprecated Server no longer sends this field */
+        role?: string;
         features: string[];
     }>;
 }

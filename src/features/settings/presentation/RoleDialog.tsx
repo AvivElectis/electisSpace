@@ -298,7 +298,7 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
                                                         align="center"
                                                         sx={{ fontWeight: 600, fontSize: '0.75rem', minWidth: 60 }}
                                                     >
-                                                        {action}
+                                                        {t(`permissions.actions.${action}`, action)}
                                                     </TableCell>
                                                 ))}
                                             </TableRow>
@@ -313,7 +313,7 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
                                                 return (
                                                     <TableRow key={resource} hover>
                                                         <TableCell sx={{ fontWeight: 500 }}>
-                                                            {resource}
+                                                            {t(`permissions.resources.${resource}`, resource)}
                                                         </TableCell>
                                                         <TableCell align="center">
                                                             <Checkbox

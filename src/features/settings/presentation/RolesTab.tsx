@@ -138,12 +138,14 @@ export function RolesTab() {
                                 <TableRow key={role.id} hover>
                                     <TableCell>
                                         <Typography variant="body2" fontWeight={500}>
-                                            {role.name}
+                                            {t(`roles.${role.name.toLowerCase()}`, role.name)}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" color="text.secondary">
-                                            {role.description || '-'}
+                                            {role.description
+                                                ? t(`roles.${role.name.toLowerCase()}_desc`, role.description)
+                                                : '-'}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>

@@ -142,7 +142,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                             storeId: s.store.id,
                             storeName: s.store.name,
                             storeCode: s.store.code,
-                            role: s.role as any,
+                            role: s.role || 'STORE_VIEWER',
+                            roleId: s.roleId,
                             features: s.features
                         }));
                     setStoreAssignments(userStoreAssignments);
@@ -204,7 +205,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                         storeId: s.store.id,
                         storeName: s.store.name,
                         storeCode: s.store.code,
-                        role: s.role as any,
+                        role: s.role || 'STORE_VIEWER',
+                        roleId: s.roleId,
                         features: s.features
                     }));
                 setStoreAssignments(userStoreAssignments);
@@ -430,13 +432,13 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 for (const assignment of storeAssignments) {
                     if (existingStoreIds.has(assignment.storeId)) {
                         await api.patch(`/users/${user.id}/stores/${assignment.storeId}`, {
-                            role: assignment.role,
+                            roleId: assignment.roleId,
                             features: assignment.features
                         });
                     } else {
                         await api.post(`/users/${user.id}/stores`, {
                             storeId: assignment.storeId,
-                            role: assignment.role,
+                            roleId: assignment.roleId,
                             features: assignment.features
                         });
                     }
@@ -467,7 +469,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                     createUserData.stores = storeAssignments.map(a => ({
                         type: 'existing',
                         id: a.storeId,
-                        role: a.role,
+                        roleId: a.roleId,
                         features: a.features
                     }));
                 }
