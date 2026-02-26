@@ -181,9 +181,8 @@ export const useSettingsStore = create<SettingsStore>()(
                             if (companySettings.peopleManagerEnabled !== undefined) {
                                 updates.peopleManagerEnabled = companySettings.peopleManagerEnabled;
                             }
-                            if (companySettings.peopleManagerConfig) {
-                                updates.peopleManagerConfig = companySettings.peopleManagerConfig;
-                            }
+                            // NOTE: peopleManagerConfig comes from store-level settings (already in `updates` from serverSettings)
+                            // Only peopleManagerEnabled (the feature toggle) is company-wide
                             if (companySettings.autoSyncEnabled !== undefined) {
                                 updates.autoSyncEnabled = companySettings.autoSyncEnabled;
                             }
@@ -312,7 +311,8 @@ export const useSettingsStore = create<SettingsStore>()(
                         if (otherSettings.logos) companyWideSettings.logos = otherSettings.logos;
                         if (otherSettings.csvConfig) companyWideSettings.csvConfig = otherSettings.csvConfig;
                         if (otherSettings.peopleManagerEnabled !== undefined) companyWideSettings.peopleManagerEnabled = otherSettings.peopleManagerEnabled;
-                        if (otherSettings.peopleManagerConfig) companyWideSettings.peopleManagerConfig = otherSettings.peopleManagerConfig;
+                        // NOTE: peopleManagerConfig is NOT company-wide — it's store-level (totalSpaces is per-store)
+                        // Only peopleManagerEnabled (the feature toggle) is company-wide
                         if (otherSettings.autoSyncEnabled !== undefined) companyWideSettings.autoSyncEnabled = otherSettings.autoSyncEnabled;
                         if (otherSettings.autoSyncInterval !== undefined) companyWideSettings.autoSyncInterval = otherSettings.autoSyncInterval;
                         if (otherSettings.appName !== undefined) companyWideSettings.appName = otherSettings.appName;
