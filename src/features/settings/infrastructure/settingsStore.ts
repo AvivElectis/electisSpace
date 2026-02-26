@@ -190,7 +190,7 @@ export const useSettingsStore = create<SettingsStore>()(
                             if (companySettings.autoSyncInterval !== undefined) {
                                 updates.autoSyncInterval = companySettings.autoSyncInterval;
                             }
-                            if (companySettings.appName) {
+                            if (companySettings.appName !== undefined) {
                                 updates.appName = companySettings.appName;
                             }
                             if (companySettings.appSubtitle !== undefined) {
@@ -315,7 +315,7 @@ export const useSettingsStore = create<SettingsStore>()(
                         if (otherSettings.peopleManagerConfig) companyWideSettings.peopleManagerConfig = otherSettings.peopleManagerConfig;
                         if (otherSettings.autoSyncEnabled !== undefined) companyWideSettings.autoSyncEnabled = otherSettings.autoSyncEnabled;
                         if (otherSettings.autoSyncInterval !== undefined) companyWideSettings.autoSyncInterval = otherSettings.autoSyncInterval;
-                        if (otherSettings.appName) companyWideSettings.appName = otherSettings.appName;
+                        if (otherSettings.appName !== undefined) companyWideSettings.appName = otherSettings.appName;
                         if (otherSettings.appSubtitle !== undefined) companyWideSettings.appSubtitle = otherSettings.appSubtitle;
                         if (otherSettings.spaceType) companyWideSettings.spaceType = otherSettings.spaceType;
 
