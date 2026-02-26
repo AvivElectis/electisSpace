@@ -1293,7 +1293,7 @@
         }
     },
     "roles": {
-        "admin": "מנהלן",
+        "admin": "מנהל ראשי",
         "manager": "מנהל",
         "employee": "עובד",
         "viewer": "צופה",
