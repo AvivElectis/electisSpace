@@ -1,10 +1,10 @@
 /**
  * Express Type Augmentations
- * 
+ *
  * @description Extends Express Request interface with authentication data.
  * This file is automatically loaded by TypeScript.
  */
-import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
+import { GlobalRole, CompanyRole } from '@prisma/client';
 
 declare global {
     namespace Express {
@@ -13,7 +13,7 @@ declare global {
          */
         interface StoreAccess {
             id: string;
-            role: StoreRole;
+            roleId: string;
             companyId: string;
         }
 

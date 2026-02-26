@@ -2,12 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config, prisma } from '../../config/index.js';
 import { unauthorized, forbidden } from './errorHandler.js';
-import { GlobalRole, StoreRole } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
+import type { Resource, Action, PermissionsMap } from '../../features/roles/types.js';
 
 // Store access info
 interface StoreAccess {
     id: string;
-    role: StoreRole;
+    roleId: string;
     companyId: string;
 }
 
@@ -86,6 +87,30 @@ export function invalidateUserCache(userId: string): void {
     userCache.delete(userId);
 }
 
+// ---- Role permissions cache ----
+const ROLE_CACHE_TTL_MS = 60_000;
+const rolePermissionsCache = new Map<string, { permissions: PermissionsMap; expiresAt: number }>();
+
+async function getRolePermissions(roleId: string): Promise<PermissionsMap> {
+    const cached = rolePermissionsCache.get(roleId);
+    if (cached && Date.now() < cached.expiresAt) {
+        return cached.permissions;
+    }
+    const role = await prisma.role.findUnique({
+        where: { id: roleId },
+        select: { permissions: true },
+    });
+    const permissions = (role?.permissions || {}) as PermissionsMap;
+    rolePermissionsCache.set(roleId, { permissions, expiresAt: Date.now() + ROLE_CACHE_TTL_MS });
+    return permissions;
+}
+
+/** Invalidate role permissions cache (call after role update) */
+export function invalidateRoleCache(roleId?: string): void {
+    if (roleId) rolePermissionsCache.delete(roleId);
+    else rolePermissionsCache.clear();
+}
+
 // Authentication middleware
 export const authenticate = async (
     req: Request,
@@ -128,7 +153,7 @@ export const authenticate = async (
                 userStores: {
                     select: {
                         storeId: true,
-                        role: true,
+                        roleId: true,
                         store: {
                             select: {
                                 companyId: true,
@@ -153,7 +178,7 @@ export const authenticate = async (
         // Build user context
         const stores: StoreAccess[] = user.userStores.map(us => ({
             id: us.storeId,
-            role: us.role,
+            roleId: us.roleId,
             companyId: us.store.companyId,
         }));
 
@@ -179,7 +204,7 @@ export const authenticate = async (
                 if (!existingStoreIds.has(cs.id)) {
                     stores.push({
                         id: cs.id,
-                        role: 'STORE_ADMIN' as StoreRole,
+                        roleId: 'role-admin',  // Company admins with allStoresAccess get admin role
                         companyId: cs.companyId,
                     });
                 }
@@ -221,9 +246,9 @@ export const requireGlobalRole = (...allowedRoles: GlobalRole[]) => {
     };
 };
 
-// Role-based authorization middleware (for backward compatibility)
-export const authorize = (...allowedRoles: string[]) => {
-    return (req: Request, _res: Response, next: NextFunction): void => {
+// Role-based authorization middleware (checks by role name from DB)
+export const authorize = (...allowedRoleNames: string[]) => {
+    return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
         if (!req.user) {
             next(unauthorized('Authentication required'));
             return;
@@ -235,62 +260,25 @@ export const authorize = (...allowedRoles: string[]) => {
             return;
         }
 
-        // Check if user has any of the allowed store roles
-        const hasRole = req.user.stores.some(s => allowedRoles.includes(s.role));
-        if (!hasRole) {
-            next(forbidden('Insufficient permissions'));
-            return;
+        // Look up role names for user's stores
+        for (const store of req.user.stores) {
+            const role = await prisma.role.findUnique({
+                where: { id: store.roleId },
+                select: { name: true },
+            });
+            if (role && allowedRoleNames.includes(role.name)) {
+                next();
+                return;
+            }
         }
 
-        next();
+        next(forbidden('Insufficient permissions'));
     };
 };
 
-// Permission-based authorization
-type Resource = 'spaces' | 'people' | 'conference' | 'settings' | 'users' | 'audit' | 'sync' | 'labels' | 'stores' | 'companies' | 'aims-management';
-type Action = 'create' | 'read' | 'update' | 'delete' | 'import' | 'assign' | 'toggle' | 'trigger' | 'view' | 'manage';
-
-const STORE_ROLE_PERMISSIONS: Record<StoreRole, Partial<Record<Resource, Action[]>>> = {
-    STORE_ADMIN: {
-        spaces: ['create', 'read', 'update', 'delete'],
-        people: ['create', 'read', 'update', 'delete', 'import', 'assign'],
-        conference: ['create', 'read', 'update', 'delete', 'toggle'],
-        settings: ['read', 'update'],
-        users: ['create', 'read', 'update', 'delete'],
-        audit: ['read'],
-        sync: ['trigger', 'view'],
-        labels: ['view', 'manage'],
-        stores: ['read', 'update', 'delete', 'manage'],
-        companies: ['read'],
-        'aims-management': ['view', 'manage'],
-    },
-    STORE_MANAGER: {
-        spaces: ['create', 'read', 'update', 'delete'],
-        people: ['create', 'read', 'update', 'delete', 'import', 'assign'],
-        conference: ['create', 'read', 'update', 'delete', 'toggle'],
-        settings: ['read'],
-        sync: ['trigger', 'view'],
-        labels: ['view', 'manage'],
-        'aims-management': ['view'],
-    },
-    STORE_EMPLOYEE: {
-        spaces: ['read', 'update'],
-        people: ['read', 'update'],
-        conference: ['read', 'update'],
-        sync: ['view'],
-        labels: ['view'],
-    },
-    STORE_VIEWER: {
-        spaces: ['read'],
-        people: ['read'],
-        conference: ['read'],
-        sync: ['view'],
-        labels: ['view'],
-    },
-};
-
+// Permission-based authorization (DB-backed)
 export const requirePermission = (resource: Resource, action: Action) => {
-    return (req: Request, _res: Response, next: NextFunction): void => {
+    return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
         if (!req.user) {
             next(unauthorized('Authentication required'));
             return;
@@ -302,26 +290,27 @@ export const requirePermission = (resource: Resource, action: Action) => {
             return;
         }
 
-        // Check if any store role has the required permission
-        let hasPermission = req.user.stores.some(s => {
-            const permissions = STORE_ROLE_PERMISSIONS[s.role];
-            const resourcePermissions = permissions[resource] || [];
-            return resourcePermissions.includes(action);
-        });
-
-        // Fallback: check if user has allStoresAccess via company role (STORE_ADMIN-level permissions)
-        if (!hasPermission) {
-            hasPermission = req.user.companies.some(c =>
-                c.allStoresAccess && (STORE_ROLE_PERMISSIONS['STORE_ADMIN'][resource]?.includes(action) ?? false)
-            );
+        // Check store role permissions
+        for (const store of req.user.stores) {
+            const permissions = await getRolePermissions(store.roleId);
+            const resourcePerms = permissions[resource] || [];
+            if (resourcePerms.includes(action)) {
+                next();
+                return;
+            }
         }
 
-        if (!hasPermission) {
-            next(forbidden(`Permission denied: ${action} on ${resource}`));
-            return;
+        // Fallback: allStoresAccess companies get admin permissions
+        for (const company of req.user.companies) {
+            if (company.allStoresAccess) {
+                const adminPerms = await getRolePermissions('role-admin');
+                if (adminPerms[resource]?.includes(action)) {
+                    next();
+                    return;
+                }
+            }
         }
 
-        next();
+        next(forbidden(`Permission denied: ${action} on ${resource}`));
     };
 };
-

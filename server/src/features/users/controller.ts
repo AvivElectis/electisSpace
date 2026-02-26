@@ -32,7 +32,7 @@ function getUserContext(req: Request): UserContext {
     return {
         id: req.user!.id,
         globalRole: req.user!.globalRole ?? null,
-        stores: req.user?.stores?.map(s => ({ id: s.id, role: s.role })),
+        stores: req.user?.stores?.map(s => ({ id: s.id, roleId: s.roleId })),
         companies: req.user?.companies?.map(c => ({ id: c.id, role: c.role })),
     };
 }
@@ -205,7 +205,7 @@ export const userController = {
                     id: us.storeId,
                     code: us.store.code,
                     name: us.store.name,
-                    role: us.role,
+                    roleId: us.roleId,
                     features: us.features as string[],
                 })),
                 userCompanies: undefined,
@@ -269,7 +269,7 @@ export const userController = {
                 storeId: updated.storeId,
                 name: updated.store.name,
                 code: updated.store.code,
-                role: updated.role,
+                roleId: updated.roleId,
                 features: updated.features as string[],
             });
         } catch (error: any) {
@@ -292,7 +292,7 @@ export const userController = {
             const userStore = await userService.assignToStore(
                 data.userId,
                 data.storeId,
-                data.role,
+                data.roleId,
                 data.features,
                 currentUser
             );
@@ -301,7 +301,7 @@ export const userController = {
                 storeId: userStore.storeId,
                 name: userStore.store.name,
                 code: userStore.store.code,
-                role: userStore.role,
+                roleId: userStore.roleId,
                 features: userStore.features as string[],
             });
         } catch (error: any) {
@@ -631,7 +631,7 @@ export const userController = {
             const result = await userService.bulkChangeRole(
                 validation.data.userIds,
                 validation.data.storeId,
-                validation.data.role,
+                validation.data.roleId,
                 getUserContext(req),
             );
             res.json(result);

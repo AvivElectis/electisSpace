@@ -4,7 +4,7 @@
  * @description Type definitions, validation schemas, and DTOs for authentication.
  */
 import { z } from 'zod';
-import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
+import { GlobalRole, CompanyRole } from '@prisma/client';
 import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResolution.js';
 
 // ======================
@@ -89,7 +89,7 @@ export interface StoreInfo {
     id: string;
     name: string;
     code: string;
-    role: StoreRole;
+    roleId: string;
     features: string[];
     companyId: string;
     companyName: string;
@@ -201,7 +201,7 @@ export interface UserWithRelations {
     isActive: boolean;
     userStores: Array<{
         storeId: string;
-        role: StoreRole;
+        roleId: string;
         features: unknown;
         store: {
             name: string;

@@ -91,6 +91,6 @@ export interface CompanyAccess {
 export interface StoreUserContext {
     id: string;
     globalRole: string | null;
-    stores?: Array<{ id: string; role: string }>;
+    stores?: Array<{ id: string; roleId: string }>;
     companies?: Array<CompanyAccess>;
 }

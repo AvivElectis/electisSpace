@@ -39,7 +39,8 @@ model Company {
   // Relations
   stores          Store[]
   userCompanies   UserCompany[]
-  
+  roles           Role[]
+
   @@map("companies")
 }
 
@@ -185,34 +186,58 @@ enum CompanyRole {
 // User-Store Access (Many-to-Many with Roles)
 // ======================
 model UserStore {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  storeId   String    @map("store_id")
-  role      StoreRole @default(STORE_VIEWER)
-  
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  storeId   String   @map("store_id")
+  roleId    String   @map("role_id")
+
   // Feature permissions (JSON array of enabled features)
   // Available features: "spaces", "conference", "people", "dashboard"
-  features  Json      @default("[\"dashboard\"]")
-  
+  features  Json     @default("[\"dashboard\"]")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
+  role  Role  @relation(fields: [roleId], references: [id])
+
   @@unique([userId, storeId])
   @@index([userId])
   @@index([storeId])
+  @@index([roleId])
   @@map("user_stores")
 }
 
-enum StoreRole {
-  STORE_ADMIN
-  STORE_MANAGER
-  STORE_EMPLOYEE
-  STORE_VIEWER
+// ======================
+// Roles (DB-backed permissions)
+// ======================
+model Role {
+  id          String    @id @default(uuid())
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(500)
+  scope       RoleScope @default(SYSTEM)
+  companyId   String?   @map("company_id")
+  permissions Json      @default("{}")
+  isDefault   Boolean   @default(false) @map("is_default")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userStores  UserStore[]
+
+  @@unique([name, companyId])
+  @@index([companyId])
+  @@index([scope])
+  @@map("roles")
+}
+
+enum RoleScope {
+  SYSTEM
+  COMPANY
 }
 
 // ======================

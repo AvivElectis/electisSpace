@@ -585,7 +585,7 @@ export const authController = {
             // Determine if current user is an admin for this store or company
             const userStoreAccess = req.user!.stores.find((s: any) => s.id === storeId);
             const isPlatformAdmin = req.user!.globalRole === 'PLATFORM_ADMIN';
-            const isStoreAdmin = userStoreAccess?.role === 'STORE_ADMIN';
+            const isStoreAdmin = userStoreAccess?.roleId === 'role-admin';
 
             // Check if user is company admin
             const userCompanyAccess = req.user!.companies?.find(
@@ -601,7 +601,7 @@ export const authController = {
                 const storeAdmins = await prisma.userStore.findMany({
                     where: {
                         storeId,
-                        role: 'STORE_ADMIN',
+                        roleId: 'role-admin',
                         user: { isActive: true },
                     },
                     include: {

@@ -88,7 +88,7 @@ const makeUser = (overrides: Record<string, any> = {}) => ({
     activeCompanyId: 'comp-1',
     activeStoreId: 'store-1',
     userStores: [{
-        storeId: 'store-1', role: 'STORE_ADMIN', features: ['dashboard'],
+        storeId: 'store-1', roleId: 'role-admin', features: ['dashboard'],
         store: { name: 'Store 1', code: 'S1', companyId: 'comp-1', company: { name: 'Company 1', settings: null }, settings: null },
     }],
     userCompanies: [{

@@ -107,9 +107,9 @@ export const settingsService = {
         // Regular user - check access and role
         const userStore = await settingsRepository.getUserStoreAccess(user.id, storeId);
         if (userStore) {
-            // Check if user has permission to update settings (STORE_ADMIN or STORE_MANAGER)
-            const allowedRoles = ['STORE_ADMIN', 'STORE_MANAGER'];
-            if (!allowedRoles.includes(userStore.role)) {
+            // Check if user has permission to update settings (Admin or Manager roles)
+            const allowedRoleIds = ['role-admin', 'role-manager'];
+            if (!allowedRoleIds.includes(userStore.roleId)) {
                 throw new Error('FORBIDDEN');
             }
         } else {
