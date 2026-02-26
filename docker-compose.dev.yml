@@ -55,6 +55,23 @@ services:
       - dev-network
 
   # ======================
+  # Database Migrations
+  # ======================
+  migrate:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: electisspace-dev-migrate
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres_dev@postgres:5432/electisspace_dev?schema=public
+    command: ["npx", "prisma", "migrate", "deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dev-network
+
+  # ======================
   # Server — Node.js API
   # ======================
   server:
@@ -76,6 +93,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
