@@ -317,6 +317,9 @@
         "logoSettings": "Logo Settings",
         "securitySettings": "Security & Devices",
         "logViewer": "Log Viewer",
+        "general": "General",
+        "administration": "Administration",
+        "system": "System",
         "applicationName": "Application Name",
         "applicationSubtitle": "Application Subtitle",
         "spaceType": "Space Type",
@@ -737,7 +740,9 @@
             "simpleConferenceMode": "Simple Conference Mode",
             "conferenceStandard": "Standard",
             "conferenceSimple": "Simple",
-            "spaceTypeLabel": "Space Type"
+            "spaceTypeLabel": "Space Type",
+            "aimsManagement": "AIMS Management",
+            "aimsManagementDesc": "Enable the AIMS Management tab for advanced label and gateway configuration"
         },
         "stores": {
             "dialogTitle": "Manage Stores",

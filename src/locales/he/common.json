@@ -328,6 +328,9 @@
         "logoSettings": "הגדרות לוגו",
         "securitySettings": "אבטחה ומכשירים",
         "logViewer": "לוגים",
+        "general": "כללי",
+        "administration": "ניהול",
+        "system": "מערכת",
         "applicationName": "שם אפליקציה",
         "applicationSubtitle": "כותרת משנה",
         "spaceType": "סוג חלל",
@@ -748,7 +751,9 @@
             "simpleConferenceMode": "מצב ועידה פשוט",
             "conferenceStandard": "רגיל",
             "conferenceSimple": "פשוט",
-            "spaceTypeLabel": "סוג חלל"
+            "spaceTypeLabel": "סוג חלל",
+            "aimsManagement": "ניהול AIMS",
+            "aimsManagementDesc": "הפעל את לשונית ניהול AIMS לתצורה מתקדמת של תגיות ושערים"
         },
         "stores": {
             "dialogTitle": "ניהול חנויות",

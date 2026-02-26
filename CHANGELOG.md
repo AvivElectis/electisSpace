@@ -16,8 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auto-whitelist for AIMS labels** — labels rejected by AIMS for whitelist reasons are auto-whitelisted and retried
 - **Migration service in dev docker-compose** — runs `prisma migrate deploy` before server starts
 - **Pre-deploy database backup** — automatic `pg_dump` before migrations in production deploy, keeps last 5 backups
+- **AIMS Management toggle in Create Company wizard** — optional feature (disabled by default) now available during company creation, not just edit
 
 ### Changed
+- **Settings dialog UI overhaul** — vertical sidebar navigation on desktop/tablet with categorized sections (General, Administration, System), horizontal scrollable tabs with icons on mobile, improved visual hierarchy and spacing
 - **People mode totalSpaces is now per-store** — each store has its own space count instead of company-wide
 - **Device auth handles network reconnection gracefully** — distinguishes network errors from auth failures, attempts device token re-auth before redirecting
 - **AIMS Management disabled by default** — companies must explicitly enable it in settings
@@ -31,8 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Store assignment 400 error** — replaced StoreRole enum validation with roleId-based system
 - **npm updated to latest stable** in CI and production deploy
 - **Role display in user management** — users now show correct DB-backed role name instead of blank/fallback
-- **Hebrew translations for roles** — distinct Hebrew names for Admin (מנהלן) vs Manager (מנהל), permission matrix resources and actions translated
+- **Hebrew translations for roles** — distinct Hebrew names for Admin (מנהל ראשי) vs Manager (מנהל), permission matrix resources and actions translated
 - **Zod roleId validation** — changed from `.uuid()` to `.min(1)` since default role IDs are deterministic strings
+- **Settings dialog admin check** — fixed `s.role === 'STORE_ADMIN'` (deprecated field) to use `s.roleId === 'role-admin'`
+- **Hebrew AIMS Management translations** — added missing `settings.companies.aimsManagement` and section header translations to both locale files
 
 ---
 

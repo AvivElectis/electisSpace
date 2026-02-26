@@ -337,6 +337,11 @@ export function CreateCompanyWizard({ state, onClose }: Props) {
                                         control={<Switch checked={state.companyFeatures.labelsEnabled} onChange={(e) => state.handleFeatureToggle('labelsEnabled', e.target.checked)} size="small" />}
                                         label={t('labels.title')}
                                     />
+
+                                    <FormControlLabel
+                                        control={<Switch checked={state.companyFeatures.aimsManagementEnabled} onChange={(e) => state.handleFeatureToggle('aimsManagementEnabled', e.target.checked)} size="small" />}
+                                        label={t('settings.companies.aimsManagement', 'AIMS Management')}
+                                    />
                                 </Box>
                             </>
                         )}
