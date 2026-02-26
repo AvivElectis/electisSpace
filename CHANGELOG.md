@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Role management system** — DB-backed roles with custom permissions replace hardcoded StoreRole enum
+- **Roles tab in Settings** — platform and company admins can create/edit/delete roles with a permission matrix (resources x actions)
+- **Custom roles** — system-wide roles (platform admin) and company-specific roles (company admin)
+- **Auto-whitelist for AIMS labels** — labels rejected by AIMS for whitelist reasons are auto-whitelisted and retried
+- **Migration service in dev docker-compose** — runs `prisma migrate deploy` before server starts
+
+### Changed
+- **People mode totalSpaces is now per-store** — each store has its own space count instead of company-wide
+- **Device auth handles network reconnection gracefully** — distinguishes network errors from auth failures, attempts device token re-auth before redirecting
+- **AIMS Management disabled by default** — companies must explicitly enable it in settings
+- **Role permissions are database-backed** — auth middleware uses cached DB lookups instead of hardcoded permission matrix
+- **StoreAssignment uses role dropdown** — shows DB-backed role names instead of hardcoded enum values
+
+### Fixed
+- **CI/CD orphan container warnings** — removed observability step, added `--remove-orphans` flag
+- **App header/subheader not persisting** — debounced saves were cancelled on dialog unmount; now flushed
+- **Link label 500 error** — structured AIMS error handling with descriptive messages instead of generic 500
+- **Store assignment 400 error** — replaced StoreRole enum validation with roleId-based system
+- **npm updated to latest stable** in CI and production deploy
+
+---
+
 ## [2.6.0] - 2026-02-25
 
 ### Added
