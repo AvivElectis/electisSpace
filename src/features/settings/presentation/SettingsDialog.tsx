@@ -30,6 +30,7 @@ const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default:
 const UnlockDialog = lazy(() => import('./UnlockDialog').then(m => ({ default: m.UnlockDialog })));
 const UsersSettingsTab = lazy(() => import('./UsersSettingsTab').then(m => ({ default: m.UsersSettingsTab })));
 const CompaniesTab = lazy(() => import('./CompaniesTab').then(m => ({ default: m.CompaniesTab })));
+const RolesTab = lazy(() => import('./RolesTab').then(m => ({ default: m.RolesTab })));
 
 // Tab loading fallback
 function TabLoadingFallback() {
@@ -118,6 +119,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         adminTabs.push({
             label: t('settings.companies.title'),
             panel: <CompaniesTab />
+        });
+        adminTabs.push({
+            label: t('settings.roles.title'),
+            panel: <RolesTab />
         });
     }
 

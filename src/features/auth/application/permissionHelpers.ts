@@ -1,13 +1,36 @@
 /**
  * Permission Helpers
- * 
+ *
  * Utility functions for checking user permissions, roles, and feature access.
  * These work with the User type from authService.
+ *
+ * Supports both the legacy `role` enum (STORE_ADMIN, etc.) and the new
+ * `roleId` field (FK to the Role table: 'role-admin', 'role-manager', etc.).
+ * When `roleId` is present it takes precedence; the legacy `role` is used
+ * as a fallback for backward compatibility.
  */
 
 import type { User, Store, Company, CompanyFeatures } from '@shared/infrastructure/services/authService';
+import type { Resource, Action } from '@features/roles/domain/types';
+import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
 
-// Role hierarchy for comparison
+// Well-known default role IDs (created by DB seed)
+export const DEFAULT_ROLE_IDS = {
+    ADMIN: 'role-admin',
+    MANAGER: 'role-manager',
+    EMPLOYEE: 'role-employee',
+    VIEWER: 'role-viewer',
+} as const;
+
+// Map well-known roleIds to their hierarchy level
+const ROLE_ID_HIERARCHY: Record<string, number> = {
+    'role-admin': 4,
+    'role-manager': 3,
+    'role-employee': 2,
+    'role-viewer': 1,
+};
+
+// Role hierarchy for comparison (legacy enum-based)
 const STORE_ROLE_HIERARCHY: Record<Store['role'], number> = {
     'STORE_ADMIN': 4,
     'STORE_MANAGER': 3,
@@ -45,45 +68,56 @@ export function isCompanyAdmin(user: User | null, companyId: string): boolean {
 }
 
 /**
- * Check if user has Store Admin role for a specific store
+ * Check if user has Store Admin role for a specific store.
+ * Checks both legacy `role` enum and new `roleId` field.
  */
 export function isStoreAdmin(user: User | null, storeId: string): boolean {
     if (!user) return false;
     if (isPlatformAdmin(user)) return true;
-    
+
     const store = user.stores.find(s => s.id === storeId);
     if (!store) return false;
-    
+
     // Check if user is company admin for the store's company
     if (isCompanyAdmin(user, store.companyId)) return true;
-    
+
+    // Check new roleId first, fall back to legacy role
+    if (store.roleId) {
+        return store.roleId === DEFAULT_ROLE_IDS.ADMIN;
+    }
     return store.role === 'STORE_ADMIN';
 }
 
 /**
- * Check if user has at least a certain store role
+ * Check if user has at least a certain store role.
+ * Supports both roleId-based and legacy enum-based hierarchy comparison.
  */
 export function hasStoreRole(
-    user: User | null, 
-    storeId: string, 
+    user: User | null,
+    storeId: string,
     minimumRole: Store['role']
 ): boolean {
     if (!user) return false;
     if (isPlatformAdmin(user)) return true;
-    
+
     const store = user.stores.find(s => s.id === storeId);
     if (!store) {
         // Check if user has all-stores access for the company
-        const company = user.companies.find(c => 
+        const company = user.companies.find(c =>
             c.allStoresAccess && user.stores.some(s => s.companyId === c.id)
         );
         if (company && isCompanyAdmin(user, company.id)) return true;
         return false;
     }
-    
+
     // Check if user is company admin for the store's company
     if (isCompanyAdmin(user, store.companyId)) return true;
-    
+
+    // Try roleId-based comparison first
+    if (store.roleId && ROLE_ID_HIERARCHY[store.roleId] !== undefined) {
+        return ROLE_ID_HIERARCHY[store.roleId] >= STORE_ROLE_HIERARCHY[minimumRole];
+    }
+
     return STORE_ROLE_HIERARCHY[store.role] >= STORE_ROLE_HIERARCHY[minimumRole];
 }
 
@@ -171,8 +205,8 @@ export function canAccessFeature(
     // Company admins have access to all enabled features
     if (isCompanyAdmin(user, store.companyId)) return true;
 
-    // Store admins have access to all enabled features
-    if (store.role === 'STORE_ADMIN') return true;
+    // Store admins have access to all enabled features (check roleId first)
+    if (store.roleId === DEFAULT_ROLE_IDS.ADMIN || store.role === 'STORE_ADMIN') return true;
 
     // Check feature list for other roles
     return store.features.includes(feature);
@@ -289,7 +323,24 @@ export function canTriggerSync(user: User | null, storeId: string): boolean {
 }
 
 /**
- * Get the highest role level for display purposes
+ * Check if user has a specific permission via their role in a store.
+ * Looks up role permissions from the rolesStore cache.
+ * Falls back to false if the role data isn't cached yet.
+ */
+export function hasRolePermission(roleId: string, resource: Resource, action: Action): boolean {
+    const rolesState = useRolesStore.getState();
+    const role = rolesState.roles.find(r => r.id === roleId);
+    if (!role) return false;
+
+    const resourcePerms = role.permissions[resource];
+    if (!resourcePerms) return false;
+
+    return resourcePerms.includes(action);
+}
+
+/**
+ * Get the highest role level for display purposes.
+ * Checks both roleId and legacy role enum.
  */
 export function getHighestRole(user: User | null): string {
     if (!user) return 'Guest';
@@ -301,14 +352,29 @@ export function getHighestRole(user: User | null): string {
     const hasCompanyStoreAdmin = user.companies.some(c => c.role === 'STORE_ADMIN');
     if (hasCompanyStoreAdmin) return 'Store Manager';
 
-    const hasStoreAdmin = user.stores.some(s => s.role === 'STORE_ADMIN');
+    const hasStoreAdmin = user.stores.some(s =>
+        s.roleId === DEFAULT_ROLE_IDS.ADMIN || s.role === 'STORE_ADMIN'
+    );
     if (hasStoreAdmin) return 'Store Manager';
 
-    const hasStoreManager = user.stores.some(s => s.role === 'STORE_MANAGER');
+    const hasStoreManager = user.stores.some(s =>
+        s.roleId === DEFAULT_ROLE_IDS.MANAGER || s.role === 'STORE_MANAGER'
+    );
     if (hasStoreManager) return 'Store Manager';
 
-    const hasStoreEmployee = user.stores.some(s => s.role === 'STORE_EMPLOYEE');
+    const hasStoreEmployee = user.stores.some(s =>
+        s.roleId === DEFAULT_ROLE_IDS.EMPLOYEE || s.role === 'STORE_EMPLOYEE'
+    );
     if (hasStoreEmployee) return 'Store Viewer';
-    
+
     return 'Viewer';
+}
+
+/**
+ * Get the roleId for a user's store, falling back to null.
+ */
+export function getStoreRoleId(user: User | null, storeId: string): string | null {
+    if (!user) return null;
+    const store = user.stores.find(s => s.id === storeId);
+    return store?.roleId || null;
 }

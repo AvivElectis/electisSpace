@@ -32,6 +32,8 @@ export interface Store {
     name: string;
     code: string;
     role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    /** New role system: FK to the Role table (e.g., 'role-admin', 'role-viewer') */
+    roleId?: string;
     features: string[]; // Available features: 'dashboard', 'spaces', 'conference', 'people'
     companyId: string;
     companyName: string;

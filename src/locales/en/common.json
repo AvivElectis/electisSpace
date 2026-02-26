@@ -777,6 +777,26 @@
             "overrideLogos": "Override Company Logos",
             "storeLogosInfo": "Upload logos specific to this store. These override company-level logos.",
             "logo": "Logo"
+        },
+        "roles": {
+            "title": "Roles",
+            "add": "Add Role",
+            "edit": "Edit Role",
+            "delete": "Delete Role",
+            "name": "Role Name",
+            "description": "Description",
+            "scope": "Scope",
+            "system": "System",
+            "company": "Company",
+            "permissions": "Permissions",
+            "default": "Default",
+            "custom": "Custom",
+            "cannotDeleteDefault": "Default roles cannot be deleted",
+            "confirmDelete": "Are you sure you want to delete this role?",
+            "deleteInUse": "Cannot delete role that is assigned to users",
+            "noRoles": "No roles found",
+            "permissionMatrix": "Permission Matrix",
+            "selectAll": "Select All"
         }
     },
     "errors": {
