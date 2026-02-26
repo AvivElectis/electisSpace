@@ -26,6 +26,9 @@ jobs:
             set -e
             cd /opt/electisSpace
 
+            echo "=== Updating npm ==="
+            npm install -g npm@latest
+
             echo "=== Pulling latest code ==="
             git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/AvivElectis/electisSpace.git"
             git pull origin main
@@ -36,19 +39,15 @@ jobs:
             echo "=== Starting Redis ==="
             docker compose -f docker-compose.infra.yml up -d redis
 
-            echo "=== Running migrations (before server start) ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate resolve --rolled-back 20260223000000_add_store_status_and_user_suspension 2>/dev/null || true
+            echo "=== Running migrations ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate deploy
 
             echo "=== Starting core services ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d server client
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --remove-orphans server client
 
             echo "=== Health check ==="
             sleep 10
             curl -f http://localhost:3071/health || echo "Health check failed"
-
-            echo "=== Starting observability stack (non-blocking) ==="
-            docker compose -f docker-compose.infra.yml up -d loki promtail grafana || echo "WARNING: Observability stack failed to start (non-critical)"
 
             echo "=== Deployment complete ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml ps
