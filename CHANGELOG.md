@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Custom roles** — system-wide roles (platform admin) and company-specific roles (company admin)
 - **Auto-whitelist for AIMS labels** — labels rejected by AIMS for whitelist reasons are auto-whitelisted and retried
 - **Migration service in dev docker-compose** — runs `prisma migrate deploy` before server starts
+- **Pre-deploy database backup** — automatic `pg_dump` before migrations in production deploy, keeps last 5 backups
 
 ### Changed
 - **People mode totalSpaces is now per-store** — each store has its own space count instead of company-wide

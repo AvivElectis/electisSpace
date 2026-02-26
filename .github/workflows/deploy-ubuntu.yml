@@ -39,6 +39,15 @@ jobs:
             echo "=== Starting Redis ==="
             docker compose -f docker-compose.infra.yml up -d redis
 
+            echo "=== Backing up database before migrations ==="
+            BACKUP_DIR="/opt/electisSpace/backups"
+            mkdir -p "$BACKUP_DIR"
+            BACKUP_FILE="$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S).sql.gz"
+            docker exec global-postgres pg_dump -U postgres electisspace_prod | gzip > "$BACKUP_FILE"
+            echo "Backup saved to $BACKUP_FILE"
+            # Keep only the last 5 backups
+            ls -t "$BACKUP_DIR"/pre-deploy-*.sql.gz 2>/dev/null | tail -n +6 | xargs -r rm
+
             echo "=== Running migrations ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate deploy
 
