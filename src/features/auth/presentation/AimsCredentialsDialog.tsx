@@ -155,7 +155,7 @@ export function AimsCredentialsDialog({
                     />
                 </Stack>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onCancel} disabled={isLoading}>
                     {t('common.cancel', 'Cancel')}
                 </Button>

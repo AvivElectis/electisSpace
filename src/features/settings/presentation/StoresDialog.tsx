@@ -46,6 +46,7 @@ import {
     type CompanyStore
 } from '@shared/infrastructure/services/companyService';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { logger } from '@shared/infrastructure/services/logger';
 
 // Lazy load store dialog - using default export
 const StoreDialog = lazy(() => import('./StoreDialog'));
@@ -82,7 +83,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
             const response = await companyService.getStores(company.id);
             setStores(response?.stores || []);
         } catch (err) {
-            console.error('[StoresDialog] Failed to fetch stores:', err);
+            logger.error('StoresDialog', 'Failed to fetch stores', { error: String(err) });
             setError(t('settings.stores.fetchError'));
             setStores([]);
         } finally {
@@ -129,7 +130,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                 await companyService.deleteStore(store.id);
                 fetchStores();
             } catch (err) {
-                console.error('Failed to delete store:', err);
+                logger.error('StoresDialog', 'Failed to delete store', { error: String(err) });
                 setError(t('settings.stores.deleteError'));
             }
         }
@@ -204,7 +205,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                     gap={1}
                     sx={{ mb: 2 }}
                 >
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" fontWeight={600}>
                         {t('settings.stores.count', { count: safeStores.length })}
                     </Typography>
                     <Button

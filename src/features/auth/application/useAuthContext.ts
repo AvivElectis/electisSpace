@@ -57,7 +57,7 @@ export interface AuthContext {
 
     // Permission checks (bound to active context)
     canAccessFeature: (feature: Feature) => boolean;
-    hasStoreRole: (minimumRole: Store['role']) => boolean;
+    hasStoreRole: (minimumRole: string) => boolean;
     hasCompanyRole: (minimumRole: Company['role']) => boolean;
 
     // Company/store-level feature config
@@ -140,7 +140,7 @@ export function useAuthContext(): AuthContext {
     }, [user, activeStoreId, isPlatformAdminFlag]);
 
     const hasStoreRoleFn = useMemo(() => {
-        return (minimumRole: Store['role']) => {
+        return (minimumRole: string) => {
             if (!activeStoreId) return isPlatformAdminFlag;
             return hasStoreRole(user, activeStoreId, minimumRole);
         };

@@ -645,7 +645,7 @@ export function ConferencePage() {
                                 )}
                             </Stack>
                         </DialogContent>
-                        <DialogActions>
+                        <DialogActions sx={{ px: 3, py: 2 }}>
                             <Button onClick={() => setDetailsOpen(false)}>{t('common.close')}</Button>
                             <Button
                                 variant="contained"

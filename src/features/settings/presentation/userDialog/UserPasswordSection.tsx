@@ -61,7 +61,7 @@ export function UserPasswordSection({
         return (
             <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="subtitle2" color="primary">
+                    <Typography variant="subtitle2" fontWeight={600}>
                         {t('settings.users.password')}
                     </Typography>
                     <Button
@@ -133,7 +133,7 @@ export function UserPasswordSection({
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="subtitle2" color="primary">
+                <Typography variant="subtitle2" fontWeight={600}>
                     {t('settings.users.resetPassword')}
                 </Typography>
                 <Button

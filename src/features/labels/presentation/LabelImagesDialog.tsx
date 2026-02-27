@@ -262,7 +262,7 @@ export function LabelImagesDialog({
                     </>
                 )}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose}>{t('common.close', 'Close')}</Button>
             </DialogActions>
         </Dialog>

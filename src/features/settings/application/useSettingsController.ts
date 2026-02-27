@@ -111,20 +111,30 @@ export function useSettingsController() {
         }, 2000);
     }, [saveArticleFormatToServer]);
 
-    // Cleanup timeouts on unmount
+    // Flush pending saves on unmount instead of discarding them.
+    // This ensures that debounced settings changes (e.g. appName, appSubtitle)
+    // are persisted to the server even when the dialog closes before the
+    // debounce timer fires.
     useEffect(() => {
         return () => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
+                saveTimeoutRef.current = null;
+                // Fire the save immediately so changes aren't lost
+                saveSettingsToServer();
             }
             if (fieldMappingSaveTimeoutRef.current) {
                 clearTimeout(fieldMappingSaveTimeoutRef.current);
+                fieldMappingSaveTimeoutRef.current = null;
+                saveFieldMappingsToServer();
             }
             if (articleFormatSaveTimeoutRef.current) {
                 clearTimeout(articleFormatSaveTimeoutRef.current);
+                articleFormatSaveTimeoutRef.current = null;
+                saveArticleFormatToServer();
             }
         };
-    }, []);
+    }, [saveSettingsToServer, saveFieldMappingsToServer, saveArticleFormatToServer]);
 
     /**
      * Check if password protection is enabled

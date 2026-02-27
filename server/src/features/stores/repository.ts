@@ -35,7 +35,7 @@ export const storeRepository = {
                 },
                 userStores: {
                     where: { userId },
-                    select: { role: true, features: true }
+                    select: { roleId: true, features: true }
                 }
             }
         });
@@ -63,7 +63,7 @@ export const storeRepository = {
                 },
                 userStores: {
                     where: { userId },
-                    select: { role: true, features: true }
+                    select: { roleId: true, features: true }
                 }
             },
             orderBy: { code: 'asc' }

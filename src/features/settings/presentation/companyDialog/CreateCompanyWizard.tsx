@@ -170,7 +170,7 @@ export function CreateCompanyWizard({ state, onClose }: Props) {
                         </Typography>
 
                         {/* Store Selection */}
-                        <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <StorefrontIcon fontSize="small" />
                             {t('settings.companies.selectStore')} ({state.aimsStores.length})
                         </Typography>
@@ -336,6 +336,11 @@ export function CreateCompanyWizard({ state, onClose }: Props) {
                                     <FormControlLabel
                                         control={<Switch checked={state.companyFeatures.labelsEnabled} onChange={(e) => state.handleFeatureToggle('labelsEnabled', e.target.checked)} size="small" />}
                                         label={t('labels.title')}
+                                    />
+
+                                    <FormControlLabel
+                                        control={<Switch checked={state.companyFeatures.aimsManagementEnabled} onChange={(e) => state.handleFeatureToggle('aimsManagementEnabled', e.target.checked)} size="small" />}
+                                        label={t('settings.companies.aimsManagement', 'AIMS Management')}
                                     />
                                 </Box>
                             </>

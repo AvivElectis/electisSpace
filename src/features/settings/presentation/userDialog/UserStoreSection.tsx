@@ -27,7 +27,7 @@ export function UserStoreSection({
 
     return (
         <Box>
-            <Typography variant="subtitle2" color="primary" gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 {t('settings.users.storeAssignments')}
             </Typography>
             <StoreAssignment

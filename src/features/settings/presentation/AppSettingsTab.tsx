@@ -3,7 +3,6 @@ import {
     TextField,
     Stack,
     Typography,
-    Divider,
     Button,
     CircularProgress,
     Dialog,
@@ -11,6 +10,7 @@ import {
     DialogContent,
     DialogContentText,
     DialogActions,
+    Paper,
 } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useState } from 'react';
@@ -29,10 +29,6 @@ interface AppSettingsTabProps {
     onUpdate: (updates: Partial<SettingsData>) => void;
 }
 
-/**
- * Helper function to clear all data stores
- * Uses static imports
- */
 function clearAllDataStores(): void {
     useSpacesStore.getState().clearAllData();
     usePeopleStore.getState().clearAllData();
@@ -41,7 +37,7 @@ function clearAllDataStores(): void {
 
 /**
  * App Settings Tab
- * General application configuration with mode navigation
+ * General application configuration
  */
 export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
     const { t } = useTranslation();
@@ -49,14 +45,6 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
     const [pendingMode, setPendingMode] = useState<WorkingMode | null>(null);
     const [showModeSwitchDialog, setShowModeSwitchDialog] = useState(false);
     const [isSwitching, setIsSwitching] = useState(false);
-    // Mode switching logic removed/deprecated
-    /*
-    const handleModeChange = (newMode: WorkingMode) => {
-        if (newMode !== settings.workingMode) {
-             // ...
-        }
-    };
-    */
 
     const handleConfirmModeSwitch = async () => {
         if (pendingMode) {
@@ -64,16 +52,12 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
             const currentMode = settings.workingMode;
 
             logger.info('Settings', `Switching working mode from ${currentMode} to ${pendingMode}`);
-
-            // Clear all data stores using async helper
             await clearAllDataStores();
             logger.info('Settings', 'Cleared all data stores (spaces, people, conference rooms)');
 
-            // Clear old mode credentials and mappings
             clearModeCredentials(currentMode);
             logger.info('Settings', `Cleared credentials for ${currentMode} mode`);
 
-            // Switch to new mode
             onUpdate({ workingMode: pendingMode });
             logger.info('Settings', `Successfully switched to ${pendingMode} mode`);
 
@@ -104,7 +88,7 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
                         {t('settings.switchModeWarning')}
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ px: 3, py: 2 }}>
                     <Button onClick={handleCancelModeSwitch} disabled={isSwitching}>
                         {t('common.cancel')}
                     </Button>
@@ -121,13 +105,13 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
                 </DialogActions>
             </Dialog>
 
-            <Stack gap={2}>
-                {/* Application Info */}
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
+            <Stack gap={2.5}>
+                {/* Application Info Section */}
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
                         {t('settings.applicationInfo')}
                     </Typography>
-                    <Stack gap={1.5}>
+                    <Stack gap={2}>
                         <TextField
                             fullWidth
                             size="small"
@@ -145,20 +129,7 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
                             helperText={t('settings.displayedBelowAppName')}
                         />
                     </Stack>
-                </Box>
-
-                <Divider />
-
-                {/* Working Mode (Hidden/Deprecated - SoluM API Only) */}
-                {/* 
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t('settings.syncMode')}
-                    </Typography>
-                     ... Removed selector ...
-                </Box>
-                */}
-
+                </Paper>
             </Stack>
         </Box>
     );

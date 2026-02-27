@@ -47,6 +47,7 @@ import { settingsService } from '@shared/infrastructure/services/settingsService
 import type { LogoConfig } from '../domain/types';
 import { MAX_LOGO_SIZE, ALLOWED_LOGO_FORMATS } from '../domain/types';
 import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import { logger } from '@shared/infrastructure/services/logger';
 import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 // Common timezones
@@ -233,11 +234,11 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
     const handleLogoUpload = (logoIndex: 1 | 2, file: File) => {
         setLogoError(null);
         if (!ALLOWED_LOGO_FORMATS.includes(file.type)) {
-            setLogoError('Only PNG and JPEG formats are allowed');
+            setLogoError(t('settings.invalidLogoFormat'));
             return;
         }
         if (file.size > MAX_LOGO_SIZE) {
-            setLogoError(`File size must be less than ${MAX_LOGO_SIZE / 1024 / 1024}MB`);
+            setLogoError(t('settings.logoTooLarge', { size: MAX_LOGO_SIZE / 1024 / 1024 }));
             return;
         }
         const reader = new FileReader();
@@ -293,8 +294,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
 
             onSave();
         } catch (err: any) {
-            console.error('[StoreDialog] Failed to save store:', err);
-            console.error('[StoreDialog] Error response:', err.response?.data);
+            logger.error('StoreDialog', 'Failed to save store', { error: String(err), response: err.response?.data });
             setError(err.response?.data?.message || t('settings.stores.saveError'));
         } finally {
             setSubmitting(false);
@@ -545,7 +545,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                     {/* Logo 1 */}
                                     <Card variant="outlined">
                                         <CardContent sx={{ pb: 0 }}>
-                                            <Typography variant="subtitle2">{t('settings.stores.logo')} 1</Typography>
+                                            <Typography variant="subtitle2" fontWeight={600}>{t('settings.stores.logo')} 1</Typography>
                                             {storeLogo1 ? (
                                                 <Box
                                                     component="img"
@@ -555,7 +555,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                                 />
                                             ) : (
                                                 <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', borderRadius: 1, border: '2px dashed', borderColor: 'divider', mt: 1 }}>
-                                                    <Typography variant="body2" color="text.secondary">No logo</Typography>
+                                                    <Typography variant="body2" color="text.secondary">{t('settings.noLogoUploaded')}</Typography>
                                                 </Box>
                                             )}
                                         </CardContent>
@@ -574,7 +574,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                     {/* Logo 2 */}
                                     <Card variant="outlined">
                                         <CardContent sx={{ pb: 0 }}>
-                                            <Typography variant="subtitle2">{t('settings.stores.logo')} 2</Typography>
+                                            <Typography variant="subtitle2" fontWeight={600}>{t('settings.stores.logo')} 2</Typography>
                                             {storeLogo2 ? (
                                                 <Box
                                                     component="img"
@@ -584,7 +584,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                                 />
                                             ) : (
                                                 <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', borderRadius: 1, border: '2px dashed', borderColor: 'divider', mt: 1 }}>
-                                                    <Typography variant="body2" color="text.secondary">No logo</Typography>
+                                                    <Typography variant="body2" color="text.secondary">{t('settings.noLogoUploaded')}</Typography>
                                                 </Box>
                                             )}
                                         </CardContent>

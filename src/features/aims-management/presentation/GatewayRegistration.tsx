@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TextField, Button, Alert,
+    TextField, Button, Alert, Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useGatewayManagement } from '../application/useGatewayManagement';
@@ -18,7 +18,8 @@ interface GatewayRegistrationProps {
 }
 
 export function GatewayRegistration({ open, onClose, storeId, onSuccess }: GatewayRegistrationProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.language === 'he';
     const [mac, setMac] = useState('');
     const { registerGateway, loading, error } = useGatewayManagement(storeId);
 
@@ -35,25 +36,33 @@ export function GatewayRegistration({ open, onClose, storeId, onSuccess }: Gatew
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>{t('aims.registerGateway', 'Register Gateway')}</DialogTitle>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth dir={isRtl ? 'rtl' : 'ltr'}>
+            <DialogTitle sx={{ textAlign: 'start' }}>{t('aims.registerGateway')}</DialogTitle>
             <DialogContent>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, mt: 1, textAlign: 'start' }}>
+                    {t('aims.macAddressHelp')}
+                </Typography>
                 <TextField
                     autoFocus
                     fullWidth
-                    label={t('aims.macAddress', 'MAC Address')}
+                    label={t('aims.macAddress')}
                     placeholder="D02544FFFE..."
                     value={mac}
                     onChange={(e) => setMac(e.target.value)}
-                    sx={{ mt: 1 }}
-                    helperText={t('aims.macAddressHelp', 'Enter the gateway MAC address (e.g., D02544FFFE123456)')}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                    slotProps={{
+                        input: {
+                            dir: 'ltr',
+                            sx: { textAlign: 'left', fontFamily: 'monospace' },
+                        },
+                    }}
                 />
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+            <DialogActions sx={{ px: 3, py: 2 }}>
+                <Button onClick={onClose}>{t('common.cancel')}</Button>
                 <Button onClick={handleSubmit} variant="contained" disabled={loading || !mac.trim()}>
-                    {t('aims.register', 'Register')}
+                    {t('aims.register')}
                 </Button>
             </DialogActions>
         </Dialog>

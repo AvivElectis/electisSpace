@@ -201,7 +201,7 @@ export function ListsManagerDialog({ open, onClose }: ListsManagerDialogProps) {
                     </Box>
                 )}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose}>{t('common.close')}</Button>
             </DialogActions>
             <ConfirmDialog />

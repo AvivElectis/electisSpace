@@ -3,7 +3,7 @@
  * 
  * @description Business logic for store management.
  */
-import { GlobalRole, CompanyRole, StoreRole } from '@prisma/client';
+import { GlobalRole, CompanyRole } from '@prisma/client';
 import { prisma } from '../../config/index.js';
 import { storeRepository, companyRepository, userCompanyRepository } from './repository.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
@@ -35,9 +35,9 @@ const canManageCompany = (user: StoreUserContext, companyId: string): boolean =>
 
 const canManageStore = (user: StoreUserContext, storeId: string): boolean => {
     if (isPlatformAdmin(user)) return true;
-    
+
     const storeAccess = user.stores?.find(s => s.id === storeId);
-    return storeAccess?.role === StoreRole.STORE_ADMIN;
+    return storeAccess?.roleId === 'role-admin';
 };
 
 const hasCompanyAccess = (user: StoreUserContext, companyId: string): boolean => {
@@ -98,7 +98,7 @@ export const storeService = {
                 spaceCount: s._count.spaces,
                 peopleCount: s._count.people,
                 conferenceRoomCount: s._count.conferenceRooms,
-                userRole: s.userStores[0]?.role || (allStoresAccess ? 'COMPANY_WIDE_ACCESS' : null),
+                userRole: s.userStores[0]?.roleId || (allStoresAccess ? 'COMPANY_WIDE_ACCESS' : null),
                 userFeatures: (s.userStores[0]?.features as string[]) || (allStoresAccess ? ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels'] : []),
                 createdAt: s.createdAt,
                 updatedAt: s.updatedAt,
@@ -161,7 +161,7 @@ export const storeService = {
                 peopleCount: store._count.people,
                 conferenceRoomCount: store._count.conferenceRooms,
                 userCount: store._count.userStores,
-                userRole: store.userStores[0]?.role,
+                userRole: store.userStores[0]?.roleId,
                 userFeatures: store.userStores[0]?.features as string[] | undefined,
                 createdAt: store.createdAt,
                 updatedAt: store.updatedAt,

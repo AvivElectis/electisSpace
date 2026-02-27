@@ -1,9 +1,9 @@
 /**
  * Store Assignment Component
- * 
+ *
  * @description Component for assigning a user to stores within a company.
  * Allows selecting specific stores or granting access to all stores.
- * Includes role selection and feature toggles per store.
+ * Includes role selection (from DB-backed roles) and feature toggles per store.
  */
 import {
     Box,
@@ -27,6 +27,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
+import { logger } from '@shared/infrastructure/services/logger';
+import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
 
 // Available features
 const AVAILABLE_FEATURES = [
@@ -39,20 +41,24 @@ const AVAILABLE_FEATURES = [
     { id: 'settings', icon: '⚙️' },
 ] as const;
 
-// Store roles (from lowest to highest privilege)
-const STORE_ROLES = ['STORE_VIEWER', 'STORE_ADMIN'] as const;
-type StoreRole = typeof STORE_ROLES[number];
+// Legacy store roles kept for backward compatibility with existing data
+// New assignments use roleId (FK to Role table)
+const LEGACY_STORE_ROLES = ['STORE_VIEWER', 'STORE_ADMIN'] as const;
+type LegacyStoreRole = typeof LEGACY_STORE_ROLES[number];
 
 // Company roles
 const COMPANY_ROLES = ['VIEWER', 'STORE_VIEWER', 'STORE_ADMIN', 'COMPANY_ADMIN'] as const;
 type CompanyRole = typeof COMPANY_ROLES[number];
 
-/** Store assignment data */
+/** Store assignment data — supports both legacy role enum and new roleId */
 export interface StoreAssignmentData {
     storeId: string;
     storeName?: string;
     storeCode?: string;
-    role: StoreRole;
+    /** @deprecated Use roleId instead. Kept for backward compatibility. */
+    role: LegacyStoreRole | string;
+    /** Role ID from the Role table (e.g., 'role-viewer', 'role-admin') */
+    roleId?: string;
     features: string[];
 }
 
@@ -68,11 +74,19 @@ interface StoreAssignmentProps {
     /** Whether the component is disabled */
     disabled?: boolean;
     /** Default role for new assignments */
-    defaultRole?: StoreRole;
+    defaultRole?: LegacyStoreRole | string;
+    /** Default roleId for new assignments */
+    defaultRoleId?: string;
     /** Default features for new assignments */
     defaultFeatures?: string[];
     /** Company-level enabled features — filters which features are shown */
     companyEnabledFeatures?: string[];
+}
+
+/** Map well-known role IDs to legacy role names for feature auto-assignment */
+function isAdminRole(roleId: string | undefined, legacyRole: string): boolean {
+    if (roleId === 'role-admin') return true;
+    return legacyRole === 'STORE_ADMIN';
 }
 
 export function StoreAssignment({
@@ -82,10 +96,12 @@ export function StoreAssignment({
     onAssignmentsChange,
     disabled = false,
     defaultRole = 'STORE_VIEWER',
+    defaultRoleId = 'role-viewer',
     defaultFeatures = ['dashboard'],
     companyEnabledFeatures,
 }: StoreAssignmentProps) {
     const { t } = useTranslation();
+    const { roles, fetchRoles } = useRolesStore();
 
     // State
     const [stores, setStores] = useState<CompanyStore[]>([]);
@@ -98,7 +114,7 @@ export function StoreAssignment({
             setStores([]);
             return;
         }
-        
+
         try {
             setLoading(true);
             setError(null);
@@ -106,7 +122,7 @@ export function StoreAssignment({
             // API returns {stores: [...]} not {data: [...]}
             setStores(response?.stores || []);
         } catch (err) {
-            console.error('[StoreAssignment] Failed to fetch stores:', err);
+            logger.error('StoreAssignment', 'Failed to fetch stores', { error: String(err) });
             setError(t('settings.stores.fetchError', 'Failed to load stores'));
             setStores([]); // Ensure stores is empty array on error
         } finally {
@@ -117,6 +133,13 @@ export function StoreAssignment({
     useEffect(() => {
         fetchStores();
     }, [fetchStores]);
+
+    // Fetch roles if not loaded yet
+    useEffect(() => {
+        if (roles.length === 0) {
+            fetchRoles(companyId || undefined);
+        }
+    }, [roles.length, fetchRoles, companyId]);
 
     // Filter features by what's enabled at the company/store level
     // Dashboard, sync, and settings are always available
@@ -135,13 +158,14 @@ export function StoreAssignment({
         store => !safeAssignments.some(a => a.storeId === store.id)
     );
 
+
     // Add a new store assignment
     const handleAddStore = (storeId: string) => {
         const store = safeStores.find(s => s.id === storeId);
         if (!store) return;
 
-        // Use all features for elevated roles
-        const effectiveFeatures = (defaultRole === 'STORE_ADMIN')
+        // Use all features for admin roles
+        const effectiveFeatures = isAdminRole(defaultRoleId, defaultRole)
             ? [...ALL_FEATURES]
             : [...defaultFeatures];
 
@@ -150,6 +174,7 @@ export function StoreAssignment({
             storeName: store.name,
             storeCode: store.code,
             role: defaultRole,
+            roleId: defaultRoleId,
             features: effectiveFeatures
         };
 
@@ -162,15 +187,21 @@ export function StoreAssignment({
     };
 
     // Update a store assignment's role
-    const handleRoleChange = (storeId: string, role: StoreRole) => {
+    const handleRoleChange = (storeId: string, newRoleId: string) => {
+        // Find the role to determine legacy role name
+        const selectedRole = roles.find(r => r.id === newRoleId);
+        const legacyRole = selectedRole
+            ? (newRoleId === 'role-admin' ? 'STORE_ADMIN' : 'STORE_VIEWER')
+            : 'STORE_VIEWER';
+
         onAssignmentsChange(
             safeAssignments.map(a => {
                 if (a.storeId !== storeId) return a;
-                // Auto-enable all features for manager/admin roles
-                const features = (role === 'STORE_ADMIN')
+                // Auto-enable all features for admin roles
+                const features = isAdminRole(newRoleId, legacyRole)
                     ? [...ALL_FEATURES]
                     : a.features;
-                return { ...a, role, features };
+                return { ...a, role: legacyRole, roleId: newRoleId, features };
             })
         );
     };
@@ -180,7 +211,7 @@ export function StoreAssignment({
         onAssignmentsChange(
             safeAssignments.map(a => {
                 if (a.storeId !== storeId) return a;
-                
+
                 // Dashboard is always required
                 if (featureId === 'dashboard') return a;
 
@@ -250,9 +281,9 @@ export function StoreAssignment({
                                 {availableStores.map(store => (
                                     <MenuItem key={store.id} value={store.id}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Chip 
-                                                label={store.code} 
-                                                size="small" 
+                                            <Chip
+                                                label={store.code}
+                                                size="small"
                                                 variant="outlined"
                                                 sx={{ fontFamily: 'monospace' }}
                                             />
@@ -272,22 +303,22 @@ export function StoreAssignment({
                     ) : (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {assignments.map(assignment => (
-                                <Paper 
-                                    key={assignment.storeId} 
-                                    variant="outlined" 
+                                <Paper
+                                    key={assignment.storeId}
+                                    variant="outlined"
                                     sx={{ p: 2 }}
                                 >
                                     {/* Store Header */}
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'space-between', 
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
                                         alignItems: 'center',
                                         mb: 2
                                     }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Chip 
-                                                label={assignment.storeCode} 
-                                                size="small" 
+                                            <Chip
+                                                label={assignment.storeCode}
+                                                size="small"
                                                 color="primary"
                                                 variant="outlined"
                                                 sx={{ fontFamily: 'monospace' }}
@@ -297,8 +328,8 @@ export function StoreAssignment({
                                             </Typography>
                                         </Box>
                                         <Tooltip title={t('common.remove', 'Remove')}>
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 color="error"
                                                 onClick={() => handleRemoveStore(assignment.storeId)}
                                                 disabled={disabled}
@@ -308,23 +339,32 @@ export function StoreAssignment({
                                         </Tooltip>
                                     </Box>
 
-                                    {/* Role Selector */}
+                                    {/* Role Selector — uses DB-backed roles */}
                                     <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                                         <InputLabel>{t('settings.users.storeRole', 'Store Role')}</InputLabel>
                                         <Select
-                                            value={assignment.role}
+                                            value={assignment.roleId || assignment.role}
                                             label={t('settings.users.storeRole', 'Store Role')}
                                             onChange={(e) => handleRoleChange(
-                                                assignment.storeId, 
-                                                e.target.value as StoreRole
+                                                assignment.storeId,
+                                                e.target.value
                                             )}
                                             disabled={disabled}
                                         >
-                                            {STORE_ROLES.map(role => (
-                                                <MenuItem key={role} value={role}>
-                                                    {t(`roles.${role.toLowerCase()}`, role)}
-                                                </MenuItem>
-                                            ))}
+                                            {roles.length > 0 ? (
+                                                roles.map(role => (
+                                                    <MenuItem key={role.id} value={role.id}>
+                                                        {t(`roles.${role.name.toLowerCase()}`, role.name)}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                // Fallback to legacy roles if roles haven't loaded
+                                                LEGACY_STORE_ROLES.map(role => (
+                                                    <MenuItem key={role} value={role}>
+                                                        {t(`roles.${role.toLowerCase()}`, role)}
+                                                    </MenuItem>
+                                                ))
+                                            )}
                                         </Select>
                                     </FormControl>
 
@@ -343,7 +383,7 @@ export function StoreAssignment({
                                                         <Checkbox
                                                             checked={assignment.features.includes(feature.id)}
                                                             onChange={() => handleFeatureToggle(
-                                                                assignment.storeId, 
+                                                                assignment.storeId,
                                                                 feature.id
                                                             )}
                                                             disabled={disabled || feature.id === 'dashboard'}
@@ -351,10 +391,10 @@ export function StoreAssignment({
                                                         />
                                                     }
                                                     label={
-                                                        <Box sx={{ 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
-                                                            gap: 0.5 
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.5
                                                         }}>
                                                             <span>{feature.icon}</span>
                                                             <Typography variant="body2">

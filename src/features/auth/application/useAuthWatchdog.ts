@@ -35,17 +35,45 @@ export const useAuthWatchdog = () => {
         }
 
         logger.debug('AuthWatchdog', 'Validating session...');
-        
-        const isValid = await validateSession();
-        
-        if (!isValid) {
-            logger.warn('AuthWatchdog', 'Session invalid, redirecting to login');
-            // Session is invalid, redirect to login
-            await logout();
-            navigate('/login', { replace: true });
-        } else {
+
+        const result = await validateSession();
+
+        if (result.valid) {
             logger.debug('AuthWatchdog', 'Session valid');
+            return;
         }
+
+        if (result.networkError) {
+            logger.warn('AuthWatchdog', 'Network error during validation, will retry later');
+            return; // Do NOT logout — session may still be valid
+        }
+
+        // Auth truly failed — try device token re-auth before giving up
+        logger.warn('AuthWatchdog', 'Session invalid, attempting device token re-auth');
+        try {
+            const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+            const deviceToken = await deviceTokenStorage.getDeviceToken();
+            const deviceId = await deviceTokenStorage.getDeviceId();
+
+            if (deviceToken && deviceId) {
+                const { authService } = await import('../../../shared/infrastructure/services/authService');
+                const authResult = await authService.deviceAuth(deviceToken, deviceId);
+                if (authResult.accessToken) {
+                    logger.info('AuthWatchdog', 'Device token re-auth successful');
+                    await validateSession(); // Re-validate to update user state
+                    return;
+                }
+            }
+        } catch (deviceErr) {
+            logger.warn('AuthWatchdog', 'Device token re-auth failed', {
+                error: deviceErr instanceof Error ? deviceErr.message : 'Unknown',
+            });
+        }
+
+        // All auth methods exhausted — redirect to login
+        logger.warn('AuthWatchdog', 'All auth methods failed, redirecting to login');
+        await logout();
+        navigate('/login', { replace: true });
     }, [isAuthenticated, validateSession, lastValidation, logout, navigate, location.pathname]);
 
     // Set up periodic validation
@@ -94,12 +122,15 @@ export const useAuthWatchdog = () => {
         };
     }, [isAuthenticated, location.pathname, performValidation]);
 
-    // Validate on online event (network reconnected)
+    // Validate on online event (network reconnected) with a small delay
+    // to allow the network stack to fully stabilize before making API calls
     useEffect(() => {
+        let onlineTimer: ReturnType<typeof setTimeout> | null = null;
+
         const handleOnline = () => {
             if (isAuthenticated && location.pathname !== '/login') {
-                logger.debug('AuthWatchdog', 'Network reconnected, validating session');
-                performValidation();
+                logger.debug('AuthWatchdog', 'Network reconnected, validating session after delay');
+                onlineTimer = setTimeout(() => performValidation(), 3000);
             }
         };
 
@@ -107,6 +138,9 @@ export const useAuthWatchdog = () => {
 
         return () => {
             window.removeEventListener('online', handleOnline);
+            if (onlineTimer) {
+                clearTimeout(onlineTimer);
+            }
         };
     }, [isAuthenticated, location.pathname, performValidation]);
 };

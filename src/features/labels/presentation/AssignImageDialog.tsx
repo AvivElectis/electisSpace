@@ -446,8 +446,8 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                     </Stack>
                 </DialogContent>
 
-                <DialogActions>
-                    <Button onClick={onClose} variant="outlined">
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={onClose}>
                         {t('common.close', 'Close')}
                     </Button>
                     <Button

@@ -10,7 +10,8 @@ import {
     ditherPreviewSchema,
 } from './types.js';
 import type { LabelsUserContext } from './types.js';
-import { badRequest, forbidden } from '../../shared/middleware/index.js';
+import { AppError, badRequest, forbidden } from '../../shared/middleware/index.js';
+import { AimsOperationError } from '../../shared/infrastructure/services/aimsGateway.js';
 
 // ============================================================================
 // Helpers
@@ -30,6 +31,9 @@ function mapServiceError(error: unknown): Error {
     }
     if (error === 'AIMS_NOT_CONFIGURED') {
         return badRequest('AIMS not configured for this store');
+    }
+    if (error instanceof AimsOperationError) {
+        return new AppError(error.statusCode, error.responseCode, error.message);
     }
     if (error instanceof Error) {
         return error;

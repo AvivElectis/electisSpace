@@ -28,6 +28,7 @@ import {
     Divider
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import { logger } from '@shared/infrastructure/services/logger';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -76,7 +77,7 @@ export function UsersSettingsTab() {
         if (isPlatformAdmin) {
             companyService.getAll({ limit: 100 }).then(response => {
                 setCompanies(response.data);
-            }).catch(err => console.error('Failed to fetch companies:', err));
+            }).catch(err => logger.error('UsersSettingsTab', 'Failed to fetch companies', { error: String(err) }));
         }
     }, [isPlatformAdmin]);
 
@@ -98,7 +99,7 @@ export function UsersSettingsTab() {
             setUsers(response.data);
             setTotal(response.pagination.total);
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+            logger.error('UsersSettingsTab', 'Failed to fetch users', { error: String(error) });
         } finally {
             setLoading(false);
         }
@@ -140,7 +141,7 @@ export function UsersSettingsTab() {
                 await userService.delete(user.id);
                 fetchUsers();
             } catch (error) {
-                console.error('Failed to delete user:', error);
+                logger.error('UsersSettingsTab', 'Failed to delete user', { error: String(error) });
             }
         }
     };
@@ -162,16 +163,27 @@ export function UsersSettingsTab() {
         fetchUsers();
     };
 
-    // Role color helper
+    /** Map roleId to a translation-friendly key (e.g., 'role-admin' → 'admin') */
+    const roleIdToKey = (roleId: string | undefined): string | null => {
+        if (!roleId) return null;
+        return roleId.startsWith('role-') ? roleId.substring(5) : roleId;
+    };
+
+    // Role color helper — supports both legacy CompanyRole and new roleId-based keys
     const getRoleColor = (role: string) => {
         switch (role) {
             case 'PLATFORM_ADMIN': return 'secondary';
             case 'COMPANY_ADMIN': return 'primary';
-            case 'VIEWER': return 'default';
+            case 'admin': return 'error';
+            case 'manager': return 'warning';
+            case 'employee': return 'info';
+            case 'viewer': return 'default';
+            // Legacy fallbacks
             case 'STORE_ADMIN': return 'error';
             case 'STORE_MANAGER': return 'warning';
             case 'STORE_EMPLOYEE': return 'info';
             case 'STORE_VIEWER': return 'default';
+            case 'VIEWER': return 'default';
             default: return 'default';
         }
     };
@@ -268,9 +280,9 @@ export function UsersSettingsTab() {
                                 const isAllStoresRole = isAdminCompanyRole;
                                 const userRole = user.globalRole
                                     || (isAdminCompanyRole ? 'COMPANY_ADMIN' : null)
-                                    || firstStore?.role
+                                    || roleIdToKey(firstStore?.roleId)
                                     || companyRole
-                                    || 'STORE_VIEWER';
+                                    || 'viewer';
                                 const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || isAllStoresRole;
                                 const userFeatures = isAdminLevel
                                     ? ['dashboard', 'spaces', 'conference', 'people']
@@ -376,7 +388,7 @@ export function UsersSettingsTab() {
                                     </TableRow>
                                 ) : (
                                     users.map((user) => {
-                                        // Compute display role: globalRole > COMPANY_ADMIN/SUPER_USER > STORE_ADMIN > storeRole > companyRole > fallback
+                                        // Compute display role: globalRole > COMPANY_ADMIN/SUPER_USER > store roleId > companyRole > fallback
                                         const firstStore = user.stores?.[0];
                                         const firstCompany = user.companies?.[0];
                                         const companyRole = firstCompany?.role;
@@ -384,9 +396,9 @@ export function UsersSettingsTab() {
                                         const isAllStoresRole = isAdminCompanyRole;
                                         const userRole = user.globalRole
                                             || (isAdminCompanyRole ? 'COMPANY_ADMIN' : null)
-                                            || firstStore?.role
+                                            || roleIdToKey(firstStore?.roleId)
                                             || companyRole
-                                            || 'STORE_VIEWER';
+                                            || 'viewer';
                                         const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || isAllStoresRole;
                                         const userFeatures = isAdminLevel
                                             ? ['dashboard', 'spaces', 'conference', 'people']

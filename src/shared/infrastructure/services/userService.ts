@@ -5,7 +5,10 @@ export interface UserStoreAssignment {
     id: string;
     name: string;
     code: string;
-    role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    /** DB-backed role ID (e.g., 'role-admin', 'role-viewer') */
+    roleId: string;
+    /** @deprecated Legacy field — server no longer sends this */
+    role?: string;
     features: string[];
 }
 
@@ -46,7 +49,7 @@ export interface CreateUserDto {
     lastName?: string;
     password: string;
     storeId: string;
-    role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    roleId: string;
     features: string[];
 }
 
@@ -57,7 +60,7 @@ export interface UpdateUserDto {
 }
 
 export interface UpdateUserStoreDto {
-    role?: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    roleId?: string;
     features?: string[];
 }
 
@@ -104,7 +107,7 @@ export const userService = {
         return response.data;
     },
 
-    assignToStore: async (userId: string, data: { storeId: string; role: string; features: string[] }) => {
+    assignToStore: async (userId: string, data: { storeId: string; roleId: string; features: string[] }) => {
         const response = await api.post<UserStoreAssignment>(`/users/${userId}/stores`, data);
         return response.data;
     },

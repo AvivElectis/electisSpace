@@ -17,11 +17,11 @@ function getUserContext(req: Request): StoreUserContext {
     return {
         id: req.user!.id,
         globalRole: req.user!.globalRole ?? null,
-        stores: req.user?.stores?.map(s => ({ id: s.id, role: s.role })),
-        companies: req.user?.companies?.map(c => ({ 
-            id: c.id, 
+        stores: req.user?.stores?.map(s => ({ id: s.id, roleId: s.roleId })),
+        companies: req.user?.companies?.map(c => ({
+            id: c.id,
             role: c.role,
-            allStoresAccess: c.allStoresAccess 
+            allStoresAccess: c.allStoresAccess
         })),
     };
 }

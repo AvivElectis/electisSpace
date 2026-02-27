@@ -271,7 +271,7 @@ export function CSVUploadDialog({ open, onClose }: CSVUploadDialogProps) {
                     </Box>
                 )}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={handleClose} disabled={loading}>
                     {t('common.cancel')}
                 </Button>
