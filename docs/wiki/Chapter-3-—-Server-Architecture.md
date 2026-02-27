@@ -90,6 +90,7 @@ All routes are versioned under `/api/v1/`:
 | `/settings` | Settings | Yes | Read/update company & store settings |
 | `/labels` | Label Management | Yes | List, link/unlink, blink, image push |
 | `/sync` | Synchronization | Yes | Pull, push, full sync, queue management |
+| `/aims` | AIMS Management | Yes | Gateways CRUD, labels listing, product history, batch errors |
 | `/people-lists` | People Lists | Yes | CRUD, membership management |
 | `/spaces-lists` | Spaces Lists | Yes | CRUD, snapshot content |
 | `/logs` | Server Logs | PLATFORM_ADMIN | In-memory log buffer, stats, clear |

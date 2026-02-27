@@ -1,18 +1,16 @@
-# Chapter 8 — Auth Connection Management & AIMS Management Plan
+# Chapter 8 — Auth Connection Management & AIMS Management
 
-> **Status**: Planned — see branch `claude/plan-auth-aims-features-UNrVw`
-> **Added**: 2026-02-23
+> **Status**: Implemented — Device Auth shipped in v2.6.0, AIMS Management in v2.7.0, AIMS Dashboard Enhancement in v2.8.0
+> **Added**: 2026-02-23 | **Updated**: 2026-02-27
 
 ---
 
 ## Overview
 
-This chapter documents two major planned features for ElectisSpace v2.6.0:
+This chapter documents two major features:
 
-1. **Device-Based Auth Token Management** — eliminates the need for users to re-login when mobile browsers are closed/reopened.
-2. **AIMS Management Feature** — a dedicated module for managing Electronic Shelf Labels (ESLs) with gateway management, label history, and product update tracking.
-
-Full implementation detail is in [`docs/PLAN-auth-and-aims-features.md`](../PLAN-auth-and-aims-features.md).
+1. **Device-Based Auth Token Management** (v2.6.0) — eliminates forced re-login when mobile browsers are closed/reopened.
+2. **AIMS Management Feature** (v2.7.0 base, v2.8.0 enhanced) — a dedicated module for managing Electronic Shelf Labels (ESLs) with gateway management, labels overview dashboard, and product update tracking.
 
 ---
 
@@ -66,8 +64,9 @@ Device tokens are stored in Capacitor `Preferences` (native) or `IndexedDB` (web
 A dedicated AIMS Management module, available to admins, enabling:
 
 - View and manage AIMS gateway configurations per store
+- Labels overview dashboard with stats, battery/signal distributions
 - Browse label history and article assignments
-- Track product updates and AIMS sync status
+- Track product updates with date filtering, batch error details, and article drill-down
 - Per-company feature toggle (`aimsManagementEnabled`)
 
 ### Access Control
@@ -76,23 +75,60 @@ A dedicated AIMS Management module, available to admins, enabling:
 |------|--------|
 | `PLATFORM_ADMIN` | Full access (all companies) |
 | `COMPANY_ADMIN` | Full access (own company) |
-| `STORE_ADMIN` | Full access (own stores) |
-| `STORE_MANAGER` | Read-only |
+| `STORE_ADMIN` | Full access (own stores) — can register/deregister/reboot gateways |
+| `STORE_MANAGER` | Read-only — can view all tabs and data |
 | `STORE_EMPLOYEE` / `VIEWER` | No access (feature hidden) |
 
-### Implementation Approach
+### Architecture
 
 - Server-proxy architecture (prevents CORS issues, centralises AIMS credential management)
 - Three-layer enforcement: navigation filtering → `ProtectedFeature` component → server-side role guards
-- Feature toggle in Settings → Features tab (enabled by default, can be disabled per company)
+- Feature toggle in Settings → Features tab (disabled by default, can be enabled per company)
 
-### Implementation Phases
+### Server Routes (`/aims/*`)
 
-1. **Feature Toggle Infrastructure** — `aimsManagementEnabled` in `CompanyFeatures`
-2. **Server Routes & Proxy Layer** — AIMS gateway CRUD + proxy endpoints
-3. **Client Navigation & Guards** — route protection + sidebar links
-4. **AIMS Dashboard UI** — store selector, gateway status, label browser
-5. **Product Update Tracking** — article history, sync status timeline
+| Method | Path | Permission | Description |
+|--------|------|-----------|-------------|
+| `GET` | `/gateways` | view | List all gateways |
+| `GET` | `/gateways/floating` | view | List unregistered floating gateways |
+| `GET` | `/gateways/:mac` | view | Gateway detail |
+| `GET` | `/gateways/:mac/debug` | view | Gateway debug report |
+| `POST` | `/gateways` | manage | Register gateway |
+| `DELETE` | `/gateways` | manage | Deregister gateways |
+| `PATCH` | `/gateways/:mac/reboot` | manage | Reboot gateway |
+| `GET` | `/labels` | view | List all labels |
+| `GET` | `/labels/unassigned` | view | List unassigned labels |
+| `GET` | `/labels/:code/history` | view | Label status history |
+| `GET` | `/products/history` | view | Batch update history (supports `fromDate`/`toDate`) |
+| `GET` | `/products/history/:name` | view | Batch detail |
+| `GET` | `/products/history/:name/errors` | view | Batch errors |
+| `GET` | `/products/:articleId/history` | view | Article update history |
+
+### Client Components
+
+| Component | Purpose |
+|-----------|---------|
+| `AimsManagementPage` | Main page: stats cards (gateways + labels), 3-tab layout |
+| `GatewayList` | Gateway table with status chips, row click → detail |
+| `GatewayDetail` | All gateway fields + collapsible debug report |
+| `GatewayRegistration` | Register dialog with floating gateways chip selection |
+| `LabelsOverview` | Stats cards + battery/signal distribution bars + label search |
+| `LabelHistory` | Label code search with status history table |
+| `ProductHistory` | Date-filtered batch table, expandable with errors + article drill-down |
+
+### Client State (Zustand)
+
+`useAimsManagementStore` manages: gateways, selectedGateway, floatingGateways, labels, unassignedLabels, debugReport, batchErrors, labelHistory, batchHistory, activeTab.
+
+### Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `useGateways` | Gateway list/detail/floating/debugReport with 30s stale cache |
+| `useLabelsOverview` | Labels + unassigned fetch, computes stats (status/battery/signal) |
+| `useProductHistory` | Batch history/detail/errors, article history |
+| `useGatewayManagement` | Register/deregister/reboot mutations |
+| `useLabelHistory` | Single label status history search |
 
 ---
 
@@ -101,8 +137,4 @@ A dedicated AIMS Management module, available to admins, enabling:
 - All DB changes are purely additive (new tables/columns only)
 - Standard Prisma migrations — no destructive resets
 - Backward-compatible API changes (existing clients unaffected)
-- Every phase includes a rollback strategy
-
----
-
-*See full plan: [`docs/PLAN-auth-and-aims-features.md`](../PLAN-auth-and-aims-features.md)*
+- AIMS label listing routes delegate to existing `aimsGateway.fetchLabels()` / `fetchUnassignedLabels()`

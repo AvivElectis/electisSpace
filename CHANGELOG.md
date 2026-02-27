@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.8.0] - 2026-02-27
+
+### Added
+- **AIMS Labels Overview dashboard** — stats cards (total/online/offline/unassigned), battery distribution (GOOD/LOW/CRITICAL), signal distribution (EXCELLENT/GOOD/NORMAL/BAD) replace bare label search tab
+- **Server label listing endpoints** — `GET /aims/labels` and `GET /aims/labels/unassigned` routes
+- **Gateway debug report** — collapsible section in Gateway Detail fetches and displays formatted JSON debug report
+- **Gateway floating chip selection** — Registration dialog fetches floating gateways on open and shows clickable MAC address chips for auto-fill
+- **Product history date filter** — From/To date pickers in batch history header with clear button
+- **Product history summary stats** — total batches, total processed, success rate computed from batch data
+- **Batch error details** — "View Errors" button on batches with failCount > 0, shows articleId + error table
+- **Article history drill-down** — clickable article IDs in batch detail fetch and display per-article update history inline
+- **~35 new AIMS translation keys** in both EN and HE locale files
+
+### Changed
+- Client version bumped to 2.8.0, server to 2.6.0
+- **Gateway Detail fields expanded** — apName, txPower (with dBm suffix), uptime (formatted as Xd Xh Xm)
+- **AIMS Management Page** — 4th stats card (Total Labels) added to dashboard header; Label Status tab now shows LabelsOverview instead of bare LabelHistory
+- **Zustand store expanded** — labels, unassignedLabels, debugReport, batchErrors state added to aimsManagementStore
+
+### Fixed
+- **Auth watchdog restart loop** — `performValidation` had `lastValidation` as a `useCallback` dependency; every `validateSession()` call updated it, recreating the callback and restarting the interval immediately. Fix: read `lastValidation` from `useAuthStore.getState()` inside the callback instead of as a reactive dependency
+- **401 console errors on token expiry** — Axios request interceptor now decodes the JWT `exp` claim and proactively refreshes via httpOnly cookie when within 60s of expiry, preventing the browser from logging failed `/auth/me` requests
+
+---
+
 ## [2.7.0] - 2026-02-27
 
 ### Added
