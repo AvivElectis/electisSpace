@@ -34,7 +34,7 @@ export function usePeopleController() {
     const getStoreState = usePeopleStore.getState;
     const settings = useSettingsStore(state => state.settings);
     const updateSettings = useSettingsStore(state => state.updateSettings);
-    const saveCompanySettingsToServer = useSettingsStore(state => state.saveCompanySettingsToServer);
+    const saveSettingsToServer = useSettingsStore(state => state.saveSettingsToServer);
 
     // Subscribe to store values that are returned to consumers - these MUST trigger re-renders
     const people = usePeopleStore(state => state.people);
@@ -448,8 +448,8 @@ export function usePeopleController() {
                 availableSpaces: count - getStoreState().spaceAllocation.assignedSpaces,
             });
 
-            // Persist totalSpaces to company-level settings so all clients in the company see it
-            saveCompanySettingsToServer({ peopleManagerConfig: { totalSpaces: count } });
+            // Persist totalSpaces to store-level settings (each store has its own space count)
+            saveSettingsToServer();
 
             // Provision all slot articles in AIMS (empty for unassigned, full for assigned)
             const activeStoreId = useAuthStore.getState().activeStoreId;
@@ -462,12 +462,12 @@ export function usePeopleController() {
                 }
             }
 
-            logger.info('PeopleController', 'Total spaces set and synced company-wide', { count });
+            logger.info('PeopleController', 'Total spaces set and synced to store settings', { count });
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to set total spaces', { error: error.message });
             throw error;
         }
-    }, [updateSettings, saveCompanySettingsToServer]);
+    }, [updateSettings, saveSettingsToServer]);
 
     /**
      * Post selected people to AIMS via server push

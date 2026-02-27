@@ -148,11 +148,11 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
                     />
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={handleClose} disabled={isSaving}>{t('common.cancel')}</Button>
-                <Button 
-                    onClick={handleSave} 
-                    variant="contained" 
+                <Button
+                    onClick={handleSave}
+                    variant="contained"
                     disabled={isSaving || !name.trim()}
                     startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
                 >

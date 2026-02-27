@@ -5,7 +5,7 @@
  * and orchestration of repository calls.
  */
 import bcrypt from 'bcrypt';
-import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
+import { GlobalRole, CompanyRole } from '@prisma/client';
 import { prisma } from '../../config/index.js';
 import { invalidateUserCache } from '../../shared/middleware/index.js';
 import { userRepository } from './repository.js';
@@ -65,7 +65,7 @@ export async function canManageCompany(user: UserContext, companyId: string): Pr
 export function canManageStore(user: UserContext, storeId: string): boolean {
     if (isPlatformAdmin(user)) return true;
     const storeAccess = user.stores?.find(s => s.id === storeId);
-    return storeAccess?.role === 'STORE_ADMIN';
+    return storeAccess?.roleId === 'role-admin';
 }
 
 /**
@@ -153,7 +153,7 @@ export const userService = {
                     name: us.store.name,
                     code: us.store.code,
                 },
-                role: us.role,
+                roleId: us.roleId,
                 features: us.features as string[],
             })),
         };
@@ -222,7 +222,7 @@ export const userService = {
                     name: us.store.name,
                     code: us.store.code,
                 },
-                role: us.role,
+                roleId: us.roleId,
                 features: us.features as string[],
             })),
         };
@@ -287,7 +287,7 @@ export const userService = {
                 .filter(c => c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER')
                 .map(c => c.id);
             const managedStoreIds = (user.stores || [])
-                .filter(s => s.role === 'STORE_ADMIN')
+                .filter(s => s.roleId === 'role-admin')
                 .map(s => s.id);
             const isCurrentUserCompanyAdmin = managedCompanyIds.length > 0;
 
@@ -370,7 +370,7 @@ export const userService = {
                 id: us.storeId,
                 name: us.store.name,
                 code: us.store.code,
-                role: us.role,
+                roleId: us.roleId,
                 features: us.features as string[],
             }));
 
@@ -386,7 +386,7 @@ export const userService = {
                         id: store.id,
                         name: store.name,
                         code: store.code,
-                        role: 'STORE_ADMIN' as any,
+                        roleId: 'role-admin',
                         features: allFeatures,
                     });
                 }
@@ -448,7 +448,7 @@ export const userService = {
                     code: us.store.code,
                     companyId: us.store.companyId,
                 },
-                role: us.role,
+                roleId: us.roleId,
                 features: us.features as string[],
             })),
             userCompanies: undefined,
@@ -512,7 +512,7 @@ export const userService = {
             const allStoresAccess = derivesAllStoresAccess(role);
 
             // Resolve stores
-            const storeAssignments: Array<{ storeId: string; role: StoreRole; features: string[] }> = [];
+            const storeAssignments: Array<{ storeId: string; roleId: string; features: string[] }> = [];
 
             if (!allStoresAccess && data.stores) {
                 for (const storeRef of data.stores) {
@@ -523,7 +523,7 @@ export const userService = {
 
                         storeAssignments.push({
                             storeId: store.id,
-                            role: storeRef.role as StoreRole,
+                            roleId: storeRef.roleId,
                             features: storeRef.features || ['dashboard'],
                         });
                     } else {
@@ -537,7 +537,7 @@ export const userService = {
                         });
                         storeAssignments.push({
                             storeId: newStore.id,
-                            role: storeRef.role as StoreRole,
+                            roleId: storeRef.roleId,
                             features: storeRef.features || ['dashboard'],
                         });
                     }
@@ -566,7 +566,7 @@ export const userService = {
                     userStores: allStoresAccess ? undefined : {
                         create: storeAssignments.map(sa => ({
                             storeId: sa.storeId,
-                            role: sa.role,
+                            roleId: sa.roleId,
                             features: sa.features,
                         })),
                     },
@@ -592,7 +592,7 @@ export const userService = {
                     userStores: {
                         select: {
                             storeId: true,
-                            role: true,
+                            roleId: true,
                             features: true,
                             store: { select: { id: true, code: true, name: true } },
                         },
@@ -645,12 +645,12 @@ export const userService = {
         if (!userStore) throw new Error('USER_STORE_NOT_FOUND');
 
         // Prevent self-demotion
-        if (userId === currentUser.id && data.role && data.role !== 'STORE_ADMIN' && userStore.role === 'STORE_ADMIN') {
+        if (userId === currentUser.id && data.roleId && data.roleId !== 'role-admin' && userStore.roleId === 'role-admin') {
             throw new Error('CANNOT_DEMOTE_SELF');
         }
 
         const result = await userRepository.updateUserStore(userId, storeId, {
-            ...(data.role && { role: data.role as StoreRole }),
+            ...(data.roleId && { roleId: data.roleId }),
             ...(data.features && { features: data.features }),
         });
         invalidateUserCache(userId);
@@ -660,7 +660,7 @@ export const userService = {
     /**
      * Assign user to store
      */
-    async assignToStore(userId: string, storeId: string, role: string, features: string[], currentUser: UserContext) {
+    async assignToStore(userId: string, storeId: string, roleId: string, features: string[], currentUser: UserContext) {
         if (!await canManageStoreOrCompany(currentUser, storeId)) {
             throw new Error('FORBIDDEN');
         }
@@ -677,7 +677,7 @@ export const userService = {
         const result = await userRepository.createUserStore({
             userId,
             storeId,
-            role: role as StoreRole,
+            roleId,
             features,
         });
         invalidateUserCache(userId);
@@ -909,7 +909,7 @@ export const userService = {
                     id: us.storeId,
                     code: us.store.code,
                     name: us.store.name,
-                    role: us.role,
+                    roleId: us.roleId,
                     features: us.features as string[],
                 };
             }
@@ -930,7 +930,7 @@ export const userService = {
                 code: us.store.code,
                 name: us.store.name,
                 companyId: us.store.companyId,
-                role: us.role,
+                roleId: us.roleId,
                 features: us.features as string[],
             })),
         };
@@ -1109,7 +1109,7 @@ export const userService = {
     /**
      * Bulk change store role
      */
-    async bulkChangeRole(userIds: string[], storeId: string, role: string, currentUser: UserContext) {
+    async bulkChangeRole(userIds: string[], storeId: string, roleId: string, currentUser: UserContext) {
         if (!await canManageStoreOrCompany(currentUser, storeId)) {
             throw new Error('FORBIDDEN');
         }
@@ -1131,7 +1131,7 @@ export const userService = {
                     continue;
                 }
 
-                await userRepository.updateUserStore(userId, storeId, { role: role as StoreRole });
+                await userRepository.updateUserStore(userId, storeId, { roleId });
                 invalidateUserCache(userId);
                 results.succeeded++;
             } catch {

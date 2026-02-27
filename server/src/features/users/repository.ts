@@ -4,7 +4,7 @@
  * @description Data access layer for user management. All Prisma operations.
  */
 import { prisma } from '../../config/index.js';
-import type { Prisma, StoreRole, CompanyRole } from '@prisma/client';
+import type { Prisma, CompanyRole } from '@prisma/client';
 
 // ======================
 // User Queries
@@ -49,7 +49,7 @@ export const userRepository = {
                     select: {
                         id: true,
                         storeId: true,
-                        role: true,
+                        roleId: true,
                         features: true,
                         store: {
                             select: {
@@ -106,7 +106,7 @@ export const userRepository = {
                     select: {
                         id: true,
                         storeId: true,
-                        role: true,
+                        roleId: true,
                         features: true,
                         store: {
                             select: {
@@ -163,7 +163,7 @@ export const userRepository = {
         };
         storeAssignments?: Array<{
             storeId: string;
-            role: StoreRole;
+            roleId: string;
             features: string[];
         }>;
     }) {
@@ -184,7 +184,7 @@ export const userRepository = {
                 userStores: data.storeAssignments ? {
                     create: data.storeAssignments.map(sa => ({
                         storeId: sa.storeId,
-                        role: sa.role,
+                        roleId: sa.roleId,
                         features: sa.features,
                     })),
                 } : undefined,
@@ -211,7 +211,7 @@ export const userRepository = {
                 userStores: {
                     select: {
                         storeId: true,
-                        role: true,
+                        roleId: true,
                         features: true,
                         store: {
                             select: { id: true, code: true, name: true },
@@ -267,7 +267,7 @@ export const userRepository = {
     async createUserStore(data: {
         userId: string;
         storeId: string;
-        role: StoreRole;
+        roleId: string;
         features: string[];
     }) {
         return prisma.userStore.create({
@@ -284,7 +284,7 @@ export const userRepository = {
      * Update user-store assignment
      */
     async updateUserStore(userId: string, storeId: string, data: {
-        role?: StoreRole;
+        roleId?: string;
         features?: string[];
     }) {
         return prisma.userStore.update({
@@ -474,7 +474,7 @@ export const userRepository = {
                 userStores: {
                     select: {
                         storeId: true,
-                        role: true,
+                        roleId: true,
                         features: true,
                         store: {
                             select: { id: true, code: true, name: true, companyId: true },

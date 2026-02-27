@@ -255,7 +255,7 @@ export function PeopleListsManagerDialog({ open, onClose }: PeopleListsManagerDi
                     </Box>
                 )}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose}>{t('common.close')}</Button>
             </DialogActions>
             <ConfirmDialog />

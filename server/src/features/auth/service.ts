@@ -82,7 +82,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
             id: us.storeId,
             name: us.store.name,
             code: us.store.code,
-            role: us.role,
+            roleId: us.roleId,
             features: (us.features as string[]) || ['dashboard'],
             companyId: us.store.companyId,
             companyName: us.store.company.name,
@@ -115,7 +115,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
                 id: store.id,
                 name: store.name,
                 code: store.code,
-                role: 'STORE_ADMIN' as any, // Company-wide access implies full admin
+                roleId: 'role-admin', // Company-wide access implies full admin
                 features: allFeatures,
                 companyId: store.companyId,
                 companyName: store.company.name,
@@ -167,7 +167,7 @@ export const authService = {
 
         const stores = user.userStores.map(us => ({
             id: us.storeId,
-            role: us.role,
+            roleId: us.roleId,
             companyId: us.store.companyId,
         }));
 

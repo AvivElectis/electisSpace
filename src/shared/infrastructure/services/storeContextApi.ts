@@ -32,7 +32,9 @@ export interface StoreContext {
     id: string;
     code: string;
     name: string;
-    role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    roleId: string;
+    /** @deprecated Use roleId */
+    role?: string;
     features: string[];
     aimsConnected: boolean;
     lastSync: string | null;

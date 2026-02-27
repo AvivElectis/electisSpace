@@ -22,7 +22,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     conferenceEnabled: true,
     simpleConferenceMode: false,
     labelsEnabled: true,
-    aimsManagementEnabled: true,
+    aimsManagementEnabled: false,
 };
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
@@ -31,7 +31,10 @@ export interface Store {
     id: string;
     name: string;
     code: string;
-    role: 'STORE_ADMIN' | 'STORE_MANAGER' | 'STORE_EMPLOYEE' | 'STORE_VIEWER';
+    /** DB-backed role ID (e.g., 'role-admin', 'role-viewer') */
+    roleId: string;
+    /** @deprecated Server no longer sends this field */
+    role?: string;
     features: string[]; // Available features: 'dashboard', 'spaces', 'conference', 'people'
     companyId: string;
     companyName: string;

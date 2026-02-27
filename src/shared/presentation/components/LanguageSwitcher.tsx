@@ -24,9 +24,10 @@ export function LanguageSwitcher() {
         setAnchorEl(null);
     };
 
-    const handleLanguageChange = (lang: string) => {
-        i18n.changeLanguage(lang);
+    const handleLanguageChange = async (lang: string) => {
+        await i18n.changeLanguage(lang);
         handleClose();
+        window.location.reload();
     };
 
     const currentLang = i18n.language;

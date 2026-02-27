@@ -110,6 +110,8 @@ sequenceDiagram
 
 ### 7.4 Role-Based Access Control (RBAC)
 
+Store-level roles are now **database-backed** via the `roles` table, replacing the previous hardcoded `StoreRole` enum. This allows platform and company admins to create custom roles with granular permissions.
+
 ```mermaid
 graph TB
     subgraph "Global Level"
@@ -119,23 +121,20 @@ graph TB
     subgraph "Company Level (CompanyRole)"
         SU[SUPER_USER<br/>Full access, no restrictions]
         CA[COMPANY_ADMIN<br/>Manage settings, users, stores]
-        CSA[STORE_ADMIN<br/>Per-store admin access]
-        CSV[STORE_VIEWER<br/>Per-store view only]
         CV[VIEWER<br/>Read-only access]
     end
 
-    subgraph "Store Level (StoreRole)"
-        SA[STORE_ADMIN<br/>Full store operations]
-        SM[STORE_MANAGER<br/>CRUD + sync, no user mgmt]
-        SE[STORE_EMPLOYEE<br/>Read + update only]
-        SV[STORE_VIEWER<br/>Read only]
+    subgraph "Store Level (DB-backed roles)"
+        SA[Admin<br/>Full store operations]
+        SM[Manager<br/>CRUD + sync, no user mgmt]
+        SE[Employee<br/>Read + update only]
+        SV[Viewer<br/>Read only]
+        CR[Custom Roles<br/>Admin-defined permissions]
     end
 
     PA --> SU
     SU --> CA
-    CA --> CSA
-    CSA --> CSV
-    CSV --> CV
+    CA --> CV
     SA --> SM
     SM --> SE
     SE --> SV
@@ -147,41 +146,69 @@ graph TB
     style SM fill:#2ecc71,color:#fff
     style SE fill:#3498db,color:#fff
     style SV fill:#95a5a6,color:#fff
+    style CR fill:#9b59b6,color:#fff
 ```
 
-### 7.5 Permission Matrix
+**Role Scopes:**
+- **SYSTEM** roles are built-in defaults (Admin, Manager, Employee, Viewer) — available to all companies, cannot be deleted.
+- **COMPANY** roles are custom roles created by company or platform admins — scoped to a specific company.
 
-The `requirePermission(resource, action)` middleware enforces fine-grained store-level permissions, while `requireGlobalRole(...roles)` enforces global-level role checks (e.g., restricting the `/logs` API to `PLATFORM_ADMIN`):
+Each role stores its permissions as a JSONB column:
+```json
+{
+  "spaces": ["view", "create", "edit", "delete"],
+  "people": ["view", "create", "edit", "delete", "import", "assign"],
+  "conference": ["view", "create", "edit", "delete", "toggle"],
+  "settings": ["view", "edit"],
+  "users": ["view", "create", "edit", "delete"],
+  "audit": ["view"],
+  "sync": ["view", "trigger"],
+  "labels": ["view", "manage", "link", "unlink"],
+  "stores": ["view", "edit", "delete", "manage"],
+  "companies": ["view"],
+  "aims-management": ["view", "manage"]
+}
+```
 
-| Resource | STORE_ADMIN | STORE_MANAGER | STORE_EMPLOYEE | STORE_VIEWER |
-|----------|:-----------:|:-------------:|:--------------:|:------------:|
+### 7.5 Permission Matrix (Default System Roles)
+
+The `requirePermission(resource, action)` middleware reads permissions from the user's assigned role in the `roles` table, while `requireGlobalRole(...roles)` enforces global-level role checks (e.g., restricting the `/logs` API to `PLATFORM_ADMIN`):
+
+| Resource | Admin | Manager | Employee | Viewer |
+|----------|:-----:|:-------:|:--------:|:------:|
+| spaces: view | X | X | X | X |
 | spaces: create | X | X | | |
-| spaces: read | X | X | X | X |
-| spaces: update | X | X | X | |
+| spaces: edit | X | X | X | |
 | spaces: delete | X | X | | |
+| people: view | X | X | X | X |
 | people: create | X | X | | |
-| people: read | X | X | X | X |
-| people: update | X | X | X | |
+| people: edit | X | X | X | |
 | people: delete | X | X | | |
 | people: import | X | X | | |
 | people: assign | X | X | | |
+| conference: view | X | X | X | X |
 | conference: create | X | X | | |
-| conference: read | X | X | X | X |
-| conference: update | X | X | X | |
+| conference: edit | X | X | X | |
 | conference: delete | X | X | | |
 | conference: toggle | X | X | | |
-| settings: read | X | X | | |
-| settings: update | X | | | |
+| settings: view | X | X | | |
+| settings: edit | X | | | |
 | users: CRUD | X | | | |
-| audit: read | X | | | |
-| sync: trigger | X | X | | |
+| audit: view | X | | | |
 | sync: view | X | X | X | X |
+| sync: trigger | X | X | | |
 | labels: view | X | X | X | X |
 | labels: manage | X | X | | |
+| labels: link/unlink | X | X | | |
+| stores: view/manage | X | | | |
+| aims-management: view | X | X | | |
+| aims-management: manage | X | | | |
 
 **PLATFORM_ADMIN** bypasses all permission checks.
 
-Users with `allStoresAccess` on their `UserCompany` record receive `STORE_ADMIN`-level permissions across all stores in that company.
+Users with `allStoresAccess` on their `UserCompany` record receive **Admin**-level permissions across all stores in that company.
+
+Custom roles can define any combination of the above permissions, enabling fine-grained access control tailored to organizational needs.
 
 ### 7.6 Feature-Level Access Control
 

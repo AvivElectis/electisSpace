@@ -4,7 +4,7 @@
  * @description Type definitions, validation schemas, and DTOs for user management.
  */
 import { z } from 'zod';
-import { GlobalRole, StoreRole, CompanyRole } from '@prisma/client';
+import { GlobalRole, CompanyRole } from '@prisma/client';
 
 // ======================
 // Constants
@@ -40,14 +40,14 @@ export const storeRefSchema = z.discriminatedUnion('type', [
     z.object({
         type: z.literal('existing'),
         id: z.string().uuid(),
-        role: z.enum(['STORE_ADMIN', 'STORE_MANAGER', 'STORE_EMPLOYEE', 'STORE_VIEWER']).default('STORE_VIEWER'),
+        roleId: z.string().min(1).default('role-viewer'),
         features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
     }),
     z.object({
         type: z.literal('new'),
         code: z.string().regex(STORE_CODE_REGEX, 'Store code must be numeric'),
         name: z.string().min(1).max(200),
-        role: z.enum(['STORE_ADMIN', 'STORE_MANAGER', 'STORE_EMPLOYEE', 'STORE_VIEWER']).default('STORE_VIEWER'),
+        roleId: z.string().min(1).default('role-viewer'),
         features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
     }),
 ]);
@@ -78,14 +78,14 @@ export const updateUserSchema = z.object({
 });
 
 export const updateUserStoreSchema = z.object({
-    role: z.enum(['STORE_ADMIN', 'STORE_MANAGER', 'STORE_EMPLOYEE', 'STORE_VIEWER']).optional(),
+    roleId: z.string().min(1).optional(),
     features: z.array(z.enum(AVAILABLE_FEATURES)).optional(),
 });
 
 export const assignUserToStoreSchema = z.object({
     userId: z.string().uuid(),
     storeId: z.string().uuid(),
-    role: z.enum(['STORE_ADMIN', 'STORE_MANAGER', 'STORE_EMPLOYEE', 'STORE_VIEWER']).default('STORE_VIEWER'),
+    roleId: z.string().min(1).default('role-viewer'),
     features: z.array(z.enum(AVAILABLE_FEATURES)).default(['dashboard']),
 });
 
@@ -131,7 +131,7 @@ export const bulkActivateSchema = z.object({
 export const bulkChangeRoleSchema = z.object({
     userIds: z.array(z.string().uuid()).min(1).max(50),
     storeId: z.string().uuid(),
-    role: z.enum(['STORE_ADMIN', 'STORE_MANAGER', 'STORE_EMPLOYEE', 'STORE_VIEWER']),
+    roleId: z.string().min(1),
 });
 
 export const updateContextSchema = z.object({
@@ -178,7 +178,7 @@ export interface UserStoreInfo {
     id: string;
     name: string;
     code: string;
-    role: StoreRole;
+    roleId: string;
     features: string[];
     companyId?: string;
     companyName?: string;
@@ -246,6 +246,6 @@ export interface FeaturesResponse {
 export interface UserContext {
     id: string;
     globalRole: string | null;
-    stores?: Array<{ id: string; role: string }>;
+    stores?: Array<{ id: string; roleId: string }>;
     companies?: Array<{ id: string; role: string }>;
 }

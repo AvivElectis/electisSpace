@@ -183,7 +183,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={onClose} disabled={state.submitting} color="inherit">
+                    <Button onClick={onClose} disabled={state.submitting}>
                         {state.isEditing ? t('common.cancel') : t('common.close')}
                     </Button>
                     {state.isEditing && (

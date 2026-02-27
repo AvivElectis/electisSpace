@@ -36,19 +36,24 @@ jobs:
             echo "=== Starting Redis ==="
             docker compose -f docker-compose.infra.yml up -d redis
 
-            echo "=== Running migrations (before server start) ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate resolve --rolled-back 20260223000000_add_store_status_and_user_suspension 2>/dev/null || true
+            echo "=== Backing up database before migrations ==="
+            BACKUP_DIR="/opt/electisSpace/backups"
+            mkdir -p "$BACKUP_DIR"
+            BACKUP_FILE="$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S).sql.gz"
+            docker exec global-postgres pg_dump -U postgres electisspace_prod | gzip > "$BACKUP_FILE"
+            echo "Backup saved to $BACKUP_FILE"
+            # Keep only the last 5 backups
+            ls -t "$BACKUP_DIR"/pre-deploy-*.sql.gz 2>/dev/null | tail -n +6 | xargs -r rm
+
+            echo "=== Running migrations ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate deploy
 
             echo "=== Starting core services ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d server client
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --remove-orphans server client
 
             echo "=== Health check ==="
             sleep 10
-            curl -f http://localhost:3071/health || echo "Health check failed"
-
-            echo "=== Starting observability stack (non-blocking) ==="
-            docker compose -f docker-compose.infra.yml up -d loki promtail grafana || echo "WARNING: Observability stack failed to start (non-critical)"
+            curl -f http://localhost:3071/health || (echo "Health check failed!" && exit 1)
 
             echo "=== Deployment complete ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml ps

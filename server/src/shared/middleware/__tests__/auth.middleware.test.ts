@@ -9,6 +9,7 @@ vi.mock('../../../config/index.js', () => ({
     prisma: {
         user: { findUnique: vi.fn() },
         store: { findMany: vi.fn() },
+        role: { findUnique: vi.fn() },
     },
 }));
 
@@ -77,45 +78,56 @@ describe('requireGlobalRole', () => {
 });
 
 describe('authorize', () => {
-    it('should allow PLATFORM_ADMIN', () => {
-        const mw = authorize('STORE_ADMIN');
+    beforeEach(() => vi.clearAllMocks());
+
+    it('should allow PLATFORM_ADMIN', async () => {
+        const mw = authorize('Admin');
         const { req, res, next } = createMocks();
         req.user = { id: '1', email: 'a@b.com', globalRole: 'PLATFORM_ADMIN' as any, stores: [], companies: [] };
-        mw(req, res, next);
+        await mw(req, res, next);
         expect(next).toHaveBeenCalledWith();
     });
 
-    it('should reject non-matching role', () => {
-        const mw = authorize('STORE_ADMIN');
+    it('should reject non-matching role', async () => {
+        const mw = authorize('Admin');
         const { req, res, next } = createMocks();
-        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [{ id: 's1', role: 'STORE_VIEWER' as any, companyId: 'c1' }], companies: [] };
-        mw(req, res, next);
+        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [{ id: 's1', roleId: 'role-viewer', companyId: 'c1' }], companies: [] };
+        (prisma.role.findUnique as any).mockResolvedValue({ name: 'Viewer' });
+        await mw(req, res, next);
         expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('permissions') }));
     });
 });
 
 describe('requirePermission', () => {
-    it('should allow PLATFORM_ADMIN any permission', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('should allow PLATFORM_ADMIN any permission', async () => {
         const mw = requirePermission('spaces', 'delete');
         const { req, res, next } = createMocks();
         req.user = { id: '1', email: 'a@b.com', globalRole: 'PLATFORM_ADMIN' as any, stores: [], companies: [] };
-        mw(req, res, next);
+        await mw(req, res, next);
         expect(next).toHaveBeenCalledWith();
     });
 
-    it('should deny STORE_VIEWER write', () => {
+    it('should deny viewer write access', async () => {
         const mw = requirePermission('spaces', 'create');
         const { req, res, next } = createMocks();
-        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [{ id: 's1', role: 'STORE_VIEWER' as any, companyId: 'c1' }], companies: [] };
-        mw(req, res, next);
+        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [{ id: 's1', roleId: 'role-viewer', companyId: 'c1' }], companies: [] };
+        (prisma.role.findUnique as any).mockResolvedValue({
+            permissions: { spaces: ['view'], people: ['view'] },
+        });
+        await mw(req, res, next);
         expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Permission denied') }));
     });
 
-    it('should allow allStoresAccess company user', () => {
+    it('should allow allStoresAccess company user', async () => {
         const mw = requirePermission('users', 'create');
         const { req, res, next } = createMocks();
         req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [], companies: [{ id: 'c1', role: 'COMPANY_ADMIN', allStoresAccess: true }] };
-        mw(req, res, next);
+        (prisma.role.findUnique as any).mockResolvedValue({
+            permissions: { users: ['view', 'create', 'edit', 'delete'] },
+        });
+        await mw(req, res, next);
         expect(next).toHaveBeenCalledWith();
     });
 });
