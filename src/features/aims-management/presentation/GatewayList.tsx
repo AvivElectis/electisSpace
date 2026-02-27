@@ -62,7 +62,10 @@ export function GatewayList({ storeId, onSelectGateway }: GatewayListProps) {
         return <Alert severity="error" action={<Button onClick={() => fetchGateways(true)}>{t('common.retry')}</Button>}>{gatewaysError}</Alert>;
     }
 
-    const onlineCount = gateways.filter((g: any) => g.status === 'ONLINE' || g.status === 'online').length;
+    const onlineCount = gateways.filter((g: any) => {
+        const status = (g.status || g.networkStatus || '').toUpperCase();
+        return status === 'ONLINE' || status === 'CONNECTED';
+    }).length;
 
     if (gateways.length === 0) {
         return (
@@ -106,7 +109,8 @@ export function GatewayList({ storeId, onSelectGateway }: GatewayListProps) {
                     <TableBody>
                         {gateways.map((gw: any) => {
                             const mac = gw.mac || gw.macAddress || gw.gatewayId || '';
-                            const isOnline = gw.status === 'ONLINE' || gw.status === 'online';
+                            const statusRaw = (gw.status || gw.networkStatus || '').toUpperCase();
+                            const isOnline = statusRaw === 'ONLINE' || statusRaw === 'CONNECTED';
                             return (
                                 <TableRow key={mac} hover>
                                     <TableCell><Typography variant="body2" fontFamily="monospace">{mac}</Typography></TableCell>
@@ -120,8 +124,8 @@ export function GatewayList({ storeId, onSelectGateway }: GatewayListProps) {
                                         />
                                     </TableCell>
                                     <TableCell>{gw.model || '\u2014'}</TableCell>
-                                    <TableCell>{gw.firmwareVersion || '\u2014'}</TableCell>
-                                    <TableCell align="right">{gw.connectedLabelCount ?? '\u2014'}</TableCell>
+                                    <TableCell>{gw.firmwareVersion || gw.version || '\u2014'}</TableCell>
+                                    <TableCell align="right">{gw.connectedLabelCount ?? gw.labelCount ?? '\u2014'}</TableCell>
                                     <TableCell align="right">
                                         <Tooltip title={t('aims.viewDetails')}>
                                             <IconButton size="small" onClick={() => onSelectGateway?.(mac)}>
