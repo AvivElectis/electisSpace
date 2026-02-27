@@ -2,8 +2,9 @@
  * Client-side Floyd-Steinberg dithering for ESL label preview.
  *
  * Converts a full-color resized image into the label's native color palette
- * (BINARY = black/white, TERNARY_RED = black/white/red) using error-diffusion
- * dithering. This gives users an instant preview without an AIMS round-trip.
+ * using error-diffusion dithering. Supports BINARY, TERNARY_RED, TERNARY_YELLOW,
+ * and FOUR_COLOR label types. This gives users an instant preview without an
+ * AIMS round-trip.
  *
  * Note: the actual label still receives server-side AIMS dithering on push —
  * this is a client-only approximation for preview purposes.
@@ -11,18 +12,44 @@
 
 type RGB = [number, number, number];
 
-/** Color palettes matching AIMS label colorType values */
-const PALETTES: Record<string, RGB[]> = {
-    BINARY: [
-        [0, 0, 0],       // black
-        [255, 255, 255],  // white
-    ],
-    TERNARY_RED: [
-        [0, 0, 0],       // black
-        [255, 255, 255],  // white
-        [255, 0, 0],     // red
-    ],
-};
+/** Color palettes for known AIMS label color types */
+const PALETTE_BINARY: RGB[] = [
+    [0, 0, 0],       // black
+    [255, 255, 255],  // white
+];
+
+const PALETTE_TERNARY_RED: RGB[] = [
+    [0, 0, 0],       // black
+    [255, 255, 255],  // white
+    [255, 0, 0],     // red
+];
+
+const PALETTE_TERNARY_YELLOW: RGB[] = [
+    [0, 0, 0],       // black
+    [255, 255, 255],  // white
+    [255, 255, 0],   // yellow
+];
+
+const PALETTE_FOUR_COLOR: RGB[] = [
+    [0, 0, 0],       // black
+    [255, 255, 255],  // white
+    [255, 0, 0],     // red
+    [255, 255, 0],   // yellow
+];
+
+/**
+ * Resolve AIMS colorType string to the matching palette.
+ * Matching is case-insensitive and tolerant of separators (_, -, space).
+ */
+function getPalette(colorType: string): RGB[] {
+    const key = colorType.toUpperCase().replace(/[\s-]/g, '_');
+
+    if (key.includes('FOUR') || key.includes('4_COLOR')) return PALETTE_FOUR_COLOR;
+    if (key.includes('RED')) return PALETTE_TERNARY_RED;
+    if (key.includes('YELLOW')) return PALETTE_TERNARY_YELLOW;
+    if (key.includes('TERNARY')) return PALETTE_TERNARY_RED; // default ternary
+    return PALETTE_BINARY;
+}
 
 /** Squared Euclidean distance between two RGB colors */
 function colorDistanceSq(a: RGB, b: RGB): number {
@@ -74,7 +101,7 @@ export function ditherImage(
         pixels[i * 3 + 2] = src[i * 4 + 2];
     }
 
-    const palette = PALETTES[colorType] ?? PALETTES.BINARY;
+    const palette = getPalette(colorType);
 
     // Floyd-Steinberg error diffusion
     for (let y = 0; y < height; y++) {

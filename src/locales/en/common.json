@@ -1502,7 +1502,9 @@
             "altDitheredPreview": "Dithered preview",
             "altResizedPreview": "Resized preview",
             "labelPreview": "Label Preview",
-            "altLabelPreview": "Label preview mockup"
+            "altLabelPreview": "Label preview mockup",
+            "flip": "Flip",
+            "flipTooltip": "Rotate 180°"
         }
     }
 }
