@@ -115,7 +115,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setResizedBase64(base64);
 
             // Client-side Floyd-Steinberg dithering for instant preview
-            const ditheredCanvas = ditherImage(canvas, info.colorType);
+            const ditheredCanvas = ditherImage(canvas, info.color);
             const ditheredB64 = canvasToBase64(ditheredCanvas);
             setDitheredBase64(ditheredB64);
 
