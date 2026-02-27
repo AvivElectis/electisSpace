@@ -666,7 +666,8 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/gateway?company=${config.companyName}&store=${config.storeCode}`);
         return this.withRetry('fetchGateways', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return response.data?.responseMessage ?? response.data ?? [];
+            // SoluM returns { gatewayList: [...], responseMessage: "OK" }
+            return response.data?.gatewayList ?? response.data?.responseMessage ?? response.data ?? [];
         });
     }
 
@@ -675,7 +676,9 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/gateway/detail?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
         return this.withRetry('fetchGatewayDetail', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return response.data?.responseMessage ?? response.data ?? {};
+            // SoluM returns gateway detail as flat object with responseCode/responseMessage fields
+            const { responseCode, responseMessage, ...detail } = response.data ?? {};
+            return Object.keys(detail).length > 0 ? detail : response.data ?? {};
         });
     }
 
@@ -683,7 +686,8 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/gateway/floating?company=${config.companyName}`);
         return this.withRetry('fetchFloatingGateways', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return response.data?.responseMessage ?? response.data ?? [];
+            // SoluM may return { gatewayList: [...] } or { responseMessage: [...] }
+            return response.data?.gatewayList ?? response.data?.responseMessage ?? response.data ?? [];
         });
     }
 
@@ -723,7 +727,9 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/gateway/debug/info?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
         return this.withRetry('fetchGatewayDebugReport', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return response.data?.responseMessage ?? response.data ?? {};
+            // Strip metadata fields, return the actual debug data
+            const { responseCode, responseMessage, ...report } = response.data ?? {};
+            return Object.keys(report).length > 0 ? report : response.data ?? {};
         });
     }
 
