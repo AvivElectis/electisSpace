@@ -208,6 +208,15 @@ export function canAccessFeature(
     // Store admins have access to all enabled features (check roleId first)
     if (store.roleId === DEFAULT_ROLE_IDS.ADMIN || store.role === 'STORE_ADMIN') return true;
 
+    // aims-management is a company-level feature (aimsManagementEnabled toggle).
+    // Access is role-gated (STORE_MANAGER+), not per-user feature whitelisted.
+    // The company toggle was already validated by isFeatureEnabled above.
+    if (feature === 'aims-management') {
+        const roleLevel = ROLE_ID_HIERARCHY[store.roleId ?? ''] ?? 0;
+        const legacyLevel = STORE_ROLE_HIERARCHY[store.role ?? ''] ?? 0;
+        return Math.max(roleLevel, legacyLevel) >= STORE_ROLE_HIERARCHY['STORE_MANAGER'];
+    }
+
     // Check feature list for other roles
     return store.features.includes(feature);
 }
