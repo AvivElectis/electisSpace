@@ -22,10 +22,11 @@ import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { GatewayList } from './GatewayList';
 import { GatewayDetail } from './GatewayDetail';
 import { GatewayRegistration } from './GatewayRegistration';
-import { LabelHistory } from './LabelHistory';
+import { LabelsOverview } from './LabelsOverview';
 import { ProductHistory } from './ProductHistory';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
+import { useLabelsOverview } from '../application/useLabelsOverview';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -50,11 +51,19 @@ export function AimsManagementPage() {
     const [selectedGatewayMac, setSelectedGatewayMac] = useState<string | null>(null);
     const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
     const { gateways, fetchGateways } = useGateways(activeStoreId);
+    const { stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
 
     // Reset store when store changes
     useEffect(() => {
         reset();
     }, [activeStoreId, reset]);
+
+    // Fetch labels for the stats card
+    useEffect(() => {
+        if (activeStoreId) {
+            fetchLabels();
+        }
+    }, [activeStoreId, fetchLabels]);
 
     // Stats
     const { onlineCount, offlineCount } = useMemo(() => {
@@ -122,7 +131,7 @@ export function AimsManagementPage() {
 
             {/* Stats */}
             {isMobile ? (
-                <Stack direction="row" gap={1.5} alignItems="center" sx={{ mb: 2, px: 1 }}>
+                <Stack direction="row" gap={1.5} alignItems="center" sx={{ mb: 2, px: 1 }} flexWrap="wrap">
                     <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
                         {gateways.length} {t('aims.gateways')}
                     </Typography>
@@ -134,6 +143,9 @@ export function AimsManagementPage() {
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main' }} />
                         <Typography variant="caption">{offlineCount}</Typography>
                     </Stack>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
+                        {labelStats.total} {t('aims.labels')}
+                    </Typography>
                 </Stack>
             ) : (
                 <Stack direction="row" gap={2} sx={{ mb: 3 }}>
@@ -188,6 +200,23 @@ export function AimsManagementPage() {
                             </Stack>
                         </CardContent>
                     </Card>
+                    <Card sx={{ ...cardsSetting, flex: 1, minWidth: 0 }}>
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                            <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
+                                <Box sx={{ bgcolor: 'info.main', borderRadius: 2, p: 1.5, display: 'flex' }}>
+                                    <LabelIcon sx={{ color: 'white', fontSize: 24 }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="h4" sx={{ fontWeight: 500, fontSize: '2rem' }}>
+                                        {labelStats.total}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" noWrap>
+                                        {t('aims.totalLabels')}
+                                    </Typography>
+                                </Box>
+                            </Stack>
+                        </CardContent>
+                    </Card>
                 </Stack>
             )}
 
@@ -202,7 +231,7 @@ export function AimsManagementPage() {
                 <GatewayList storeId={activeStoreId} onSelectGateway={setSelectedGatewayMac} />
             </TabPanel>
             <TabPanel value={activeTab} index={1}>
-                <LabelHistory storeId={activeStoreId} />
+                <LabelsOverview storeId={activeStoreId} />
             </TabPanel>
             <TabPanel value={activeTab} index={2}>
                 <ProductHistory storeId={activeStoreId} />

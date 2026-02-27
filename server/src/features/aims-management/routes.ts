@@ -26,6 +26,10 @@ router.post('/gateways', requirePermission('aims-management', 'manage'), aimsMan
 router.delete('/gateways', requirePermission('aims-management', 'manage'), aimsManagementController.deregisterGateways);
 router.patch('/gateways/:mac/reboot', requirePermission('aims-management', 'manage'), aimsManagementController.rebootGateway);
 
+// ─── Label Listing (STORE_MANAGER+) ─────────────────────────────────────────
+router.get('/labels', requirePermission('aims-management', 'view'), aimsManagementController.listLabels);
+router.get('/labels/unassigned', requirePermission('aims-management', 'view'), aimsManagementController.listUnassignedLabels);
+
 // ─── Label History (STORE_MANAGER+) ─────────────────────────────────────────
 router.get('/labels/:code/history', requirePermission('aims-management', 'view'), aimsManagementController.getLabelStatusHistory);
 
