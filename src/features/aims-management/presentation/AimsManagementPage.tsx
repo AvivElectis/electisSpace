@@ -5,7 +5,7 @@
  * Follows the same layout pattern as ConferencePage and other feature pages.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
     Box, Typography, Tabs, Tab, Button, Alert, Stack, Card, CardContent,
     Fab, useMediaQuery, useTheme,
@@ -53,17 +53,18 @@ export function AimsManagementPage() {
     const { gateways, fetchGateways } = useGateways(activeStoreId);
     const { stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
 
-    // Reset store when store changes
+    // Reset store and re-fetch when store changes
+    const prevStoreRef = useRef(activeStoreId);
     useEffect(() => {
-        reset();
-    }, [activeStoreId, reset]);
-
-    // Fetch labels for the stats card
-    useEffect(() => {
+        if (prevStoreRef.current !== activeStoreId) {
+            reset();
+            prevStoreRef.current = activeStoreId;
+        }
         if (activeStoreId) {
+            fetchGateways();
             fetchLabels();
         }
-    }, [activeStoreId, fetchLabels]);
+    }, [activeStoreId, reset, fetchGateways, fetchLabels]);
 
     // Stats
     const { onlineCount, offlineCount } = useMemo(() => {
