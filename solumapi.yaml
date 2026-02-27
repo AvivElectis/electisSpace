@@ -2159,7 +2159,7 @@ paths:
 
 #################### GET LABEL TYPE ####################
 
-  /common/api/v2/common/labels/type/info: 
+  /api/v2/common/labels/type/info:
 
     get:
       tags:
