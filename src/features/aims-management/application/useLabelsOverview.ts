@@ -11,7 +11,7 @@ const STALE_TIME = 30_000; // 30 seconds
 
 export function useLabelsOverview(storeId: string | null) {
     const {
-        labels, labelsLoading, labelsError, labelsLastFetched,
+        labels, labelsLoading, labelsError,
         setLabels, setLabelsLoading, setLabelsError,
         unassignedLabels, unassignedLabelsLoading,
         setUnassignedLabels, setUnassignedLabelsLoading,
@@ -19,6 +19,7 @@ export function useLabelsOverview(storeId: string | null) {
 
     const fetchLabels = useCallback(async (force = false) => {
         if (!storeId) return;
+        const { labelsLastFetched } = useAimsManagementStore.getState();
         if (!force && labelsLastFetched && Date.now() - labelsLastFetched < STALE_TIME) return;
 
         setLabelsLoading(true);
@@ -32,7 +33,7 @@ export function useLabelsOverview(storeId: string | null) {
         } finally {
             setLabelsLoading(false);
         }
-    }, [storeId, labelsLastFetched, setLabels, setLabelsLoading, setLabelsError]);
+    }, [storeId, setLabels, setLabelsLoading, setLabelsError]);
 
     const fetchUnassignedLabels = useCallback(async () => {
         if (!storeId) return;

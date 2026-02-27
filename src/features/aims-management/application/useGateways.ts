@@ -11,7 +11,7 @@ const STALE_TIME = 30_000; // 30 seconds
 
 export function useGateways(storeId: string | null) {
     const {
-        gateways, gatewaysLoading, gatewaysError, gatewaysLastFetched,
+        gateways, gatewaysLoading, gatewaysError,
         setGateways, setGatewaysLoading, setGatewaysError,
         selectedGateway, selectedGatewayLoading,
         setSelectedGateway, setSelectedGatewayLoading,
@@ -23,8 +23,9 @@ export function useGateways(storeId: string | null) {
 
     const fetchGateways = useCallback(async (force = false) => {
         if (!storeId) return;
-        if (!force && gatewaysLastFetched && Date.now() - gatewaysLastFetched < STALE_TIME) return;
-        
+        const { gatewaysLastFetched: lastFetched } = useAimsManagementStore.getState();
+        if (!force && lastFetched && Date.now() - lastFetched < STALE_TIME) return;
+
         setGatewaysLoading(true);
         setGatewaysError(null);
         try {
@@ -36,7 +37,7 @@ export function useGateways(storeId: string | null) {
         } finally {
             setGatewaysLoading(false);
         }
-    }, [storeId, gatewaysLastFetched, setGateways, setGatewaysLoading, setGatewaysError]);
+    }, [storeId, setGateways, setGatewaysLoading, setGatewaysError]);
 
     const fetchGatewayDetail = useCallback(async (mac: string) => {
         if (!storeId) return;
