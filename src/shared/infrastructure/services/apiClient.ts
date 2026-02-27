@@ -78,9 +78,69 @@ export const tokenManager = {
 
 import { getSseClientId } from './sseClientId';
 
-// Request interceptor - attach JWT token + SSE client ID
+// Auth-flow endpoints that should NOT trigger proactive refresh or 401 retry
+const AUTH_FLOW_PATHS = ['/auth/login', '/auth/verify-2fa', '/auth/refresh', '/auth/device-auth', '/auth/resend-code', '/auth/forgot-password', '/auth/reset-password'];
+
+/**
+ * Check if a JWT access token is expired or near expiry.
+ * Decodes the base64 payload to read the `exp` claim.
+ * Returns true if the token expires within the given buffer (default 60s).
+ */
+function isTokenNearExpiry(token: string, bufferMs = 60_000): boolean {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000 < Date.now() + bufferMs;
+    } catch {
+        return false; // If we can't decode, let the request proceed as-is
+    }
+}
+
+// Proactive refresh state — shared with the response interceptor
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Attempt to refresh the access token using the httpOnly cookie.
+ * Deduplicates concurrent refresh attempts via a shared promise.
+ */
+function doRefresh(): Promise<string | null> {
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = axios.post(
+        `${API_BASE_URL}/auth/refresh`,
+        {},
+        { withCredentials: true }
+    ).then((response) => {
+        const { accessToken } = response.data;
+        tokenManager.setAccessToken(accessToken);
+        return accessToken as string;
+    }).catch(() => {
+        return null;
+    }).finally(() => {
+        refreshPromise = null;
+    });
+
+    return refreshPromise;
+}
+
+// Request interceptor - proactive token refresh + attach JWT + SSE client ID
 api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
+    async (config: InternalAxiosRequestConfig) => {
+        const isAuthEndpoint = AUTH_FLOW_PATHS.some(p => config.url?.includes(p));
+
+        // Proactively refresh the token before it expires to prevent 401 console errors.
+        // Only for non-auth-flow endpoints that would carry a Bearer token.
+        if (!isAuthEndpoint) {
+            const token = tokenManager.getAccessToken();
+            if (token && isTokenNearExpiry(token)) {
+                const newToken = await doRefresh();
+                if (newToken && config.headers) {
+                    config.headers.Authorization = `Bearer ${newToken}`;
+                }
+            }
+        }
+
+        // Attach current token (may have been refreshed above)
         const token = tokenManager.getAccessToken();
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -94,9 +154,6 @@ api.interceptors.request.use(
     },
     (error) => Promise.reject(error)
 );
-
-// Response interceptor - handle 401 and refresh token
-let isRefreshing = false;
 let failedQueue: Array<{
     resolve: (value: unknown) => void;
     reject: (error: unknown) => void;
@@ -113,17 +170,15 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
+// Response interceptor - fallback 401 handler for cases where proactive refresh missed
+// (e.g., token revoked server-side, clock skew, etc.)
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        // Don't try to refresh for auth-flow endpoints (login, verify-2fa, refresh, etc.)
-        // Note: /auth/me, /auth/devices, /auth/change-password etc. are regular
-        // authenticated endpoints that SHOULD trigger token refresh on 401.
-        const authFlowPaths = ['/auth/login', '/auth/verify-2fa', '/auth/refresh', '/auth/device-auth', '/auth/resend-code', '/auth/forgot-password', '/auth/reset-password'];
-        const isAuthEndpoint = authFlowPaths.some(p => originalRequest.url?.includes(p));
-        
+        const isAuthEndpoint = AUTH_FLOW_PATHS.some(p => originalRequest.url?.includes(p));
+
         // Handle 401 Unauthorized - only for non-auth endpoints
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             if (isRefreshing) {
@@ -143,10 +198,9 @@ api.interceptors.response.use(
 
             try {
                 // Call refresh endpoint - refresh token is in httpOnly cookie
-                // The server will read it from the cookie automatically
                 const response = await axios.post(
                     `${API_BASE_URL}/auth/refresh`,
-                    {}, // No body needed - cookie contains refresh token
+                    {},
                     { withCredentials: true }
                 );
 
