@@ -754,7 +754,7 @@ export class SolumService {
         if (toDate) url += `&toDate=${toDate}`;
         return this.withRetry('fetchBatchHistory', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return this.extractResponseData(response.data);
+            return this.extractResponseData(response.data, 'fetchBatchHistory');
         });
     }
 
@@ -763,7 +763,7 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/articles/history/detail?company=${config.companyName}&store=${config.storeCode}&name=${encodeURIComponent(batchName)}`);
         return this.withRetry('fetchBatchDetail', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return this.extractResponseData(response.data);
+            return this.extractResponseData(response.data, 'fetchBatchDetail');
         });
     }
 
@@ -772,7 +772,7 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/articles/validationerror/logs?company=${config.companyName}&store=${config.storeCode}&batchId=${batchId}`);
         return this.withRetry('fetchBatchErrors', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return this.extractResponseData(response.data);
+            return this.extractResponseData(response.data, 'fetchBatchErrors');
         });
     }
 
@@ -781,25 +781,37 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/articles/update/history?company=${config.companyName}&store=${config.storeCode}&article=${encodeURIComponent(articleId)}&page=${page}&size=${size}`);
         return this.withRetry('fetchArticleUpdateHistory', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return this.extractResponseData(response.data);
+            return this.extractResponseData(response.data, 'fetchArticleUpdateHistory');
         });
     }
 
     /**
      * Extract data from AIMS API response.
-     * AIMS responses vary: sometimes data is in responseMessage (object/array),
-     * sometimes responseMessage is just "SUCCESS" and data is in a separate field.
+     * SoluM responses vary by endpoint:
+     *   - Gateway list: { gatewayList: [...], responseCode, responseMessage: "OK" }
+     *   - History/paginated: { content: [...], totalPages, totalElements, ..., responseCode, responseMessage }
+     *   - Detail: flat object with responseCode/responseMessage mixed in
+     *   - Some: responseMessage IS the data (object/array)
      */
-    private extractResponseData(data: any): any {
+    private extractResponseData(data: any, context?: string): any {
         if (!data) return {};
-        // If responseMessage is an object/array, it IS the data (gateway endpoints)
+
+        // Log full response shape for debugging SoluM endpoint variations
+        const keys = Object.keys(data);
+        appLogger.debug('SolumService', `extractResponseData [${context ?? '?'}] keys=${keys.join(',')} rmType=${typeof data.responseMessage}`);
+
+        // If responseMessage is an object/array, it IS the data
         if (data.responseMessage && typeof data.responseMessage === 'object') {
             return data.responseMessage;
         }
-        // Otherwise look for data.data or data.content (article/history endpoints)
-        if (data.data) return data.data;
-        if (data.content) return data;
-        // Fallback: return the whole response minus status fields
+        // Paginated endpoints return { content: [...], totalPages, totalElements, ... }
+        if (Array.isArray(data.content)) {
+            const { responseCode, responseMessage, ...paginated } = data;
+            return paginated;
+        }
+        // Some endpoints nest under data.data
+        if (data.data !== undefined) return data.data;
+        // Strip metadata fields and return the rest
         const { responseCode, responseMessage, ...rest } = data;
         return Object.keys(rest).length > 0 ? rest : data;
     }
