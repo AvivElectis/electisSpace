@@ -77,7 +77,11 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
 
     // Summary stats
     const summaryStats = useMemo(() => {
-        const batches = Array.isArray(batchHistory?.content) ? batchHistory.content : (Array.isArray(batchHistory) ? batchHistory : []);
+        // SoluM may return paginated { content: [...] }, direct array, or named list field
+    const batches = Array.isArray(batchHistory?.content) ? batchHistory.content
+        : Array.isArray(batchHistory) ? batchHistory
+        : Array.isArray(batchHistory?.batchHistoryList) ? batchHistory.batchHistoryList
+        : [];
         if (batches.length === 0) return null;
 
         const totalBatches = batches.length;
@@ -96,7 +100,11 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
         return <Alert severity="error">{error}</Alert>;
     }
 
-    const batches = Array.isArray(batchHistory?.content) ? batchHistory.content : (Array.isArray(batchHistory) ? batchHistory : []);
+    // SoluM may return paginated { content: [...] }, direct array, or named list field
+    const batches = Array.isArray(batchHistory?.content) ? batchHistory.content
+        : Array.isArray(batchHistory) ? batchHistory
+        : Array.isArray(batchHistory?.batchHistoryList) ? batchHistory.batchHistoryList
+        : [];
 
     return (
         <Box>

@@ -232,6 +232,7 @@
         "every": "Every",
         "toSpaces": "To Spaces",
         "toRooms": "To Rooms",
+        "toAims": "To AIMS",
         "toSpaceType": "To {{type}}",
         "toPeople": "To People",
         "managePeople": "Manage People",

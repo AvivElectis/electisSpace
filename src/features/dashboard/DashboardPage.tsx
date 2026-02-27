@@ -11,6 +11,9 @@ import { useSyncContext } from '@features/sync/application/SyncContext';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useGateways } from '@features/aims-management/application/useGateways';
+import { useLabelsOverview } from '@features/aims-management/application/useLabelsOverview';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 
 // Lazy load dialogs - not needed on initial render
@@ -23,6 +26,7 @@ import {
     DashboardSpacesCard,
     DashboardConferenceCard,
     DashboardPeopleCard,
+    DashboardAimsCard,
     DashboardSkeleton,
     QuickActionsPanel,
 } from './components';
@@ -57,15 +61,25 @@ export function DashboardPage() {
     // People store (before useEffect so fetchPeople is available)
     const peopleStore = usePeopleStore();
 
+    // AIMS data (conditionally loaded when feature is enabled)
+    const { canAccessFeature } = useAuthContext();
+    const isAimsEnabled = canAccessFeature('aims-management');
+    const { gateways, fetchGateways: fetchAimsGateways } = useGateways(activeStoreId);
+    const { stats: aimsLabelStats, fetchLabels: fetchAimsLabels } = useLabelsOverview(activeStoreId);
+
     // Fetch all data from server on mount / store switch so dashboard shows real counts
     useEffect(() => {
         if (isAppReady && activeStoreId) {
             spaceController.fetchSpaces();
             conferenceController.fetchRooms();
             peopleStore.fetchPeople();
+            if (isAimsEnabled) {
+                fetchAimsGateways();
+                fetchAimsLabels();
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady, activeStoreId]);
+    }, [isAppReady, activeStoreId, isAimsEnabled]);
 
     // Stats - Spaces
     const totalSpaces = spaceController.spaces.length;
@@ -103,6 +117,16 @@ export function DashboardPage() {
         conferenceController.conferenceRooms.reduce((count, r) => count + (r.assignedLabels?.length || 0), 0),
         [conferenceController.conferenceRooms]
     );
+
+    // Stats - AIMS
+    const aimsGatewayStats = useMemo(() => {
+        const total = gateways.length;
+        const online = gateways.filter((g: any) => {
+            const s = (g.status || g.networkStatus || '').toUpperCase();
+            return s === 'ONLINE' || s === 'CONNECTED';
+        }).length;
+        return { total, online, offline: total - online };
+    }, [gateways]);
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
@@ -205,6 +229,20 @@ export function DashboardPage() {
                         isMobile={isMobile}
                     />
                 </Grid>
+
+                {/* AIMS Area - Only show when feature is enabled */}
+                {isAimsEnabled && (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <DashboardAimsCard
+                            totalGateways={aimsGatewayStats.total}
+                            onlineGateways={aimsGatewayStats.online}
+                            offlineGateways={aimsGatewayStats.offline}
+                            totalLabels={aimsLabelStats.total}
+                            onlineLabels={aimsLabelStats.online}
+                            isMobile={isMobile}
+                        />
+                    </Grid>
+                )}
 
             </Grid>
 
