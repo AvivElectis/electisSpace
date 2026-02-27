@@ -40,6 +40,9 @@ UPDATE "user_stores" SET "role_id" = 'role-manager' WHERE "role" = 'STORE_MANAGE
 UPDATE "user_stores" SET "role_id" = 'role-employee' WHERE "role" = 'STORE_EMPLOYEE';
 UPDATE "user_stores" SET "role_id" = 'role-viewer' WHERE "role" = 'STORE_VIEWER';
 
+-- 5b. Safety net: assign default viewer role to any unmapped rows
+UPDATE "user_stores" SET "role_id" = 'role-viewer' WHERE "role_id" IS NULL;
+
 -- 6. Make role_id NOT NULL
 ALTER TABLE "user_stores" ALTER COLUMN "role_id" SET NOT NULL;
 
