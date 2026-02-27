@@ -19,16 +19,20 @@ const MIN_VALIDATION_INTERVAL_MS = 30 * 1000;
 export const useAuthWatchdog = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated, validateSession, lastValidation, logout } = useAuthStore();
+    const { isAuthenticated, validateSession, logout } = useAuthStore();
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Read lastValidation from the store via ref to avoid re-creating
+    // performValidation (and restarting the interval) on every validation.
     const performValidation = useCallback(async () => {
         // Skip validation if not authenticated or on login page
         if (!isAuthenticated || location.pathname === '/login') {
             return;
         }
 
-        // Skip if we validated recently
+        // Skip if we validated recently — read from store snapshot, not a
+        // reactive dependency, so updating lastValidation won't restart the interval.
+        const { lastValidation } = useAuthStore.getState();
         const now = Date.now();
         if (lastValidation && (now - lastValidation) < MIN_VALIDATION_INTERVAL_MS) {
             return;
@@ -74,7 +78,7 @@ export const useAuthWatchdog = () => {
         logger.warn('AuthWatchdog', 'All auth methods failed, redirecting to login');
         await logout();
         navigate('/login', { replace: true });
-    }, [isAuthenticated, validateSession, lastValidation, logout, navigate, location.pathname]);
+    }, [isAuthenticated, validateSession, logout, navigate, location.pathname]);
 
     // Set up periodic validation
     useEffect(() => {

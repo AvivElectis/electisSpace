@@ -17,6 +17,8 @@ export function useGateways(storeId: string | null) {
         setSelectedGateway, setSelectedGatewayLoading,
         floatingGateways, floatingGatewaysLoading,
         setFloatingGateways, setFloatingGatewaysLoading,
+        debugReport, debugReportLoading,
+        setDebugReport, setDebugReportLoading,
     } = useAimsManagementStore();
 
     const fetchGateways = useCallback(async (force = false) => {
@@ -62,10 +64,25 @@ export function useGateways(storeId: string | null) {
         }
     }, [storeId, setFloatingGateways, setFloatingGatewaysLoading]);
 
+    const fetchDebugReport = useCallback(async (mac: string) => {
+        if (!storeId) return;
+        setDebugReportLoading(true);
+        setDebugReport(null);
+        try {
+            const data = await aimsService.fetchGatewayDebugReport(storeId, mac);
+            setDebugReport(data);
+        } catch (error: any) {
+            logger.error('useGateways', 'Failed to fetch debug report', { error: error.message });
+        } finally {
+            setDebugReportLoading(false);
+        }
+    }, [storeId, setDebugReport, setDebugReportLoading]);
+
     return {
         gateways, gatewaysLoading, gatewaysError,
         selectedGateway, selectedGatewayLoading,
         floatingGateways, floatingGatewaysLoading,
-        fetchGateways, fetchGatewayDetail, fetchFloatingGateways: fetchFloating,
+        debugReport, debugReportLoading,
+        fetchGateways, fetchGatewayDetail, fetchFloatingGateways: fetchFloating, fetchDebugReport,
     };
 }

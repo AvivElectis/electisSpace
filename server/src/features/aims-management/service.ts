@@ -47,6 +47,16 @@ class AimsManagementService {
 
     // ─── Labels ─────────────────────────────────────────────────────────
 
+    async listLabels(storeId: string) {
+        appLogger.info('AimsManagement', 'Listing labels', { storeId });
+        return aimsGateway.fetchLabels(storeId);
+    }
+
+    async listUnassignedLabels(storeId: string) {
+        appLogger.info('AimsManagement', 'Listing unassigned labels', { storeId });
+        return aimsGateway.fetchUnassignedLabels(storeId);
+    }
+
     async getLabelStatusHistory(storeId: string, labelCode: string, page = 0, size = 50) {
         return aimsGateway.fetchLabelStatusHistory(storeId, labelCode, page, size);
     }

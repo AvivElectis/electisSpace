@@ -9,6 +9,10 @@ import { logger } from '@shared/infrastructure/services/logger';
 export function useProductHistory(storeId: string | null) {
     const [batchHistory, setBatchHistory] = useState<any>(null);
     const [batchDetail, setBatchDetail] = useState<any>(null);
+    const [batchErrors, setBatchErrors] = useState<any>(null);
+    const [batchErrorsLoading, setBatchErrorsLoading] = useState(false);
+    const [articleHistory, setArticleHistory] = useState<any>(null);
+    const [articleHistoryLoading, setArticleHistoryLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -40,5 +44,38 @@ export function useProductHistory(storeId: string | null) {
         }
     }, [storeId]);
 
-    return { batchHistory, batchDetail, loading, error, fetchBatchHistory, fetchBatchDetail };
+    const fetchBatchErrors = useCallback(async (batchName: string) => {
+        if (!storeId) return;
+        setBatchErrorsLoading(true);
+        setBatchErrors(null);
+        try {
+            const data = await aimsService.fetchBatchErrors(storeId, batchName);
+            setBatchErrors(data);
+        } catch (err: any) {
+            logger.error('useProductHistory', 'Failed to fetch batch errors', { error: err.message });
+        } finally {
+            setBatchErrorsLoading(false);
+        }
+    }, [storeId]);
+
+    const fetchArticleHistory = useCallback(async (articleId: string, page = 0, size = 50) => {
+        if (!storeId) return;
+        setArticleHistoryLoading(true);
+        setArticleHistory(null);
+        try {
+            const data = await aimsService.fetchArticleUpdateHistory(storeId, articleId, page, size);
+            setArticleHistory(data);
+        } catch (err: any) {
+            logger.error('useProductHistory', 'Failed to fetch article history', { error: err.message });
+        } finally {
+            setArticleHistoryLoading(false);
+        }
+    }, [storeId]);
+
+    return {
+        batchHistory, batchDetail, loading, error,
+        batchErrors, batchErrorsLoading,
+        articleHistory, articleHistoryLoading,
+        fetchBatchHistory, fetchBatchDetail, fetchBatchErrors, fetchArticleHistory,
+    };
 }

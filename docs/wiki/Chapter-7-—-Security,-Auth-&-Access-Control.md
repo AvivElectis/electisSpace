@@ -67,7 +67,9 @@ Security properties:
 - **Refresh tokens** use httpOnly cookies (invisible to JavaScript) with hashed storage in the database.
 - **Verification codes** are single-use, time-limited, and rate-limited per IP+email combination.
 
-**Token refresh interceptor:** The client axios interceptor auto-refreshes on 401 responses, except for auth-flow endpoints (`/auth/login`, `/auth/verify-2fa`, `/auth/refresh`, `/auth/device-auth`, `/auth/resend-code`, `/auth/forgot-password`, `/auth/reset-password`). All other `/auth/*` endpoints (e.g. `/auth/me`, `/auth/devices`) are treated as regular authenticated endpoints and trigger token refresh normally.
+**Proactive token refresh:** The client axios *request* interceptor decodes the JWT `exp` claim before every non-auth-flow request. If the token is expired or within 60 seconds of expiry, it proactively refreshes via the httpOnly cookie **before** the request is sent. This prevents the browser from logging 401 "Failed to load resource" errors. The request interceptor deduplicates concurrent refresh attempts via a shared promise.
+
+**Fallback 401 refresh:** The *response* interceptor still handles unexpected 401s (e.g., server-side revocation, clock skew) by refreshing and retrying. Auth-flow endpoints (`/auth/login`, `/auth/verify-2fa`, `/auth/refresh`, `/auth/device-auth`, `/auth/resend-code`, `/auth/forgot-password`, `/auth/reset-password`) are excluded from both proactive and fallback refresh. All other `/auth/*` endpoints (e.g. `/auth/me`, `/auth/devices`) are treated as regular authenticated endpoints.
 
 ### 7.3 Device-Based Auth Tokens
 

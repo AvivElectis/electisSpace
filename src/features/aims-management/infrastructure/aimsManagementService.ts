@@ -43,6 +43,18 @@ export async function fetchGatewayDebugReport(storeId: string, mac: string) {
     return data.data;
 }
 
+// ─── Label Listing ─────────────────────────────────────────────────────────
+
+export async function fetchLabels(storeId: string) {
+    const { data } = await api.get('/aims/labels', { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchUnassignedLabels(storeId: string) {
+    const { data } = await api.get('/aims/labels/unassigned', { params: { storeId } });
+    return data.data;
+}
+
 // ─── Label History ──────────────────────────────────────────────────────────
 
 export async function fetchLabelStatusHistory(storeId: string, labelCode: string, page = 0, size = 50) {

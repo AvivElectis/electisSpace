@@ -84,6 +84,24 @@ async function rebootGateway(req: Request, res: Response, next: NextFunction) {
     } catch (error) { next(error); }
 }
 
+// ─── Label Listing ─────────────────────────────────────────────────────────
+
+async function listLabels(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const labels = await aimsManagementService.listLabels(storeId);
+        res.json({ data: labels });
+    } catch (error) { next(error); }
+}
+
+async function listUnassignedLabels(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const labels = await aimsManagementService.listUnassignedLabels(storeId);
+        res.json({ data: labels });
+    } catch (error) { next(error); }
+}
+
 // ─── Label History ──────────────────────────────────────────────────────────
 
 async function getLabelStatusHistory(req: Request, res: Response, next: NextFunction) {
@@ -139,6 +157,8 @@ export const aimsManagementController = {
     registerGateway,
     deregisterGateways,
     rebootGateway,
+    listLabels,
+    listUnassignedLabels,
     getLabelStatusHistory,
     getBatchHistory,
     getBatchDetail,
