@@ -68,7 +68,10 @@ export function AimsManagementPage() {
 
     // Stats
     const { onlineCount, offlineCount } = useMemo(() => {
-        const online = gateways.filter((g: any) => g.status === 'ONLINE' || g.status === 'online').length;
+        const online = gateways.filter((g: any) => {
+            const status = (g.status || g.networkStatus || '').toUpperCase();
+            return status === 'ONLINE' || status === 'CONNECTED';
+        }).length;
         return { onlineCount: online, offlineCount: gateways.length - online };
     }, [gateways]);
 
