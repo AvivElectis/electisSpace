@@ -2159,7 +2159,7 @@ paths:
 
 #################### GET LABEL TYPE ####################
 
-  /common/api/v2/common/labels/type/info: 
+  /api/v2/common/labels/type/info:
 
     get:
       tags:
@@ -5940,47 +5940,51 @@ components:
 
     GetLabelType200:
       type: object
-      description:
+      description: Label properties including display size, color capabilities, and hardware info
       properties:
-        labelCode: 
-          type: string 
-          description: 
-          example: 03704160B297
-        name: 
-          type: string 
-          description: 
-          example: NEWTON_GRAPHIC_2_9_RED_NFC
-        displayWidth: 
-          type: integer 
-          description: 
-          example: 384
-        displayHeight: 
-          type: integer 
-          description: 
-          example: 168
-        totalPage: 
-          type: integer 
-          description: 
+        labelCode:
+          type: string
+          description: Label MAC address
+          example: 04507B0AC391
+        name:
+          type: string
+          description: Label model name
+          example: NEWTON_GRAPHIC_2_6_YEL_NFC
+        displayWidth:
+          type: integer
+          description: Display width in pixels
+          example: 360
+        displayHeight:
+          type: integer
+          description: Display height in pixels
+          example: 184
+        totalPage:
+          type: integer
+          description: Number of pages supported
           example: 7
-        colorType: 
-          type: string 
-          description: 
-          example: TERNARY_RED
-        resolution: 
-          type: integer 
-          description: DPI
-          example: 145
-        nfc: 
-          type: boolean 
+        colorType:
+          type: string
+          description: Descriptive color type name
+          example: TERNARY_YELLOW
+        resolution:
+          type: integer
+          description: Display resolution in DPI
+          example: 152
+        nfc:
+          type: boolean
           description: NFC capability
           example: true
-        responseCode: 
-          type: string 
-          description: 
+        color:
+          type: string
+          description: Short color code (bw, bwr, bwry, 4c, 6c)
+          example: BWR
+        responseCode:
+          type: string
+          description:
           example: "200"
-        responseMessage: 
-          type: string 
-          description: 
+        responseMessage:
+          type: string
+          description:
           example: "SUCCESS"
 
     GetLabelType405:

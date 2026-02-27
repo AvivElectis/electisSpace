@@ -92,6 +92,20 @@ export function resizeImage(
 }
 
 /**
+ * Rotate a canvas 180° (flip upside-down). Returns a new canvas.
+ */
+export function rotateCanvas180(source: HTMLCanvasElement): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = source.width;
+    canvas.height = source.height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.translate(source.width, source.height);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(source, 0, 0);
+    return canvas;
+}
+
+/**
  * Convert a canvas to base64 PNG string (without data URI prefix)
  */
 export function canvasToBase64(canvas: HTMLCanvasElement): string {

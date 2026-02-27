@@ -22,11 +22,12 @@ import {
     Close as CloseIcon,
     QrCodeScanner as ScannerIcon,
     CloudUpload as UploadIcon,
+    Flip as FlipIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
-import { loadImage, resizeImage, canvasToBase64 } from '../domain/imageUtils';
+import { loadImage, resizeImage, rotateCanvas180, canvasToBase64 } from '../domain/imageUtils';
 import { ditherImage } from '../domain/ditherUtils';
 import type { LabelTypeInfo, FitMode } from '../domain/imageTypes';
 import { BarcodeScanner } from './BarcodeScanner';
@@ -54,6 +55,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [fitMode, setFitMode] = useState<FitMode>('contain');
+    const [flipped, setFlipped] = useState(false);
     const [resizedBase64, setResizedBase64] = useState<string | null>(null);
     const [ditheredBase64, setDitheredBase64] = useState<string | null>(null);
 
@@ -72,6 +74,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setTypeInfo(null);
             setTypeInfoError(null);
             setSelectedFile(null);
+            setFlipped(false);
             setResizedBase64(null);
             setDitheredBase64(null);
             setPushError(null);
@@ -100,16 +103,19 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         }
     }, [activeStoreId]);
 
-    // Process image: resize then apply client-side dithering for instant preview
-    const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo) => {
+    // Process image: resize, optionally flip, then apply client-side dithering
+    const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo, flip: boolean) => {
         try {
             const img = await loadImage(file);
-            const canvas = resizeImage(img, info.displayWidth, info.displayHeight, mode);
+            let canvas = resizeImage(img, info.displayWidth, info.displayHeight, mode);
+            if (flip) {
+                canvas = rotateCanvas180(canvas);
+            }
             const base64 = canvasToBase64(canvas);
             setResizedBase64(base64);
 
             // Client-side Floyd-Steinberg dithering for instant preview
-            const ditheredCanvas = ditherImage(canvas, info.colorType);
+            const ditheredCanvas = ditherImage(canvas, info.color);
             const ditheredB64 = canvasToBase64(ditheredCanvas);
             setDitheredBase64(ditheredB64);
 
@@ -126,7 +132,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setPushSuccess(false);
         setPushError(null);
         if (typeInfo) {
-            await processImage(file, fitMode, typeInfo);
+            await processImage(file, fitMode, typeInfo, flipped);
         }
     };
 
@@ -136,7 +142,17 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setFitMode(newMode);
         setPushSuccess(false);
         if (selectedFile && typeInfo) {
-            await processImage(selectedFile, newMode, typeInfo);
+            await processImage(selectedFile, newMode, typeInfo, flipped);
+        }
+    };
+
+    // Handle flip toggle
+    const handleFlipToggle = async () => {
+        const newFlipped = !flipped;
+        setFlipped(newFlipped);
+        setPushSuccess(false);
+        if (selectedFile && typeInfo) {
+            await processImage(selectedFile, fitMode, typeInfo, newFlipped);
         }
     };
 
@@ -313,29 +329,41 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                             </Box>
                         )}
 
-                        {/* Section 3: Fit Mode */}
+                        {/* Section 3: Fit Mode & Flip */}
                         {typeInfo && selectedFile && (
                             <Box>
                                 <Typography variant="subtitle2" gutterBottom>
                                     {t('imageLabels.dialog.fitMode', 'Fit Mode')}
                                 </Typography>
-                                <ToggleButtonGroup
-                                    value={fitMode}
-                                    exclusive
-                                    onChange={handleFitModeChange}
-                                    size="small"
-                                    fullWidth
-                                >
-                                    <ToggleButton value="contain">
-                                        {t('imageLabels.dialog.fitContain', 'Contain')}
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <ToggleButtonGroup
+                                        value={fitMode}
+                                        exclusive
+                                        onChange={handleFitModeChange}
+                                        size="small"
+                                        sx={{ flex: 1 }}
+                                    >
+                                        <ToggleButton value="contain">
+                                            {t('imageLabels.dialog.fitContain', 'Contain')}
+                                        </ToggleButton>
+                                        <ToggleButton value="cover">
+                                            {t('imageLabels.dialog.fitCover', 'Cover')}
+                                        </ToggleButton>
+                                        <ToggleButton value="fill">
+                                            {t('imageLabels.dialog.fitFill', 'Fill')}
+                                        </ToggleButton>
+                                    </ToggleButtonGroup>
+                                    <ToggleButton
+                                        value="flip"
+                                        selected={flipped}
+                                        onChange={handleFlipToggle}
+                                        size="small"
+                                        title={t('imageLabels.dialog.flipTooltip', 'Rotate 180°')}
+                                    >
+                                        <FlipIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                        {t('imageLabels.dialog.flip', 'Flip')}
                                     </ToggleButton>
-                                    <ToggleButton value="cover">
-                                        {t('imageLabels.dialog.fitCover', 'Cover')}
-                                    </ToggleButton>
-                                    <ToggleButton value="fill">
-                                        {t('imageLabels.dialog.fitFill', 'Fill')}
-                                    </ToggleButton>
-                                </ToggleButtonGroup>
+                                </Stack>
                                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                                     {fitMode === 'contain' && t('imageLabels.dialog.fitContainHelp', 'Fits image within label, may add white bars')}
                                     {fitMode === 'cover' && t('imageLabels.dialog.fitCoverHelp', 'Fills label completely, may crop image')}

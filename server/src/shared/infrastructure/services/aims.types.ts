@@ -100,9 +100,10 @@ export interface AimsLabelTypeInfo {
     displayWidth: number;
     displayHeight: number;
     totalPage: number;
-    colorType: string;      // "TERNARY_RED", "BINARY", etc.
+    colorType: string;      // Descriptive: "TERNARY_RED", "TERNARY_YELLOW", "BINARY", etc.
     resolution: number;     // DPI
     nfc: boolean;
+    color: string;          // Short code: "bw", "bwr", "bwry", "4c", "6c"
 }
 
 // ─── Image Push Types ──────────────────────────────────────────────────────
