@@ -36,6 +36,7 @@ const AVAILABLE_FEATURES = [
     { id: 'spaces', icon: '🏷️' },
     { id: 'conference', icon: '🎤' },
     { id: 'people', icon: '👥' },
+    { id: 'labels', icon: '🏷️' },
     { id: 'aims-management', icon: '📡' },
     { id: 'sync', icon: '🔄' },
     { id: 'settings', icon: '⚙️' },

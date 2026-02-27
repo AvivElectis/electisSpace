@@ -10,7 +10,7 @@ import { GlobalRole, CompanyRole } from '@prisma/client';
 // Constants
 // ======================
 
-export const AVAILABLE_FEATURES = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels'] as const;
+export const AVAILABLE_FEATURES = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels', 'aims-management'] as const;
 export type Feature = typeof AVAILABLE_FEATURES[number];
 
 const COMPANY_CODE_REGEX = /^[A-Z]{3,}$/;
