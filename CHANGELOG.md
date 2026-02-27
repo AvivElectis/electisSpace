@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [2.7.0] - 2026-02-27
 
 ### Added
 - **Role management system** — DB-backed roles with custom permissions replace hardcoded StoreRole enum
@@ -19,24 +19,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AIMS Management toggle in Create Company wizard** — optional feature (disabled by default) now available during company creation, not just edit
 
 ### Changed
+- Client version bumped to 2.7.0, server to 2.5.0
 - **Settings dialog UI overhaul** — vertical sidebar navigation on desktop/tablet with categorized sections (General, Administration, System), horizontal scrollable tabs with icons on mobile, improved visual hierarchy and spacing
+- **UI polish across settings dialogs** — standardized section headers (`fontWeight: 600`), Paper styling for sections, consistent button variants and DialogActions padding
 - **People mode totalSpaces is now per-store** — each store has its own space count instead of company-wide
 - **Device auth handles network reconnection gracefully** — distinguishes network errors from auth failures, attempts device token re-auth before redirecting
 - **AIMS Management disabled by default** — companies must explicitly enable it in settings
 - **Role permissions are database-backed** — auth middleware uses cached DB lookups instead of hardcoded permission matrix
 - **StoreAssignment uses role dropdown** — shows DB-backed role names instead of hardcoded enum values
+- **Console.error replaced with structured logger** — migrated 10+ `console.error` calls across settings components to use `appLogger`
 
 ### Fixed
 - **CI/CD orphan container warnings** — removed observability step, added `--remove-orphans` flag
+- **CI/CD deploy health check** — health check now fails the pipeline on error instead of silently continuing
 - **App header/subheader not persisting** — debounced saves were cancelled on dialog unmount; now flushed
 - **Link label 500 error** — structured AIMS error handling with descriptive messages instead of generic 500
 - **Store assignment 400 error** — replaced StoreRole enum validation with roleId-based system
-- **npm updated to latest stable** in CI and production deploy
 - **Role display in user management** — users now show correct DB-backed role name instead of blank/fallback
 - **Hebrew translations for roles** — distinct Hebrew names for Admin (מנהל ראשי) vs Manager (מנהל), permission matrix resources and actions translated
 - **Zod roleId validation** — changed from `.uuid()` to `.min(1)` since default role IDs are deterministic strings
 - **Settings dialog admin check** — fixed `s.role === 'STORE_ADMIN'` (deprecated field) to use `s.roleId === 'role-admin'`
 - **Hebrew AIMS Management translations** — added missing `settings.companies.aimsManagement` and section header translations to both locale files
+- **Build errors from stricter tsc -b** — removed unused imports/variables in GatewayList, RoleDialog, SolumSettingsTab, StoreAssignment, permissionHelpers
+- **Migration safety-net** — added fallback for unmapped `role_id` rows before `SET NOT NULL` constraint
+
+### Removed
+- **DevicesTab.tsx** — unused component (functionality was merged into SecuritySettingsTab)
+- **Unnecessary npm global update** — removed `npm install -g npm@latest` from CI/CD deploy workflow
 
 ---
 
