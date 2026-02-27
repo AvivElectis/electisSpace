@@ -2,9 +2,10 @@
  * Client-side Floyd-Steinberg dithering for ESL label preview.
  *
  * Converts a full-color resized image into the label's native color palette
- * using error-diffusion dithering. Supports BINARY, TERNARY_RED, TERNARY_YELLOW,
- * and FOUR_COLOR label types. This gives users an instant preview without an
- * AIMS round-trip.
+ * using error-diffusion dithering. This gives users an instant preview
+ * without an AIMS round-trip.
+ *
+ * AIMS colorType values: bw, bwr, 4c, bwry, 6c
  *
  * Note: the actual label still receives server-side AIMS dithering on push —
  * this is a client-only approximation for preview purposes.
@@ -12,43 +13,61 @@
 
 type RGB = [number, number, number];
 
-/** Color palettes for known AIMS label color types */
-const PALETTE_BINARY: RGB[] = [
+/**
+ * Color palettes for AIMS label colorType values.
+ *
+ * AIMS reports: bw (black/white), bwr (black/white/red),
+ * 4c / bwry (black/white/red/yellow), 6c (6-color e-ink).
+ */
+const PALETTE_BW: RGB[] = [
     [0, 0, 0],       // black
     [255, 255, 255],  // white
 ];
 
-const PALETTE_TERNARY_RED: RGB[] = [
+const PALETTE_BWR: RGB[] = [
     [0, 0, 0],       // black
     [255, 255, 255],  // white
     [255, 0, 0],     // red
 ];
 
-const PALETTE_TERNARY_YELLOW: RGB[] = [
-    [0, 0, 0],       // black
-    [255, 255, 255],  // white
-    [255, 255, 0],   // yellow
-];
-
-const PALETTE_FOUR_COLOR: RGB[] = [
+const PALETTE_BWRY: RGB[] = [
     [0, 0, 0],       // black
     [255, 255, 255],  // white
     [255, 0, 0],     // red
     [255, 255, 0],   // yellow
+];
+
+const PALETTE_6C: RGB[] = [
+    [0, 0, 0],       // black
+    [255, 255, 255],  // white
+    [255, 0, 0],     // red
+    [255, 255, 0],   // yellow
+    [0, 128, 0],     // green
+    [0, 0, 255],     // blue
 ];
 
 /**
  * Resolve AIMS colorType string to the matching palette.
- * Matching is case-insensitive and tolerant of separators (_, -, space).
+ * Matches the actual AIMS values (bw, bwr, 4c, bwry, 6c)
+ * as well as legacy/descriptive names (BINARY, TERNARY_RED, etc).
  */
 function getPalette(colorType: string): RGB[] {
-    const key = colorType.toUpperCase().replace(/[\s-]/g, '_');
+    const key = colorType.toLowerCase().trim();
 
-    if (key.includes('FOUR') || key.includes('4_COLOR')) return PALETTE_FOUR_COLOR;
-    if (key.includes('RED')) return PALETTE_TERNARY_RED;
-    if (key.includes('YELLOW')) return PALETTE_TERNARY_YELLOW;
-    if (key.includes('TERNARY')) return PALETTE_TERNARY_RED; // default ternary
-    return PALETTE_BINARY;
+    // Exact AIMS values
+    if (key === 'bw') return PALETTE_BW;
+    if (key === 'bwr') return PALETTE_BWR;
+    if (key === 'bwry' || key === '4c') return PALETTE_BWRY;
+    if (key === '6c') return PALETTE_6C;
+
+    // Fallback: keyword matching for legacy/descriptive names
+    const upper = key.toUpperCase();
+    if (upper.includes('6') || upper.includes('SIX')) return PALETTE_6C;
+    if (upper.includes('FOUR') || upper.includes('4')) return PALETTE_BWRY;
+    if (upper.includes('RED') || upper === 'BWR') return PALETTE_BWR;
+    if (upper.includes('YELLOW')) return PALETTE_BWRY;
+
+    return PALETTE_BW;
 }
 
 /** Squared Euclidean distance between two RGB colors */
@@ -80,7 +99,7 @@ function findNearest(pixel: RGB, palette: RGB[]): RGB {
  * with the dithered result — the source is never mutated.
  *
  * @param sourceCanvas - Canvas with the resized full-color image
- * @param colorType    - AIMS colorType string ("BINARY", "TERNARY_RED", …)
+ * @param colorType    - AIMS colorType string ("bw", "bwr", "4c", "bwry", "6c")
  * @returns A new canvas containing the dithered image
  */
 export function ditherImage(
