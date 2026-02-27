@@ -9,6 +9,7 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { companyService, type Company, type CreateCompanyDto } from '@shared/infrastructure/services/companyService';
 import type { CompanyFeatures } from '@shared/infrastructure/services/authService';
 import api from '@shared/infrastructure/services/apiClient';
+import { logger } from '@shared/infrastructure/services/logger';
 import type { UserData, CompanyRole, StoreAssignmentData } from './types';
 
 interface Params {
@@ -167,7 +168,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                     setFetchedUserData(response.data);
                 })
                 .catch(err => {
-                    console.error('Failed to fetch user details:', err);
+                    logger.error('UserDialog', 'Failed to fetch user details', { error: String(err) });
                     setFetchedUserData(null);
                 })
                 .finally(() => {
@@ -477,10 +478,17 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 await api.post('/users', createUserData);
             }
 
+            // If we just assigned stores to the current logged-in user, refresh auth state
+            // so the app picks up the new store and reloads data
+            if (user && currentUser && user.id === currentUser.id) {
+                const { validateSession } = useAuthStore.getState();
+                await validateSession();
+            }
+
             setIsEditing(false);
             onSave();
         } catch (err: any) {
-            console.error('Failed to save user:', err);
+            logger.error('UserDialog', 'Failed to save user', { error: String(err) });
             const errorMessage = err.response?.data?.message || err.response?.data?.error?.message;
 
             if (errorMessage?.toLowerCase().includes('email already exists') ||
@@ -517,13 +525,19 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
     }, [userData]);
 
     const getRoleLabel = useCallback(() => {
-        if (userData?.globalRole === 'PLATFORM_ADMIN') return t('settings.users.roles.platformAdmin');
+        if (userData?.globalRole === 'PLATFORM_ADMIN') return t('roles.platform_admin');
         const role = userData?.companies?.[0]?.role;
-        if (role === 'SUPER_USER') return t('settings.users.roles.superUser');
-        if (role === 'COMPANY_ADMIN') return t('settings.users.roles.companyAdmin');
-        if (role === 'STORE_ADMIN') return t('settings.users.roles.storeAdmin');
-        if (role === 'STORE_VIEWER') return t('settings.users.roles.storeViewer');
-        return t('settings.users.roles.viewer');
+        if (role === 'SUPER_USER') return t('roles.super_user');
+        if (role === 'COMPANY_ADMIN') return t('roles.company_admin');
+        if (role === 'STORE_ADMIN') return t('roles.store_admin');
+        if (role === 'STORE_VIEWER') return t('roles.store_viewer');
+        // Check store-level roleId
+        const storeRoleId = userData?.stores?.[0]?.roleId;
+        if (storeRoleId) {
+            const roleKey = storeRoleId.startsWith('role-') ? storeRoleId.substring(5) : storeRoleId;
+            return t(`roles.${roleKey}`, roleKey);
+        }
+        return t('roles.viewer');
     }, [userData, t]);
 
     return {

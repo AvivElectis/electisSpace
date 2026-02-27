@@ -18,7 +18,8 @@ import {
     Button,
     Alert,
     CircularProgress,
-    InputAdornment
+    InputAdornment,
+    Paper
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -26,6 +27,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { companyService, type Company } from '@shared/infrastructure/services/companyService';
+import { logger } from '@shared/infrastructure/services/logger';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 
 interface NewCompanyData {
@@ -93,7 +95,7 @@ export function CompanySelector({
             const response = await companyService.getAll({ limit: 100 });
             setCompanies(response.data);
         } catch (err) {
-            console.error('Failed to fetch companies:', err);
+            logger.error('CompanySelector', 'Failed to fetch companies', { error: String(err) });
             setFetchError(t('settings.companies.fetchError', 'Failed to load companies'));
         } finally {
             setLoading(false);
@@ -308,19 +310,17 @@ export function CompanySelector({
                         </Box>
                     </Box>
                 ) : (
-                <Box 
-                    sx={{ 
-                        p: 2, 
-                        border: 1, 
-                        borderColor: 'primary.main',
-                        borderRadius: 1,
-                        bgcolor: 'action.hover',
+                <Paper
+                    variant="outlined"
+                    sx={{
+                        p: 2,
+                        borderRadius: 2,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 2
                     }}
                 >
-                    <Typography variant="subtitle2" color="primary">
+                    <Typography variant="subtitle2" fontWeight={600}>
                         {t('settings.companies.createNew', 'Create New Company')}
                     </Typography>
 
@@ -392,7 +392,7 @@ export function CompanySelector({
                             {t('settings.companies.fillRequired', 'Please fill in code and name to create a new company.')}
                         </Typography>
                     )}
-                </Box>
+                </Paper>
                 )}
             </Collapse>
         </Box>

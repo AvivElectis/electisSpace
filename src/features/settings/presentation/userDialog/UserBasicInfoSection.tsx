@@ -46,7 +46,7 @@ export function UserBasicInfoSection({
 
     return (
         <Box>
-            <Typography variant="subtitle2" color="primary" gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 {t('settings.users.basicInfo')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

@@ -27,7 +27,7 @@ export const useRolesStore = create<RolesState>((set, get) => ({
             const { data } = await rolesApi.list(companyId);
             set({ roles: data, loading: false });
         } catch (err: unknown) {
-            set({ error: err instanceof Error ? err.message : 'Failed to fetch roles', loading: false });
+            set({ error: err instanceof Error ? err.message : 'FETCH_ROLES_ERROR', loading: false });
         }
     },
 

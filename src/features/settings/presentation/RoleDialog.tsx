@@ -35,10 +35,10 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
-import type { Role, PermissionsMap, PermissionsMatrix } from '@features/roles/domain/types';
+import type { Role, PermissionsMap } from '@features/roles/domain/types';
 
 const roleSchema = z.object({
-    name: z.string().min(1, 'Role name is required').max(100),
+    name: z.string().min(1).max(100),
     description: z.string().max(500).optional().or(z.literal('')),
     scope: z.enum(['SYSTEM', 'COMPANY']),
 });
@@ -67,7 +67,6 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
         control,
         handleSubmit,
         reset,
-        watch,
         formState: { errors },
     } = useForm<RoleFormData>({
         resolver: zodResolver(roleSchema),
@@ -77,8 +76,6 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
             scope: 'COMPANY',
         },
     });
-
-    const watchedScope = watch('scope');
 
     // Initialize form and fetch permissions matrix
     useEffect(() => {
@@ -157,7 +154,7 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
             }
             onSaved();
         } catch (err: unknown) {
-            setSaveError(err instanceof Error ? err.message : 'Failed to save role');
+            setSaveError(err instanceof Error ? err.message : t('settings.roles.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -355,7 +352,7 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
                         </Box>
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ px: 3, py: 2 }}>
                     <Button onClick={onClose} disabled={saving}>
                         {t('common.cancel')}
                     </Button>

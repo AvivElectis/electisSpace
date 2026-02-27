@@ -110,7 +110,7 @@ export function RolesTab() {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={handleAdd}
-                        size="small"
+                        sx={{ whiteSpace: 'nowrap' }}
                     >
                         {t('settings.roles.add')}
                     </Button>

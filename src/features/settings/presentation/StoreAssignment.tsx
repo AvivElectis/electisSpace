@@ -27,6 +27,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
+import { logger } from '@shared/infrastructure/services/logger';
 import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
 
 // Available features
@@ -121,7 +122,7 @@ export function StoreAssignment({
             // API returns {stores: [...]} not {data: [...]}
             setStores(response?.stores || []);
         } catch (err) {
-            console.error('[StoreAssignment] Failed to fetch stores:', err);
+            logger.error('StoreAssignment', 'Failed to fetch stores', { error: String(err) });
             setError(t('settings.stores.fetchError', 'Failed to load stores'));
             setStores([]); // Ensure stores is empty array on error
         } finally {
@@ -157,15 +158,6 @@ export function StoreAssignment({
         store => !safeAssignments.some(a => a.storeId === store.id)
     );
 
-    // Get display name for a role by roleId or legacy role string
-    const getRoleDisplayName = useCallback((roleId: string | undefined, legacyRole: string): string => {
-        if (roleId) {
-            const role = roles.find(r => r.id === roleId);
-            if (role) return t(`roles.${role.name.toLowerCase()}`, role.name);
-        }
-        // Fallback to legacy role translation
-        return t(`roles.${legacyRole.toLowerCase()}`, legacyRole);
-    }, [roles, t]);
 
     // Add a new store assignment
     const handleAddStore = (storeId: string) => {

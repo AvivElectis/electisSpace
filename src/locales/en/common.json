@@ -47,10 +47,12 @@
         "signal": "Signal",
         "status": "Status",
         "statusHistory": "Status History",
+        "subtitle": "Manage gateways, label status, and product updates",
         "success": "Success",
         "temperature": "Temperature",
         "timestamp": "Timestamp",
         "totalArticles": "Total",
+        "totalGateways": "Total Gateways",
         "viewDetails": "View Details"
     },
     "navigation": {
@@ -61,6 +63,7 @@
         "labels": "Labels",
         "sync": "Synchronization",
         "aims-management": "AIMS Management",
+        "aimsManagement": "AIMS Management",
         "settings": "Settings"
     },
     "common": {
@@ -125,7 +128,8 @@
         "lastName": "Last Name",
         "phone": "Phone",
         "never": "Never",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "retry": "Retry"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -496,6 +500,11 @@
         "customLogo": "Custom Logo",
         "recommendedFormat": "Recommended: PNG or SVG format, max 200KB",
         "appearInHeader": "These logos appear in the application header",
+        "noLogoUploaded": "No logo uploaded",
+        "replaceLogo": "Replace",
+        "invalidLogoFormat": "Only PNG and JPEG formats are allowed",
+        "logoTooLarge": "File size must be less than {{size}}MB",
+        "logoUploadFailed": "Failed to upload logo",
         "connect": "Connect",
         "disconnect": "Disconnect",
         "connecting": "Connecting...",
@@ -803,7 +812,8 @@
             "deleteInUse": "Cannot delete role that is assigned to users",
             "noRoles": "No roles found",
             "permissionMatrix": "Permission Matrix",
-            "selectAll": "Select All"
+            "selectAll": "Select All",
+            "saveFailed": "Failed to save role"
         }
     },
     "errors": {

@@ -19,7 +19,7 @@ export function UserAccountStats({ userData }: Props) {
 
     return (
         <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 {t('settings.users.accountStats')}
             </Typography>
             <Grid container spacing={2}>

@@ -1,4 +1,4 @@
-import { Box, Stack, Divider, Typography, Tabs, Tab, Alert, FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Button, CircularProgress } from '@mui/material';
+import { Box, Stack, Typography, Tabs, Tab, Alert, FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Button, CircularProgress, Paper } from '@mui/material';
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfigurationController } from '@features/configuration/application/useConfigurationController';
@@ -193,21 +193,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
             <Tabs
                 value={subTab}
                 onChange={(_, newValue) => setSubTab(newValue)}
-                sx={{
-                    borderBottom: 0,
-                    '& .MuiTab-root': {
-                        border: '1px solid transparent',
-                        borderRadius: 2,
-                        '&.Mui-selected': {
-                            border: '1px solid',
-                            borderColor: 'primary',
-                            boxShadow: '2px 0 1px 1px rgba(68, 68, 68, 0.09)',
-                        },
-                    },
-                }}
-                slotProps={{
-                    indicator: { sx: { display: 'none' } }
-                }}
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
                 <Tab label={t('settings.connectionTab')} disabled={isLocked} />
                 {canManageCompanySettings && (
@@ -245,11 +231,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
             {!isLocked && subTab === 0 && (
                 <Stack gap={2} sx={{ mt: 2 }}>
                     {/* Auto Sync Setting */}
-                    <Box>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                         <Typography
                             variant="subtitle2"
-                            color="text.secondary"
-                            sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}
+                            fontWeight={600}
+                            sx={{ mb: 1.5 }}
                         >
                             {t('settings.syncSettings', 'Sync Settings')}
                         </Typography>
@@ -281,9 +267,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                 </FormControl>
                             )}
                         </Stack>
-                    </Box>
-
-                    <Divider />
+                    </Paper>
 
                     {/* Conference Mode - Company admins only */}
                     {canManageCompanySettings && (
@@ -292,8 +276,6 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                             onConfigChange={handleCsvConfigChange}
                         />
                     )}
-
-                    <Divider />
 
                     {/* People Manager Mode */}
                     <SolumPeopleManagerSection
@@ -316,13 +298,11 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                     {/* Data Mapping - shown only when article format exists */}
                     {articleFormatFields.length > 0 && (
                         <>
-                            <Divider />
-
-                            <Box>
+                            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                                 <Typography
                                     variant="subtitle2"
-                                    color="text.secondary"
-                                    sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}
+                                    fontWeight={600}
+                                    sx={{ mb: 0.5 }}
                                 >
                                     {t('settings.dataMapping')}
                                 </Typography>
@@ -405,8 +385,8 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                 <Box sx={{ mt: 3 }}>
                                     <Typography
                                         variant="subtitle2"
-                                        color="text.secondary"
-                                        sx={{ mb: 1.5, fontSize: '0.85rem', fontWeight: 600 }}
+                                        fontWeight={600}
+                                        sx={{ mb: 1.5 }}
                                     >
                                         {t('settings.fieldFriendlyNames')}
                                     </Typography>
@@ -433,7 +413,7 @@ export function SolumSettingsTab({ settings, onUpdate }: SolumSettingsTabProps) 
                                         disabled={false}
                                     />
                                 </Box>
-                            </Box>
+                            </Paper>
                         </>
                     )}
                 </Stack>

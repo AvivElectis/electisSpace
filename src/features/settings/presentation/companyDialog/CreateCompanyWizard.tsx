@@ -170,7 +170,7 @@ export function CreateCompanyWizard({ state, onClose }: Props) {
                         </Typography>
 
                         {/* Store Selection */}
-                        <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <StorefrontIcon fontSize="small" />
                             {t('settings.companies.selectStore')} ({state.aimsStores.length})
                         </Typography>

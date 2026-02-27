@@ -26,9 +26,6 @@ jobs:
             set -e
             cd /opt/electisSpace
 
-            echo "=== Updating npm ==="
-            npm install -g npm@latest
-
             echo "=== Pulling latest code ==="
             git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/AvivElectis/electisSpace.git"
             git pull origin main
@@ -56,7 +53,7 @@ jobs:
 
             echo "=== Health check ==="
             sleep 10
-            curl -f http://localhost:3071/health || echo "Health check failed"
+            curl -f http://localhost:3071/health || (echo "Health check failed!" && exit 1)
 
             echo "=== Deployment complete ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml ps

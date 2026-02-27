@@ -28,6 +28,7 @@ import {
     Divider
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import { logger } from '@shared/infrastructure/services/logger';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -76,7 +77,7 @@ export function UsersSettingsTab() {
         if (isPlatformAdmin) {
             companyService.getAll({ limit: 100 }).then(response => {
                 setCompanies(response.data);
-            }).catch(err => console.error('Failed to fetch companies:', err));
+            }).catch(err => logger.error('UsersSettingsTab', 'Failed to fetch companies', { error: String(err) }));
         }
     }, [isPlatformAdmin]);
 
@@ -98,7 +99,7 @@ export function UsersSettingsTab() {
             setUsers(response.data);
             setTotal(response.pagination.total);
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+            logger.error('UsersSettingsTab', 'Failed to fetch users', { error: String(error) });
         } finally {
             setLoading(false);
         }
@@ -140,7 +141,7 @@ export function UsersSettingsTab() {
                 await userService.delete(user.id);
                 fetchUsers();
             } catch (error) {
-                console.error('Failed to delete user:', error);
+                logger.error('UsersSettingsTab', 'Failed to delete user', { error: String(error) });
             }
         }
     };

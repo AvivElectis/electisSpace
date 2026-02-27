@@ -8,38 +8,38 @@
     },
     "aims": {
         "actions": "פעולות",
-        "articleId": "מאמר",
+        "articleId": "פריט",
         "batchName": "אצווה",
         "battery": "סוללה",
         "channel": "ערוץ",
-        "confirmDeregister": "לבטל רישום של שער זה?",
-        "confirmReboot": "לאתחל שער זה?",
+        "confirmDeregister": "לבטל רישום של נתב זה?",
+        "confirmReboot": "לאתחל נתב זה?",
         "connectedLabels": "תוויות מחוברות",
         "deregister": "ביטול רישום",
         "failed": "נכשל",
         "firmware": "קושחה",
-        "gateway": "שער",
-        "gatewayDetail": "פרטי שער",
-        "gateways": "שערים",
+        "gateway": "נתב",
+        "gatewayDetail": "פרטי נתב",
+        "gateways": "נתבים",
         "ipAddress": "כתובת IP",
         "labelCode": "תווית",
         "labels": "תוויות",
         "labelStatus": "סטטוס תווית",
         "macAddress": "כתובת MAC",
-        "macAddressHelp": "הזן את כתובת ה-MAC של השער (לדוגמה: D02544FFFE123456)",
+        "macAddressHelp": "הזן את כתובת ה-MAC של הנתב (לדוגמה: D02544FFFE123456)",
         "management": "ניהול AIMS",
         "model": "דגם",
         "networkType": "סוג רשת",
         "noBatches": "לא נמצאו אצוות עדכון מוצרים.",
         "noDetails": "אין פרטים זמינים.",
-        "noGateways": "לא נמצאו שערים לחנות זו.",
+        "noGateways": "לא נמצאו נתבים לחנות זו.",
         "noHistory": "לא נמצא היסטוריית סטטוס לתווית זו.",
         "offline": "לא מקוון",
         "online": "מקוון",
         "productUpdates": "עדכוני מוצרים",
         "reboot": "אתחול",
         "register": "רישום",
-        "registerGateway": "רישום שער",
+        "registerGateway": "רישום נתב",
         "searchLabelCode": "הזן קוד תווית...",
         "searchPrompt": "הזן קוד תווית למעלה כדי לצפות בהיסטוריית הסטטוס.",
         "selectStore": "אנא בחר חנות לצפייה בניהול AIMS.",
@@ -47,10 +47,12 @@
         "signal": "אות",
         "status": "סטטוס",
         "statusHistory": "היסטוריית סטטוס",
+        "subtitle": "ניהול נתבים, סטטוס תוויות ועדכוני מוצרים",
         "success": "הצלחה",
         "temperature": "טמפרטורה",
         "timestamp": "חותמת זמן",
         "totalArticles": "סה\"כ",
+        "totalGateways": "סה\"כ נתבים",
         "viewDetails": "הצג פרטים"
     },
     "navigation": {
@@ -61,6 +63,7 @@
         "labels": "תגיות",
         "sync": "סינכרון",
         "aims-management": "ניהול AIMS",
+        "aimsManagement": "ניהול AIMS",
         "settings": "הגדרות"
     },
     "common": {
@@ -128,7 +131,8 @@
         "lastName": "שם משפחה",
         "phone": "טלפון",
         "never": "אף פעם",
-        "refresh": "רענן"
+        "refresh": "רענן",
+        "retry": "נסה שוב"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -514,6 +518,11 @@
         "customLogo": "לוגו מותאם אישית",
         "recommendedFormat": "מומלץ: פורמט PNG או SVG, מקסימום 200KB",
         "appearInHeader": "הלוגואים הללו מופיעים בכותרת האפליקציה",
+        "noLogoUploaded": "לא הועלה לוגו",
+        "replaceLogo": "החלף",
+        "invalidLogoFormat": "רק פורמטים PNG ו-JPEG מותרים",
+        "logoTooLarge": "גודל הקובץ חייב להיות פחות מ-{{size}}MB",
+        "logoUploadFailed": "ההעלאה נכשלה",
         "dataMapping": "מיפוי נתונים",
         "dataMappingHelp": "הגדר כיצד שדות המאמרים של SoluM ממופים לאפליקציה שלך",
         "uniqueIdField": "שדה מזהה ייחודי",
@@ -753,7 +762,7 @@
             "conferenceSimple": "פשוט",
             "spaceTypeLabel": "סוג חלל",
             "aimsManagement": "ניהול AIMS",
-            "aimsManagementDesc": "הפעל את לשונית ניהול AIMS לתצורה מתקדמת של תגיות ושערים"
+            "aimsManagementDesc": "הפעל את לשונית ניהול AIMS לתצורה מתקדמת של תגיות ונתבים"
         },
         "stores": {
             "dialogTitle": "ניהול חנויות",
@@ -814,7 +823,8 @@
             "deleteInUse": "לא ניתן למחוק תפקיד המשויך למשתמשים",
             "noRoles": "לא נמצאו תפקידים",
             "permissionMatrix": "מטריצת הרשאות",
-            "selectAll": "בחר הכל"
+            "selectAll": "בחר הכל",
+            "saveFailed": "שמירת התפקיד נכשלה"
         }
     },
     "errors": {

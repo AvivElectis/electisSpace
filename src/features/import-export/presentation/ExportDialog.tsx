@@ -137,7 +137,7 @@ export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
                     )}
                 </Stack>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={handleClose} disabled={loading}>
                     {t('common.cancel')}
                 </Button>

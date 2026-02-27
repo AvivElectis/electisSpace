@@ -31,7 +31,7 @@ const ROLE_ID_HIERARCHY: Record<string, number> = {
 };
 
 // Role hierarchy for comparison (legacy enum-based)
-const STORE_ROLE_HIERARCHY: Record<Store['role'], number> = {
+const STORE_ROLE_HIERARCHY: Record<string, number> = {
     'STORE_ADMIN': 4,
     'STORE_MANAGER': 3,
     'STORE_EMPLOYEE': 2,
@@ -95,7 +95,7 @@ export function isStoreAdmin(user: User | null, storeId: string): boolean {
 export function hasStoreRole(
     user: User | null,
     storeId: string,
-    minimumRole: Store['role']
+    minimumRole: string
 ): boolean {
     if (!user) return false;
     if (isPlatformAdmin(user)) return true;
@@ -115,10 +115,10 @@ export function hasStoreRole(
 
     // Try roleId-based comparison first
     if (store.roleId && ROLE_ID_HIERARCHY[store.roleId] !== undefined) {
-        return ROLE_ID_HIERARCHY[store.roleId] >= STORE_ROLE_HIERARCHY[minimumRole];
+        return ROLE_ID_HIERARCHY[store.roleId] >= (STORE_ROLE_HIERARCHY[minimumRole] ?? 0);
     }
 
-    return STORE_ROLE_HIERARCHY[store.role] >= STORE_ROLE_HIERARCHY[minimumRole];
+    return (STORE_ROLE_HIERARCHY[store.role ?? ''] ?? 0) >= (STORE_ROLE_HIERARCHY[minimumRole] ?? 0);
 }
 
 /**
