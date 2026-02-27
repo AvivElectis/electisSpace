@@ -1499,7 +1499,9 @@
             "scanLabel": "Scan Label Code",
             "acceptedFormats": "PNG, JPEG, BMP",
             "altDitheredPreview": "Dithered preview",
-            "altResizedPreview": "Resized preview"
+            "altResizedPreview": "Resized preview",
+            "labelPreview": "Label Preview",
+            "altLabelPreview": "Label preview mockup"
         }
     }
 }

@@ -27,8 +27,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 import { loadImage, resizeImage, canvasToBase64 } from '../domain/imageUtils';
+import { ditherImage } from '../domain/ditherUtils';
 import type { LabelTypeInfo, FitMode } from '../domain/imageTypes';
 import { BarcodeScanner } from './BarcodeScanner';
+import { LabelMockup } from './LabelMockup';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface AssignImageDialogProps {
@@ -53,10 +55,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [fitMode, setFitMode] = useState<FitMode>('contain');
     const [resizedBase64, setResizedBase64] = useState<string | null>(null);
-
-    const [ditherPreview, setDitherPreview] = useState<string | null>(null);
-    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-    const [previewError, setPreviewError] = useState<string | null>(null);
+    const [ditheredBase64, setDitheredBase64] = useState<string | null>(null);
 
     const [isPushing, setIsPushing] = useState(false);
     const [pushError, setPushError] = useState<string | null>(null);
@@ -74,8 +73,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setTypeInfoError(null);
             setSelectedFile(null);
             setResizedBase64(null);
-            setDitherPreview(null);
-            setPreviewError(null);
+            setDitheredBase64(null);
             setPushError(null);
             setPushSuccess(false);
         }
@@ -89,7 +87,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setTypeInfoError(null);
         setTypeInfo(null);
         setResizedBase64(null);
-        setDitherPreview(null);
+        setDitheredBase64(null);
 
         try {
             const response = await labelsApi.getLabelTypeInfo(activeStoreId, code.trim());
@@ -102,13 +100,19 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         }
     }, [activeStoreId]);
 
-    // Process image when file or fit mode changes
+    // Process image: resize then apply client-side dithering for instant preview
     const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo) => {
         try {
             const img = await loadImage(file);
             const canvas = resizeImage(img, info.displayWidth, info.displayHeight, mode);
             const base64 = canvasToBase64(canvas);
             setResizedBase64(base64);
+
+            // Client-side Floyd-Steinberg dithering for instant preview
+            const ditheredCanvas = ditherImage(canvas, info.colorType);
+            const ditheredB64 = canvasToBase64(ditheredCanvas);
+            setDitheredBase64(ditheredB64);
+
             return base64;
         } catch (error: any) {
             logger.error('AssignImageDialog', 'Failed to process image', { error: error.message });
@@ -116,41 +120,13 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         }
     }, []);
 
-    // Fetch dither preview
-    const fetchDitherPreview = useCallback(async (base64: string, code: string) => {
-        if (!activeStoreId) return;
-
-        setIsLoadingPreview(true);
-        setPreviewError(null);
-        setDitherPreview(null);
-
-        try {
-            const response = await labelsApi.getDitherPreview(activeStoreId, code, base64);
-            // AIMS returns the dithered image in responseMessage or as a direct image field
-            const previewData = response.data?.responseMessage || response.data?.image || response.data;
-            if (typeof previewData === 'string') {
-                setDitherPreview(previewData);
-            } else {
-                setPreviewError(t('imageLabels.previewFailed', 'Could not generate preview'));
-            }
-        } catch (error: any) {
-            logger.error('AssignImageDialog', 'Failed to fetch dither preview', { error: error.message });
-            setPreviewError(error.response?.data?.error?.message || error.message);
-        } finally {
-            setIsLoadingPreview(false);
-        }
-    }, [activeStoreId, t]);
-
     // Handle file selection
     const handleFileSelect = async (file: File) => {
         setSelectedFile(file);
         setPushSuccess(false);
         setPushError(null);
         if (typeInfo) {
-            const base64 = await processImage(file, fitMode, typeInfo);
-            if (base64) {
-                await fetchDitherPreview(base64, labelCode);
-            }
+            await processImage(file, fitMode, typeInfo);
         }
     };
 
@@ -160,10 +136,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setFitMode(newMode);
         setPushSuccess(false);
         if (selectedFile && typeInfo) {
-            const base64 = await processImage(selectedFile, newMode, typeInfo);
-            if (base64) {
-                await fetchDitherPreview(base64, labelCode);
-            }
+            await processImage(selectedFile, newMode, typeInfo);
         }
     };
 
@@ -371,64 +344,19 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                             </Box>
                         )}
 
-                        {/* Section 4: Dithered Preview */}
-                        {typeInfo && selectedFile && (
+                        {/* Section 4: Label Preview — client-side dithered mockup */}
+                        {typeInfo && ditheredBase64 && (
                             <Box>
                                 <Typography variant="subtitle2" gutterBottom>
-                                    {t('imageLabels.dialog.preview', 'Preview')}
+                                    {t('imageLabels.dialog.labelPreview', 'Label Preview')}
                                 </Typography>
-                                {isLoadingPreview ? (
-                                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-                                        <CircularProgress />
-                                    </Box>
-                                ) : previewError ? (
-                                    <Alert severity="warning" sx={{ mb: 1 }}>
-                                        {previewError}
-                                    </Alert>
-                                ) : null}
-
-                                {/* Show resized image (always available if file is selected) */}
-                                {resizedBase64 && (
-                                    <Stack spacing={1} alignItems="center">
-                                        {ditherPreview ? (
-                                            <Box>
-                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mb: 0.5 }}>
-                                                    {t('imageLabels.dialog.ditheredPreview', 'Dithered Preview (as it will appear on label)')}
-                                                </Typography>
-                                                <Box
-                                                    component="img"
-                                                    src={`data:image/png;base64,${ditherPreview}`}
-                                                    alt={t('imageLabels.dialog.altDitheredPreview', 'Dithered preview')}
-                                                    sx={{
-                                                        maxWidth: '100%',
-                                                        border: '2px solid',
-                                                        borderColor: 'divider',
-                                                        borderRadius: 1,
-                                                        bgcolor: 'background.paper',
-                                                    }}
-                                                />
-                                            </Box>
-                                        ) : (
-                                            <Box>
-                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mb: 0.5 }}>
-                                                    {t('imageLabels.dialog.resizedPreview', 'Resized Preview')}
-                                                </Typography>
-                                                <Box
-                                                    component="img"
-                                                    src={`data:image/png;base64,${resizedBase64}`}
-                                                    alt={t('imageLabels.dialog.altResizedPreview', 'Resized preview')}
-                                                    sx={{
-                                                        maxWidth: '100%',
-                                                        border: '2px solid',
-                                                        borderColor: 'divider',
-                                                        borderRadius: 1,
-                                                        bgcolor: 'background.paper',
-                                                    }}
-                                                />
-                                            </Box>
-                                        )}
-                                    </Stack>
-                                )}
+                                <LabelMockup
+                                    imageSrc={`data:image/png;base64,${ditheredBase64}`}
+                                    displayWidth={typeInfo.displayWidth}
+                                    displayHeight={typeInfo.displayHeight}
+                                    modelName={typeInfo.name}
+                                    colorType={typeInfo.colorType}
+                                />
                             </Box>
                         )}
 
