@@ -1515,7 +1515,9 @@
             "scanLabel": "סרוק קוד תגית",
             "acceptedFormats": "PNG, JPEG, BMP",
             "altDitheredPreview": "תצוגה מקדימה מעובדת",
-            "altResizedPreview": "תצוגה מקדימה מוקטנת"
+            "altResizedPreview": "תצוגה מקדימה מוקטנת",
+            "labelPreview": "תצוגה מקדימה של תגית",
+            "altLabelPreview": "דגם תצוגה מקדימה של תגית"
         }
     }
 }
