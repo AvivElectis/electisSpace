@@ -1518,8 +1518,8 @@
             "altResizedPreview": "תצוגה מקדימה מוקטנת",
             "labelPreview": "תצוגה מקדימה של תגית",
             "altLabelPreview": "דגם תצוגה מקדימה של תגית",
-            "flip": "הפוך",
-            "flipTooltip": "סובב 180°"
+            "rotateTooltip": "סובב 90°",
+            "ariaFitMode": "מצב התאמת תמונה"
         }
     }
 }
