@@ -33,7 +33,7 @@ function getUserContext(req: Request): UserContext {
         id: req.user!.id,
         globalRole: req.user!.globalRole ?? null,
         stores: req.user?.stores?.map(s => ({ id: s.id, roleId: s.roleId })),
-        companies: req.user?.companies?.map(c => ({ id: c.id, role: c.role })),
+        companies: req.user?.companies?.map(c => ({ id: c.id, roleId: c.roleId })),
     };
 }
 
@@ -197,9 +197,9 @@ export const userController = {
                     id: uc.companyId,
                     code: uc.company.code,
                     name: uc.company.name,
-                    role: uc.role,
+                    roleId: uc.roleId,
                     allStoresAccess: uc.allStoresAccess,
-                    isCompanyAdmin: uc.role === 'COMPANY_ADMIN' || uc.role === 'SUPER_USER',
+                    isCompanyAdmin: uc.roleId === 'role-admin',
                 })),
                 stores: user.userStores.map((us: any) => ({
                     id: us.storeId,
@@ -367,21 +367,7 @@ export const userController = {
             const currentUser = getUserContext(req);
             const result = await userService.elevate(userId, validation.data, currentUser);
 
-            if (validation.data.globalRole === 'COMPANY_ADMIN' && result && 'userCompanies' in result) {
-                const typedResult = result as { id: string; email: string; globalRole: string | null; userCompanies: Array<{ companyId: string; company: { name: string; code: string } }> };
-                res.json({
-                    id: typedResult.id,
-                    email: typedResult.email,
-                    globalRole: typedResult.globalRole,
-                    companyAdmin: typedResult.userCompanies[0] ? {
-                        companyId: typedResult.userCompanies[0].companyId,
-                        companyName: typedResult.userCompanies[0].company.name,
-                        companyCode: typedResult.userCompanies[0].company.code,
-                    } : null,
-                });
-            } else {
-                res.json(result);
-            }
+            res.json(result);
         } catch (error: any) {
             if (error.message === 'FORBIDDEN') return next(forbidden('Only platform admins can elevate user roles'));
             if (error.message === 'CANNOT_DEMOTE_SELF') return next(badRequest('Cannot demote yourself'));
@@ -426,9 +412,9 @@ export const userController = {
                 code: result.company.code,
                 name: result.company.name,
                 location: result.company.location,
-                role: result.role,
+                roleId: result.roleId,
                 allStoresAccess: result.allStoresAccess,
-                isCompanyAdmin: result.role === 'COMPANY_ADMIN' || result.role === 'SUPER_USER',
+                isCompanyAdmin: result.roleId === 'role-admin',
             });
         } catch (error: any) {
             if (error.message === 'USER_NOT_FOUND') return next(notFound('User'));
@@ -462,9 +448,9 @@ export const userController = {
                 companyId: updated.companyId,
                 code: updated.company.code,
                 name: updated.company.name,
-                role: updated.role,
+                roleId: updated.roleId,
                 allStoresAccess: updated.allStoresAccess,
-                isCompanyAdmin: updated.role === 'COMPANY_ADMIN' || updated.role === 'SUPER_USER',
+                isCompanyAdmin: updated.roleId === 'role-admin',
             });
         } catch (error: any) {
             if (error.message === 'FORBIDDEN') return next(forbidden('You do not have permission to update this assignment'));

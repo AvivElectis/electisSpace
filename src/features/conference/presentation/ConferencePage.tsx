@@ -57,8 +57,8 @@ export function ConferencePage() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const { settings } = useSettingsStore();
     const { confirm, ConfirmDialog } = useConfirmDialog();
-    const { hasStoreRole } = useAuthContext();
-    const canEdit = hasStoreRole('STORE_EMPLOYEE');
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
 
     // Get SoluM access token if available
     const solumToken = settings.solumConfig?.tokens?.accessToken;

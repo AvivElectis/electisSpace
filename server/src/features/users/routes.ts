@@ -4,13 +4,14 @@
  * @description Thin route definitions for user management.
  */
 import { Router } from 'express';
-import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requireGlobalRole } from '../../shared/middleware/index.js';
 import { userController } from './controller.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // ======================
 // User Profile Routes (/me)

@@ -168,7 +168,8 @@
         "phone": "טלפון",
         "never": "אף פעם",
         "refresh": "רענן",
-        "retry": "נסה שוב"
+        "retry": "נסה שוב",
+        "type": "סוג"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -360,7 +361,9 @@
         "retryAllFailed": "נסה שוב את כל הכושלים",
         "clearFailed": "נקה כושלים",
         "queueEmpty": "תור הסינכרון ריק",
-        "retry": "נסה שוב"
+        "retry": "נסה שוב",
+        "connectionDetails": "פרטי חיבור",
+        "serverConnection": "שרת"
     },
     "settings": {
         "title": "הגדרות",
@@ -643,14 +646,24 @@
             "searchPlaceholder": "חפש משתמשים...",
             "companyFilter": "חברה",
             "noSearchResults": "לא נמצאו משתמשים התואמים לחיפוש",
-            "elevate": "העלה למנהל אפליקציה",
-            "elevateTitle": "העלה למנהל אפליקציה",
-            "elevateWarning": "אתה עומד להעניק הרשאות מנהל אפליקציה למשתמש זה. לא ניתן לבטל פעולה זו בקלות.",
-            "elevateError": "העלאת המשתמש נכשלה",
+            "elevate": "שנה תפקיד אפליקציה",
+            "elevateTitle": "שנה תפקיד אפליקציה",
+            "changeAppRole": "שנה תפקיד אפליקציה",
+            "elevateWarning": "פעולה זו תעניק גישה מנהלתית מלאה לכל החברות, החנויות וההגדרות.",
+            "elevateError": "שינוי תפקיד המשתמש נכשל",
             "elevateConfirm": "אני מבין ורוצה להעניק הרשאות מנהל אפליקציה למשתמש זה",
-            "elevateButton": "העלה משתמש",
-            "userToElevate": "משתמש להעלאה",
+            "elevateButton": "שמור",
+            "userToElevate": "משתמש",
             "platformAdminPrivileges": "הרשאות מנהל אפליקציה כוללות:",
+            "appRole": "תפקיד אפליקציה",
+            "role": {
+                "platformAdmin": "מנהל אפליקציה",
+                "platformAdminDesc": "גישה מלאה ללא הגבלות לכל החברות, החנויות וההגדרות",
+                "appViewer": "צופה באפליקציה",
+                "appViewerDesc": "גישה לקריאה בלבד — כל פעולות ההוספה, העריכה והמחיקה מושבתות",
+                "regularUser": "משתמש רגיל",
+                "regularUserDesc": "הגישה נקבעת לפי תפקידי החברה והחנות שהוקצו"
+            },
             "privilege": {
                 "companies": "יצירה וניהול של כל החברות",
                 "companiesDesc": "שליטה מלאה על הגדרות חברה ותצורת AIMS",
@@ -667,6 +680,7 @@
             "companyRole": "תפקיד בחברה",
             "companyAdminDesc": "יכול לנהל חנויות ומשתמשים בחברה זו",
             "storeAdminDesc": "גישת מנהל לכל החנויות ללא ניהול חברה",
+            "storeEmployeeDesc": "יכול לצפות, ליצור ולערוך — ללא מחיקה או גישת מנהל",
             "storeViewerDesc": "גישת צפייה בלבד לחנויות שהוקצו",
             "viewerDesc": "גישת צפייה בלבד לנתוני החברה",
             "steps": {
@@ -861,7 +875,15 @@
             "noRoles": "לא נמצאו תפקידים",
             "permissionMatrix": "מטריצת הרשאות",
             "selectAll": "בחר הכל",
-            "saveFailed": "שמירת התפקיד נכשלה"
+            "saveFailed": "שמירת התפקיד נכשלה",
+            "appRoles": "תפקידי אפליקציה",
+            "appRolesDesc": "תפקידים גלובליים המוקצים למשתמשים דרך לשונית המשתמשים",
+            "companyStoreRoles": "תפקידי חברה וחנות",
+            "companyStoreRolesDesc": "תפקידים המוקצים בעת הוספת משתמשים לחברות או חנויות",
+            "assignedVia": "מוקצה דרך לשונית משתמשים",
+            "appAdminDesc": "גישה מלאה לכל התכונות, החברות והחנויות בפלטפורמה",
+            "appViewerDesc": "גישת צפייה בלבד לכל התכונות בפלטפורמה",
+            "regularUserDesc": "הגישה נקבעת על ידי שיוך תפקידים לחברה ולחנות"
         }
     },
     "errors": {
@@ -1346,9 +1368,13 @@
     },
     "roles": {
         "admin": "מנהל ראשי",
+        "admin_desc": "גישה מלאה לכל התכונות וההגדרות",
         "manager": "מנהל",
+        "manager_desc": "ניהול תוכן ומשתמשים בהיקף המוקצה",
         "employee": "עובד",
+        "employee_desc": "יצירה ועריכת תוכן בתכונות המוקצות",
         "viewer": "צופה",
+        "viewer_desc": "גישת צפייה בלבד לתכונות המוקצות",
         "company_admin": "מנהל חברה",
         "store_admin": "מנהל חנות",
         "store_manager": "מנהל משמרת",

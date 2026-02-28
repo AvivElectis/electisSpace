@@ -7,13 +7,14 @@
  */
 
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission } from '../../shared/middleware/index.js';
 import { aimsManagementController } from './controller.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // ─── Gateway Read Operations (STORE_MANAGER+) ──────────────────────────────
 router.get('/gateways', requirePermission('aims-management', 'view'), aimsManagementController.listGateways);

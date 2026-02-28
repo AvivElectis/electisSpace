@@ -48,8 +48,8 @@ export function PeopleManagerView() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const settings = useSettingsStore((state) => state.settings);
     const { getLabel } = useSpaceTypeLabels();
-    const { hasStoreRole } = useAuthContext();
-    const canEdit = hasStoreRole('STORE_EMPLOYEE');
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
 
     // Helper for translations with space type
     const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {

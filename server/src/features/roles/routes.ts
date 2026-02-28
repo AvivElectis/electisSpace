@@ -5,10 +5,11 @@
  */
 import { Router } from 'express';
 import { rolesController } from './controller.js';
-import { authenticate } from '../../shared/middleware/auth.js';
+import { authenticate, restrictAppViewer } from '../../shared/middleware/auth.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 router.get('/', rolesController.list);
 router.get('/permissions-matrix', rolesController.getPermissionsMatrix);

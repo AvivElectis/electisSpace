@@ -2,11 +2,12 @@
  * Spaces Feature - Routes (Refactored)
  */
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission } from '../../shared/middleware/index.js';
 import { spacesController } from './controller.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 router.get('/', requirePermission('spaces', 'read'), spacesController.list);
 router.get('/:id', requirePermission('spaces', 'read'), spacesController.getById);

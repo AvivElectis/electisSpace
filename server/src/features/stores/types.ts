@@ -84,7 +84,7 @@ export interface CodeValidationResponse {
 
 export interface CompanyAccess {
     id: string;
-    role: string;
+    roleId: string;
     allStoresAccess?: boolean;
 }
 

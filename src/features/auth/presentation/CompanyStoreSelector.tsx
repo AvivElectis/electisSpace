@@ -195,7 +195,7 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                                 primary={company.name}
                                 secondary={company.code}
                             />
-                            {company.role === 'COMPANY_ADMIN' && (
+                            {company.roleId === 'role-admin' && (
                                 <Chip
                                     label={t('selector.admin', 'Admin')}
                                     size="small"
