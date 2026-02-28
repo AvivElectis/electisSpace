@@ -28,9 +28,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 import { loadImage, resizeImage, rotateCanvas, canvasToBase64 } from '../domain/imageUtils';
-import { ditherImage } from '../domain/ditherUtils';
-import type { LabelTypeInfo, FitMode } from '../domain/imageTypes';
+import { ditherImage, applyClientDither } from '../domain/ditherUtils';
+import { DEFAULT_DITHER_ENGINE } from '../domain/imageTypes';
+import type { LabelTypeInfo, FitMode, DitherEngine } from '../domain/imageTypes';
 import { BarcodeScanner } from './BarcodeScanner';
+import { DitherEngineSelector } from './DitherEngineSelector';
 import { LabelMockup } from './LabelMockup';
 import { logger } from '@shared/infrastructure/services/logger';
 
@@ -61,6 +63,10 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
     const [imageError, setImageError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const [ditherEngine, setDitherEngine] = useState<DitherEngine>(DEFAULT_DITHER_ENGINE);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState<string | null>(null);
+
     const [isPushing, setIsPushing] = useState(false);
     const [pushError, setPushError] = useState<string | null>(null);
     const [pushSuccess, setPushSuccess] = useState(false);
@@ -68,6 +74,8 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
     const [scannerOpen, setScannerOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const resizedCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const previewAbortRef = useRef<AbortController | null>(null);
 
     // Reset state when dialog opens/closes
     useEffect(() => {
@@ -82,32 +90,67 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setImageError(null);
             setPushError(null);
             setPushSuccess(false);
+            setDitherEngine(DEFAULT_DITHER_ENGINE);
+            setIsPreviewLoading(false);
+            setPreviewError(null);
+            resizedCanvasRef.current = null;
+            previewAbortRef.current?.abort();
+            previewAbortRef.current = null;
         }
     }, [open, initialLabelCode]);
 
-    // Fetch label type info when label code changes
-    const fetchTypeInfo = useCallback(async (code: string) => {
-        if (!activeStoreId || !code.trim()) return;
+    // Generate dithered preview from the resized canvas
+    const generatePreview = useCallback(async (
+        canvas: HTMLCanvasElement,
+        info: LabelTypeInfo,
+        engine: DitherEngine,
+    ) => {
+        // Abort any in-flight AIMS preview
+        previewAbortRef.current?.abort();
+        previewAbortRef.current = null;
+        setPreviewError(null);
 
-        setIsLoadingTypeInfo(true);
-        setTypeInfoError(null);
-        setTypeInfo(null);
-        setResizedBase64(null);
-        setDitheredBase64(null);
+        if (engine === 'aims') {
+            // Server-side AIMS dithering preview
+            if (!activeStoreId || !labelCode.trim()) return;
 
-        try {
-            const response = await labelsApi.getLabelTypeInfo(activeStoreId, code.trim());
-            setTypeInfo(response.data);
-        } catch (error: any) {
-            logger.error('AssignImageDialog', 'Failed to fetch type info', { error: error.message });
-            setTypeInfoError(error.response?.data?.error?.message || error.message);
-        } finally {
-            setIsLoadingTypeInfo(false);
+            const abortController = new AbortController();
+            previewAbortRef.current = abortController;
+            setIsPreviewLoading(true);
+
+            try {
+                const sourceBase64 = canvasToBase64(canvas);
+                const response = await labelsApi.getDitherPreview(
+                    activeStoreId,
+                    labelCode.trim(),
+                    sourceBase64,
+                    undefined,
+                    abortController.signal,
+                );
+                if (!abortController.signal.aborted) {
+                    setDitheredBase64(response.data?.image || response.data);
+                }
+            } catch (error: any) {
+                if (error.name === 'AbortError' || error.name === 'CanceledError') return;
+                logger.warn('AssignImageDialog', 'AIMS preview failed, falling back to Floyd-Steinberg', { error: error.message });
+                // Fallback to Floyd-Steinberg with warning
+                const fallbackCanvas = ditherImage(canvas, info.color);
+                setDitheredBase64(canvasToBase64(fallbackCanvas));
+                setPreviewError(t('imageLabels.dialog.dithering.previewFailed', 'AIMS preview unavailable — showing local approximation'));
+            } finally {
+                if (!abortController.signal.aborted) {
+                    setIsPreviewLoading(false);
+                }
+            }
+        } else {
+            // Client-side dithering — synchronous
+            const ditheredCanvas = applyClientDither(canvas, info.color, engine);
+            setDitheredBase64(canvasToBase64(ditheredCanvas));
         }
-    }, [activeStoreId]);
+    }, [activeStoreId, labelCode, t]);
 
-    // Process image: resize, optionally rotate, then apply client-side dithering
-    const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo, rotationSteps: number) => {
+    // Process image: resize, optionally rotate, then generate preview
+    const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo, rotationSteps: number, engine: DitherEngine) => {
         setImageError(null);
         setIsProcessing(true);
         try {
@@ -118,23 +161,22 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             }
             const base64 = canvasToBase64(canvas);
             setResizedBase64(base64);
+            resizedCanvasRef.current = canvas;
 
-            // Client-side Floyd-Steinberg dithering for instant preview
-            const ditheredCanvas = ditherImage(canvas, info.color);
-            const ditheredB64 = canvasToBase64(ditheredCanvas);
-            setDitheredBase64(ditheredB64);
+            await generatePreview(canvas, info, engine);
 
             return base64;
         } catch (error: any) {
             logger.error('AssignImageDialog', 'Failed to process image', { error: error.message });
             setResizedBase64(null);
             setDitheredBase64(null);
+            resizedCanvasRef.current = null;
             setImageError(error.message);
             return null;
         } finally {
             setIsProcessing(false);
         }
-    }, []);
+    }, [generatePreview]);
 
     // Handle file selection
     const handleFileSelect = async (file: File) => {
@@ -142,7 +184,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setPushSuccess(false);
         setPushError(null);
         if (typeInfo) {
-            await processImage(file, fitMode, typeInfo, rotation);
+            await processImage(file, fitMode, typeInfo, rotation, ditherEngine);
         }
     };
 
@@ -152,7 +194,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setFitMode(newMode);
         setPushSuccess(false);
         if (selectedFile && typeInfo) {
-            await processImage(selectedFile, newMode, typeInfo, rotation);
+            await processImage(selectedFile, newMode, typeInfo, rotation, ditherEngine);
         }
     };
 
@@ -162,7 +204,17 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setRotation(newRotation);
         setPushSuccess(false);
         if (selectedFile && typeInfo) {
-            await processImage(selectedFile, fitMode, typeInfo, newRotation);
+            await processImage(selectedFile, fitMode, typeInfo, newRotation, ditherEngine);
+        }
+    };
+
+    // Handle dither engine change — only re-generate preview, no re-resize
+    const handleDitherEngineChange = async (engine: DitherEngine) => {
+        setDitherEngine(engine);
+        setPushSuccess(false);
+        setPreviewError(null);
+        if (resizedCanvasRef.current && typeInfo) {
+            await generatePreview(resizedCanvasRef.current, typeInfo, engine);
         }
     };
 
@@ -180,18 +232,50 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         fetchTypeInfo(value);
     };
 
+    // Fetch label type info when label code changes
+    const fetchTypeInfo = useCallback(async (code: string) => {
+        if (!activeStoreId || !code.trim()) return;
+
+        setIsLoadingTypeInfo(true);
+        setTypeInfoError(null);
+        setTypeInfo(null);
+        setResizedBase64(null);
+        setDitheredBase64(null);
+        resizedCanvasRef.current = null;
+
+        try {
+            const response = await labelsApi.getLabelTypeInfo(activeStoreId, code.trim());
+            setTypeInfo(response.data);
+        } catch (error: any) {
+            logger.error('AssignImageDialog', 'Failed to fetch type info', { error: error.message });
+            setTypeInfoError(error.response?.data?.error?.message || error.message);
+        } finally {
+            setIsLoadingTypeInfo(false);
+        }
+    }, [activeStoreId]);
+
     // Handle image push
     const handlePush = async () => {
-        if (!activeStoreId || !resizedBase64 || !labelCode.trim()) return;
+        if (!activeStoreId || !labelCode.trim()) return;
+
+        if (ditherEngine !== 'aims') {
+            // Client-dithered: push the pre-dithered image, tell AIMS not to re-dither
+            if (!ditheredBase64) return;
+        } else {
+            // AIMS engine: push the full-color resized image, let AIMS dither
+            if (!resizedBase64) return;
+        }
 
         setIsPushing(true);
         setPushError(null);
         setPushSuccess(false);
 
         try {
-            await labelsApi.pushImage(activeStoreId, labelCode.trim(), resizedBase64);
+            const imageToSend = ditherEngine !== 'aims' ? ditheredBase64! : resizedBase64!;
+            const dithering = ditherEngine === 'aims';
+            await labelsApi.pushImage(activeStoreId, labelCode.trim(), imageToSend, 1, 1, dithering);
             setPushSuccess(true);
-            logger.info('AssignImageDialog', 'Image pushed successfully', { labelCode });
+            logger.info('AssignImageDialog', 'Image pushed successfully', { labelCode, ditherEngine, dithering });
             onSuccess?.();
         } catch (error: any) {
             logger.error('AssignImageDialog', 'Failed to push image', { error: error.message });
@@ -425,19 +509,41 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                             </Box>
                         )}
 
-                        {/* Section 4: Label Preview — client-side dithered mockup */}
-                        {typeInfo && ditheredBase64 && (
+                        {/* Section 3.5: Dither Engine */}
+                        {typeInfo && selectedFile && (
+                            <DitherEngineSelector
+                                value={ditherEngine}
+                                onChange={handleDitherEngineChange}
+                                disabled={isProcessing}
+                            />
+                        )}
+
+                        {/* Preview warning for AIMS fallback */}
+                        {previewError && (
+                            <Alert severity="warning">
+                                {previewError}
+                            </Alert>
+                        )}
+
+                        {/* Section 4: Label Preview */}
+                        {typeInfo && (ditheredBase64 || isPreviewLoading) && (
                             <Box>
                                 <Typography variant="subtitle2" gutterBottom>
                                     {t('imageLabels.dialog.labelPreview', 'Label Preview')}
                                 </Typography>
-                                <LabelMockup
-                                    imageSrc={`data:image/png;base64,${ditheredBase64}`}
-                                    displayWidth={typeInfo.displayWidth}
-                                    displayHeight={typeInfo.displayHeight}
-                                    modelName={typeInfo.name}
-                                    colorType={typeInfo.colorType}
-                                />
+                                {isPreviewLoading ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                        <CircularProgress />
+                                    </Box>
+                                ) : ditheredBase64 && (
+                                    <LabelMockup
+                                        imageSrc={`data:image/png;base64,${ditheredBase64}`}
+                                        displayWidth={typeInfo.displayWidth}
+                                        displayHeight={typeInfo.displayHeight}
+                                        modelName={typeInfo.name}
+                                        colorType={typeInfo.colorType}
+                                    />
+                                )}
                             </Box>
                         )}
 
@@ -462,7 +568,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                     <Button
                         variant="contained"
                         onClick={handlePush}
-                        disabled={!resizedBase64 || isPushing || !labelCode.trim()}
+                        disabled={!resizedBase64 || isPushing || !labelCode.trim() || isPreviewLoading}
                         startIcon={isPushing ? <CircularProgress size={18} color="inherit" /> : undefined}
                     >
                         {t('imageLabels.dialog.pushButton', 'Push to Label')}
