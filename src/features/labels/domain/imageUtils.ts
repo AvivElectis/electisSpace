@@ -14,6 +14,10 @@ export function loadImage(file: File): Promise<HTMLImageElement> {
         const img = new Image();
         img.onload = () => {
             URL.revokeObjectURL(url);
+            if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                reject(new Error('Image has invalid dimensions (0×0)'));
+                return;
+            }
             resolve(img);
         };
         img.onerror = () => {
@@ -38,6 +42,10 @@ export function resizeImage(
     targetH: number,
     fitMode: FitMode,
 ): HTMLCanvasElement {
+    if (targetW <= 0 || targetH <= 0) {
+        throw new Error(`Invalid target dimensions: ${targetW}×${targetH}`);
+    }
+
     const canvas = document.createElement('canvas');
     canvas.width = targetW;
     canvas.height = targetH;

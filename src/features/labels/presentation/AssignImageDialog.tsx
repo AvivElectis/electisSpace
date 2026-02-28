@@ -58,6 +58,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
     const [flipped, setFlipped] = useState(false);
     const [resizedBase64, setResizedBase64] = useState<string | null>(null);
     const [ditheredBase64, setDitheredBase64] = useState<string | null>(null);
+    const [imageError, setImageError] = useState<string | null>(null);
 
     const [isPushing, setIsPushing] = useState(false);
     const [pushError, setPushError] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setFlipped(false);
             setResizedBase64(null);
             setDitheredBase64(null);
+            setImageError(null);
             setPushError(null);
             setPushSuccess(false);
         }
@@ -105,6 +107,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
 
     // Process image: resize, optionally flip, then apply client-side dithering
     const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo, flip: boolean) => {
+        setImageError(null);
         try {
             const img = await loadImage(file);
             let canvas = resizeImage(img, info.displayWidth, info.displayHeight, mode);
@@ -122,6 +125,9 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             return base64;
         } catch (error: any) {
             logger.error('AssignImageDialog', 'Failed to process image', { error: error.message });
+            setResizedBase64(null);
+            setDitheredBase64(null);
+            setImageError(error.message);
             return null;
         }
     }, []);
@@ -327,6 +333,12 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                                     style={{ display: 'none' }}
                                 />
                             </Box>
+                        )}
+
+                        {imageError && (
+                            <Alert severity="error">
+                                {imageError}
+                            </Alert>
                         )}
 
                         {/* Section 3: Fit Mode & Flip */}
