@@ -4,7 +4,7 @@
  * @description Type definitions, validation schemas, and DTOs for user management.
  */
 import { z } from 'zod';
-import { GlobalRole, CompanyRole } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
 
 // ======================
 // Constants
@@ -52,9 +52,6 @@ export const storeRefSchema = z.discriminatedUnion('type', [
     }),
 ]);
 
-// Company roles that grant all-stores access
-const ALL_STORES_COMPANY_ROLES = ['SUPER_USER', 'COMPANY_ADMIN', 'STORE_ADMIN'] as const;
-
 // Create user with company/store
 export const createUserSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -63,11 +60,12 @@ export const createUserSchema = z.object({
     phone: z.string().max(50).optional().nullable(),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     company: companyRefSchema,
-    companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).default('VIEWER'),
+    companyRoleId: z.string().default('role-viewer'),
+    allStoresAccess: z.boolean().default(false),
     stores: z.array(storeRefSchema).optional(),
 }).refine(
-    (data) => ALL_STORES_COMPANY_ROLES.includes(data.companyRole as any) || (data.stores && data.stores.length > 0),
-    { message: 'Per-store roles require at least one store assignment', path: ['stores'] }
+    (data) => data.allStoresAccess || (data.stores && data.stores.length > 0),
+    { message: 'stores are required unless allStoresAccess is true', path: ['stores'] }
 );
 
 export const updateUserSchema = z.object({
@@ -90,20 +88,18 @@ export const assignUserToStoreSchema = z.object({
 });
 
 export const elevateUserSchema = z.object({
-    globalRole: z.enum(['USER', 'COMPANY_ADMIN', 'PLATFORM_ADMIN']),
-    companyId: z.string().uuid().optional(),
-}).refine(
-    (data) => data.globalRole !== 'COMPANY_ADMIN' || data.companyId,
-    { message: 'companyId is required when elevating to COMPANY_ADMIN', path: ['companyId'] }
-);
+    globalRole: z.enum(['USER', 'APP_VIEWER', 'PLATFORM_ADMIN']),
+});
 
 export const assignUserToCompanySchema = z.object({
     company: companyRefSchema,
-    companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).default('VIEWER'),
+    companyRoleId: z.string().default('role-viewer'),
+    allStoresAccess: z.boolean().default(false),
 });
 
 export const updateUserCompanySchema = z.object({
-    companyRole: z.enum(['COMPANY_ADMIN', 'STORE_ADMIN', 'STORE_VIEWER', 'VIEWER']).optional(),
+    companyRoleId: z.string().optional(),
+    allStoresAccess: z.boolean().optional(),
 });
 
 // Suspend user
@@ -197,7 +193,7 @@ export interface UserCompanyListInfo {
     id: string;
     code: string;
     name: string;
-    role: CompanyRole;
+    roleId: string;
     allStoresAccess: boolean;
 }
 
@@ -247,5 +243,5 @@ export interface UserContext {
     id: string;
     globalRole: string | null;
     stores?: Array<{ id: string; roleId: string }>;
-    companies?: Array<{ id: string; role: string }>;
+    companies?: Array<{ id: string; roleId: string; allStoresAccess?: boolean }>;
 }

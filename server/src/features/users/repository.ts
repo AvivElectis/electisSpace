@@ -4,7 +4,7 @@
  * @description Data access layer for user management. All Prisma operations.
  */
 import { prisma } from '../../config/index.js';
-import type { Prisma, CompanyRole } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 // ======================
 // User Queries
@@ -34,7 +34,7 @@ export const userRepository = {
                 userCompanies: {
                     select: {
                         companyId: true,
-                        role: true,
+                        roleId: true,
                         allStoresAccess: true,
                         company: {
                             select: {
@@ -91,7 +91,7 @@ export const userRepository = {
                     select: {
                         id: true,
                         companyId: true,
-                        role: true,
+                        roleId: true,
                         allStoresAccess: true,
                         company: {
                             select: {
@@ -159,7 +159,7 @@ export const userRepository = {
         companyAssignment: {
             companyId: string;
             allStoresAccess: boolean;
-            role: CompanyRole;
+            roleId: string;
         };
         storeAssignments?: Array<{
             storeId: string;
@@ -178,7 +178,7 @@ export const userRepository = {
                     create: {
                         companyId: data.companyAssignment.companyId,
                         allStoresAccess: data.companyAssignment.allStoresAccess,
-                        role: data.companyAssignment.role,
+                        roleId: data.companyAssignment.roleId,
                     },
                 },
                 userStores: data.storeAssignments ? {
@@ -202,7 +202,7 @@ export const userRepository = {
                     select: {
                         companyId: true,
                         allStoresAccess: true,
-                        role: true,
+                        roleId: true,
                         company: {
                             select: { id: true, code: true, name: true },
                         },
@@ -332,7 +332,7 @@ export const userRepository = {
                     select: {
                         companyId: true,
                         allStoresAccess: true,
-                        role: true,
+                        roleId: true,
                         company: {
                             select: {
                                 id: true,
@@ -354,7 +354,7 @@ export const userRepository = {
         userId: string;
         companyId: string;
         allStoresAccess: boolean;
-        role: CompanyRole;
+        roleId: string;
     }) {
         return prisma.userCompany.create({
             data,
@@ -371,7 +371,7 @@ export const userRepository = {
      */
     async updateUserCompany(userId: string, companyId: string, data: {
         allStoresAccess?: boolean;
-        role?: CompanyRole;
+        roleId?: string;
     }) {
         return prisma.userCompany.update({
             where: { userId_companyId: { userId, companyId } },
@@ -393,11 +393,11 @@ export const userRepository = {
             create: {
                 userId,
                 companyId,
-                role: 'COMPANY_ADMIN',
+                roleId: 'role-admin',
                 allStoresAccess: true,
             },
             update: {
-                role: 'COMPANY_ADMIN',
+                roleId: 'role-admin',
                 allStoresAccess: true,
             },
         });
@@ -443,7 +443,7 @@ export const userRepository = {
      */
     async countCompanyAdmins(companyId: string) {
         return prisma.userCompany.count({
-            where: { companyId, role: 'COMPANY_ADMIN' },
+            where: { companyId, roleId: 'role-admin' },
         });
     },
 
@@ -465,7 +465,7 @@ export const userRepository = {
                     select: {
                         companyId: true,
                         allStoresAccess: true,
-                        role: true,
+                        roleId: true,
                         company: {
                             select: { id: true, code: true, name: true },
                         },
@@ -587,7 +587,7 @@ export const userRepository = {
     /**
      * Update user global role
      */
-    async updateGlobalRole(userId: string, globalRole: 'PLATFORM_ADMIN' | null) {
+    async updateGlobalRole(userId: string, globalRole: 'PLATFORM_ADMIN' | 'APP_VIEWER' | null) {
         return prisma.user.update({
             where: { id: userId },
             data: { globalRole },
@@ -609,7 +609,7 @@ export const userRepository = {
                     where: { companyId },
                     select: {
                         companyId: true,
-                        role: true,
+                        roleId: true,
                         allStoresAccess: true,
                         company: {
                             select: { name: true, code: true },

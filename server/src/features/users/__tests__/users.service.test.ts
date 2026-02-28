@@ -29,13 +29,13 @@ describe('canManageCompany', () => {
         expect(await canManageCompany({ id: '1', globalRole: 'PLATFORM_ADMIN' as any, stores: [], companies: [] }, 'c1')).toBe(true);
     });
 
-    it('true for COMPANY_ADMIN', async () => {
-        (userRepository.findUserCompany as any).mockResolvedValue({ role: 'COMPANY_ADMIN' });
+    it('true for company admin (role-admin)', async () => {
+        (userRepository.findUserCompany as any).mockResolvedValue({ roleId: 'role-admin' });
         expect(await canManageCompany({ id: '1', globalRole: null, stores: [], companies: [] }, 'c1')).toBe(true);
     });
 
     it('false for regular user', async () => {
-        (userRepository.findUserCompany as any).mockResolvedValue({ role: 'COMPANY_USER' });
+        (userRepository.findUserCompany as any).mockResolvedValue({ roleId: 'role-viewer' });
         expect(await canManageCompany({ id: '1', globalRole: null, stores: [], companies: [] }, 'c1')).toBe(false);
     });
 });

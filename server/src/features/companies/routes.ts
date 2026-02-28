@@ -5,13 +5,14 @@
  * All business logic lives in service.ts, all data access in repository.ts.
  */
 import { Router } from 'express';
-import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requireGlobalRole } from '../../shared/middleware/index.js';
 import { companyController } from './controller.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // ======================
 // Route Definitions
