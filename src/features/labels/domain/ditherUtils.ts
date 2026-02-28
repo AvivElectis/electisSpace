@@ -108,6 +108,11 @@ export function ditherImage(
 ): HTMLCanvasElement {
     const width = sourceCanvas.width;
     const height = sourceCanvas.height;
+
+    if (width === 0 || height === 0) {
+        throw new Error(`Cannot dither canvas with dimensions ${width}×${height}`);
+    }
+
     const ctx = sourceCanvas.getContext('2d')!;
     const imageData = ctx.getImageData(0, 0, width, height);
     const src = imageData.data; // Uint8ClampedArray [R,G,B,A, …]

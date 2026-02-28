@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **AssignImageDialog crash on zero-dimension labels** — `getImageData` threw when AIMS returned `displayWidth` or `displayHeight` of 0; added dimension validation in `loadImage`, `resizeImage`, and `ditherImage`; added user-visible error alert in the dialog
+
+---
+
 ## [2.8.0] - 2026-02-27
 
 ### Added
