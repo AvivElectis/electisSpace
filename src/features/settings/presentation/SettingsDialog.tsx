@@ -85,7 +85,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
     // Check if user is platform admin or has admin role
     const isPlatformAdmin = user?.globalRole === 'PLATFORM_ADMIN';
-    const isCompanyAdmin = user?.companies?.some(c => c.role === 'COMPANY_ADMIN');
+    const isCompanyAdmin = user?.companies?.some(c => c.roleId === 'role-admin');
     const isAdmin = isPlatformAdmin || isCompanyAdmin ||
         user?.stores?.some(s => s.roleId === 'role-admin');
 
@@ -226,7 +226,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 }}
             >
                 <SettingsIcon color="primary" />
-                <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+                <Typography variant="h6" component="span" fontWeight={600} sx={{ flex: 1 }}>
                     {t('settings.title')}
                 </Typography>
                 <IconButton

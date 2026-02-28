@@ -183,9 +183,9 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                     </Tooltip>
                     <LanguageSwitcher />
 
-                    {user && (user.globalRole === 'PLATFORM_ADMIN' || 
-                        user.companies?.some(c => c.role === 'COMPANY_ADMIN') ||
-                        user.stores?.some(s => s.role === 'STORE_ADMIN' || s.role === 'STORE_MANAGER')) && (
+                    {user && (user.globalRole === 'PLATFORM_ADMIN' ||
+                        user.companies?.some(c => c.roleId === 'role-admin') ||
+                        user.stores?.some(s => s.roleId === 'role-admin' || s.roleId === 'role-manager')) && (
                         <IconButton
                             color={iconColor}
                             onClick={onSettingsClick}
@@ -261,7 +261,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                                                 fontSize: '0.65rem'
                                             }}
                                         >
-                                            {user.globalRole || user.stores?.[0]?.role || 'User'}
+                                            {user.globalRole || user.stores?.[0]?.roleId || 'User'}
                                         </Typography>
                                     </Box>
                                 </Box>

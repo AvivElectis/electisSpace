@@ -8,7 +8,7 @@
 import { type ReactNode } from 'react';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import type { Feature } from '@features/auth/application/permissionHelpers';
-import type { Store, Company } from '@shared/infrastructure/services/authService';
+import type { Store } from '@shared/infrastructure/services/authService';
 
 interface ProtectedFeatureProps {
     children: ReactNode;
@@ -30,11 +30,11 @@ interface ProtectedFeatureProps {
     /** Require specific feature access */
     feature?: Feature;
     
-    /** Require minimum store role */
-    minimumStoreRole?: Store['role'];
-    
-    /** Require minimum company role */
-    minimumCompanyRole?: Company['role'];
+    /** Require minimum store role (roleId) */
+    minimumStoreRole?: string;
+
+    /** Require minimum company role (roleId) */
+    minimumCompanyRole?: string;
     
     /** Require ability to manage users */
     requireManageUsers?: boolean;

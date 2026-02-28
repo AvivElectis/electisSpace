@@ -81,7 +81,7 @@ export const settingsRepository = {
      */
     async getUserCompanyAdminAccess(userId: string, companyId: string) {
         return prisma.userCompany.findFirst({
-            where: { userId, companyId, role: 'COMPANY_ADMIN' },
+            where: { userId, companyId, roleId: 'role-admin' },
             include: { company: true },
         });
     },

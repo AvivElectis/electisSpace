@@ -4,13 +4,14 @@
  * @description Thin route definitions for store management.
  */
 import { Router } from 'express';
-import { authenticate, requirePermission, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission, requireGlobalRole } from '../../shared/middleware/index.js';
 import { storeController } from './controller.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // ======================
 // Company-Scoped Store Routes

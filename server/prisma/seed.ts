@@ -1,4 +1,4 @@
-import { PrismaClient, GlobalRole, CompanyRole } from '@prisma/client';
+import { PrismaClient, GlobalRole } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
@@ -103,7 +103,8 @@ async function main() {
     data: {
       userId: companyAdmin.id,
       companyId: company.id,
-      role: CompanyRole.COMPANY_ADMIN,
+      roleId: 'role-admin',
+      allStoresAccess: true,
     },
   });
 
@@ -140,7 +141,7 @@ async function main() {
     data: {
       userId: storeAdmin.id,
       companyId: company.id,
-      role: CompanyRole.VIEWER,
+      roleId: 'role-viewer',
     },
   });
 
@@ -169,7 +170,7 @@ async function main() {
     data: {
       userId: storeManager.id,
       companyId: company.id,
-      role: CompanyRole.VIEWER,
+      roleId: 'role-viewer',
     },
   });
 
@@ -198,7 +199,7 @@ async function main() {
     data: {
       userId: employee.id,
       companyId: company.id,
-      role: CompanyRole.VIEWER,
+      roleId: 'role-viewer',
     },
   });
 
@@ -227,7 +228,7 @@ async function main() {
     data: {
       userId: viewer.id,
       companyId: company.id,
-      role: CompanyRole.VIEWER,
+      roleId: 'role-viewer',
     },
   });
 

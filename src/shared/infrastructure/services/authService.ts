@@ -33,8 +33,6 @@ export interface Store {
     code: string;
     /** DB-backed role ID (e.g., 'role-admin', 'role-viewer') */
     roleId: string;
-    /** @deprecated Server no longer sends this field */
-    role?: string;
     features: string[]; // Available features: 'dashboard', 'spaces', 'conference', 'people'
     companyId: string;
     companyName: string;
@@ -46,7 +44,8 @@ export interface Company {
     id: string;
     name: string;
     code: string;
-    role: 'SUPER_USER' | 'COMPANY_ADMIN' | 'STORE_ADMIN' | 'STORE_VIEWER' | 'VIEWER';
+    /** DB-backed role ID (e.g., 'role-admin', 'role-viewer') */
+    roleId: string;
     allStoresAccess: boolean;
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
@@ -57,7 +56,8 @@ export interface User {
     email: string;
     firstName: string | null;
     lastName: string | null;
-    globalRole: 'PLATFORM_ADMIN' | null;
+    globalRole: 'PLATFORM_ADMIN' | 'APP_VIEWER' | null;
+    isAppViewer: boolean;
     activeCompanyId: string | null;
     activeStoreId: string | null;
     stores: Store[];

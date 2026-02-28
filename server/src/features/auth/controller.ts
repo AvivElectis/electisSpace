@@ -591,7 +591,7 @@ export const authController = {
             const userCompanyAccess = req.user!.companies?.find(
                 (c: any) => c.id === store.companyId
             );
-            const isCompanyAdmin = userCompanyAccess?.role === 'COMPANY_ADMIN';
+            const isCompanyAdmin = userCompanyAccess?.roleId === 'role-admin';
             const isAdmin = isPlatformAdmin || isCompanyAdmin || isStoreAdmin;
 
             // If not admin and AIMS not configured, find admin contacts
@@ -622,7 +622,7 @@ export const authController = {
                     const companyAdmins = await prisma.userCompany.findMany({
                         where: {
                             companyId: store.companyId,
-                            role: 'COMPANY_ADMIN',
+                            roleId: 'role-admin',
                             user: { isActive: true },
                         },
                         include: {

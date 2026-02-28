@@ -16,7 +16,7 @@ function getUserContext(req: Request) {
     return {
         id: req.user!.id,
         globalRole: req.user!.globalRole ?? null,
-        companies: req.user?.companies?.map(c => ({ id: c.id, role: c.role })),
+        companies: req.user?.companies?.map(c => ({ id: c.id, roleId: c.roleId })),
     };
 }
 

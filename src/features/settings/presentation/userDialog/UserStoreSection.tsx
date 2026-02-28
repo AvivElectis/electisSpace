@@ -5,12 +5,11 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { StoreAssignment, type StoreAssignmentData } from '../StoreAssignment';
-import type { CompanyRole } from './types';
 
 interface Props {
     companyId: string;
     isCreatingCompany: boolean;
-    companyRole: CompanyRole;
+    allStoresAccess: boolean;
     assignments: StoreAssignmentData[];
     onAssignmentsChange: (assignments: StoreAssignmentData[]) => void;
     isEdit: boolean;
@@ -19,7 +18,7 @@ interface Props {
 }
 
 export function UserStoreSection({
-    companyId, isCreatingCompany, companyRole,
+    companyId, isCreatingCompany, allStoresAccess,
     assignments, onAssignmentsChange,
     isEdit, isEditing, companyEnabledFeatures,
 }: Props) {
@@ -32,7 +31,7 @@ export function UserStoreSection({
             </Typography>
             <StoreAssignment
                 companyId={isCreatingCompany ? '' : companyId}
-                companyRole={companyRole}
+                allStoresAccess={allStoresAccess}
                 assignments={assignments}
                 onAssignmentsChange={onAssignmentsChange}
                 disabled={isEdit && !isEditing}

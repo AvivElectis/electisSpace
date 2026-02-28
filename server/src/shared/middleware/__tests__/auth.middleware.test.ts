@@ -123,7 +123,7 @@ describe('requirePermission', () => {
     it('should allow allStoresAccess company user', async () => {
         const mw = requirePermission('users', 'create');
         const { req, res, next } = createMocks();
-        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [], companies: [{ id: 'c1', role: 'COMPANY_ADMIN', allStoresAccess: true }] };
+        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [], companies: [{ id: 'c1', roleId: 'role-admin', allStoresAccess: true }] };
         (prisma.role.findUnique as any).mockResolvedValue({
             permissions: { users: ['view', 'create', 'edit', 'delete'] },
         });
