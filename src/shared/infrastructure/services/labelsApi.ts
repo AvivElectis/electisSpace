@@ -135,13 +135,14 @@ export const labelsApi = {
         labelCode: string,
         image: string,
         optAlgType?: number,
+        signal?: AbortSignal,
     ): Promise<{ data: any }> {
         const response = await api.post<{ data: any }>('/labels/dither-preview', {
             storeId,
             labelCode,
             image,
             optAlgType,
-        });
+        }, { signal });
         return response.data;
     },
 

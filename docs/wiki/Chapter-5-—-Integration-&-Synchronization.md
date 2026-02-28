@@ -145,7 +145,7 @@ Labels are the physical e-ink devices managed through AIMS:
 | **Unlink Label** | Client sends `labelCode` -> Server -> AIMS unlink endpoint |
 | **Blink Label** | Client sends `labelCode` -> Server -> AIMS blink endpoint (flashes LED) |
 | **Push Image** | Client sends base64 image -> Server -> AIMS image push endpoint |
-| **Dither Preview** | Client-side Floyd-Steinberg dithering for instant preview (no AIMS round-trip) |
+| **Dither Preview** | Multiple client-side engines or AIMS server-side preview |
 
 #### Image Push Pipeline (`AssignImageDialog`)
 
@@ -157,18 +157,35 @@ User selects image file
   → resizeImage(img, w, h)   — validate target dimensions > 0, apply fit mode
   → rotateCanvas(canvas, steps) — optional 90° rotation (steps=1–3)
   → canvasToBase64(canvas)   — PNG base64 (without data URI prefix)
-  → ditherImage(canvas, colorType) — Floyd-Steinberg to label palette (bw/bwr/bwry/6c)
-  → LabelMockup preview      — instant client-side preview
-  → pushImage API call        — server forwards base64 to AIMS for final dithering + display
+  → store resized canvas in ref (for re-dithering without re-resize)
+  → generatePreview(canvas, info, engine):
+      Client engine → applyClientDither(canvas, colorType, engine) — instant
+      AIMS engine   → labelsApi.getDitherPreview() — network round-trip
+  → LabelMockup preview      — shows dithered result
+  → pushImage API call:
+      Client engine → push dithered image with dithering: false (pre-dithered)
+      AIMS engine   → push full-color image with dithering: true (AIMS dithers)
 ```
+
+**Dithering engines** (`DitherEngine` type in `imageTypes.ts`):
+
+| Engine | Type | Description |
+|--------|------|-------------|
+| `floyd-steinberg` | Client | Error diffusion, natural organic look (default) |
+| `atkinson` | Client | Sharper, diffuses 75% of error to 6 neighbors |
+| `ordered` | Client | Bayer 4×4 threshold matrix, deterministic crosshatch |
+| `threshold` | Client | Nearest-color only, no pattern |
+| `aims` | Server | AIMS server-side dithering via `getDitherPreview` API |
+
+Switching engines only re-runs `generatePreview` using the cached resized canvas — no re-resize needed. AIMS preview requests use `AbortController` to handle rapid engine switching.
 
 Key utilities in `labels/domain/`:
 
 | File | Purpose |
 |------|---------|
 | `imageUtils.ts` | `loadImage`, `resizeImage` (contain/cover/fill), `rotateCanvas` (90° steps), `canvasToBase64` |
-| `ditherUtils.ts` | `ditherImage` — Floyd-Steinberg error-diffusion dithering to label color palette |
-| `imageTypes.ts` | `LabelTypeInfo` (displayWidth, displayHeight, colorType, color), `FitMode` |
+| `ditherUtils.ts` | `ditherImage` (legacy), `applyClientDither` (dispatcher for all 4 client engines) |
+| `imageTypes.ts` | `LabelTypeInfo`, `FitMode`, `DitherEngine`, `DITHER_ENGINES` metadata |
 
 All canvas functions validate dimensions before processing to prevent browser `getImageData` errors on zero-size canvases.
 
