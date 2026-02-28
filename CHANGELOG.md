@@ -13,12 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Multiple dithering engines in AssignImageDialog** — users can choose between Floyd-Steinberg, Atkinson, Ordered (Bayer 4x4), Threshold (nearest-color), or AIMS server-side dithering; client engines produce instant previews and push pre-dithered images (`dithering: false`), while AIMS engine fetches a server preview and pushes full-color images (`dithering: true`)
 
 ### Fixed
+- **AIMS dither preview not working** — `solumService.fetchDitherPreview()` returned raw AIMS envelope without `extractResponseData()`, so the client received `{responseCode, responseMessage}` instead of image data; client now robustly extracts the image from multiple possible response shapes
 - **BarcodeScanner autofocus on mobile** — removed autofocus from scanner/manual inputs that triggered the virtual keyboard and hid the camera/scanner/manual tabs on mobile devices
 - **AssignImageDialog crash on zero-dimension labels (root cause)** — `solumService.fetchLabelTypeInfo()` returned raw AIMS envelope without `extractResponseData()`, so `displayWidth`/`displayHeight` were `undefined`; client guards also hardened (`!targetW || !targetH` catches `undefined`/`NaN`)
 - **AssignImageDialog empty chips** — label info chips (dimensions, color type) were blank because the AIMS envelope fields were returned instead of actual data
 - **AIMS label type info wrong URL** — `fetchLabelTypeInfo` used `/api/v2/...` instead of `/common/api/v2/...`, hitting wrong AIMS endpoint and returning incorrect data
 
 ### Changed
+- **AssignImageDialog mobile UX** — compact upload zone with horizontal layout on mobile; tighter spacing and padding throughout; smaller title typography
 - **AssignImageDialog UX improvements** — disable autofocus (was hiding camera/manual tabs on mobile); 90° rotation (was 180°); loading spinner during image processing; `dir="ltr"` on fit-mode tabs for correct RTL display
 
 ---
