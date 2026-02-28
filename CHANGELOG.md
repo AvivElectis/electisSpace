@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **AssignImageDialog crash on zero-dimension labels (root cause)** — `solumService.fetchLabelTypeInfo()` returned raw AIMS envelope without `extractResponseData()`, so `displayWidth`/`displayHeight` were `undefined`; client guards also hardened (`!targetW || !targetH` catches `undefined`/`NaN`)
 - **AssignImageDialog empty chips** — label info chips (dimensions, color type) were blank because the AIMS envelope fields were returned instead of actual data
+- **AIMS label type info wrong URL** — `fetchLabelTypeInfo` used `/api/v2/...` instead of `/common/api/v2/...`, hitting wrong AIMS endpoint and returning incorrect data
 
 ### Changed
 - **AssignImageDialog UX improvements** — disable autofocus (was hiding camera/manual tabs on mobile); 90° rotation (was 180°); loading spinner during image processing; `dir="ltr"` on fit-mode tabs for correct RTL display
