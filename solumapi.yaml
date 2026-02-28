@@ -2064,6 +2064,62 @@ paths:
             $ref: '#/components/responses/InternalServerError'
 
 
+#################### DITHER PREVIEW ####################
+
+  /common/api/v2/common/labels/image/dither/preview:
+    put:
+      tags:
+        - Label Assign/Unassign
+      summary: Get dither preview image
+      security:
+        - bearerAuth: []
+      description: "Get a dithered preview of an image as it would appear on the label. The image is converted to the label's native color palette using server-side dithering."
+      parameters:
+        - $ref: '#/components/parameters/company'
+        - $ref: '#/components/parameters/labelCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  description: "Base64 encoded image data (PNG, JPEG, GIF)"
+                  example: "b3BlbmFwaTogMy4wLjMKaW5mbzoKICB0aXRsZTogQVBJIE..."
+                optAlgType:
+                  type: integer
+                  description: "Optional dithering algorithm type"
+                  example: 1
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  responseCode:
+                    type: string
+                    example: "200"
+                  responseMessage:
+                    type: string
+                    example: "SUCCESS"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/components/responses/Unauthorized'
+        403:
+          description: License Error
+        405:
+          description: Parameter is invalid
+        500:
+          description: Failed to process request operation
+
+
 #################### GET STORE LINKED WITH A LABEL ####################
 
   /common/api/v2/common/labels/store: 
