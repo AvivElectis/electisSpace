@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { useAuthStore } from '../infrastructure/authStore';
 import {
     isPlatformAdmin,
+    isAppViewer,
     isCompanyAdmin,
     isStoreAdmin,
     hasStoreRole,
@@ -51,6 +52,7 @@ export interface AuthContext {
 
     // Role checks
     isPlatformAdmin: boolean;
+    isAppViewer: boolean;
     isCompanyAdmin: boolean; // For active company
     isStoreAdmin: boolean; // For active store
     highestRole: string;
@@ -58,7 +60,7 @@ export interface AuthContext {
     // Permission checks (bound to active context)
     canAccessFeature: (feature: Feature) => boolean;
     hasStoreRole: (minimumRole: string) => boolean;
-    hasCompanyRole: (minimumRole: Company['role']) => boolean;
+    hasCompanyRole: (minimumRoleId: string) => boolean;
 
     // Company/store-level feature config
     activeCompanyFeatures: CompanyFeatures | null;
@@ -121,6 +123,7 @@ export function useAuthContext(): AuthContext {
 
     // Role checks
     const isPlatformAdminFlag = useMemo(() => isPlatformAdmin(user), [user]);
+    const isAppViewerFlag = useMemo(() => isAppViewer(user), [user]);
     const isCompanyAdminFlag = useMemo(
         () => activeCompanyId ? isCompanyAdmin(user, activeCompanyId) : false,
         [user, activeCompanyId]
@@ -147,9 +150,9 @@ export function useAuthContext(): AuthContext {
     }, [user, activeStoreId, isPlatformAdminFlag]);
 
     const hasCompanyRoleFn = useMemo(() => {
-        return (minimumRole: Company['role']) => {
+        return (minimumRoleId: string) => {
             if (!activeCompanyId) return isPlatformAdminFlag;
-            return hasCompanyRole(user, activeCompanyId, minimumRole);
+            return hasCompanyRole(user, activeCompanyId, minimumRoleId);
         };
     }, [user, activeCompanyId, isPlatformAdminFlag]);
 
@@ -208,6 +211,7 @@ export function useAuthContext(): AuthContext {
 
         // Role checks
         isPlatformAdmin: isPlatformAdminFlag,
+        isAppViewer: isAppViewerFlag,
         isCompanyAdmin: isCompanyAdminFlag,
         isStoreAdmin: isStoreAdminFlag,
         highestRole,

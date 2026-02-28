@@ -73,7 +73,7 @@ export function CompanySelector({
 
     // State
     const [companies, setCompanies] = useState<Company[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     // Code validation for new company

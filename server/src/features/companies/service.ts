@@ -4,10 +4,10 @@
  * @description Business logic layer for companies. Orchestrates repository calls,
  * handles authorization, and applies business rules.
  */
-import { GlobalRole, CompanyRole, Prisma } from '@prisma/client';
+import { GlobalRole, Prisma } from '@prisma/client';
 import { companyRepository } from './repository.js';
 import { encrypt } from '../../shared/utils/encryption.js';
-import { config } from '../../config/index.js';
+import { config, prisma } from '../../config/index.js';
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
@@ -46,7 +46,7 @@ export function canManageCompany(user: UserContext, companyId: string): boolean 
     if (isPlatformAdmin(user)) return true;
     
     const companyAccess = user.companies?.find(c => c.id === companyId);
-    return companyAccess?.role === CompanyRole.COMPANY_ADMIN;
+    return companyAccess?.roleId === 'role-admin';
 }
 
 /**
@@ -106,7 +106,7 @@ export const companyService = {
                     isActive: c.isActive,
                     storeCount: c._count.stores,
                     userCount: c._count.userCompanies,
-                    userRole: null, // Platform admin has implicit access
+                    userRoleId: null, // Platform admin has implicit access
                     aimsConfigured: !!(c.aimsBaseUrl && c.aimsUsername),
                     companyFeatures: extractCompanyFeatures(settings),
                     spaceType: extractSpaceType(settings),
@@ -140,7 +140,7 @@ export const companyService = {
                         isActive: uc.company.isActive,
                         storeCount: uc.company._count.stores,
                         userCount: uc.company._count.userCompanies,
-                        userRole: uc.role,
+                        userRoleId: uc.roleId,
                         allStoresAccess: uc.allStoresAccess,
                         aimsConfigured: !!(uc.company.aimsBaseUrl && uc.company.aimsUsername),
                         companyFeatures: extractCompanyFeatures(settings),
@@ -227,7 +227,7 @@ export const companyService = {
                 firstName: uc.user.firstName,
                 lastName: uc.user.lastName,
                 globalRole: uc.user.globalRole,
-                companyRole: uc.role,
+                companyRoleId: uc.roleId,
                 allStoresAccess: uc.allStoresAccess,
                 isActive: uc.user.isActive,
             })) : undefined,
@@ -274,6 +274,27 @@ export const companyService = {
             settings: initialSettings as unknown as Prisma.InputJsonValue,
         });
 
+        // Auto-assign all PLATFORM_ADMIN users to the new company with SUPER_USER + allStoresAccess
+        const platformAdmins = await prisma.user.findMany({
+            where: { globalRole: GlobalRole.PLATFORM_ADMIN },
+            select: { id: true },
+        });
+        for (const admin of platformAdmins) {
+            await prisma.userCompany.upsert({
+                where: { userId_companyId: { userId: admin.id, companyId: company.id } },
+                create: {
+                    userId: admin.id,
+                    companyId: company.id,
+                    roleId: 'role-admin',
+                    allStoresAccess: true,
+                },
+                update: {
+                    roleId: 'role-admin',
+                    allStoresAccess: true,
+                },
+            });
+        }
+
         return {
             id: company.id,
             code: company.code,
@@ -283,7 +304,7 @@ export const companyService = {
             isActive: company.isActive,
             storeCount: company._count.stores,
             userCount: company._count.userCompanies,
-            userRole: null,
+            userRoleId: null,
             aimsConfigured: !!(company.aimsBaseUrl && company.aimsUsername),
             companyFeatures,
             spaceType,

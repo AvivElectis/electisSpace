@@ -15,7 +15,7 @@ interface StoreAccess {
 // Company access info
 interface CompanyAccess {
     id: string;
-    role: string;
+    roleId: string;
     allStoresAccess?: boolean;
 }
 
@@ -164,7 +164,7 @@ export const authenticate = async (
                 userCompanies: {
                     select: {
                         companyId: true,
-                        role: true,
+                        roleId: true,
                         allStoresAccess: true,
                     }
                 }
@@ -184,7 +184,7 @@ export const authenticate = async (
 
         const companies: CompanyAccess[] = user.userCompanies.map(uc => ({
             id: uc.companyId,
-            role: uc.role,
+            roleId: uc.roleId,
             allStoresAccess: uc.allStoresAccess,
         }));
 
@@ -273,6 +273,32 @@ export const authorize = (...allowedRoleNames: string[]) => {
         }
 
         next(forbidden('Insufficient permissions'));
+    };
+};
+
+// App Viewer restriction middleware — blocks mutating requests for APP_VIEWER users
+export const restrictAppViewer = () => {
+    return (req: Request, _res: Response, next: NextFunction): void => {
+        if (!req.user) {
+            next(unauthorized('Authentication required'));
+            return;
+        }
+
+        // APP_VIEWER users can only perform GET (read) requests
+        if (req.user.globalRole === GlobalRole.APP_VIEWER && req.method !== 'GET') {
+            // Use originalUrl for correct matching across sub-routers
+            const url = req.originalUrl || req.url;
+            // Allow self-service: own profile, context switch, auth operations
+            const selfServicePatterns = ['/users/me', '/auth/change-password', '/auth/logout', '/auth/refresh'];
+            const isSelfService = selfServicePatterns.some(p => url.includes(p));
+
+            if (!isSelfService) {
+                next(forbidden('App Viewer accounts have read-only access'));
+                return;
+            }
+        }
+
+        next();
     };
 };
 

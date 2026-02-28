@@ -109,7 +109,7 @@ export const adminService = {
                 lastName: uc.user.lastName,
                 isActive: uc.user.isActive,
                 lastLogin: uc.user.lastLogin,
-                role: uc.role,
+                roleId: uc.roleId,
                 allStoresAccess: uc.allStoresAccess,
             })),
             createdAt: company.createdAt,

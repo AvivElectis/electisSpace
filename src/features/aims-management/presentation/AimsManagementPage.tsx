@@ -41,8 +41,8 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 export function AimsManagementPage() {
     const { t } = useTranslation();
     const { activeStoreId, isAppReady } = useAuthStore();
-    const { hasStoreRole } = useAuthContext();
-    const canManage = hasStoreRole('STORE_ADMIN');
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canManage = hasStoreRole('STORE_ADMIN') && !isAppViewer;
     const { activeTab, setActiveTab, reset } = useAimsManagementStore();
 
     const theme = useTheme();

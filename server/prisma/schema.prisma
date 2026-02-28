@@ -148,6 +148,7 @@ model User {
 
 enum GlobalRole {
   PLATFORM_ADMIN
+  APP_VIEWER
 }
 
 // ======================
@@ -157,29 +158,23 @@ model UserCompany {
   id              String      @id @default(uuid())
   userId          String      @map("user_id")
   companyId       String      @map("company_id")
-  role            CompanyRole @default(VIEWER)
+  roleId          String      @map("role_id")
   allStoresAccess Boolean     @default(false) @map("all_stores_access")  // If true, user has access to ALL stores in company
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+  companyRole Role @relation(fields: [roleId], references: [id])
+
   @@unique([userId, companyId])
   @@index([userId])
   @@index([companyId])
+  @@index([roleId])
   @@map("user_companies")
-}
-
-enum CompanyRole {
-  SUPER_USER     // For PLATFORM_ADMIN - full access without restrictions
-  COMPANY_ADMIN  // Can manage company settings, users, stores, all-stores access
-  STORE_ADMIN    // Per-store admin (needs explicit store assignments)
-  STORE_VIEWER   // Per-store view-only access
-  VIEWER         // Read-only access
 }
 
 // ======================
@@ -226,8 +221,9 @@ model Role {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userStores  UserStore[]
+  company       Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userStores    UserStore[]
+  userCompanies UserCompany[]
 
   @@unique([name, companyId])
   @@index([companyId])

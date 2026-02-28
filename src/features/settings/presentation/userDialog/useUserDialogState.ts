@@ -10,7 +10,7 @@ import { companyService, type Company, type CreateCompanyDto } from '@shared/inf
 import type { CompanyFeatures } from '@shared/infrastructure/services/authService';
 import api from '@shared/infrastructure/services/apiClient';
 import { logger } from '@shared/infrastructure/services/logger';
-import type { UserData, CompanyRole, StoreAssignmentData } from './types';
+import type { UserData, StoreAssignmentData } from './types';
 
 interface Params {
     open: boolean;
@@ -101,10 +101,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
     const [selectedCompanyId, setSelectedCompanyId] = useState('');
     const [isCreatingCompany, setIsCreatingCompany] = useState(false);
     const [newCompanyData, setNewCompanyData] = useState<{ code: string; name: string; location?: string }>({ code: '', name: '' });
-    const [companyRole, setCompanyRole] = useState<CompanyRole>('VIEWER');
-
-    // Derive allStoresAccess from company role
-    const allStoresAccess = companyRole === 'COMPANY_ADMIN' || companyRole === 'STORE_ADMIN';
+    const [companyRoleId, setCompanyRoleId] = useState('role-viewer');
+    const [allStoresAccess, setAllStoresAccess] = useState(false);
 
     // Store Assignments
     const [storeAssignments, setStoreAssignments] = useState<StoreAssignmentData[]>([]);
@@ -134,7 +132,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                     const firstCompanyAssignment = data.companies?.[0];
                     if (firstCompanyAssignment) {
                         setSelectedCompanyId(firstCompanyAssignment.company.id);
-                        setCompanyRole(firstCompanyAssignment.role === 'SUPER_USER' ? 'COMPANY_ADMIN' : firstCompanyAssignment.role);
+                        setCompanyRoleId(firstCompanyAssignment.roleId);
+                        setAllStoresAccess(firstCompanyAssignment.allStoresAccess ?? false);
                     }
 
                     const userStoreAssignments: StoreAssignmentData[] = (data.stores || [])
@@ -143,7 +142,6 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                             storeId: s.store.id,
                             storeName: s.store.name,
                             storeCode: s.store.code,
-                            role: s.role || 'STORE_VIEWER',
                             roleId: s.roleId,
                             features: s.features
                         }));
@@ -197,7 +195,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 const firstCompanyAssignment = userToUse.companies?.[0];
                 if (firstCompanyAssignment) {
                     setSelectedCompanyId(firstCompanyAssignment.company.id);
-                    setCompanyRole(firstCompanyAssignment.role === 'SUPER_USER' ? 'COMPANY_ADMIN' : firstCompanyAssignment.role);
+                    setCompanyRoleId(firstCompanyAssignment.roleId);
+                    setAllStoresAccess(firstCompanyAssignment.allStoresAccess ?? false);
                 }
 
                 const userStoreAssignments: StoreAssignmentData[] = (userToUse.stores || [])
@@ -206,7 +205,6 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                         storeId: s.store.id,
                         storeName: s.store.name,
                         storeCode: s.store.code,
-                        role: s.role || 'STORE_VIEWER',
                         roleId: s.roleId,
                         features: s.features
                     }));
@@ -224,7 +222,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 setSelectedCompanyId('');
                 setIsCreatingCompany(false);
                 setNewCompanyData({ code: '', name: '' });
-                setCompanyRole('VIEWER');
+                setCompanyRoleId('role-viewer');
+                setAllStoresAccess(false);
                 setStoreAssignments([]);
                 setSelectedCompanyFeatures(null);
             }
@@ -284,10 +283,15 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         setStoreAssignments([]);
     }, []);
 
-    // When company role changes, auto-clear stores for all-stores roles
-    const handleCompanyRoleChange = useCallback((role: CompanyRole) => {
-        setCompanyRole(role);
-        if (role === 'COMPANY_ADMIN' || role === 'STORE_ADMIN') {
+    // When company role changes
+    const handleCompanyRoleChange = useCallback((roleId: string) => {
+        setCompanyRoleId(roleId);
+    }, []);
+
+    // When allStoresAccess changes, auto-clear store assignments
+    const handleAllStoresAccessChange = useCallback((value: boolean) => {
+        setAllStoresAccess(value);
+        if (value) {
             setStoreAssignments([]);
         }
     }, []);
@@ -409,12 +413,14 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 if (companyId) {
                     if (existingCompanyAssignment) {
                         await api.patch(`/users/${user.id}/companies/${companyId}`, {
-                            companyRole
+                            companyRoleId,
+                            allStoresAccess,
                         });
                     } else {
                         await api.post(`/users/${user.id}/companies`, {
                             company: { type: 'existing', id: companyId },
-                            companyRole
+                            companyRoleId,
+                            allStoresAccess,
                         });
                     }
                 }
@@ -452,7 +458,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                     lastName: lastName.trim() || undefined,
                     phone: phone.trim() || undefined,
                     password,
-                    companyRole,
+                    companyRoleId,
+                    allStoresAccess,
                 };
 
                 if (isCreatingCompany) {
@@ -504,9 +511,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
     }, [
         profileMode, firstName, lastName, phone, t, currentUser, setAuthUser, onSave,
         selectedCompanyId, isCreatingCompany, isEdit, user, newCompanyData,
-        newPassword, confirmPassword, isActive, fetchedUserData, companyRole,
+        newPassword, confirmPassword, isActive, fetchedUserData, companyRoleId,
         allStoresAccess, storeAssignments, email, password,
-        // Note: allStoresAccess is derived from companyRole
     ]);
 
     // Profile helpers
@@ -518,19 +524,20 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
 
     const getRoleBadgeColor = useCallback(() => {
         if (userData?.globalRole === 'PLATFORM_ADMIN') return 'error';
-        const role = userData?.companies?.[0]?.role;
-        if (role === 'COMPANY_ADMIN' || role === 'SUPER_USER') return 'primary';
-        if (role === 'STORE_ADMIN') return 'warning';
+        const roleId = userData?.companies?.[0]?.roleId;
+        if (roleId === 'role-admin') return 'primary';
+        if (roleId === 'role-manager') return 'warning';
         return 'default';
     }, [userData]);
 
     const getRoleLabel = useCallback(() => {
         if (userData?.globalRole === 'PLATFORM_ADMIN') return t('roles.platform_admin');
-        const role = userData?.companies?.[0]?.role;
-        if (role === 'SUPER_USER') return t('roles.super_user');
-        if (role === 'COMPANY_ADMIN') return t('roles.company_admin');
-        if (role === 'STORE_ADMIN') return t('roles.store_admin');
-        if (role === 'STORE_VIEWER') return t('roles.store_viewer');
+        // Check company-level roleId
+        const companyRoleId = userData?.companies?.[0]?.roleId;
+        if (companyRoleId) {
+            const roleKey = companyRoleId.startsWith('role-') ? companyRoleId.substring(5) : companyRoleId;
+            return t(`roles.${roleKey}`, roleKey);
+        }
         // Check store-level roleId
         const storeRoleId = userData?.stores?.[0]?.roleId;
         if (storeRoleId) {
@@ -555,8 +562,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         // Company
         selectedCompanyId, isCreatingCompany, setIsCreatingCompany,
         newCompanyData, setNewCompanyData,
-        companyRole, setCompanyRole, handleCompanyRoleChange,
-        allStoresAccess,
+        companyRoleId, setCompanyRoleId, handleCompanyRoleChange,
+        allStoresAccess, setAllStoresAccess, handleAllStoresAccessChange,
         isPlatformAdmin, accessibleCompanyId,
         handleCompanyChange,
 

@@ -4,7 +4,6 @@
  * @description Type definitions, interfaces, and validation schemas for the companies feature.
  */
 import { z } from 'zod';
-import { CompanyRole } from '@prisma/client';
 import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResolution.js';
 
 // ======================
@@ -138,7 +137,7 @@ export interface CompanyListItem {
     isActive: boolean;
     storeCount: number;
     userCount: number;
-    userRole: CompanyRole | null;
+    userRoleId: string | null;
     allStoresAccess?: boolean;
     aimsConfigured: boolean;
     companyFeatures: CompanyFeatures;
@@ -202,7 +201,7 @@ export interface CompanyUserItem {
     firstName: string | null;
     lastName: string | null;
     globalRole: string | null;
-    companyRole: CompanyRole;
+    companyRoleId: string;
     allStoresAccess: boolean;
     isActive: boolean;
 }
@@ -229,5 +228,5 @@ export interface CodeValidationResponse {
 export interface UserContext {
     id: string;
     globalRole: string | null;
-    companies?: Array<{ id: string; role: string }>;
+    companies?: Array<{ id: string; roleId: string }>;
 }

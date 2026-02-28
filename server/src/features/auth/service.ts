@@ -131,7 +131,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
             id: uc.companyId,
             name: uc.company.name,
             code: uc.company.code,
-            role: uc.role,
+            roleId: uc.roleId,
             allStoresAccess: uc.allStoresAccess,
             companyFeatures: extractCompanyFeatures(companySettings),
             spaceType: extractSpaceType(companySettings),
@@ -144,6 +144,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
         firstName: user.firstName,
         lastName: user.lastName,
         globalRole: user.globalRole,
+        isAppViewer: user.globalRole === GlobalRole.APP_VIEWER,
         activeCompanyId: user.activeCompanyId,
         activeStoreId: user.activeStoreId,
         stores,
@@ -173,7 +174,7 @@ export const authService = {
 
         const companies = user.userCompanies.map(uc => ({
             id: uc.companyId,
-            role: uc.role,
+            roleId: uc.roleId,
             allStoresAccess: uc.allStoresAccess,
         }));
 

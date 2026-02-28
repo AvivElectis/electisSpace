@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission } from '../../shared/middleware/index.js';
 import { labelsController } from './controller.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // Labels routes
 router.get('/', requirePermission('labels', 'view'), labelsController.list);

@@ -67,8 +67,8 @@ export function LabelsPage() {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isRtl = i18n.language === 'he';
     const { activeStoreId, isAppReady } = useAuthStore();
-    const { hasStoreRole } = useAuthContext();
-    const canEdit = hasStoreRole('STORE_EMPLOYEE');
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
     const solumConnected = useSettingsStore(state => !!state.settings.solumConfig?.isConnected);
     const { confirm, ConfirmDialog } = useConfirmDialog();
 

@@ -127,27 +127,30 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                         selectedCompanyId={state.selectedCompanyId}
                                         isCreatingCompany={state.isCreatingCompany}
                                         newCompanyData={state.newCompanyData}
-                                        companyRole={state.companyRole}
+                                        companyRoleId={state.companyRoleId}
+                                        allStoresAccess={state.allStoresAccess}
                                         isPlatformAdmin={state.isPlatformAdmin}
                                         accessibleCompanyId={state.accessibleCompanyId}
                                         isEdit={state.isEdit}
                                         isEditing={state.isEditing}
+                                        profileMode={profileMode}
                                         onCompanyChange={state.handleCompanyChange}
                                         onCreateModeChange={state.setIsCreatingCompany}
                                         onNewCompanyDataChange={state.setNewCompanyData}
                                         onCompanyRoleChange={state.handleCompanyRoleChange}
+                                        onAllStoresAccessChange={state.handleAllStoresAccessChange}
                                     />
                                 </>
                             )}
 
-                            {/* Store Section */}
-                            {(!profileMode || (state.userData?.stores && state.userData.stores.length > 0)) && (
+                            {/* Store Section — show when not allStoresAccess, or in profile mode if user has stores */}
+                            {(!profileMode || (state.userData?.stores && state.userData.stores.length > 0) || !state.allStoresAccess) && (
                                 <>
                                     <Divider />
                                     <UserStoreSection
                                         companyId={state.selectedCompanyId}
                                         isCreatingCompany={state.isCreatingCompany}
-                                        companyRole={state.companyRole}
+                                        allStoresAccess={state.allStoresAccess}
                                         assignments={state.storeAssignments}
                                         onAssignmentsChange={state.setStoreAssignments}
                                         isEdit={state.isEdit}
@@ -273,7 +276,8 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                         selectedCompanyId={state.selectedCompanyId}
                         isCreatingCompany={state.isCreatingCompany}
                         newCompanyData={state.newCompanyData}
-                        companyRole={state.companyRole}
+                        companyRoleId={state.companyRoleId}
+                        allStoresAccess={state.allStoresAccess}
                         isPlatformAdmin={state.isPlatformAdmin}
                         accessibleCompanyId={state.accessibleCompanyId}
                         isEdit={state.isEdit}
@@ -282,13 +286,14 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                         onCreateModeChange={state.setIsCreatingCompany}
                         onNewCompanyDataChange={state.setNewCompanyData}
                         onCompanyRoleChange={state.handleCompanyRoleChange}
+                        onAllStoresAccessChange={state.handleAllStoresAccessChange}
                     />
                 )}
                 {state.activeStep === 2 && (
                     <UserStoreSection
                         companyId={state.selectedCompanyId}
                         isCreatingCompany={state.isCreatingCompany}
-                        companyRole={state.companyRole}
+                        allStoresAccess={state.allStoresAccess}
                         assignments={state.storeAssignments}
                         onAssignmentsChange={state.setStoreAssignments}
                         isEdit={state.isEdit}

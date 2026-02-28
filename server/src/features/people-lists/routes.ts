@@ -4,11 +4,12 @@
  * CRUD for people lists (store-scoped, shared between users)
  */
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission } from '../../shared/middleware/index.js';
 import { peopleListsController } from './controller.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // List all people lists for a store
 router.get('/', requirePermission('people', 'read'), peopleListsController.list);

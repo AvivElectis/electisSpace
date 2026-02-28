@@ -3,7 +3,7 @@
  * 
  * @description Business logic for store management.
  */
-import { GlobalRole, CompanyRole } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
 import { prisma } from '../../config/index.js';
 import { storeRepository, companyRepository, userCompanyRepository } from './repository.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
@@ -30,7 +30,7 @@ const canManageCompany = (user: StoreUserContext, companyId: string): boolean =>
     if (isPlatformAdmin(user)) return true;
     
     const companyAccess = user.companies?.find(c => c.id === companyId);
-    return companyAccess?.role === CompanyRole.COMPANY_ADMIN;
+    return companyAccess?.roleId === 'role-admin';
 };
 
 const canManageStore = (user: StoreUserContext, storeId: string): boolean => {

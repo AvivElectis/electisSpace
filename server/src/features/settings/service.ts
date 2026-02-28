@@ -196,7 +196,7 @@ export const settingsService = {
             throw new Error('COMPANY_NOT_FOUND_OR_DENIED');
         }
 
-        if (userCompany.role !== 'COMPANY_ADMIN') {
+        if (userCompany.roleId !== 'role-admin') {
             throw new Error('FORBIDDEN_NOT_ADMIN');
         }
 
@@ -260,7 +260,7 @@ export const settingsService = {
         } else {
             const userCompany = await settingsRepository.getUserCompanyAccess(user.id, companyId);
             company = userCompany?.company;
-            hasWriteAccess = userCompany?.role === 'COMPANY_ADMIN';
+            hasWriteAccess = userCompany?.roleId === 'role-admin';
         }
 
         if (!company) {
@@ -370,7 +370,7 @@ export const settingsService = {
         } else {
             const userCompany = await settingsRepository.getUserCompanyAccess(user.id, companyId);
             company = userCompany?.company;
-            hasWriteAccess = userCompany?.role === 'COMPANY_ADMIN';
+            hasWriteAccess = userCompany?.roleId === 'role-admin';
         }
 
         if (!company) {
