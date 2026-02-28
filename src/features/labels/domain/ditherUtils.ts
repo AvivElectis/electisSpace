@@ -1,15 +1,20 @@
 /**
- * Client-side Floyd-Steinberg dithering for ESL label preview.
+ * Client-side dithering for ESL label preview.
  *
- * Converts a full-color resized image into the label's native color palette
- * using error-diffusion dithering. This gives users an instant preview
- * without an AIMS round-trip.
+ * Multiple algorithms convert a full-color resized image into the label's
+ * native color palette. This gives users an instant preview without an
+ * AIMS round-trip.
  *
  * AIMS colorType values: bw, bwr, 4c, bwry, 6c
  *
- * Note: the actual label still receives server-side AIMS dithering on push —
- * this is a client-only approximation for preview purposes.
+ * Engines:
+ *   - Floyd-Steinberg: classic error diffusion (natural, organic look)
+ *   - Atkinson:        sharper error diffusion, diffuses 75% of error
+ *   - Ordered:         Bayer 4x4 threshold matrix, deterministic pattern
+ *   - Threshold:       simple nearest-color, no dithering pattern
  */
+
+import type { DitherEngine } from './imageTypes';
 
 type RGB = [number, number, number];
 
@@ -100,91 +105,31 @@ function findNearest(pixel: RGB, palette: RGB[]): RGB {
     return nearest;
 }
 
-/**
- * Apply Floyd-Steinberg error-diffusion dithering to a canvas.
- *
- * Reads pixel data from the source canvas and returns a **new** canvas
- * with the dithered result — the source is never mutated.
- *
- * @param sourceCanvas - Canvas with the resized full-color image
- * @param colorType    - AIMS colorType string ("bw", "bwr", "4c", "bwry", "6c")
- * @returns A new canvas containing the dithered image
- */
-export function ditherImage(
-    sourceCanvas: HTMLCanvasElement,
-    colorType: string,
-): HTMLCanvasElement {
-    const width = sourceCanvas.width;
-    const height = sourceCanvas.height;
+// ── Shared helpers ──────────────────────────────────────────────────────
 
+/** Read canvas pixels into a Float32Array (RGB, no alpha) and resolve the palette. */
+function initPixelBuffer(sourceCanvas: HTMLCanvasElement, colorType: string) {
+    const { width, height } = sourceCanvas;
     if (!width || !height) {
         throw new Error(`Cannot dither canvas with dimensions ${width}×${height}`);
     }
 
     const ctx = sourceCanvas.getContext('2d')!;
     const imageData = ctx.getImageData(0, 0, width, height);
-    const src = imageData.data; // Uint8ClampedArray [R,G,B,A, …]
+    const src = imageData.data;
 
-    // Use float array so error accumulation doesn't clamp prematurely
     const pixels = new Float32Array(width * height * 3);
     for (let i = 0; i < width * height; i++) {
-        pixels[i * 3] = src[i * 4];
+        pixels[i * 3]     = src[i * 4];
         pixels[i * 3 + 1] = src[i * 4 + 1];
         pixels[i * 3 + 2] = src[i * 4 + 2];
     }
 
-    const palette = getPalette(colorType);
+    return { width, height, pixels, palette: getPalette(colorType) };
+}
 
-    // Floyd-Steinberg error diffusion
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = (y * width + x) * 3;
-
-            const oldR = Math.max(0, Math.min(255, pixels[idx]));
-            const oldG = Math.max(0, Math.min(255, pixels[idx + 1]));
-            const oldB = Math.max(0, Math.min(255, pixels[idx + 2]));
-
-            const newPixel = findNearest([oldR, oldG, oldB], palette);
-
-            pixels[idx] = newPixel[0];
-            pixels[idx + 1] = newPixel[1];
-            pixels[idx + 2] = newPixel[2];
-
-            const errR = oldR - newPixel[0];
-            const errG = oldG - newPixel[1];
-            const errB = oldB - newPixel[2];
-
-            // Distribute error to neighbors: right, bottom-left, bottom, bottom-right
-            if (x + 1 < width) {
-                const i = idx + 3;
-                pixels[i] += errR * 7 / 16;
-                pixels[i + 1] += errG * 7 / 16;
-                pixels[i + 2] += errB * 7 / 16;
-            }
-            if (y + 1 < height) {
-                if (x - 1 >= 0) {
-                    const i = ((y + 1) * width + (x - 1)) * 3;
-                    pixels[i] += errR * 3 / 16;
-                    pixels[i + 1] += errG * 3 / 16;
-                    pixels[i + 2] += errB * 3 / 16;
-                }
-                {
-                    const i = ((y + 1) * width + x) * 3;
-                    pixels[i] += errR * 5 / 16;
-                    pixels[i + 1] += errG * 5 / 16;
-                    pixels[i + 2] += errB * 5 / 16;
-                }
-                if (x + 1 < width) {
-                    const i = ((y + 1) * width + (x + 1)) * 3;
-                    pixels[i] += errR * 1 / 16;
-                    pixels[i + 1] += errG * 1 / 16;
-                    pixels[i + 2] += errB * 1 / 16;
-                }
-            }
-        }
-    }
-
-    // Write result to a new canvas
+/** Write a Float32Array (RGB) back to a new canvas. */
+function pixelBufferToCanvas(width: number, height: number, pixels: Float32Array): HTMLCanvasElement {
     const outCanvas = document.createElement('canvas');
     outCanvas.width = width;
     outCanvas.height = height;
@@ -192,7 +137,7 @@ export function ditherImage(
     const outData = outCtx.createImageData(width, height);
 
     for (let i = 0; i < width * height; i++) {
-        outData.data[i * 4] = pixels[i * 3];
+        outData.data[i * 4]     = pixels[i * 3];
         outData.data[i * 4 + 1] = pixels[i * 3 + 1];
         outData.data[i * 4 + 2] = pixels[i * 3 + 2];
         outData.data[i * 4 + 3] = 255; // fully opaque
@@ -200,4 +145,221 @@ export function ditherImage(
 
     outCtx.putImageData(outData, 0, 0);
     return outCanvas;
+}
+
+/** Clamp a value to [0, 255] */
+function clamp(v: number): number {
+    return v < 0 ? 0 : v > 255 ? 255 : v;
+}
+
+// ── Algorithms ──────────────────────────────────────────────────────────
+
+/**
+ * Floyd-Steinberg error-diffusion dithering.
+ * Distributes 100% of quantisation error to 4 neighbors (7/16, 3/16, 5/16, 1/16).
+ */
+function ditherFloydSteinberg(sourceCanvas: HTMLCanvasElement, colorType: string): HTMLCanvasElement {
+    const { width, height, pixels, palette } = initPixelBuffer(sourceCanvas, colorType);
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 3;
+
+            const oldR = clamp(pixels[idx]);
+            const oldG = clamp(pixels[idx + 1]);
+            const oldB = clamp(pixels[idx + 2]);
+
+            const newPixel = findNearest([oldR, oldG, oldB], palette);
+
+            pixels[idx]     = newPixel[0];
+            pixels[idx + 1] = newPixel[1];
+            pixels[idx + 2] = newPixel[2];
+
+            const errR = oldR - newPixel[0];
+            const errG = oldG - newPixel[1];
+            const errB = oldB - newPixel[2];
+
+            if (x + 1 < width) {
+                const i = idx + 3;
+                pixels[i]     += errR * 7 / 16;
+                pixels[i + 1] += errG * 7 / 16;
+                pixels[i + 2] += errB * 7 / 16;
+            }
+            if (y + 1 < height) {
+                if (x - 1 >= 0) {
+                    const i = ((y + 1) * width + (x - 1)) * 3;
+                    pixels[i]     += errR * 3 / 16;
+                    pixels[i + 1] += errG * 3 / 16;
+                    pixels[i + 2] += errB * 3 / 16;
+                }
+                {
+                    const i = ((y + 1) * width + x) * 3;
+                    pixels[i]     += errR * 5 / 16;
+                    pixels[i + 1] += errG * 5 / 16;
+                    pixels[i + 2] += errB * 5 / 16;
+                }
+                if (x + 1 < width) {
+                    const i = ((y + 1) * width + (x + 1)) * 3;
+                    pixels[i]     += errR * 1 / 16;
+                    pixels[i + 1] += errG * 1 / 16;
+                    pixels[i + 2] += errB * 1 / 16;
+                }
+            }
+        }
+    }
+
+    return pixelBufferToCanvas(width, height, pixels);
+}
+
+/**
+ * Atkinson dithering (Bill Atkinson, original Macintosh).
+ * Diffuses only 6/8 (75%) of the error to 6 neighbors (1/8 each).
+ * Produces sharper, higher-contrast results than Floyd-Steinberg.
+ */
+function ditherAtkinson(sourceCanvas: HTMLCanvasElement, colorType: string): HTMLCanvasElement {
+    const { width, height, pixels, palette } = initPixelBuffer(sourceCanvas, colorType);
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 3;
+
+            const oldR = clamp(pixels[idx]);
+            const oldG = clamp(pixels[idx + 1]);
+            const oldB = clamp(pixels[idx + 2]);
+
+            const newPixel = findNearest([oldR, oldG, oldB], palette);
+
+            pixels[idx]     = newPixel[0];
+            pixels[idx + 1] = newPixel[1];
+            pixels[idx + 2] = newPixel[2];
+
+            // Atkinson distributes 1/8 of error to each of 6 neighbors (total: 6/8 = 75%)
+            const fracR = (oldR - newPixel[0]) / 8;
+            const fracG = (oldG - newPixel[1]) / 8;
+            const fracB = (oldB - newPixel[2]) / 8;
+
+            // Right (+1,0)
+            if (x + 1 < width) {
+                const i = idx + 3;
+                pixels[i] += fracR; pixels[i + 1] += fracG; pixels[i + 2] += fracB;
+            }
+            // Right+2 (+2,0)
+            if (x + 2 < width) {
+                const i = idx + 6;
+                pixels[i] += fracR; pixels[i + 1] += fracG; pixels[i + 2] += fracB;
+            }
+            if (y + 1 < height) {
+                // Below-left (-1,+1)
+                if (x - 1 >= 0) {
+                    const i = ((y + 1) * width + (x - 1)) * 3;
+                    pixels[i] += fracR; pixels[i + 1] += fracG; pixels[i + 2] += fracB;
+                }
+                // Below (0,+1)
+                {
+                    const i = ((y + 1) * width + x) * 3;
+                    pixels[i] += fracR; pixels[i + 1] += fracG; pixels[i + 2] += fracB;
+                }
+                // Below-right (+1,+1)
+                if (x + 1 < width) {
+                    const i = ((y + 1) * width + (x + 1)) * 3;
+                    pixels[i] += fracR; pixels[i + 1] += fracG; pixels[i + 2] += fracB;
+                }
+            }
+            // Two rows below (0,+2)
+            if (y + 2 < height) {
+                const i = ((y + 2) * width + x) * 3;
+                pixels[i] += fracR; pixels[i + 1] += fracG; pixels[i + 2] += fracB;
+            }
+        }
+    }
+
+    return pixelBufferToCanvas(width, height, pixels);
+}
+
+/**
+ * Ordered dithering using a Bayer 4x4 threshold matrix.
+ * No error propagation — deterministic crosshatch pattern.
+ * Cleaner for text and graphics.
+ */
+// prettier-ignore
+const BAYER_4X4 = [
+     0,  8,  2, 10,
+    12,  4, 14,  6,
+     3, 11,  1,  9,
+    15,  7, 13,  5,
+];
+
+function ditherOrdered(sourceCanvas: HTMLCanvasElement, colorType: string): HTMLCanvasElement {
+    const { width, height, pixels, palette } = initPixelBuffer(sourceCanvas, colorType);
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 3;
+            const threshold = (BAYER_4X4[(y % 4) * 4 + (x % 4)] / 16 - 0.5) * 64;
+
+            const r = clamp(pixels[idx]     + threshold);
+            const g = clamp(pixels[idx + 1] + threshold);
+            const b = clamp(pixels[idx + 2] + threshold);
+
+            const newPixel = findNearest([r, g, b], palette);
+            pixels[idx]     = newPixel[0];
+            pixels[idx + 1] = newPixel[1];
+            pixels[idx + 2] = newPixel[2];
+        }
+    }
+
+    return pixelBufferToCanvas(width, height, pixels);
+}
+
+/**
+ * Simple threshold (nearest-color) quantisation.
+ * No dithering pattern — sharpest but loses all gradients.
+ */
+function ditherThreshold(sourceCanvas: HTMLCanvasElement, colorType: string): HTMLCanvasElement {
+    const { width, height, pixels, palette } = initPixelBuffer(sourceCanvas, colorType);
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 3;
+            const newPixel = findNearest(
+                [pixels[idx], pixels[idx + 1], pixels[idx + 2]],
+                palette,
+            );
+            pixels[idx]     = newPixel[0];
+            pixels[idx + 1] = newPixel[1];
+            pixels[idx + 2] = newPixel[2];
+        }
+    }
+
+    return pixelBufferToCanvas(width, height, pixels);
+}
+
+// ── Public API ──────────────────────────────────────────────────────────
+
+/**
+ * Apply Floyd-Steinberg error-diffusion dithering to a canvas.
+ * Kept for backward compatibility — delegates to ditherFloydSteinberg.
+ */
+export function ditherImage(
+    sourceCanvas: HTMLCanvasElement,
+    colorType: string,
+): HTMLCanvasElement {
+    return ditherFloydSteinberg(sourceCanvas, colorType);
+}
+
+/**
+ * Apply client-side dithering using the specified engine.
+ * Dispatches to the appropriate algorithm based on the engine parameter.
+ */
+export function applyClientDither(
+    sourceCanvas: HTMLCanvasElement,
+    colorType: string,
+    engine: Exclude<DitherEngine, 'aims'>,
+): HTMLCanvasElement {
+    switch (engine) {
+        case 'floyd-steinberg': return ditherFloydSteinberg(sourceCanvas, colorType);
+        case 'atkinson':        return ditherAtkinson(sourceCanvas, colorType);
+        case 'ordered':         return ditherOrdered(sourceCanvas, colorType);
+        case 'threshold':       return ditherThreshold(sourceCanvas, colorType);
+    }
 }
