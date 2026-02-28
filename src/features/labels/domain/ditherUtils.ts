@@ -47,25 +47,33 @@ const PALETTE_6C: RGB[] = [
 ];
 
 /**
- * Resolve AIMS colorType string to the matching palette.
- * Matches the actual AIMS values (bw, bwr, 4c, bwry, 6c)
- * as well as legacy/descriptive names (BINARY, TERNARY_RED, etc).
+ * Resolve AIMS color/colorType string to the matching palette.
+ *
+ * AIMS responses have two fields:
+ *   - color:     "BW", "BWR", "BWYR"  (palette description)
+ *   - colorType: "BIT1", "BIT2_BWR", "BIT2_4C", etc.  (technical ID)
+ *
+ * We normalise by sorting the letters so both "BWRY" and "BWYR" match.
  */
 function getPalette(colorType: string): RGB[] {
     const key = colorType.toLowerCase().trim();
 
-    // Exact AIMS values
+    // Exact matches (covers color field values + shorthand)
     if (key === 'bw') return PALETTE_BW;
     if (key === 'bwr') return PALETTE_BWR;
-    if (key === 'bwry' || key === '4c') return PALETTE_BWRY;
+    if (key === '4c') return PALETTE_BWRY;
     if (key === '6c') return PALETTE_6C;
 
-    // Fallback: keyword matching for legacy/descriptive names
-    const upper = key.toUpperCase();
-    if (upper.includes('6') || upper.includes('SIX')) return PALETTE_6C;
-    if (upper.includes('FOUR') || upper.includes('4')) return PALETTE_BWRY;
-    if (upper.includes('RED') || upper === 'BWR') return PALETTE_BWR;
-    if (upper.includes('YELLOW')) return PALETTE_BWRY;
+    // Sort letters so "bwyr" and "bwry" both become "brwy"
+    const sorted = key.split('').sort().join('');
+    if (sorted === 'brwy') return PALETTE_BWRY;
+    if (sorted === 'brw')  return PALETTE_BWR;
+
+    // Fallback: keyword matching for colorType values (BIT2_4C, etc.)
+    if (key.includes('6c') || key.includes('6_c')) return PALETTE_6C;
+    if (key.includes('4c') || key.includes('4_c')) return PALETTE_BWRY;
+    if (key.includes('bwr') || key.includes('red')) return PALETTE_BWR;
+    if (key.includes('yellow')) return PALETTE_BWRY;
 
     return PALETTE_BW;
 }
