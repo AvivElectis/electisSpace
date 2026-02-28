@@ -145,6 +145,31 @@ Labels are the physical e-ink devices managed through AIMS:
 | **Unlink Label** | Client sends `labelCode` -> Server -> AIMS unlink endpoint |
 | **Blink Label** | Client sends `labelCode` -> Server -> AIMS blink endpoint (flashes LED) |
 | **Push Image** | Client sends base64 image -> Server -> AIMS image push endpoint |
-| **Dither Preview** | Client sends image params -> Server -> AIMS dither endpoint -> Return preview |
+| **Dither Preview** | Client-side Floyd-Steinberg dithering for instant preview (no AIMS round-trip) |
+
+#### Image Push Pipeline (`AssignImageDialog`)
+
+The image push flow processes user-uploaded images through a client-side canvas pipeline before sending to AIMS:
+
+```
+User selects image file
+  → loadImage(file)          — validate non-zero naturalWidth/Height
+  → resizeImage(img, w, h)   — validate target dimensions > 0, apply fit mode
+  → rotateCanvas180(canvas)  — optional 180° flip
+  → canvasToBase64(canvas)   — PNG base64 (without data URI prefix)
+  → ditherImage(canvas, colorType) — Floyd-Steinberg to label palette (bw/bwr/bwry/6c)
+  → LabelMockup preview      — instant client-side preview
+  → pushImage API call        — server forwards base64 to AIMS for final dithering + display
+```
+
+Key utilities in `labels/domain/`:
+
+| File | Purpose |
+|------|---------|
+| `imageUtils.ts` | `loadImage`, `resizeImage` (contain/cover/fill), `rotateCanvas180`, `canvasToBase64` |
+| `ditherUtils.ts` | `ditherImage` — Floyd-Steinberg error-diffusion dithering to label color palette |
+| `imageTypes.ts` | `LabelTypeInfo` (displayWidth, displayHeight, colorType, color), `FitMode` |
+
+All canvas functions validate dimensions before processing to prevent browser `getImageData` errors on zero-size canvases.
 
 Label-to-entity binding (`assignedLabels` arrays) is synced back from AIMS during the reconciliation job's `syncAssignedLabels` step.
