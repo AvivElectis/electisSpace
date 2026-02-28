@@ -155,7 +155,7 @@ The image push flow processes user-uploaded images through a client-side canvas 
 User selects image file
   → loadImage(file)          — validate non-zero naturalWidth/Height
   → resizeImage(img, w, h)   — validate target dimensions > 0, apply fit mode
-  → rotateCanvas180(canvas)  — optional 180° flip
+  → rotateCanvas(canvas, steps) — optional 90° rotation (steps=1–3)
   → canvasToBase64(canvas)   — PNG base64 (without data URI prefix)
   → ditherImage(canvas, colorType) — Floyd-Steinberg to label palette (bw/bwr/bwry/6c)
   → LabelMockup preview      — instant client-side preview
@@ -166,7 +166,7 @@ Key utilities in `labels/domain/`:
 
 | File | Purpose |
 |------|---------|
-| `imageUtils.ts` | `loadImage`, `resizeImage` (contain/cover/fill), `rotateCanvas180`, `canvasToBase64` |
+| `imageUtils.ts` | `loadImage`, `resizeImage` (contain/cover/fill), `rotateCanvas` (90° steps), `canvasToBase64` |
 | `ditherUtils.ts` | `ditherImage` — Floyd-Steinberg error-diffusion dithering to label color palette |
 | `imageTypes.ts` | `LabelTypeInfo` (displayWidth, displayHeight, colorType, color), `FitMode` |
 

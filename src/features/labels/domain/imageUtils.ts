@@ -42,8 +42,8 @@ export function resizeImage(
     targetH: number,
     fitMode: FitMode,
 ): HTMLCanvasElement {
-    if (targetW <= 0 || targetH <= 0) {
-        throw new Error(`Invalid target dimensions: ${targetW}×${targetH}`);
+    if (!targetW || !targetH || targetW <= 0 || targetH <= 0) {
+        throw new Error(`Invalid target dimensions: ${targetW ?? 'undefined'}×${targetH ?? 'undefined'}`);
     }
 
     const canvas = document.createElement('canvas');
@@ -100,16 +100,22 @@ export function resizeImage(
 }
 
 /**
- * Rotate a canvas 180° (flip upside-down). Returns a new canvas.
+ * Rotate a canvas by the given number of 90° clockwise steps.
+ * steps=1 → 90°, steps=2 → 180°, steps=3 → 270°.
+ * Returns a new canvas (source is not mutated).
  */
-export function rotateCanvas180(source: HTMLCanvasElement): HTMLCanvasElement {
+export function rotateCanvas(source: HTMLCanvasElement, steps: number): HTMLCanvasElement {
+    const s = ((steps % 4) + 4) % 4; // normalise to 0-3
+    if (s === 0) return source;
+
+    const swap = s === 1 || s === 3;
     const canvas = document.createElement('canvas');
-    canvas.width = source.width;
-    canvas.height = source.height;
+    canvas.width = swap ? source.height : source.width;
+    canvas.height = swap ? source.width : source.height;
     const ctx = canvas.getContext('2d')!;
-    ctx.translate(source.width, source.height);
-    ctx.rotate(Math.PI);
-    ctx.drawImage(source, 0, 0);
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((s * Math.PI) / 2);
+    ctx.drawImage(source, -source.width / 2, -source.height / 2);
     return canvas;
 }
 

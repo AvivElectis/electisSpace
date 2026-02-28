@@ -1503,8 +1503,8 @@
             "altResizedPreview": "Resized preview",
             "labelPreview": "Label Preview",
             "altLabelPreview": "Label preview mockup",
-            "flip": "Flip",
-            "flipTooltip": "Rotate 180°"
+            "rotateTooltip": "Rotate 90°",
+            "ariaFitMode": "image fit mode"
         }
     }
 }

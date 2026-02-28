@@ -109,7 +109,7 @@ export function ditherImage(
     const width = sourceCanvas.width;
     const height = sourceCanvas.height;
 
-    if (width === 0 || height === 0) {
+    if (!width || !height) {
         throw new Error(`Cannot dither canvas with dimensions ${width}×${height}`);
     }
 

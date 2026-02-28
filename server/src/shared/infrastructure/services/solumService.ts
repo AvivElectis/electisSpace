@@ -562,7 +562,7 @@ export class SolumService {
                 const response = await this.client.get(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                return response.data as AimsLabelTypeInfo;
+                return this.extractResponseData(response.data, 'fetchLabelTypeInfo') as AimsLabelTypeInfo;
             } catch (error: any) {
                 throw new Error(`Fetch label type info failed: ${error.message}`);
             }
