@@ -57,7 +57,7 @@ export function UserCompanySection({
     // Filter to roles usable at company level (non-system roles)
     // Non-platform-admins cannot assign the admin role to other users
     const companyRoles = roles.filter(r =>
-        !r.isSystem && (isPlatformAdmin || r.id !== 'role-admin')
+        r.scope !== 'SYSTEM' && (isPlatformAdmin || r.id !== 'role-admin')
     );
 
     return (

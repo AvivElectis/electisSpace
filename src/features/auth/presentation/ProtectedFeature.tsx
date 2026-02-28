@@ -8,7 +8,6 @@
 import { type ReactNode } from 'react';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import type { Feature } from '@features/auth/application/permissionHelpers';
-import type { Store } from '@shared/infrastructure/services/authService';
 
 interface ProtectedFeatureProps {
     children: ReactNode;
