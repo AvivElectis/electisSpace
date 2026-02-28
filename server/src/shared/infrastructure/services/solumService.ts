@@ -592,7 +592,7 @@ export class SolumService {
     /**
      * Get dithered preview of an image from AIMS
      */
-    async fetchDitherPreview(config: SolumConfig, token: string, labelCode: string, request: AimsDitherPreviewRequest): Promise<AimsApiResponse> {
+    async fetchDitherPreview(config: SolumConfig, token: string, labelCode: string, request: AimsDitherPreviewRequest): Promise<any> {
         if (!config.storeCode) throw new Error('Store code required');
 
         const url = this.buildUrl(config, `/common/api/v2/common/labels/image/dither/preview?company=${config.companyName}&labelCode=${encodeURIComponent(labelCode)}`);
@@ -602,7 +602,7 @@ export class SolumService {
                 const response = await this.client.put(url, request, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                return response.data;
+                return this.extractResponseData(response.data, 'fetchDitherPreview');
             } catch (error: any) {
                 throw new Error(`Fetch dither preview failed: ${error.message}`);
             }

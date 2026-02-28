@@ -758,7 +758,7 @@ export class AIMSGateway {
     /**
      * Get dithered preview of an image
      */
-    async fetchDitherPreview(storeId: string, labelCode: string, request: AimsDitherPreviewRequest): Promise<AimsApiResponse> {
+    async fetchDitherPreview(storeId: string, labelCode: string, request: AimsDitherPreviewRequest): Promise<any> {
         const { token, config } = await this.getTokenForStore(storeId);
 
         try {

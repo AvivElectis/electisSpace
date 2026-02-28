@@ -128,7 +128,24 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                     abortController.signal,
                 );
                 if (!abortController.signal.aborted) {
-                    setDitheredBase64(response.data?.image || response.data);
+                    // AIMS response (after server extractResponseData) may be:
+                    //   - string (base64 image directly)
+                    //   - object with .image field
+                    //   - object with other structure
+                    const extracted = response.data;
+                    const imageBase64 = typeof extracted === 'string'
+                        ? extracted
+                        : extracted?.image ?? extracted?.responseMessage ?? null;
+
+                    if (imageBase64 && typeof imageBase64 === 'string' && imageBase64 !== 'SUCCESS') {
+                        setDitheredBase64(imageBase64);
+                    } else {
+                        // AIMS returned success but no image data — fall back
+                        logger.warn('AssignImageDialog', 'AIMS preview returned no image data, falling back', { responseKeys: extracted ? Object.keys(extracted) : 'null' });
+                        const fallbackCanvas = ditherImage(canvas, info.color);
+                        setDitheredBase64(canvasToBase64(fallbackCanvas));
+                        setPreviewError(t('imageLabels.dialog.dithering.previewFailed', 'AIMS preview unavailable — showing local approximation'));
+                    }
                 }
             } catch (error: any) {
                 if (error.name === 'AbortError' || error.name === 'CanceledError') return;
@@ -321,9 +338,9 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                 disableRestoreFocus
                 disableEnforceFocus
             >
-                <DialogTitle>
+                <DialogTitle sx={isMobile ? { px: 2, py: 1.5 } : undefined}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="h6">
+                        <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold">
                             {t('imageLabels.dialog.title', 'Assign Image to Label')}
                         </Typography>
                         <IconButton onClick={onClose} size="small">
@@ -332,8 +349,8 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                     </Box>
                 </DialogTitle>
 
-                <DialogContent dividers>
-                    <Stack spacing={3}>
+                <DialogContent dividers sx={isMobile ? { px: 2, py: 1.5 } : undefined}>
+                    <Stack spacing={isMobile ? 2 : 3}>
                         {/* Section 1: Label Code */}
                         <Box>
                             <Typography variant="subtitle2" gutterBottom>
@@ -413,7 +430,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                                         border: '2px dashed',
                                         borderColor: selectedFile ? 'primary.main' : 'divider',
                                         borderRadius: 2,
-                                        p: 3,
+                                        p: isMobile ? 1.5 : 3,
                                         textAlign: 'center',
                                         cursor: 'pointer',
                                         bgcolor: 'action.hover',
@@ -435,15 +452,33 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                                             <CircularProgress />
                                         </Box>
                                     )}
-                                    <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                                    <Typography variant="body2" color="text.secondary">
-                                        {selectedFile
-                                            ? selectedFile.name
-                                            : t('imageLabels.dialog.dropOrClick', 'Drop an image here or click to browse')}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {t('imageLabels.dialog.acceptedFormats', 'PNG, JPEG, BMP')}
-                                    </Typography>
+                                    {isMobile ? (
+                                        <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="center">
+                                            <UploadIcon sx={{ fontSize: 28, color: 'text.secondary' }} />
+                                            <Box sx={{ textAlign: 'left' }}>
+                                                <Typography variant="body2" color="text.secondary" noWrap>
+                                                    {selectedFile
+                                                        ? selectedFile.name
+                                                        : t('imageLabels.dialog.dropOrClick', 'Drop an image here or click to browse')}
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {t('imageLabels.dialog.acceptedFormats', 'PNG, JPEG, BMP')}
+                                                </Typography>
+                                            </Box>
+                                        </Stack>
+                                    ) : (
+                                        <>
+                                            <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                                            <Typography variant="body2" color="text.secondary">
+                                                {selectedFile
+                                                    ? selectedFile.name
+                                                    : t('imageLabels.dialog.dropOrClick', 'Drop an image here or click to browse')}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {t('imageLabels.dialog.acceptedFormats', 'PNG, JPEG, BMP')}
+                                            </Typography>
+                                        </>
+                                    )}
                                 </Box>
                                 <input
                                     ref={fileInputRef}
@@ -561,7 +596,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                     </Stack>
                 </DialogContent>
 
-                <DialogActions sx={{ px: 3, py: 2 }}>
+                <DialogActions sx={{ px: isMobile ? 2 : 3, py: isMobile ? 1.5 : 2 }}>
                     <Button onClick={onClose}>
                         {t('common.close', 'Close')}
                     </Button>
