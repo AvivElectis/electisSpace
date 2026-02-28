@@ -1219,7 +1219,7 @@
             },
             "labels": {
                 "title": "Label Assignment",
-                "content": "Electronic Shelf Labels (ESL) are the physical e-ink displays that show your space information. Here's how they work with electis Space:\n• Automatic Display: When a label is linked to a space in AIMS, it automatically displays the space's data. No manual configuration needed in this app.\n• Label Count: The toolbar shows how many spaces have linked labels vs. total spaces. This helps you track deployment progress.\n• Label Status: The SoluM AIMS platform tracks label battery, signal strength, and display status. Use the SoluM AIMS dashboard for detailed label monitoring.\n• Linking Labels: Labels are typically linked to spaces using the SoluM Picks mobile app or the AIMS web interface. You scan the label's barcode and associate it with an article ID.\n• Blink/Identify: Need to find a specific label? Use the blink feature in AIMS to flash the label's LED for easy identification.\nRemember: electis Space manages the data content — what appears on labels. The physical label management (linking, battery monitoring, firmware updates) is done through SoluM AIMS directly."
+                "content": "Electronic Shelf Labels (ESL) are the physical e-ink displays that show your space information. Here's how they work with electis Space:\n• Automatic Display: When a label is linked to a space in AIMS, it automatically displays the space's data. No manual configuration needed in this app.\n• Label Count: The toolbar shows how many spaces have linked labels vs. total spaces. This helps you track deployment progress.\n• Label Status: The SoluM AIMS platform tracks label battery, signal strength, and display status. Use the SoluM AIMS dashboard for detailed label monitoring.\n• Linking Labels: Labels are typically linked to spaces using the SoluM Picks mobile app or the AIMS web interface. You scan the label's barcode and associate it with an article ID.\n• Blink/Identify: Need to find a specific label? Use the blink feature in AIMS to flash the label's LED for easy identification.\n• Image Push — Color Conversion: When pushing an image to a label, you can choose a color conversion engine that determines how your full-color image is converted to the label's limited palette:\n  — Floyd-Steinberg: Classic error diffusion with a natural, organic look. Best for photos and gradients. (Default)\n  — Atkinson: Sharper error diffusion that preserves more contrast. Good for images with text overlays.\n  — Ordered: Bayer matrix pattern, deterministic and clean. Best for graphics, logos, and text.\n  — Threshold: Simple nearest-color mapping with no pattern. Sharpest but loses all gradients.\n  — AIMS: Server-side dithering by the AIMS platform. Uses the same algorithm the label hardware uses, but requires a network round-trip for preview.\n  Client engines (Floyd-Steinberg, Atkinson, Ordered, Threshold) produce an instant preview and send the pre-dithered image to the label. The AIMS engine fetches a server preview and sends the original image for server-side processing.\nRemember: electis Space manages the data content — what appears on labels. The physical label management (linking, battery monitoring, firmware updates) is done through SoluM AIMS directly."
             }
         },
         "people": {
@@ -1504,7 +1504,22 @@
             "labelPreview": "Label Preview",
             "altLabelPreview": "Label preview mockup",
             "rotateTooltip": "Rotate 90°",
-            "ariaFitMode": "image fit mode"
+            "ariaFitMode": "image fit mode",
+            "dithering": {
+                "title": "Color Conversion",
+                "ariaGroup": "color conversion engine",
+                "floydSteinberg": "Floyd-Steinberg",
+                "floydSteinbergHelp": "Error diffusion with natural, organic look",
+                "atkinson": "Atkinson",
+                "atkinsonHelp": "Sharper contrast, diffuses 75% of error",
+                "ordered": "Ordered",
+                "orderedHelp": "Regular pattern, cleaner for text and graphics",
+                "threshold": "Threshold",
+                "thresholdHelp": "Nearest color only, no dithering pattern",
+                "aims": "AIMS",
+                "aimsHelp": "Server-side dithering by AIMS (requires network)",
+                "previewFailed": "AIMS preview unavailable — showing local approximation"
+            }
         }
     }
 }
