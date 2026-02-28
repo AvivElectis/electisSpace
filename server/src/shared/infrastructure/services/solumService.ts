@@ -555,7 +555,7 @@ export class SolumService {
      * Fetch label type/hardware info (dimensions, color type, etc.)
      */
     async fetchLabelTypeInfo(config: SolumConfig, token: string, labelCode: string): Promise<AimsLabelTypeInfo> {
-        const url = this.buildUrl(config, `/api/v2/common/labels/type/info?labelCode=${encodeURIComponent(labelCode)}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/type/info?labelCode=${encodeURIComponent(labelCode)}`);
 
         return this.withRetry('fetchLabelTypeInfo', async () => {
             try {
