@@ -234,6 +234,8 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                 fullWidth
                 fullScreen={isMobile}
                 disableAutoFocus
+                disableRestoreFocus
+                disableEnforceFocus
             >
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
