@@ -16,7 +16,7 @@ import type { CreateRoleDTO, UpdateRoleDTO, PermissionsMap } from './types.js';
 interface RoleUserContext {
     id: string;
     globalRole: string | null;
-    companies?: Array<{ id: string; role: string }>;
+    companies?: Array<{ id: string; roleId: string }>;
 }
 
 function isPlatformAdmin(user: RoleUserContext): boolean {
@@ -25,7 +25,7 @@ function isPlatformAdmin(user: RoleUserContext): boolean {
 
 function isCompanyAdminFor(user: RoleUserContext, companyId: string): boolean {
     return user.companies?.some(
-        c => c.id === companyId && (c.role === 'COMPANY_ADMIN' || c.role === 'SUPER_USER')
+        c => c.id === companyId && c.roleId === 'role-admin'
     ) ?? false;
 }
 

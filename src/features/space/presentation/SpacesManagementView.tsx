@@ -307,8 +307,8 @@ export function SpacesManagementView() {
     });
 
     const { getLabel } = useSpaceTypeLabels();
-    const { hasStoreRole } = useAuthContext();
-    const canEdit = hasStoreRole('STORE_EMPLOYEE');
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
 
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);

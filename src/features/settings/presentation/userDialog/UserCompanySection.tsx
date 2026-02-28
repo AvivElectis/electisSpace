@@ -1,43 +1,64 @@
 /**
  * UserCompanySection - Company selector and role dropdown
- * Used in both create (stepper) and edit modes
+ * Uses DB-backed roles from useRolesStore instead of hardcoded enum.
  */
 import {
     Box,
+    Checkbox,
     Divider,
     FormControl,
+    FormControlLabel,
     InputLabel,
     Select,
     MenuItem,
     Typography,
 } from '@mui/material';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CompanySelector } from '../CompanySelector';
-import { COMPANY_ROLES, type CompanyRole } from './types';
+import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
 import type { Company } from '@shared/infrastructure/services/companyService';
 
 interface Props {
     selectedCompanyId: string;
     isCreatingCompany: boolean;
     newCompanyData: { code: string; name: string; location?: string };
-    companyRole: CompanyRole;
+    companyRoleId: string;
+    allStoresAccess: boolean;
     isPlatformAdmin: boolean;
     accessibleCompanyId: string | null;
     isEdit: boolean;
     isEditing: boolean;
+    profileMode?: boolean;
     onCompanyChange: (companyId: string, company?: Company) => void;
     onCreateModeChange: (creating: boolean) => void;
     onNewCompanyDataChange: (data: { code: string; name: string; location?: string }) => void;
-    onCompanyRoleChange: (role: CompanyRole) => void;
+    onCompanyRoleChange: (roleId: string) => void;
+    onAllStoresAccessChange: (value: boolean) => void;
 }
 
 export function UserCompanySection({
-    selectedCompanyId, isCreatingCompany, newCompanyData, companyRole,
+    selectedCompanyId, isCreatingCompany, newCompanyData, companyRoleId,
+    allStoresAccess,
     isPlatformAdmin, accessibleCompanyId,
-    isEdit, isEditing,
-    onCompanyChange, onCreateModeChange, onNewCompanyDataChange, onCompanyRoleChange,
+    isEdit, isEditing, profileMode = false,
+    onCompanyChange, onCreateModeChange, onNewCompanyDataChange,
+    onCompanyRoleChange, onAllStoresAccessChange,
 }: Props) {
     const { t } = useTranslation();
+    const { roles, fetchRoles } = useRolesStore();
+
+    useEffect(() => {
+        if (roles.length === 0) {
+            fetchRoles();
+        }
+    }, [roles.length, fetchRoles]);
+
+    // Filter to roles usable at company level (non-system roles)
+    // Non-platform-admins cannot assign the admin role to other users
+    const companyRoles = roles.filter(r =>
+        !r.isSystem && (isPlatformAdmin || r.id !== 'role-admin')
+    );
 
     return (
         <Box>
@@ -58,30 +79,40 @@ export function UserCompanySection({
 
                 <Divider sx={{ my: 1 }} />
 
-                <FormControl fullWidth size="small" disabled={isEdit && !isEditing}>
+                <FormControl fullWidth size="small" disabled={profileMode || (isEdit && !isEditing)}>
                     <InputLabel>{t('settings.users.companyRole')}</InputLabel>
                     <Select
-                        value={companyRole}
+                        value={companyRoles.some(r => r.id === companyRoleId) ? companyRoleId : ''}
                         label={t('settings.users.companyRole')}
-                        onChange={(e) => onCompanyRoleChange(e.target.value as CompanyRole)}
+                        onChange={(e) => onCompanyRoleChange(e.target.value)}
                     >
-                        {COMPANY_ROLES.map(role => (
-                            <MenuItem key={role} value={role}>
+                        {companyRoles.map(role => (
+                            <MenuItem key={role.id} value={role.id}>
                                 <Box>
                                     <Typography variant="body1">
-                                        {t(`roles.${role.toLowerCase()}`)}
+                                        {t(`roles.${role.name.toLowerCase()}`, role.name)}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {role === 'COMPANY_ADMIN' && t('settings.users.companyAdminDesc')}
-                                        {role === 'STORE_ADMIN' && t('settings.users.storeAdminDesc')}
-                                        {role === 'STORE_VIEWER' && t('settings.users.storeViewerDesc')}
-                                        {role === 'VIEWER' && t('settings.users.viewerDesc')}
-                                    </Typography>
+                                    {role.description && (
+                                        <Typography variant="caption" color="text.secondary">
+                                            {t(`roles.${role.name.toLowerCase()}_desc`, role.description)}
+                                        </Typography>
+                                    )}
                                 </Box>
                             </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
+
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={allStoresAccess}
+                            onChange={(e) => onAllStoresAccessChange(e.target.checked)}
+                            disabled={profileMode || (isEdit && !isEditing)}
+                        />
+                    }
+                    label={t('settings.users.allStoresAccess', 'Access to all stores')}
+                />
             </Box>
         </Box>
     );

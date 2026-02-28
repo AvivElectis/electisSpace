@@ -2,11 +2,12 @@
  * Spaces Lists Feature - Routes
  */
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission } from '../../shared/middleware/index.js';
 import { spacesListsController } from './controller.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 router.get('/', requirePermission('spaces', 'read'), spacesListsController.list);
 router.get('/:id', requirePermission('spaces', 'read'), spacesListsController.getById);

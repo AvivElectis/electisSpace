@@ -43,8 +43,8 @@ export function GatewayList({ storeId, onSelectGateway }: GatewayListProps) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const { hasStoreRole } = useAuthContext();
-    const canManage = hasStoreRole('STORE_ADMIN');
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canManage = hasStoreRole('STORE_ADMIN') && !isAppViewer;
 
     const { gateways, gatewaysLoading, gatewaysError, fetchGateways } = useGateways(storeId);
     const { rebootGateway, deregisterGateways, loading: actionLoading } = useGatewayManagement(storeId);

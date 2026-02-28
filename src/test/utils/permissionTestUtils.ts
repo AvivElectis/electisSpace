@@ -44,8 +44,6 @@ export {
 
 // Type re-exports
 export type { User, Store, Company };
-export type StoreRole = Store['role'];
-export type CompanyRole = Company['role'];
 
 /**
  * Create a mock Store with defaults
@@ -55,7 +53,7 @@ export function createMockStore(overrides: Partial<Store> = {}): Store {
         id: overrides.id || `store_${Date.now()}`,
         name: overrides.name || 'Test Store',
         code: overrides.code || 'TEST001',
-        role: overrides.role || 'STORE_EMPLOYEE',
+        roleId: overrides.roleId || 'role-employee',
         features: overrides.features || ['dashboard', 'spaces', 'conference', 'people'],
         companyId: overrides.companyId || 'company_1',
         companyName: overrides.companyName || 'Test Company',
@@ -70,7 +68,7 @@ export function createMockCompany(overrides: Partial<Company> = {}): Company {
         id: overrides.id || `company_${Date.now()}`,
         name: overrides.name || 'Test Company',
         code: overrides.code || 'TESTCO',
-        role: overrides.role || 'VIEWER',
+        roleId: overrides.roleId || 'role-viewer',
         allStoresAccess: overrides.allStoresAccess ?? false,
     };
 }
@@ -85,6 +83,7 @@ export function createMockUser(overrides: Partial<User & { role?: 'PLATFORM_ADMI
         firstName: overrides.firstName ?? 'Test',
         lastName: overrides.lastName ?? 'User',
         globalRole: overrides.role === 'PLATFORM_ADMIN' ? 'PLATFORM_ADMIN' : (overrides.globalRole ?? null),
+        isAppViewer: overrides.isAppViewer ?? (overrides.globalRole === 'APP_VIEWER'),
         activeCompanyId: overrides.activeCompanyId ?? null,
         activeStoreId: overrides.activeStoreId ?? null,
         stores: overrides.stores || [],
@@ -121,8 +120,8 @@ export const testScenarios: TestScenario[] = [
             role: 'PLATFORM_ADMIN',
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
-            companies: [createMockCompany({ id: 'company_1', role: 'COMPANY_ADMIN' })],
-            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', role: 'STORE_ADMIN' })],
+            companies: [createMockCompany({ id: 'company_1', roleId: 'role-admin' })],
+            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', roleId: 'role-admin' })],
         }),
         expectedPermissions: {
             isPlatformAdmin: true,
@@ -144,8 +143,8 @@ export const testScenarios: TestScenario[] = [
             id: 'user_company_admin',
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
-            companies: [createMockCompany({ id: 'company_1', role: 'COMPANY_ADMIN', allStoresAccess: true })],
-            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', role: 'STORE_ADMIN' })],
+            companies: [createMockCompany({ id: 'company_1', roleId: 'role-admin', allStoresAccess: true })],
+            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', roleId: 'role-admin' })],
         }),
         expectedPermissions: {
             isPlatformAdmin: false,
@@ -167,8 +166,8 @@ export const testScenarios: TestScenario[] = [
             id: 'user_store_admin',
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
-            companies: [createMockCompany({ id: 'company_1', role: 'VIEWER' })],
-            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', role: 'STORE_ADMIN' })],
+            companies: [createMockCompany({ id: 'company_1', roleId: 'role-viewer' })],
+            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', roleId: 'role-admin' })],
         }),
         expectedPermissions: {
             isPlatformAdmin: false,
@@ -190,8 +189,8 @@ export const testScenarios: TestScenario[] = [
             id: 'user_store_manager',
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
-            companies: [createMockCompany({ id: 'company_1', role: 'VIEWER' })],
-            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', role: 'STORE_MANAGER' })],
+            companies: [createMockCompany({ id: 'company_1', roleId: 'role-viewer' })],
+            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', roleId: 'role-manager' })],
         }),
         expectedPermissions: {
             isPlatformAdmin: false,
@@ -213,8 +212,8 @@ export const testScenarios: TestScenario[] = [
             id: 'user_store_employee',
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
-            companies: [createMockCompany({ id: 'company_1', role: 'VIEWER' })],
-            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', role: 'STORE_EMPLOYEE' })],
+            companies: [createMockCompany({ id: 'company_1', roleId: 'role-viewer' })],
+            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', roleId: 'role-employee' })],
         }),
         expectedPermissions: {
             isPlatformAdmin: false,
@@ -236,8 +235,8 @@ export const testScenarios: TestScenario[] = [
             id: 'user_store_viewer',
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
-            companies: [createMockCompany({ id: 'company_1', role: 'VIEWER' })],
-            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', role: 'STORE_VIEWER' })],
+            companies: [createMockCompany({ id: 'company_1', roleId: 'role-viewer' })],
+            stores: [createMockStore({ id: 'store_1', companyId: 'company_1', roleId: 'role-viewer' })],
         }),
         expectedPermissions: {
             isPlatformAdmin: false,
@@ -260,12 +259,12 @@ export const testScenarios: TestScenario[] = [
             activeCompanyId: 'company_1',
             activeStoreId: 'store_1',
             companies: [
-                createMockCompany({ id: 'company_1', name: 'Company 1', role: 'COMPANY_ADMIN' }),
-                createMockCompany({ id: 'company_2', name: 'Company 2', role: 'VIEWER' }),
+                createMockCompany({ id: 'company_1', name: 'Company 1', roleId: 'role-admin' }),
+                createMockCompany({ id: 'company_2', name: 'Company 2', roleId: 'role-viewer' }),
             ],
             stores: [
-                createMockStore({ id: 'store_1', name: 'Store 1', companyId: 'company_1', role: 'STORE_ADMIN' }),
-                createMockStore({ id: 'store_2', name: 'Store 2', companyId: 'company_2', role: 'STORE_MANAGER' }),
+                createMockStore({ id: 'store_1', name: 'Store 1', companyId: 'company_1', roleId: 'role-admin' }),
+                createMockStore({ id: 'store_2', name: 'Store 2', companyId: 'company_2', roleId: 'role-manager' }),
             ],
         }),
         expectedPermissions: {

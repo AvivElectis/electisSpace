@@ -84,6 +84,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { syncState, setWorkingMode } = useSyncStore();
     const { canAccessFeature, isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
+    const currentUser = useAuthStore(state => state.user);
     
     // Determine drawer direction based on current language (more reliable than theme.direction)
     const settings = useSettingsStore(state => state.settings);
@@ -405,7 +406,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                             open={profileOpen}
                             onClose={() => setProfileOpen(false)}
                             onSave={() => setProfileOpen(false)}
-                            profileMode={true}
+                            user={currentUser as any}
                         />
                     </Suspense>
                 )}

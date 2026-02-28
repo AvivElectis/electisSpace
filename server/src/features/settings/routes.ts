@@ -4,13 +4,14 @@
  * @description Thin route definitions for settings management.
  */
 import { Router } from 'express';
-import { authenticate, requirePermission } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requirePermission } from '../../shared/middleware/index.js';
 import { settingsController } from './controller.js';
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(restrictAppViewer());
 
 // ======================
 // Store Settings

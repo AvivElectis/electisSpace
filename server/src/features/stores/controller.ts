@@ -20,7 +20,7 @@ function getUserContext(req: Request): StoreUserContext {
         stores: req.user?.stores?.map(s => ({ id: s.id, roleId: s.roleId })),
         companies: req.user?.companies?.map(c => ({
             id: c.id,
-            role: c.role,
+            roleId: c.roleId,
             allStoresAccess: c.allStoresAccess
         })),
     };

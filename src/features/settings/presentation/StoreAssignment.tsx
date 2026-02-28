@@ -42,40 +42,28 @@ const AVAILABLE_FEATURES = [
     { id: 'settings', icon: '⚙️' },
 ] as const;
 
-// Legacy store roles kept for backward compatibility with existing data
-// New assignments use roleId (FK to Role table)
-const LEGACY_STORE_ROLES = ['STORE_VIEWER', 'STORE_ADMIN'] as const;
-type LegacyStoreRole = typeof LEGACY_STORE_ROLES[number];
 
-// Company roles
-const COMPANY_ROLES = ['VIEWER', 'STORE_VIEWER', 'STORE_ADMIN', 'COMPANY_ADMIN'] as const;
-type CompanyRole = typeof COMPANY_ROLES[number];
-
-/** Store assignment data — supports both legacy role enum and new roleId */
+/** Store assignment data */
 export interface StoreAssignmentData {
     storeId: string;
     storeName?: string;
     storeCode?: string;
-    /** @deprecated Use roleId instead. Kept for backward compatibility. */
-    role: LegacyStoreRole | string;
     /** Role ID from the Role table (e.g., 'role-viewer', 'role-admin') */
-    roleId?: string;
+    roleId: string;
     features: string[];
 }
 
 interface StoreAssignmentProps {
     /** Company ID to load stores from */
     companyId: string;
-    /** Company role determines some defaults */
-    companyRole: CompanyRole;
+    /** Whether user has all-stores access (hides individual assignments) */
+    allStoresAccess: boolean;
     /** Current store assignments */
     assignments: StoreAssignmentData[];
     /** Callback when assignments change */
     onAssignmentsChange: (assignments: StoreAssignmentData[]) => void;
     /** Whether the component is disabled */
     disabled?: boolean;
-    /** Default role for new assignments */
-    defaultRole?: LegacyStoreRole | string;
     /** Default roleId for new assignments */
     defaultRoleId?: string;
     /** Default features for new assignments */
@@ -84,19 +72,16 @@ interface StoreAssignmentProps {
     companyEnabledFeatures?: string[];
 }
 
-/** Map well-known role IDs to legacy role names for feature auto-assignment */
-function isAdminRole(roleId: string | undefined, legacyRole: string): boolean {
-    if (roleId === 'role-admin') return true;
-    return legacyRole === 'STORE_ADMIN';
+function isAdminRole(roleId: string): boolean {
+    return roleId === 'role-admin';
 }
 
 export function StoreAssignment({
     companyId,
-    companyRole,
+    allStoresAccess,
     assignments,
     onAssignmentsChange,
     disabled = false,
-    defaultRole = 'STORE_VIEWER',
     defaultRoleId = 'role-viewer',
     defaultFeatures = ['dashboard'],
     companyEnabledFeatures,
@@ -166,7 +151,7 @@ export function StoreAssignment({
         if (!store) return;
 
         // Use all features for admin roles
-        const effectiveFeatures = isAdminRole(defaultRoleId, defaultRole)
+        const effectiveFeatures = isAdminRole(defaultRoleId)
             ? [...ALL_FEATURES]
             : [...defaultFeatures];
 
@@ -174,7 +159,6 @@ export function StoreAssignment({
             storeId: store.id,
             storeName: store.name,
             storeCode: store.code,
-            role: defaultRole,
             roleId: defaultRoleId,
             features: effectiveFeatures
         };
@@ -189,20 +173,14 @@ export function StoreAssignment({
 
     // Update a store assignment's role
     const handleRoleChange = (storeId: string, newRoleId: string) => {
-        // Find the role to determine legacy role name
-        const selectedRole = roles.find(r => r.id === newRoleId);
-        const legacyRole = selectedRole
-            ? (newRoleId === 'role-admin' ? 'STORE_ADMIN' : 'STORE_VIEWER')
-            : 'STORE_VIEWER';
-
         onAssignmentsChange(
             safeAssignments.map(a => {
                 if (a.storeId !== storeId) return a;
                 // Auto-enable all features for admin roles
-                const features = isAdminRole(newRoleId, legacyRole)
+                const features = isAdminRole(newRoleId)
                     ? [...ALL_FEATURES]
                     : a.features;
-                return { ...a, role: legacyRole, roleId: newRoleId, features };
+                return { ...a, roleId: newRoleId, features };
             })
         );
     };
@@ -262,8 +240,7 @@ export function StoreAssignment({
         );
     }
 
-    // Derive allStoresAccess from company role
-    const isAllStoresRole = companyRole === 'COMPANY_ADMIN';
+    const isAllStoresRole = allStoresAccess;
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -344,7 +321,7 @@ export function StoreAssignment({
                                     <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                                         <InputLabel>{t('settings.users.storeRole', 'Store Role')}</InputLabel>
                                         <Select
-                                            value={assignment.roleId || assignment.role}
+                                            value={roles.some(r => r.id === assignment.roleId) ? assignment.roleId : ''}
                                             label={t('settings.users.storeRole', 'Store Role')}
                                             onChange={(e) => handleRoleChange(
                                                 assignment.storeId,
@@ -352,20 +329,11 @@ export function StoreAssignment({
                                             )}
                                             disabled={disabled}
                                         >
-                                            {roles.length > 0 ? (
-                                                roles.map(role => (
-                                                    <MenuItem key={role.id} value={role.id}>
-                                                        {t(`roles.${role.name.toLowerCase()}`, role.name)}
-                                                    </MenuItem>
-                                                ))
-                                            ) : (
-                                                // Fallback to legacy roles if roles haven't loaded
-                                                LEGACY_STORE_ROLES.map(role => (
-                                                    <MenuItem key={role} value={role}>
-                                                        {t(`roles.${role.toLowerCase()}`, role)}
-                                                    </MenuItem>
-                                                ))
-                                            )}
+                                            {roles.map(role => (
+                                                <MenuItem key={role.id} value={role.id}>
+                                                    {t(`roles.${role.name.toLowerCase()}`, role.name)}
+                                                </MenuItem>
+                                            ))}
                                         </Select>
                                     </FormControl>
 
