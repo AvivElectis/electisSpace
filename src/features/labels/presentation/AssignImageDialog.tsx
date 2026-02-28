@@ -22,12 +22,12 @@ import {
     Close as CloseIcon,
     QrCodeScanner as ScannerIcon,
     CloudUpload as UploadIcon,
-    Flip as FlipIcon,
+    RotateRight as RotateIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
-import { loadImage, resizeImage, rotateCanvas180, canvasToBase64 } from '../domain/imageUtils';
+import { loadImage, resizeImage, rotateCanvas, canvasToBase64 } from '../domain/imageUtils';
 import { ditherImage } from '../domain/ditherUtils';
 import type { LabelTypeInfo, FitMode } from '../domain/imageTypes';
 import { BarcodeScanner } from './BarcodeScanner';
@@ -55,10 +55,11 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [fitMode, setFitMode] = useState<FitMode>('contain');
-    const [flipped, setFlipped] = useState(false);
+    const [rotation, setRotation] = useState(0); // 0-3 for 0°/90°/180°/270°
     const [resizedBase64, setResizedBase64] = useState<string | null>(null);
     const [ditheredBase64, setDitheredBase64] = useState<string | null>(null);
     const [imageError, setImageError] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const [isPushing, setIsPushing] = useState(false);
     const [pushError, setPushError] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setTypeInfo(null);
             setTypeInfoError(null);
             setSelectedFile(null);
-            setFlipped(false);
+            setRotation(0);
             setResizedBase64(null);
             setDitheredBase64(null);
             setImageError(null);
@@ -105,14 +106,15 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         }
     }, [activeStoreId]);
 
-    // Process image: resize, optionally flip, then apply client-side dithering
-    const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo, flip: boolean) => {
+    // Process image: resize, optionally rotate, then apply client-side dithering
+    const processImage = useCallback(async (file: File, mode: FitMode, info: LabelTypeInfo, rotationSteps: number) => {
         setImageError(null);
+        setIsProcessing(true);
         try {
             const img = await loadImage(file);
             let canvas = resizeImage(img, info.displayWidth, info.displayHeight, mode);
-            if (flip) {
-                canvas = rotateCanvas180(canvas);
+            if (rotationSteps > 0) {
+                canvas = rotateCanvas(canvas, rotationSteps);
             }
             const base64 = canvasToBase64(canvas);
             setResizedBase64(base64);
@@ -129,6 +131,8 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
             setDitheredBase64(null);
             setImageError(error.message);
             return null;
+        } finally {
+            setIsProcessing(false);
         }
     }, []);
 
@@ -138,7 +142,7 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setPushSuccess(false);
         setPushError(null);
         if (typeInfo) {
-            await processImage(file, fitMode, typeInfo, flipped);
+            await processImage(file, fitMode, typeInfo, rotation);
         }
     };
 
@@ -148,17 +152,17 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         setFitMode(newMode);
         setPushSuccess(false);
         if (selectedFile && typeInfo) {
-            await processImage(selectedFile, newMode, typeInfo, flipped);
+            await processImage(selectedFile, newMode, typeInfo, rotation);
         }
     };
 
-    // Handle flip toggle
-    const handleFlipToggle = async () => {
-        const newFlipped = !flipped;
-        setFlipped(newFlipped);
+    // Handle rotation (90° clockwise each press)
+    const handleRotate = async () => {
+        const newRotation = (rotation + 1) % 4;
+        setRotation(newRotation);
         setPushSuccess(false);
         if (selectedFile && typeInfo) {
-            await processImage(selectedFile, fitMode, typeInfo, newFlipped);
+            await processImage(selectedFile, fitMode, typeInfo, newRotation);
         }
     };
 
@@ -219,9 +223,18 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
         }
     };
 
+    const rotationLabel = rotation > 0 ? `${rotation * 90}°` : '';
+
     return (
         <>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
+            <Dialog
+                open={open}
+                onClose={onClose}
+                maxWidth="sm"
+                fullWidth
+                fullScreen={isMobile}
+                disableAutoFocus
+            >
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography variant="h6">
@@ -271,22 +284,28 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
 
                             {typeInfo && (
                                 <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
-                                    <Chip
-                                        label={`${typeInfo.displayWidth}×${typeInfo.displayHeight} px`}
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                    />
-                                    <Chip
-                                        label={typeInfo.colorType}
-                                        size="small"
-                                        variant="outlined"
-                                    />
-                                    <Chip
-                                        label={typeInfo.name}
-                                        size="small"
-                                        variant="outlined"
-                                    />
+                                    {typeInfo.displayWidth > 0 && typeInfo.displayHeight > 0 && (
+                                        <Chip
+                                            label={`${typeInfo.displayWidth}×${typeInfo.displayHeight} px`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                    {typeInfo.colorType && (
+                                        <Chip
+                                            label={typeInfo.colorType}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    )}
+                                    {typeInfo.name && (
+                                        <Chip
+                                            label={typeInfo.name}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    )}
                                     {typeInfo.nfc && (
                                         <Chip label="NFC" size="small" color="info" variant="outlined" />
                                     )}
@@ -312,9 +331,24 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                                         textAlign: 'center',
                                         cursor: 'pointer',
                                         bgcolor: 'action.hover',
+                                        position: 'relative',
                                         '&:hover': { borderColor: 'primary.main' },
                                     }}
                                 >
+                                    {isProcessing && (
+                                        <Box sx={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            bgcolor: 'rgba(255,255,255,0.7)',
+                                            borderRadius: 2,
+                                            zIndex: 1,
+                                        }}>
+                                            <CircularProgress />
+                                        </Box>
+                                    )}
                                     <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
                                     <Typography variant="body2" color="text.secondary">
                                         {selectedFile
@@ -341,42 +375,47 @@ export function AssignImageDialog({ open, onClose, onSuccess, initialLabelCode }
                             </Alert>
                         )}
 
-                        {/* Section 3: Fit Mode & Flip */}
+                        {/* Section 3: Fit Mode & Rotate */}
                         {typeInfo && selectedFile && (
                             <Box>
                                 <Typography variant="subtitle2" gutterBottom>
                                     {t('imageLabels.dialog.fitMode', 'Fit Mode')}
                                 </Typography>
-                                <Stack direction="row" spacing={1} alignItems="center">
+                                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
                                     <ToggleButtonGroup
                                         value={fitMode}
                                         exclusive
                                         onChange={handleFitModeChange}
                                         size="small"
-                                        sx={{ flex: 1 }}
+                                        dir="ltr"
+                                        aria-label={t('imageLabels.dialog.ariaFitMode', 'image fit mode')}
                                     >
-                                        <ToggleButton value="contain">
+                                        <ToggleButton value="contain" sx={{ gap: 0.5 }}>
                                             {t('imageLabels.dialog.fitContain', 'Contain')}
                                         </ToggleButton>
-                                        <ToggleButton value="cover">
+                                        <ToggleButton value="cover" sx={{ gap: 0.5 }}>
                                             {t('imageLabels.dialog.fitCover', 'Cover')}
                                         </ToggleButton>
-                                        <ToggleButton value="fill">
+                                        <ToggleButton value="fill" sx={{ gap: 0.5 }}>
                                             {t('imageLabels.dialog.fitFill', 'Fill')}
                                         </ToggleButton>
                                     </ToggleButtonGroup>
-                                    <ToggleButton
-                                        value="flip"
-                                        selected={flipped}
-                                        onChange={handleFlipToggle}
+                                    <IconButton
+                                        onClick={handleRotate}
                                         size="small"
-                                        title={t('imageLabels.dialog.flipTooltip', 'Rotate 180°')}
+                                        color={rotation > 0 ? 'primary' : 'default'}
+                                        title={t('imageLabels.dialog.rotateTooltip', 'Rotate 90°')}
+                                        sx={{ ml: 1 }}
                                     >
-                                        <FlipIcon sx={{ mr: 0.5 }} fontSize="small" />
-                                        {t('imageLabels.dialog.flip', 'Flip')}
-                                    </ToggleButton>
-                                </Stack>
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                        <RotateIcon />
+                                        {rotationLabel && (
+                                            <Typography variant="caption" sx={{ fontSize: '0.65rem', ml: 0.25 }}>
+                                                {rotationLabel}
+                                            </Typography>
+                                        )}
+                                    </IconButton>
+                                </Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
                                     {fitMode === 'contain' && t('imageLabels.dialog.fitContainHelp', 'Fits image within label, may add white bars')}
                                     {fitMode === 'cover' && t('imageLabels.dialog.fitCoverHelp', 'Fills label completely, may crop image')}
                                     {fitMode === 'fill' && t('imageLabels.dialog.fitFillHelp', 'Stretches image to fill label exactly')}
