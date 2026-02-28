@@ -211,12 +211,12 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
         }
     };
 
-    // Focus scanner input when in scanner mode
+    // Focus scanner input when in scanner mode (desktop only — on mobile it opens the virtual keyboard)
     useEffect(() => {
-        if (open && inputType === 'scanner' && scannerInputRef.current) {
+        if (open && inputType === 'scanner' && scannerInputRef.current && !isMobile) {
             setTimeout(() => scannerInputRef.current?.focus(), 100);
         }
-    }, [open, inputType]);
+    }, [open, inputType, isMobile]);
 
     // Start camera when camera mode is selected
     useEffect(() => {
@@ -248,7 +248,7 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
     }, [open, stopCamera]);
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile} disableAutoFocus disableRestoreFocus>
             <DialogTitle>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="h6">
@@ -319,7 +319,6 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                                     borderRadius: '4px',
                                     marginTop: '16px',
                                 }}
-                                autoFocus
                             />
                         </Box>
                     </Box>
@@ -417,7 +416,6 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                                 border: '1px solid #ccc',
                                 borderRadius: '4px',
                             }}
-                            autoFocus
                         />
                     </Box>
                 )}
