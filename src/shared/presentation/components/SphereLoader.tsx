@@ -1,4 +1,5 @@
 import { useRef, useEffect, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SphereLoaderProps {
     width?: number;
@@ -16,6 +17,9 @@ export const SphereLoader = memo(function SphereLoader({
     width = 440,
     height = 280,
 }: SphereLoaderProps) {
+    const { t, i18n } = useTranslation();
+    const loadingText = t('common.loading', 'Loading...').replace(/\.{1,3}$/, '').toUpperCase();
+    const isRtl = i18n.dir() === 'rtl';
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgRef = useRef<HTMLImageElement | null>(null);
     const stateRef = useRef({
@@ -135,9 +139,9 @@ export const SphereLoader = memo(function SphereLoader({
 
         function drawLoadingText(time: number) {
             const textY = FLOOR_Y + BALL_RADIUS + 42 * scale;
-            const fontSize = Math.round(12 * scale);
+            const fontSize = Math.round(16 * scale);
 
-            const letters = 'LOADING';
+            const letters = loadingText;
             const spacing = fontSize * 1.1;
             const totalWidth = letters.length * spacing;
             const startX = (width - totalWidth) / 2 + spacing / 2;
@@ -147,18 +151,25 @@ export const SphereLoader = memo(function SphereLoader({
                 const alpha = 0.3 + wave * 0.15 + 0.2;
                 const yOff = wave * 2 * scale;
 
+                // RTL: first letter on the right, last on the left
+                const posIndex = isRtl ? letters.length - 1 - i : i;
+
                 ctx!.fillStyle = 'rgba(0,200,255,' + alpha.toFixed(3) + ')';
-                ctx!.font = '800 ' + fontSize + 'px system-ui, sans-serif';
-                ctx!.shadowColor = 'rgba(0,180,255,0.6)';
-                ctx!.shadowBlur = 12 * scale;
+                ctx!.font = '800 ' + fontSize + 'px "Assistant", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+                ctx!.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx!.shadowBlur = 4 * scale;
                 ctx!.shadowOffsetX = 0;
-                ctx!.shadowOffsetY = 2 * scale;
+                ctx!.shadowOffsetY = 1 * scale;
                 ctx!.textAlign = 'center';
                 ctx!.textBaseline = 'middle';
-                ctx!.fillText(letters[i], startX + i * spacing, textY + yOff);
+                ctx!.fillText(letters[i], startX + posIndex * spacing, textY + yOff);
             }
 
-            const dotsX = startX + letters.length * spacing + spacing * 0.3;
+            // Dots: after text (right for LTR, left for RTL)
+            const dotsDir = isRtl ? -1 : 1;
+            const dotsX = isRtl
+                ? startX - spacing * 0.8
+                : startX + letters.length * spacing + spacing * 0.3;
             for (let d = 0; d < 3; d++) {
                 const dotPhase = (time * 2 - d * 0.4) % 1;
                 const dotAlpha = dotPhase > 0 ? 0.25 + 0.4 * Math.max(0, Math.sin(dotPhase * Math.PI)) : 0;
@@ -166,7 +177,7 @@ export const SphereLoader = memo(function SphereLoader({
 
                 ctx!.fillStyle = 'rgba(0,200,255,' + dotAlpha.toFixed(3) + ')';
                 ctx!.beginPath();
-                ctx!.arc(dotsX + d * fontSize * 0.6, dotY, 2.2 * scale, 0, Math.PI * 2);
+                ctx!.arc(dotsX + d * fontSize * 0.6 * dotsDir, dotY, 2.2 * scale, 0, Math.PI * 2);
                 ctx!.fill();
             }
             ctx!.shadowColor = 'transparent';
@@ -215,7 +226,7 @@ export const SphereLoader = memo(function SphereLoader({
 
         raf = requestAnimationFrame(frame);
         return () => cancelAnimationFrame(raf);
-    }, [width, height]);
+    }, [width, height, loadingText, isRtl]);
 
     return (
         <canvas
