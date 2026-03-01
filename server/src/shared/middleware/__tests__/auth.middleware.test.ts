@@ -18,7 +18,7 @@ vi.mock('jsonwebtoken', () => ({
 }));
 
 import jwt from 'jsonwebtoken';
-import { authenticate, authorize, requireGlobalRole, requirePermission } from '../auth.js';
+import { authenticate, requireGlobalRole, requirePermission } from '../auth.js';
 import { prisma } from '../../../config/index.js';
 
 function createMocks(overrides: Partial<Request> = {}) {
@@ -74,27 +74,6 @@ describe('requireGlobalRole', () => {
         req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [], companies: [] };
         mw(req, res, next);
         expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('global role') }));
-    });
-});
-
-describe('authorize', () => {
-    beforeEach(() => vi.clearAllMocks());
-
-    it('should allow PLATFORM_ADMIN', async () => {
-        const mw = authorize('Admin');
-        const { req, res, next } = createMocks();
-        req.user = { id: '1', email: 'a@b.com', globalRole: 'PLATFORM_ADMIN' as any, stores: [], companies: [] };
-        await mw(req, res, next);
-        expect(next).toHaveBeenCalledWith();
-    });
-
-    it('should reject non-matching role', async () => {
-        const mw = authorize('Admin');
-        const { req, res, next } = createMocks();
-        req.user = { id: '1', email: 'a@b.com', globalRole: null, stores: [{ id: 's1', roleId: 'role-viewer', companyId: 'c1' }], companies: [] };
-        (prisma.role.findUnique as any).mockResolvedValue({ name: 'Viewer' });
-        await mw(req, res, next);
-        expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('permissions') }));
     });
 });
 

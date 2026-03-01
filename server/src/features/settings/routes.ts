@@ -31,7 +31,7 @@ router.put('/store/:storeId', requirePermission('settings', 'update'), settingsC
 router.get('/company/:companyId', settingsController.getCompanySettings);
 
 // Update company settings
-router.put('/company/:companyId', settingsController.updateCompanySettings);
+router.put('/company/:companyId', requirePermission('settings', 'update'), settingsController.updateCompanySettings);
 
 // ======================
 // Field Mappings (Company-Level)
@@ -41,7 +41,7 @@ router.put('/company/:companyId', settingsController.updateCompanySettings);
 router.get('/company/:companyId/field-mappings', settingsController.getFieldMappings);
 
 // Update field mappings
-router.put('/company/:companyId/field-mappings', settingsController.updateFieldMappings);
+router.put('/company/:companyId/field-mappings', requirePermission('settings', 'update'), settingsController.updateFieldMappings);
 
 // ======================
 // Article Format (Company-Level)
@@ -51,7 +51,7 @@ router.put('/company/:companyId/field-mappings', settingsController.updateFieldM
 router.get('/company/:companyId/article-format', settingsController.getArticleFormat);
 
 // Update article format (saves to DB + pushes to AIMS)
-router.put('/company/:companyId/article-format', settingsController.updateArticleFormat);
+router.put('/company/:companyId/article-format', requirePermission('settings', 'update'), settingsController.updateArticleFormat);
 
 // ======================
 // AIMS Configuration

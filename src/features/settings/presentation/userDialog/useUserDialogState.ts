@@ -572,16 +572,30 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
 
     const getRoleLabel = useCallback(() => {
         if (userData?.globalRole === 'PLATFORM_ADMIN') return t('roles.platform_admin');
-        // Check company-level roleId
-        const companyRoleId = userData?.companies?.[0]?.roleId;
-        if (companyRoleId) {
-            const roleKey = companyRoleId.startsWith('role-') ? companyRoleId.substring(5) : companyRoleId;
-            return t(`roles.${roleKey}`, roleKey);
+        if (userData?.globalRole === 'APP_VIEWER') return t('settings.users.role.appViewer');
+
+        // Find the highest-priority role across all company and store assignments
+        const ROLE_PRIORITY: Record<string, number> = { 'role-admin': 4, 'role-manager': 3, 'role-employee': 2, 'role-viewer': 1 };
+        let highestRole = '';
+        let highestPriority = 0;
+
+        for (const c of userData?.companies || []) {
+            const rid = c?.roleId;
+            if (rid && (ROLE_PRIORITY[rid] || 0) > highestPriority) {
+                highestPriority = ROLE_PRIORITY[rid] || 0;
+                highestRole = rid;
+            }
         }
-        // Check store-level roleId
-        const storeRoleId = userData?.stores?.[0]?.roleId;
-        if (storeRoleId) {
-            const roleKey = storeRoleId.startsWith('role-') ? storeRoleId.substring(5) : storeRoleId;
+        for (const s of userData?.stores || []) {
+            const rid = s?.roleId;
+            if (rid && (ROLE_PRIORITY[rid] || 0) > highestPriority) {
+                highestPriority = ROLE_PRIORITY[rid] || 0;
+                highestRole = rid;
+            }
+        }
+
+        if (highestRole) {
+            const roleKey = highestRole.startsWith('role-') ? highestRole.substring(5) : highestRole;
             return t(`roles.${roleKey}`, roleKey);
         }
         return t('roles.viewer');
