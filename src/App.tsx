@@ -1,6 +1,5 @@
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box, CircularProgress, Typography } from '@mui/material';
 import { HashRouter } from 'react-router-dom';
 import { createAppTheme } from './theme';
 import { AppRoutes } from './AppRoutes';
@@ -9,6 +8,7 @@ import { NotificationContainer } from './shared/presentation/components/Notifica
 
 import { CustomTitleBar } from './shared/presentation/components/CustomTitleBar';
 import { ErrorBoundary } from './shared/presentation/components/ErrorBoundary';
+import { AppLoadingScreen } from './shared/presentation/components/AppLoadingScreen';
 import { useTokenRefresh } from './features/settings/application/useTokenRefresh';
 import { useAuthWatchdog } from './features/auth/application/useAuthWatchdog';
 import { useSessionRestore } from './features/auth/application/useSessionRestore';
@@ -33,7 +33,7 @@ function AuthWatchdogWrapper({ children }: { children: React.ReactNode }) {
  * Supports dynamic RTL/LTR switching based on language
  */
 function App() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isAppReady = useAuthStore((state) => state.isAppReady);
   const isSwitchingStore = useAuthStore((state) => state.isSwitchingStore);
 
@@ -70,21 +70,7 @@ function App() {
         <HashRouter>
           <AuthWatchdogWrapper>
             {!isAppReady || isSwitchingStore ? (
-              <Box
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                minHeight="100vh"
-                gap={2}
-              >
-                <CircularProgress size={60} />
-                <Typography variant="h6" color="text.secondary">
-                  {isSwitchingStore
-                    ? t('app.switchingStore', 'Switching store...')
-                    : t('app.loadingApplication', 'Loading application...')}
-                </Typography>
-              </Box>
+              <AppLoadingScreen />
             ) : (
               <>
                 <MainLayout>

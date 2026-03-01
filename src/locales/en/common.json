@@ -275,7 +275,24 @@
         "delete": "Delete",
         "totalSpaces": "Total",
         "noSpacesMatching": "No {{spaces}} found matching",
-        "noSpacesYet": "No {{spaces}} yet. Click {{button}} to get started."
+        "noSpacesYet": "No {{spaces}} yet. Click {{button}} to get started.",
+        "sync": {
+            "title": "AIMS Sync",
+            "connected": "Connected to AIMS",
+            "disconnected": "Disconnected from AIMS",
+            "pending": "pending",
+            "pendingSpaces": "pending",
+            "synced": "synced",
+            "errors": "errors",
+            "lastSync": "Last sync",
+            "pull": "Pull from AIMS",
+            "push": "Push to AIMS",
+            "fullSync": "Full Sync",
+            "pullResult": "Pulled: {{created}} new, {{updated}} updated, {{unchanged}} unchanged",
+            "pushResult": "Pushed: {{processed}} processed, {{pending}} still pending",
+            "fullResult": "Full sync complete",
+            "error": "Sync failed"
+        }
     },
     "conference": {
         "title": "Conference Rooms",
@@ -453,6 +470,15 @@
         "connecting": "Connecting...",
         "reconnectFailed": "Failed to connect. Please check AIMS credentials in Company Settings.",
         "noStoreSelected": "No store selected. Please select a store from the header menu.",
+        "aims": {
+            "dialogTitle": "AIMS Settings",
+            "configure": "Configure",
+            "connectionSection": "Connection",
+            "syncSection": "Sync Settings",
+            "schemaSection": "Article Format",
+            "mappingSection": "Field Mapping",
+            "manageInCompanies": "Manage AIMS credentials, sync settings, and field mappings from the Companies tab."
+        },
         "syncSettings": "Sync Settings",
         "schemaFetchedSuccess": "Schema fetched successfully!",
         "schemaFetchedError": "Failed to fetch schema: {{error}}",

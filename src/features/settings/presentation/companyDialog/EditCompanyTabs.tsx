@@ -1,5 +1,6 @@
 /**
- * EditCompanyTabs - Edit mode with Basic Info and AIMS Config tabs
+ * EditCompanyTabs - Edit mode with Basic Info and Features tabs
+ * AIMS configuration is accessed via the unified AIMSSettingsDialog
  */
 import {
     DialogTitle,
@@ -15,24 +16,24 @@ import {
     Switch,
     Tabs,
     Tab,
-    IconButton,
     Divider,
     FormControl,
     InputLabel,
     Select,
     MenuItem,
+    Chip,
+    Stack,
 } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import CloudIcon from '@mui/icons-material/Cloud';
 import BusinessIcon from '@mui/icons-material/Business';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
 import TuneIcon from '@mui/icons-material/Tune';
+import CloudIcon from '@mui/icons-material/Cloud';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import { useState, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { useCompanyDialogState } from './useCompanyDialogState';
+
+const AIMSSettingsDialog = lazy(() => import('../AIMSSettingsDialog'));
 
 function TabPanel({ children, value, index }: { children?: React.ReactNode; index: number; value: number }) {
     return (
@@ -51,6 +52,7 @@ interface Props {
 
 export function EditCompanyTabs({ state, onClose }: Props) {
     const { t } = useTranslation();
+    const [aimsDialogOpen, setAimsDialogOpen] = useState(false);
 
     return (
         <>
@@ -68,7 +70,6 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     variant="fullWidth"
                 >
                     <Tab icon={<BusinessIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.basicInfo')} sx={{ minHeight: 48 }} />
-                    <Tab icon={<CloudIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.aimsConfig')} sx={{ minHeight: 48 }} />
                     <Tab icon={<TuneIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.featuresTab', 'Features')} sx={{ minHeight: 48 }} />
                 </Tabs>
 
@@ -107,11 +108,37 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             control={<Switch checked={state.isActive} onChange={(e) => state.setIsActive(e.target.checked)} />}
                             label={t('settings.companies.activeLabel')}
                         />
+
+                        {/* AIMS Settings Quick Access */}
+                        <Divider />
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                            <Stack direction="row" alignItems="center" gap={1}>
+                                <CloudIcon fontSize="small" color={state.isConnected ? 'success' : 'disabled'} />
+                                <Typography variant="body2">
+                                    {t('settings.aims.dialogTitle', 'AIMS Settings')}
+                                </Typography>
+                                {state.isConnected ? (
+                                    <Chip label={t('settings.companies.connectedToAims')} size="small" color="success" variant="outlined" icon={<CheckCircleIcon />} />
+                                ) : state.company?.aimsConfigured ? (
+                                    <Chip label={t('settings.companies.aimsConfigured')} size="small" color="warning" variant="outlined" />
+                                ) : (
+                                    <Chip label={t('settings.companies.aimsNotConfigured')} size="small" variant="outlined" icon={<CloudOffIcon />} />
+                                )}
+                            </Stack>
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<CloudIcon />}
+                                onClick={() => setAimsDialogOpen(true)}
+                            >
+                                {t('settings.aims.configure', 'Configure')}
+                            </Button>
+                        </Stack>
                     </Box>
                 </TabPanel>
 
                 {/* Features Tab */}
-                <TabPanel value={state.activeTab} index={2}>
+                <TabPanel value={state.activeTab} index={1}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <FormControl fullWidth>
                             <InputLabel>{t('settings.companies.spaceTypeLabel', 'Space Type')}</InputLabel>
@@ -215,109 +242,6 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                         />
                     </Box>
                 </TabPanel>
-
-                {/* AIMS Config Tab */}
-                <TabPanel value={state.activeTab} index={1}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {state.isConnected ? (
-                            <Alert severity="success" sx={{ mb: 1 }}>{t('settings.companies.connectedToAims')}</Alert>
-                        ) : (
-                            <Alert severity="info" sx={{ mb: 1 }}>{t('settings.companies.aimsConfigInfo')}</Alert>
-                        )}
-                        <FormControl fullWidth disabled={state.isConnected}>
-                            <InputLabel>{t('settings.companies.aimsCluster')}</InputLabel>
-                            <Select
-                                value={state.aimsCluster || 'c1'}
-                                label={t('settings.companies.aimsCluster')}
-                                onChange={(e) => {
-                                    const cluster = e.target.value;
-                                    state.handleAimsFieldChange(state.setAimsCluster)(cluster);
-                                    const baseUrl = cluster === 'common' ? 'https://eu.common.solumesl.com/common' : 'https://eu.common.solumesl.com/c1/common';
-                                    state.handleAimsFieldChange(state.setAimsBaseUrl)(baseUrl);
-                                }}
-                            >
-                                <MenuItem value="c1">C1 (eu.common.solumesl.com/c1/common)</MenuItem>
-                                <MenuItem value="common">Common (eu.common.solumesl.com/common)</MenuItem>
-                            </Select>
-                        </FormControl>
-                        <TextField label={t('settings.companies.aimsBaseUrl')} value={state.aimsBaseUrl} disabled helperText={t('settings.companies.aimsBaseUrlHelp')} />
-                        <TextField
-                            label={t('settings.companies.aimsUsername')}
-                            value={state.aimsUsername}
-                            onChange={(e) => state.handleAimsFieldChange(state.setAimsUsername)(e.target.value)}
-                            placeholder="admin@company.com"
-                            disabled={state.isConnected}
-                        />
-                        <Box sx={{ display: 'flex', flexDirection: state.isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
-                            <TextField
-                                label={t('settings.companies.aimsPassword')}
-                                type={state.showPassword ? 'text' : 'password'}
-                                value={state.aimsPassword}
-                                onChange={(e) => state.handleAimsFieldChange(state.setAimsPassword)(e.target.value)}
-                                placeholder={t('settings.companies.aimsPasswordPlaceholder')}
-                                sx={{ flex: 1 }}
-                                disabled={state.isConnected}
-                            />
-                            <IconButton
-                                onClick={() => state.setShowPassword(!state.showPassword)}
-                                disabled={state.isConnected}
-                                sx={{ mt: 1, border: 1, borderColor: 'divider', borderRadius: 1, width: 40, height: 40 }}
-                            >
-                                {state.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                            </IconButton>
-                        </Box>
-                        {state.company && (
-                            <>
-                                <Divider sx={{ my: 1 }} />
-                                <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        {state.isConnected ? (
-                                            <>
-                                                <CheckCircleIcon color="success" fontSize="small" />
-                                                <Typography variant="body2" color="success.main">{t('settings.companies.connectedToAims')}</Typography>
-                                            </>
-                                        ) : state.company.aimsConfigured ? (
-                                            <>
-                                                <ErrorIcon color="warning" fontSize="small" />
-                                                <Typography variant="body2" color="warning.main">{t('settings.companies.aimsConfigured')}</Typography>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ErrorIcon color="warning" fontSize="small" />
-                                                <Typography variant="body2" color="warning.main">{t('settings.companies.aimsNotConfigured')}</Typography>
-                                            </>
-                                        )}
-                                    </Box>
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                        {state.isConnected && (
-                                            <Button size="small" variant="outlined" color="warning" startIcon={<LinkOffIcon />} onClick={state.handleDisconnect}>
-                                                {t('settings.companies.disconnect')}
-                                            </Button>
-                                        )}
-                                        {!state.isConnected && (state.company.aimsConfigured || (state.aimsBaseUrl && state.aimsCluster && state.aimsUsername)) && (
-                                            <Button
-                                                size="small" variant="outlined"
-                                                startIcon={state.testingConnection ? <CircularProgress size={14} /> : <RefreshIcon />}
-                                                onClick={state.handleTestConnection}
-                                                disabled={state.testingConnection}
-                                            >
-                                                {state.aimsChanged ? t('settings.companies.saveAndTest') : t('settings.companies.testConnection')}
-                                            </Button>
-                                        )}
-                                    </Box>
-                                </Box>
-                                {state.connectionTestResult && (
-                                    <Alert severity={state.connectionTestResult.success ? 'success' : 'error'} sx={{ mt: 1 }} onClose={() => state.setConnectionTestResult(null)}>
-                                        {state.connectionTestResult.message}
-                                    </Alert>
-                                )}
-                                {state.aimsChanged && !state.isConnected && (
-                                    <Alert severity="info" sx={{ mt: 1 }}>{t('settings.companies.aimsChangesPending')}</Alert>
-                                )}
-                            </>
-                        )}
-                    </Box>
-                </TabPanel>
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={state.submitting}>{t('common.cancel')}</Button>
@@ -325,6 +249,19 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     {t('common.save')}
                 </Button>
             </DialogActions>
+
+            {/* AIMS Settings Dialog */}
+            {state.company && (
+                <Suspense fallback={null}>
+                    {aimsDialogOpen && (
+                        <AIMSSettingsDialog
+                            open={true}
+                            onClose={() => setAimsDialogOpen(false)}
+                            company={state.company}
+                        />
+                    )}
+                </Suspense>
+            )}
         </>
     );
 }

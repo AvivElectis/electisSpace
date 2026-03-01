@@ -37,9 +37,11 @@ interface ElevateUserDialogProps {
     onClose: () => void;
     onSuccess: () => void;
     user: User;
+    /** Roles the caller is allowed to assign. Defaults to all. */
+    allowedRoles?: AppRole[];
 }
 
-export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUserDialogProps) {
+export function ElevateUserDialog({ open, onClose, onSuccess, user, allowedRoles }: ElevateUserDialogProps) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -165,7 +167,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user }: ElevateUse
                         value={selectedRole}
                         onChange={(e) => setSelectedRole(e.target.value as AppRole)}
                     >
-                        {roleOptions.map((option) => (
+                        {roleOptions.filter(o => !allowedRoles || allowedRoles.includes(o.value)).map((option) => (
                             <Box
                                 key={option.value}
                                 sx={{

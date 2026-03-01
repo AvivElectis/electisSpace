@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
 import { logger } from '@shared/infrastructure/services/logger';
 import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
+import { getAllowedStoreRoles } from '@features/auth/application/permissionHelpers';
 
 // Available features
 const AVAILABLE_FEATURES = [
@@ -70,6 +71,8 @@ interface StoreAssignmentProps {
     defaultFeatures?: string[];
     /** Company-level enabled features — filters which features are shown */
     companyEnabledFeatures?: string[];
+    /** Target user's global role — constrains available store roles for APP_VIEWER users */
+    targetGlobalRole?: string | null;
 }
 
 function isAdminRole(roleId: string): boolean {
@@ -85,6 +88,7 @@ export function StoreAssignment({
     defaultRoleId = 'role-viewer',
     defaultFeatures = ['dashboard'],
     companyEnabledFeatures,
+    targetGlobalRole,
 }: StoreAssignmentProps) {
     const { t } = useTranslation();
     const { roles, fetchRoles } = useRolesStore();
@@ -329,7 +333,7 @@ export function StoreAssignment({
                                             )}
                                             disabled={disabled}
                                         >
-                                            {roles.map(role => (
+                                            {roles.filter(r => getAllowedStoreRoles(targetGlobalRole).includes(r.id)).map(role => (
                                                 <MenuItem key={role.id} value={role.id}>
                                                     {t(`roles.${role.name.toLowerCase()}`, role.name)}
                                                 </MenuItem>

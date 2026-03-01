@@ -281,7 +281,24 @@
         "noSpacesYet": "עדיין אין {{spaces}}. לחץ על {{button}} כדי להתחיל.",
         "idCannotChange": "לא ניתן לשנות את המזהה",
         "uniqueIdentifier": "מזהה ייחודי",
-        "additionalInfo": "מידע נוסף"
+        "additionalInfo": "מידע נוסף",
+        "sync": {
+            "title": "סנכרון AIMS",
+            "connected": "מחובר ל-AIMS",
+            "disconnected": "מנותק מ-AIMS",
+            "pending": "ממתין",
+            "pendingSpaces": "ממתין",
+            "synced": "מסונכרן",
+            "errors": "שגיאות",
+            "lastSync": "סנכרון אחרון",
+            "pull": "משיכה מ-AIMS",
+            "push": "דחיפה ל-AIMS",
+            "fullSync": "סנכרון מלא",
+            "pullResult": "נמשכו: {{created}} חדשים, {{updated}} עודכנו, {{unchanged}} ללא שינוי",
+            "pushResult": "נדחפו: {{processed}} עובדו, {{pending}} עדיין ממתינים",
+            "fullResult": "סנכרון מלא הושלם",
+            "error": "הסנכרון נכשל"
+        }
     },
     "conference": {
         "title": "חדרי ישיבות",
@@ -463,6 +480,15 @@
         "connecting": "מתחבר...",
         "reconnectFailed": "החיבור נכשל. אנא בדוק את אישורי AIMS בהגדרות חברה.",
         "noStoreSelected": "לא נבחרה חנות. אנא בחר חנות מתפריט הכותרת.",
+        "aims": {
+            "dialogTitle": "הגדרות AIMS",
+            "configure": "הגדר",
+            "connectionSection": "חיבור",
+            "syncSection": "הגדרות סינכרון",
+            "schemaSection": "פורמט מאמר",
+            "mappingSection": "מיפוי שדות",
+            "manageInCompanies": "נהל אישורי AIMS, הגדרות סינכרון ומיפוי שדות מלשונית חברות."
+        },
         "syncSettings": "הגדרות סינכרון",
         "schemaFetchedSuccess": "הסכמה נשלפה בהצלחה!",
         "schemaFetchedError": "שליפת הסכמה נכשלה: {{error}}",

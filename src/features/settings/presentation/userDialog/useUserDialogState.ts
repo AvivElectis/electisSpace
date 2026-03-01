@@ -6,11 +6,14 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@mui/material';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { canElevateUser, getAllowedAppRoles } from '@features/auth/application/permissionHelpers';
 import { companyService, type Company, type CreateCompanyDto } from '@shared/infrastructure/services/companyService';
 import type { CompanyFeatures } from '@shared/infrastructure/services/authService';
 import api from '@shared/infrastructure/services/apiClient';
 import { logger } from '@shared/infrastructure/services/logger';
 import type { UserData, StoreAssignmentData } from './types';
+
+type AppRole = 'PLATFORM_ADMIN' | 'APP_VIEWER' | 'USER';
 
 interface Params {
     open: boolean;
@@ -96,6 +99,10 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
+
+    // App Role
+    const [appRole, setAppRole] = useState<AppRole>('USER');
+    const initialAppRole = useRef<AppRole>('USER');
 
     // Company Assignment
     const [selectedCompanyId, setSelectedCompanyId] = useState('');
@@ -192,6 +199,11 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 setIsActive(userToUse.isActive);
                 setPassword('');
 
+                const role: AppRole = userToUse.globalRole === 'PLATFORM_ADMIN' ? 'PLATFORM_ADMIN'
+                    : userToUse.globalRole === 'APP_VIEWER' ? 'APP_VIEWER' : 'USER';
+                setAppRole(role);
+                initialAppRole.current = role;
+
                 const firstCompanyAssignment = userToUse.companies?.[0];
                 if (firstCompanyAssignment) {
                     setSelectedCompanyId(firstCompanyAssignment.company.id);
@@ -219,6 +231,8 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
                 setPhone('');
                 setPassword('');
                 setIsActive(true);
+                setAppRole('USER');
+                initialAppRole.current = 'USER';
                 setSelectedCompanyId('');
                 setIsCreatingCompany(false);
                 setNewCompanyData({ code: '', name: '' });
@@ -264,6 +278,18 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         return enabled;
     }, [selectedCompanyFeatures]);
 
+    // App role permissions
+    const canEditAppRole = useMemo(() => {
+        if (!userData || !currentUser) return false;
+        return canElevateUser(currentUser, {
+            id: userData.id,
+            globalRole: userData.globalRole,
+            companies: userData.companies?.map(c => ({ id: c.company.id })),
+        });
+    }, [currentUser, userData]);
+
+    const allowedAppRoles = useMemo(() => getAllowedAppRoles(currentUser), [currentUser]);
+
     // Accessible company for non-platform admins
     const accessibleCompanyId = useMemo(() => {
         if (isPlatformAdmin) return null;
@@ -276,6 +302,10 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
             setSelectedCompanyId(accessibleCompanyId);
         }
     }, [isPlatformAdmin, accessibleCompanyId, isEdit]);
+
+    const handleAppRoleChange = useCallback((role: AppRole) => {
+        setAppRole(role);
+    }, []);
 
     const handleCompanyChange = useCallback((companyId: string, company?: Company) => {
         setSelectedCompanyId(companyId);
@@ -406,6 +436,13 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
 
                 await api.patch(`/users/${user.id}`, updateData);
 
+                // Update app role if changed
+                if (appRole !== initialAppRole.current) {
+                    await api.post(`/users/${user.id}/elevate`, {
+                        globalRole: appRole,
+                    });
+                }
+
                 // Handle company assignment
                 const userWithCompanies = fetchedUserData || user;
                 const existingCompanyAssignment = userWithCompanies.companies?.find(c => c.company.id === companyId);
@@ -512,7 +549,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         profileMode, firstName, lastName, phone, t, currentUser, setAuthUser, onSave,
         selectedCompanyId, isCreatingCompany, isEdit, user, newCompanyData,
         newPassword, confirmPassword, isActive, fetchedUserData, companyRoleId,
-        allStoresAccess, storeAssignments, email, password,
+        allStoresAccess, storeAssignments, email, password, appRole,
     ]);
 
     // Profile helpers
@@ -558,6 +595,9 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         firstName, setFirstName, lastName, setLastName,
         phone, setPhone, password, setPassword,
         isActive, setIsActive,
+
+        // App Role
+        appRole, handleAppRoleChange, canEditAppRole, allowedAppRoles,
 
         // Company
         selectedCompanyId, isCreatingCompany, setIsCreatingCompany,

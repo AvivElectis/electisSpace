@@ -720,6 +720,8 @@ export const userService = {
 
     /**
      * Elevate user role
+     *
+     * Only platform admins can change app-level roles (PLATFORM_ADMIN, APP_VIEWER, USER).
      */
     async elevate(userId: string, data: ElevateUserDto, currentUser: UserContext) {
         if (!isPlatformAdmin(currentUser)) {
@@ -759,6 +761,18 @@ export const userService = {
                     },
                 });
             }
+        }
+
+        // When setting to APP_VIEWER, downgrade any store/company roles above viewer
+        if (newGlobalRole === 'APP_VIEWER') {
+            await prisma.userCompany.updateMany({
+                where: { userId, roleId: { not: 'role-viewer' } },
+                data: { roleId: 'role-viewer' },
+            });
+            await prisma.userStore.updateMany({
+                where: { userId, roleId: { not: 'role-viewer' } },
+                data: { roleId: 'role-viewer' },
+            });
         }
 
         invalidateUserCache(userId);

@@ -56,19 +56,19 @@ describe('Permission System', () => {
     });
 
     describe('isCompanyAdmin', () => {
-        it('should return true for user with COMPANY_ADMIN role in company', () => {
+        it('should return true for user with admin role in company', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'COMPANY_ADMIN' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-admin' }),
                 ],
             });
             expect(isCompanyAdmin(user, 'c1')).toBe(true);
         });
 
-        it('should return false for user with VIEWER role in company', () => {
+        it('should return false for user with viewer role in company', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'VIEWER' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-viewer' }),
                 ],
             });
             expect(isCompanyAdmin(user, 'c1')).toBe(false);
@@ -78,7 +78,7 @@ describe('Permission System', () => {
             const user = createMockUser({
                 role: 'PLATFORM_ADMIN',
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'VIEWER' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-viewer' }),
                 ],
             });
             expect(isCompanyAdmin(user, 'c1')).toBe(true);
@@ -86,22 +86,22 @@ describe('Permission System', () => {
     });
 
     describe('isStoreAdmin', () => {
-        it('should return true for user with STORE_ADMIN role in store', () => {
+        it('should return true for user with admin role in store', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'VIEWER' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-viewer' }),
                 ],
-                stores: [createMockStore({ id: 's1', companyId: 'c1', role: 'STORE_ADMIN' })],
+                stores: [createMockStore({ id: 's1', companyId: 'c1', roleId: 'role-admin' })],
             });
             expect(isStoreAdmin(user, 's1')).toBe(true);
         });
 
-        it('should return true for COMPANY_ADMIN even with lower store role', () => {
+        it('should return true for company admin even with lower store role', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'COMPANY_ADMIN' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-admin' }),
                 ],
-                stores: [createMockStore({ id: 's1', companyId: 'c1', role: 'STORE_EMPLOYEE' })],
+                stores: [createMockStore({ id: 's1', companyId: 'c1', roleId: 'role-employee' })],
             });
             expect(isStoreAdmin(user, 's1')).toBe(true);
         });
@@ -111,9 +111,9 @@ describe('Permission System', () => {
         it('should check minimum role level correctly', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'VIEWER' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-viewer' }),
                 ],
-                stores: [createMockStore({ id: 's1', companyId: 'c1', role: 'STORE_MANAGER' })],
+                stores: [createMockStore({ id: 's1', companyId: 'c1', roleId: 'role-manager' })],
             });
 
             expect(hasStoreRole(user, 's1', 'STORE_VIEWER')).toBe(true);
@@ -127,7 +127,7 @@ describe('Permission System', () => {
         it('should allow access to assigned features', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'VIEWER' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-viewer' }),
                 ],
                 stores: [createMockStore({ 
                     id: 's1', 
@@ -147,7 +147,7 @@ describe('Permission System', () => {
             const user = createMockUser({
                 role: 'PLATFORM_ADMIN',
                 companies: [
-                    createMockCompany({ id: 'c1', role: 'VIEWER' }),
+                    createMockCompany({ id: 'c1', roleId: 'role-viewer' }),
                 ],
                 stores: [createMockStore({ id: 's1', companyId: 'c1', features: [] })],
             });
@@ -213,16 +213,16 @@ describe('Permission System', () => {
             expect(canManageUsers(user)).toBe(true);
         });
 
-        it('should allow COMPANY_ADMIN to manage users in their company', () => {
+        it('should allow company admin to manage users in their company', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'COMPANY_ADMIN' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-admin' })],
             });
             expect(canManageUsers(user, 'c1')).toBe(true);
         });
 
-        it('should not allow VIEWER to manage users', () => {
+        it('should not allow viewer to manage users', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'VIEWER' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-viewer' })],
             });
             expect(canManageUsers(user, 'c1')).toBe(false);
         });
@@ -241,16 +241,16 @@ describe('Permission System', () => {
             expect(canManageStores(user, 'any')).toBe(true);
         });
 
-        it('should allow COMPANY_ADMIN to manage stores in their company', () => {
+        it('should allow company admin to manage stores in their company', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'COMPANY_ADMIN' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-admin' })],
             });
             expect(canManageStores(user, 'c1')).toBe(true);
         });
 
-        it('should not allow VIEWER to manage stores', () => {
+        it('should not allow viewer to manage stores', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'VIEWER' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-viewer' })],
             });
             expect(canManageStores(user, 'c1')).toBe(false);
         });
@@ -262,16 +262,16 @@ describe('Permission System', () => {
             expect(canConfigureAIMS(user, 'any')).toBe(true);
         });
 
-        it('should allow COMPANY_ADMIN to configure AIMS for their company', () => {
+        it('should allow company admin to configure AIMS for their company', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'COMPANY_ADMIN' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-admin' })],
             });
             expect(canConfigureAIMS(user, 'c1')).toBe(true);
         });
 
-        it('should not allow VIEWER to configure AIMS', () => {
+        it('should not allow viewer to configure AIMS', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'VIEWER' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-viewer' })],
             });
             expect(canConfigureAIMS(user, 'c1')).toBe(false);
         });
@@ -283,18 +283,18 @@ describe('Permission System', () => {
             expect(canTriggerSync(user, 'any')).toBe(true);
         });
 
-        it('should allow STORE_MANAGER to trigger sync', () => {
+        it('should allow store manager to trigger sync', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'VIEWER' })],
-                stores: [createMockStore({ id: 's1', companyId: 'c1', role: 'STORE_MANAGER' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-viewer' })],
+                stores: [createMockStore({ id: 's1', companyId: 'c1', roleId: 'role-manager' })],
             });
             expect(canTriggerSync(user, 's1')).toBe(true);
         });
 
-        it('should not allow STORE_EMPLOYEE to trigger sync', () => {
+        it('should not allow store employee to trigger sync', () => {
             const user = createMockUser({
-                companies: [createMockCompany({ id: 'c1', role: 'VIEWER' })],
-                stores: [createMockStore({ id: 's1', companyId: 'c1', role: 'STORE_EMPLOYEE' })],
+                companies: [createMockCompany({ id: 'c1', roleId: 'role-viewer' })],
+                stores: [createMockStore({ id: 's1', companyId: 'c1', roleId: 'role-employee' })],
             });
             expect(canTriggerSync(user, 's1')).toBe(false);
         });
@@ -304,7 +304,7 @@ describe('Permission System', () => {
         it('should return Platform Admin as highest', () => {
             const user = createMockUser({
                 role: 'PLATFORM_ADMIN',
-                companies: [createMockCompany({ role: 'VIEWER' })],
+                companies: [createMockCompany({ roleId: 'role-viewer' })],
             });
             expect(getHighestRole(user)).toBe('App Admin');
         });
@@ -313,8 +313,8 @@ describe('Permission System', () => {
             const user = createMockUser({
                 role: 'USER',
                 companies: [
-                    createMockCompany({ role: 'VIEWER' }),
-                    createMockCompany({ role: 'COMPANY_ADMIN' }),
+                    createMockCompany({ roleId: 'role-viewer' }),
+                    createMockCompany({ roleId: 'role-admin' }),
                 ],
             });
             expect(getHighestRole(user)).toBe('Company Admin');
