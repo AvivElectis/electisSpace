@@ -284,7 +284,10 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
         return canElevateUser(currentUser, {
             id: userData.id,
             globalRole: userData.globalRole,
-            companies: userData.companies?.map(c => ({ id: c.company.id })),
+            companies: userData.companies?.map(c => ({
+                // Handle both nested (UserData) and flat (User from list) shapes
+                id: (c as any).company?.id ?? (c as any).id,
+            })),
         });
     }, [currentUser, userData]);
 
