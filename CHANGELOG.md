@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Permission test mock data** — tests used old enum-based role names (`COMPANY_ADMIN`, `STORE_ADMIN`) instead of current `roleId` values (`role-admin`, `role-manager`, etc.), causing 13 false failures
 - **SphereLoader crash in test environment** — `i18n.dir()` called without null check, failing in environments where `dir` is not mocked; now uses optional chaining
 - **LoadingFallback/RouteLoadingFallback tests outdated** — tests expected old skeleton/CircularProgress implementation but components now use SphereLoader; tests updated to match current behavior
+- **User dialog crash on open** — `canEditAppRole` useMemo crashed on `c.company.id` when user prop had flat company shape (from list API) instead of nested shape (from detail API); now handles both shapes
 
 ### Changed
 - **Chip and button padding** — added inline padding to chips (4px) and primary contained buttons (20px) for better visual spacing
