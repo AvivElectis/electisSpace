@@ -252,7 +252,11 @@ graph LR
     GLOBAL --> HANDLER
 ```
 
-The auth middleware uses a 60-second in-memory cache (max 500 entries) to reduce database queries. The cache is invalidated when user roles or store assignments change.
+The auth middleware uses a 60-second in-memory cache (max 500 entries) to reduce database queries. The cache is invalidated when user roles or store assignments change via `invalidateUserCache(userId)`. Similarly, role permission lookups are cached for 60 seconds and invalidated via `invalidateRoleCache(roleId)` when roles are updated or deleted.
+
+**Action Alias Normalization:** The `requirePermission()` middleware normalizes legacy action aliases (`read`→`view`, `update`→`edit`) before checking, ensuring consistent permission resolution regardless of which alias is used in route definitions.
+
+**Audit Logging:** All role mutation operations (`elevate`, `assignToStore`, `assignToCompany`, `updateUserStore`, `updateUserCompany`) log structured entries via `appLogger` with the category `'Roles'`, capturing the target user, new role, and who performed the change.
 
 SSE endpoints accept the token as a query parameter (`?token=...`) since `EventSource` does not support custom headers.
 

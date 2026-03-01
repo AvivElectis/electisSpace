@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **App role editing in user dialog** — platform admins can set/change a user's app role (Platform Admin, App Viewer, Regular User) directly from the user dialog via inline radio cards
 - **Roles audit remediation plan** — comprehensive 4-phase plan documenting 16 security, functional, and polish improvements for the roles system (`docs/plans/2026-03-01-roles-audit-remediation.md`)
 
+### Security
+- **Roles CRUD endpoints protected** — POST/PATCH/DELETE on `/api/v1/roles` now require `PLATFORM_ADMIN`; GET requires `settings:view` permission
+- **Elevate endpoint defense-in-depth** — `POST /users/:id/elevate` now has `requireGlobalRole('PLATFORM_ADMIN')` middleware guard
+- **Bulk user operations protected** — bulk deactivate/activate/role endpoints now require `users:edit` permission
+- **Settings write endpoints protected** — PUT on company settings, field-mappings, and article-format now require `settings:update` permission
+- **allStoresAccess privilege escalation fixed** — company managers with `allStoresAccess` no longer silently get admin permissions on expanded stores; uses actual company roleId instead of hardcoded `role-admin`
+- **requirePermission fallback fixed** — allStoresAccess companies now use their actual roleId for permission checks instead of hardcoded `role-admin`
+- **RoleId validation on user creation/assignment** — invalid roleId values now return 400 instead of opaque Prisma FK errors
+- **Action alias normalization** — `requirePermission()` now normalizes legacy `read`→`view` and `update`→`edit` aliases to prevent permission bypass from mismatched action names
+- **Role permissions cache invalidation** — roles service now invalidates permission cache on update/delete, preventing stale permissions being served for up to 60 seconds
+
 ### Fixed
 - **AIMS dither preview not working** — `solumService.fetchDitherPreview()` returned raw AIMS envelope without `extractResponseData()`, so the client received `{responseCode, responseMessage}` instead of image data; client now robustly extracts the image from multiple possible response shapes
 - **BarcodeScanner autofocus on mobile** — removed autofocus from scanner/manual inputs that triggered the virtual keyboard and hid the camera/scanner/manual tabs on mobile devices
@@ -28,8 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SphereLoader crash in test environment** — `i18n.dir()` called without null check, failing in environments where `dir` is not mocked; now uses optional chaining
 - **LoadingFallback/RouteLoadingFallback tests outdated** — tests expected old skeleton/CircularProgress implementation but components now use SphereLoader; tests updated to match current behavior
 - **User dialog crash on open** — `canEditAppRole` useMemo crashed on `c.company.id` when user prop had flat company shape (from list API) instead of nested shape (from detail API); now handles both shapes
+- **User table role chip broken** — role chip in user list accessed non-existent `.role` field instead of `.roleId`, causing company admin detection to always fail; refactored to use `getUserRoleDisplay()` helper with proper `roleId`-based detection
+- **User profile role label single-company** — `getRoleLabel()` only showed first company's role; now scans all company/store assignments and returns the highest-priority role
 
 ### Changed
+- **Dead `authorize()` middleware removed** — unused role-name-based middleware removed from auth module; replaced by `requirePermission()` and `requireGlobalRole()`
+- **APP_VIEWER self-service patterns extracted** — hardcoded URL exceptions moved to `APP_VIEWER_SELF_SERVICE_PATTERNS` constant for maintainability
+- **Audit logging for role changes** — all role mutations (elevate, assignToStore, assignToCompany, updateUserStore, updateUserCompany) now log structured audit entries via `appLogger`
+- **User table role scope indicators** — role chips now show "App Admin", "Company Admin", etc. with scope-aware labels instead of ambiguous "Admin"
 - **Chip and button padding** — added inline padding to chips (4px) and primary contained buttons (20px) for better visual spacing
 
 ### Changed
