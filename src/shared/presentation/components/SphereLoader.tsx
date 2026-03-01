@@ -19,7 +19,7 @@ export const SphereLoader = memo(function SphereLoader({
 }: SphereLoaderProps) {
     const { t, i18n } = useTranslation();
     const loadingText = t('common.loading', 'Loading...').replace(/\.{1,3}$/, '').toUpperCase();
-    const isRtl = i18n.dir() === 'rtl';
+    const isRtl = i18n.dir?.() === 'rtl';
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgRef = useRef<HTMLImageElement | null>(null);
     const stateRef = useRef({

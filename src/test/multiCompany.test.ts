@@ -23,10 +23,10 @@ describe('Multi-Company Scenarios', () => {
             // User only has access to Company A
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [
-                    createMockStore({ id: 'store_a1', companyId: 'company_a', role: 'STORE_ADMIN' }),
+                    createMockStore({ id: 'store_a1', companyId: 'company_a', roleId: 'role-admin' }),
                 ],
             });
 
@@ -42,7 +42,7 @@ describe('Multi-Company Scenarios', () => {
         it('should isolate features between stores', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [
                     createMockStore({ id: 'store_a1', companyId: 'company_a', features: ['dashboard', 'spaces'] }),
@@ -64,8 +64,8 @@ describe('Multi-Company Scenarios', () => {
         it('should allow switching between companies', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'COMPANY_ADMIN' }),
-                    createMockCompany({ id: 'company_b', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-admin' }),
+                    createMockCompany({ id: 'company_b', roleId: 'role-viewer' }),
                 ],
                 activeCompanyId: 'company_a',
             });
@@ -84,12 +84,12 @@ describe('Multi-Company Scenarios', () => {
         it('should have different permissions per company', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'COMPANY_ADMIN' }),
-                    createMockCompany({ id: 'company_b', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-admin' }),
+                    createMockCompany({ id: 'company_b', roleId: 'role-viewer' }),
                 ],
                 stores: [
-                    createMockStore({ id: 'store_a1', companyId: 'company_a', role: 'STORE_ADMIN' }),
-                    createMockStore({ id: 'store_b1', companyId: 'company_b', role: 'STORE_VIEWER' }),
+                    createMockStore({ id: 'store_a1', companyId: 'company_a', roleId: 'role-admin' }),
+                    createMockStore({ id: 'store_b1', companyId: 'company_b', roleId: 'role-viewer' }),
                 ],
             });
 
@@ -111,11 +111,11 @@ describe('Multi-Company Scenarios', () => {
         it('should allow access to multiple stores in same company', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [
-                    createMockStore({ id: 'store_a1', companyId: 'company_a', role: 'STORE_ADMIN' }),
-                    createMockStore({ id: 'store_a2', companyId: 'company_a', role: 'STORE_MANAGER' }),
+                    createMockStore({ id: 'store_a1', companyId: 'company_a', roleId: 'role-admin' }),
+                    createMockStore({ id: 'store_a2', companyId: 'company_a', roleId: 'role-manager' }),
                 ],
             });
 
@@ -132,7 +132,7 @@ describe('Multi-Company Scenarios', () => {
         it('should apply different features per store', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [
                     createMockStore({ 
@@ -163,8 +163,8 @@ describe('Multi-Company Scenarios', () => {
             const user = createMockUser({
                 role: 'PLATFORM_ADMIN',
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
-                    createMockCompany({ id: 'company_b', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
+                    createMockCompany({ id: 'company_b', roleId: 'role-viewer' }),
                 ],
             });
 
@@ -181,7 +181,7 @@ describe('Multi-Company Scenarios', () => {
             const user = createMockUser({
                 role: 'PLATFORM_ADMIN',
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [
                     createMockStore({ id: 'store_a1', companyId: 'company_a', features: [] }),
@@ -200,7 +200,7 @@ describe('Multi-Company Scenarios', () => {
             const user = createMockUser({
                 role: 'USER',
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'COMPANY_ADMIN' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-admin' }),
                 ],
                 stores: [
                     createMockStore({ id: 'store_a1', companyId: 'company_a' }),
@@ -222,7 +222,7 @@ describe('Multi-Company Scenarios', () => {
         it('should allow company admin to access all stores in their company', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'COMPANY_ADMIN' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-admin' }),
                 ],
                 stores: [
                     createMockStore({ id: 'store_a1', companyId: 'company_a', features: ['dashboard'] }),
@@ -240,7 +240,7 @@ describe('Multi-Company Scenarios', () => {
         it('should restrict user to explicitly assigned stores', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [
                     createMockStore({ id: 'store_a1', companyId: 'company_a' }),
@@ -256,7 +256,7 @@ describe('Multi-Company Scenarios', () => {
         it('should handle user with no store assignments', () => {
             const user = createMockUser({
                 companies: [
-                    createMockCompany({ id: 'company_a', role: 'VIEWER' }),
+                    createMockCompany({ id: 'company_a', roleId: 'role-viewer' }),
                 ],
                 stores: [], // No stores assigned
             });

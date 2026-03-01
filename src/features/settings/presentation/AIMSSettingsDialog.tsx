@@ -59,7 +59,7 @@ import {
     SolumPeopleManagerSection,
     SolumSchemaEditorSection,
 } from './solum';
-import type { SettingsData, SolumMappingConfig } from '../domain/types';
+import type { SolumMappingConfig } from '../domain/types';
 import type { CSVConfig } from '@shared/domain/types';
 
 interface AIMSSettingsDialogProps {

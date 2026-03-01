@@ -56,12 +56,11 @@ export function UserCompanySection({
         }
     }, [roles.length, fetchRoles]);
 
-    // Filter to roles usable at company level (non-system roles)
+    // Filter to roles usable at company level
     // Non-platform-admins cannot assign the admin role to other users
     // APP_VIEWER users can only be assigned viewer roles
     const allowedRoleIds = getAllowedCompanyRoles(targetGlobalRole);
     const companyRoles = roles.filter(r =>
-        r.scope !== 'SYSTEM' &&
         (isPlatformAdmin || r.id !== 'role-admin') &&
         allowedRoleIds.includes(r.id)
     );

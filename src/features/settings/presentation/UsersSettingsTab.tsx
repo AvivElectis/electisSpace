@@ -402,9 +402,7 @@ export function UsersSettingsTab() {
                                         const userFeatures = isAdminLevel
                                             ? ['dashboard', 'spaces', 'conference', 'people']
                                             : (firstStore?.features || ['dashboard']);
-                                        const canElevate = isPlatformAdmin &&
-                                            user.globalRole !== 'PLATFORM_ADMIN' &&
-                                            user.id !== currentUser?.id;
+                                        const canElevate = canElevateUser(currentUser, user);
 
                                         return (
                                             <TableRow key={user.id} hover>

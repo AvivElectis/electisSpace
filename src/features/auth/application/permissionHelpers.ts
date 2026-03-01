@@ -367,36 +367,26 @@ export function getStoreRoleId(user: User | null, storeId: string): string | nul
 
 /**
  * Check if the current user can elevate/change the target user's app role.
- * - Platform admin: can elevate anyone except self (to downgrade)
- * - Company admin: can elevate users that share a company
+ * Only platform admins can change app roles. They cannot change their own role
+ * or elevate users who are already PLATFORM_ADMIN.
  */
 export function canElevateUser(currentUser: User | null, targetUser: { id: string; globalRole?: string | null; companies?: Array<{ id: string }> }): boolean {
     if (!currentUser) return false;
+    if (!isPlatformAdmin(currentUser)) return false;
     if (targetUser.id === currentUser.id) return false;
-
-    // Platform admins that are already PLATFORM_ADMIN can't be further elevated
     if (targetUser.globalRole === 'PLATFORM_ADMIN') return false;
 
-    if (isPlatformAdmin(currentUser)) return true;
-
-    // Company admins can elevate users that share a company
-    const isCallerCompanyAdmin = currentUser.companies.some(c => c.roleId === DEFAULT_ROLE_IDS.ADMIN);
-    if (!isCallerCompanyAdmin) return false;
-
-    const callerCompanyIds = currentUser.companies.map(c => c.id);
-    const targetCompanyIds = targetUser.companies?.map(c => c.id) ?? [];
-    return targetCompanyIds.some(id => callerCompanyIds.includes(id));
+    return true;
 }
 
 /**
  * Get the app roles the current user is allowed to assign.
- * - Platform admin: all roles (PLATFORM_ADMIN, APP_VIEWER, USER)
- * - Company admin: only non-admin roles (APP_VIEWER, USER)
+ * Only platform admins can assign app roles.
  */
 export function getAllowedAppRoles(currentUser: User | null): Array<'PLATFORM_ADMIN' | 'APP_VIEWER' | 'USER'> {
     if (!currentUser) return [];
     if (isPlatformAdmin(currentUser)) return ['PLATFORM_ADMIN', 'APP_VIEWER', 'USER'];
-    return ['APP_VIEWER', 'USER'];
+    return [];
 }
 
 /**

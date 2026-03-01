@@ -36,6 +36,7 @@ import { UserBasicInfoSection } from './userDialog/UserBasicInfoSection';
 import { UserCompanySection } from './userDialog/UserCompanySection';
 import { UserStoreSection } from './userDialog/UserStoreSection';
 import { UserPasswordSection } from './userDialog/UserPasswordSection';
+import { UserAppRoleSection } from './userDialog/UserAppRoleSection';
 import { CREATE_STEPS, type UserData } from './userDialog/types';
 
 interface EnhancedUserDialogProps {
@@ -114,6 +115,18 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                 isEditing={state.isEditing}
                                 profileMode={profileMode}
                             />
+
+                            {!profileMode && state.canEditAppRole && (
+                                <>
+                                    <Divider />
+                                    <UserAppRoleSection
+                                        appRole={state.appRole}
+                                        onAppRoleChange={state.handleAppRoleChange}
+                                        allowedRoles={state.allowedAppRoles}
+                                        disabled={!state.isEditing}
+                                    />
+                                </>
+                            )}
 
                             <Divider />
 

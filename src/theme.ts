@@ -181,6 +181,7 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         background: 'linear-gradient(135deg, #0D47A1 0%, #1565C0d7 50%, #0D47A1 100%)',
                         backgroundSize: '200% auto',
                         color: '#FFFFFF',
+                        paddingInline: '20px',
                         textShadow: '0 0px 3px rgba(0, 0, 0, 1)',
                         animation: 'gradientAnimation 20s ease infinite',
                         '& .MuiButton-startIcon, & .MuiButton-endIcon': {
@@ -402,13 +403,14 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                         fontWeight: 600,
                         fontSize: '1rem',
                         letterSpacing: '0.02em',
+                        paddingInline: '4px',
                     },
                     colorPrimary: {
                         color: '#FFFFFF',
-                        backgroundColor: 'transparent',
-                        border: '1px solid #ffffffff',
+                        backgroundColor: '#0D47A1',
+                        border: '1px solid #1565C0',
                         '&:hover': {
-                            backgroundColor: '#0D47A1ff',
+                            backgroundColor: '#1565C0',
                         },
                     },
                 },
