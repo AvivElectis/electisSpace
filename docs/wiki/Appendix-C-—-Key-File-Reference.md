@@ -37,6 +37,10 @@
 | `docker-compose.app.yml` | Application container orchestration |
 | `docker-compose.infra.yml` | Infrastructure container orchestration (Redis) |
 | `ecosystem.config.cjs` | PM2 process manager config (Windows) |
+| `my-video/src/Root.tsx` | Remotion composition registration (intro video) |
+| `my-video/src/Composition.tsx` | Video scene sequencing with TransitionSeries + audio |
+| `my-video/src/scenes/*.tsx` | Individual video scenes (Hero, Problem, Features, Workflow, Mobile, Platforms, Outro) |
+| `my-video/src/theme.ts` | Video brand theme constants (mirrors app theme) |
 
 ---
 

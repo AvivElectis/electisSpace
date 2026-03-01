@@ -199,6 +199,39 @@ graph TB
 - **Electron**: Wraps the SPA in a Chromium window with native features (file system, auto-update via GitHub releases, custom title bar).
 - **Capacitor**: Wraps the SPA in a WebView for Android with native plugins (file system, network, preferences).
 
+### 6.10 Intro Video (Remotion)
+
+A promotional intro video lives in `my-video/` and is built with **Remotion 4** (React-based video framework).
+
+**Structure:**
+```
+my-video/
+  src/
+    Root.tsx              ← Composition registration (1050 frames, 30fps, 1920x1080)
+    Composition.tsx       ← TransitionSeries scene sequencing + background audio
+    theme.ts              ← Brand theme constants (mirrors src/theme.ts)
+    scenes/
+      HeroScene.tsx       ← App icon, logo, tagline, SoluM partnership
+      ProblemScene.tsx     ← Pain points (manual signs, Excel, expensive apps)
+      FeaturesScene.tsx    ← Dashboard + People screenshots
+      WorkflowScene.tsx    ← Conference rooms + Labels screenshots
+      MobileScene.tsx      ← 5 phone frames with mobile screenshots
+      PlatformsScene.tsx   ← Web app platform + tech stack + partnership
+      OutroScene.tsx       ← CTA + company credits
+  public/
+    logos/                ← App icons, Electis logo, SoluM logo
+    screens/              ← Desktop + mobile app screenshots
+    bgm.mp3               ← Background music (CC BY 4.0)
+```
+
+**Commands:**
+```bash
+cd my-video
+npm install
+npx remotion studio                          # Preview in browser
+npx remotion render ElectisSpaceIntro out.mp4 # Render final video
+```
+
 ### 6.8 Testing Infrastructure
 
 #### Server Unit Tests (Vitest)
