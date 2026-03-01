@@ -1,15 +1,11 @@
 import { Box } from '@mui/material';
 import { SphereLoader } from './SphereLoader';
 
-interface AppLoadingScreenProps {
-    message?: string;
-}
-
 /**
  * Full-viewport centered loading screen with bouncing sphere animation.
  * Used for initial app load, route transitions, and store switching.
  */
-export function AppLoadingScreen({ message }: AppLoadingScreenProps) {
+export function AppLoadingScreen() {
     return (
         <Box
             display="flex"
@@ -18,7 +14,7 @@ export function AppLoadingScreen({ message }: AppLoadingScreenProps) {
             minHeight="100vh"
             sx={{ bgcolor: 'background.default' }}
         >
-            <SphereLoader message={message} />
+            <SphereLoader />
         </Box>
     );
 }

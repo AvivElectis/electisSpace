@@ -33,7 +33,7 @@ function AuthWatchdogWrapper({ children }: { children: React.ReactNode }) {
  * Supports dynamic RTL/LTR switching based on language
  */
 function App() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isAppReady = useAuthStore((state) => state.isAppReady);
   const isSwitchingStore = useAuthStore((state) => state.isSwitchingStore);
 
@@ -70,11 +70,7 @@ function App() {
         <HashRouter>
           <AuthWatchdogWrapper>
             {!isAppReady || isSwitchingStore ? (
-              <AppLoadingScreen
-                message={isSwitchingStore
-                  ? t('app.switchingStore', 'Switching store...')
-                  : t('app.loadingApplication', 'Loading application...')}
-              />
+              <AppLoadingScreen />
             ) : (
               <>
                 <MainLayout>
