@@ -15,7 +15,7 @@ services:
   # PostgreSQL
   # ======================
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: electisspace-dev-postgres
     environment:
       POSTGRES_USER: postgres
@@ -55,6 +55,19 @@ services:
       - dev-network
 
   # ======================
+  # Mailpit — Dev SMTP + Web UI
+  # ======================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: electisspace-dev-mailpit
+    ports:
+      - "127.0.0.1:8025:8025"   # Web UI
+      - "127.0.0.1:1025:1025"   # SMTP
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  # ======================
   # Database Migrations
   # ======================
   migrate:
@@ -86,6 +99,8 @@ services:
       - PORT=3000
       - DATABASE_URL=postgresql://postgres:postgres_dev@postgres:5432/electisspace_dev?schema=public
       - REDIS_URL=redis://redis:6379
+      - EXCHANGE_HOST=ex.electis.co.il
+      - EXCHANGE_PORT=25
     ports:
       - "127.0.0.1:3001:3000"
     depends_on:
