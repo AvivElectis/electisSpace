@@ -165,7 +165,7 @@ export function RolesTab() {
             {/* Section 2: Company & Store Roles */}
             <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Box>
+                    <Box sx={{ minWidth: 0, marginInlineEnd: 3 }}>
                         <Typography variant="h6">
                             {t('settings.roles.companyStoreRoles')}
                         </Typography>
@@ -178,7 +178,7 @@ export function RolesTab() {
                             variant="contained"
                             startIcon={<AddIcon />}
                             onClick={handleAdd}
-                            sx={{ whiteSpace: 'nowrap', ml: 2, flexShrink: 0 }}
+                            sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
                             {t('settings.roles.add')}
                         </Button>
