@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Multiple dithering engines in AssignImageDialog** — users can choose between Floyd-Steinberg, Atkinson, Ordered (Bayer 4x4), Threshold (nearest-color), or AIMS server-side dithering; client engines produce instant previews and push pre-dithered images (`dithering: false`), while AIMS engine fetches a server preview and pushes full-color images (`dithering: true`)
+- **App role editing in user dialog** — platform admins can set/change a user's app role (Platform Admin, App Viewer, Regular User) directly from the user dialog via inline radio cards
+- **Roles audit remediation plan** — comprehensive 4-phase plan documenting 16 security, functional, and polish improvements for the roles system (`docs/plans/2026-03-01-roles-audit-remediation.md`)
 
 ### Fixed
 - **AIMS dither preview not working** — `solumService.fetchDitherPreview()` returned raw AIMS envelope without `extractResponseData()`, so the client received `{responseCode, responseMessage}` instead of image data; client now robustly extracts the image from multiple possible response shapes
@@ -18,6 +20,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AssignImageDialog crash on zero-dimension labels (root cause)** — `solumService.fetchLabelTypeInfo()` returned raw AIMS envelope without `extractResponseData()`, so `displayWidth`/`displayHeight` were `undefined`; client guards also hardened (`!targetW || !targetH` catches `undefined`/`NaN`)
 - **AssignImageDialog empty chips** — label info chips (dimensions, color type) were blank because the AIMS envelope fields were returned instead of actual data
 - **AIMS label type info wrong URL** — `fetchLabelTypeInfo` used `/api/v2/...` instead of `/common/api/v2/...`, hitting wrong AIMS endpoint and returning incorrect data
+- **App role elevation restricted to platform admins** — company admins could previously change app roles; now only platform admins can view and modify app roles (client + server)
+- **Primary chip invisible styling** — chips with `color="primary"` had transparent background and white border making them invisible; now use solid blue background
+- **MUI Tooltip disabled button warning** — wrapped disabled IconButton in LabelsPage with `<span>` to suppress Tooltip accessibility warning
+- **Unused import build error** — removed stale `SettingsData` import in AIMSSettingsDialog
+- **Permission test mock data** — tests used old enum-based role names (`COMPANY_ADMIN`, `STORE_ADMIN`) instead of current `roleId` values (`role-admin`, `role-manager`, etc.), causing 13 false failures
+- **SphereLoader crash in test environment** — `i18n.dir()` called without null check, failing in environments where `dir` is not mocked; now uses optional chaining
+- **LoadingFallback/RouteLoadingFallback tests outdated** — tests expected old skeleton/CircularProgress implementation but components now use SphereLoader; tests updated to match current behavior
+
+### Changed
+- **Chip and button padding** — added inline padding to chips (4px) and primary contained buttons (20px) for better visual spacing
 
 ### Changed
 - **AssignImageDialog mobile UX** — compact upload zone with horizontal layout on mobile; tighter spacing and padding throughout; smaller title typography

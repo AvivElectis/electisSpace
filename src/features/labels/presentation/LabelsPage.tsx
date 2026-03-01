@@ -514,13 +514,15 @@ export function LabelsPage() {
                         {t('imageLabels.assignImage', 'Assign Image')}
                     </Button>
                     <Tooltip title={t('common.refresh', 'Refresh')}>
-                        <IconButton
-                            onClick={handleRefresh}
-                            disabled={isLoading}
-                            sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
-                        >
-                            <RefreshIcon />
-                        </IconButton>
+                        <span style={{ display: 'inline-flex' }}>
+                            <IconButton
+                                onClick={handleRefresh}
+                                disabled={isLoading}
+                                sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+                            >
+                                <RefreshIcon />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                     <Button
                         variant="text"

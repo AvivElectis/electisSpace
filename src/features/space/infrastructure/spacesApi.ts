@@ -132,6 +132,48 @@ export const spacesApi = {
         const response = await api.delete<ServerSpace>(`/spaces/${id}/unassign-label`);
         return transformSpace(response.data);
     },
+
+    /**
+     * Pull spaces from AIMS
+     */
+    syncPull: async (storeId: string) => {
+        const response = await api.post<{ total: number; created: number; updated: number; unchanged: number }>('/spaces/sync/pull', { storeId });
+        return response.data;
+    },
+
+    /**
+     * Push pending spaces to AIMS
+     */
+    syncPush: async (storeId: string) => {
+        const response = await api.post<{ processed: number; pending: number }>('/spaces/sync/push', { storeId });
+        return response.data;
+    },
+
+    /**
+     * Full bi-directional sync
+     */
+    syncFull: async (storeId: string) => {
+        const response = await api.post('/spaces/sync/full', { storeId });
+        return response.data;
+    },
+
+    /**
+     * Get sync status for a store's spaces
+     */
+    syncStatus: async (storeId: string) => {
+        const response = await api.get<{
+            totalSpaces: number;
+            pendingSpaces: number;
+            syncedSpaces: number;
+            errorSpaces: number;
+            pendingQueueItems: number;
+            failedQueueItems: number;
+            lastSyncAt: string | null;
+            syncEnabled: boolean;
+            aimsConnected: boolean;
+        }>('/spaces/sync/status', { params: { storeId } });
+        return response.data;
+    },
 };
 
 export default spacesApi;

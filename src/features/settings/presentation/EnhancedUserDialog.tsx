@@ -36,6 +36,7 @@ import { UserBasicInfoSection } from './userDialog/UserBasicInfoSection';
 import { UserCompanySection } from './userDialog/UserCompanySection';
 import { UserStoreSection } from './userDialog/UserStoreSection';
 import { UserPasswordSection } from './userDialog/UserPasswordSection';
+import { UserAppRoleSection } from './userDialog/UserAppRoleSection';
 import { CREATE_STEPS, type UserData } from './userDialog/types';
 
 interface EnhancedUserDialogProps {
@@ -115,6 +116,18 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                 profileMode={profileMode}
                             />
 
+                            {!profileMode && state.canEditAppRole && (
+                                <>
+                                    <Divider />
+                                    <UserAppRoleSection
+                                        appRole={state.appRole}
+                                        onAppRoleChange={state.handleAppRoleChange}
+                                        allowedRoles={state.allowedAppRoles}
+                                        disabled={!state.isEditing}
+                                    />
+                                </>
+                            )}
+
                             <Divider />
 
                             <UserAccountStats userData={state.userData} />
@@ -130,6 +143,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                         companyRoleId={state.companyRoleId}
                                         allStoresAccess={state.allStoresAccess}
                                         isPlatformAdmin={state.isPlatformAdmin}
+                                        targetGlobalRole={state.userData?.globalRole}
                                         accessibleCompanyId={state.accessibleCompanyId}
                                         isEdit={state.isEdit}
                                         isEditing={state.isEditing}
@@ -156,6 +170,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                                         isEdit={state.isEdit}
                                         isEditing={state.isEditing}
                                         companyEnabledFeatures={state.companyEnabledFeatures}
+                                        targetGlobalRole={state.userData?.globalRole}
                                     />
                                 </>
                             )}
@@ -279,6 +294,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                         companyRoleId={state.companyRoleId}
                         allStoresAccess={state.allStoresAccess}
                         isPlatformAdmin={state.isPlatformAdmin}
+                        targetGlobalRole={state.userData?.globalRole}
                         accessibleCompanyId={state.accessibleCompanyId}
                         isEdit={state.isEdit}
                         isEditing={state.isEditing}
@@ -298,6 +314,7 @@ export function EnhancedUserDialog({ open, onClose, onSave, user, profileMode = 
                         onAssignmentsChange={state.setStoreAssignments}
                         isEdit={state.isEdit}
                         isEditing={state.isEditing}
+                        targetGlobalRole={state.userData?.globalRole}
                     />
                 )}
             </DialogContent>

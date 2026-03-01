@@ -366,6 +366,50 @@ export function getStoreRoleId(user: User | null, storeId: string): string | nul
 }
 
 /**
+ * Check if the current user can elevate/change the target user's app role.
+ * Only platform admins can change app roles. They cannot change their own role
+ * or elevate users who are already PLATFORM_ADMIN.
+ */
+export function canElevateUser(currentUser: User | null, targetUser: { id: string; globalRole?: string | null; companies?: Array<{ id: string }> }): boolean {
+    if (!currentUser) return false;
+    if (!isPlatformAdmin(currentUser)) return false;
+    if (targetUser.id === currentUser.id) return false;
+    if (targetUser.globalRole === 'PLATFORM_ADMIN') return false;
+
+    return true;
+}
+
+/**
+ * Get the app roles the current user is allowed to assign.
+ * Only platform admins can assign app roles.
+ */
+export function getAllowedAppRoles(currentUser: User | null): Array<'PLATFORM_ADMIN' | 'APP_VIEWER' | 'USER'> {
+    if (!currentUser) return [];
+    if (isPlatformAdmin(currentUser)) return ['PLATFORM_ADMIN', 'APP_VIEWER', 'USER'];
+    return [];
+}
+
+/**
+ * Get allowed company roles based on the target user's app role.
+ * - If target is APP_VIEWER: only role-viewer
+ * - Otherwise: normal role filtering
+ */
+export function getAllowedCompanyRoles(targetGlobalRole: string | null | undefined): string[] {
+    if (targetGlobalRole === 'APP_VIEWER') return [DEFAULT_ROLE_IDS.VIEWER];
+    return [DEFAULT_ROLE_IDS.ADMIN, DEFAULT_ROLE_IDS.MANAGER, DEFAULT_ROLE_IDS.EMPLOYEE, DEFAULT_ROLE_IDS.VIEWER];
+}
+
+/**
+ * Get allowed store roles based on the target user's app role.
+ * - If target is APP_VIEWER: only role-viewer
+ * - Otherwise: all roles
+ */
+export function getAllowedStoreRoles(targetGlobalRole: string | null | undefined): string[] {
+    if (targetGlobalRole === 'APP_VIEWER') return [DEFAULT_ROLE_IDS.VIEWER];
+    return [DEFAULT_ROLE_IDS.ADMIN, DEFAULT_ROLE_IDS.MANAGER, DEFAULT_ROLE_IDS.EMPLOYEE, DEFAULT_ROLE_IDS.VIEWER];
+}
+
+/**
  * Check if a user can perform a specific action on a resource in a store.
  * App Viewers are always blocked from mutating actions.
  * Platform admins and company admins bypass permission checks.

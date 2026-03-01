@@ -57,9 +57,21 @@ When a user disconnects from SoluM or changes modes, the `useSettingsController`
 - **Export**: Serializes `SettingsData` to a JSON file. Can be optionally encrypted with a password.
 - **Import**: Decrypts (if needed) and hydrates the store.
 
-## 5. Components
+## 5. AIMS Configuration
 
-- **`SettingsDialog`**: The main container.
-- **`SolumSettingsTab`**: Connection & Mapping UI.
-- **`SFTPSettingsTab`**: Credential & CSV Column Mapping UI.
-- **`GeneralSettingsTab`**: Appearance & Logos.
+AIMS credentials and connection settings are configured at the **company level** in the Company Settings dialog (AIMS Config tab). Sync settings, field mappings, and article format are in the SoluM Settings tab.
+
+For full details on AIMS connection, authentication, sync, and field mapping, see [AIMS Integration](AIMS_INTEGRATION.md).
+
+## 6. Components
+
+- **`SettingsDialog`**: The main container with sidebar navigation.
+- **`SolumSettingsTab`**: Sync settings & field mapping UI (requires active AIMS connection).
+- **`EditCompanyTabs`**: Company dialog with AIMS Config tab for credentials.
+- **`AppSettingsTab`**: Theme, language, and display preferences.
+- **`LogoSettingsTab`**: Custom logo upload.
+- **`SecuritySettingsTab`**: App lock PIN/password.
+- **`UsersSettingsTab`**: User management (admin only).
+- **`CompaniesTab`**: Company management (admin only).
+- **`RolesTab`**: Role & permission management (admin only).
+- **`LogsViewerTab`**: Real-time server log viewer.

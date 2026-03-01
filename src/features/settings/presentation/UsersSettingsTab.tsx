@@ -40,6 +40,7 @@ import { userService, type User } from '@shared/infrastructure/services/userServ
 import { companyService, type Company } from '@shared/infrastructure/services/companyService';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { canElevateUser, getAllowedAppRoles } from '@features/auth/application/permissionHelpers';
 
 // Lazy load dialogs
 const EnhancedUserDialog = lazy(() => import('./EnhancedUserDialog').then(m => ({ default: m.EnhancedUserDialog })));
@@ -287,9 +288,7 @@ export function UsersSettingsTab() {
                                 const userFeatures = isAdminLevel
                                     ? ['dashboard', 'spaces', 'conference', 'people']
                                     : (firstStore?.features || ['dashboard']);
-                                const canElevate = isPlatformAdmin &&
-                                    user.globalRole !== 'PLATFORM_ADMIN' &&
-                                    user.id !== currentUser?.id;
+                                const canElevate = canElevateUser(currentUser, user);
 
                                 return (
                                     <Card key={user.id} sx={{ mb: 1.5, overflow: 'hidden' }}>
@@ -403,9 +402,7 @@ export function UsersSettingsTab() {
                                         const userFeatures = isAdminLevel
                                             ? ['dashboard', 'spaces', 'conference', 'people']
                                             : (firstStore?.features || ['dashboard']);
-                                        const canElevate = isPlatformAdmin &&
-                                            user.globalRole !== 'PLATFORM_ADMIN' &&
-                                            user.id !== currentUser?.id;
+                                        const canElevate = canElevateUser(currentUser, user);
 
                                         return (
                                             <TableRow key={user.id} hover>
@@ -538,6 +535,7 @@ export function UsersSettingsTab() {
                         }}
                         onSuccess={handleElevateSuccess}
                         user={userToElevate}
+                        allowedRoles={getAllowedAppRoles(currentUser)}
                     />
                 )}
             </Suspense>
