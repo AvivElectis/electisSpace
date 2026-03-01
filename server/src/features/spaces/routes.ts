@@ -17,4 +17,10 @@ router.delete('/:id', requirePermission('spaces', 'delete'), spacesController.de
 router.post('/:id/assign-label', requirePermission('spaces', 'update'), spacesController.assignLabel);
 router.post('/sync', requirePermission('sync', 'trigger'), spacesController.forceSync);
 
+// Spaces AIMS sync endpoints
+router.post('/sync/pull', requirePermission('sync', 'trigger'), spacesController.syncPull);
+router.post('/sync/push', requirePermission('sync', 'trigger'), spacesController.syncPush);
+router.post('/sync/full', requirePermission('sync', 'trigger'), spacesController.syncFull);
+router.get('/sync/status', requirePermission('sync', 'read'), spacesController.syncStatus);
+
 export default router;
