@@ -4,7 +4,7 @@
  * @description Thin route definitions for user management.
  */
 import { Router } from 'express';
-import { authenticate, restrictAppViewer, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer } from '../../shared/middleware/index.js';
 import { userController } from './controller.js';
 
 const router = Router();
@@ -78,8 +78,8 @@ router.delete('/:id', userController.delete);
 // User Role Elevation
 // ======================
 
-// Elevate user role (Platform Admin only)
-router.post('/:id/elevate', requireGlobalRole('PLATFORM_ADMIN'), userController.elevate);
+// Elevate user role (Platform Admin or Company Admin — permission checked in service)
+router.post('/:id/elevate', userController.elevate);
 
 // Suspend user
 router.post('/:id/suspend', userController.suspend);

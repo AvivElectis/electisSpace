@@ -720,9 +720,16 @@ export const userService = {
 
     /**
      * Elevate user role
+     *
+     * - Platform admins can set any user to any global role (PLATFORM_ADMIN, APP_VIEWER, USER).
+     * - Company admins can set users within their companies to APP_VIEWER or USER only.
      */
     async elevate(userId: string, data: ElevateUserDto, currentUser: UserContext) {
-        if (!isPlatformAdmin(currentUser)) {
+        const isCallerPlatformAdmin = isPlatformAdmin(currentUser);
+        const isCallerCompanyAdmin = !isCallerPlatformAdmin &&
+            currentUser.companies?.some(c => c.roleId === 'role-admin');
+
+        if (!isCallerPlatformAdmin && !isCallerCompanyAdmin) {
             throw new Error('FORBIDDEN');
         }
 
@@ -732,6 +739,23 @@ export const userService = {
 
         const user = await userRepository.findById(userId);
         if (!user) throw new Error('USER_NOT_FOUND');
+
+        // Company admins: can only elevate users in their companies, and cannot set PLATFORM_ADMIN
+        if (!isCallerPlatformAdmin) {
+            if (data.globalRole === 'PLATFORM_ADMIN') {
+                throw new Error('FORBIDDEN');
+            }
+            // Verify target user shares a company with the caller
+            const callerCompanyIds = currentUser.companies?.map(c => c.id) ?? [];
+            const targetCompanies = await prisma.userCompany.findMany({
+                where: { userId },
+                select: { companyId: true },
+            });
+            const sharesCompany = targetCompanies.some(tc => callerCompanyIds.includes(tc.companyId));
+            if (!sharesCompany) {
+                throw new Error('FORBIDDEN');
+            }
+        }
 
         const globalRoleMap: Record<string, 'PLATFORM_ADMIN' | 'APP_VIEWER' | null> = {
             'PLATFORM_ADMIN': 'PLATFORM_ADMIN',
@@ -759,6 +783,18 @@ export const userService = {
                     },
                 });
             }
+        }
+
+        // When setting to APP_VIEWER, downgrade any store/company roles above viewer
+        if (newGlobalRole === 'APP_VIEWER') {
+            await prisma.userCompany.updateMany({
+                where: { userId, roleId: { not: 'role-viewer' } },
+                data: { roleId: 'role-viewer' },
+            });
+            await prisma.userStore.updateMany({
+                where: { userId, roleId: { not: 'role-viewer' } },
+                data: { roleId: 'role-viewer' },
+            });
         }
 
         invalidateUserCache(userId);
