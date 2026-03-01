@@ -470,6 +470,15 @@
         "connecting": "Connecting...",
         "reconnectFailed": "Failed to connect. Please check AIMS credentials in Company Settings.",
         "noStoreSelected": "No store selected. Please select a store from the header menu.",
+        "aims": {
+            "dialogTitle": "AIMS Settings",
+            "configure": "Configure",
+            "connectionSection": "Connection",
+            "syncSection": "Sync Settings",
+            "schemaSection": "Article Format",
+            "mappingSection": "Field Mapping",
+            "manageInCompanies": "Manage AIMS credentials, sync settings, and field mappings from the Companies tab."
+        },
         "syncSettings": "Sync Settings",
         "schemaFetchedSuccess": "Schema fetched successfully!",
         "schemaFetchedError": "Failed to fetch schema: {{error}}",

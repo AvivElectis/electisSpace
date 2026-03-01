@@ -480,6 +480,15 @@
         "connecting": "מתחבר...",
         "reconnectFailed": "החיבור נכשל. אנא בדוק את אישורי AIMS בהגדרות חברה.",
         "noStoreSelected": "לא נבחרה חנות. אנא בחר חנות מתפריט הכותרת.",
+        "aims": {
+            "dialogTitle": "הגדרות AIMS",
+            "configure": "הגדר",
+            "connectionSection": "חיבור",
+            "syncSection": "הגדרות סינכרון",
+            "schemaSection": "פורמט מאמר",
+            "mappingSection": "מיפוי שדות",
+            "manageInCompanies": "נהל אישורי AIMS, הגדרות סינכרון ומיפוי שדות מלשונית חברות."
+        },
         "syncSettings": "הגדרות סינכרון",
         "schemaFetchedSuccess": "הסכמה נשלפה בהצלחה!",
         "schemaFetchedError": "שליפת הסכמה נכשלה: {{error}}",
