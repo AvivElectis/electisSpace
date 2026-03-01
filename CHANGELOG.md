@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Remotion intro video** — 7-scene Hebrew promotional video (~35s) in `my-video/` showcasing app capabilities, real desktop + mobile screenshots, branded assets, SoluM partnership, and background music; built with Remotion 4, React 19, TransitionSeries transitions, and spring-based animations
 - **Multiple dithering engines in AssignImageDialog** — users can choose between Floyd-Steinberg, Atkinson, Ordered (Bayer 4x4), Threshold (nearest-color), or AIMS server-side dithering; client engines produce instant previews and push pre-dithered images (`dithering: false`), while AIMS engine fetches a server preview and pushes full-color images (`dithering: true`)
 - **App role editing in user dialog** — platform admins can set/change a user's app role (Platform Admin, App Viewer, Regular User) directly from the user dialog via inline radio cards
 - **Roles audit remediation plan** — comprehensive 4-phase plan documenting 16 security, functional, and polish improvements for the roles system (`docs/plans/2026-03-01-roles-audit-remediation.md`)
