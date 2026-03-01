@@ -17,10 +17,6 @@ vi.mock('../presentation/SFTPSettingsTab', () => ({
     SFTPSettingsTab: () => <div data-testid="sftp-settings-tab">SFTP Settings Content</div>
 }));
 
-vi.mock('../presentation/SolumSettingsTab', () => ({
-    SolumSettingsTab: () => <div data-testid="solum-settings-tab">SoluM Settings Content</div>
-}));
-
 vi.mock('../presentation/LogoSettingsTab', () => ({
     LogoSettingsTab: () => <div data-testid="logo-settings-tab">Logo Settings Content</div>
 }));

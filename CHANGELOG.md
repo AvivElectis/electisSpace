@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Chip and button padding** — added inline padding to chips (4px) and primary contained buttons (20px) for better visual spacing
+- **RoleDialog mobile layout** — permissions matrix uses card-based layout on mobile (one card per resource with wrapped checkboxes) instead of the wide table; dialog is full-screen on mobile
+- **SoluM Settings tab removed** — AIMS settings are now fully consolidated in Company Settings dialog; the redundant SoluM Settings tab has been removed from the settings sidebar
 
 ### Changed
 - **AssignImageDialog mobile UX** — compact upload zone with horizontal layout on mobile; tighter spacing and padding throughout; smaller title typography

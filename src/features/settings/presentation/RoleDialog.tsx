@@ -27,6 +27,9 @@ import {
     FormLabel,
     CircularProgress,
     Alert,
+    Paper,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -54,6 +57,8 @@ interface RoleDialogProps {
 
 export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { isPlatformAdmin, activeCompanyId } = useAuthContext();
     const { createRole, updateRole, fetchPermissionsMatrix, permissionsMatrix } = useRolesStore();
 
@@ -173,7 +178,8 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
             onClose={onClose}
             maxWidth="md"
             fullWidth
-            PaperProps={{ sx: { maxHeight: '85vh' } }}
+            fullScreen={isMobile}
+            PaperProps={{ sx: isMobile ? {} : { maxHeight: '85vh' } }}
         >
             <form onSubmit={handleSubmit(onSubmit)}>
                 <DialogTitle>
@@ -278,7 +284,68 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
                                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
                                     <CircularProgress size={24} />
                                 </Box>
+                            ) : isMobile ? (
+                                /* ── Mobile: Card-based layout ── */
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                    {resources.map(resource => {
+                                        const validActions = permissionsMatrix[resource] || [];
+                                        const currentPerms = permissions[resource as keyof PermissionsMap] || [];
+                                        const allSelected = validActions.length > 0 &&
+                                            validActions.every(a => currentPerms.includes(a as any));
+
+                                        return (
+                                            <Paper key={resource} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                                    <Typography variant="body2" fontWeight={600}>
+                                                        {t(`permissions.resources.${resource}`, resource)}
+                                                    </Typography>
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
+                                                                size="small"
+                                                                checked={allSelected}
+                                                                indeterminate={currentPerms.length > 0 && !allSelected}
+                                                                onChange={() => handleSelectAllResource(resource, validActions)}
+                                                            />
+                                                        }
+                                                        label={
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {t('settings.roles.selectAll')}
+                                                            </Typography>
+                                                        }
+                                                        labelPlacement="start"
+                                                        sx={{ m: 0, gap: 0.5 }}
+                                                    />
+                                                </Box>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+                                                    {validActions.map(action => {
+                                                        const isChecked = currentPerms.includes(action as any);
+                                                        return (
+                                                            <FormControlLabel
+                                                                key={action}
+                                                                control={
+                                                                    <Checkbox
+                                                                        size="small"
+                                                                        checked={isChecked}
+                                                                        onChange={() => handlePermissionToggle(resource, action)}
+                                                                    />
+                                                                }
+                                                                label={
+                                                                    <Typography variant="caption">
+                                                                        {t(`permissions.actions.${action}`, action)}
+                                                                    </Typography>
+                                                                }
+                                                                sx={{ minWidth: '45%', mr: 0 }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </Box>
+                                            </Paper>
+                                        );
+                                    })}
+                                </Box>
                             ) : (
+                                /* ── Desktop: Table layout ── */
                                 <TableContainer sx={{ maxHeight: 400 }}>
                                     <Table size="small" stickyHeader>
                                         <TableHead>

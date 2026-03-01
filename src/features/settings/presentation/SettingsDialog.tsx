@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
-import CloudIcon from '@mui/icons-material/Cloud';
+// CloudIcon removed — SoluM Settings tab consolidated into Company Settings
 import ImageIcon from '@mui/icons-material/Image';
 import SecurityIcon from '@mui/icons-material/Security';
 import PeopleIcon from '@mui/icons-material/People';
@@ -36,7 +36,7 @@ import { SphereLoader } from '@shared/presentation/components/SphereLoader';
 
 // Lazy load all tabs - they have heavy dependencies
 const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
-const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
+// SolumSettingsTab removed — AIMS settings consolidated into Company Settings dialog
 const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
 const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
 const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default: m.LogsViewerTab })));
@@ -96,11 +96,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             icon: <SettingsIcon />,
             panel: <AppSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} />,
         },
-        {
-            label: t('settings.solumSettings'),
-            icon: <CloudIcon />,
-            panel: <SolumSettingsTab settings={settingsController.settings} onUpdate={(updates) => settingsController.updateSettings(updates)} />,
-        },
+        // SoluM Settings tab removed — AIMS settings are now in Company Settings dialog
         {
             label: t('settings.logoSettings'),
             icon: <ImageIcon />,
