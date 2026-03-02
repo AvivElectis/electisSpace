@@ -114,6 +114,33 @@ class AimsManagementService {
         return aimsGateway.fetchLabelHistory(storeId, labelCode, page, size);
     }
 
+    // ─── Articles ─────────────────────────────────────────────────────
+
+    async listArticles(storeId: string, params?: { page?: number; size?: number; sort?: string }) {
+        appLogger.info('AimsManagement', 'Listing articles', { storeId, ...params });
+        return aimsGateway.fetchArticleList(storeId, params);
+    }
+
+    async getArticleById(storeId: string, articleId: string) {
+        appLogger.info('AimsManagement', 'Getting article by ID', { storeId, articleId });
+        return aimsGateway.fetchArticleById(storeId, articleId);
+    }
+
+    async listLinkedArticles(storeId: string, params?: { page?: number; size?: number }) {
+        appLogger.info('AimsManagement', 'Listing linked articles', { storeId, ...params });
+        return aimsGateway.fetchLinkedArticles(storeId, params);
+    }
+
+    async getArticleUpdateHistoryAll(storeId: string, params?: { page?: number; size?: number }) {
+        appLogger.info('AimsManagement', 'Getting all article update history', { storeId, ...params });
+        return aimsGateway.fetchArticleUpdateHistoryAll(storeId, params);
+    }
+
+    async getArticleUpdateHistoryDetail(storeId: string, articleId: string, params?: { page?: number; size?: number }) {
+        appLogger.info('AimsManagement', 'Getting article update history detail', { storeId, articleId, ...params });
+        return aimsGateway.fetchArticleUpdateHistoryDetail(storeId, articleId, params);
+    }
+
     // ─── Product / Batch History ────────────────────────────────────────
 
     async getBatchHistory(storeId: string, params?: { page?: number; size?: number; fromDate?: string; toDate?: string }) {

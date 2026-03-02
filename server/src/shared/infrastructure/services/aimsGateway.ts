@@ -901,6 +901,28 @@ export class AIMSGateway {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistory(config, token, articleId, page, size));
     }
 
+    // ─── Article Browsing ──────────────────────────────────────────────────
+
+    async fetchArticleList(storeId: string, params?: { page?: number; size?: number; sort?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleList(config, token, params));
+    }
+
+    async fetchArticleById(storeId: string, articleId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleById(config, token, articleId));
+    }
+
+    async fetchLinkedArticles(storeId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLinkedArticles(config, token, params));
+    }
+
+    async fetchArticleUpdateHistoryAll(storeId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistoryAll(config, token, params));
+    }
+
+    async fetchArticleUpdateHistoryDetail(storeId: string, articleId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistoryDetail(config, token, articleId, params));
+    }
+
     // ─── Summary / Overview ────────────────────────────────────────────────
 
     async fetchStoreSummary(storeId: string) {

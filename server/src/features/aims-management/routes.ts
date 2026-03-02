@@ -53,6 +53,13 @@ router.post('/labels/:code/blink', requirePermission('aims-management', 'manage'
 router.put('/labels/:code/nfc', requirePermission('aims-management', 'manage'), aimsManagementController.setLabelNfc);
 router.post('/labels/:code/heartbeat', requirePermission('aims-management', 'manage'), aimsManagementController.forceLabelAlive);
 
+// ─── Article Browsing (STORE_MANAGER+) ──────────────────────────────────────
+router.get('/articles', requirePermission('aims-management', 'view'), aimsManagementController.listArticles);
+router.get('/articles/linked', requirePermission('aims-management', 'view'), aimsManagementController.listLinkedArticles);
+router.get('/articles/update-history', requirePermission('aims-management', 'view'), aimsManagementController.getArticleUpdateHistoryAll);
+router.get('/articles/:articleId', requirePermission('aims-management', 'view'), aimsManagementController.getArticleById);
+router.get('/articles/:articleId/update-history', requirePermission('aims-management', 'view'), aimsManagementController.getArticleUpdateHistoryDetail);
+
 // ─── Product / Batch History (STORE_MANAGER+) ───────────────────────────────
 router.get('/products/history', requirePermission('aims-management', 'view'), aimsManagementController.getBatchHistory);
 router.get('/products/history/:name', requirePermission('aims-management', 'view'), aimsManagementController.getBatchDetail);

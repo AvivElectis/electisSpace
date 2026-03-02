@@ -46,6 +46,18 @@ export const labelCodeParamSchema = z.object({
     code: z.string().min(1),
 });
 
+// ─── Article Browsing Schemas ────────────────────────────────────────────────
+
+export const articleListQuerySchema = z.object({
+    page: z.coerce.number().int().min(0).default(0),
+    size: z.coerce.number().int().min(1).max(500).default(50),
+    sort: z.string().optional(),
+});
+
+export const articleIdParamSchema = z.object({
+    articleId: z.string().min(1),
+});
+
 // ─── Gateway Config Schemas ─────────────────────────────────────────────────
 
 export const gatewayConfigUpdateSchema = z.object({

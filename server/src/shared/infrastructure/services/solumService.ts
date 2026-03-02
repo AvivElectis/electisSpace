@@ -900,6 +900,75 @@ export class SolumService {
         });
     }
 
+    // ─── Article Browsing Endpoints ─────────────────────────────────────────
+
+    /**
+     * Fetch article list for browsing (paginated).
+     * Unlike fetchArticles (used for sync), this returns paginated data for UI browsing.
+     */
+    async fetchArticleList(config: SolumConfig, token: string, params: { page?: number; size?: number; sort?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50, sort } = params;
+        let urlPath = `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`;
+        if (sort) urlPath += `&sort=${sort}`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('fetchArticleList', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleList');
+        });
+    }
+
+    /**
+     * Fetch a single article by its ID
+     */
+    async fetchArticleById(config: SolumConfig, token: string, articleId: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/id?company=${config.companyName}&store=${config.storeCode}&article=${encodeURIComponent(articleId)}`);
+        return this.withRetry('fetchArticleById', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleById');
+        });
+    }
+
+    /**
+     * Fetch articles that are linked to labels
+     */
+    async fetchLinkedArticles(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/linked?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLinkedArticles', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLinkedArticles');
+        });
+    }
+
+    /**
+     * Fetch all article update history (paginated, not filtered by article)
+     */
+    async fetchArticleUpdateHistoryAll(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/update/history?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchArticleUpdateHistoryAll', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleUpdateHistoryAll');
+        });
+    }
+
+    /**
+     * Fetch article update history detail for a specific article
+     */
+    async fetchArticleUpdateHistoryDetail(config: SolumConfig, token: string, articleId: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/update/history/detail?company=${config.companyName}&store=${config.storeCode}&article=${encodeURIComponent(articleId)}&page=${page}&size=${size}`);
+        return this.withRetry('fetchArticleUpdateHistoryDetail', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleUpdateHistoryDetail');
+        });
+    }
+
     // ─── Summary / Overview Endpoints ──────────────────────────────────────
 
     /**

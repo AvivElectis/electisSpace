@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
 
 /**
@@ -182,6 +182,52 @@ async function getArticleUpdateHistory(req: Request, res: Response, next: NextFu
     } catch (error) { next(error); }
 }
 
+// ─── Article Browsing ──────────────────────────────────────────────────────
+
+async function listArticles(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size, sort } = articleListQuerySchema.parse(req.query);
+        const articles = await aimsManagementService.listArticles(storeId, { page, size, sort });
+        res.json({ data: articles });
+    } catch (error) { next(error); }
+}
+
+async function getArticleById(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const article = await aimsManagementService.getArticleById(storeId, String(req.params.articleId));
+        res.json({ data: article });
+    } catch (error) { next(error); }
+}
+
+async function listLinkedArticles(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = articleListQuerySchema.parse(req.query);
+        const articles = await aimsManagementService.listLinkedArticles(storeId, { page, size });
+        res.json({ data: articles });
+    } catch (error) { next(error); }
+}
+
+async function getArticleUpdateHistoryAll(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = articleHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getArticleUpdateHistoryAll(storeId, { page, size });
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+async function getArticleUpdateHistoryDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = articleHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getArticleUpdateHistoryDetail(storeId, String(req.params.articleId), { page, size });
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
 // ─── Label Detail & Actions ────────────────────────────────────────────────
 
 async function getLabelDetail(req: Request, res: Response, next: NextFunction) {
@@ -308,6 +354,11 @@ export const aimsManagementController = {
     blinkLabel,
     setLabelNfc,
     forceLabelAlive,
+    listArticles,
+    getArticleById,
+    listLinkedArticles,
+    getArticleUpdateHistoryAll,
+    getArticleUpdateHistoryDetail,
     getBatchHistory,
     getBatchDetail,
     getBatchErrors,
