@@ -45,6 +45,14 @@ interface AimsManagementState {
     batchHistory: any | null;
     batchHistoryLoading: boolean;
 
+    // Label detail
+    selectedLabel: any | null;
+    selectedLabelLoading: boolean;
+    labelDetailData: any | null;
+    labelArticleData: any | null;
+    labelAliveHistory: any | null;
+    labelOperationHistory: any | null;
+
     // Overview
     storeSummary: any | null;
     labelStatusSummary: any | null;
@@ -78,6 +86,12 @@ interface AimsManagementState {
     setLabelHistoryLoading: (loading: boolean) => void;
     setBatchHistory: (history: any | null) => void;
     setBatchHistoryLoading: (loading: boolean) => void;
+    setSelectedLabel: (label: any | null) => void;
+    setSelectedLabelLoading: (loading: boolean) => void;
+    setLabelDetailData: (data: any | null) => void;
+    setLabelArticleData: (data: any | null) => void;
+    setLabelAliveHistory: (data: any | null) => void;
+    setLabelOperationHistory: (data: any | null) => void;
     setStoreSummary: (data: any | null) => void;
     setLabelStatusSummary: (data: any | null) => void;
     setGatewayStatusSummary: (data: any | null) => void;
@@ -112,6 +126,12 @@ const initialState = {
     labelHistoryLoading: false,
     batchHistory: null,
     batchHistoryLoading: false,
+    selectedLabel: null,
+    selectedLabelLoading: false,
+    labelDetailData: null,
+    labelArticleData: null,
+    labelAliveHistory: null,
+    labelOperationHistory: null,
     storeSummary: null,
     labelStatusSummary: null,
     gatewayStatusSummary: null,
@@ -144,6 +164,12 @@ export const useAimsManagementStore = create<AimsManagementState>((set) => ({
     setLabelHistoryLoading: (labelHistoryLoading) => set({ labelHistoryLoading }),
     setBatchHistory: (batchHistory) => set({ batchHistory }),
     setBatchHistoryLoading: (batchHistoryLoading) => set({ batchHistoryLoading }),
+    setSelectedLabel: (selectedLabel) => set({ selectedLabel }),
+    setSelectedLabelLoading: (selectedLabelLoading) => set({ selectedLabelLoading }),
+    setLabelDetailData: (labelDetailData) => set({ labelDetailData }),
+    setLabelArticleData: (labelArticleData) => set({ labelArticleData }),
+    setLabelAliveHistory: (labelAliveHistory) => set({ labelAliveHistory }),
+    setLabelOperationHistory: (labelOperationHistory) => set({ labelOperationHistory }),
     setStoreSummary: (storeSummary) => set({ storeSummary }),
     setLabelStatusSummary: (labelStatusSummary) => set({ labelStatusSummary }),
     setGatewayStatusSummary: (gatewayStatusSummary) => set({ gatewayStatusSummary }),

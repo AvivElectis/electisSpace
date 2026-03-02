@@ -55,10 +55,52 @@ export async function fetchUnassignedLabels(storeId: string) {
     return data.data;
 }
 
+// ─── Label Detail & Actions ────────────────────────────────────────────────
+
+export async function fetchLabelDetail(storeId: string, labelCode: string) {
+    const { data } = await api.get(`/aims/labels/${encodeURIComponent(labelCode)}/detail`, { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchLabelArticle(storeId: string, labelCode: string) {
+    const { data } = await api.get(`/aims/labels/${encodeURIComponent(labelCode)}/article`, { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchLabelAliveHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+    const { data } = await api.get(`/aims/labels/${encodeURIComponent(labelCode)}/alive-history`, { params: { storeId, page, size } });
+    return data.data;
+}
+
+export async function fetchLabelOperationHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+    const { data } = await api.get(`/aims/labels/${encodeURIComponent(labelCode)}/operation-history`, { params: { storeId, page, size } });
+    return data.data;
+}
+
+export async function setLabelLed(storeId: string, labelCode: string, led: { color?: string; mode?: string }) {
+    const { data } = await api.put(`/aims/labels/${encodeURIComponent(labelCode)}/led`, led, { params: { storeId } });
+    return data.data;
+}
+
+export async function blinkLabel(storeId: string, labelCode: string) {
+    const { data } = await api.post(`/aims/labels/${encodeURIComponent(labelCode)}/blink`, {}, { params: { storeId } });
+    return data.data;
+}
+
+export async function setLabelNfc(storeId: string, labelCode: string, nfcUrl: string) {
+    const { data } = await api.put(`/aims/labels/${encodeURIComponent(labelCode)}/nfc`, { nfcUrl }, { params: { storeId } });
+    return data.data;
+}
+
+export async function forceLabelAlive(storeId: string, labelCode: string) {
+    const { data } = await api.post(`/aims/labels/${encodeURIComponent(labelCode)}/heartbeat`, {}, { params: { storeId } });
+    return data.data;
+}
+
 // ─── Label History ──────────────────────────────────────────────────────────
 
 export async function fetchLabelStatusHistory(storeId: string, labelCode: string, page = 0, size = 50) {
-    const { data } = await api.get(`/aims/labels/${labelCode}/history`, { params: { storeId, page, size } });
+    const { data } = await api.get(`/aims/labels/${encodeURIComponent(labelCode)}/history`, { params: { storeId, page, size } });
     return data.data;
 }
 
