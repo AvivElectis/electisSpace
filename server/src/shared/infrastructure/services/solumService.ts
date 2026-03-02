@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
+import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest, AimsStoreSummary, AimsLabelStatusSummary, AimsGatewayStatusSummary, AimsLabelModel } from './aims.types.js';
 import { appLogger } from './appLogger.js';
 
 // Types definition (replicating needed parts from shared/domain/types)
@@ -782,6 +782,56 @@ export class SolumService {
         return this.withRetry('fetchArticleUpdateHistory', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
             return this.extractResponseData(response.data, 'fetchArticleUpdateHistory');
+        });
+    }
+
+    // ─── Summary / Overview Endpoints ──────────────────────────────────────
+
+    /**
+     * Fetch store summary (label + gateway counts, online/offline)
+     */
+    async fetchStoreSummary(config: SolumConfig, token: string): Promise<AimsStoreSummary> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/store/summary?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchStoreSummary', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchStoreSummary') as AimsStoreSummary;
+        });
+    }
+
+    /**
+     * Fetch label status summary (success/processing/timeout/online/offline counts)
+     */
+    async fetchLabelStatusSummary(config: SolumConfig, token: string): Promise<AimsLabelStatusSummary> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/summary/status?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchLabelStatusSummary', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelStatusSummary') as AimsLabelStatusSummary;
+        });
+    }
+
+    /**
+     * Fetch gateway status summary (connected/disconnected counts)
+     */
+    async fetchGatewayStatusSummary(config: SolumConfig, token: string): Promise<AimsGatewayStatusSummary> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/status/summary?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchGatewayStatusSummary', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchGatewayStatusSummary') as AimsGatewayStatusSummary;
+        });
+    }
+
+    /**
+     * Fetch label models/types with counts
+     */
+    async fetchLabelModels(config: SolumConfig, token: string): Promise<AimsLabelModel[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/model?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchLabelModels', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
         });
     }
 

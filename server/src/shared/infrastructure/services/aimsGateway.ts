@@ -862,6 +862,24 @@ export class AIMSGateway {
     async fetchArticleUpdateHistory(storeId: string, articleId: string, page = 0, size = 50) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistory(config, token, articleId, page, size));
     }
+
+    // ─── Summary / Overview ────────────────────────────────────────────────
+
+    async fetchStoreSummary(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchStoreSummary(config, token));
+    }
+
+    async fetchLabelStatusSummary(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelStatusSummary(config, token));
+    }
+
+    async fetchGatewayStatusSummary(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayStatusSummary(config, token));
+    }
+
+    async fetchLabelModels(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelModels(config, token));
+    }
 }
 
 // Singleton instance

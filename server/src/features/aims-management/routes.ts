@@ -16,6 +16,12 @@ const router = Router();
 router.use(authenticate);
 router.use(restrictAppViewer());
 
+// ─── Summary / Overview (STORE_MANAGER+) ────────────────────────────────────
+router.get('/store/summary', requirePermission('aims-management', 'view'), aimsManagementController.getStoreSummary);
+router.get('/labels/summary/status', requirePermission('aims-management', 'view'), aimsManagementController.getLabelStatusSummary);
+router.get('/labels/models', requirePermission('aims-management', 'view'), aimsManagementController.getLabelModels);
+router.get('/gateways/summary/status', requirePermission('aims-management', 'view'), aimsManagementController.getGatewayStatusSummary);
+
 // ─── Gateway Read Operations (STORE_MANAGER+) ──────────────────────────────
 router.get('/gateways', requirePermission('aims-management', 'view'), aimsManagementController.listGateways);
 router.get('/gateways/floating', requirePermission('aims-management', 'view'), aimsManagementController.getFloatingGateways);

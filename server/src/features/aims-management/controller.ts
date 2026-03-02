@@ -157,6 +157,40 @@ async function getArticleUpdateHistory(req: Request, res: Response, next: NextFu
     } catch (error) { next(error); }
 }
 
+// ─── Summary / Overview ────────────────────────────────────────────────────
+
+async function getStoreSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const summary = await aimsManagementService.getStoreSummary(storeId);
+        res.json({ data: summary });
+    } catch (error) { next(error); }
+}
+
+async function getLabelStatusSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const summary = await aimsManagementService.getLabelStatusSummary(storeId);
+        res.json({ data: summary });
+    } catch (error) { next(error); }
+}
+
+async function getGatewayStatusSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const summary = await aimsManagementService.getGatewayStatusSummary(storeId);
+        res.json({ data: summary });
+    } catch (error) { next(error); }
+}
+
+async function getLabelModels(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const models = await aimsManagementService.getLabelModels(storeId);
+        res.json({ data: models });
+    } catch (error) { next(error); }
+}
+
 export const aimsManagementController = {
     listGateways,
     getGatewayDetail,
@@ -173,4 +207,8 @@ export const aimsManagementController = {
     getBatchErrors,
     getBatchErrorsById,
     getArticleUpdateHistory,
+    getStoreSummary,
+    getLabelStatusSummary,
+    getGatewayStatusSummary,
+    getLabelModels,
 };

@@ -78,6 +78,28 @@ class AimsManagementService {
     async getArticleUpdateHistory(storeId: string, articleId: string, page = 0, size = 50) {
         return aimsGateway.fetchArticleUpdateHistory(storeId, articleId, page, size);
     }
+
+    // ─── Summary / Overview ────────────────────────────────────────────────
+
+    async getStoreSummary(storeId: string) {
+        appLogger.debug('AimsManagement', 'Getting store summary', { storeId });
+        return aimsGateway.fetchStoreSummary(storeId);
+    }
+
+    async getLabelStatusSummary(storeId: string) {
+        appLogger.debug('AimsManagement', 'Getting label status summary', { storeId });
+        return aimsGateway.fetchLabelStatusSummary(storeId);
+    }
+
+    async getGatewayStatusSummary(storeId: string) {
+        appLogger.debug('AimsManagement', 'Getting gateway status summary', { storeId });
+        return aimsGateway.fetchGatewayStatusSummary(storeId);
+    }
+
+    async getLabelModels(storeId: string) {
+        appLogger.debug('AimsManagement', 'Getting label models', { storeId });
+        return aimsGateway.fetchLabelModels(storeId);
+    }
 }
 
 export const aimsManagementService = new AimsManagementService();
