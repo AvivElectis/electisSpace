@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography, Stack, LinearProgress } from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, LinearProgress, Chip } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RouterIcon from '@mui/icons-material/Router';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,13 @@ interface DashboardAimsCardProps {
     totalLabels: number;
     onlineLabels: number;
     isMobile?: boolean;
+    // Battery health indicators (optional for backward compatibility)
+    batteryGood?: number;
+    batteryLow?: number;
+    batteryCritical?: number;
+    // Additional label status counts (optional)
+    labelsTimeout?: number;
+    labelsProcessing?: number;
 }
 
 export function DashboardAimsCard({
@@ -21,11 +28,43 @@ export function DashboardAimsCard({
     totalLabels,
     onlineLabels,
     isMobile,
+    batteryGood,
+    batteryLow,
+    batteryCritical,
+    labelsTimeout,
+    labelsProcessing,
 }: DashboardAimsCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
     const gatewayHealthPercent = totalGateways > 0 ? Math.round((onlineGateways / totalGateways) * 100) : 0;
+
+    const hasBatteryData = batteryGood !== undefined || batteryLow !== undefined || batteryCritical !== undefined;
+
+    const batteryChips = hasBatteryData ? (
+        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                {t('aims.batteryHealth')}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {batteryGood != null && batteryGood > 0 && (
+                    <Chip size="small" label={`${t('aims.batteryGood')}: ${batteryGood}`} color="success" variant="outlined" />
+                )}
+                {batteryLow != null && batteryLow > 0 && (
+                    <Chip size="small" label={`${t('aims.batteryLow')}: ${batteryLow}`} color="warning" variant="outlined" />
+                )}
+                {batteryCritical != null && batteryCritical > 0 && (
+                    <Chip size="small" label={`${t('aims.batteryCritical')}: ${batteryCritical}`} color="error" variant="outlined" />
+                )}
+                {/* Show "all good" when there are labels but no low/critical */}
+                {batteryGood === 0 && batteryLow === 0 && batteryCritical === 0 && totalLabels > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                        {t('aims.batteryGood')}
+                    </Typography>
+                )}
+            </Box>
+        </Box>
+    ) : null;
 
     if (isMobile) {
         return (
@@ -98,6 +137,8 @@ export function DashboardAimsCard({
                             color="info"
                         />
                     </Stack>
+
+                    {batteryChips}
                 </CardContent>
             </Card>
         );
@@ -189,6 +230,8 @@ export function DashboardAimsCard({
                             </Typography>
                         </Box>
                     </Box>
+
+                    {batteryChips}
                 </Stack>
             </CardContent>
         </Card>
