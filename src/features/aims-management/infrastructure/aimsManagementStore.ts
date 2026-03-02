@@ -75,6 +75,15 @@ interface AimsManagementState {
     templateGroups: any[];
     selectedTemplate: any | null;
 
+    // Whitelist
+    whitelist: any[];
+    whitelistLoading: boolean;
+    whitelistError: string | null;
+    whitelistLastFetched: number | null;
+    whitelistTotalElements: number;
+    whitelistTotalPages: number;
+    unassignedWhitelist: any[];
+
     // Overview
     storeSummary: any | null;
     labelStatusSummary: any | null;
@@ -139,6 +148,13 @@ interface AimsManagementState {
     setTemplateMappings: (mappings: any[]) => void;
     setTemplateGroups: (groups: any[]) => void;
     setSelectedTemplate: (template: any | null) => void;
+    setWhitelist: (items: any[]) => void;
+    setWhitelistLoading: (loading: boolean) => void;
+    setWhitelistError: (error: string | null) => void;
+    setWhitelistLastFetched: (ts: number | null) => void;
+    setWhitelistTotalElements: (total: number) => void;
+    setWhitelistTotalPages: (pages: number) => void;
+    setUnassignedWhitelist: (items: any[]) => void;
     setActiveTab: (tab: number) => void;
     reset: () => void;
 }
@@ -190,6 +206,13 @@ const initialState = {
     templateMappings: [],
     templateGroups: [],
     selectedTemplate: null,
+    whitelist: [],
+    whitelistLoading: false,
+    whitelistError: null,
+    whitelistLastFetched: null,
+    whitelistTotalElements: 0,
+    whitelistTotalPages: 0,
+    unassignedWhitelist: [],
     storeSummary: null,
     labelStatusSummary: null,
     gatewayStatusSummary: null,
@@ -253,6 +276,13 @@ export const useAimsManagementStore = create<AimsManagementState>((set) => ({
     setTemplateMappings: (templateMappings) => set({ templateMappings }),
     setTemplateGroups: (templateGroups) => set({ templateGroups }),
     setSelectedTemplate: (selectedTemplate) => set({ selectedTemplate }),
+    setWhitelist: (whitelist) => set({ whitelist, whitelistLastFetched: Date.now() }),
+    setWhitelistLoading: (whitelistLoading) => set({ whitelistLoading }),
+    setWhitelistError: (whitelistError) => set({ whitelistError }),
+    setWhitelistLastFetched: (whitelistLastFetched) => set({ whitelistLastFetched }),
+    setWhitelistTotalElements: (whitelistTotalElements) => set({ whitelistTotalElements }),
+    setWhitelistTotalPages: (whitelistTotalPages) => set({ whitelistTotalPages }),
+    setUnassignedWhitelist: (unassignedWhitelist) => set({ unassignedWhitelist }),
     setActiveTab: (activeTab) => set({ activeTab }),
     reset: () => set(initialState),
 }));

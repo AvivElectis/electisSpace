@@ -216,3 +216,40 @@ export async function fetchTemplateGroups(storeId: string) {
     const { data } = await api.get('/aims/templates/groups', { params: { storeId } });
     return data.data;
 }
+
+// ─── Whitelist Operations ───────────────────────────────────────────────────
+
+export async function fetchWhitelist(storeId: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}) {
+    const { data } = await api.get('/aims/whitelist', { params: { storeId, ...params } });
+    return data.data;
+}
+
+export async function addToWhitelist(storeId: string, labelList: string[]) {
+    const { data } = await api.post('/aims/whitelist', { labelList }, { params: { storeId } });
+    return data.data;
+}
+
+export async function removeFromWhitelist(storeId: string, labelList: string[]) {
+    const { data } = await api.delete('/aims/whitelist', { data: { labelList }, params: { storeId } });
+    return data.data;
+}
+
+export async function whitelistBox(storeId: string, boxId: string) {
+    const { data } = await api.post('/aims/whitelist/box', { boxId }, { params: { storeId } });
+    return data.data;
+}
+
+export async function syncWhitelistToStorage(storeId: string, fullUpdate = false) {
+    const { data } = await api.put('/aims/whitelist/sync/storage', { fullUpdate }, { params: { storeId } });
+    return data.data;
+}
+
+export async function syncWhitelistToGateways(storeId: string, partialDelete = false) {
+    const { data } = await api.put('/aims/whitelist/sync/gateway', { partialDelete }, { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchUnassignedWhitelist(storeId: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}) {
+    const { data } = await api.get('/aims/whitelist/unassigned', { params: { storeId, ...params } });
+    return data.data;
+}

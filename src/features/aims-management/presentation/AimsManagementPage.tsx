@@ -39,6 +39,7 @@ import { AimsOverviewTab } from './AimsOverviewTab';
 import { ArticlesTab } from './ArticlesTab';
 import { HistoryTab } from './HistoryTab';
 import { TemplatesTab } from './TemplatesTab';
+import { WhitelistTab } from './WhitelistTab';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
 import { useLabelsOverview } from '../application/useLabelsOverview';
@@ -287,11 +288,9 @@ export function AimsManagementPage() {
                 <HistoryTab storeId={activeStoreId} />
             </TabPanel>
 
-            {/* Tab 6 — Whitelist (placeholder) */}
+            {/* Tab 6 — Whitelist */}
             <TabPanel value={activeTab} index={6}>
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
-                </Box>
+                <WhitelistTab storeId={activeStoreId} />
             </TabPanel>
 
             {/* Mobile FAB for register gateway */}
