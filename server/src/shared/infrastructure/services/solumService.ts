@@ -807,6 +807,47 @@ export class SolumService {
         });
     }
 
+    // ─── Gateway Config / Status / Opcodes ─────────────────────────────────
+
+    /**
+     * Update gateway configuration (channels, refresh periods, network settings)
+     * PUT /api/v2/common/gateway with gateway MAC + config fields in body
+     */
+    async updateGatewayConfig(config: SolumConfig, token: string, gatewayMac: string, configData: Record<string, any>): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('updateGatewayConfig', async () => {
+            const response = await this.client.put(url, { gateway: gatewayMac, ...configData }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return this.extractResponseData(response.data, 'updateGatewayConfig');
+        });
+    }
+
+    /**
+     * Fetch gateway opcodes (pending operations queue)
+     */
+    async fetchGatewayOpcodes(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/opcode?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('fetchGatewayOpcodes', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchGatewayOpcodes');
+        });
+    }
+
+    /**
+     * Fetch gateway connection status
+     */
+    async fetchGatewayStatus(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/status?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('fetchGatewayStatus', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchGatewayStatus');
+        });
+    }
+
     // ─── Label History ──────────────────────────────────────────────────────
 
     async fetchLabelStatusHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {

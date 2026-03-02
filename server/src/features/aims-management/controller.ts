@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, ledControlSchema, nfcConfigSchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
 
 /**
@@ -80,6 +80,31 @@ async function rebootGateway(req: Request, res: Response, next: NextFunction) {
     try {
         const storeId = getStoreId(req);
         const result = await aimsManagementService.rebootGateway(storeId, String(req.params.mac), req.user!.id);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function getGatewayStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const status = await aimsManagementService.getGatewayStatus(storeId, String(req.params.mac));
+        res.json({ data: status });
+    } catch (error) { next(error); }
+}
+
+async function getGatewayOpcodes(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const opcodes = await aimsManagementService.getGatewayOpcodes(storeId, String(req.params.mac));
+        res.json({ data: opcodes });
+    } catch (error) { next(error); }
+}
+
+async function updateGatewayConfig(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const configData = gatewayConfigUpdateSchema.parse(req.body);
+        const result = await aimsManagementService.updateGatewayConfig(storeId, String(req.params.mac), configData);
         res.json({ data: result });
     } catch (error) { next(error); }
 }
@@ -269,6 +294,9 @@ export const aimsManagementController = {
     registerGateway,
     deregisterGateways,
     rebootGateway,
+    getGatewayStatus,
+    getGatewayOpcodes,
+    updateGatewayConfig,
     listLabels,
     listUnassignedLabels,
     getLabelStatusHistory,

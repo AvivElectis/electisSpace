@@ -27,11 +27,14 @@ router.get('/gateways', requirePermission('aims-management', 'view'), aimsManage
 router.get('/gateways/floating', requirePermission('aims-management', 'view'), aimsManagementController.getFloatingGateways);
 router.get('/gateways/:mac', requirePermission('aims-management', 'view'), aimsManagementController.getGatewayDetail);
 router.get('/gateways/:mac/debug', requirePermission('aims-management', 'view'), aimsManagementController.getGatewayDebugReport);
+router.get('/gateways/:mac/status', requirePermission('aims-management', 'view'), aimsManagementController.getGatewayStatus);
+router.get('/gateways/:mac/opcodes', requirePermission('aims-management', 'view'), aimsManagementController.getGatewayOpcodes);
 
 // ─── Gateway Write Operations (STORE_ADMIN+) ───────────────────────────────
 router.post('/gateways', requirePermission('aims-management', 'manage'), aimsManagementController.registerGateway);
 router.delete('/gateways', requirePermission('aims-management', 'manage'), aimsManagementController.deregisterGateways);
 router.patch('/gateways/:mac/reboot', requirePermission('aims-management', 'manage'), aimsManagementController.rebootGateway);
+router.put('/gateways/:mac/config', requirePermission('aims-management', 'manage'), aimsManagementController.updateGatewayConfig);
 
 // ─── Label Listing (STORE_MANAGER+) ─────────────────────────────────────────
 router.get('/labels', requirePermission('aims-management', 'view'), aimsManagementController.listLabels);

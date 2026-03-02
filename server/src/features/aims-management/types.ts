@@ -45,3 +45,12 @@ export const nfcConfigSchema = z.object({
 export const labelCodeParamSchema = z.object({
     code: z.string().min(1),
 });
+
+// ─── Gateway Config Schemas ─────────────────────────────────────────────────
+
+export const gatewayConfigUpdateSchema = z.object({
+    refreshStart: z.string().optional(),
+    refreshEnd: z.string().optional(),
+    refreshInterval: z.number().optional(),
+    refreshMode: z.string().optional(),
+}).passthrough(); // Allow additional AIMS config fields

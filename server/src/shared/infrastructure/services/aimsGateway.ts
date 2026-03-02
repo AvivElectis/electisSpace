@@ -839,6 +839,18 @@ export class AIMSGateway {
         return this.withTokenRetry(storeId, (token, config) => solumService.rebootGateway(config, token, gatewayMac));
     }
 
+    async updateGatewayConfig(storeId: string, gatewayMac: string, configData: Record<string, any>) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.updateGatewayConfig(config, token, gatewayMac, configData));
+    }
+
+    async fetchGatewayOpcodes(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayOpcodes(config, token, gatewayMac));
+    }
+
+    async fetchGatewayStatus(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayStatus(config, token, gatewayMac));
+    }
+
     async fetchGatewayDebugReport(storeId: string, gatewayMac: string) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayDebugReport(config, token, gatewayMac));
     }

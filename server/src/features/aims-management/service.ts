@@ -45,6 +45,21 @@ class AimsManagementService {
         return aimsGateway.fetchGatewayDebugReport(storeId, mac);
     }
 
+    async updateGatewayConfig(storeId: string, gatewayMac: string, configData: Record<string, any>) {
+        appLogger.info('AimsManagement', 'Updating gateway config', { storeId, gatewayMac });
+        return aimsGateway.updateGatewayConfig(storeId, gatewayMac, configData);
+    }
+
+    async getGatewayOpcodes(storeId: string, gatewayMac: string) {
+        appLogger.debug('AimsManagement', 'Getting gateway opcodes', { storeId, gatewayMac });
+        return aimsGateway.fetchGatewayOpcodes(storeId, gatewayMac);
+    }
+
+    async getGatewayStatus(storeId: string, gatewayMac: string) {
+        appLogger.debug('AimsManagement', 'Getting gateway status', { storeId, gatewayMac });
+        return aimsGateway.fetchGatewayStatus(storeId, gatewayMac);
+    }
+
     // ─── Labels ─────────────────────────────────────────────────────────
 
     async listLabels(storeId: string) {
