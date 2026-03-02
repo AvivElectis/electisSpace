@@ -193,7 +193,7 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                     <Stack direction="row" gap={1} flexWrap="wrap">
                                         {labelType && <Chip label={labelType} size="small" variant="outlined" />}
                                         {(width || height) && (
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" color="text.secondary" dir="ltr" component="span">
                                                 {width} x {height}
                                             </Typography>
                                         )}
@@ -287,7 +287,7 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                             </TableCell>
                                             <TableCell>{labelType || '\u2014'}</TableCell>
                                             <TableCell>
-                                                {(width || height) ? `${width} x ${height}` : '\u2014'}
+                                                {(width || height) ? <span dir="ltr">{width} x {height}</span> : '\u2014'}
                                             </TableCell>
                                             <TableCell>{colorMode || '\u2014'}</TableCell>
                                             <TableCell align="center">
