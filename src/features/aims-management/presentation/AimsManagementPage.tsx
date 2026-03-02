@@ -36,8 +36,8 @@ import { GatewayDetail } from './GatewayDetail';
 import { GatewayRegistration } from './GatewayRegistration';
 import { LabelsOverview } from './LabelsOverview';
 import { AimsOverviewTab } from './AimsOverviewTab';
-import { ProductHistory } from './ProductHistory';
 import { ArticlesTab } from './ArticlesTab';
+import { HistoryTab } from './HistoryTab';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
 import { useLabelsOverview } from '../application/useLabelsOverview';
@@ -283,9 +283,9 @@ export function AimsManagementPage() {
                 </Box>
             </TabPanel>
 
-            {/* Tab 5 — History (existing ProductHistory) */}
+            {/* Tab 5 — History (unified: batch / article / label) */}
             <TabPanel value={activeTab} index={5}>
-                <ProductHistory storeId={activeStoreId} />
+                <HistoryTab storeId={activeStoreId} />
             </TabPanel>
 
             {/* Tab 6 — Whitelist (placeholder) */}

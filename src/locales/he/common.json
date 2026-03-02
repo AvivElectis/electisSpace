@@ -156,7 +156,8 @@
         "labelUpdates": "היסטוריית תוויות",
         "dateRange": "טווח תאריכים",
         "searchByLabel": "חפש לפי קוד תווית",
-        "searchByArticle": "חפש לפי מזהה מוצר"
+        "searchByArticle": "חפש לפי מזהה מוצר",
+        "noArticleUpdates": "לא נמצאו עדכוני מוצרים."
     },
     "navigation": {
         "dashboard": "לוח בקרה",
