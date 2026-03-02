@@ -124,6 +124,21 @@ export interface AimsDitherPreviewRequest {
     optAlgType?: number;
 }
 
+// ─── Label Action Types ────────────────────────────────────────────────────
+
+/** LED control request for a label */
+export interface AimsLedControl {
+    labelCode: string;
+    color?: string;
+    mode?: string;
+}
+
+/** NFC configuration request for a label */
+export interface AimsNfcConfig {
+    labelCode: string;
+    nfcUrl: string;
+}
+
 // ─── Response Types ────────────────────────────────────────────────────────
 
 /** Generic AIMS API response envelope */
@@ -246,5 +261,46 @@ export interface AimsArticleUpdateHistory {
     }>;
     totalElements?: number;
     totalPages?: number;
+    [key: string]: unknown;
+}
+
+// ─── Summary / Overview Types ──────────────────────────────────────────────
+
+/** Store summary from AIMS overview endpoint */
+export interface AimsStoreSummary {
+    store: string;
+    storeName: string;
+    labelCount: number;
+    gatewayCount: number;
+    onlineLabelCount?: number;
+    offlineLabelCount?: number;
+    onlineGatewayCount?: number;
+    offlineGatewayCount?: number;
+    [key: string]: unknown;
+}
+
+/** Label status summary (success/processing/timeout/online/offline counts) */
+export interface AimsLabelStatusSummary {
+    totalLabels: number;
+    successCount: number;
+    processingCount: number;
+    timeoutCount: number;
+    onlineCount: number;
+    offlineCount: number;
+    [key: string]: unknown;
+}
+
+/** Gateway status summary (connected/disconnected counts) */
+export interface AimsGatewayStatusSummary {
+    totalGateways: number;
+    connectedCount: number;
+    disconnectedCount: number;
+    [key: string]: unknown;
+}
+
+/** Label model/type count from AIMS */
+export interface AimsLabelModel {
+    labelType: string;
+    count: number;
     [key: string]: unknown;
 }
