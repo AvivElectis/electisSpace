@@ -63,6 +63,18 @@ interface AimsManagementState {
     selectedArticle: any | null;
     articleHistory: any | null;
 
+    // Templates
+    templates: any[];
+    templatesLoading: boolean;
+    templatesError: string | null;
+    templatesLastFetched: number | null;
+    templatesTotalElements: number;
+    templatesTotalPages: number;
+    templateTypes: any[];
+    templateMappings: any[];
+    templateGroups: any[];
+    selectedTemplate: any | null;
+
     // Overview
     storeSummary: any | null;
     labelStatusSummary: any | null;
@@ -117,6 +129,16 @@ interface AimsManagementState {
     setArticlesTotalPages: (pages: number) => void;
     setSelectedArticle: (article: any | null) => void;
     setArticleHistory: (history: any | null) => void;
+    setTemplates: (templates: any[]) => void;
+    setTemplatesLoading: (loading: boolean) => void;
+    setTemplatesError: (error: string | null) => void;
+    setTemplatesLastFetched: (ts: number | null) => void;
+    setTemplatesTotalElements: (total: number) => void;
+    setTemplatesTotalPages: (pages: number) => void;
+    setTemplateTypes: (types: any[]) => void;
+    setTemplateMappings: (mappings: any[]) => void;
+    setTemplateGroups: (groups: any[]) => void;
+    setSelectedTemplate: (template: any | null) => void;
     setActiveTab: (tab: number) => void;
     reset: () => void;
 }
@@ -158,6 +180,16 @@ const initialState = {
     articlesTotalPages: 0,
     selectedArticle: null,
     articleHistory: null,
+    templates: [],
+    templatesLoading: false,
+    templatesError: null,
+    templatesLastFetched: null,
+    templatesTotalElements: 0,
+    templatesTotalPages: 0,
+    templateTypes: [],
+    templateMappings: [],
+    templateGroups: [],
+    selectedTemplate: null,
     storeSummary: null,
     labelStatusSummary: null,
     gatewayStatusSummary: null,
@@ -211,6 +243,16 @@ export const useAimsManagementStore = create<AimsManagementState>((set) => ({
     setArticlesTotalPages: (articlesTotalPages) => set({ articlesTotalPages }),
     setSelectedArticle: (selectedArticle) => set({ selectedArticle }),
     setArticleHistory: (articleHistory) => set({ articleHistory }),
+    setTemplates: (templates) => set({ templates, templatesLastFetched: Date.now() }),
+    setTemplatesLoading: (templatesLoading) => set({ templatesLoading }),
+    setTemplatesError: (templatesError) => set({ templatesError }),
+    setTemplatesLastFetched: (templatesLastFetched) => set({ templatesLastFetched }),
+    setTemplatesTotalElements: (templatesTotalElements) => set({ templatesTotalElements }),
+    setTemplatesTotalPages: (templatesTotalPages) => set({ templatesTotalPages }),
+    setTemplateTypes: (templateTypes) => set({ templateTypes }),
+    setTemplateMappings: (templateMappings) => set({ templateMappings }),
+    setTemplateGroups: (templateGroups) => set({ templateGroups }),
+    setSelectedTemplate: (selectedTemplate) => set({ selectedTemplate }),
     setActiveTab: (activeTab) => set({ activeTab }),
     reset: () => set(initialState),
 }));

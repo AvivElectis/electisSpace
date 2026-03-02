@@ -157,7 +157,10 @@
         "dateRange": "Date Range",
         "searchByLabel": "Search by label code",
         "searchByArticle": "Search by article ID",
-        "noArticleUpdates": "No article updates found."
+        "noArticleUpdates": "No article updates found.",
+        "searchByTemplate": "Search by template name",
+        "templateDetail": "Template Detail",
+        "templateGroupName": "Group Name"
     },
     "navigation": {
         "dashboard": "Dashboard",

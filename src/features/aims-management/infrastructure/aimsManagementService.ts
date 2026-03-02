@@ -189,3 +189,30 @@ export async function fetchLabelModels(storeId: string) {
     const { data } = await api.get('/aims/labels/models', { params: { storeId } });
     return data.data;
 }
+
+// ─── Template Operations ─────────────────────────────────────────────────────
+
+export async function fetchTemplates(storeId: string, params: { page?: number; size?: number } = {}) {
+    const { data } = await api.get('/aims/templates', { params: { storeId, ...params } });
+    return data.data;
+}
+
+export async function fetchTemplateByName(storeId: string, templateName: string) {
+    const { data } = await api.get(`/aims/templates/${encodeURIComponent(templateName)}`, { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchTemplateTypes(storeId: string) {
+    const { data } = await api.get('/aims/templates/types', { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchTemplateMappings(storeId: string) {
+    const { data } = await api.get('/aims/templates/mappings', { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchTemplateGroups(storeId: string) {
+    const { data } = await api.get('/aims/templates/groups', { params: { storeId } });
+    return data.data;
+}

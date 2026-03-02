@@ -157,7 +157,10 @@
         "dateRange": "טווח תאריכים",
         "searchByLabel": "חפש לפי קוד תווית",
         "searchByArticle": "חפש לפי מזהה מוצר",
-        "noArticleUpdates": "לא נמצאו עדכוני מוצרים."
+        "noArticleUpdates": "לא נמצאו עדכוני מוצרים.",
+        "searchByTemplate": "חפש לפי שם תבנית",
+        "templateDetail": "פרטי תבנית",
+        "templateGroupName": "שם קבוצה"
     },
     "navigation": {
         "dashboard": "לוח בקרה",

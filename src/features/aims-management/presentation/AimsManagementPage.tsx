@@ -38,6 +38,7 @@ import { LabelsOverview } from './LabelsOverview';
 import { AimsOverviewTab } from './AimsOverviewTab';
 import { ArticlesTab } from './ArticlesTab';
 import { HistoryTab } from './HistoryTab';
+import { TemplatesTab } from './TemplatesTab';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
 import { useLabelsOverview } from '../application/useLabelsOverview';
@@ -276,11 +277,9 @@ export function AimsManagementPage() {
                 <ArticlesTab storeId={activeStoreId} />
             </TabPanel>
 
-            {/* Tab 4 — Templates (placeholder) */}
+            {/* Tab 4 — Templates */}
             <TabPanel value={activeTab} index={4}>
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
-                </Box>
+                <TemplatesTab storeId={activeStoreId} />
             </TabPanel>
 
             {/* Tab 5 — History (unified: batch / article / label) */}
