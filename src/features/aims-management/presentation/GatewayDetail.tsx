@@ -47,7 +47,8 @@ export function GatewayDetail({ storeId, mac, onBack }: GatewayDetailProps) {
     const gw = selectedGateway;
     if (!gw) return null;
 
-    const isOnline = gw.status === 'ONLINE' || gw.status === 'online';
+    const statusRaw = (gw.status || gw.networkStatus || '').toUpperCase();
+    const isOnline = statusRaw === 'ONLINE' || statusRaw === 'CONNECTED';
 
     const fields = [
         { label: t('aims.macAddress', 'MAC Address'), value: gw.mac || gw.macAddress || mac },
