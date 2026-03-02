@@ -43,6 +43,21 @@ export async function fetchGatewayDebugReport(storeId: string, mac: string) {
     return data.data;
 }
 
+export async function fetchGatewayStatus(storeId: string, mac: string) {
+    const { data } = await api.get(`/aims/gateways/${encodeURIComponent(mac)}/status`, { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchGatewayOpcodes(storeId: string, mac: string) {
+    const { data } = await api.get(`/aims/gateways/${encodeURIComponent(mac)}/opcodes`, { params: { storeId } });
+    return data.data;
+}
+
+export async function updateGatewayConfig(storeId: string, mac: string, configData: Record<string, any>) {
+    const { data } = await api.put(`/aims/gateways/${encodeURIComponent(mac)}/config`, configData, { params: { storeId } });
+    return data.data;
+}
+
 // ─── Label Listing ─────────────────────────────────────────────────────────
 
 export async function fetchLabels(storeId: string) {
