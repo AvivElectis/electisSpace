@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] — 2026-03-02 — AIMS Manager Overhaul
+
 ### Added
 - **AIMS Manager overhaul — 7-tab layout** — expanded from 3 to 7 scrollable tabs: Overview, Gateways, Labels, Articles, Templates, History, Whitelist; comprehensive replacement for AIMS SaaS UI
 - **AIMS Overview tab** — store health dashboard with gateway/label status summaries, battery health indicators, and label model breakdown
