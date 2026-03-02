@@ -923,6 +923,28 @@ export class AIMSGateway {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistoryDetail(config, token, articleId, params));
     }
 
+    // ─── Templates ──────────────────────────────────────────────────────
+
+    async fetchTemplates(storeId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplates(config, token, params));
+    }
+
+    async fetchTemplateByName(storeId: string, templateName: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateByName(config, token, templateName));
+    }
+
+    async fetchTemplateTypes(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateTypes(config, token));
+    }
+
+    async fetchTemplateMappingConditions(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateMappingConditions(config, token));
+    }
+
+    async fetchTemplateGroups(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateGroups(config, token));
+    }
+
     // ─── Summary / Overview ────────────────────────────────────────────────
 
     async fetchStoreSummary(storeId: string) {

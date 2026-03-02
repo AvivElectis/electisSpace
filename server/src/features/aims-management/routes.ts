@@ -60,6 +60,13 @@ router.get('/articles/update-history', requirePermission('aims-management', 'vie
 router.get('/articles/:articleId', requirePermission('aims-management', 'view'), aimsManagementController.getArticleById);
 router.get('/articles/:articleId/update-history', requirePermission('aims-management', 'view'), aimsManagementController.getArticleUpdateHistoryDetail);
 
+// ─── Templates (STORE_MANAGER+) ──────────────────────────────────────────────
+router.get('/templates', requirePermission('aims-management', 'view'), aimsManagementController.listTemplates);
+router.get('/templates/types', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateTypes);
+router.get('/templates/mappings', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateMappings);
+router.get('/templates/groups', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateGroups);
+router.get('/templates/:name', requirePermission('aims-management', 'view'), aimsManagementController.getTemplateByName);
+
 // ─── Product / Batch History (STORE_MANAGER+) ───────────────────────────────
 router.get('/products/history', requirePermission('aims-management', 'view'), aimsManagementController.getBatchHistory);
 router.get('/products/history/:name', requirePermission('aims-management', 'view'), aimsManagementController.getBatchDetail);

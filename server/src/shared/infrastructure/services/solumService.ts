@@ -1019,6 +1019,66 @@ export class SolumService {
         });
     }
 
+    // ─── Template Endpoints ──────────────────────────────────────────────
+
+    /**
+     * Fetch templates (paginated)
+     */
+    async fetchTemplates(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/templates?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchTemplates', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchTemplates');
+        });
+    }
+
+    /**
+     * Fetch a template by name
+     */
+    async fetchTemplateByName(config: SolumConfig, token: string, templateName: string): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/name?company=${config.companyName}&templateName=${encodeURIComponent(templateName)}`);
+        return this.withRetry('fetchTemplateByName', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchTemplateByName');
+        });
+    }
+
+    /**
+     * Fetch template types
+     */
+    async fetchTemplateTypes(config: SolumConfig, token: string): Promise<any[]> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/type?company=${config.companyName}`);
+        return this.withRetry('fetchTemplateTypes', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    /**
+     * Fetch template mapping conditions
+     */
+    async fetchTemplateMappingConditions(config: SolumConfig, token: string): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/mapping/condition?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchTemplateMappingConditions', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    /**
+     * Fetch template groups
+     */
+    async fetchTemplateGroups(config: SolumConfig, token: string): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/mapping/group?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchTemplateGroups', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
     /**
      * Extract data from AIMS API response.
      * SoluM responses vary by endpoint:

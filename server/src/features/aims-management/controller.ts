@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
 
 /**
@@ -298,6 +298,49 @@ async function forceLabelAlive(req: Request, res: Response, next: NextFunction) 
     } catch (error) { next(error); }
 }
 
+// ─── Templates ──────────────────────────────────────────────────────────────
+
+async function listTemplates(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = templateListQuerySchema.parse(req.query);
+        const templates = await aimsManagementService.listTemplates(storeId, { page, size });
+        res.json({ data: templates });
+    } catch (error) { next(error); }
+}
+
+async function listTemplateTypes(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const types = await aimsManagementService.listTemplateTypes(storeId);
+        res.json({ data: types });
+    } catch (error) { next(error); }
+}
+
+async function listTemplateMappings(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const mappings = await aimsManagementService.listTemplateMappingConditions(storeId);
+        res.json({ data: mappings });
+    } catch (error) { next(error); }
+}
+
+async function listTemplateGroups(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const groups = await aimsManagementService.listTemplateGroups(storeId);
+        res.json({ data: groups });
+    } catch (error) { next(error); }
+}
+
+async function getTemplateByName(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const template = await aimsManagementService.getTemplateByName(storeId, String(req.params.name));
+        res.json({ data: template });
+    } catch (error) { next(error); }
+}
+
 // ─── Summary / Overview ────────────────────────────────────────────────────
 
 async function getStoreSummary(req: Request, res: Response, next: NextFunction) {
@@ -364,6 +407,11 @@ export const aimsManagementController = {
     getBatchErrors,
     getBatchErrorsById,
     getArticleUpdateHistory,
+    listTemplates,
+    listTemplateTypes,
+    listTemplateMappings,
+    listTemplateGroups,
+    getTemplateByName,
     getStoreSummary,
     getLabelStatusSummary,
     getGatewayStatusSummary,

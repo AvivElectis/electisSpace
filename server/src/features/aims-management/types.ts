@@ -58,6 +58,13 @@ export const articleIdParamSchema = z.object({
     articleId: z.string().min(1),
 });
 
+// ─── Template Schemas ───────────────────────────────────────────────────────
+
+export const templateListQuerySchema = z.object({
+    page: z.coerce.number().int().min(0).default(0),
+    size: z.coerce.number().int().min(1).max(500).default(50),
+});
+
 // ─── Gateway Config Schemas ─────────────────────────────────────────────────
 
 export const gatewayConfigUpdateSchema = z.object({

@@ -159,6 +159,33 @@ class AimsManagementService {
         return aimsGateway.fetchArticleUpdateHistory(storeId, articleId, page, size);
     }
 
+    // ─── Templates ────────────────────────────────────────────────────
+
+    async listTemplates(storeId: string, params?: { page?: number; size?: number }) {
+        appLogger.info('AimsManagement', 'Listing templates', { storeId, ...params });
+        return aimsGateway.fetchTemplates(storeId, params);
+    }
+
+    async getTemplateByName(storeId: string, templateName: string) {
+        appLogger.info('AimsManagement', 'Getting template by name', { storeId, templateName });
+        return aimsGateway.fetchTemplateByName(storeId, templateName);
+    }
+
+    async listTemplateTypes(storeId: string) {
+        appLogger.info('AimsManagement', 'Listing template types', { storeId });
+        return aimsGateway.fetchTemplateTypes(storeId);
+    }
+
+    async listTemplateMappingConditions(storeId: string) {
+        appLogger.info('AimsManagement', 'Listing template mapping conditions', { storeId });
+        return aimsGateway.fetchTemplateMappingConditions(storeId);
+    }
+
+    async listTemplateGroups(storeId: string) {
+        appLogger.info('AimsManagement', 'Listing template groups', { storeId });
+        return aimsGateway.fetchTemplateGroups(storeId);
+    }
+
     // ─── Summary / Overview ────────────────────────────────────────────────
 
     async getStoreSummary(storeId: string) {
