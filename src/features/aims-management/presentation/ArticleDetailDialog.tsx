@@ -23,7 +23,7 @@ interface ArticleDetailDialogProps {
     onFetchHistory: (articleId: string, page?: number) => void;
 }
 
-export function ArticleDetailDialog({ open, onClose, article, articleHistory, storeId, onFetchHistory }: ArticleDetailDialogProps) {
+export function ArticleDetailDialog({ open, onClose, article, articleHistory, storeId: _storeId, onFetchHistory: _onFetchHistory }: ArticleDetailDialogProps) {
     const { t } = useTranslation();
     const [tab, setTab] = useState(0);
 

@@ -31,8 +31,8 @@ export function DashboardAimsCard({
     batteryGood,
     batteryLow,
     batteryCritical,
-    labelsTimeout,
-    labelsProcessing,
+    labelsTimeout: _labelsTimeout,
+    labelsProcessing: _labelsProcessing,
 }: DashboardAimsCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
