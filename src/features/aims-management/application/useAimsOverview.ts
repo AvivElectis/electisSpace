@@ -25,17 +25,27 @@ export function useAimsOverview(storeId: string | null) {
         setOverviewLoading(true);
         setOverviewError(null);
         try {
-            const [storeSummaryData, labelStatusData, gatewayStatusData, labelModelsData] = await Promise.all([
+            // Use allSettled so one failing endpoint doesn't block the rest
+            const [storeSummaryResult, labelStatusResult, gatewayStatusResult, labelModelsResult] = await Promise.allSettled([
                 aimsService.fetchStoreSummary(storeId),
                 aimsService.fetchLabelStatusSummary(storeId),
                 aimsService.fetchGatewayStatusSummary(storeId),
                 aimsService.fetchLabelModels(storeId),
             ]);
-            setStoreSummary(storeSummaryData);
-            setLabelStatusSummary(labelStatusData);
-            setGatewayStatusSummary(gatewayStatusData);
-            setLabelModels(Array.isArray(labelModelsData) ? labelModelsData : []);
+            if (storeSummaryResult.status === 'fulfilled') setStoreSummary(storeSummaryResult.value);
+            if (labelStatusResult.status === 'fulfilled') setLabelStatusSummary(labelStatusResult.value);
+            if (gatewayStatusResult.status === 'fulfilled') setGatewayStatusSummary(gatewayStatusResult.value);
+            if (labelModelsResult.status === 'fulfilled') setLabelModels(Array.isArray(labelModelsResult.value) ? labelModelsResult.value : []);
             setOverviewLastFetched(Date.now());
+
+            // Report partial failures as warnings, not blocking errors
+            const failures = [storeSummaryResult, labelStatusResult, gatewayStatusResult, labelModelsResult]
+                .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+            if (failures.length > 0 && failures.length < 4) {
+                failures.forEach(f => logger.warn('useAimsOverview', 'Partial overview fetch failed', { error: f.reason?.message }));
+            } else if (failures.length === 4) {
+                setOverviewError(failures[0].reason?.message || 'Failed to load overview');
+            }
         } catch (error: any) {
             logger.error('useAimsOverview', 'Failed to fetch overview', { error: error.message });
             setOverviewError(error.message || 'Failed to load overview');
