@@ -1,8 +1,9 @@
 /**
  * AIMS Overview Tab
  *
- * Stats dashboard showing store health metrics: gateway/label counts,
- * battery/signal distributions, label type breakdown, and update stats.
+ * Stats dashboard showing store health metrics from AIMS store summary:
+ * gateway/label counts, battery health, signal distribution, update progress,
+ * and label type breakdown.
  */
 
 import { useEffect } from 'react';
@@ -13,7 +14,9 @@ import {
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
 import CategoryOutlined from '@mui/icons-material/CategoryOutlined';
-import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
+import BatteryChargingFullOutlined from '@mui/icons-material/BatteryChargingFull';
+import SignalCellularAltOutlined from '@mui/icons-material/SignalCellularAlt';
+import UpdateOutlined from '@mui/icons-material/Update';
 import { useTranslation } from 'react-i18next';
 import { useAimsOverview } from '../application/useAimsOverview';
 
@@ -62,9 +65,9 @@ function HealthBar({ label, value, total, color }: HealthBarProps) {
 function OverviewSkeleton() {
     return (
         <Grid container spacing={2}>
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Grid size={{ xs: 12, md: 6 }} key={i}>
-                    <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 2 }} />
+                    <Skeleton variant="rectangular" height={160} sx={{ borderRadius: 2 }} />
                 </Grid>
             ))}
         </Grid>
@@ -76,7 +79,7 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const {
-        storeSummary, labelStatusSummary, gatewayStatusSummary, labelModels,
+        storeSummary, labelModels,
         overviewLoading, overviewError, fetchOverview,
     } = useAimsOverview(storeId);
 
@@ -92,18 +95,27 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
         return <Alert severity="error" sx={{ mb: 2 }}>{overviewError}</Alert>;
     }
 
-    // Gateway stats with safe defaults
-    const gwTotal = gatewayStatusSummary?.totalGateways ?? storeSummary?.gatewayCount ?? 0;
-    const gwConnected = gatewayStatusSummary?.connectedCount ?? storeSummary?.onlineGatewayCount ?? 0;
-    const gwDisconnected = gatewayStatusSummary?.disconnectedCount ?? storeSummary?.offlineGatewayCount ?? 0;
+    // All data comes from the store summary endpoint (correct AIMS field names)
+    const gwOnline = storeSummary?.onlineGwCount ?? 0;
+    const gwOffline = storeSummary?.offlineGwCount ?? 0;
+    const gwTotal = gwOnline + gwOffline;
 
-    // Label stats with safe defaults
-    const lblTotal = labelStatusSummary?.totalLabels ?? storeSummary?.labelCount ?? 0;
-    const lblOnline = labelStatusSummary?.onlineCount ?? storeSummary?.onlineLabelCount ?? 0;
-    const lblOffline = labelStatusSummary?.offlineCount ?? storeSummary?.offlineLabelCount ?? 0;
-    const lblSuccess = labelStatusSummary?.successCount ?? 0;
-    const lblProcessing = labelStatusSummary?.processingCount ?? 0;
-    const lblTimeout = labelStatusSummary?.timeoutCount ?? 0;
+    const lblTotal = storeSummary?.totalLabelCount ?? 0;
+    const lblOnline = storeSummary?.onlineLabelCount ?? 0;
+    const lblOffline = storeSummary?.offlineLabelCount ?? 0;
+
+    const lblUpdated = storeSummary?.updatedLabelCount ?? 0;
+    const lblInProgress = storeSummary?.inProgressLabelCount ?? 0;
+    const lblNotUpdated = storeSummary?.notUpdatedLabelCount ?? 0;
+
+    const batGood = storeSummary?.goodBatteryCount ?? 0;
+    const batLow = storeSummary?.lowBatteryCount ?? 0;
+    const batTotal = batGood + batLow;
+
+    const sigExcellent = storeSummary?.excellentSignalLabelCount ?? 0;
+    const sigGood = storeSummary?.goodSignalLabelCount ?? 0;
+    const sigBad = storeSummary?.badSignalLabelCount ?? 0;
+    const sigTotal = sigExcellent + sigGood + sigBad;
 
     return (
         <Grid container spacing={2}>
@@ -116,16 +128,19 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
                                 <RouterIcon sx={{ color: 'white', fontSize: 20 }} />
                             </Box>
                             <Typography variant="h6">{t('aims.gatewayHealth')}</Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+                                {gwTotal} {t('aims.gateways')}
+                            </Typography>
                         </Stack>
                         <HealthBar
                             label={t('aims.online')}
-                            value={gwConnected}
+                            value={gwOnline}
                             total={gwTotal}
                             color={theme.palette.success.main}
                         />
                         <HealthBar
                             label={t('aims.offline')}
-                            value={gwDisconnected}
+                            value={gwOffline}
                             total={gwTotal}
                             color={theme.palette.error.main}
                         />
@@ -142,6 +157,9 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
                                 <LabelIcon sx={{ color: 'white', fontSize: 20 }} />
                             </Box>
                             <Typography variant="h6">{t('aims.labelHealth')}</Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+                                {lblTotal} {t('aims.labels')}
+                            </Typography>
                         </Stack>
                         <HealthBar
                             label={t('aims.online')}
@@ -155,13 +173,115 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
                             total={lblTotal}
                             color={theme.palette.error.main}
                         />
-                        {lblTimeout > 0 && (
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* Update Progress */}
+            <Grid size={{ xs: 12, md: 6 }}>
+                <Card sx={cardsSetting}>
+                    <CardContent>
+                        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                            <Box sx={{ bgcolor: 'success.main', borderRadius: 2, p: 1, display: 'flex' }}>
+                                <UpdateOutlined sx={{ color: 'white', fontSize: 20 }} />
+                            </Box>
+                            <Typography variant="h6">{t('aims.productUpdates')}</Typography>
+                        </Stack>
+                        <HealthBar
+                            label={t('aims.success')}
+                            value={lblUpdated}
+                            total={lblTotal}
+                            color={theme.palette.success.main}
+                        />
+                        {lblInProgress > 0 && (
                             <HealthBar
-                                label={t('aims.failed')}
-                                value={lblTimeout}
+                                label={t('aims.status')}
+                                value={lblInProgress}
                                 total={lblTotal}
                                 color={theme.palette.warning.main}
                             />
+                        )}
+                        {lblNotUpdated > 0 && (
+                            <HealthBar
+                                label={t('aims.failed')}
+                                value={lblNotUpdated}
+                                total={lblTotal}
+                                color={theme.palette.error.main}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* Battery Health */}
+            <Grid size={{ xs: 12, md: 6 }}>
+                <Card sx={cardsSetting}>
+                    <CardContent>
+                        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                            <Box sx={{ bgcolor: 'warning.main', borderRadius: 2, p: 1, display: 'flex' }}>
+                                <BatteryChargingFullOutlined sx={{ color: 'white', fontSize: 20 }} />
+                            </Box>
+                            <Typography variant="h6">{t('aims.batteryHealth')}</Typography>
+                        </Stack>
+                        {batTotal > 0 ? (
+                            <>
+                                <HealthBar
+                                    label={t('aims.batteryGood')}
+                                    value={batGood}
+                                    total={batTotal}
+                                    color={theme.palette.success.main}
+                                />
+                                <HealthBar
+                                    label={t('aims.batteryLow')}
+                                    value={batLow}
+                                    total={batTotal}
+                                    color={theme.palette.warning.main}
+                                />
+                            </>
+                        ) : (
+                            <Typography color="text.secondary" variant="body2">
+                                {t('aims.noDetails')}
+                            </Typography>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* Signal Distribution */}
+            <Grid size={{ xs: 12, md: 6 }}>
+                <Card sx={cardsSetting}>
+                    <CardContent>
+                        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                            <Box sx={{ bgcolor: 'info.main', borderRadius: 2, p: 1, display: 'flex' }}>
+                                <SignalCellularAltOutlined sx={{ color: 'white', fontSize: 20 }} />
+                            </Box>
+                            <Typography variant="h6">{t('aims.signalDistribution')}</Typography>
+                        </Stack>
+                        {sigTotal > 0 ? (
+                            <>
+                                <HealthBar
+                                    label={t('aims.signalExcellent')}
+                                    value={sigExcellent}
+                                    total={sigTotal}
+                                    color={theme.palette.success.main}
+                                />
+                                <HealthBar
+                                    label={t('aims.signalGood')}
+                                    value={sigGood}
+                                    total={sigTotal}
+                                    color={theme.palette.info.main}
+                                />
+                                <HealthBar
+                                    label={t('aims.signalBad')}
+                                    value={sigBad}
+                                    total={sigTotal}
+                                    color={theme.palette.error.main}
+                                />
+                            </>
+                        ) : (
+                            <Typography color="text.secondary" variant="body2">
+                                {t('aims.noDetails')}
+                            </Typography>
                         )}
                     </CardContent>
                 </Card>
@@ -183,7 +303,7 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
                                     <Chip
                                         key={i}
                                         label={`${model.labelType || model.type || 'Unknown'}: ${model.count ?? 0}`}
-                                        size="small"
+                                        size={isMobile ? 'small' : 'medium'}
                                         variant="outlined"
                                     />
                                 ))}
@@ -193,60 +313,6 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
                                 {t('aims.noDetails')}
                             </Typography>
                         )}
-                    </CardContent>
-                </Card>
-            </Grid>
-
-            {/* Store Summary / Quick Stats */}
-            <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={cardsSetting}>
-                    <CardContent>
-                        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
-                            <Box sx={{ bgcolor: 'success.main', borderRadius: 2, p: 1, display: 'flex' }}>
-                                <BarChartOutlined sx={{ color: 'white', fontSize: 20 }} />
-                            </Box>
-                            <Typography variant="h6">{t('aims.storeSummary')}</Typography>
-                        </Stack>
-                        <Stack
-                            direction="row"
-                            flexWrap="wrap"
-                            gap={isMobile ? 2 : 3}
-                        >
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h4" color="primary" sx={{ fontWeight: 500 }}>
-                                    {gwTotal}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {t('aims.gateways')}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h4" color="primary" sx={{ fontWeight: 500 }}>
-                                    {lblTotal}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {t('aims.labels')}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h4" color="success.main" sx={{ fontWeight: 500 }}>
-                                    {lblSuccess}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {t('aims.success')}
-                                </Typography>
-                            </Box>
-                            {lblProcessing > 0 && (
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h4" color="warning.main" sx={{ fontWeight: 500 }}>
-                                        {lblProcessing}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('aims.status')}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Stack>
                     </CardContent>
                 </Card>
             </Grid>
