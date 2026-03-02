@@ -1079,6 +1079,82 @@ export class SolumService {
         });
     }
 
+    // ─── Whitelist ─────────────────────────────────────────────────────
+
+    async fetchWhitelist(config: SolumConfig, token: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50, labelCode, labelModel, sort } = params;
+        let urlPath = `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`;
+        if (labelCode) urlPath += `&labelCode=${encodeURIComponent(labelCode)}`;
+        if (labelModel) urlPath += `&labelModel=${encodeURIComponent(labelModel)}`;
+        if (sort) urlPath += `&sort=${sort}`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('fetchWhitelist', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchWhitelist');
+        });
+    }
+
+    async addToWhitelist(config: SolumConfig, token: string, labelCodes: string[]): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('addToWhitelist', async () => {
+            const response = await this.client.post(url, { labelList: labelCodes }, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'addToWhitelist');
+        });
+    }
+
+    async removeFromWhitelist(config: SolumConfig, token: string, labelCodes: string[]): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('removeFromWhitelist', async () => {
+            const response = await this.client.delete(url, { data: { labelList: labelCodes }, headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'removeFromWhitelist');
+        });
+    }
+
+    async whitelistBox(config: SolumConfig, token: string, boxId: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist/box?company=${config.companyName}&store=${config.storeCode}&boxid=${encodeURIComponent(boxId)}`);
+        return this.withRetry('whitelistBox', async () => {
+            const response = await this.client.post(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'whitelistBox');
+        });
+    }
+
+    async syncWhitelistToStorage(config: SolumConfig, token: string, fullUpdate = false): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist/update/storage?company=${config.companyName}&isFullUpdateRequired=${fullUpdate ? 'YES' : 'NO'}`);
+        return this.withRetry('syncWhitelistToStorage', async () => {
+            const response = await this.client.put(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'syncWhitelistToStorage');
+        });
+    }
+
+    async syncWhitelistToGateways(config: SolumConfig, token: string, params: { store?: string; partialDelete?: boolean } = {}): Promise<any> {
+        let urlPath = `/common/api/v2/common/whitelist/update/gateway?company=${config.companyName}`;
+        if (params.store) urlPath += `&store=${params.store}`;
+        if (params.partialDelete) urlPath += `&partialWhitelistDelete=YES`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('syncWhitelistToGateways', async () => {
+            const response = await this.client.put(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'syncWhitelistToGateways');
+        });
+    }
+
+    async fetchUnassignedWhitelist(config: SolumConfig, token: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50, labelCode, labelModel, sort } = params;
+        let urlPath = `/common/api/v2/common/whitelist/unassigned?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`;
+        if (labelCode) urlPath += `&labelCode=${encodeURIComponent(labelCode)}`;
+        if (labelModel) urlPath += `&labelModel=${encodeURIComponent(labelModel)}`;
+        if (sort) urlPath += `&sort=${sort}`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('fetchUnassignedWhitelist', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchUnassignedWhitelist');
+        });
+    }
+
     /**
      * Extract data from AIMS API response.
      * SoluM responses vary by endpoint:

@@ -73,3 +73,29 @@ export const gatewayConfigUpdateSchema = z.object({
     refreshInterval: z.number().optional(),
     refreshMode: z.string().optional(),
 }).passthrough(); // Allow additional AIMS config fields
+
+// ─── Whitelist Schemas ────────────────────────────────────────────────
+
+export const whitelistQuerySchema = z.object({
+    page: z.coerce.number().int().min(0).default(0),
+    size: z.coerce.number().int().min(1).max(500).default(50),
+    labelCode: z.string().optional(),
+    labelModel: z.string().optional(),
+    sort: z.string().optional(),
+});
+
+export const whitelistModifySchema = z.object({
+    labelList: z.array(z.string().min(1)).min(1),
+});
+
+export const whitelistBoxSchema = z.object({
+    boxId: z.string().min(1),
+});
+
+export const whitelistSyncStorageSchema = z.object({
+    fullUpdate: z.boolean().default(false),
+});
+
+export const whitelistSyncGatewaySchema = z.object({
+    partialDelete: z.boolean().default(false),
+});

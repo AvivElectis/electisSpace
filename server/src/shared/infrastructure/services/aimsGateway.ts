@@ -962,6 +962,36 @@ export class AIMSGateway {
     async fetchLabelModels(storeId: string) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelModels(config, token));
     }
+
+    // ─── Whitelist ──────────────────────────────────────────────────────
+
+    async fetchWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchWhitelist(config, token, params));
+    }
+
+    async addToWhitelist(storeId: string, labelCodes: string[]) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.addToWhitelist(config, token, labelCodes));
+    }
+
+    async removeFromWhitelist(storeId: string, labelCodes: string[]) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.removeFromWhitelist(config, token, labelCodes));
+    }
+
+    async whitelistBox(storeId: string, boxId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.whitelistBox(config, token, boxId));
+    }
+
+    async syncWhitelistToStorage(storeId: string, fullUpdate?: boolean) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.syncWhitelistToStorage(config, token, fullUpdate));
+    }
+
+    async syncWhitelistToGateways(storeId: string, params?: { store?: string; partialDelete?: boolean }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.syncWhitelistToGateways(config, token, params));
+    }
+
+    async fetchUnassignedWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchUnassignedWhitelist(config, token, params));
+    }
 }
 
 // Singleton instance

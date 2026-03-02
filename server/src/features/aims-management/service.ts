@@ -207,6 +207,43 @@ class AimsManagementService {
         appLogger.debug('AimsManagement', 'Getting label models', { storeId });
         return aimsGateway.fetchLabelModels(storeId);
     }
+
+    // ─── Whitelist ─────────────────────────────────────────────────────
+
+    async listWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
+        appLogger.info('AimsManagement', 'Listing whitelist', { storeId, ...params });
+        return aimsGateway.fetchWhitelist(storeId, params);
+    }
+
+    async addToWhitelist(storeId: string, labelCodes: string[]) {
+        appLogger.info('AimsManagement', 'Adding to whitelist', { storeId, count: labelCodes.length });
+        return aimsGateway.addToWhitelist(storeId, labelCodes);
+    }
+
+    async removeFromWhitelist(storeId: string, labelCodes: string[]) {
+        appLogger.info('AimsManagement', 'Removing from whitelist', { storeId, count: labelCodes.length });
+        return aimsGateway.removeFromWhitelist(storeId, labelCodes);
+    }
+
+    async whitelistBox(storeId: string, boxId: string) {
+        appLogger.info('AimsManagement', 'Whitelisting box', { storeId, boxId });
+        return aimsGateway.whitelistBox(storeId, boxId);
+    }
+
+    async syncWhitelistToStorage(storeId: string, fullUpdate?: boolean) {
+        appLogger.info('AimsManagement', 'Syncing whitelist to storage', { storeId, fullUpdate });
+        return aimsGateway.syncWhitelistToStorage(storeId, fullUpdate);
+    }
+
+    async syncWhitelistToGateways(storeId: string, params?: { store?: string; partialDelete?: boolean }) {
+        appLogger.info('AimsManagement', 'Syncing whitelist to gateways', { storeId, ...params });
+        return aimsGateway.syncWhitelistToGateways(storeId, params);
+    }
+
+    async listUnassignedWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
+        appLogger.info('AimsManagement', 'Listing unassigned whitelist', { storeId, ...params });
+        return aimsGateway.fetchUnassignedWhitelist(storeId, params);
+    }
 }
 
 export const aimsManagementService = new AimsManagementService();

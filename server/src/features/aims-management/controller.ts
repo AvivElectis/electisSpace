@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema, whitelistQuerySchema, whitelistModifySchema, whitelistBoxSchema, whitelistSyncStorageSchema, whitelistSyncGatewaySchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
 
 /**
@@ -375,6 +375,71 @@ async function getLabelModels(req: Request, res: Response, next: NextFunction) {
     } catch (error) { next(error); }
 }
 
+// ─── Whitelist ──────────────────────────────────────────────────────
+
+async function listWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const params = whitelistQuerySchema.parse(req.query);
+        const whitelist = await aimsManagementService.listWhitelist(storeId, params);
+        res.json({ data: whitelist });
+    } catch (error) { next(error); }
+}
+
+async function addToWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { labelList } = whitelistModifySchema.parse(req.body);
+        const result = await aimsManagementService.addToWhitelist(storeId, labelList);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function removeFromWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { labelList } = whitelistModifySchema.parse(req.body);
+        const result = await aimsManagementService.removeFromWhitelist(storeId, labelList);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function whitelistBox(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { boxId } = whitelistBoxSchema.parse(req.body);
+        const result = await aimsManagementService.whitelistBox(storeId, boxId);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function syncWhitelistToStorage(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { fullUpdate } = whitelistSyncStorageSchema.parse(req.body);
+        const result = await aimsManagementService.syncWhitelistToStorage(storeId, fullUpdate);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function syncWhitelistToGateways(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { partialDelete } = whitelistSyncGatewaySchema.parse(req.body);
+        const result = await aimsManagementService.syncWhitelistToGateways(storeId, { store: storeId, partialDelete });
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function listUnassignedWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const params = whitelistQuerySchema.parse(req.query);
+        const whitelist = await aimsManagementService.listUnassignedWhitelist(storeId, params);
+        res.json({ data: whitelist });
+    } catch (error) { next(error); }
+}
+
 export const aimsManagementController = {
     listGateways,
     getGatewayDetail,
@@ -416,4 +481,11 @@ export const aimsManagementController = {
     getLabelStatusSummary,
     getGatewayStatusSummary,
     getLabelModels,
+    listWhitelist,
+    addToWhitelist,
+    removeFromWhitelist,
+    whitelistBox,
+    syncWhitelistToStorage,
+    syncWhitelistToGateways,
+    listUnassignedWhitelist,
 };

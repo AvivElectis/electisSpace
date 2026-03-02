@@ -67,6 +67,15 @@ router.get('/templates/mappings', requirePermission('aims-management', 'view'), 
 router.get('/templates/groups', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateGroups);
 router.get('/templates/:name', requirePermission('aims-management', 'view'), aimsManagementController.getTemplateByName);
 
+// ─── Whitelist (STORE_MANAGER+ for read, STORE_ADMIN+ for write) ────────────
+router.get('/whitelist', requirePermission('aims-management', 'view'), aimsManagementController.listWhitelist);
+router.get('/whitelist/unassigned', requirePermission('aims-management', 'view'), aimsManagementController.listUnassignedWhitelist);
+router.post('/whitelist', requirePermission('aims-management', 'manage'), aimsManagementController.addToWhitelist);
+router.delete('/whitelist', requirePermission('aims-management', 'manage'), aimsManagementController.removeFromWhitelist);
+router.post('/whitelist/box', requirePermission('aims-management', 'manage'), aimsManagementController.whitelistBox);
+router.put('/whitelist/sync/storage', requirePermission('aims-management', 'manage'), aimsManagementController.syncWhitelistToStorage);
+router.put('/whitelist/sync/gateway', requirePermission('aims-management', 'manage'), aimsManagementController.syncWhitelistToGateways);
+
 // ─── Product / Batch History (STORE_MANAGER+) ───────────────────────────────
 router.get('/products/history', requirePermission('aims-management', 'view'), aimsManagementController.getBatchHistory);
 router.get('/products/history/:name', requirePermission('aims-management', 'view'), aimsManagementController.getBatchDetail);
