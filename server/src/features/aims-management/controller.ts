@@ -140,6 +140,14 @@ async function getBatchErrors(req: Request, res: Response, next: NextFunction) {
     } catch (error) { next(error); }
 }
 
+async function getBatchErrorsById(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const errors = await aimsManagementService.getBatchErrors(storeId, String(req.params.batchId));
+        res.json({ data: errors });
+    } catch (error) { next(error); }
+}
+
 async function getArticleUpdateHistory(req: Request, res: Response, next: NextFunction) {
     try {
         const storeId = getStoreId(req);
@@ -163,5 +171,6 @@ export const aimsManagementController = {
     getBatchHistory,
     getBatchDetail,
     getBatchErrors,
+    getBatchErrorsById,
     getArticleUpdateHistory,
 };

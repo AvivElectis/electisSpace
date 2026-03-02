@@ -38,6 +38,7 @@ router.get('/labels/:code/history', requirePermission('aims-management', 'view')
 router.get('/products/history', requirePermission('aims-management', 'view'), aimsManagementController.getBatchHistory);
 router.get('/products/history/:name', requirePermission('aims-management', 'view'), aimsManagementController.getBatchDetail);
 router.get('/products/history/:name/errors', requirePermission('aims-management', 'view'), aimsManagementController.getBatchErrors);
+router.get('/products/errors/:batchId', requirePermission('aims-management', 'view'), aimsManagementController.getBatchErrorsById);
 router.get('/products/:articleId/history', requirePermission('aims-management', 'view'), aimsManagementController.getArticleUpdateHistory);
 
 export default router;

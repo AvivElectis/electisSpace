@@ -63,10 +63,12 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
         }
     };
 
-    const handleViewErrors = (batchName: string) => {
-        setErrorsForBatch(batchName);
+    const handleViewErrors = (batch: any) => {
+        const batchId = batch.id || batch.batchId || batch.batchName || batch.name || '';
+        const name = batch.batchName || batch.name || '';
+        setErrorsForBatch(name);
         setArticleDrilldown(null);
-        fetchBatchErrors(batchName);
+        fetchBatchErrors(batchId);
     };
 
     const handleViewArticleHistory = (articleId: string) => {
@@ -213,7 +215,7 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
                                                                         variant="outlined"
                                                                         color="error"
                                                                         startIcon={<ErrorOutlineIcon />}
-                                                                        onClick={(e) => { e.stopPropagation(); handleViewErrors(name); }}
+                                                                        onClick={(e) => { e.stopPropagation(); handleViewErrors(batch); }}
                                                                     >
                                                                         {t('aims.viewErrors')} ({batch.failCount})
                                                                     </Button>

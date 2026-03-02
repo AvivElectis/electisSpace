@@ -74,8 +74,8 @@ export async function fetchBatchDetail(storeId: string, batchName: string) {
     return data.data;
 }
 
-export async function fetchBatchErrors(storeId: string, batchName: string) {
-    const { data } = await api.get(`/aims/products/history/${encodeURIComponent(batchName)}/errors`, { params: { storeId } });
+export async function fetchBatchErrors(storeId: string, batchId: string) {
+    const { data } = await api.get(`/aims/products/errors/${encodeURIComponent(batchId)}`, { params: { storeId } });
     return data.data;
 }
 
