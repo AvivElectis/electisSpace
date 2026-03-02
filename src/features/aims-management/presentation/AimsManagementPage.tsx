@@ -1,7 +1,15 @@
 /**
  * AIMS Management Page
  *
- * Main page with tab navigation for Gateways, Labels, and Product Updates.
+ * Main page with 7 scrollable tabs:
+ *   0 - Overview (placeholder)
+ *   1 - Gateways (existing GatewayList / GatewayDetail)
+ *   2 - Labels (existing LabelsOverview)
+ *   3 - Articles (placeholder)
+ *   4 - Templates (placeholder)
+ *   5 - History (existing ProductHistory)
+ *   6 - Whitelist (placeholder)
+ *
  * Follows the same layout pattern as ConferencePage and other feature pages.
  */
 
@@ -12,10 +20,14 @@ import {
 } from '@mui/material';
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
-import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
 import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
+import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
+import ArticleOutlined from '@mui/icons-material/ArticleOutlined';
+import DesignServicesOutlined from '@mui/icons-material/DesignServicesOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import PlaylistAddCheckOutlined from '@mui/icons-material/PlaylistAddCheckOutlined';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
@@ -121,7 +133,7 @@ export function AimsManagementPage() {
                         {t('aims.subtitle')}
                     </Typography>
                 </Box>
-                {canManage && activeTab === 0 && (
+                {canManage && activeTab === 1 && (
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -225,24 +237,68 @@ export function AimsManagementPage() {
             )}
 
             {/* Tabs */}
-            <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+                value={activeTab}
+                onChange={(_, v) => setActiveTab(v)}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+                <Tab icon={<DashboardOutlined fontSize="small" />} iconPosition="start" label={t('aims.overview')} />
                 <Tab icon={<RouterIcon fontSize="small" />} iconPosition="start" label={t('aims.gateways')} />
-                <Tab icon={<LabelIcon fontSize="small" />} iconPosition="start" label={t('aims.labelStatus')} />
-                <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label={t('aims.productUpdates')} />
+                <Tab icon={<LabelIcon fontSize="small" />} iconPosition="start" label={t('aims.labels')} />
+                <Tab icon={<ArticleOutlined fontSize="small" />} iconPosition="start" label={t('aims.articles')} />
+                <Tab icon={<DesignServicesOutlined fontSize="small" />} iconPosition="start" label={t('aims.templates')} />
+                <Tab icon={<HistoryOutlined fontSize="small" />} iconPosition="start" label={t('aims.history')} />
+                <Tab icon={<PlaylistAddCheckOutlined fontSize="small" />} iconPosition="start" label={t('aims.whitelist')} />
             </Tabs>
 
+            {/* Tab 0 — Overview (placeholder) */}
             <TabPanel value={activeTab} index={0}>
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
+                </Box>
+            </TabPanel>
+
+            {/* Tab 1 — Gateways */}
+            <TabPanel value={activeTab} index={1}>
                 <GatewayList storeId={activeStoreId} onSelectGateway={setSelectedGatewayMac} />
             </TabPanel>
-            <TabPanel value={activeTab} index={1}>
+
+            {/* Tab 2 — Labels */}
+            <TabPanel value={activeTab} index={2}>
                 <LabelsOverview storeId={activeStoreId} />
             </TabPanel>
-            <TabPanel value={activeTab} index={2}>
+
+            {/* Tab 3 — Articles (placeholder) */}
+            <TabPanel value={activeTab} index={3}>
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
+                </Box>
+            </TabPanel>
+
+            {/* Tab 4 — Templates (placeholder) */}
+            <TabPanel value={activeTab} index={4}>
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
+                </Box>
+            </TabPanel>
+
+            {/* Tab 5 — History (existing ProductHistory) */}
+            <TabPanel value={activeTab} index={5}>
                 <ProductHistory storeId={activeStoreId} />
             </TabPanel>
 
+            {/* Tab 6 — Whitelist (placeholder) */}
+            <TabPanel value={activeTab} index={6}>
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
+                </Box>
+            </TabPanel>
+
             {/* Mobile FAB for register gateway */}
-            {isMobile && canManage && activeTab === 0 && (
+            {isMobile && canManage && activeTab === 1 && (
                 <Fab
                     color="primary"
                     variant="extended"
