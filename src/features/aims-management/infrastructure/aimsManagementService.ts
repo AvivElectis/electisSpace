@@ -83,3 +83,25 @@ export async function fetchArticleUpdateHistory(storeId: string, articleId: stri
     const { data } = await api.get(`/aims/products/${encodeURIComponent(articleId)}/history`, { params: { storeId, page, size } });
     return data.data;
 }
+
+// ─── Overview / Summary ────────────────────────────────────────────────────
+
+export async function fetchStoreSummary(storeId: string) {
+    const { data } = await api.get('/aims/store/summary', { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchLabelStatusSummary(storeId: string) {
+    const { data } = await api.get('/aims/labels/summary/status', { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchGatewayStatusSummary(storeId: string) {
+    const { data } = await api.get('/aims/gateways/summary/status', { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchLabelModels(storeId: string) {
+    const { data } = await api.get('/aims/labels/models', { params: { storeId } });
+    return data.data;
+}

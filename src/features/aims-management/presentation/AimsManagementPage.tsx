@@ -35,6 +35,7 @@ import { GatewayList } from './GatewayList';
 import { GatewayDetail } from './GatewayDetail';
 import { GatewayRegistration } from './GatewayRegistration';
 import { LabelsOverview } from './LabelsOverview';
+import { AimsOverviewTab } from './AimsOverviewTab';
 import { ProductHistory } from './ProductHistory';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
@@ -254,11 +255,9 @@ export function AimsManagementPage() {
                 <Tab icon={<PlaylistAddCheckOutlined fontSize="small" />} iconPosition="start" label={t('aims.whitelist')} />
             </Tabs>
 
-            {/* Tab 0 — Overview (placeholder) */}
+            {/* Tab 0 — Overview */}
             <TabPanel value={activeTab} index={0}>
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
-                </Box>
+                <AimsOverviewTab storeId={activeStoreId} />
             </TabPanel>
 
             {/* Tab 1 — Gateways */}

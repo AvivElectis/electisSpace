@@ -45,6 +45,15 @@ interface AimsManagementState {
     batchHistory: any | null;
     batchHistoryLoading: boolean;
 
+    // Overview
+    storeSummary: any | null;
+    labelStatusSummary: any | null;
+    gatewayStatusSummary: any | null;
+    labelModels: any[];
+    overviewLoading: boolean;
+    overviewError: string | null;
+    overviewLastFetched: number | null;
+
     // Active tab
     activeTab: number;
 
@@ -69,6 +78,13 @@ interface AimsManagementState {
     setLabelHistoryLoading: (loading: boolean) => void;
     setBatchHistory: (history: any | null) => void;
     setBatchHistoryLoading: (loading: boolean) => void;
+    setStoreSummary: (data: any | null) => void;
+    setLabelStatusSummary: (data: any | null) => void;
+    setGatewayStatusSummary: (data: any | null) => void;
+    setLabelModels: (data: any[]) => void;
+    setOverviewLoading: (loading: boolean) => void;
+    setOverviewError: (error: string | null) => void;
+    setOverviewLastFetched: (ts: number | null) => void;
     setActiveTab: (tab: number) => void;
     reset: () => void;
 }
@@ -96,6 +112,13 @@ const initialState = {
     labelHistoryLoading: false,
     batchHistory: null,
     batchHistoryLoading: false,
+    storeSummary: null,
+    labelStatusSummary: null,
+    gatewayStatusSummary: null,
+    labelModels: [],
+    overviewLoading: false,
+    overviewError: null,
+    overviewLastFetched: null,
     activeTab: 0,
 };
 
@@ -121,6 +144,13 @@ export const useAimsManagementStore = create<AimsManagementState>((set) => ({
     setLabelHistoryLoading: (labelHistoryLoading) => set({ labelHistoryLoading }),
     setBatchHistory: (batchHistory) => set({ batchHistory }),
     setBatchHistoryLoading: (batchHistoryLoading) => set({ batchHistoryLoading }),
+    setStoreSummary: (storeSummary) => set({ storeSummary }),
+    setLabelStatusSummary: (labelStatusSummary) => set({ labelStatusSummary }),
+    setGatewayStatusSummary: (gatewayStatusSummary) => set({ gatewayStatusSummary }),
+    setLabelModels: (labelModels) => set({ labelModels }),
+    setOverviewLoading: (overviewLoading) => set({ overviewLoading }),
+    setOverviewError: (overviewError) => set({ overviewError }),
+    setOverviewLastFetched: (overviewLastFetched) => set({ overviewLastFetched }),
     setActiveTab: (activeTab) => set({ activeTab }),
     reset: () => set(initialState),
 }));
