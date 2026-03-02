@@ -9,10 +9,12 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import SettingsIcon from '@mui/icons-material/Settings';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useTranslation } from 'react-i18next';
 import { useGateways } from '../application/useGateways';
+import GatewayConfigDialog from './GatewayConfigDialog';
 
 interface GatewayDetailProps {
     storeId: string;
@@ -37,6 +39,7 @@ export function GatewayDetail({ storeId, mac, onBack }: GatewayDetailProps) {
         debugReport, debugReportLoading, fetchDebugReport,
     } = useGateways(storeId);
     const [debugOpen, setDebugOpen] = useState(false);
+    const [configDialogOpen, setConfigDialogOpen] = useState(false);
 
     useEffect(() => { fetchGatewayDetail(mac); }, [mac, fetchGatewayDetail]);
 
@@ -47,7 +50,8 @@ export function GatewayDetail({ storeId, mac, onBack }: GatewayDetailProps) {
     const gw = selectedGateway;
     if (!gw) return null;
 
-    const isOnline = gw.status === 'ONLINE' || gw.status === 'online';
+    const statusRaw = (gw.status || gw.networkStatus || '').toUpperCase();
+    const isOnline = statusRaw === 'ONLINE' || statusRaw === 'CONNECTED';
 
     const fields = [
         { label: t('aims.macAddress', 'MAC Address'), value: gw.mac || gw.macAddress || mac },
@@ -93,18 +97,27 @@ export function GatewayDetail({ storeId, mac, onBack }: GatewayDetailProps) {
                 </Grid>
             </Paper>
 
-            {/* Debug Report */}
+            {/* Actions: Configure + Debug Report */}
             <Box sx={{ mt: 2 }}>
-                <Button
-                    variant="outlined"
-                    startIcon={<BugReportIcon />}
-                    endIcon={debugOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                    onClick={handleLoadDebugReport}
-                    disabled={debugReportLoading}
-                >
-                    {debugReportLoading ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null}
-                    {t('aims.debugReport')}
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<SettingsIcon />}
+                        onClick={() => setConfigDialogOpen(true)}
+                    >
+                        {t('aims.configure', 'Configure')}
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<BugReportIcon />}
+                        endIcon={debugOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        onClick={handleLoadDebugReport}
+                        disabled={debugReportLoading}
+                    >
+                        {debugReportLoading ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null}
+                        {t('aims.debugReport')}
+                    </Button>
+                </Box>
                 <Collapse in={debugOpen}>
                     <Paper
                         variant="outlined"
@@ -126,6 +139,15 @@ export function GatewayDetail({ storeId, mac, onBack }: GatewayDetailProps) {
                     </Paper>
                 </Collapse>
             </Box>
+
+            {/* Gateway Configuration Dialog */}
+            <GatewayConfigDialog
+                open={configDialogOpen}
+                onClose={() => setConfigDialogOpen(false)}
+                gateway={gw}
+                storeId={storeId}
+                onSaved={() => fetchGatewayDetail(mac)}
+            />
         </Box>
     );
 }

@@ -9,10 +9,14 @@
 | `server/src/config/database.ts` | Prisma client configuration |
 | `server/prisma/schema.prisma` | Database schema definition |
 | `server/src/shared/middleware/auth.ts` | JWT auth + RBAC middleware (authenticate, requirePermission, requireGlobalRole) |
-| `server/src/shared/infrastructure/services/aimsGateway.ts` | AIMS API client with caching |
+| `server/src/shared/infrastructure/services/aimsGateway.ts` | AIMS API client with token retry and caching |
+| `server/src/features/aims-management/routes.ts` | AIMS management routes (40+ endpoints) |
+| `server/src/features/aims-management/controller.ts` | AIMS request handling and Zod validation |
+| `server/src/features/aims-management/service.ts` | AIMS business logic with structured logging |
+| `server/src/features/aims-management/types.ts` | AIMS Zod schemas and TypeScript types |
 | `server/src/shared/infrastructure/services/syncQueueService.ts` | Sync queue helper |
 | `server/src/shared/infrastructure/services/articleBuilder.ts` | AIMS article construction |
-| `server/src/shared/infrastructure/services/solumService.ts` | Low-level AIMS HTTP client |
+| `server/src/shared/infrastructure/services/solumService.ts` | Low-level AIMS HTTP client (gateway, label, article, template, whitelist operations) |
 | `server/src/shared/infrastructure/services/redisCache.ts` | Redis cache wrapper |
 | `server/src/shared/infrastructure/services/appLogger.ts` | Structured JSON logger (singleton) |
 | `server/src/features/logs/routes.ts` | Log buffer API (admin-only) |
@@ -28,6 +32,11 @@
 | `src/shared/infrastructure/services/storeEventsService.ts` | SSE client |
 | `src/shared/infrastructure/store/rootStore.ts` | Store aggregation |
 | `src/features/auth/infrastructure/authStore.ts` | Auth state management |
+| `src/features/aims-management/presentation/AimsManagementPage.tsx` | AIMS Manager: 7-tab layout (Overview, Gateways, Labels, Articles, Templates, History, Whitelist) |
+| `src/features/aims-management/infrastructure/aimsManagementStore.ts` | AIMS Zustand store (all tab state, loading, errors) |
+| `src/features/aims-management/infrastructure/aimsManagementService.ts` | AIMS API service (all client-side API calls) |
+| `src/features/aims-management/application/useAimsOverview.ts` | Overview hook (allSettled for partial failure resilience) |
+| `src/features/aims-management/application/useWhitelist.ts` | Whitelist hook (CRUD, box, sync operations) |
 | `vite.config.ts` | Vite build configuration |
 | `capacitor.config.ts` | Capacitor mobile configuration |
 | `electron/main.cjs` | Electron main process |

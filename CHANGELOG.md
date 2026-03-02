@@ -9,7 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] — 2026-03-02 — AIMS Manager Overhaul
+
 ### Added
+- **AIMS Manager overhaul — 7-tab layout** — expanded from 3 to 7 scrollable tabs: Overview, Gateways, Labels, Articles, Templates, History, Whitelist; comprehensive replacement for AIMS SaaS UI
+- **AIMS Overview tab** — store health dashboard with gateway/label status summaries, battery health indicators, and label model breakdown
+- **AIMS Labels tab — detail & actions** — searchable label list with click-to-detail view showing status, alive history, operation history, and assigned article; action buttons for LED control, blink, NFC URL, and force heartbeat
+- **AIMS Articles tab** — searchable paginated article browser with detail dialog showing linked labels, update history, and raw article data
+- **AIMS Templates tab** — sortable template browser with detail dialog showing mapping conditions and template groups
+- **AIMS History tab** — unified history with 3 sub-tabs: Batch Updates, Article Updates, and Label History
+- **AIMS Whitelist tab** — full CRUD for label whitelisting with bulk add/remove, box whitelist, sync to storage, and sync to gateways
+- **AIMS Gateway configuration** — dialog for configuring gateway refresh settings and viewing network info
+- **AIMS Dashboard enhancements** — battery health chips (Good/Low/Critical) on dashboard AIMS card
+- **17 new AIMS server endpoints** — store/label/gateway summaries, label actions (LED, NFC, blink, heartbeat), article browsing, templates, whitelist CRUD & sync, gateway config
+
+### Fixed
+- **Gateway detail status mismatch** — gateway detail showed "disconnected" when connected; now checks both `status` and `networkStatus` fields, accepting both ONLINE and CONNECTED values
+- **Product history batch errors** — batch error viewing failed because client passed `batchName` instead of `batchId`; added dedicated `/products/errors/:batchId` endpoint and fixed client extraction
+
 - **Remotion intro video** — 7-scene Hebrew promotional video (~35s) in `my-video/` showcasing app capabilities, real desktop + mobile screenshots, branded assets, SoluM partnership, and background music; built with Remotion 4, React 19, TransitionSeries transitions, and spring-based animations
 - **Multiple dithering engines in AssignImageDialog** — users can choose between Floyd-Steinberg, Atkinson, Ordered (Bayer 4x4), Threshold (nearest-color), or AIMS server-side dithering; client engines produce instant previews and push pre-dithered images (`dithering: false`), while AIMS engine fetches a server preview and pushes full-color images (`dithering: true`)
 - **App role editing in user dialog** — platform admins can set/change a user's app role (Platform Admin, App Viewer, Regular User) directly from the user dialog via inline radio cards
