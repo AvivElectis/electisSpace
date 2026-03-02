@@ -141,6 +141,33 @@ export async function fetchArticleUpdateHistory(storeId: string, articleId: stri
     return data.data;
 }
 
+// ─── Article Operations ───────────────────────────────────────────────────
+
+export async function fetchArticleList(storeId: string, params: { page?: number; size?: number; sort?: string } = {}) {
+    const { data } = await api.get('/aims/articles', { params: { storeId, ...params } });
+    return data.data;
+}
+
+export async function fetchArticleById(storeId: string, articleId: string) {
+    const { data } = await api.get(`/aims/articles/${encodeURIComponent(articleId)}`, { params: { storeId } });
+    return data.data;
+}
+
+export async function fetchLinkedArticles(storeId: string, params: { page?: number; size?: number } = {}) {
+    const { data } = await api.get('/aims/articles/linked', { params: { storeId, ...params } });
+    return data.data;
+}
+
+export async function fetchArticleUpdateHistoryAll(storeId: string, params: { page?: number; size?: number } = {}) {
+    const { data } = await api.get('/aims/articles/update-history', { params: { storeId, ...params } });
+    return data.data;
+}
+
+export async function fetchArticleUpdateHistoryDetail(storeId: string, articleId: string, params: { page?: number; size?: number } = {}) {
+    const { data } = await api.get(`/aims/articles/${encodeURIComponent(articleId)}/update-history`, { params: { storeId, ...params } });
+    return data.data;
+}
+
 // ─── Overview / Summary ────────────────────────────────────────────────────
 
 export async function fetchStoreSummary(storeId: string) {

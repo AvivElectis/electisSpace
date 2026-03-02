@@ -37,6 +37,7 @@ import { GatewayRegistration } from './GatewayRegistration';
 import { LabelsOverview } from './LabelsOverview';
 import { AimsOverviewTab } from './AimsOverviewTab';
 import { ProductHistory } from './ProductHistory';
+import { ArticlesTab } from './ArticlesTab';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
 import { useLabelsOverview } from '../application/useLabelsOverview';
@@ -270,11 +271,9 @@ export function AimsManagementPage() {
                 <LabelsOverview storeId={activeStoreId} />
             </TabPanel>
 
-            {/* Tab 3 — Articles (placeholder) */}
+            {/* Tab 3 — Articles */}
             <TabPanel value={activeTab} index={3}>
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography color="text.secondary">{t('aims.comingSoon')}</Typography>
-                </Box>
+                <ArticlesTab storeId={activeStoreId} />
             </TabPanel>
 
             {/* Tab 4 — Templates (placeholder) */}

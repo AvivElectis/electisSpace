@@ -53,6 +53,16 @@ interface AimsManagementState {
     labelAliveHistory: any | null;
     labelOperationHistory: any | null;
 
+    // Articles
+    articles: any[];
+    articlesLoading: boolean;
+    articlesError: string | null;
+    articlesLastFetched: number | null;
+    articlesTotalElements: number;
+    articlesTotalPages: number;
+    selectedArticle: any | null;
+    articleHistory: any | null;
+
     // Overview
     storeSummary: any | null;
     labelStatusSummary: any | null;
@@ -99,6 +109,14 @@ interface AimsManagementState {
     setOverviewLoading: (loading: boolean) => void;
     setOverviewError: (error: string | null) => void;
     setOverviewLastFetched: (ts: number | null) => void;
+    setArticles: (articles: any[]) => void;
+    setArticlesLoading: (loading: boolean) => void;
+    setArticlesError: (error: string | null) => void;
+    setArticlesLastFetched: (ts: number | null) => void;
+    setArticlesTotalElements: (total: number) => void;
+    setArticlesTotalPages: (pages: number) => void;
+    setSelectedArticle: (article: any | null) => void;
+    setArticleHistory: (history: any | null) => void;
     setActiveTab: (tab: number) => void;
     reset: () => void;
 }
@@ -132,6 +150,14 @@ const initialState = {
     labelArticleData: null,
     labelAliveHistory: null,
     labelOperationHistory: null,
+    articles: [],
+    articlesLoading: false,
+    articlesError: null,
+    articlesLastFetched: null,
+    articlesTotalElements: 0,
+    articlesTotalPages: 0,
+    selectedArticle: null,
+    articleHistory: null,
     storeSummary: null,
     labelStatusSummary: null,
     gatewayStatusSummary: null,
@@ -177,6 +203,14 @@ export const useAimsManagementStore = create<AimsManagementState>((set) => ({
     setOverviewLoading: (overviewLoading) => set({ overviewLoading }),
     setOverviewError: (overviewError) => set({ overviewError }),
     setOverviewLastFetched: (overviewLastFetched) => set({ overviewLastFetched }),
+    setArticles: (articles) => set({ articles }),
+    setArticlesLoading: (articlesLoading) => set({ articlesLoading }),
+    setArticlesError: (articlesError) => set({ articlesError }),
+    setArticlesLastFetched: (articlesLastFetched) => set({ articlesLastFetched }),
+    setArticlesTotalElements: (articlesTotalElements) => set({ articlesTotalElements }),
+    setArticlesTotalPages: (articlesTotalPages) => set({ articlesTotalPages }),
+    setSelectedArticle: (selectedArticle) => set({ selectedArticle }),
+    setArticleHistory: (articleHistory) => set({ articleHistory }),
     setActiveTab: (activeTab) => set({ activeTab }),
     reset: () => set(initialState),
 }));
