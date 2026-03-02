@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, ledControlSchema, nfcConfigSchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
 
 /**
@@ -157,6 +157,76 @@ async function getArticleUpdateHistory(req: Request, res: Response, next: NextFu
     } catch (error) { next(error); }
 }
 
+// ─── Label Detail & Actions ────────────────────────────────────────────────
+
+async function getLabelDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const detail = await aimsManagementService.getLabelDetail(storeId, String(req.params.code));
+        res.json({ data: detail });
+    } catch (error) { next(error); }
+}
+
+async function getLabelArticle(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const article = await aimsManagementService.getLabelArticle(storeId, String(req.params.code));
+        res.json({ data: article });
+    } catch (error) { next(error); }
+}
+
+async function getLabelAliveHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = labelHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getLabelAliveHistory(storeId, String(req.params.code), page, size);
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+async function getLabelOperationHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = labelHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getLabelOperationHistory(storeId, String(req.params.code), page, size);
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+async function setLabelLed(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const led = ledControlSchema.parse(req.body);
+        const result = await aimsManagementService.setLabelLed(storeId, String(req.params.code), led);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function blinkLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const result = await aimsManagementService.blinkLabel(storeId, String(req.params.code));
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function setLabelNfc(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { nfcUrl } = nfcConfigSchema.parse(req.body);
+        const result = await aimsManagementService.setLabelNfc(storeId, String(req.params.code), nfcUrl);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function forceLabelAlive(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const result = await aimsManagementService.forceLabelAlive(storeId, String(req.params.code));
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
 // ─── Summary / Overview ────────────────────────────────────────────────────
 
 async function getStoreSummary(req: Request, res: Response, next: NextFunction) {
@@ -202,6 +272,14 @@ export const aimsManagementController = {
     listLabels,
     listUnassignedLabels,
     getLabelStatusHistory,
+    getLabelDetail,
+    getLabelArticle,
+    getLabelAliveHistory,
+    getLabelOperationHistory,
+    setLabelLed,
+    blinkLabel,
+    setLabelNfc,
+    forceLabelAlive,
     getBatchHistory,
     getBatchDetail,
     getBatchErrors,

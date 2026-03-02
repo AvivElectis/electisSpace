@@ -124,6 +124,21 @@ export interface AimsDitherPreviewRequest {
     optAlgType?: number;
 }
 
+// ─── Label Action Types ────────────────────────────────────────────────────
+
+/** LED control request for a label */
+export interface AimsLedControl {
+    labelCode: string;
+    color?: string;
+    mode?: string;
+}
+
+/** NFC configuration request for a label */
+export interface AimsNfcConfig {
+    labelCode: string;
+    nfcUrl: string;
+}
+
 // ─── Response Types ────────────────────────────────────────────────────────
 
 /** Generic AIMS API response envelope */

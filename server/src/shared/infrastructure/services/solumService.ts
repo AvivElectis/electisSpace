@@ -659,6 +659,80 @@ export class SolumService {
             }
         });
     }
+    // ─── Label Action Operations ────────────────────────────────────────────
+
+    /**
+     * Set LED on a label (color/mode control)
+     */
+    async setLabelLed(config: SolumConfig, token: string, labelCode: string, led: { color?: string; mode?: string }): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/led?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('setLabelLed', async () => {
+            const response = await this.client.put(url, led, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'setLabelLed');
+        });
+    }
+
+    /**
+     * Configure NFC URL on a label
+     */
+    async setLabelNfc(config: SolumConfig, token: string, labelCode: string, nfcUrl: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/nfc?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('setLabelNfc', async () => {
+            const response = await this.client.put(url, { nfcUrl }, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'setLabelNfc');
+        });
+    }
+
+    /**
+     * Force a heartbeat/alive signal from a label
+     */
+    async forceLabelAlive(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/force/alive/signal?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('forceLabelAlive', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'forceLabelAlive');
+        });
+    }
+
+    /**
+     * Fetch article info assigned to a label
+     */
+    async fetchLabelArticle(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/article?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('fetchLabelArticle', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelArticle');
+        });
+    }
+
+    /**
+     * Fetch label alive/heartbeat history
+     */
+    async fetchLabelAliveHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/alive/history?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLabelAliveHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelAliveHistory');
+        });
+    }
+
+    /**
+     * Fetch label operation history (link/unlink/push operations)
+     */
+    async fetchLabelHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/history?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLabelHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelHistory');
+        });
+    }
+
     // ─── Gateway Operations ─────────────────────────────────────────────────
 
     async fetchGateways(config: SolumConfig, token: string): Promise<any[]> {

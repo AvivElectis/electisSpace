@@ -61,6 +61,44 @@ class AimsManagementService {
         return aimsGateway.fetchLabelStatusHistory(storeId, labelCode, page, size);
     }
 
+    async getLabelDetail(storeId: string, labelCode: string) {
+        appLogger.info('AimsManagement', 'Getting label detail', { storeId, labelCode });
+        return aimsGateway.fetchLabelImages(storeId, labelCode);
+    }
+
+    async blinkLabel(storeId: string, labelCode: string) {
+        appLogger.info('AimsManagement', 'Blinking label', { storeId, labelCode });
+        return aimsGateway.blinkLabel(storeId, labelCode);
+    }
+
+    async setLabelLed(storeId: string, labelCode: string, led: { color?: string; mode?: string }) {
+        appLogger.info('AimsManagement', 'Setting label LED', { storeId, labelCode, led });
+        return aimsGateway.setLabelLed(storeId, labelCode, led);
+    }
+
+    async setLabelNfc(storeId: string, labelCode: string, nfcUrl: string) {
+        appLogger.info('AimsManagement', 'Setting label NFC', { storeId, labelCode, nfcUrl });
+        return aimsGateway.setLabelNfc(storeId, labelCode, nfcUrl);
+    }
+
+    async forceLabelAlive(storeId: string, labelCode: string) {
+        appLogger.info('AimsManagement', 'Forcing label heartbeat', { storeId, labelCode });
+        return aimsGateway.forceLabelAlive(storeId, labelCode);
+    }
+
+    async getLabelArticle(storeId: string, labelCode: string) {
+        appLogger.info('AimsManagement', 'Getting label article', { storeId, labelCode });
+        return aimsGateway.fetchLabelArticle(storeId, labelCode);
+    }
+
+    async getLabelAliveHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return aimsGateway.fetchLabelAliveHistory(storeId, labelCode, page, size);
+    }
+
+    async getLabelOperationHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return aimsGateway.fetchLabelHistory(storeId, labelCode, page, size);
+    }
+
     // ─── Product / Batch History ────────────────────────────────────────
 
     async getBatchHistory(storeId: string, params?: { page?: number; size?: number; fromDate?: string; toDate?: string }) {

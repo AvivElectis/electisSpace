@@ -847,6 +847,32 @@ export class AIMSGateway {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelStatusHistory(config, token, labelCode, page, size));
     }
 
+    // ─── Label Action Operations ────────────────────────────────────────────
+
+    async setLabelLed(storeId: string, labelCode: string, led: { color?: string; mode?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.setLabelLed(config, token, labelCode, led));
+    }
+
+    async setLabelNfc(storeId: string, labelCode: string, nfcUrl: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.setLabelNfc(config, token, labelCode, nfcUrl));
+    }
+
+    async forceLabelAlive(storeId: string, labelCode: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.forceLabelAlive(config, token, labelCode));
+    }
+
+    async fetchLabelArticle(storeId: string, labelCode: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelArticle(config, token, labelCode));
+    }
+
+    async fetchLabelAliveHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelAliveHistory(config, token, labelCode, page, size));
+    }
+
+    async fetchLabelHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelHistory(config, token, labelCode, page, size));
+    }
+
     async fetchBatchHistory(storeId: string, params?: { page?: number; size?: number; fromDate?: string; toDate?: string }) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchBatchHistory(config, token, params));
     }

@@ -30,3 +30,18 @@ export const articleHistoryQuerySchema = z.object({
     page: z.coerce.number().int().min(0).default(0),
     size: z.coerce.number().int().min(1).max(100).default(50),
 });
+
+// ─── Label Action Schemas ──────────────────────────────────────────────────
+
+export const ledControlSchema = z.object({
+    color: z.string().optional(),
+    mode: z.string().optional(),
+});
+
+export const nfcConfigSchema = z.object({
+    nfcUrl: z.string().min(1),
+});
+
+export const labelCodeParamSchema = z.object({
+    code: z.string().min(1),
+});

@@ -37,8 +37,18 @@ router.patch('/gateways/:mac/reboot', requirePermission('aims-management', 'mana
 router.get('/labels', requirePermission('aims-management', 'view'), aimsManagementController.listLabels);
 router.get('/labels/unassigned', requirePermission('aims-management', 'view'), aimsManagementController.listUnassignedLabels);
 
-// ─── Label History (STORE_MANAGER+) ─────────────────────────────────────────
+// ─── Label Detail & Read (STORE_MANAGER+) ──────────────────────────────────
 router.get('/labels/:code/history', requirePermission('aims-management', 'view'), aimsManagementController.getLabelStatusHistory);
+router.get('/labels/:code/detail', requirePermission('aims-management', 'view'), aimsManagementController.getLabelDetail);
+router.get('/labels/:code/article', requirePermission('aims-management', 'view'), aimsManagementController.getLabelArticle);
+router.get('/labels/:code/alive-history', requirePermission('aims-management', 'view'), aimsManagementController.getLabelAliveHistory);
+router.get('/labels/:code/operation-history', requirePermission('aims-management', 'view'), aimsManagementController.getLabelOperationHistory);
+
+// ─── Label Actions (STORE_ADMIN+) ──────────────────────────────────────────
+router.put('/labels/:code/led', requirePermission('aims-management', 'manage'), aimsManagementController.setLabelLed);
+router.post('/labels/:code/blink', requirePermission('aims-management', 'manage'), aimsManagementController.blinkLabel);
+router.put('/labels/:code/nfc', requirePermission('aims-management', 'manage'), aimsManagementController.setLabelNfc);
+router.post('/labels/:code/heartbeat', requirePermission('aims-management', 'manage'), aimsManagementController.forceLabelAlive);
 
 // ─── Product / Batch History (STORE_MANAGER+) ───────────────────────────────
 router.get('/products/history', requirePermission('aims-management', 'view'), aimsManagementController.getBatchHistory);
