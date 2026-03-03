@@ -4,7 +4,7 @@
  * @description Thin route definitions for user management.
  */
 import { Router } from 'express';
-import { authenticate, restrictAppViewer, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requireGlobalRole, requirePermission } from '../../shared/middleware/index.js';
 import { userController } from './controller.js';
 
 const router = Router();
@@ -47,13 +47,13 @@ router.get('/check-email', userController.checkEmail);
 // ======================
 
 // Bulk deactivate users
-router.post('/bulk/deactivate', userController.bulkDeactivate);
+router.post('/bulk/deactivate', requirePermission('users', 'edit'), userController.bulkDeactivate);
 
 // Bulk activate users
-router.post('/bulk/activate', userController.bulkActivate);
+router.post('/bulk/activate', requirePermission('users', 'edit'), userController.bulkActivate);
 
 // Bulk change store role
-router.post('/bulk/role', userController.bulkChangeRole);
+router.post('/bulk/role', requirePermission('users', 'edit'), userController.bulkChangeRole);
 
 // ======================
 // User Management Routes

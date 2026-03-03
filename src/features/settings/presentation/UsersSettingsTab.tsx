@@ -40,6 +40,7 @@ import { userService, type User } from '@shared/infrastructure/services/userServ
 import { companyService, type Company } from '@shared/infrastructure/services/companyService';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { canElevateUser, getAllowedAppRoles } from '@features/auth/application/permissionHelpers';
 
 // Lazy load dialogs
 const EnhancedUserDialog = lazy(() => import('./EnhancedUserDialog').then(m => ({ default: m.EnhancedUserDialog })));
@@ -163,29 +164,29 @@ export function UsersSettingsTab() {
         fetchUsers();
     };
 
-    /** Map roleId to a translation-friendly key (e.g., 'role-admin' → 'admin') */
-    const roleIdToKey = (roleId: string | undefined): string | null => {
-        if (!roleId) return null;
-        return roleId.startsWith('role-') ? roleId.substring(5) : roleId;
-    };
-
-    // Role color helper — supports both legacy CompanyRole and new roleId-based keys
-    const getRoleColor = (role: string) => {
-        switch (role) {
-            case 'PLATFORM_ADMIN': return 'secondary';
-            case 'COMPANY_ADMIN': return 'primary';
-            case 'admin': return 'error';
-            case 'manager': return 'warning';
-            case 'employee': return 'info';
-            case 'viewer': return 'default';
-            // Legacy fallbacks
-            case 'STORE_ADMIN': return 'error';
-            case 'STORE_MANAGER': return 'warning';
-            case 'STORE_EMPLOYEE': return 'info';
-            case 'STORE_VIEWER': return 'default';
-            case 'VIEWER': return 'default';
-            default: return 'default';
+    /** Compute display role key and color for a user, with scope context */
+    const getUserRoleDisplay = (user: any): { roleKey: string; color: string; isAdminLevel: boolean } => {
+        // App-level roles
+        if (user.globalRole === 'PLATFORM_ADMIN') {
+            return { roleKey: 'platform_admin', color: 'secondary', isAdminLevel: true };
         }
+        if (user.globalRole === 'APP_VIEWER') {
+            return { roleKey: 'viewer', color: 'default', isAdminLevel: false };
+        }
+        // Company-level: check if user has company admin role via roleId
+        const firstCompany = user.companies?.[0];
+        if (firstCompany?.roleId === 'role-admin' && firstCompany?.allStoresAccess) {
+            return { roleKey: 'company_admin', color: 'primary', isAdminLevel: true };
+        }
+        // Store-level role
+        const firstStore = user.stores?.[0];
+        const roleId = firstCompany?.roleId || firstStore?.roleId;
+        if (roleId) {
+            const key = roleId.startsWith('role-') ? roleId.substring(5) : roleId;
+            const colorMap: Record<string, string> = { admin: 'error', manager: 'warning', employee: 'info', viewer: 'default' };
+            return { roleKey: key, color: colorMap[key] || 'default', isAdminLevel: key === 'admin' };
+        }
+        return { roleKey: 'viewer', color: 'default', isAdminLevel: false };
     };
 
     // Feature icon helper
@@ -273,23 +274,12 @@ export function UsersSettingsTab() {
                             </Typography>
                         ) : (
                             users.map((user) => {
+                                const { roleKey, color, isAdminLevel } = getUserRoleDisplay(user);
                                 const firstStore = user.stores?.[0];
-                                const firstCompany = user.companies?.[0];
-                                const companyRole = firstCompany?.role;
-                                const isAdminCompanyRole = companyRole === 'COMPANY_ADMIN' || companyRole === 'SUPER_USER';
-                                const isAllStoresRole = isAdminCompanyRole;
-                                const userRole = user.globalRole
-                                    || (isAdminCompanyRole ? 'COMPANY_ADMIN' : null)
-                                    || roleIdToKey(firstStore?.roleId)
-                                    || companyRole
-                                    || 'viewer';
-                                const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || isAllStoresRole;
                                 const userFeatures = isAdminLevel
                                     ? ['dashboard', 'spaces', 'conference', 'people']
                                     : (firstStore?.features || ['dashboard']);
-                                const canElevate = isPlatformAdmin &&
-                                    user.globalRole !== 'PLATFORM_ADMIN' &&
-                                    user.id !== currentUser?.id;
+                                const canElevate = canElevateUser(currentUser, user);
 
                                 return (
                                     <Card key={user.id} sx={{ mb: 1.5, overflow: 'hidden' }}>
@@ -314,7 +304,7 @@ export function UsersSettingsTab() {
                                             </Stack>
                                             <Divider sx={{ my: 1.5 }} />
                                             <Stack direction="row" gap={0.75} flexWrap="wrap" alignItems="center">
-                                                <Chip label={t(`roles.${userRole.toLowerCase()}`)} color={getRoleColor(userRole) as any} variant="filled" size="small" sx={{ p: 1, px: 1.5 }} />
+                                                <Chip label={t(`roles.${roleKey}`)} color={color as any} variant="filled" size="small" sx={{ p: 1, px: 1.5 }} />
                                                 <Chip label={user.isActive ? t('common.status.active') : t('common.status.inactive')} color={user.isActive ? 'success' : 'default'} variant="outlined" size="small" sx={{ p: 1, px: 1.5 }} />
                                             </Stack>
                                             <Stack direction="row" gap={0.5} flexWrap="wrap" sx={{ mt: 1 }}>
@@ -388,24 +378,12 @@ export function UsersSettingsTab() {
                                     </TableRow>
                                 ) : (
                                     users.map((user) => {
-                                        // Compute display role: globalRole > COMPANY_ADMIN/SUPER_USER > store roleId > companyRole > fallback
+                                        const { roleKey, color, isAdminLevel } = getUserRoleDisplay(user);
                                         const firstStore = user.stores?.[0];
-                                        const firstCompany = user.companies?.[0];
-                                        const companyRole = firstCompany?.role;
-                                        const isAdminCompanyRole = companyRole === 'COMPANY_ADMIN' || companyRole === 'SUPER_USER';
-                                        const isAllStoresRole = isAdminCompanyRole;
-                                        const userRole = user.globalRole
-                                            || (isAdminCompanyRole ? 'COMPANY_ADMIN' : null)
-                                            || roleIdToKey(firstStore?.roleId)
-                                            || companyRole
-                                            || 'viewer';
-                                        const isAdminLevel = user.globalRole === 'PLATFORM_ADMIN' || isAllStoresRole;
                                         const userFeatures = isAdminLevel
                                             ? ['dashboard', 'spaces', 'conference', 'people']
                                             : (firstStore?.features || ['dashboard']);
-                                        const canElevate = isPlatformAdmin &&
-                                            user.globalRole !== 'PLATFORM_ADMIN' &&
-                                            user.id !== currentUser?.id;
+                                        const canElevate = canElevateUser(currentUser, user);
 
                                         return (
                                             <TableRow key={user.id} hover>
@@ -422,8 +400,8 @@ export function UsersSettingsTab() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <Chip
-                                                        label={t(`roles.${userRole.toLowerCase()}`)}
-                                                        color={getRoleColor(userRole) as any}
+                                                        label={t(`roles.${roleKey}`)}
+                                                        color={color as any}
                                                         variant='filled'
                                                         size="small"
                                                         sx={{ p: 1, px: 1.5 }}
@@ -538,6 +516,7 @@ export function UsersSettingsTab() {
                         }}
                         onSuccess={handleElevateSuccess}
                         user={userToElevate}
+                        allowedRoles={getAllowedAppRoles(currentUser)}
                     />
                 )}
             </Suspense>

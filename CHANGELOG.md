@@ -10,7 +10,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Template download** — download XSL and/or JSON files from the template detail dialog; AIMS base64 response decoded server-side
+- **Template upload** — upload new templates with name, size selection (from AIMS template types), XSL + JSON file pickers; validates duplicate names
+- **Template edit (re-upload)** — update existing template files from the detail dialog with new XSL + JSON uploads
+
+### Fixed
+- **Template detail not loading** — AIMS `/templates/name` query parameter was wrong (`templateName=` instead of `name=`); response list extraction checked `content` instead of `templateList`
+- **Template download double extension** — templateName includes `.xsl` suffix; both server and client now strip existing extensions before appending file type
+- **Template download content corrupt** — AIMS returns JSON `{template: base64}`, not raw binary; server now decodes base64 before sending to client
+- **Template mappings/groups 500 errors** — AIMS instances that don't support these endpoints now return empty arrays instead of crashing
+- **Template detail enrichment null guard** — prevents overwriting good list data when detail API returns null
+
+## [2.9.0] — 2026-03-02 — AIMS Manager Overhaul
+
+### Added
+- **AIMS Manager overhaul — 7-tab layout** — expanded from 3 to 7 scrollable tabs: Overview, Gateways, Labels, Articles, Templates, History, Whitelist; comprehensive replacement for AIMS SaaS UI
+- **AIMS Overview tab** — store health dashboard with gateway/label status summaries, battery health indicators, and label model breakdown
+- **AIMS Labels tab — detail & actions** — searchable label list with click-to-detail view showing status, alive history, operation history, and assigned article; action buttons for LED control, blink, NFC URL, and force heartbeat
+- **AIMS Articles tab** — searchable paginated article browser with detail dialog showing linked labels, update history, and raw article data
+- **AIMS Templates tab** — sortable template browser with detail dialog showing mapping conditions and template groups
+- **AIMS History tab** — unified history with 3 sub-tabs: Batch Updates, Article Updates, and Label History
+- **AIMS Whitelist tab** — full CRUD for label whitelisting with bulk add/remove, box whitelist, sync to storage, and sync to gateways
+- **AIMS Gateway configuration** — dialog for configuring gateway refresh settings and viewing network info
+- **AIMS Dashboard enhancements** — battery health chips (Good/Low/Critical) on dashboard AIMS card
+- **17 new AIMS server endpoints** — store/label/gateway summaries, label actions (LED, NFC, blink, heartbeat), article browsing, templates, whitelist CRUD & sync, gateway config
+
+### Fixed
+- **Gateway detail status mismatch** — gateway detail showed "disconnected" when connected; now checks both `status` and `networkStatus` fields, accepting both ONLINE and CONNECTED values
+- **Product history batch errors** — batch error viewing failed because client passed `batchName` instead of `batchId`; added dedicated `/products/errors/:batchId` endpoint and fixed client extraction
+
+- **Remotion intro video** — 7-scene Hebrew promotional video (~35s) in `my-video/` showcasing app capabilities, real desktop + mobile screenshots, branded assets, SoluM partnership, and background music; built with Remotion 4, React 19, TransitionSeries transitions, and spring-based animations
 - **Multiple dithering engines in AssignImageDialog** — users can choose between Floyd-Steinberg, Atkinson, Ordered (Bayer 4x4), Threshold (nearest-color), or AIMS server-side dithering; client engines produce instant previews and push pre-dithered images (`dithering: false`), while AIMS engine fetches a server preview and pushes full-color images (`dithering: true`)
+- **App role editing in user dialog** — platform admins can set/change a user's app role (Platform Admin, App Viewer, Regular User) directly from the user dialog via inline radio cards
+- **Roles audit remediation plan** — comprehensive 4-phase plan documenting 16 security, functional, and polish improvements for the roles system (`docs/plans/2026-03-01-roles-audit-remediation.md`)
+
+### Security
+- **Roles CRUD endpoints protected** — POST/PATCH/DELETE on `/api/v1/roles` now require `PLATFORM_ADMIN`; GET requires `settings:view` permission
+- **Elevate endpoint defense-in-depth** — `POST /users/:id/elevate` now has `requireGlobalRole('PLATFORM_ADMIN')` middleware guard
+- **Bulk user operations protected** — bulk deactivate/activate/role endpoints now require `users:edit` permission
+- **Settings write endpoints protected** — PUT on company settings, field-mappings, and article-format now require `settings:update` permission
+- **allStoresAccess privilege escalation fixed** — company managers with `allStoresAccess` no longer silently get admin permissions on expanded stores; uses actual company roleId instead of hardcoded `role-admin`
+- **requirePermission fallback fixed** — allStoresAccess companies now use their actual roleId for permission checks instead of hardcoded `role-admin`
+- **RoleId validation on user creation/assignment** — invalid roleId values now return 400 instead of opaque Prisma FK errors
+- **Action alias normalization** — `requirePermission()` now normalizes legacy `read`→`view` and `update`→`edit` aliases to prevent permission bypass from mismatched action names
+- **Role permissions cache invalidation** — roles service now invalidates permission cache on update/delete, preventing stale permissions being served for up to 60 seconds
 
 ### Fixed
 - **AIMS dither preview not working** — `solumService.fetchDitherPreview()` returned raw AIMS envelope without `extractResponseData()`, so the client received `{responseCode, responseMessage}` instead of image data; client now robustly extracts the image from multiple possible response shapes
@@ -18,6 +61,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AssignImageDialog crash on zero-dimension labels (root cause)** — `solumService.fetchLabelTypeInfo()` returned raw AIMS envelope without `extractResponseData()`, so `displayWidth`/`displayHeight` were `undefined`; client guards also hardened (`!targetW || !targetH` catches `undefined`/`NaN`)
 - **AssignImageDialog empty chips** — label info chips (dimensions, color type) were blank because the AIMS envelope fields were returned instead of actual data
 - **AIMS label type info wrong URL** — `fetchLabelTypeInfo` used `/api/v2/...` instead of `/common/api/v2/...`, hitting wrong AIMS endpoint and returning incorrect data
+- **App role elevation restricted to platform admins** — company admins could previously change app roles; now only platform admins can view and modify app roles (client + server)
+- **Primary chip invisible styling** — chips with `color="primary"` had transparent background and white border making them invisible; now use solid blue background
+- **MUI Tooltip disabled button warning** — wrapped disabled IconButton in LabelsPage with `<span>` to suppress Tooltip accessibility warning
+- **Unused import build error** — removed stale `SettingsData` import in AIMSSettingsDialog
+- **Permission test mock data** — tests used old enum-based role names (`COMPANY_ADMIN`, `STORE_ADMIN`) instead of current `roleId` values (`role-admin`, `role-manager`, etc.), causing 13 false failures
+- **SphereLoader crash in test environment** — `i18n.dir()` called without null check, failing in environments where `dir` is not mocked; now uses optional chaining
+- **LoadingFallback/RouteLoadingFallback tests outdated** — tests expected old skeleton/CircularProgress implementation but components now use SphereLoader; tests updated to match current behavior
+- **User dialog crash on open** — `canEditAppRole` useMemo crashed on `c.company.id` when user prop had flat company shape (from list API) instead of nested shape (from detail API); now handles both shapes
+- **User table role chip broken** — role chip in user list accessed non-existent `.role` field instead of `.roleId`, causing company admin detection to always fail; refactored to use `getUserRoleDisplay()` helper with proper `roleId`-based detection
+- **User profile role label single-company** — `getRoleLabel()` only showed first company's role; now scans all company/store assignments and returns the highest-priority role
+
+### Changed
+- **Dead `authorize()` middleware removed** — unused role-name-based middleware removed from auth module; replaced by `requirePermission()` and `requireGlobalRole()`
+- **APP_VIEWER self-service patterns extracted** — hardcoded URL exceptions moved to `APP_VIEWER_SELF_SERVICE_PATTERNS` constant for maintainability
+- **Audit logging for role changes** — all role mutations (elevate, assignToStore, assignToCompany, updateUserStore, updateUserCompany) now log structured audit entries via `appLogger`
+- **User table role scope indicators** — role chips now show "App Admin", "Company Admin", etc. with scope-aware labels instead of ambiguous "Admin"
+- **Chip and button padding** — added inline padding to chips (4px) and primary contained buttons (20px) for better visual spacing
 
 ### Changed
 - **AssignImageDialog mobile UX** — compact upload zone with horizontal layout on mobile; tighter spacing and padding throughout; smaller title typography

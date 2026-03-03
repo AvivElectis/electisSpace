@@ -57,7 +57,7 @@ const APP_ROLES = [
         nameKey: 'roles.employee',
         descKey: 'settings.roles.regularUserDesc',
         icon: PersonIcon,
-        color: 'default' as const,
+        color: 'action' as const,
     },
 ] as const;
 

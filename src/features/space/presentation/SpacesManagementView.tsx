@@ -46,6 +46,8 @@ import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 
+import { SpacesSyncPanel } from './SpacesSyncPanel';
+
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('./SpaceDialog').then(m => ({ default: m.SpaceDialog })));
 const ListsManagerDialog = lazy(() => import('@features/lists/presentation/ListsManagerDialog').then(m => ({ default: m.ListsManagerDialog })));
@@ -510,6 +512,10 @@ export function SpacesManagementView() {
                     {getLabel('add')}
                 </Button>
             </Stack>
+
+            {/* AIMS Sync Panel */}
+            <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
+
             {/* List Management Panel — beneath header */}
             <Paper sx={{ mb: 2, overflow: 'hidden' }}>
                 <Stack

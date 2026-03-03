@@ -6,6 +6,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { notFound, conflict, badRequest, forbidden } from '../../shared/middleware/index.js';
 import { spacesService } from './service.js';
+import { spacesSyncService } from './syncService.js';
 import { createSpaceSchema, updateSpaceSchema, assignLabelSchema } from './types.js';
 import type { SpacesUserContext } from './types.js';
 
@@ -92,6 +93,54 @@ export const spacesController = {
         try {
             const result = await spacesService.forceSync(req.body.storeId, getUserContext(req));
             res.status(202).json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
+            next(error);
+        }
+    },
+
+    async syncPull(req: Request, res: Response, next: NextFunction) {
+        try {
+            const storeId = req.body.storeId;
+            if (!storeId) return next(badRequest('storeId is required'));
+            const result = await spacesSyncService.pullFromAims(storeId, getUserContext(req));
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
+            next(error);
+        }
+    },
+
+    async syncPush(req: Request, res: Response, next: NextFunction) {
+        try {
+            const storeId = req.body.storeId;
+            if (!storeId) return next(badRequest('storeId is required'));
+            const result = await spacesSyncService.pushToAims(storeId, getUserContext(req));
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
+            next(error);
+        }
+    },
+
+    async syncFull(req: Request, res: Response, next: NextFunction) {
+        try {
+            const storeId = req.body.storeId;
+            if (!storeId) return next(badRequest('storeId is required'));
+            const result = await spacesSyncService.fullSync(storeId, getUserContext(req));
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
+            next(error);
+        }
+    },
+
+    async syncStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const storeId = req.query.storeId as string;
+            if (!storeId) return next(badRequest('storeId query parameter is required'));
+            const result = await spacesSyncService.getSyncStatus(storeId, getUserContext(req));
+            res.json(result);
         } catch (error: any) {
             if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));
             next(error);

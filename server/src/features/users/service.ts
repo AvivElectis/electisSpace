@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import { GlobalRole } from '@prisma/client';
 import { prisma } from '../../config/index.js';
 import { invalidateUserCache } from '../../shared/middleware/index.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import { userRepository } from './repository.js';
 import type {
     UserContext,
@@ -36,6 +37,12 @@ import type {
 // ======================
 // Role Helpers
 // ======================
+
+/** Validate that a roleId exists in the roles table */
+async function validateRoleId(roleId: string): Promise<void> {
+    const role = await prisma.role.findUnique({ where: { id: roleId }, select: { id: true } });
+    if (!role) throw new Error('INVALID_ROLE_ID');
+}
 
 // ======================
 // Authorization Helpers
@@ -467,6 +474,16 @@ export const userService = {
             throw new Error('EMAIL_EXISTS');
         }
 
+        // Validate company roleId
+        await validateRoleId(data.companyRoleId);
+
+        // Validate store roleIds
+        if (data.stores) {
+            for (const storeRef of data.stores) {
+                await validateRoleId(storeRef.roleId);
+            }
+        }
+
         // Only platform admins can create new companies
         if (data.company.type === 'new' && !isPlatformAdmin(currentUser)) {
             throw new Error('FORBIDDEN_CREATE_COMPANY');
@@ -646,6 +663,7 @@ export const userService = {
             ...(data.features && { features: data.features }),
         });
         invalidateUserCache(userId);
+        appLogger.info('Roles', `User store role updated`, { userId, storeId, newRoleId: data.roleId, by: currentUser.id });
         return result;
     },
 
@@ -656,6 +674,8 @@ export const userService = {
         if (!await canManageStoreOrCompany(currentUser, storeId)) {
             throw new Error('FORBIDDEN');
         }
+
+        await validateRoleId(roleId);
 
         const user = await userRepository.findById(userId);
         if (!user) throw new Error('USER_NOT_FOUND');
@@ -673,6 +693,7 @@ export const userService = {
             features,
         });
         invalidateUserCache(userId);
+        appLogger.info('Roles', `User assigned to store`, { userId, storeId, roleId, by: currentUser.id });
         return result;
     },
 
@@ -720,6 +741,8 @@ export const userService = {
 
     /**
      * Elevate user role
+     *
+     * Only platform admins can change app-level roles (PLATFORM_ADMIN, APP_VIEWER, USER).
      */
     async elevate(userId: string, data: ElevateUserDto, currentUser: UserContext) {
         if (!isPlatformAdmin(currentUser)) {
@@ -761,7 +784,20 @@ export const userService = {
             }
         }
 
+        // When setting to APP_VIEWER, downgrade any store/company roles above viewer
+        if (newGlobalRole === 'APP_VIEWER') {
+            await prisma.userCompany.updateMany({
+                where: { userId, roleId: { not: 'role-viewer' } },
+                data: { roleId: 'role-viewer' },
+            });
+            await prisma.userStore.updateMany({
+                where: { userId, roleId: { not: 'role-viewer' } },
+                data: { roleId: 'role-viewer' },
+            });
+        }
+
         invalidateUserCache(userId);
+        appLogger.info('Roles', `User app role changed`, { userId, previousRole: user.globalRole, newRole: data.globalRole, by: currentUser.id });
         return result;
     },
 
@@ -791,6 +827,8 @@ export const userService = {
     async assignToCompany(userId: string, data: AssignUserToCompanyDto, currentUser: UserContext) {
         const user = await userRepository.findById(userId);
         if (!user) throw new Error('USER_NOT_FOUND');
+
+        await validateRoleId(data.companyRoleId);
 
         if (data.company.type === 'new' && !isPlatformAdmin(currentUser)) {
             throw new Error('FORBIDDEN_CREATE_COMPANY');
@@ -841,6 +879,7 @@ export const userService = {
             });
 
             invalidateUserCache(userId);
+            appLogger.info('Roles', `User assigned to company`, { userId, companyId, roleId: data.companyRoleId, by: currentUser.id });
             return result;
         });
     },
@@ -868,6 +907,7 @@ export const userService = {
 
         const result = await userRepository.updateUserCompany(userId, companyId, updateData);
         invalidateUserCache(userId);
+        appLogger.info('Roles', `User company role updated`, { userId, companyId, newRoleId: data.companyRoleId, by: currentUser.id });
         return result;
     },
 

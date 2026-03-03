@@ -85,7 +85,7 @@ export function LabelHistory({ storeId }: LabelHistoryProps) {
                                             <TableCell>
                                                 <Chip label={entry.status || '—'} color={getStatusColor(entry.status)} size="small" variant="outlined" />
                                             </TableCell>
-                                            <TableCell><Typography variant="body2" fontFamily="monospace">{entry.gateway || '—'}</Typography></TableCell>
+                                            <TableCell><Typography variant="body2" fontFamily="monospace">{(typeof entry.gateway === 'object' ? entry.gateway?.name : entry.gateway) || '—'}</Typography></TableCell>
                                             <TableCell>{entry.signal ?? '—'}</TableCell>
                                             <TableCell>{entry.battery ?? '—'}</TableCell>
                                         </TableRow>

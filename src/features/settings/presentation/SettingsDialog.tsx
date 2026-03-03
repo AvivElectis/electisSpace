@@ -4,7 +4,6 @@ import {
     DialogContent,
     Box,
     IconButton,
-    CircularProgress,
     useMediaQuery,
     useTheme,
     List,
@@ -33,6 +32,7 @@ import { useSettingsController } from '../application/useSettingsController';
 import { useAutoLock } from '../application/useAutoLock';
 import { useSettingsStore } from '../infrastructure/settingsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { SphereLoader } from '@shared/presentation/components/SphereLoader';
 
 // Lazy load all tabs - they have heavy dependencies
 const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
@@ -49,7 +49,7 @@ const RolesTab = lazy(() => import('./RolesTab').then(m => ({ default: m.RolesTa
 function TabLoadingFallback() {
     return (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-            <CircularProgress />
+            <SphereLoader width={180} height={140} />
         </Box>
     );
 }

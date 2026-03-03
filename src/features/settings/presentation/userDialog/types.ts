@@ -9,7 +9,7 @@ export interface UserData {
     firstName: string | null;
     lastName: string | null;
     phone?: string | null;
-    globalRole: 'PLATFORM_ADMIN' | null;
+    globalRole: 'PLATFORM_ADMIN' | 'APP_VIEWER' | null;
     isActive: boolean;
     lastLogin?: string | null;
     lastActivity?: string | null;

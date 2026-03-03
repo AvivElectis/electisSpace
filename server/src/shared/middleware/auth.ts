@@ -190,21 +190,20 @@ export const authenticate = async (
 
         // For companies where user has allStoresAccess, expand into stores array
         // so all downstream services that check req.user.stores work correctly.
-        const allStoresCompanyIds = companies
-            .filter(c => c.allStoresAccess)
-            .map(c => c.id);
+        const allStoresCompanies = companies.filter(c => c.allStoresAccess);
 
-        if (allStoresCompanyIds.length > 0) {
+        if (allStoresCompanies.length > 0) {
             const existingStoreIds = new Set(stores.map(s => s.id));
+            const companyRoleMap = new Map(allStoresCompanies.map(c => [c.id, c.roleId]));
             const companyStores = await prisma.store.findMany({
-                where: { companyId: { in: allStoresCompanyIds }, isActive: true },
+                where: { companyId: { in: allStoresCompanies.map(c => c.id) }, isActive: true },
                 select: { id: true, companyId: true },
             });
             for (const cs of companyStores) {
                 if (!existingStoreIds.has(cs.id)) {
                     stores.push({
                         id: cs.id,
-                        roleId: 'role-admin',  // Company admins with allStoresAccess get admin role
+                        roleId: companyRoleMap.get(cs.companyId) || 'role-viewer',
                         companyId: cs.companyId,
                     });
                 }
@@ -246,35 +245,13 @@ export const requireGlobalRole = (...allowedRoles: GlobalRole[]) => {
     };
 };
 
-// Role-based authorization middleware (checks by role name from DB)
-export const authorize = (...allowedRoleNames: string[]) => {
-    return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-        if (!req.user) {
-            next(unauthorized('Authentication required'));
-            return;
-        }
-
-        // Platform admin has all access
-        if (req.user.globalRole === GlobalRole.PLATFORM_ADMIN) {
-            next();
-            return;
-        }
-
-        // Look up role names for user's stores
-        for (const store of req.user.stores) {
-            const role = await prisma.role.findUnique({
-                where: { id: store.roleId },
-                select: { name: true },
-            });
-            if (role && allowedRoleNames.includes(role.name)) {
-                next();
-                return;
-            }
-        }
-
-        next(forbidden('Insufficient permissions'));
-    };
-};
+// Self-service URL patterns allowed for APP_VIEWER even on mutating methods
+const APP_VIEWER_SELF_SERVICE_PATTERNS = [
+    '/users/me',
+    '/auth/change-password',
+    '/auth/logout',
+    '/auth/refresh',
+];
 
 // App Viewer restriction middleware — blocks mutating requests for APP_VIEWER users
 export const restrictAppViewer = () => {
@@ -288,9 +265,7 @@ export const restrictAppViewer = () => {
         if (req.user.globalRole === GlobalRole.APP_VIEWER && req.method !== 'GET') {
             // Use originalUrl for correct matching across sub-routers
             const url = req.originalUrl || req.url;
-            // Allow self-service: own profile, context switch, auth operations
-            const selfServicePatterns = ['/users/me', '/auth/change-password', '/auth/logout', '/auth/refresh'];
-            const isSelfService = selfServicePatterns.some(p => url.includes(p));
+            const isSelfService = APP_VIEWER_SELF_SERVICE_PATTERNS.some(p => url.includes(p));
 
             if (!isSelfService) {
                 next(forbidden('App Viewer accounts have read-only access'));
@@ -302,8 +277,12 @@ export const restrictAppViewer = () => {
     };
 };
 
+// Normalize legacy action aliases: read→view, update→edit
+const ACTION_ALIASES: Partial<Record<Action, Action>> = { read: 'view', update: 'edit' };
+
 // Permission-based authorization (DB-backed)
 export const requirePermission = (resource: Resource, action: Action) => {
+    const normalizedAction = ACTION_ALIASES[action] || action;
     return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
         if (!req.user) {
             next(unauthorized('Authentication required'));
@@ -316,21 +295,21 @@ export const requirePermission = (resource: Resource, action: Action) => {
             return;
         }
 
-        // Check store role permissions
+        // Check store role permissions (check both original and normalized action)
         for (const store of req.user.stores) {
             const permissions = await getRolePermissions(store.roleId);
             const resourcePerms = permissions[resource] || [];
-            if (resourcePerms.includes(action)) {
+            if (resourcePerms.includes(normalizedAction) || resourcePerms.includes(action)) {
                 next();
                 return;
             }
         }
 
-        // Fallback: allStoresAccess companies get admin permissions
+        // Fallback: allStoresAccess companies use their actual company role permissions
         for (const company of req.user.companies) {
             if (company.allStoresAccess) {
-                const adminPerms = await getRolePermissions('role-admin');
-                if (adminPerms[resource]?.includes(action)) {
+                const companyPerms = await getRolePermissions(company.roleId);
+                if (companyPerms[resource]?.includes(normalizedAction) || companyPerms[resource]?.includes(action)) {
                     next();
                     return;
                 }

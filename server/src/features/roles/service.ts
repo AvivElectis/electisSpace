@@ -6,6 +6,7 @@
  */
 import { GlobalRole, RoleScope } from '@prisma/client';
 import { prisma } from '../../config/index.js';
+import { invalidateRoleCache } from '../../shared/middleware/index.js';
 import { RESOURCE_ACTIONS, DEFAULT_ROLE_IDS } from './types.js';
 import type { CreateRoleDTO, UpdateRoleDTO, PermissionsMap } from './types.js';
 
@@ -128,7 +129,7 @@ export const rolesService = {
             }
         }
 
-        return prisma.role.update({
+        const updated = await prisma.role.update({
             where: { id },
             data: {
                 ...(data.name && { name: data.name }),
@@ -136,6 +137,8 @@ export const rolesService = {
                 ...(data.permissions && { permissions: data.permissions as any }),
             },
         });
+        invalidateRoleCache(id);
+        return updated;
     },
 
     /**
@@ -170,7 +173,9 @@ export const rolesService = {
             }
         }
 
-        return prisma.role.delete({ where: { id } });
+        const deleted = await prisma.role.delete({ where: { id } });
+        invalidateRoleCache(id);
+        return deleted;
     },
 
     /**

@@ -6,8 +6,9 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema, templateDownloadQuerySchema, templateUploadSchema, whitelistQuerySchema, whitelistModifySchema, whitelistBoxSchema, whitelistSyncStorageSchema, whitelistSyncGatewaySchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 
 /**
  * Extract active store ID from request.
@@ -84,6 +85,31 @@ async function rebootGateway(req: Request, res: Response, next: NextFunction) {
     } catch (error) { next(error); }
 }
 
+async function getGatewayStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const status = await aimsManagementService.getGatewayStatus(storeId, String(req.params.mac));
+        res.json({ data: status });
+    } catch (error) { next(error); }
+}
+
+async function getGatewayOpcodes(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const opcodes = await aimsManagementService.getGatewayOpcodes(storeId, String(req.params.mac));
+        res.json({ data: opcodes });
+    } catch (error) { next(error); }
+}
+
+async function updateGatewayConfig(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const configData = gatewayConfigUpdateSchema.parse(req.body);
+        const result = await aimsManagementService.updateGatewayConfig(storeId, String(req.params.mac), configData);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
 // ─── Label Listing ─────────────────────────────────────────────────────────
 
 async function listLabels(req: Request, res: Response, next: NextFunction) {
@@ -140,12 +166,321 @@ async function getBatchErrors(req: Request, res: Response, next: NextFunction) {
     } catch (error) { next(error); }
 }
 
+async function getBatchErrorsById(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const errors = await aimsManagementService.getBatchErrors(storeId, String(req.params.batchId));
+        res.json({ data: errors });
+    } catch (error) { next(error); }
+}
+
 async function getArticleUpdateHistory(req: Request, res: Response, next: NextFunction) {
     try {
         const storeId = getStoreId(req);
         const { page, size } = articleHistoryQuerySchema.parse(req.query);
         const history = await aimsManagementService.getArticleUpdateHistory(storeId, String(req.params.articleId), page, size);
         res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+// ─── Article Browsing ──────────────────────────────────────────────────────
+
+async function listArticles(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size, sort } = articleListQuerySchema.parse(req.query);
+        const articles = await aimsManagementService.listArticles(storeId, { page, size, sort });
+        res.json({ data: articles });
+    } catch (error) { next(error); }
+}
+
+async function getArticleById(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const article = await aimsManagementService.getArticleById(storeId, String(req.params.articleId));
+        res.json({ data: article });
+    } catch (error) { next(error); }
+}
+
+async function listLinkedArticles(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = articleListQuerySchema.parse(req.query);
+        const articles = await aimsManagementService.listLinkedArticles(storeId, { page, size });
+        res.json({ data: articles });
+    } catch (error) { next(error); }
+}
+
+async function getArticleUpdateHistoryAll(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = articleHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getArticleUpdateHistoryAll(storeId, { page, size });
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+async function getArticleUpdateHistoryDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = articleHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getArticleUpdateHistoryDetail(storeId, String(req.params.articleId), { page, size });
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+// ─── Label Detail & Actions ────────────────────────────────────────────────
+
+async function getLabelDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const detail = await aimsManagementService.getLabelDetail(storeId, String(req.params.code));
+        res.json({ data: detail });
+    } catch (error) { next(error); }
+}
+
+async function getLabelArticle(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const article = await aimsManagementService.getLabelArticle(storeId, String(req.params.code));
+        res.json({ data: article });
+    } catch (error) { next(error); }
+}
+
+async function getLabelAliveHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = labelHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getLabelAliveHistory(storeId, String(req.params.code), page, size);
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+async function getLabelOperationHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = labelHistoryQuerySchema.parse(req.query);
+        const history = await aimsManagementService.getLabelOperationHistory(storeId, String(req.params.code), page, size);
+        res.json({ data: history });
+    } catch (error) { next(error); }
+}
+
+async function setLabelLed(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const led = ledControlSchema.parse(req.body);
+        const result = await aimsManagementService.setLabelLed(storeId, String(req.params.code), led);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function blinkLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const result = await aimsManagementService.blinkLabel(storeId, String(req.params.code));
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function setLabelNfc(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { nfcUrl } = nfcConfigSchema.parse(req.body);
+        const result = await aimsManagementService.setLabelNfc(storeId, String(req.params.code), nfcUrl);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function forceLabelAlive(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const result = await aimsManagementService.forceLabelAlive(storeId, String(req.params.code));
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+// ─── Templates ──────────────────────────────────────────────────────────────
+
+async function listTemplates(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { page, size } = templateListQuerySchema.parse(req.query);
+        const templates = await aimsManagementService.listTemplates(storeId, { page, size });
+        res.json({ data: templates });
+    } catch (error) { next(error); }
+}
+
+async function listTemplateTypes(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const types = await aimsManagementService.listTemplateTypes(storeId);
+        res.json({ data: types });
+    } catch (error) { next(error); }
+}
+
+async function listTemplateMappings(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const mappings = await aimsManagementService.listTemplateMappingConditions(storeId);
+        res.json({ data: mappings });
+    } catch (error: any) {
+        // Mapping conditions are optional — some AIMS instances don't support them
+        appLogger.warn('AimsManagement', 'Template mappings not available', { error: error.message });
+        res.json({ data: [] });
+    }
+}
+
+async function listTemplateGroups(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const groups = await aimsManagementService.listTemplateGroups(storeId);
+        res.json({ data: groups });
+    } catch (error: any) {
+        // Template groups are optional — some AIMS instances don't support them
+        appLogger.warn('AimsManagement', 'Template groups not available', { error: error.message });
+        res.json({ data: [] });
+    }
+}
+
+async function getTemplateByName(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const template = await aimsManagementService.getTemplateByName(storeId, String(req.params.name));
+        res.json({ data: template });
+    } catch (error: any) {
+        // Template detail enrichment is optional — return null so client falls back to list data
+        appLogger.warn('AimsManagement', 'Template detail not available', { name: req.params.name, error: error.message });
+        res.json({ data: null });
+    }
+}
+
+async function downloadTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { templateName, version, fileType } = templateDownloadQuerySchema.parse(req.query);
+        const data = await aimsManagementService.downloadTemplate(storeId, templateName, version, fileType);
+        if (!data) {
+            res.status(404).json({ error: 'Template file not found' });
+            return;
+        }
+        const ext = fileType === 'XSL' ? 'xsl' : 'json';
+        // Strip existing extension from templateName to avoid double extensions (e.g. .xsl.xsl)
+        const baseName = templateName.replace(/\.(xsl|xslt|json|xml|dat)$/i, '');
+        const filename = `${baseName}.${ext}`;
+        const buffer = data.encoding === 'base64'
+            ? Buffer.from(data.content, 'base64')
+            : Buffer.from(typeof data.content === 'string' ? data.content : JSON.stringify(data.content));
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(buffer);
+    } catch (error) { next(error); }
+}
+
+async function uploadTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const templateData = templateUploadSchema.parse(req.body);
+        const result = await aimsManagementService.uploadTemplate(storeId, templateData);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+// ─── Summary / Overview ────────────────────────────────────────────────────
+
+async function getStoreSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const summary = await aimsManagementService.getStoreSummary(storeId);
+        res.json({ data: summary });
+    } catch (error) { next(error); }
+}
+
+async function getLabelStatusSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const summary = await aimsManagementService.getLabelStatusSummary(storeId);
+        res.json({ data: summary });
+    } catch (error) { next(error); }
+}
+
+async function getGatewayStatusSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const summary = await aimsManagementService.getGatewayStatusSummary(storeId);
+        res.json({ data: summary });
+    } catch (error) { next(error); }
+}
+
+async function getLabelModels(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const models = await aimsManagementService.getLabelModels(storeId);
+        res.json({ data: models });
+    } catch (error) { next(error); }
+}
+
+// ─── Whitelist ──────────────────────────────────────────────────────
+
+async function listWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const params = whitelistQuerySchema.parse(req.query);
+        const whitelist = await aimsManagementService.listWhitelist(storeId, params);
+        res.json({ data: whitelist });
+    } catch (error) { next(error); }
+}
+
+async function addToWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { labelList } = whitelistModifySchema.parse(req.body);
+        const result = await aimsManagementService.addToWhitelist(storeId, labelList);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function removeFromWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { labelList } = whitelistModifySchema.parse(req.body);
+        const result = await aimsManagementService.removeFromWhitelist(storeId, labelList);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function whitelistBox(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { boxId } = whitelistBoxSchema.parse(req.body);
+        const result = await aimsManagementService.whitelistBox(storeId, boxId);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function syncWhitelistToStorage(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { fullUpdate } = whitelistSyncStorageSchema.parse(req.body);
+        const result = await aimsManagementService.syncWhitelistToStorage(storeId, fullUpdate);
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function syncWhitelistToGateways(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { partialDelete } = whitelistSyncGatewaySchema.parse(req.body);
+        const result = await aimsManagementService.syncWhitelistToGateways(storeId, { store: storeId, partialDelete });
+        res.json({ data: result });
+    } catch (error) { next(error); }
+}
+
+async function listUnassignedWhitelist(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const params = whitelistQuerySchema.parse(req.query);
+        const whitelist = await aimsManagementService.listUnassignedWhitelist(storeId, params);
+        res.json({ data: whitelist });
     } catch (error) { next(error); }
 }
 
@@ -157,11 +492,46 @@ export const aimsManagementController = {
     registerGateway,
     deregisterGateways,
     rebootGateway,
+    getGatewayStatus,
+    getGatewayOpcodes,
+    updateGatewayConfig,
     listLabels,
     listUnassignedLabels,
     getLabelStatusHistory,
+    getLabelDetail,
+    getLabelArticle,
+    getLabelAliveHistory,
+    getLabelOperationHistory,
+    setLabelLed,
+    blinkLabel,
+    setLabelNfc,
+    forceLabelAlive,
+    listArticles,
+    getArticleById,
+    listLinkedArticles,
+    getArticleUpdateHistoryAll,
+    getArticleUpdateHistoryDetail,
     getBatchHistory,
     getBatchDetail,
     getBatchErrors,
+    getBatchErrorsById,
     getArticleUpdateHistory,
+    listTemplates,
+    listTemplateTypes,
+    listTemplateMappings,
+    listTemplateGroups,
+    getTemplateByName,
+    downloadTemplate,
+    uploadTemplate,
+    getStoreSummary,
+    getLabelStatusSummary,
+    getGatewayStatusSummary,
+    getLabelModels,
+    listWhitelist,
+    addToWhitelist,
+    removeFromWhitelist,
+    whitelistBox,
+    syncWhitelistToStorage,
+    syncWhitelistToGateways,
+    listUnassignedWhitelist,
 };

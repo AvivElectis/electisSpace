@@ -1,7 +1,7 @@
 # Chapter 8 — Auth Connection Management & AIMS Management
 
-> **Status**: Implemented — Device Auth shipped in v2.6.0, AIMS Management in v2.7.0, AIMS Dashboard Enhancement in v2.8.0
-> **Added**: 2026-02-23 | **Updated**: 2026-02-27
+> **Status**: Implemented — Device Auth shipped in v2.6.0, AIMS Management in v2.7.0, AIMS Dashboard Enhancement in v2.8.0, AIMS Manager Overhaul in v2.9.0
+> **Added**: 2026-02-23 | **Updated**: 2026-03-02
 
 ---
 
@@ -10,7 +10,7 @@
 This chapter documents two major features:
 
 1. **Device-Based Auth Token Management** (v2.6.0) — eliminates forced re-login when mobile browsers are closed/reopened.
-2. **AIMS Management Feature** (v2.7.0 base, v2.8.0 enhanced) — a dedicated module for managing Electronic Shelf Labels (ESLs) with gateway management, labels overview dashboard, and product update tracking.
+2. **AIMS Management Feature** (v2.7.0 base, v2.8.0 enhanced, v2.9.0 overhaul) — a comprehensive module for managing Electronic Shelf Labels (ESLs). The v2.9.0 overhaul expanded from 3 to 7 tabs, added 17 new server endpoints, and aims to replace the AIMS SaaS UI entirely.
 
 ---
 
@@ -61,12 +61,15 @@ Device tokens are stored in Capacitor `Preferences` (native) or `IndexedDB` (web
 
 ### Overview
 
-A dedicated AIMS Management module, available to admins, enabling:
+A comprehensive AIMS Management module that serves as a full replacement for the AIMS SaaS UI, enabling:
 
-- View and manage AIMS gateway configurations per store
-- Labels overview dashboard with stats, battery/signal distributions
-- Browse label history and article assignments
-- Track product updates with date filtering, batch error details, and article drill-down
+- **Overview** — store health dashboard with gateway/label status summaries and battery health
+- **Gateways** — view, register, deregister, reboot, and configure gateway network settings
+- **Labels** — searchable list with detail view, LED control, blink, NFC URL, force heartbeat
+- **Articles** — paginated article browser with linked labels, update history, and raw data
+- **Templates** — sortable template list with mapping conditions and template groups
+- **History** — unified history with batch updates, article updates, and label history sub-tabs
+- **Whitelist** — full CRUD for label whitelisting with box whitelist, sync to storage/gateways
 - Per-company feature toggle (`aimsManagementEnabled`)
 
 ### Access Control
@@ -84,51 +87,115 @@ A dedicated AIMS Management module, available to admins, enabling:
 - Server-proxy architecture (prevents CORS issues, centralises AIMS credential management)
 - Three-layer enforcement: navigation filtering → `ProtectedFeature` component → server-side role guards
 - Feature toggle in Settings → Features tab (disabled by default, can be enabled per company)
+- `Promise.allSettled` used for overview fetches — partial API failures degrade gracefully
+
+### Tab Layout (v2.9.0 — 7 Scrollable Tabs)
+
+| Tab | Component | Description |
+|-----|-----------|-------------|
+| 0 — Overview | `OverviewTab` | Store health metrics: gateway/label summaries, battery indicators, label models |
+| 1 — Gateways | `GatewayList` | Gateway table, detail dialog, registration dialog, config dialog |
+| 2 — Labels | `LabelsTab` | Searchable labels with click-to-detail: status, history, actions |
+| 3 — Articles | `ArticlesTab` | Paginated article browser with detail dialog |
+| 4 — Templates | `TemplatesTab` | Template list with detail, download (XSL/JSON), upload, and edit |
+| 5 — History | `HistoryTab` | 3 sub-tabs: Batch Updates, Article Updates, Label History |
+| 6 — Whitelist | `WhitelistTab` | Whitelist CRUD, bulk add/remove, box, sync operations |
 
 ### Server Routes (`/aims/*`)
 
 | Method | Path | Permission | Description |
 |--------|------|-----------|-------------|
+| **Gateways** | | | |
 | `GET` | `/gateways` | view | List all gateways |
 | `GET` | `/gateways/floating` | view | List unregistered floating gateways |
 | `GET` | `/gateways/:mac` | view | Gateway detail |
 | `GET` | `/gateways/:mac/debug` | view | Gateway debug report |
+| `GET` | `/gateways/:mac/config` | view | Gateway configuration |
+| `GET` | `/gateways/:mac/status` | view | Gateway status with opcode info |
 | `POST` | `/gateways` | manage | Register gateway |
 | `DELETE` | `/gateways` | manage | Deregister gateways |
 | `PATCH` | `/gateways/:mac/reboot` | manage | Reboot gateway |
-| `GET` | `/labels` | view | List all labels |
+| `PUT` | `/gateways/:mac/config` | manage | Update gateway configuration |
+| **Labels** | | | |
+| `GET` | `/labels` | view | List all labels (paginated) |
 | `GET` | `/labels/unassigned` | view | List unassigned labels |
-| `GET` | `/labels/:code/history` | view | Label status history |
-| `GET` | `/products/history` | view | Batch update history (supports `fromDate`/`toDate`) |
+| `GET` | `/labels/:code` | view | Label detail |
+| `GET` | `/labels/:code/history` | view | Label alive history |
+| `GET` | `/labels/:code/operations` | view | Label operation history |
+| `POST` | `/labels/:code/led` | manage | Control label LED |
+| `POST` | `/labels/:code/blink` | manage | Blink label LED |
+| `POST` | `/labels/:code/nfc` | manage | Set NFC URL |
+| `POST` | `/labels/:code/heartbeat` | manage | Force heartbeat |
+| **Overview** | | | |
+| `GET` | `/store-summary` | view | Store summary statistics |
+| `GET` | `/labels/summary/status` | view | Label status summary |
+| `GET` | `/gateways/summary/status` | view | Gateway status summary |
+| `GET` | `/labels/models` | view | Label model breakdown |
+| **Articles** | | | |
+| `GET` | `/articles` | view | List articles (paginated, searchable) |
+| `GET` | `/articles/:articleId` | view | Article detail |
+| `GET` | `/articles/:articleId/linked` | view | Linked labels for article |
+| `GET` | `/articles/:articleId/updates` | view | Article update history |
+| **Templates** | | | |
+| `GET` | `/templates` | view | List templates |
+| `GET` | `/templates/:name` | view | Template detail by name |
+| `GET` | `/templates/types` | view | Template type list (sizes) |
+| `GET` | `/templates/mappings` | view | Template mapping conditions |
+| `GET` | `/templates/groups` | view | Template groups |
+| `GET` | `/templates/download` | view | Download template file (XSL/JSON, base64-decoded) |
+| `POST` | `/templates` | manage | Upload/update template (XSL + JSON as base64) |
+| **Products (History)** | | | |
+| `GET` | `/products/history` | view | Batch update history |
 | `GET` | `/products/history/:name` | view | Batch detail |
-| `GET` | `/products/history/:name/errors` | view | Batch errors |
+| `GET` | `/products/errors/:batchId` | view | Batch errors by ID |
 | `GET` | `/products/:articleId/history` | view | Article update history |
+| **Whitelist** | | | |
+| `GET` | `/whitelist` | view | List whitelisted labels |
+| `GET` | `/whitelist/unassigned` | view | List unassigned whitelisted labels |
+| `POST` | `/whitelist` | manage | Add labels to whitelist |
+| `DELETE` | `/whitelist` | manage | Remove labels from whitelist |
+| `POST` | `/whitelist/box` | manage | Whitelist all labels in a box |
+| `PUT` | `/whitelist/sync/storage` | manage | Sync whitelist to storage |
+| `PUT` | `/whitelist/sync/gateway` | manage | Sync whitelist to gateways |
 
 ### Client Components
 
 | Component | Purpose |
 |-----------|---------|
-| `AimsManagementPage` | Main page: stats cards (gateways + labels), 3-tab layout |
+| `AimsManagementPage` | Main page: 7 scrollable tabs, responsive layout |
+| `OverviewTab` | Store health: summary cards, label/gateway status, battery chips, models |
 | `GatewayList` | Gateway table with status chips, row click → detail |
 | `GatewayDetail` | All gateway fields + collapsible debug report |
 | `GatewayRegistration` | Register dialog with floating gateways chip selection |
-| `LabelsOverview` | Stats cards + battery/signal distribution bars + label search |
-| `LabelHistory` | Label code search with status history table |
-| `ProductHistory` | Date-filtered batch table, expandable with errors + article drill-down |
+| `GatewayConfigDialog` | Gateway refresh settings + network info display |
+| `LabelsTab` | Searchable label list, click → detail with actions (LED, blink, NFC, heartbeat) |
+| `ArticlesTab` | Paginated article search with detail dialog (linked labels, history, data) |
+| `ArticleDetailDialog` | Article metadata, linked labels, update history, raw data tabs |
+| `TemplatesTab` | Sortable template list with detail, download, upload, and edit |
+| `TemplateDetailDialog` | Template metadata, mappings, groups tabs; download XSL/JSON/Both; edit files |
+| `UploadTemplateDialog` | Upload new template: name, size (from types), XSL + JSON file pickers |
+| `HistoryTab` | 3 sub-tabs: BatchUpdatesSubTab, ArticleUpdatesSubTab, LabelHistorySubTab |
+| `WhitelistTab` | Whitelist CRUD table, add/remove dialogs, box whitelist, sync buttons |
+| `DashboardAimsCard` | Dashboard card with battery health chips (Good/Low/Critical) |
 
 ### Client State (Zustand)
 
-`useAimsManagementStore` manages: gateways, selectedGateway, floatingGateways, labels, unassignedLabels, debugReport, batchErrors, labelHistory, batchHistory, activeTab.
+`useAimsManagementStore` manages: gateways, selectedGateway, floatingGateways, labels, unassignedLabels, debugReport, batchErrors, labelHistory, batchHistory, activeTab, storeSummary, labelStatusSummary, gatewayStatusSummary, labelModels, labelDetail, labelAliveHistory, labelOperationHistory, articles, articleDetail, articleHistory, templates, templateDetail, templateTypes, mappingConditions, templateGroups, whitelist, unassignedWhitelist, historySubTab.
 
 ### Hooks
 
 | Hook | Purpose |
 |------|---------|
-| `useGateways` | Gateway list/detail/floating/debugReport with 30s stale cache |
+| `useAimsOverview` | Store summary, label/gateway status, label models (allSettled, 60s stale) |
+| `useGateways` | Gateway list/detail/floating/debug/config with 30s stale cache |
 | `useLabelsOverview` | Labels + unassigned fetch, computes stats (status/battery/signal) |
+| `useLabelsDetail` | Label detail, alive history, operation history, actions (LED/blink/NFC/heartbeat) |
+| `useArticles` | Article list/detail/linked/updates with pagination and search |
+| `useTemplates` | Template list/detail/types/conditions/groups/download/upload |
 | `useProductHistory` | Batch history/detail/errors, article history |
-| `useGatewayManagement` | Register/deregister/reboot mutations |
+| `useGatewayManagement` | Register/deregister/reboot/config mutations |
 | `useLabelHistory` | Single label status history search |
+| `useWhitelist` | Whitelist CRUD, box whitelist, sync to storage/gateways |
 
 ---
 

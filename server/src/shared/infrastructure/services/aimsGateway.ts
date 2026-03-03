@@ -839,12 +839,50 @@ export class AIMSGateway {
         return this.withTokenRetry(storeId, (token, config) => solumService.rebootGateway(config, token, gatewayMac));
     }
 
+    async updateGatewayConfig(storeId: string, gatewayMac: string, configData: Record<string, any>) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.updateGatewayConfig(config, token, gatewayMac, configData));
+    }
+
+    async fetchGatewayOpcodes(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayOpcodes(config, token, gatewayMac));
+    }
+
+    async fetchGatewayStatus(storeId: string, gatewayMac: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayStatus(config, token, gatewayMac));
+    }
+
     async fetchGatewayDebugReport(storeId: string, gatewayMac: string) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayDebugReport(config, token, gatewayMac));
     }
 
     async fetchLabelStatusHistory(storeId: string, labelCode: string, page = 0, size = 50) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelStatusHistory(config, token, labelCode, page, size));
+    }
+
+    // ─── Label Action Operations ────────────────────────────────────────────
+
+    async setLabelLed(storeId: string, labelCode: string, led: { color?: string; mode?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.setLabelLed(config, token, labelCode, led));
+    }
+
+    async setLabelNfc(storeId: string, labelCode: string, nfcUrl: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.setLabelNfc(config, token, labelCode, nfcUrl));
+    }
+
+    async forceLabelAlive(storeId: string, labelCode: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.forceLabelAlive(config, token, labelCode));
+    }
+
+    async fetchLabelArticle(storeId: string, labelCode: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelArticle(config, token, labelCode));
+    }
+
+    async fetchLabelAliveHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelAliveHistory(config, token, labelCode, page, size));
+    }
+
+    async fetchLabelHistory(storeId: string, labelCode: string, page = 0, size = 50) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelHistory(config, token, labelCode, page, size));
     }
 
     async fetchBatchHistory(storeId: string, params?: { page?: number; size?: number; fromDate?: string; toDate?: string }) {
@@ -861,6 +899,106 @@ export class AIMSGateway {
 
     async fetchArticleUpdateHistory(storeId: string, articleId: string, page = 0, size = 50) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistory(config, token, articleId, page, size));
+    }
+
+    // ─── Article Browsing ──────────────────────────────────────────────────
+
+    async fetchArticleList(storeId: string, params?: { page?: number; size?: number; sort?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleList(config, token, params));
+    }
+
+    async fetchArticleById(storeId: string, articleId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleById(config, token, articleId));
+    }
+
+    async fetchLinkedArticles(storeId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLinkedArticles(config, token, params));
+    }
+
+    async fetchArticleUpdateHistoryAll(storeId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistoryAll(config, token, params));
+    }
+
+    async fetchArticleUpdateHistoryDetail(storeId: string, articleId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchArticleUpdateHistoryDetail(config, token, articleId, params));
+    }
+
+    // ─── Templates ──────────────────────────────────────────────────────
+
+    async fetchTemplates(storeId: string, params?: { page?: number; size?: number }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplates(config, token, params));
+    }
+
+    async fetchTemplateByName(storeId: string, templateName: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateByName(config, token, templateName));
+    }
+
+    async fetchTemplateTypes(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateTypes(config, token));
+    }
+
+    async fetchTemplateMappingConditions(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateMappingConditions(config, token));
+    }
+
+    async fetchTemplateGroups(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateGroups(config, token));
+    }
+
+    async downloadTemplate(storeId: string, templateName: string, version: number, fileType: 'XSL' | 'JSON') {
+        return this.withTokenRetry(storeId, (token, config) => solumService.downloadTemplate(config, token, templateName, version, fileType));
+    }
+
+    async uploadTemplate(storeId: string, templateData: Record<string, any>) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.uploadTemplate(config, token, templateData));
+    }
+
+    // ─── Summary / Overview ────────────────────────────────────────────────
+
+    async fetchStoreSummary(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchStoreSummary(config, token));
+    }
+
+    async fetchLabelStatusSummary(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelStatusSummary(config, token));
+    }
+
+    async fetchGatewayStatusSummary(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchGatewayStatusSummary(config, token));
+    }
+
+    async fetchLabelModels(storeId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchLabelModels(config, token));
+    }
+
+    // ─── Whitelist ──────────────────────────────────────────────────────
+
+    async fetchWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchWhitelist(config, token, params));
+    }
+
+    async addToWhitelist(storeId: string, labelCodes: string[]) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.addToWhitelist(config, token, labelCodes));
+    }
+
+    async removeFromWhitelist(storeId: string, labelCodes: string[]) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.removeFromWhitelist(config, token, labelCodes));
+    }
+
+    async whitelistBox(storeId: string, boxId: string) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.whitelistBox(config, token, boxId));
+    }
+
+    async syncWhitelistToStorage(storeId: string, fullUpdate?: boolean) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.syncWhitelistToStorage(config, token, fullUpdate));
+    }
+
+    async syncWhitelistToGateways(storeId: string, params?: { store?: string; partialDelete?: boolean }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.syncWhitelistToGateways(config, token, params));
+    }
+
+    async fetchUnassignedWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.fetchUnassignedWhitelist(config, token, params));
     }
 }
 
