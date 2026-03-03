@@ -186,6 +186,16 @@ class AimsManagementService {
         return aimsGateway.fetchTemplateGroups(storeId);
     }
 
+    async downloadTemplate(storeId: string, templateName: string, version: number, fileType: 'XSL' | 'JSON') {
+        appLogger.info('AimsManagement', 'Downloading template', { storeId, templateName, version, fileType });
+        return aimsGateway.downloadTemplate(storeId, templateName, version, fileType);
+    }
+
+    async uploadTemplate(storeId: string, templateData: Record<string, any>) {
+        appLogger.info('AimsManagement', 'Uploading template', { storeId, templateName: templateData.templateName });
+        return aimsGateway.uploadTemplate(storeId, templateData);
+    }
+
     // ─── Summary / Overview ────────────────────────────────────────────────
 
     async getStoreSummary(storeId: string) {

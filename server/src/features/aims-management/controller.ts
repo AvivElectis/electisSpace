@@ -6,8 +6,9 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
-import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema, whitelistQuerySchema, whitelistModifySchema, whitelistBoxSchema, whitelistSyncStorageSchema, whitelistSyncGatewaySchema } from './types.js';
+import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema, templateDownloadQuerySchema, templateUploadSchema, whitelistQuerySchema, whitelistModifySchema, whitelistBoxSchema, whitelistSyncStorageSchema, whitelistSyncGatewaySchema } from './types.js';
 import { badRequest } from '../../shared/middleware/errorHandler.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 
 /**
  * Extract active store ID from request.
@@ -322,7 +323,11 @@ async function listTemplateMappings(req: Request, res: Response, next: NextFunct
         const storeId = getStoreId(req);
         const mappings = await aimsManagementService.listTemplateMappingConditions(storeId);
         res.json({ data: mappings });
-    } catch (error) { next(error); }
+    } catch (error: any) {
+        // Mapping conditions are optional — some AIMS instances don't support them
+        appLogger.warn('AimsManagement', 'Template mappings not available', { error: error.message });
+        res.json({ data: [] });
+    }
 }
 
 async function listTemplateGroups(req: Request, res: Response, next: NextFunction) {
@@ -330,7 +335,11 @@ async function listTemplateGroups(req: Request, res: Response, next: NextFunctio
         const storeId = getStoreId(req);
         const groups = await aimsManagementService.listTemplateGroups(storeId);
         res.json({ data: groups });
-    } catch (error) { next(error); }
+    } catch (error: any) {
+        // Template groups are optional — some AIMS instances don't support them
+        appLogger.warn('AimsManagement', 'Template groups not available', { error: error.message });
+        res.json({ data: [] });
+    }
 }
 
 async function getTemplateByName(req: Request, res: Response, next: NextFunction) {
@@ -338,6 +347,41 @@ async function getTemplateByName(req: Request, res: Response, next: NextFunction
         const storeId = getStoreId(req);
         const template = await aimsManagementService.getTemplateByName(storeId, String(req.params.name));
         res.json({ data: template });
+    } catch (error: any) {
+        // Template detail enrichment is optional — return null so client falls back to list data
+        appLogger.warn('AimsManagement', 'Template detail not available', { name: req.params.name, error: error.message });
+        res.json({ data: null });
+    }
+}
+
+async function downloadTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const { templateName, version, fileType } = templateDownloadQuerySchema.parse(req.query);
+        const data = await aimsManagementService.downloadTemplate(storeId, templateName, version, fileType);
+        if (!data) {
+            res.status(404).json({ error: 'Template file not found' });
+            return;
+        }
+        const ext = fileType === 'XSL' ? 'xsl' : 'json';
+        // Strip existing extension from templateName to avoid double extensions (e.g. .xsl.xsl)
+        const baseName = templateName.replace(/\.(xsl|xslt|json|xml|dat)$/i, '');
+        const filename = `${baseName}.${ext}`;
+        const buffer = data.encoding === 'base64'
+            ? Buffer.from(data.content, 'base64')
+            : Buffer.from(typeof data.content === 'string' ? data.content : JSON.stringify(data.content));
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(buffer);
+    } catch (error) { next(error); }
+}
+
+async function uploadTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+        const storeId = getStoreId(req);
+        const templateData = templateUploadSchema.parse(req.body);
+        const result = await aimsManagementService.uploadTemplate(storeId, templateData);
+        res.json({ data: result });
     } catch (error) { next(error); }
 }
 
@@ -477,6 +521,8 @@ export const aimsManagementController = {
     listTemplateMappings,
     listTemplateGroups,
     getTemplateByName,
+    downloadTemplate,
+    uploadTemplate,
     getStoreSummary,
     getLabelStatusSummary,
     getGatewayStatusSummary,

@@ -97,7 +97,7 @@ A comprehensive AIMS Management module that serves as a full replacement for the
 | 1 — Gateways | `GatewayList` | Gateway table, detail dialog, registration dialog, config dialog |
 | 2 — Labels | `LabelsTab` | Searchable labels with click-to-detail: status, history, actions |
 | 3 — Articles | `ArticlesTab` | Paginated article browser with detail dialog |
-| 4 — Templates | `TemplatesTab` | Template list with detail dialog showing conditions/groups |
+| 4 — Templates | `TemplatesTab` | Template list with detail, download (XSL/JSON), upload, and edit |
 | 5 — History | `HistoryTab` | 3 sub-tabs: Batch Updates, Article Updates, Label History |
 | 6 — Whitelist | `WhitelistTab` | Whitelist CRUD, bulk add/remove, box, sync operations |
 
@@ -138,10 +138,12 @@ A comprehensive AIMS Management module that serves as a full replacement for the
 | `GET` | `/articles/:articleId/updates` | view | Article update history |
 | **Templates** | | | |
 | `GET` | `/templates` | view | List templates |
-| `GET` | `/templates/:templateName` | view | Template detail |
-| `GET` | `/templates/:templateName/types` | view | Template type mappings |
-| `GET` | `/templates/mapping-conditions` | view | Template mapping conditions |
+| `GET` | `/templates/:name` | view | Template detail by name |
+| `GET` | `/templates/types` | view | Template type list (sizes) |
+| `GET` | `/templates/mappings` | view | Template mapping conditions |
 | `GET` | `/templates/groups` | view | Template groups |
+| `GET` | `/templates/download` | view | Download template file (XSL/JSON, base64-decoded) |
+| `POST` | `/templates` | manage | Upload/update template (XSL + JSON as base64) |
 | **Products (History)** | | | |
 | `GET` | `/products/history` | view | Batch update history |
 | `GET` | `/products/history/:name` | view | Batch detail |
@@ -169,7 +171,9 @@ A comprehensive AIMS Management module that serves as a full replacement for the
 | `LabelsTab` | Searchable label list, click → detail with actions (LED, blink, NFC, heartbeat) |
 | `ArticlesTab` | Paginated article search with detail dialog (linked labels, history, data) |
 | `ArticleDetailDialog` | Article metadata, linked labels, update history, raw data tabs |
-| `TemplatesTab` | Sortable template list with detail dialog showing conditions/groups |
+| `TemplatesTab` | Sortable template list with detail, download, upload, and edit |
+| `TemplateDetailDialog` | Template metadata, mappings, groups tabs; download XSL/JSON/Both; edit files |
+| `UploadTemplateDialog` | Upload new template: name, size (from types), XSL + JSON file pickers |
 | `HistoryTab` | 3 sub-tabs: BatchUpdatesSubTab, ArticleUpdatesSubTab, LabelHistorySubTab |
 | `WhitelistTab` | Whitelist CRUD table, add/remove dialogs, box whitelist, sync buttons |
 | `DashboardAimsCard` | Dashboard card with battery health chips (Good/Low/Critical) |
@@ -187,7 +191,7 @@ A comprehensive AIMS Management module that serves as a full replacement for the
 | `useLabelsOverview` | Labels + unassigned fetch, computes stats (status/battery/signal) |
 | `useLabelsDetail` | Label detail, alive history, operation history, actions (LED/blink/NFC/heartbeat) |
 | `useArticles` | Article list/detail/linked/updates with pagination and search |
-| `useTemplates` | Template list/detail/types/conditions/groups |
+| `useTemplates` | Template list/detail/types/conditions/groups/download/upload |
 | `useProductHistory` | Batch history/detail/errors, article history |
 | `useGatewayManagement` | Register/deregister/reboot/config mutations |
 | `useLabelHistory` | Single label status history search |
