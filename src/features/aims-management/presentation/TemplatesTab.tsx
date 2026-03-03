@@ -175,7 +175,7 @@ export function TemplatesTab({ storeId, externalUploadOpen, onExternalUploadClos
                     sx={{ width: { xs: '100%', sm: 400 } }}
                 />
                 {searchTerm && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" dir="ltr">
                         {filtered.length} / {templates.length}
                     </Typography>
                 )}

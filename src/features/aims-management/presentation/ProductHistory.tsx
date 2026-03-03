@@ -154,11 +154,11 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
                     </Box>
                     <Box>
                         <Typography variant="caption" color="text.secondary">{t('aims.totalProcessed')}</Typography>
-                        <Typography variant="body2" fontWeight={600}>{summaryStats.totalProcessed}</Typography>
+                        <Typography variant="body2" fontWeight={600} dir="ltr">{summaryStats.totalProcessed}</Typography>
                     </Box>
                     <Box>
                         <Typography variant="caption" color="text.secondary">{t('aims.successRate')}</Typography>
-                        <Typography variant="body2" fontWeight={600}>{summaryStats.successRate}%</Typography>
+                        <Typography variant="body2" fontWeight={600} dir="ltr">{summaryStats.successRate}%</Typography>
                     </Box>
                 </Stack>
             )}

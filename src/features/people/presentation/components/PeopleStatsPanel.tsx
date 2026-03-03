@@ -63,7 +63,7 @@ export function PeopleStatsPanel({
                     onClick={() => setExpanded(!expanded)}
                 >
                     <Stack direction="row" alignItems="center" gap={1.5} sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
+                        <Typography variant="body2" fontWeight={600} dir="ltr" sx={{ fontSize: '0.85rem' }}>
                             {assignedCount}/{totalSpaces}
                         </Typography>
                         <LinearProgress
