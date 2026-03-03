@@ -44,7 +44,7 @@ function HealthBar({ label, value, total, color }: HealthBarProps) {
         <Box sx={{ mb: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                 <Typography variant="body2">{label}</Typography>
-                <Typography variant="body2" fontWeight="bold">
+                <Typography variant="body2" fontWeight="bold" dir="ltr">
                     {value} / {total} ({total > 0 ? Math.round(pct) : 0}%)
                 </Typography>
             </Box>
