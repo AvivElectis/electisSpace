@@ -5,39 +5,52 @@
  * Follows the same pattern as ArticlesTab for table + search.
  */
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Box, TextField, Table, TableBody, TableCell, TableContainer, TableHead,
     TableRow, Paper, Typography, TablePagination, Chip, CircularProgress,
     Alert, InputAdornment, Stack, TableSortLabel, useMediaQuery, useTheme,
+    Button, Snackbar,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useTemplates } from '../application/useTemplates';
 import { TemplateDetailDialog } from './TemplateDetailDialog';
+import { UploadTemplateDialog } from './UploadTemplateDialog';
 
 interface TemplatesTabProps {
     storeId: string;
+    externalUploadOpen?: boolean;
+    onExternalUploadClose?: () => void;
 }
 
-type SortField = 'templateName' | 'labelType' | 'dimensions' | 'colorMode' | 'dithering';
+type SortField = 'templateName' | 'labelType' | 'dimensions' | 'dithering';
 type SortDir = 'asc' | 'desc';
 
-export function TemplatesTab({ storeId }: TemplatesTabProps) {
+
+export function TemplatesTab({ storeId, externalUploadOpen, onExternalUploadClose }: TemplatesTabProps) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const { hasStoreRole, isAppViewer } = useAuthContext();
+    const canManage = hasStoreRole('STORE_ADMIN') && !isAppViewer;
     const {
         templates, templatesLoading, templatesError, templatesTotalElements,
-        templateMappings, templateGroups,
+        templateTypes, templateMappings, templateGroups,
         fetchTemplates, fetchTemplateDetail, fetchTemplateTypes, fetchTemplateMappings, fetchTemplateGroups,
-        selectedTemplate,
+        selectedTemplate, setSelectedTemplate, downloadTemplate, uploadTemplate,
     } = useTemplates(storeId);
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(50);
     const [searchTerm, setSearchTerm] = useState('');
     const [detailOpen, setDetailOpen] = useState(false);
+    const [internalUploadOpen, setInternalUploadOpen] = useState(false);
+    const uploadOpen = internalUploadOpen || !!externalUploadOpen;
+    const closeUpload = () => { setInternalUploadOpen(false); onExternalUploadClose?.(); };
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
     const [sortField, setSortField] = useState<SortField>('templateName');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -83,10 +96,6 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                     const bW = b.width ?? 0;
                     return sortDir === 'asc' ? aW - bW : bW - aW;
                 }
-                case 'colorMode':
-                    aVal = a.colorType || a.colorMode || a.color || '';
-                    bVal = b.colorType || b.colorMode || b.color || '';
-                    break;
                 case 'dithering': {
                     const aD = (a.dithering ?? a.ditheringYn ?? false) ? 1 : 0;
                     const bD = (b.dithering ?? b.ditheringYn ?? false) ? 1 : 0;
@@ -100,6 +109,11 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
         return result;
     }, [templates, searchTerm, sortField, sortDir]);
 
+    const existingTemplateNames = useMemo(
+        () => templates.map((t: any) => t.templateName || t.name || '').filter(Boolean),
+        [templates],
+    );
+
     const handleSort = (field: SortField) => {
         if (sortField === field) {
             setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
@@ -110,16 +124,29 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
     };
 
     const handleRowClick = (tmpl: any) => {
+        // Set immediately from list data so the dialog opens instantly
+        setSelectedTemplate(tmpl);
+        setDetailOpen(true);
+        // Fetch full detail in background to enrich the data
         const name = tmpl.templateName || tmpl.name;
         if (name) {
             fetchTemplateDetail(name);
         }
-        setDetailOpen(true);
     };
 
     const handleDetailClose = () => {
         setDetailOpen(false);
     };
+
+    const handleUpload = useCallback(async (templateData: Record<string, any>) => {
+        try {
+            await uploadTemplate(templateData);
+            setSnackbar({ open: true, message: t('aims.uploadTemplateSuccess'), severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: t('aims.uploadTemplateFailed'), severity: 'error' });
+            throw new Error('upload failed');
+        }
+    }, [uploadTemplate, t]);
 
     if (templatesLoading && templates.length === 0) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
@@ -129,8 +156,8 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
         <Box>
             {templatesError && <Alert severity="error" sx={{ mb: 2 }}>{templatesError}</Alert>}
 
-            {/* Search */}
-            <Box sx={{ mb: 2 }}>
+            {/* Search + Upload */}
+            <Stack direction="row" gap={2} alignItems="center" sx={{ mb: 2 }} flexWrap="wrap">
                 <TextField
                     size="small"
                     placeholder={t('aims.searchByTemplate')}
@@ -148,11 +175,22 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                     sx={{ width: { xs: '100%', sm: 400 } }}
                 />
                 {searchTerm && (
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
                         {filtered.length} / {templates.length}
                     </Typography>
                 )}
-            </Box>
+                {canManage && !isMobile && (
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => setInternalUploadOpen(true)}
+                        sx={{ ml: 'auto' }}
+                    >
+                        {t('aims.uploadTemplate')}
+                    </Button>
+                )}
+            </Stack>
 
             {/* Template list */}
             {templates.length > 0 ? (
@@ -164,7 +202,6 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                             const labelType = tmpl.labelType || tmpl.type || '';
                             const width = tmpl.width ?? '';
                             const height = tmpl.height ?? '';
-                            const colorMode = tmpl.colorType || tmpl.colorMode || tmpl.color || '';
                             const dithering = tmpl.dithering ?? tmpl.ditheringYn ?? false;
                             return (
                                 <Paper
@@ -193,13 +230,8 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                     <Stack direction="row" gap={1} flexWrap="wrap">
                                         {labelType && <Chip label={labelType} size="small" variant="outlined" />}
                                         {(width || height) && (
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" color="text.secondary" dir="ltr" component="span">
                                                 {width} x {height}
-                                            </Typography>
-                                        )}
-                                        {colorMode && (
-                                            <Typography variant="caption" color="text.secondary">
-                                                {colorMode}
                                             </Typography>
                                         )}
                                     </Stack>
@@ -245,15 +277,6 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                             {t('aims.templateDimensions')}
                                         </TableSortLabel>
                                     </TableCell>
-                                    <TableCell>
-                                        <TableSortLabel
-                                            active={sortField === 'colorMode'}
-                                            direction={sortField === 'colorMode' ? sortDir : 'asc'}
-                                            onClick={() => handleSort('colorMode')}
-                                        >
-                                            {t('aims.templateColor')}
-                                        </TableSortLabel>
-                                    </TableCell>
                                     <TableCell align="center">
                                         <TableSortLabel
                                             active={sortField === 'dithering'}
@@ -271,7 +294,6 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                     const labelType = tmpl.labelType || tmpl.type || '';
                                     const width = tmpl.width ?? '';
                                     const height = tmpl.height ?? '';
-                                    const colorMode = tmpl.colorType || tmpl.colorMode || tmpl.color || '';
                                     const dithering = tmpl.dithering ?? tmpl.ditheringYn ?? false;
                                     return (
                                         <TableRow
@@ -287,12 +309,11 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                             </TableCell>
                                             <TableCell>{labelType || '\u2014'}</TableCell>
                                             <TableCell>
-                                                {(width || height) ? `${width} x ${height}` : '\u2014'}
+                                                {(width || height) ? <span dir="ltr">{width} x {height}</span> : '\u2014'}
                                             </TableCell>
-                                            <TableCell>{colorMode || '\u2014'}</TableCell>
                                             <TableCell align="center">
                                                 <Chip
-                                                    label={dithering ? 'Yes' : 'No'}
+                                                    label={dithering ? t('common.yes') : t('common.no')}
                                                     size="small"
                                                     variant="outlined"
                                                     color={dithering ? 'success' : 'default'}
@@ -303,7 +324,7 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                                 })}
                                 {filtered.length === 0 && !templatesLoading && (
                                     <TableRow>
-                                        <TableCell colSpan={5} align="center">
+                                        <TableCell colSpan={4} align="center">
                                             <Typography color="text.secondary" sx={{ py: 2 }}>
                                                 {t('aims.noTemplates')}
                                             </Typography>
@@ -346,6 +367,28 @@ export function TemplatesTab({ storeId }: TemplatesTabProps) {
                 template={selectedTemplate}
                 templateMappings={templateMappings}
                 templateGroups={templateGroups}
+                onDownload={downloadTemplate}
+                canManage={canManage}
+                onUpdateFiles={canManage ? handleUpload : undefined}
+            />
+
+            {/* Upload template dialog */}
+            {canManage && (
+                <UploadTemplateDialog
+                    open={uploadOpen}
+                    onClose={closeUpload}
+                    templateTypes={templateTypes}
+                    existingTemplateNames={existingTemplateNames}
+                    onUpload={handleUpload}
+                />
+            )}
+
+            {/* Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                message={snackbar.message}
             />
         </Box>
     );

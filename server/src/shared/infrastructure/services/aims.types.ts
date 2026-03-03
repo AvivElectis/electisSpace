@@ -266,16 +266,33 @@ export interface AimsArticleUpdateHistory {
 
 // ─── Summary / Overview Types ──────────────────────────────────────────────
 
-/** Store summary from AIMS overview endpoint */
+/** Store summary from AIMS /common/api/v2/common/store/summary endpoint */
 export interface AimsStoreSummary {
-    store: string;
-    storeName: string;
-    labelCount: number;
-    gatewayCount: number;
-    onlineLabelCount?: number;
-    offlineLabelCount?: number;
-    onlineGatewayCount?: number;
-    offlineGatewayCount?: number;
+    company?: string;
+    store?: string;
+    storeName?: string;
+    // Label counts
+    totalLabelCount: number;
+    onlineLabelCount: number;
+    offlineLabelCount: number;
+    // Label update status
+    updatedLabelCount: number;
+    inProgressLabelCount: number;
+    notUpdatedLabelCount: number;
+    totalUpdatedLabelCount: number;
+    // Battery health
+    goodBatteryCount: number;
+    lowBatteryCount: number;
+    // Signal distribution
+    excellentSignalLabelCount: number;
+    goodSignalLabelCount: number;
+    badSignalLabelCount: number;
+    // Gateway counts
+    onlineGwCount: number;
+    offlineGwCount: number;
+    // Product counts
+    totalAssignedProductCount?: number;
+    totalProductCount?: number;
     [key: string]: unknown;
 }
 
@@ -290,7 +307,7 @@ export interface AimsLabelStatusSummary {
     [key: string]: unknown;
 }
 
-/** Gateway status summary (connected/disconnected counts) */
+/** Gateway status summary — per-gateway endpoint (requires gateway MAC + date range) */
 export interface AimsGatewayStatusSummary {
     totalGateways: number;
     connectedCount: number;

@@ -117,7 +117,7 @@ export function LabelsOverview({ storeId }: LabelsOverviewProps) {
                 const code = (l.labelCode || l.code || '').toLowerCase();
                 const type = (l.labelType || l.type || '').toLowerCase();
                 const template = (l.templateName || '').toLowerCase();
-                const gateway = (l.gateway || '').toLowerCase();
+                const gateway = (typeof l.gateway === 'object' ? l.gateway?.name || '' : l.gateway || '').toLowerCase();
                 return code.includes(term) || type.includes(term) || template.includes(term) || gateway.includes(term);
             });
         }
@@ -452,7 +452,7 @@ export function LabelsOverview({ storeId }: LabelsOverviewProps) {
                                     const labelBattery = label.batteryStatus || label.battery || '';
                                     const labelSignal = label.signalStrength || label.signal || '';
                                     const labelType = label.labelType || label.type || '';
-                                    const labelGateway = label.gateway || '';
+                                    const labelGateway = typeof label.gateway === 'object' ? label.gateway?.name || '' : label.gateway || '';
                                     return (
                                         <TableRow
                                             key={code}

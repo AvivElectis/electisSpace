@@ -84,7 +84,8 @@ export function LabelDetailView({ open, onClose, label, storeId }: LabelDetailVi
     const signal = detail.signalStrength || detail.signal || label.signalStrength || label.signal || '';
     const labelType = detail.labelType || detail.type || label.labelType || label.type || '';
     const templateName = detail.templateName || label.templateName || '';
-    const gateway = detail.gateway || detail.gatewayMac || label.gateway || '';
+    const gwRaw = detail.gateway || detail.gatewayMac || label.gateway || '';
+    const gateway = typeof gwRaw === 'object' ? gwRaw?.name || '' : gwRaw;
 
     const infoFields = [
         { label: t('aims.labelCode'), value: labelCode, mono: true },
@@ -218,7 +219,7 @@ export function LabelDetailView({ open, onClose, label, storeId }: LabelDetailVi
                                                             </TableCell>
                                                             <TableCell>
                                                                 <Typography variant="body2" fontFamily="monospace">
-                                                                    {entry.gateway || '\u2014'}
+                                                                    {(typeof entry.gateway === 'object' ? entry.gateway?.name : entry.gateway) || '\u2014'}
                                                                 </Typography>
                                                             </TableCell>
                                                             <TableCell>{entry.signal ?? '\u2014'}</TableCell>

@@ -53,7 +53,8 @@ export function useTemplates(storeId: string | null) {
         if (!storeId) return;
         try {
             const detail = await aimsService.fetchTemplateByName(storeId, templateName);
-            setSelectedTemplate(detail);
+            // Only update if enrichment returned real data — keep list data as fallback
+            if (detail) setSelectedTemplate(detail);
         } catch (error: any) {
             logger.error('useTemplates', 'Failed to fetch template detail', { error: error.message });
         }
@@ -63,7 +64,7 @@ export function useTemplates(storeId: string | null) {
         if (!storeId) return;
         try {
             const types = await aimsService.fetchTemplateTypes(storeId);
-            setTemplateTypes(Array.isArray(types) ? types : types?.content || []);
+            setTemplateTypes(Array.isArray(types) ? types : types?.templateTypeList || types?.content || []);
         } catch (error: any) {
             logger.error('useTemplates', 'Failed to fetch template types', { error: error.message });
         }
@@ -89,6 +90,27 @@ export function useTemplates(storeId: string | null) {
         }
     }, [storeId, setTemplateGroups]);
 
+    const downloadTemplate = useCallback(async (templateName: string, version: number, fileType: 'XSL' | 'JSON') => {
+        if (!storeId) return null;
+        try {
+            return await aimsService.downloadTemplate(storeId, templateName, version, fileType);
+        } catch (error: any) {
+            logger.error('useTemplates', 'Failed to download template', { error: error.message });
+            throw error;
+        }
+    }, [storeId]);
+
+    const uploadTemplate = useCallback(async (templateData: Record<string, any>) => {
+        if (!storeId) return;
+        try {
+            await aimsService.uploadTemplate(storeId, templateData);
+            await fetchTemplates({}, true);
+        } catch (error: any) {
+            logger.error('useTemplates', 'Failed to upload template', { error: error.message });
+            throw error;
+        }
+    }, [storeId, fetchTemplates]);
+
     return {
         templates,
         templatesLoading,
@@ -99,10 +121,13 @@ export function useTemplates(storeId: string | null) {
         templateMappings,
         templateGroups,
         selectedTemplate,
+        setSelectedTemplate,
         fetchTemplates,
         fetchTemplateDetail,
         fetchTemplateTypes,
         fetchTemplateMappings,
         fetchTemplateGroups,
+        downloadTemplate,
+        uploadTemplate,
     };
 }

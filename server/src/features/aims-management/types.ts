@@ -65,6 +65,27 @@ export const templateListQuerySchema = z.object({
     size: z.coerce.number().int().min(1).max(500).default(50),
 });
 
+export const templateDownloadQuerySchema = z.object({
+    templateName: z.string().min(1),
+    version: z.coerce.number().int().min(0),
+    fileType: z.enum(['XSL', 'JSON']),
+});
+
+export const templateUploadSchema = z.object({
+    data: z.string().min(1),
+    jsonData: z.string().min(1),
+    templateName: z.string().min(1),
+    labelType: z.string().min(1),
+    fileType: z.string().default('.dat'),
+    width: z.string().min(1),
+    height: z.string().min(1),
+    tagImageUpdateRequired: z.boolean().default(false),
+    templateModel: z.string().default(''),
+    templateModelSize: z.string().default(''),
+    color: z.string().default('BW'),
+    dithering: z.boolean().default(false),
+});
+
 // ─── Gateway Config Schemas ─────────────────────────────────────────────────
 
 export const gatewayConfigUpdateSchema = z.object({

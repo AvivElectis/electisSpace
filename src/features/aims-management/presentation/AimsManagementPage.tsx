@@ -21,6 +21,7 @@ import {
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
 import AddIcon from '@mui/icons-material/Add';
+import UploadIcon from '@mui/icons-material/Upload';
 import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
@@ -55,7 +56,8 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 }
 
 export function AimsManagementPage() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.language === 'he';
     const { activeStoreId, isAppReady } = useAuthStore();
     const { hasStoreRole, isAppViewer } = useAuthContext();
     const canManage = hasStoreRole('STORE_ADMIN') && !isAppViewer;
@@ -66,6 +68,7 @@ export function AimsManagementPage() {
 
     const [selectedGatewayMac, setSelectedGatewayMac] = useState<string | null>(null);
     const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
+    const [uploadTemplateOpen, setUploadTemplateOpen] = useState(false);
     const { gateways, fetchGateways } = useGateways(activeStoreId);
     const { stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
 
@@ -120,7 +123,7 @@ export function AimsManagementPage() {
     }
 
     return (
-        <Box>
+        <Box dir={isRtl ? 'rtl' : 'ltr'} sx={{ '& .MuiTableCell-root': { textAlign: 'start' } }}>
             {/* Header Section */}
             <Stack
                 direction="column"
@@ -280,7 +283,11 @@ export function AimsManagementPage() {
 
             {/* Tab 4 — Templates */}
             <TabPanel value={activeTab} index={4}>
-                <TemplatesTab storeId={activeStoreId} />
+                <TemplatesTab
+                    storeId={activeStoreId}
+                    externalUploadOpen={uploadTemplateOpen}
+                    onExternalUploadClose={() => setUploadTemplateOpen(false)}
+                />
             </TabPanel>
 
             {/* Tab 5 — History (unified: batch / article / label) */}
@@ -312,6 +319,28 @@ export function AimsManagementPage() {
                 >
                     <AddIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
                     {t('aims.register')}
+                </Fab>
+            )}
+
+            {/* Mobile FAB for upload template */}
+            {isMobile && canManage && activeTab === 4 && (
+                <Fab
+                    color="primary"
+                    variant="extended"
+                    onClick={() => setUploadTemplateOpen(true)}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        zIndex: 1050,
+                        height: 64,
+                        px: 3,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                    }}
+                >
+                    <UploadIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
+                    {t('aims.uploadTemplate')}
                 </Fab>
             )}
 
