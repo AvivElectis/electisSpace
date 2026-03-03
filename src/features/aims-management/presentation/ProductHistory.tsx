@@ -80,15 +80,16 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
     // Summary stats
     const summaryStats = useMemo(() => {
         // SoluM may return paginated { content: [...] }, direct array, or named list field
-    const batches = Array.isArray(batchHistory?.content) ? batchHistory.content
-        : Array.isArray(batchHistory) ? batchHistory
-        : Array.isArray(batchHistory?.batchHistoryList) ? batchHistory.batchHistoryList
-        : [];
+        const batches = Array.isArray(batchHistory?.content) ? batchHistory.content
+            : Array.isArray(batchHistory) ? batchHistory
+            : Array.isArray(batchHistory?.batchHistoryList) ? batchHistory.batchHistoryList
+            : Array.isArray(batchHistory?.articleFileHistoryList) ? batchHistory.articleFileHistoryList
+            : [];
         if (batches.length === 0) return null;
 
         const totalBatches = batches.length;
-        const totalProcessed = batches.reduce((sum: number, b: any) => sum + (b.totalArticles || 0), 0);
-        const totalSuccess = batches.reduce((sum: number, b: any) => sum + (b.successCount || 0), 0);
+        const totalProcessed = batches.reduce((sum: number, b: any) => sum + (b.totalArticles || b.total || 0), 0);
+        const totalSuccess = batches.reduce((sum: number, b: any) => sum + (b.successCount || b.success || 0), 0);
         const successRate = totalProcessed > 0 ? Math.round((totalSuccess / totalProcessed) * 100) : 0;
 
         return { totalBatches, totalProcessed, successRate };
@@ -106,6 +107,7 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
     const batches = Array.isArray(batchHistory?.content) ? batchHistory.content
         : Array.isArray(batchHistory) ? batchHistory
         : Array.isArray(batchHistory?.batchHistoryList) ? batchHistory.batchHistoryList
+        : Array.isArray(batchHistory?.articleFileHistoryList) ? batchHistory.articleFileHistoryList
         : [];
 
     return (
@@ -181,7 +183,12 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
                             {batches.map((batch: any, i: number) => {
                                 const name = batch.batchName || batch.name || `batch-${i}`;
                                 const isExpanded = expandedBatch === name;
-                                const hasErrors = (batch.failCount || 0) > 0;
+                                const status = batch.status || batch.result || '';
+                                const total = batch.totalArticles ?? batch.total ?? '—';
+                                const success = batch.successCount ?? batch.success ?? '—';
+                                const fail = batch.failCount ?? batch.fail ?? '—';
+                                const hasErrors = (batch.failCount || batch.fail || 0) > 0;
+                                const ts = batch.timestamp || batch.created || batch.lastUpdateTime;
                                 return (
                                     <Fragment key={name}>
                                         <TableRow hover onClick={() => handleExpandBatch(name)} sx={{ cursor: 'pointer' }}>
@@ -189,14 +196,14 @@ export function ProductHistory({ storeId }: ProductHistoryProps) {
                                                 {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                                             </TableCell>
                                             <TableCell><Typography variant="body2" fontFamily="monospace">{name}</Typography></TableCell>
-                                            <TableCell>{batch.timestamp ? new Date(batch.timestamp).toLocaleString() : '—'}</TableCell>
-                                            <TableCell align="right">{batch.totalArticles ?? '—'}</TableCell>
-                                            <TableCell align="right">{batch.successCount ?? '—'}</TableCell>
-                                            <TableCell align="right">{batch.failCount ?? '—'}</TableCell>
+                                            <TableCell>{ts ? new Date(ts).toLocaleString() : '—'}</TableCell>
+                                            <TableCell align="right">{total}</TableCell>
+                                            <TableCell align="right">{success}</TableCell>
+                                            <TableCell align="right">{fail}</TableCell>
                                             <TableCell>
                                                 <Chip
-                                                    label={batch.status || '—'}
-                                                    color={batch.status === 'COMPLETED' || batch.status === 'SUCCESS' ? 'success' : batch.status === 'FAILED' ? 'error' : 'default'}
+                                                    label={status || '—'}
+                                                    color={status === 'COMPLETED' || status === 'SUCCESS' || status === 'PARTIAL_SUCCESS' ? 'success' : status === 'FAILED' ? 'error' : 'default'}
                                                     size="small"
                                                     variant="outlined"
                                                 />

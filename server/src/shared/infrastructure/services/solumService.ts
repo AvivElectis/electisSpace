@@ -865,8 +865,9 @@ export class SolumService {
         if (!config.storeCode) throw new Error('Store code required');
         const { page = 0, size = 20, fromDate, toDate } = params;
         let url = this.buildUrl(config, `/common/api/v2/common/articles/history?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
-        if (fromDate) url += `&fromDate=${fromDate}`;
-        if (toDate) url += `&toDate=${toDate}`;
+        // AIMS API expects 'start'/'end' date params (format: YYYY-MM-DD HH:mm:ss)
+        if (fromDate) url += `&start=${encodeURIComponent(fromDate + ' 00:00:00')}`;
+        if (toDate) url += `&end=${encodeURIComponent(toDate + ' 23:59:59')}`;
         return this.withRetry('fetchBatchHistory', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
             return this.extractResponseData(response.data, 'fetchBatchHistory');
@@ -944,16 +945,12 @@ export class SolumService {
     }
 
     /**
-     * Fetch all article update history (paginated, not filtered by article)
+     * Fetch all article update history (paginated).
+     * AIMS has no "list all" article history endpoint — reuses the batch history
+     * endpoint (/articles/history) which returns articleFileHistoryList.
      */
     async fetchArticleUpdateHistoryAll(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
-        if (!config.storeCode) throw new Error('Store code required');
-        const { page = 0, size = 50 } = params;
-        const url = this.buildUrl(config, `/common/api/v2/common/articles/update/history?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
-        return this.withRetry('fetchArticleUpdateHistoryAll', async () => {
-            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return this.extractResponseData(response.data, 'fetchArticleUpdateHistoryAll');
-        });
+        return this.fetchBatchHistory(config, token, { ...params });
     }
 
     /**
@@ -1037,10 +1034,16 @@ export class SolumService {
      * Fetch a template by name
      */
     async fetchTemplateByName(config: SolumConfig, token: string, templateName: string): Promise<any> {
-        const url = this.buildUrl(config, `/common/api/v2/common/templates/name?company=${config.companyName}&templateName=${encodeURIComponent(templateName)}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/name?company=${config.companyName}&name=${encodeURIComponent(templateName)}`);
         return this.withRetry('fetchTemplateByName', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return this.extractResponseData(response.data, 'fetchTemplateByName');
+            const data = this.extractResponseData(response.data, 'fetchTemplateByName');
+            // API returns a paginated list — extract the first matching template
+            const list = data?.content || data?.templateList;
+            if (Array.isArray(list)) {
+                return list[0] || null;
+            }
+            return data;
         });
     }
 
@@ -1058,9 +1061,9 @@ export class SolumService {
     /**
      * Fetch template mapping conditions
      */
-    async fetchTemplateMappingConditions(config: SolumConfig, token: string): Promise<any[]> {
+    async fetchTemplateMappingConditions(config: SolumConfig, token: string, page = 0): Promise<any[]> {
         if (!config.storeCode) throw new Error('Store code required');
-        const url = this.buildUrl(config, `/common/api/v2/common/templates/mapping/condition?company=${config.companyName}&store=${config.storeCode}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/mapping/condition?company=${config.companyName}&page=${page}`);
         return this.withRetry('fetchTemplateMappingConditions', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
             return response.data?.responseMessage ?? response.data ?? [];
@@ -1076,6 +1079,40 @@ export class SolumService {
         return this.withRetry('fetchTemplateGroups', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
             return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    /**
+     * Download a template file (XSL or JSON)
+     */
+    async downloadTemplate(config: SolumConfig, token: string, templateName: string, version: number, fileType: 'XSL' | 'JSON'): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/download?company=${config.companyName}&version=${version}&fileType=${fileType}`);
+        return this.withRetry('downloadTemplate', async () => {
+            const response = await this.client.get(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'templateName': templateName,
+                },
+            });
+            const data = response.data;
+            // AIMS returns JSON with base64-encoded template content
+            if (data?.template) {
+                return { content: data.template, encoding: 'base64' };
+            }
+            return { content: data, encoding: 'raw' };
+        });
+    }
+
+    /**
+     * Upload a template (XSL + JSON as base64)
+     */
+    async uploadTemplate(config: SolumConfig, token: string, templateData: Record<string, any>): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates?company=${config.companyName}`);
+        return this.withRetry('uploadTemplate', async () => {
+            const response = await this.client.post(url, templateData, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            return this.extractResponseData(response.data, 'uploadTemplate');
         });
     }
 

@@ -217,6 +217,19 @@ export async function fetchTemplateGroups(storeId: string) {
     return data.data;
 }
 
+export async function downloadTemplate(storeId: string, templateName: string, version: number, fileType: 'XSL' | 'JSON') {
+    const { data } = await api.get('/aims/templates/download', {
+        params: { storeId, templateName, version, fileType },
+        responseType: 'blob',
+    });
+    return data;
+}
+
+export async function uploadTemplate(storeId: string, templateData: Record<string, any>) {
+    const { data } = await api.post('/aims/templates', templateData, { params: { storeId } });
+    return data.data;
+}
+
 // ─── Whitelist Operations ───────────────────────────────────────────────────
 
 export async function fetchWhitelist(storeId: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}) {

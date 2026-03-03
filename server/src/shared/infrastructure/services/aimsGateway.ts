@@ -945,6 +945,14 @@ export class AIMSGateway {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchTemplateGroups(config, token));
     }
 
+    async downloadTemplate(storeId: string, templateName: string, version: number, fileType: 'XSL' | 'JSON') {
+        return this.withTokenRetry(storeId, (token, config) => solumService.downloadTemplate(config, token, templateName, version, fileType));
+    }
+
+    async uploadTemplate(storeId: string, templateData: Record<string, any>) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.uploadTemplate(config, token, templateData));
+    }
+
     // ─── Summary / Overview ────────────────────────────────────────────────
 
     async fetchStoreSummary(storeId: string) {

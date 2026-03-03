@@ -65,6 +65,8 @@ router.get('/templates', requirePermission('aims-management', 'view'), aimsManag
 router.get('/templates/types', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateTypes);
 router.get('/templates/mappings', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateMappings);
 router.get('/templates/groups', requirePermission('aims-management', 'view'), aimsManagementController.listTemplateGroups);
+router.get('/templates/download', requirePermission('aims-management', 'view'), aimsManagementController.downloadTemplate);
+router.post('/templates', requirePermission('aims-management', 'manage'), aimsManagementController.uploadTemplate);
 router.get('/templates/:name', requirePermission('aims-management', 'view'), aimsManagementController.getTemplateByName);
 
 // ─── Whitelist (STORE_MANAGER+ for read, STORE_ADMIN+ for write) ────────────

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Template download** — download XSL and/or JSON files from the template detail dialog; AIMS base64 response decoded server-side
+- **Template upload** — upload new templates with name, size selection (from AIMS template types), XSL + JSON file pickers; validates duplicate names
+- **Template edit (re-upload)** — update existing template files from the detail dialog with new XSL + JSON uploads
+
+### Fixed
+- **Template detail not loading** — AIMS `/templates/name` query parameter was wrong (`templateName=` instead of `name=`); response list extraction checked `content` instead of `templateList`
+- **Template download double extension** — templateName includes `.xsl` suffix; both server and client now strip existing extensions before appending file type
+- **Template download content corrupt** — AIMS returns JSON `{template: base64}`, not raw binary; server now decodes base64 before sending to client
+- **Template mappings/groups 500 errors** — AIMS instances that don't support these endpoints now return empty arrays instead of crashing
+- **Template detail enrichment null guard** — prevents overwriting good list data when detail API returns null
+
 ## [2.9.0] — 2026-03-02 — AIMS Manager Overhaul
 
 ### Added
