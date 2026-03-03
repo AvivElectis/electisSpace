@@ -44,12 +44,12 @@ export function useProductHistory(storeId: string | null) {
         }
     }, [storeId]);
 
-    const fetchBatchErrors = useCallback(async (batchName: string) => {
+    const fetchBatchErrors = useCallback(async (batchId: string) => {
         if (!storeId) return;
         setBatchErrorsLoading(true);
         setBatchErrors(null);
         try {
-            const data = await aimsService.fetchBatchErrors(storeId, batchName);
+            const data = await aimsService.fetchBatchErrors(storeId, batchId);
             setBatchErrors(data);
         } catch (err: any) {
             logger.error('useProductHistory', 'Failed to fetch batch errors', { error: err.message });

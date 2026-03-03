@@ -239,6 +239,9 @@ export function DashboardPage() {
                             offlineGateways={aimsGatewayStats.offline}
                             totalLabels={aimsLabelStats.total}
                             onlineLabels={aimsLabelStats.online}
+                            batteryGood={aimsLabelStats.battery.good}
+                            batteryLow={aimsLabelStats.battery.low}
+                            batteryCritical={aimsLabelStats.battery.critical}
                             isMobile={isMobile}
                         />
                     </Grid>

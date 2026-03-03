@@ -46,3 +46,4 @@ The page displays a real-time log of the sync session.
 
 ---
 *See [MECHANICS_SYNC](../mechanics/MECHANICS_SYNC.md) for the internal logic.*
+*See [AIMS Integration](AIMS_INTEGRATION.md) for the full AIMS connection, authentication, article format, field mapping, and sync queue architecture.*

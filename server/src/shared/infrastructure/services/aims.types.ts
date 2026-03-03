@@ -124,6 +124,21 @@ export interface AimsDitherPreviewRequest {
     optAlgType?: number;
 }
 
+// ─── Label Action Types ────────────────────────────────────────────────────
+
+/** LED control request for a label */
+export interface AimsLedControl {
+    labelCode: string;
+    color?: string;
+    mode?: string;
+}
+
+/** NFC configuration request for a label */
+export interface AimsNfcConfig {
+    labelCode: string;
+    nfcUrl: string;
+}
+
 // ─── Response Types ────────────────────────────────────────────────────────
 
 /** Generic AIMS API response envelope */
@@ -246,5 +261,63 @@ export interface AimsArticleUpdateHistory {
     }>;
     totalElements?: number;
     totalPages?: number;
+    [key: string]: unknown;
+}
+
+// ─── Summary / Overview Types ──────────────────────────────────────────────
+
+/** Store summary from AIMS /common/api/v2/common/store/summary endpoint */
+export interface AimsStoreSummary {
+    company?: string;
+    store?: string;
+    storeName?: string;
+    // Label counts
+    totalLabelCount: number;
+    onlineLabelCount: number;
+    offlineLabelCount: number;
+    // Label update status
+    updatedLabelCount: number;
+    inProgressLabelCount: number;
+    notUpdatedLabelCount: number;
+    totalUpdatedLabelCount: number;
+    // Battery health
+    goodBatteryCount: number;
+    lowBatteryCount: number;
+    // Signal distribution
+    excellentSignalLabelCount: number;
+    goodSignalLabelCount: number;
+    badSignalLabelCount: number;
+    // Gateway counts
+    onlineGwCount: number;
+    offlineGwCount: number;
+    // Product counts
+    totalAssignedProductCount?: number;
+    totalProductCount?: number;
+    [key: string]: unknown;
+}
+
+/** Label status summary (success/processing/timeout/online/offline counts) */
+export interface AimsLabelStatusSummary {
+    totalLabels: number;
+    successCount: number;
+    processingCount: number;
+    timeoutCount: number;
+    onlineCount: number;
+    offlineCount: number;
+    [key: string]: unknown;
+}
+
+/** Gateway status summary — per-gateway endpoint (requires gateway MAC + date range) */
+export interface AimsGatewayStatusSummary {
+    totalGateways: number;
+    connectedCount: number;
+    disconnectedCount: number;
+    [key: string]: unknown;
+}
+
+/** Label model/type count from AIMS */
+export interface AimsLabelModel {
+    labelType: string;
+    count: number;
     [key: string]: unknown;
 }

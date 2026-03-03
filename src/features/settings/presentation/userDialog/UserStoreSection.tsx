@@ -15,12 +15,13 @@ interface Props {
     isEdit: boolean;
     isEditing: boolean;
     companyEnabledFeatures?: string[];
+    targetGlobalRole?: string | null;
 }
 
 export function UserStoreSection({
     companyId, isCreatingCompany, allStoresAccess,
     assignments, onAssignmentsChange,
-    isEdit, isEditing, companyEnabledFeatures,
+    isEdit, isEditing, companyEnabledFeatures, targetGlobalRole,
 }: Props) {
     const { t } = useTranslation();
 
@@ -36,6 +37,7 @@ export function UserStoreSection({
                 onAssignmentsChange={onAssignmentsChange}
                 disabled={isEdit && !isEditing}
                 companyEnabledFeatures={companyEnabledFeatures}
+                targetGlobalRole={targetGlobalRole}
             />
         </Box>
     );

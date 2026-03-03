@@ -48,6 +48,7 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 // Lazy load dialogs - using default exports
 const CompanyDialog = lazy(() => import('./CompanyDialog'));
 const StoresDialog = lazy(() => import('./StoresDialog'));
+const AIMSSettingsDialog = lazy(() => import('./AIMSSettingsDialog'));
 
 /**
  * Companies Settings Tab Component
@@ -73,6 +74,7 @@ export function CompaniesTab() {
     // Dialog State
     const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
     const [storesDialogOpen, setStoresDialogOpen] = useState(false);
+    const [aimsDialogOpen, setAimsDialogOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
     // Fetch Companies
@@ -133,6 +135,17 @@ export function CompaniesTab() {
     const handleManageStores = (company: Company) => {
         setSelectedCompany(company);
         setStoresDialogOpen(true);
+    };
+
+    const handleAimsSettings = (company: Company) => {
+        setSelectedCompany(company);
+        setAimsDialogOpen(true);
+    };
+
+    const handleAimsDialogClose = () => {
+        setAimsDialogOpen(false);
+        setSelectedCompany(null);
+        fetchCompanies();
     };
 
     const handleDelete = async (company: Company) => {
@@ -269,6 +282,15 @@ export function CompaniesTab() {
                                             {company.location && <Typography variant="caption" color="text.secondary">{company.location}</Typography>}
                                         </Box>
                                         <Stack direction="row" gap={0.5}>
+                                            <Tooltip title={t('settings.aims.dialogTitle', 'AIMS Settings')}>
+                                                <IconButton size="small" onClick={() => handleAimsSettings(company)}>
+                                                    {company.aimsConfigured ? (
+                                                        <CloudIcon fontSize="small" color="success" />
+                                                    ) : (
+                                                        <CloudOffIcon fontSize="small" />
+                                                    )}
+                                                </IconButton>
+                                            </Tooltip>
                                             <Tooltip title={t('settings.companies.manageStores')}>
                                                 <IconButton size="small" onClick={() => handleManageStores(company)}>
                                                     <StoreIcon fontSize="small" />
@@ -299,11 +321,15 @@ export function CompaniesTab() {
                                             sx={{ px: 1.5, cursor: 'pointer' }}
                                         />
                                         <Tooltip title={company.aimsConfigured ? t('settings.companies.aimsConfigured') : t('settings.companies.aimsNotConfigured')}>
-                                            {company.aimsConfigured ? (
-                                                <CloudIcon color="success" fontSize="small" />
-                                            ) : (
-                                                <CloudOffIcon color="disabled" fontSize="small" />
-                                            )}
+                                            <Chip
+                                                icon={company.aimsConfigured ? <CloudIcon fontSize="small" /> : <CloudOffIcon fontSize="small" />}
+                                                label={t('settings.aims.dialogTitle', 'AIMS Settings')}
+                                                size="small"
+                                                onClick={() => handleAimsSettings(company)}
+                                                color={company.aimsConfigured ? 'success' : 'default'}
+                                                variant="outlined"
+                                                sx={{ cursor: 'pointer' }}
+                                            />
                                         </Tooltip>
                                         <Chip
                                             label={company.isActive ? t('common.active') : t('common.inactive')}
@@ -441,6 +467,18 @@ export function CompaniesTab() {
                                             </TableCell>
                                             <TableCell align="right">
                                                 <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    <Tooltip title={t('settings.aims.dialogTitle', 'AIMS Settings')}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleAimsSettings(company)}
+                                                        >
+                                                            {company.aimsConfigured ? (
+                                                                <CloudIcon fontSize="small" color="success" />
+                                                            ) : (
+                                                                <CloudOffIcon fontSize="small" />
+                                                            )}
+                                                        </IconButton>
+                                                    </Tooltip>
                                                     <Tooltip title={t('settings.companies.manageStores')}>
                                                         <IconButton
                                                             size="small"
@@ -526,6 +564,18 @@ export function CompaniesTab() {
                         open={true}
                         onClose={handleStoresDialogClose}
                         company={selectedCompany}
+                    />
+                )}
+            </Suspense>
+
+            {/* AIMS Settings Dialog */}
+            <Suspense fallback={null}>
+                {aimsDialogOpen && selectedCompany && (
+                    <AIMSSettingsDialog
+                        open={true}
+                        onClose={handleAimsDialogClose}
+                        company={selectedCompany}
+                        onSave={fetchCompanies}
                     />
                 )}
             </Suspense>

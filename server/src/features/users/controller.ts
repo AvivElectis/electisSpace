@@ -220,6 +220,7 @@ export const userController = {
             if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
             if (error.message === 'STORE_COMPANY_MISMATCH') return next(badRequest('Store does not belong to the specified company'));
             if (error.message?.startsWith('STORE_CODE_EXISTS:')) return next(conflict(`Store code ${error.message.split(':')[1]} already exists in this company`));
+            if (error.message === 'INVALID_ROLE_ID') return next(badRequest('Invalid role ID'));
             next(error);
         }
     },
@@ -309,6 +310,7 @@ export const userController = {
             if (error.message === 'USER_NOT_FOUND') return next(notFound('User'));
             if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
             if (error.message === 'ALREADY_ASSIGNED') return next(conflict('User is already assigned to this store'));
+            if (error.message === 'INVALID_ROLE_ID') return next(badRequest('Invalid role ID'));
             next(error);
         }
     },
@@ -423,6 +425,7 @@ export const userController = {
             if (error.message === 'FORBIDDEN_MANAGE_COMPANY') return next(forbidden('You do not have permission to assign users to this company'));
             if (error.message === 'COMPANY_CODE_EXISTS') return next(conflict('Company code already exists'));
             if (error.message === 'ALREADY_ASSIGNED') return next(conflict('User is already assigned to this company'));
+            if (error.message === 'INVALID_ROLE_ID') return next(badRequest('Invalid role ID'));
             next(error);
         }
     },

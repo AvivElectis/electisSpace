@@ -17,6 +17,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CompanySelector } from '../CompanySelector';
 import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
+import { getAllowedCompanyRoles } from '@features/auth/application/permissionHelpers';
 import type { Company } from '@shared/infrastructure/services/companyService';
 
 interface Props {
@@ -26,6 +27,7 @@ interface Props {
     companyRoleId: string;
     allStoresAccess: boolean;
     isPlatformAdmin: boolean;
+    targetGlobalRole?: string | null;
     accessibleCompanyId: string | null;
     isEdit: boolean;
     isEditing: boolean;
@@ -40,7 +42,7 @@ interface Props {
 export function UserCompanySection({
     selectedCompanyId, isCreatingCompany, newCompanyData, companyRoleId,
     allStoresAccess,
-    isPlatformAdmin, accessibleCompanyId,
+    isPlatformAdmin, targetGlobalRole, accessibleCompanyId,
     isEdit, isEditing, profileMode = false,
     onCompanyChange, onCreateModeChange, onNewCompanyDataChange,
     onCompanyRoleChange, onAllStoresAccessChange,
@@ -54,10 +56,13 @@ export function UserCompanySection({
         }
     }, [roles.length, fetchRoles]);
 
-    // Filter to roles usable at company level (non-system roles)
+    // Filter to roles usable at company level
     // Non-platform-admins cannot assign the admin role to other users
+    // APP_VIEWER users can only be assigned viewer roles
+    const allowedRoleIds = getAllowedCompanyRoles(targetGlobalRole);
     const companyRoles = roles.filter(r =>
-        !r.isSystem && (isPlatformAdmin || r.id !== 'role-admin')
+        (isPlatformAdmin || r.id !== 'role-admin') &&
+        allowedRoleIds.includes(r.id)
     );
 
     return (

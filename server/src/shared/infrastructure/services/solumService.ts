@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest } from './aims.types.js';
+import type { AimsArticle, AimsArticleInfo, AimsLabel, AimsLabelDetail, AimsStore, AimsLinkEntry, AimsApiResponse, AimsLabelTypeInfo, AimsImagePushRequest, AimsDitherPreviewRequest, AimsStoreSummary, AimsLabelStatusSummary, AimsGatewayStatusSummary, AimsLabelModel } from './aims.types.js';
 import { appLogger } from './appLogger.js';
 
 // Types definition (replicating needed parts from shared/domain/types)
@@ -659,6 +659,80 @@ export class SolumService {
             }
         });
     }
+    // ─── Label Action Operations ────────────────────────────────────────────
+
+    /**
+     * Set LED on a label (color/mode control)
+     */
+    async setLabelLed(config: SolumConfig, token: string, labelCode: string, led: { color?: string; mode?: string }): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/led?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('setLabelLed', async () => {
+            const response = await this.client.put(url, led, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'setLabelLed');
+        });
+    }
+
+    /**
+     * Configure NFC URL on a label
+     */
+    async setLabelNfc(config: SolumConfig, token: string, labelCode: string, nfcUrl: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/nfc?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('setLabelNfc', async () => {
+            const response = await this.client.put(url, { nfcUrl }, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'setLabelNfc');
+        });
+    }
+
+    /**
+     * Force a heartbeat/alive signal from a label
+     */
+    async forceLabelAlive(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/force/alive/signal?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('forceLabelAlive', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'forceLabelAlive');
+        });
+    }
+
+    /**
+     * Fetch article info assigned to a label
+     */
+    async fetchLabelArticle(config: SolumConfig, token: string, labelCode: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/article?company=${config.companyName}&store=${config.storeCode}&labelCode=${labelCode}`);
+        return this.withRetry('fetchLabelArticle', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelArticle');
+        });
+    }
+
+    /**
+     * Fetch label alive/heartbeat history
+     */
+    async fetchLabelAliveHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/alive/history?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLabelAliveHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelAliveHistory');
+        });
+    }
+
+    /**
+     * Fetch label operation history (link/unlink/push operations)
+     */
+    async fetchLabelHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/history?company=${config.companyName}&store=${config.storeCode}&label=${labelCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLabelHistory', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelHistory');
+        });
+    }
+
     // ─── Gateway Operations ─────────────────────────────────────────────────
 
     async fetchGateways(config: SolumConfig, token: string): Promise<any[]> {
@@ -733,6 +807,47 @@ export class SolumService {
         });
     }
 
+    // ─── Gateway Config / Status / Opcodes ─────────────────────────────────
+
+    /**
+     * Update gateway configuration (channels, refresh periods, network settings)
+     * PUT /api/v2/common/gateway with gateway MAC + config fields in body
+     */
+    async updateGatewayConfig(config: SolumConfig, token: string, gatewayMac: string, configData: Record<string, any>): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('updateGatewayConfig', async () => {
+            const response = await this.client.put(url, { gateway: gatewayMac, ...configData }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return this.extractResponseData(response.data, 'updateGatewayConfig');
+        });
+    }
+
+    /**
+     * Fetch gateway opcodes (pending operations queue)
+     */
+    async fetchGatewayOpcodes(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/opcode?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('fetchGatewayOpcodes', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchGatewayOpcodes');
+        });
+    }
+
+    /**
+     * Fetch gateway connection status
+     */
+    async fetchGatewayStatus(config: SolumConfig, token: string, gatewayMac: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/status?company=${config.companyName}&store=${config.storeCode}&gateway=${gatewayMac}`);
+        return this.withRetry('fetchGatewayStatus', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchGatewayStatus');
+        });
+    }
+
     // ─── Label History ──────────────────────────────────────────────────────
 
     async fetchLabelStatusHistory(config: SolumConfig, token: string, labelCode: string, page = 0, size = 50): Promise<any> {
@@ -750,8 +865,9 @@ export class SolumService {
         if (!config.storeCode) throw new Error('Store code required');
         const { page = 0, size = 20, fromDate, toDate } = params;
         let url = this.buildUrl(config, `/common/api/v2/common/articles/history?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
-        if (fromDate) url += `&fromDate=${fromDate}`;
-        if (toDate) url += `&toDate=${toDate}`;
+        // AIMS API expects 'start'/'end' date params (format: YYYY-MM-DD HH:mm:ss)
+        if (fromDate) url += `&start=${encodeURIComponent(fromDate + ' 00:00:00')}`;
+        if (toDate) url += `&end=${encodeURIComponent(toDate + ' 23:59:59')}`;
         return this.withRetry('fetchBatchHistory', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
             return this.extractResponseData(response.data, 'fetchBatchHistory');
@@ -782,6 +898,297 @@ export class SolumService {
         return this.withRetry('fetchArticleUpdateHistory', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
             return this.extractResponseData(response.data, 'fetchArticleUpdateHistory');
+        });
+    }
+
+    // ─── Article Browsing Endpoints ─────────────────────────────────────────
+
+    /**
+     * Fetch article list for browsing (paginated).
+     * Unlike fetchArticles (used for sync), this returns paginated data for UI browsing.
+     */
+    async fetchArticleList(config: SolumConfig, token: string, params: { page?: number; size?: number; sort?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50, sort } = params;
+        let urlPath = `/common/api/v2/common/articles?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`;
+        if (sort) urlPath += `&sort=${sort}`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('fetchArticleList', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleList');
+        });
+    }
+
+    /**
+     * Fetch a single article by its ID
+     */
+    async fetchArticleById(config: SolumConfig, token: string, articleId: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/id?company=${config.companyName}&store=${config.storeCode}&article=${encodeURIComponent(articleId)}`);
+        return this.withRetry('fetchArticleById', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleById');
+        });
+    }
+
+    /**
+     * Fetch articles that are linked to labels
+     */
+    async fetchLinkedArticles(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/linked?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchLinkedArticles', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLinkedArticles');
+        });
+    }
+
+    /**
+     * Fetch all article update history (paginated).
+     * AIMS has no "list all" article history endpoint — reuses the batch history
+     * endpoint (/articles/history) which returns articleFileHistoryList.
+     */
+    async fetchArticleUpdateHistoryAll(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        return this.fetchBatchHistory(config, token, { ...params });
+    }
+
+    /**
+     * Fetch article update history detail for a specific article
+     */
+    async fetchArticleUpdateHistoryDetail(config: SolumConfig, token: string, articleId: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/articles/update/history/detail?company=${config.companyName}&store=${config.storeCode}&article=${encodeURIComponent(articleId)}&page=${page}&size=${size}`);
+        return this.withRetry('fetchArticleUpdateHistoryDetail', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchArticleUpdateHistoryDetail');
+        });
+    }
+
+    // ─── Summary / Overview Endpoints ──────────────────────────────────────
+
+    /**
+     * Fetch store summary (label + gateway counts, online/offline)
+     */
+    async fetchStoreSummary(config: SolumConfig, token: string): Promise<AimsStoreSummary> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/store/summary?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchStoreSummary', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchStoreSummary') as AimsStoreSummary;
+        });
+    }
+
+    /**
+     * Fetch label status summary (success/processing/timeout/online/offline counts)
+     */
+    async fetchLabelStatusSummary(config: SolumConfig, token: string): Promise<AimsLabelStatusSummary> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/summary/status?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchLabelStatusSummary', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchLabelStatusSummary') as AimsLabelStatusSummary;
+        });
+    }
+
+    /**
+     * Fetch gateway status summary (connected/disconnected counts)
+     */
+    async fetchGatewayStatusSummary(config: SolumConfig, token: string): Promise<AimsGatewayStatusSummary> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/gateway/status/summary?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchGatewayStatusSummary', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchGatewayStatusSummary') as AimsGatewayStatusSummary;
+        });
+    }
+
+    /**
+     * Fetch label models/types with counts
+     */
+    async fetchLabelModels(config: SolumConfig, token: string): Promise<AimsLabelModel[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/model?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchLabelModels', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    // ─── Template Endpoints ──────────────────────────────────────────────
+
+    /**
+     * Fetch templates (paginated)
+     */
+    async fetchTemplates(config: SolumConfig, token: string, params: { page?: number; size?: number } = {}): Promise<any> {
+        const { page = 0, size = 50 } = params;
+        const url = this.buildUrl(config, `/common/api/v2/common/templates?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`);
+        return this.withRetry('fetchTemplates', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchTemplates');
+        });
+    }
+
+    /**
+     * Fetch a template by name
+     */
+    async fetchTemplateByName(config: SolumConfig, token: string, templateName: string): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/name?company=${config.companyName}&name=${encodeURIComponent(templateName)}`);
+        return this.withRetry('fetchTemplateByName', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = this.extractResponseData(response.data, 'fetchTemplateByName');
+            // API returns a paginated list — extract the first matching template
+            const list = data?.content || data?.templateList;
+            if (Array.isArray(list)) {
+                return list[0] || null;
+            }
+            return data;
+        });
+    }
+
+    /**
+     * Fetch template types
+     */
+    async fetchTemplateTypes(config: SolumConfig, token: string): Promise<any[]> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/type?company=${config.companyName}`);
+        return this.withRetry('fetchTemplateTypes', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    /**
+     * Fetch template mapping conditions
+     */
+    async fetchTemplateMappingConditions(config: SolumConfig, token: string, page = 0): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/mapping/condition?company=${config.companyName}&page=${page}`);
+        return this.withRetry('fetchTemplateMappingConditions', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    /**
+     * Fetch template groups
+     */
+    async fetchTemplateGroups(config: SolumConfig, token: string): Promise<any[]> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/mapping/group?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('fetchTemplateGroups', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return response.data?.responseMessage ?? response.data ?? [];
+        });
+    }
+
+    /**
+     * Download a template file (XSL or JSON)
+     */
+    async downloadTemplate(config: SolumConfig, token: string, templateName: string, version: number, fileType: 'XSL' | 'JSON'): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates/download?company=${config.companyName}&version=${version}&fileType=${fileType}`);
+        return this.withRetry('downloadTemplate', async () => {
+            const response = await this.client.get(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'templateName': templateName,
+                },
+            });
+            const data = response.data;
+            // AIMS returns JSON with base64-encoded template content
+            if (data?.template) {
+                return { content: data.template, encoding: 'base64' };
+            }
+            return { content: data, encoding: 'raw' };
+        });
+    }
+
+    /**
+     * Upload a template (XSL + JSON as base64)
+     */
+    async uploadTemplate(config: SolumConfig, token: string, templateData: Record<string, any>): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/templates?company=${config.companyName}`);
+        return this.withRetry('uploadTemplate', async () => {
+            const response = await this.client.post(url, templateData, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            return this.extractResponseData(response.data, 'uploadTemplate');
+        });
+    }
+
+    // ─── Whitelist ─────────────────────────────────────────────────────
+
+    async fetchWhitelist(config: SolumConfig, token: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50, labelCode, labelModel, sort } = params;
+        let urlPath = `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`;
+        if (labelCode) urlPath += `&labelCode=${encodeURIComponent(labelCode)}`;
+        if (labelModel) urlPath += `&labelModel=${encodeURIComponent(labelModel)}`;
+        if (sort) urlPath += `&sort=${sort}`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('fetchWhitelist', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchWhitelist');
+        });
+    }
+
+    async addToWhitelist(config: SolumConfig, token: string, labelCodes: string[]): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('addToWhitelist', async () => {
+            const response = await this.client.post(url, { labelList: labelCodes }, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'addToWhitelist');
+        });
+    }
+
+    async removeFromWhitelist(config: SolumConfig, token: string, labelCodes: string[]): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist?company=${config.companyName}&store=${config.storeCode}`);
+        return this.withRetry('removeFromWhitelist', async () => {
+            const response = await this.client.delete(url, { data: { labelList: labelCodes }, headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'removeFromWhitelist');
+        });
+    }
+
+    async whitelistBox(config: SolumConfig, token: string, boxId: string): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist/box?company=${config.companyName}&store=${config.storeCode}&boxid=${encodeURIComponent(boxId)}`);
+        return this.withRetry('whitelistBox', async () => {
+            const response = await this.client.post(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'whitelistBox');
+        });
+    }
+
+    async syncWhitelistToStorage(config: SolumConfig, token: string, fullUpdate = false): Promise<any> {
+        const url = this.buildUrl(config, `/common/api/v2/common/whitelist/update/storage?company=${config.companyName}&isFullUpdateRequired=${fullUpdate ? 'YES' : 'NO'}`);
+        return this.withRetry('syncWhitelistToStorage', async () => {
+            const response = await this.client.put(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'syncWhitelistToStorage');
+        });
+    }
+
+    async syncWhitelistToGateways(config: SolumConfig, token: string, params: { store?: string; partialDelete?: boolean } = {}): Promise<any> {
+        let urlPath = `/common/api/v2/common/whitelist/update/gateway?company=${config.companyName}`;
+        if (params.store) urlPath += `&store=${params.store}`;
+        if (params.partialDelete) urlPath += `&partialWhitelistDelete=YES`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('syncWhitelistToGateways', async () => {
+            const response = await this.client.put(url, {}, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'syncWhitelistToGateways');
+        });
+    }
+
+    async fetchUnassignedWhitelist(config: SolumConfig, token: string, params: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string } = {}): Promise<any> {
+        if (!config.storeCode) throw new Error('Store code required');
+        const { page = 0, size = 50, labelCode, labelModel, sort } = params;
+        let urlPath = `/common/api/v2/common/whitelist/unassigned?company=${config.companyName}&store=${config.storeCode}&page=${page}&size=${size}`;
+        if (labelCode) urlPath += `&labelCode=${encodeURIComponent(labelCode)}`;
+        if (labelModel) urlPath += `&labelModel=${encodeURIComponent(labelModel)}`;
+        if (sort) urlPath += `&sort=${sort}`;
+        const url = this.buildUrl(config, urlPath);
+        return this.withRetry('fetchUnassignedWhitelist', async () => {
+            const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            return this.extractResponseData(response.data, 'fetchUnassignedWhitelist');
         });
     }
 

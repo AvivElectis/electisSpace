@@ -112,44 +112,57 @@ sequenceDiagram
 
 ### 7.4 Role-Based Access Control (RBAC)
 
-Store-level roles are now **database-backed** via the `roles` table, replacing the previous hardcoded `StoreRole` enum. This allows platform and company admins to create custom roles with granular permissions.
+The system uses a **three-tier role architecture**: app roles (global), company roles (DB-backed), and store roles (DB-backed). Both company and store roles reference the same `roles` table, replacing the previous hardcoded enums.
 
 ```mermaid
 graph TB
-    subgraph "Global Level"
+    subgraph "App Level (GlobalRole)"
         PA[PLATFORM_ADMIN<br/>Full system access]
+        AV[APP_VIEWER<br/>Read-only, all CUD disabled]
+        RU[USER (null)<br/>Regular authenticated user]
     end
 
-    subgraph "Company Level (CompanyRole)"
-        SU[SUPER_USER<br/>Full access, no restrictions]
-        CA[COMPANY_ADMIN<br/>Manage settings, users, stores]
-        CV[VIEWER<br/>Read-only access]
+    subgraph "Company Level (DB-backed roleId)"
+        CA[role-admin<br/>Manage settings, users, stores]
+        CM[role-manager<br/>CRUD + sync, no user mgmt]
+        CE[role-employee<br/>Read + update only]
+        CV[role-viewer<br/>Read-only access]
     end
 
-    subgraph "Store Level (DB-backed roles)"
-        SA[Admin<br/>Full store operations]
-        SM[Manager<br/>CRUD + sync, no user mgmt]
-        SE[Employee<br/>Read + update only]
-        SV[Viewer<br/>Read only]
+    subgraph "Store Level (DB-backed roleId)"
+        SA[role-admin<br/>Full store operations]
+        SM[role-manager<br/>CRUD + sync, no user mgmt]
+        SE[role-employee<br/>Read + update only]
+        SV[role-viewer<br/>Read only]
         CR[Custom Roles<br/>Admin-defined permissions]
     end
 
-    PA --> SU
-    SU --> CA
-    CA --> CV
+    PA --> CA
+    CA --> CM
+    CM --> CE
+    CE --> CV
     SA --> SM
     SM --> SE
     SE --> SV
 
     style PA fill:#e74c3c,color:#fff
-    style SU fill:#c0392b,color:#fff
+    style AV fill:#95a5a6,color:#fff
+    style RU fill:#bdc3c7,color:#333
     style CA fill:#e67e22,color:#fff
+    style CM fill:#f39c12,color:#fff
+    style CE fill:#3498db,color:#fff
+    style CV fill:#95a5a6,color:#fff
     style SA fill:#27ae60,color:#fff
     style SM fill:#2ecc71,color:#fff
     style SE fill:#3498db,color:#fff
     style SV fill:#95a5a6,color:#fff
     style CR fill:#9b59b6,color:#fff
 ```
+
+**App Role Elevation:**
+- Only **PLATFORM_ADMIN** users can view and change another user's app role.
+- App roles can be changed via the inline radio selector in the user dialog (edit mode).
+- Enforced on both client (permission helpers gate UI visibility) and server (`elevate()` rejects non-platform-admin callers).
 
 **Role Scopes:**
 - **SYSTEM** roles are built-in defaults (Admin, Manager, Employee, Viewer) — available to all companies, cannot be deleted.
@@ -239,7 +252,11 @@ graph LR
     GLOBAL --> HANDLER
 ```
 
-The auth middleware uses a 60-second in-memory cache (max 500 entries) to reduce database queries. The cache is invalidated when user roles or store assignments change.
+The auth middleware uses a 60-second in-memory cache (max 500 entries) to reduce database queries. The cache is invalidated when user roles or store assignments change via `invalidateUserCache(userId)`. Similarly, role permission lookups are cached for 60 seconds and invalidated via `invalidateRoleCache(roleId)` when roles are updated or deleted.
+
+**Action Alias Normalization:** The `requirePermission()` middleware normalizes legacy action aliases (`read`→`view`, `update`→`edit`) before checking, ensuring consistent permission resolution regardless of which alias is used in route definitions.
+
+**Audit Logging:** All role mutation operations (`elevate`, `assignToStore`, `assignToCompany`, `updateUserStore`, `updateUserCompany`) log structured entries via `appLogger` with the category `'Roles'`, capturing the target user, new role, and who performed the change.
 
 SSE endpoints accept the token as a query parameter (`?token=...`) since `EventSource` does not support custom headers.
 

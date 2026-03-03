@@ -1,7 +1,15 @@
 /**
  * AIMS Management Page
  *
- * Main page with tab navigation for Gateways, Labels, and Product Updates.
+ * Main page with 7 scrollable tabs:
+ *   0 - Overview (placeholder)
+ *   1 - Gateways (existing GatewayList / GatewayDetail)
+ *   2 - Labels (existing LabelsOverview)
+ *   3 - Articles (placeholder)
+ *   4 - Templates (placeholder)
+ *   5 - History (existing ProductHistory)
+ *   6 - Whitelist (placeholder)
+ *
  * Follows the same layout pattern as ConferencePage and other feature pages.
  */
 
@@ -12,10 +20,15 @@ import {
 } from '@mui/material';
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
-import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
+import UploadIcon from '@mui/icons-material/Upload';
 import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
+import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
+import ArticleOutlined from '@mui/icons-material/ArticleOutlined';
+import DesignServicesOutlined from '@mui/icons-material/DesignServicesOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import PlaylistAddCheckOutlined from '@mui/icons-material/PlaylistAddCheckOutlined';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
@@ -23,7 +36,11 @@ import { GatewayList } from './GatewayList';
 import { GatewayDetail } from './GatewayDetail';
 import { GatewayRegistration } from './GatewayRegistration';
 import { LabelsOverview } from './LabelsOverview';
-import { ProductHistory } from './ProductHistory';
+import { AimsOverviewTab } from './AimsOverviewTab';
+import { ArticlesTab } from './ArticlesTab';
+import { HistoryTab } from './HistoryTab';
+import { TemplatesTab } from './TemplatesTab';
+import { WhitelistTab } from './WhitelistTab';
 import { useAimsManagementStore } from '../infrastructure/aimsManagementStore';
 import { useGateways } from '../application/useGateways';
 import { useLabelsOverview } from '../application/useLabelsOverview';
@@ -39,7 +56,8 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 }
 
 export function AimsManagementPage() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.language === 'he';
     const { activeStoreId, isAppReady } = useAuthStore();
     const { hasStoreRole, isAppViewer } = useAuthContext();
     const canManage = hasStoreRole('STORE_ADMIN') && !isAppViewer;
@@ -50,6 +68,7 @@ export function AimsManagementPage() {
 
     const [selectedGatewayMac, setSelectedGatewayMac] = useState<string | null>(null);
     const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
+    const [uploadTemplateOpen, setUploadTemplateOpen] = useState(false);
     const { gateways, fetchGateways } = useGateways(activeStoreId);
     const { stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
 
@@ -104,7 +123,7 @@ export function AimsManagementPage() {
     }
 
     return (
-        <Box>
+        <Box dir={isRtl ? 'rtl' : 'ltr'} sx={{ '& .MuiTableCell-root': { textAlign: 'start' } }}>
             {/* Header Section */}
             <Stack
                 direction="column"
@@ -121,7 +140,7 @@ export function AimsManagementPage() {
                         {t('aims.subtitle')}
                     </Typography>
                 </Box>
-                {canManage && activeTab === 0 && (
+                {canManage && activeTab === 1 && (
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -225,24 +244,64 @@ export function AimsManagementPage() {
             )}
 
             {/* Tabs */}
-            <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+                value={activeTab}
+                onChange={(_, v) => setActiveTab(v)}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+                <Tab icon={<DashboardOutlined fontSize="small" />} iconPosition="start" label={t('aims.overview')} />
                 <Tab icon={<RouterIcon fontSize="small" />} iconPosition="start" label={t('aims.gateways')} />
-                <Tab icon={<LabelIcon fontSize="small" />} iconPosition="start" label={t('aims.labelStatus')} />
-                <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label={t('aims.productUpdates')} />
+                <Tab icon={<LabelIcon fontSize="small" />} iconPosition="start" label={t('aims.labels')} />
+                <Tab icon={<ArticleOutlined fontSize="small" />} iconPosition="start" label={t('aims.articles')} />
+                <Tab icon={<DesignServicesOutlined fontSize="small" />} iconPosition="start" label={t('aims.templates')} />
+                <Tab icon={<HistoryOutlined fontSize="small" />} iconPosition="start" label={t('aims.history')} />
+                <Tab icon={<PlaylistAddCheckOutlined fontSize="small" />} iconPosition="start" label={t('aims.whitelist')} />
             </Tabs>
 
+            {/* Tab 0 — Overview */}
             <TabPanel value={activeTab} index={0}>
+                <AimsOverviewTab storeId={activeStoreId} />
+            </TabPanel>
+
+            {/* Tab 1 — Gateways */}
+            <TabPanel value={activeTab} index={1}>
                 <GatewayList storeId={activeStoreId} onSelectGateway={setSelectedGatewayMac} />
             </TabPanel>
-            <TabPanel value={activeTab} index={1}>
+
+            {/* Tab 2 — Labels */}
+            <TabPanel value={activeTab} index={2}>
                 <LabelsOverview storeId={activeStoreId} />
             </TabPanel>
-            <TabPanel value={activeTab} index={2}>
-                <ProductHistory storeId={activeStoreId} />
+
+            {/* Tab 3 — Articles */}
+            <TabPanel value={activeTab} index={3}>
+                <ArticlesTab storeId={activeStoreId} />
+            </TabPanel>
+
+            {/* Tab 4 — Templates */}
+            <TabPanel value={activeTab} index={4}>
+                <TemplatesTab
+                    storeId={activeStoreId}
+                    externalUploadOpen={uploadTemplateOpen}
+                    onExternalUploadClose={() => setUploadTemplateOpen(false)}
+                />
+            </TabPanel>
+
+            {/* Tab 5 — History (unified: batch / article / label) */}
+            <TabPanel value={activeTab} index={5}>
+                <HistoryTab storeId={activeStoreId} />
+            </TabPanel>
+
+            {/* Tab 6 — Whitelist */}
+            <TabPanel value={activeTab} index={6}>
+                <WhitelistTab storeId={activeStoreId} />
             </TabPanel>
 
             {/* Mobile FAB for register gateway */}
-            {isMobile && canManage && activeTab === 0 && (
+            {isMobile && canManage && activeTab === 1 && (
                 <Fab
                     color="primary"
                     variant="extended"
@@ -260,6 +319,28 @@ export function AimsManagementPage() {
                 >
                     <AddIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
                     {t('aims.register')}
+                </Fab>
+            )}
+
+            {/* Mobile FAB for upload template */}
+            {isMobile && canManage && activeTab === 4 && (
+                <Fab
+                    color="primary"
+                    variant="extended"
+                    onClick={() => setUploadTemplateOpen(true)}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        zIndex: 1050,
+                        height: 64,
+                        px: 3,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                    }}
+                >
+                    <UploadIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
+                    {t('aims.uploadTemplate')}
                 </Fab>
             )}
 

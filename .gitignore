@@ -68,5 +68,9 @@ playwright-report/
 # Windows null device artifact
 nul
 
+# Remotion intro video (large assets — managed separately)
+my-video/
+
 # Misc temp files
 replacements.txt
+electisspace_dev.dump
