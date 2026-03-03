@@ -322,7 +322,7 @@ export function LabelsOverview({ storeId }: LabelsOverviewProps) {
                     sx={{ width: { xs: '100%', sm: 400 } }}
                 />
                 {searchTerm && (
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                    <Typography variant="caption" color="text.secondary" dir="ltr" sx={{ ml: 1 }}>
                         {filteredLabels.length} / {labels.length}
                     </Typography>
                 )}
