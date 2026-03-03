@@ -101,7 +101,7 @@ export function GatewayList({ storeId, onSelectGateway }: GatewayListProps) {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="subtitle1">
-                    {t('aims.gateways')} ({onlineCount}/{gateways.length} {t('aims.online')})
+                    {t('aims.gateways')} (<span dir="ltr">{onlineCount}/{gateways.length}</span> {t('aims.online')})
                 </Typography>
                 <Tooltip title={t('common.refresh')}>
                     <IconButton onClick={() => fetchGateways(true)} disabled={gatewaysLoading}>

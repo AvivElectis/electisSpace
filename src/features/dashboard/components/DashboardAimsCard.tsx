@@ -98,9 +98,9 @@ export function DashboardAimsCard({
                     <Stack gap={0.5} sx={{ mb: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                             <Typography variant="subtitle2" color="text.secondary">
-                                {t('aims.online')} {onlineGateways}/{totalGateways}
+                                {t('aims.online')} <span dir="ltr">{onlineGateways}/{totalGateways}</span>
                             </Typography>
-                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" dir="ltr">
                                 {gatewayHealthPercent}%
                             </Typography>
                         </Stack>
@@ -182,9 +182,9 @@ export function DashboardAimsCard({
                     <Stack gap={0.5}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                             <Typography variant="body2" color="text.secondary">
-                                {t('aims.online')} {onlineGateways}/{totalGateways}
+                                {t('aims.online')} <span dir="ltr">{onlineGateways}/{totalGateways}</span>
                             </Typography>
-                            <Typography variant="body2" fontWeight={600}>
+                            <Typography variant="body2" fontWeight={600} dir="ltr">
                                 {gatewayHealthPercent}%
                             </Typography>
                         </Stack>
