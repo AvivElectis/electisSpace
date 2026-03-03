@@ -1,3 +1,5 @@
+# DEPRECATED: This file is kept for historical reference only.
+# The canonical AIMS API spec is now in aims-saas-api-full.yaml at the project root.
 openapi: 3.0.0
 servers:
   - url: //petstore.swagger.io/v2
