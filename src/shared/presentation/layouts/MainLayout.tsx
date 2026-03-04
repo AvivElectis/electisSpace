@@ -141,10 +141,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         !tab.feature || canAccessFeature(tab.feature as any)
     );
 
+    // Only enable sync when the company has the 'sync' feature
+    const isSyncEnabled = canAccessFeature('sync');
+
     // Initialize backend sync controller (all AIMS communication goes through server)
     const syncController = useBackendSyncController({
         storeId: effectiveStoreId,
-        autoSyncEnabled: settings.autoSyncEnabled,
+        autoSyncEnabled: settings.autoSyncEnabled && isSyncEnabled,
         autoSyncInterval: settings.autoSyncInterval,
         onSpaceUpdate: handleSpaceUpdate,
         onError: (error) => {
@@ -168,8 +171,6 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     // Auto-sync on app load and when store changes
     // Tracks which store was last synced so switching stores triggers a new sync
-    // Only sync when the 'sync' feature is enabled for the active company
-    const isSyncEnabled = canAccessFeature('sync');
     const lastSyncedStoreId = useRef<string | null>(null);
     useEffect(() => {
         if (activeStoreId && authReady && sync && isSyncEnabled && lastSyncedStoreId.current !== activeStoreId) {
