@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Fab, Stack, useMediaQuery, useTheme, ClickAwayListener } from '@mui/material';
+import { Box, Button, Fab, Stack, ClickAwayListener } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import LinkIcon from '@mui/icons-material/Link';
@@ -12,11 +12,15 @@ interface QuickActionsPanelProps {
     onLinkLabel: () => void;
     onAddSpace: () => void;
     onAddConferenceRoom: () => void;
+    /** When true, renders mobile FAB layout. When false, renders inline glass row. */
+    isMobile?: boolean;
 }
 
-const glassCardSx = {
-    p: 2,
+const glassRowSx = {
+    p: 1.5,
     borderRadius: 3,
+    display: 'inline-flex',
+    gap: 1.5,
     background: (theme: any) =>
         theme.palette.mode === 'dark'
             ? `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, ${alpha(theme.palette.background.paper, 0.25)} 100%)`
@@ -29,8 +33,8 @@ const glassCardSx = {
             : `1.5px solid ${alpha(theme.palette.primary.main, 0.15)}`,
     boxShadow: (theme: any) =>
         theme.palette.mode === 'dark'
-            ? `0 12px 40px ${alpha(theme.palette.common.black, 0.45)}, inset 0 1px 0 ${alpha(theme.palette.primary.light, 0.1)}, inset 0 -1px 0 ${alpha(theme.palette.common.black, 0.2)}`
-            : `0 12px 40px ${alpha(theme.palette.primary.main, 0.12)}, 0 4px 12px ${alpha(theme.palette.common.black, 0.06)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.9)}`,
+            ? `0 8px 24px ${alpha(theme.palette.common.black, 0.35)}, inset 0 1px 0 ${alpha(theme.palette.primary.light, 0.1)}`
+            : `0 8px 24px ${alpha(theme.palette.primary.main, 0.1)}, 0 2px 8px ${alpha(theme.palette.common.black, 0.04)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.9)}`,
 };
 
 export function QuickActionsPanel({
@@ -38,10 +42,9 @@ export function QuickActionsPanel({
     onLinkLabel,
     onAddSpace,
     onAddConferenceRoom,
+    isMobile,
 }: QuickActionsPanelProps) {
     const { t } = useTranslation();
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [open, setOpen] = useState(false);
 
     const handleAction = (callback: () => void) => {
@@ -49,7 +52,7 @@ export function QuickActionsPanel({
         callback();
     };
 
-    // Actions ordered top-to-bottom (first = farthest from FAB, top of stack)
+    // Actions for mobile FAB
     const actions = [
         {
             key: 'linkLabel',
@@ -149,20 +152,20 @@ export function QuickActionsPanel({
         );
     }
 
+    // Desktop/Tablet: inline glass row with even gaps
     return (
-        <Stack direction="column" spacing={2} sx={{ ...glassCardSx, p: 2.5 }}>
+        <Box sx={glassRowSx}>
             <Button
                 variant="contained"
                 startIcon={<LinkIcon />}
                 onClick={onLinkLabel}
                 sx={{
-                    borderRadius: 3,
+                    borderRadius: 2,
                     textTransform: 'none',
                     fontWeight: 600,
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1rem',
-                    boxShadow: (theme) => `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                    px: 2.5,
+                    py: 1,
+                    boxShadow: (theme) => `0 2px 8px ${alpha(theme.palette.primary.main, 0.25)}`,
                 }}
             >
                 {t('dashboard.linkLabel', 'Link Label')}
@@ -172,14 +175,12 @@ export function QuickActionsPanel({
                 startIcon={<AddIcon />}
                 onClick={onAddSpace}
                 sx={{
-                    borderRadius: 3,
+                    borderRadius: 2,
                     textTransform: 'none',
                     fontWeight: 500,
-                    px: 4,
-                    py: 1.3,
-                    fontSize: '0.95rem',
+                    px: 2.5,
+                    py: 1,
                     borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                    bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
                     '&:hover': {
                         bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                         borderColor: 'primary.main',
@@ -195,14 +196,12 @@ export function QuickActionsPanel({
                 startIcon={<GroupsIcon />}
                 onClick={onAddConferenceRoom}
                 sx={{
-                    borderRadius: 3,
+                    borderRadius: 2,
                     textTransform: 'none',
                     fontWeight: 500,
-                    px: 4,
-                    py: 1.3,
-                    fontSize: '0.95rem',
+                    px: 2.5,
+                    py: 1,
                     borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                    bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
                     '&:hover': {
                         bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                         borderColor: 'primary.main',
@@ -211,6 +210,6 @@ export function QuickActionsPanel({
             >
                 {t('conference.addRoom')}
             </Button>
-        </Stack>
+        </Box>
     );
 }
