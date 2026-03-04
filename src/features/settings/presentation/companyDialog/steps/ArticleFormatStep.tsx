@@ -104,6 +104,7 @@ export function ArticleFormatStep({
                     exclusive
                     onChange={(_, v) => v && setViewMode(v)}
                     size="small"
+                    sx={{ direction: 'ltr' }}
                 >
                     <ToggleButton value="visual">
                         <ViewListIcon sx={{ mr: 0.5 }} fontSize="small" />
