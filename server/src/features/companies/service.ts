@@ -299,7 +299,7 @@ export const companyService = {
                         code: storeData.code,
                         name: storeData.name || storeData.code,
                         timezone: storeData.timezone || 'UTC',
-                        syncEnabled: false, // Don't auto-sync on creation
+                        syncEnabled: true, // Wizard validates AIMS connection, safe to enable
                         isActive: true,
                     },
                 });

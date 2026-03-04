@@ -141,13 +141,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         !tab.feature || canAccessFeature(tab.feature as any)
     );
 
-    // Only enable sync when the company has the 'sync' feature
-    const isSyncEnabled = canAccessFeature('sync');
-
     // Initialize backend sync controller (all AIMS communication goes through server)
     const syncController = useBackendSyncController({
         storeId: effectiveStoreId,
-        autoSyncEnabled: settings.autoSyncEnabled && isSyncEnabled,
+        autoSyncEnabled: settings.autoSyncEnabled,
         autoSyncInterval: settings.autoSyncInterval,
         onSpaceUpdate: handleSpaceUpdate,
         onError: (error) => {
@@ -173,7 +170,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     // Tracks which store was last synced so switching stores triggers a new sync
     const lastSyncedStoreId = useRef<string | null>(null);
     useEffect(() => {
-        if (activeStoreId && authReady && sync && isSyncEnabled && lastSyncedStoreId.current !== activeStoreId) {
+        if (activeStoreId && authReady && sync && lastSyncedStoreId.current !== activeStoreId) {
             lastSyncedStoreId.current = activeStoreId;
             logger.info('MainLayout', 'Auto-syncing on app load / store switch', { storeId: activeStoreId });
             const syncTimeout = setTimeout(() => {
@@ -183,7 +180,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             }, 500);
             return () => clearTimeout(syncTimeout);
         }
-    }, [activeStoreId, authReady, sync, isSyncEnabled]);
+    }, [activeStoreId, authReady, sync]);
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
@@ -358,8 +355,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </Container>
                 </Box>
 
-                {/* Sync Status Indicator - Fixed at bottom end (RTL-aware), only when sync feature enabled */}
-                {isSyncEnabled && (
+                {/* Sync Status Indicator - Fixed at bottom end (RTL-aware) */}
                 <Box sx={{
                     position: 'fixed',
                     bottom: { xs: 16, sm: 24 },
@@ -382,7 +378,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                         autoSyncInterval={settings.autoSyncInterval}
                     />
                 </Box>
-                )}
 
                 {/* Settings Dialog - Lazy loaded */}
                 {settingsOpen && (
