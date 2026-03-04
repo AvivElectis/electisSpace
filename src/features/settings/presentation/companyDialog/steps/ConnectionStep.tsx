@@ -133,27 +133,24 @@ export function ConnectionStep({
                 required
             />
 
-            {/* Password */}
-            <TextField
-                label={t('settings.companies.aimsPassword')}
-                type={formData.showPassword ? 'text' : 'password'}
-                value={formData.aimsPassword}
-                onChange={(e) => onUpdate({ aimsPassword: e.target.value })}
-                required
-                InputProps={{
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <IconButton
-                                onClick={() => onUpdate({ showPassword: !formData.showPassword })}
-                                edge="end"
-                                size="small"
-                            >
-                                {formData.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                            </IconButton>
-                        </InputAdornment>
-                    ),
-                }}
-            />
+            {/* Password — visibility toggle outside input for better RTL support */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                <TextField
+                    label={t('settings.companies.aimsPassword')}
+                    type={formData.showPassword ? 'text' : 'password'}
+                    value={formData.aimsPassword}
+                    onChange={(e) => onUpdate({ aimsPassword: e.target.value })}
+                    required
+                    fullWidth
+                />
+                <IconButton
+                    onClick={() => onUpdate({ showPassword: !formData.showPassword })}
+                    size="small"
+                    sx={{ mt: 1 }}
+                >
+                    {formData.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </IconButton>
+            </Box>
 
             {/* Test Connection button */}
             <Button
