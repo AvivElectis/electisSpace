@@ -135,11 +135,24 @@ export const conferenceApi = {
     },
 
     /**
-     * Flip ESL page manually
+     * Get current page for all conference room labels from AIMS
+     * Returns map of labelCode → currentPage
      */
-    flipPage: async (id: string): Promise<{ message: string; roomId: string; labelCode: string }> => {
-        const response = await api.post<{ message: string; roomId: string; labelCode: string }>(
-            `/conference/${id}/flip-page`
+    getLabelPages: async (storeId: string): Promise<Record<string, number>> => {
+        const response = await api.get<Record<string, number>>('/conference/label-pages', {
+            params: { storeId },
+        });
+        return response.data;
+    },
+
+    /**
+     * Flip ESL page via server → AIMS API
+     * Page 1 = Available, Page 2 = Busy
+     */
+    flipPage: async (id: string, page: number): Promise<{ message: string; roomId: string; labelCodes: string[]; page: number }> => {
+        const response = await api.post<{ message: string; roomId: string; labelCodes: string[]; page: number }>(
+            `/conference/${id}/flip-page`,
+            { page }
         );
         return response.data;
     },

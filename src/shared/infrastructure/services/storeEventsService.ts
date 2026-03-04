@@ -11,13 +11,13 @@ import { tokenManager } from './apiClient';
 const isDev = import.meta.env.DEV;
 const API_BASE_URL = isDev ? 'http://127.0.0.1:3001/api/v1' : (import.meta.env.VITE_API_BASE_URL || `${import.meta.env.BASE_URL}api/v1`);
 
-export type StoreEventType = 'connected' | 'people:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed';
+export type StoreEventType = 'connected' | 'people:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed' | 'conference:page-flip';
 
 export interface StoreEvent {
     type: StoreEventType;
     timestamp: string;
     // people:changed, conference:changed
-    action?: 'create' | 'delete' | 'assign' | 'unassign' | 'update' | 'toggle';
+    action?: 'create' | 'delete' | 'assign' | 'unassign' | 'update' | 'toggle' | 'page-flip';
     personId?: string;
     spaceId?: string;
     // list:loaded

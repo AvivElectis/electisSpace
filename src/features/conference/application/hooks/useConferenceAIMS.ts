@@ -24,7 +24,7 @@ interface UseConferenceAIMSResult {
     pushToAIMS: (room: ConferenceRoom) => Promise<void>;
     deleteFromAIMS: (id: string) => Promise<void>;
     fetchFromAIMS: () => Promise<ConferenceRoom[]>;
-    flipLabelPage: (labelCode: string, currentPage: number) => Promise<void>;
+    flipLabelPage: (labelCodes: string[], targetPage: number) => Promise<void>;
     isAIMSConfigured: boolean;
 }
 
@@ -128,26 +128,26 @@ export function useConferenceAIMS({
 
     /**
      * Flip label page (for SoluM simple conference mode)
+     * Page 1 = Available, Page 2 = Busy
+     * Supports multiple labels per room (all get same page)
      */
     const flipLabelPage = useCallback(
-        async (labelCode: string, currentPage: number): Promise<void> => {
+        async (labelCodes: string[], targetPage: number): Promise<void> => {
             if (!solumConfig || !solumToken) {
                 throw new Error('SoluM configuration or token not available');
             }
 
-            logger.info('ConferenceAIMS', 'Flipping label page', { labelCode, currentPage });
-
-            const newPage = currentPage === 0 ? 1 : 0;
+            logger.info('ConferenceAIMS', 'Flipping label page', { labelCodes, targetPage });
 
             await solumService.updateLabelPage(
                 solumConfig,
                 solumConfig.storeNumber,
                 solumToken,
-                labelCode,
-                newPage
+                labelCodes,
+                targetPage
             );
 
-            logger.info('ConferenceAIMS', 'Label page flipped', { labelCode, newPage });
+            logger.info('ConferenceAIMS', 'Label page flipped', { labelCodes, targetPage });
         },
         [solumConfig, solumToken]
     );
