@@ -147,7 +147,79 @@ Building B, Floor G → prefix: "BG", range: BG01-BG50 → spaces: BG01, BG02...
 Single building, Floor 1 → prefix: "1", range: 100-199 → spaces: 100, 101, 102...
 ```
 
-This maps directly to AIMS article IDs (externalId).
+### AIMS Article ID Mapping
+
+The space `externalId` (AIMS article ID) is the primary key for ESL synchronization. It must be **unique within the AIMS store** and must encode enough context to identify the space's physical location.
+
+#### Article ID Format
+
+The article ID format is **configurable per company** (set during the onboarding wizard). The format uses a template with placeholders that resolve from the hierarchy:
+
+| Placeholder | Source | Example |
+|-------------|--------|---------|
+| `{building}` | `Building.code` | `A`, `B`, `MAIN` |
+| `{floor}` | `Floor.prefix` | `1`, `2`, `G` |
+| `{number}` | Space sequential number within range | `01`, `102` |
+| `{branch}` | `Store.code` (rarely needed — AIMS already scopes by store) | `TLV`, `HFA` |
+
+#### Format Examples
+
+| Company Setting | Building | Floor | Number | Generated `externalId` |
+|-----------------|----------|-------|--------|------------------------|
+| `{building}{floor}{number}` (default multi-building) | A | 1 | 02 | `A102` |
+| `{floor}{number}` (default single-building) | — | 2 | 15 | `215` |
+| `{building}-{floor}-{number}` (dash-separated) | B | G | 03 | `B-G-03` |
+| `{branch}-{building}{floor}{number}` (with branch) | A | 3 | 01 | `TLV-A301` |
+| Custom fixed prefix: `SPC-{building}{floor}{number}` | A | 2 | 10 | `SPC-A210` |
+
+#### How It Works
+
+```
+1. Company onboarding wizard → admin sets article format template
+   e.g., "{building}{floor}{number}"
+
+2. When creating spaces (batch or individual):
+   - System resolves {building} from Building.code
+   - System resolves {floor} from Floor.prefix
+   - System resolves {number} from range counter
+   - Generated externalId = "A102"
+
+3. This externalId is pushed to AIMS as the article ID
+   - AIMS uses it to address the ESL label
+   - Pull sync matches incoming articles by externalId
+
+4. If a space is moved between buildings/floors:
+   - externalId is regenerated using the new building/floor
+   - Old AIMS article is deleted, new one is created
+   - Label reassignment is triggered
+```
+
+#### Data Model Impact
+
+```typescript
+// Company settings (set during onboarding wizard)
+interface CompanySettings {
+  articleFormat: string;        // e.g., "{building}{floor}{number}"
+  articleNumberPadding: number; // e.g., 2 → "01", 3 → "001"
+  // ...other settings
+}
+
+// Space — externalId is generated, not manually entered
+interface Space {
+  externalId: string;           // Generated from articleFormat template
+  // The externalId encodes building + floor implicitly
+  buildingId?: string;          // Source for {building} placeholder
+  floorId?: string;             // Source for {floor} placeholder
+  number: string;               // Source for {number} placeholder
+  // ...
+}
+```
+
+#### Uniqueness Constraint
+
+- `externalId` must be unique within a branch (AIMS store)
+- The format template must produce unique IDs — if building codes or floor prefixes overlap, the system validates and warns at creation time
+- `@@unique([branchId, externalId])` enforced at database level
 
 ### Batch Operations
 
@@ -215,7 +287,8 @@ interface Space {
 
   // Identity
   number: string;                // Display number ("101", "G03")
-  externalId: string;            // AIMS article ID
+  externalId: string;            // AIMS article ID — generated from company articleFormat
+                                 // template using {building}, {floor}, {number} placeholders
   name?: string;                 // Optional friendly name ("Corner Office")
 
   // Type & Status
@@ -1457,18 +1530,27 @@ Step 2: AIMS Configuration
   → Test connection
 
 Step 3: Article Format & Mapping  ← THIS STEP IS CRITICAL
-  → Fetch article format from AIMS
-  → Set field mapping (SoluM fields ↔ display fields)
-  → If this feature is chosen → other features disabled
-  → Only AIMS Manager enabled alongside
+  → Two modes:
+    A) Space Management Mode (default):
+       → Set article ID format template: "{building}{floor}{number}"
+       → Configure number padding (2 = "01", 3 = "001")
+       → Preview generated IDs: "A102", "B-G-03", etc.
+       → Set field mapping for ESL display (name, department, status fields)
+       → All features available
+    B) AIMS-Only Mode:
+       → Fetch article format from AIMS directly
+       → Set field mapping (SoluM fields ↔ display fields)
+       → All other features disabled — only AIMS Manager enabled
 
 Step 4: Feature Selection
   → Enable: Spaces, People, Conference, Labels
-  → If Article Format was set in Step 3 → only AIMS Manager available
+  → If AIMS-Only Mode was chosen in Step 3 → only AIMS Manager available
 
 Step 5: Branch Setup
   → Add branches (stores) with codes
-  → Configure floors and initial spaces per branch
+  → Add buildings per branch (skip for single-building)
+  → Configure floors per building with prefix and space ranges
+  → System auto-generates spaces with externalIds from the article format template
 
 Step 6: Integration (Optional)
   → Microsoft 365 / Google Workspace / LDAP
