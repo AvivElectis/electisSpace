@@ -14,6 +14,10 @@ interface QuickActionsPanelProps {
     onAddConferenceRoom: () => void;
     /** When true, renders mobile FAB layout. When false, renders inline glass row. */
     isMobile?: boolean;
+    /** Feature flags — only show buttons for enabled features */
+    showLabels?: boolean;
+    showSpaces?: boolean;
+    showConference?: boolean;
 }
 
 const glassRowSx = {
@@ -43,6 +47,9 @@ export function QuickActionsPanel({
     onAddSpace,
     onAddConferenceRoom,
     isMobile,
+    showLabels = true,
+    showSpaces = true,
+    showConference = true,
 }: QuickActionsPanelProps) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
@@ -52,16 +59,16 @@ export function QuickActionsPanel({
         callback();
     };
 
-    // Actions for mobile FAB
+    // Build actions list based on enabled features
     const actions = [
-        {
+        showLabels && {
             key: 'linkLabel',
             variant: 'contained' as const,
             icon: <LinkIcon sx={{ fontSize: '1.5rem !important' }} />,
             label: t('dashboard.linkLabel', 'Link Label'),
             onClick: onLinkLabel,
         },
-        {
+        showSpaces && {
             key: 'addSpace',
             variant: 'outlined' as const,
             icon: <AddIcon sx={{ fontSize: '1.5rem !important' }} />,
@@ -70,14 +77,17 @@ export function QuickActionsPanel({
                 : t('dashboard.addSpace', 'Add Space'),
             onClick: onAddSpace,
         },
-        {
+        showConference && {
             key: 'conference',
             variant: 'outlined' as const,
             icon: <GroupsIcon sx={{ fontSize: '1.5rem !important' }} />,
             label: t('conference.addRoom'),
             onClick: onAddConferenceRoom,
         },
-    ];
+    ].filter(Boolean) as { key: string; variant: 'contained' | 'outlined'; icon: React.ReactNode; label: string; onClick: () => void }[];
+
+    // Don't render anything if no actions are available
+    if (actions.length === 0) return null;
 
     if (isMobile) {
         return (
@@ -155,61 +165,32 @@ export function QuickActionsPanel({
     // Desktop/Tablet: inline glass row with even gaps
     return (
         <Box sx={glassRowSx}>
-            <Button
-                variant="contained"
-                startIcon={<LinkIcon />}
-                onClick={onLinkLabel}
-                sx={{
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    px: 2.5,
-                    py: 1,
-                    boxShadow: (theme) => `0 2px 8px ${alpha(theme.palette.primary.main, 0.25)}`,
-                }}
-            >
-                {t('dashboard.linkLabel', 'Link Label')}
-            </Button>
-            <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={onAddSpace}
-                sx={{
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 2.5,
-                    py: 1,
-                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                    '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                        borderColor: 'primary.main',
-                    },
-                }}
-            >
-                {isPeopleManagerMode
-                    ? t('dashboard.addPerson', 'Add Person')
-                    : t('dashboard.addSpace', 'Add Space')}
-            </Button>
-            <Button
-                variant="outlined"
-                startIcon={<GroupsIcon />}
-                onClick={onAddConferenceRoom}
-                sx={{
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 2.5,
-                    py: 1,
-                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                    '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                        borderColor: 'primary.main',
-                    },
-                }}
-            >
-                {t('conference.addRoom')}
-            </Button>
+            {actions.map((action) => (
+                <Button
+                    key={action.key}
+                    variant={action.variant}
+                    startIcon={action.icon}
+                    onClick={action.onClick}
+                    sx={{
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: action.variant === 'contained' ? 600 : 500,
+                        px: 2.5,
+                        py: 1,
+                        ...(action.variant === 'contained'
+                            ? { boxShadow: (theme: any) => `0 2px 8px ${alpha(theme.palette.primary.main, 0.25)}` }
+                            : {
+                                  borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
+                                  '&:hover': {
+                                      bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
+                                      borderColor: 'primary.main',
+                                  },
+                              }),
+                    }}
+                >
+                    {action.label}
+                </Button>
+            ))}
         </Box>
     );
 }

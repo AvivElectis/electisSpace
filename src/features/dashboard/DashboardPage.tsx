@@ -176,6 +176,9 @@ export function DashboardPage() {
                         onLinkLabel={() => setLinkLabelDialogOpen(true)}
                         onAddSpace={() => setSpaceDialogOpen(true)}
                         onAddConferenceRoom={() => setConferenceDialogOpen(true)}
+                        showLabels={can('labels')}
+                        showSpaces={can('spaces') || can('people')}
+                        showConference={can('conference')}
                     />
                 </Box>
             )}
@@ -259,6 +262,9 @@ export function DashboardPage() {
                         onLinkLabel={() => setLinkLabelDialogOpen(true)}
                         onAddSpace={() => setSpaceDialogOpen(true)}
                         onAddConferenceRoom={() => setConferenceDialogOpen(true)}
+                        showLabels={can('labels')}
+                        showSpaces={can('spaces') || can('people')}
+                        showConference={can('conference')}
                         isMobile
                     />
                 </Box>
