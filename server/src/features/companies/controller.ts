@@ -6,10 +6,10 @@
  */
 import type { Request, Response, NextFunction } from 'express';
 import { companyService, isPlatformAdmin, canManageCompany, hasCompanyAccess } from './service.js';
-import { 
+import {
     companyCodeSchema,
-    createCompanySchema, 
-    updateCompanySchema, 
+    createCompanyFullSchema,
+    updateCompanySchema,
     updateAimsConfigSchema,
     fetchAimsStoresSchema,
 } from './types.js';
@@ -101,23 +101,24 @@ export const companyController = {
 
     /**
      * POST /companies
-     * Create a new company (Platform Admin only)
+     * Create a new company (Platform Admin only).
+     * Accepts extended payload with stores[], articleFormat, fieldMapping from wizard.
      */
     async create(req: Request, res: Response, next: NextFunction) {
         try {
             const user = getUserContext(req);
-            
+
             // Only platform admins can create companies
             if (!isPlatformAdmin(user)) {
                 throw forbidden('Only platform administrators can create companies');
             }
-            
-            // Validate input
-            const validation = createCompanySchema.safeParse(req.body);
+
+            // Validate with the full schema (superset of base schema — backward compatible)
+            const validation = createCompanyFullSchema.safeParse(req.body);
             if (!validation.success) {
                 throw badRequest(validation.error.errors[0].message);
             }
-            
+
             const company = await companyService.create(validation.data);
             res.status(201).json({ company });
         } catch (error: any) {
@@ -241,6 +242,44 @@ export const companyController = {
                 companyCode,
             });
             
+            res.json(result);
+        } catch (error: any) {
+            if (error.message?.includes('login failed') || error.message?.includes('401')) {
+                return next(badRequest('AIMS authentication failed. Please check your credentials.'));
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * POST /companies/aims/article-format
+     * Fetch article format from AIMS using raw credentials (for wizard)
+     */
+    async fetchArticleFormat(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = getUserContext(req);
+
+            // Only platform admins can fetch article format (creating companies)
+            if (!isPlatformAdmin(user)) {
+                throw forbidden('Only platform administrators can fetch article format');
+            }
+
+            // Reuse the same schema as fetchAimsStores (same credentials)
+            const validation = fetchAimsStoresSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const { baseUrl, cluster, username, password, companyCode } = validation.data;
+
+            const result = await companyService.fetchArticleFormat({
+                baseUrl,
+                cluster,
+                username,
+                password,
+                companyCode,
+            });
+
             res.json(result);
         } catch (error: any) {
             if (error.message?.includes('login failed') || error.message?.includes('401')) {
