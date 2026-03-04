@@ -127,15 +127,30 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                     </Stack>
 
                     {/* Stat tiles — gateways */}
-                    <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>
+                        {t('aims.gatewayHealth')}
+                    </Typography>
+                    <Stack direction="row" gap={1} sx={{ mb: 1.5 }}>
                         <MobileStatTile value={gwOnline} label={t('aims.online')} color="success" />
                         <MobileStatTile value={gwOffline} label={t('aims.offline')} color="error" />
                     </Stack>
 
                     {/* Stat tiles — labels */}
-                    <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>
+                        {t('aims.labelHealth')}
+                    </Typography>
+                    <Stack direction="row" gap={1} sx={{ mb: 1.5 }}>
                         <MobileStatTile value={lblTotal} label={t('aims.totalLabels')} color="primary" />
                         <MobileStatTile value={lblOnline} label={t('aims.online')} color="info" />
+                    </Stack>
+
+                    {/* Stat tiles — update progress */}
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>
+                        {t('aims.productUpdates')}
+                    </Typography>
+                    <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                        <MobileStatTile value={lblUpdated} label={t('aims.success')} color="success" />
+                        <MobileStatTile value={lblNotUpdated} label={t('aims.failed')} color="error" />
                     </Stack>
 
                     {/* Battery & Signal chips */}
