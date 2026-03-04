@@ -83,7 +83,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const [error, setError] = useState<string | null>(null);
 
     // Code validation with debounce
-    const codeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+    const codeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     useEffect(() => {
         const code = formData.companyCode;
         if (!code || code.length < 3) {
@@ -242,8 +242,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 })),
                 companyFeatures: formData.features,
                 spaceType: formData.spaceType,
-                articleFormat: formData.articleFormat as Record<string, unknown> | undefined,
-                fieldMapping: formData.fieldMapping as Record<string, unknown> | undefined,
+                articleFormat: formData.articleFormat as unknown as Record<string, unknown> | undefined,
+                fieldMapping: formData.fieldMapping as unknown as Record<string, unknown> | undefined,
             };
 
             await companyService.create(createData);

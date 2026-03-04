@@ -165,12 +165,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     }, [state.company?.id, fieldMapping, state, t]);
 
     // Field mapping helpers
-    const articleDataFields = articleFormat?.articleData?.map(d => d.name) || [];
-    const COMMON_TIMEZONES = [
-        'UTC', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Rome',
-        'Europe/Madrid', 'Asia/Jerusalem', 'Asia/Tokyo', 'Asia/Shanghai',
-        'America/New_York', 'America/Chicago', 'America/Los_Angeles',
-    ];
+    const articleDataFields = articleFormat?.articleData || [];
 
     return (
         <>
@@ -336,7 +331,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                     <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('settings.companies.basicInfoFields')}</Typography>
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                         {articleFormat.articleBasicInfo.map((f) => (
-                                            <Chip key={f.name} label={f.name} size="small" variant="outlined" />
+                                            <Chip key={f} label={f} size="small" variant="outlined" />
                                         ))}
                                     </Box>
                                 </Box>
@@ -347,7 +342,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                     <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('settings.companies.dataFields')}</Typography>
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                         {articleFormat.articleData.map((f) => (
-                                            <Chip key={f.name} label={f.name} size="small" />
+                                            <Chip key={f} label={f} size="small" />
                                         ))}
                                     </Box>
                                 </Box>
@@ -410,7 +405,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                     <TextField
                                                         size="small"
                                                         variant="standard"
-                                                        value={field.friendlyName}
+                                                        value={field.friendlyNameEn}
                                                         onChange={(e) => {
                                                             setFieldMapping(prev => {
                                                                 if (!prev) return prev;
@@ -418,7 +413,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                                     ...prev,
                                                                     fields: {
                                                                         ...prev.fields,
-                                                                        [key]: { ...field, friendlyName: e.target.value },
+                                                                        [key]: { ...field, friendlyNameEn: e.target.value },
                                                                     },
                                                                 };
                                                             });
