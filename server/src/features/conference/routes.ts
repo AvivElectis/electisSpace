@@ -9,6 +9,7 @@ router.use(authenticate);
 router.use(restrictAppViewer());
 
 // Conference room routes
+router.get('/label-pages', requirePermission('conference', 'read'), conferenceController.getLabelPages);
 router.get('/', requirePermission('conference', 'read'), conferenceController.list);
 router.get('/:id', requirePermission('conference', 'read'), conferenceController.getById);
 router.post('/', requirePermission('conference', 'create'), conferenceController.create);

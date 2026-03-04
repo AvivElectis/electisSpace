@@ -1000,6 +1000,12 @@ export class AIMSGateway {
     async fetchUnassignedWhitelist(storeId: string, params?: { page?: number; size?: number; labelCode?: string; labelModel?: string; sort?: string }) {
         return this.withTokenRetry(storeId, (token, config) => solumService.fetchUnassignedWhitelist(config, token, params));
     }
+
+    // ─── Conference Page Flip ──────────────────────────────────────────────
+
+    async changeLabelPage(storeId: string, labelCodes: string[], page: number) {
+        return this.withTokenRetry(storeId, (token, config) => solumService.changeLabelPage(config, token, labelCodes, page));
+    }
 }
 
 // Singleton instance

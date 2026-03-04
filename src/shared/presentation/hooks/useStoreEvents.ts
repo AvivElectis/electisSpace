@@ -93,6 +93,7 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
                 break;
 
             case 'conference:changed':
+            case 'conference:page-flip':
                 logger.info('StoreEvents', 'Conference changed by another user', {
                     action: event.action,
                     roomId: event.roomId,
