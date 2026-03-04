@@ -1006,7 +1006,12 @@
             "noFieldsConfigured": "No fields configured",
             "fieldsVisible": "{{count}} fields visible",
             "storeSelected": "{{count}} store(s) selected",
-            "clickToEdit": "Click to edit"
+            "clickToEdit": "Click to edit",
+            "noStoresYet": "No stores configured yet.",
+            "storesManageHint": "Use the Stores dialog from the settings page to add, edit, or remove stores.",
+            "noArticleFormat": "No article format stored. Fetch from AIMS to configure.",
+            "refetchArticleFormat": "Re-fetch from AIMS",
+            "saveFieldMapping": "Save Mapping"
         },
         "stores": {
             "dialogTitle": "Manage Stores",

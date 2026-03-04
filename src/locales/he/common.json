@@ -1017,7 +1017,12 @@
             "noFieldsConfigured": "לא הוגדרו שדות",
             "fieldsVisible": "{{count}} שדות גלויים",
             "storeSelected": "{{count}} חנויות נבחרו",
-            "clickToEdit": "לחץ לעריכה"
+            "clickToEdit": "לחץ לעריכה",
+            "noStoresYet": "לא הוגדרו חנויות עדיין.",
+            "storesManageHint": "השתמש בדיאלוג החנויות מדף ההגדרות כדי להוסיף, לערוך או להסיר חנויות.",
+            "noArticleFormat": "לא נשמר פורמט מוצרים. אחזר מ-AIMS כדי להגדיר.",
+            "refetchArticleFormat": "אחזר מחדש מ-AIMS",
+            "saveFieldMapping": "שמור מיפוי"
         },
         "stores": {
             "dialogTitle": "ניהול חנויות",
