@@ -1,0 +1,442 @@
+# electisCompass — Flowcharts & Sequence Diagrams
+
+**Version:** 1.0
+**Date:** 2026-03-04
+**Status:** Draft
+
+---
+
+## 1. Booking Lifecycle Flowchart
+
+```
+                        ┌─────────────┐
+                        │   START     │
+                        └──────┬──────┘
+                               │
+                        ┌──────▼──────┐
+                        │ Employee     │
+                        │ selects space│
+                        └──────┬──────┘
+                               │
+                     ┌─────────▼─────────┐
+                     │ Resolve booking    │
+                     │ rules for branch   │
+                     │ + space            │
+                     └─────────┬─────────┘
+                               │
+                 ┌─────────────▼─────────────┐
+                 │ Validate:                  │
+                 │ - Duration within range    │
+                 │ - Not too far in advance   │
+                 │ - Granularity snapped      │
+                 │ - Max concurrent not hit   │
+                 └─────────────┬─────────────┘
+                               │
+                     ┌─────────▼─────────┐     ┌──────────────┐
+                     │ Rules valid?       │─NO─▶│ Show error   │
+                     └─────────┬─────────┘     │ with rule    │
+                               │YES            │ details      │
+                               │               └──────────────┘
+                     ┌─────────▼─────────┐
+                     │ Acquire row lock   │
+                     │ SELECT FOR UPDATE  │
+                     └─────────┬─────────┘
+                               │
+                     ┌─────────▼─────────┐     ┌──────────────┐
+                     │ Conflicts exist?   │─YES▶│ 409 Conflict │
+                     └─────────┬─────────┘     │ "Space just  │
+                               │NO             │ booked"      │
+                               │               └──────────────┘
+                     ┌─────────▼─────────┐
+                     │ CREATE Booking     │
+                     │ status: BOOKED     │
+                     └─────────┬─────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+      ┌───────▼───────┐ ┌─────▼─────┐ ┌────────▼────────┐
+      │ Queue AIMS    │ │ Socket.IO │ │ Push notification│
+      │ sync item     │ │ broadcast │ │ confirmation     │
+      │ (ESL update)  │ │ event     │ │                  │
+      └───────────────┘ └───────────┘ └─────────────────┘
+                               │
+                     ┌─────────▼─────────┐
+                     │ BOOKING CREATED    │
+                     │ Wait for check-in  │
+                     └─────────┬─────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+     ┌────────▼────────┐ ┌────▼────┐  ┌────────▼────────┐
+     │ Employee        │ │ Window  │  │ Employee         │
+     │ checks in       │ │ expires │  │ cancels          │
+     │ within window   │ │ (no-show│  │                  │
+     └────────┬────────┘ │ job)    │  └────────┬────────┘
+              │          └────┬────┘           │
+     ┌────────▼────────┐ ┌───▼───────┐ ┌──────▼──────┐
+     │ CHECKED_IN      │ │ NO_SHOW   │ │ CANCELLED   │
+     │                 │ │ (auto-    │ │             │
+     │                 │ │ release)  │ │             │
+     └────────┬────────┘ └───────────┘ └─────────────┘
+              │
+    ┌─────────┼─────────┐
+    │                   │
+┌───▼────┐      ┌───────▼───────┐
+│Employee│      │ endTime       │
+│releases│      │ passes        │
+│ early  │      │ (auto-release │
+└───┬────┘      │ job)          │
+    │           └───────┬───────┘
+┌───▼────┐      ┌───────▼───────┐
+│RELEASED│      │AUTO_RELEASED  │
+└────────┘      └───────────────┘
+```
+
+---
+
+## 2. Authentication Flow
+
+```
+┌──────────┐          ┌──────────┐          ┌──────────┐
+│ Compass  │          │   API    │          │  Email   │
+│  Client  │          │  Server  │          │ Service  │
+└────┬─────┘          └────┬─────┘          └────┬─────┘
+     │                     │                     │
+     │  1. Open app        │                     │
+     │─────────────────────┤                     │
+     │                     │                     │
+     │  2. Check device    │                     │
+     │     token (local)   │                     │
+     │                     │                     │
+     ├── [HAS TOKEN] ─────▶│                     │
+     │  POST /device       │                     │
+     │                     │ 3. Validate token   │
+     │                     │    in DB             │
+     │◀── JWT tokens ──────┤                     │
+     │                     │                     │
+     ├── [NO TOKEN] ──────▶│                     │
+     │  Screen: Enter email│                     │
+     │                     │                     │
+     │  POST /login        │                     │
+     │  { email }          │                     │
+     │                     │ 4. Generate code    │
+     │                     │    Hash + store     │
+     │                     │ 5. Send code ──────▶│
+     │                     │                     │─── Email ──▶ 📧
+     │◀── 200 OK ──────────┤                     │
+     │                     │                     │
+     │  Screen: Enter code │                     │
+     │                     │                     │
+     │  POST /verify       │                     │
+     │  { email, code }    │                     │
+     │                     │ 6. Validate code    │
+     │                     │    vs hash          │
+     │                     │ 7. Issue JWT        │
+     │                     │ 8. Create device    │
+     │                     │    token            │
+     │◀── { accessToken,   │                     │
+     │      refreshToken,  │                     │
+     │      deviceToken }  │                     │
+     │                     │                     │
+     │  9. Store device    │                     │
+     │     token securely  │                     │
+     │                     │                     │
+     │  10. Navigate to    │                     │
+     │      Home screen    │                     │
+     ▼                     ▼                     ▼
+```
+
+---
+
+## 3. Space Booking Sequence Diagram
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│  Client  │    │Controller│    │ Service  │    │ RuleEng  │    │   Repo   │    │ SyncQueue│
+└────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘
+     │               │              │              │              │              │
+     │ POST /bookings│              │              │              │              │
+     │──────────────▶│              │              │              │              │
+     │               │ validate(zod)│              │              │              │
+     │               │──────┐      │              │              │              │
+     │               │◀─────┘      │              │              │              │
+     │               │              │              │              │              │
+     │               │ createBooking│              │              │              │
+     │               │─────────────▶│              │              │              │
+     │               │              │ resolveRules │              │              │
+     │               │              │─────────────▶│              │              │
+     │               │              │              │ check cache  │              │
+     │               │              │              │─────────────▶│              │
+     │               │              │◀─────────────┤              │              │
+     │               │              │              │              │              │
+     │               │              │ validateRules│              │              │
+     │               │              │──────┐      │              │              │
+     │               │              │◀─────┘      │              │              │
+     │               │              │              │              │              │
+     │               │              │ countActive  │              │              │
+     │               │              │──────────────┼──────────────▶              │
+     │               │              │◀─────────────┼──────────────┤              │
+     │               │              │              │              │              │
+     │               │              │ findConflicts│(with lock)   │              │
+     │               │              │──────────────┼──────────────▶              │
+     │               │              │◀─────────────┼──────────────┤              │
+     │               │              │              │              │              │
+     │               │              │ create       │              │              │
+     │               │              │──────────────┼──────────────▶              │
+     │               │              │◀─────────────┼──────────────┤              │
+     │               │              │              │              │              │
+     │               │              │ enqueue sync │              │              │
+     │               │              │──────────────┼──────────────┼─────────────▶│
+     │               │              │              │              │              │
+     │               │◀─────────────┤              │              │              │
+     │◀──────────────┤ 201 Created  │              │              │              │
+     │               │              │              │              │              │
+     ▼               ▼              ▼              ▼              ▼              ▼
+```
+
+---
+
+## 4. Auto-Release Background Job Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                  Auto-Release Job (BullMQ)                │
+│                  Runs every 1 minute                      │
+└──────────┬───────────────────────────────────────────────┘
+           │
+    ┌──────▼──────────────────────────────┐
+    │ Query: bookings WHERE               │
+    │   status = 'BOOKED'                 │
+    │   AND end_time < NOW()              │
+    │ Using partial index                 │
+    └──────┬──────────────────────────────┘
+           │
+    ┌──────▼──────┐
+    │ Results     │
+    │ found?      │──NO──▶ Exit (log "0 bookings to release")
+    └──────┬──────┘
+           │YES
+           │
+    ┌──────▼──────────────────────────────┐
+    │ FOR EACH expired booking:           │
+    │                                     │
+    │  1. Update status → AUTO_RELEASED   │
+    │  2. Set autoReleased = true         │
+    │  3. Set releasedAt = NOW()          │
+    │  4. ──▶ Queue AIMS sync             │
+    │         (ESL → "Available")         │
+    │  5. ──▶ Emit Socket.IO              │
+    │         booking:auto_released       │
+    │  6. ──▶ Send push notification      │
+    │         "Your booking was released" │
+    └──────┬──────────────────────────────┘
+           │
+    ┌──────▼──────────────────────────────┐
+    │ Log: "Released N bookings"          │
+    │ Metric: increment auto_release_count│
+    └─────────────────────────────────────┘
+```
+
+---
+
+## 5. No-Show Detection Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                  No-Show Job (BullMQ)                     │
+│                  Runs every 5 minutes                     │
+└──────────┬───────────────────────────────────────────────┘
+           │
+    ┌──────▼──────────────────────────────┐
+    │ FOR EACH branch with active         │
+    │ Compass bookings:                   │
+    │                                     │
+    │  1. Resolve CHECK_IN_WINDOW rule    │
+    │  2. Calculate cutoff:               │
+    │     start_time + check_in_window    │
+    └──────┬──────────────────────────────┘
+           │
+    ┌──────▼──────────────────────────────┐
+    │ Query: bookings WHERE               │
+    │   status = 'BOOKED'                 │
+    │   AND start_time + window < NOW()   │
+    └──────┬──────────────────────────────┘
+           │
+    ┌──────▼──────────┐
+    │ AUTO_RELEASE_ON │         ┌──────────────────┐
+    │ _NO_SHOW = true?│──YES──▶ │ Status → NO_SHOW │
+    └──────┬──────────┘         │ Release space    │
+           │NO                  │ AIMS sync        │
+           │                    │ Notify employee  │
+    ┌──────▼──────────┐         └──────────────────┘
+    │ Send reminder   │
+    │ "Please check   │
+    │ in to Office X" │
+    └─────────────────┘
+```
+
+---
+
+## 6. Friend Proximity Resolution Flow
+
+```
+    ┌─────────────────────────┐
+    │ Employee taps            │
+    │ "Find space near Dan"    │
+    └───────────┬─────────────┘
+                │
+    ┌───────────▼─────────────┐
+    │ Get Dan's current       │
+    │ booking (CHECKED_IN)    │
+    └───────────┬─────────────┘
+                │
+    ┌───────────▼─────────────┐     ┌──────────────────┐
+    │ Dan checked in?         │─NO─▶│ "Dan is not in   │
+    └───────────┬─────────────┘     │ the office"      │
+                │YES                └──────────────────┘
+                │
+    ┌───────────▼─────────────┐
+    │ Get Dan's space:        │
+    │ buildingId, floorId,    │
+    │ sortOrder               │
+    └───────────┬─────────────┘
+                │
+    ┌───────────▼─────────────┐
+    │ Query available spaces  │
+    │ in Dan's branch         │
+    └───────────┬─────────────┘
+                │
+    ┌───────────▼─────────────┐
+    │ Categorize each space:  │
+    │                         │
+    │ ┌─ SAME FLOOR ────────┐│
+    │ │ Same building +      ││
+    │ │ same floor as Dan    ││
+    │ │ Sort: |sortOrder     ││
+    │ │       - Dan.order|   ││
+    │ └──────────────────────┘│
+    │                         │
+    │ ┌─ SAME BUILDING ─────┐│
+    │ │ Same building,       ││
+    │ │ different floor      ││
+    │ │ Sort: |floorNum      ││
+    │ │       - Dan.floor|   ││
+    │ └──────────────────────┘│
+    │                         │
+    │ ┌─ DIFFERENT BUILDING ─┐│
+    │ │ Different building    ││
+    │ │ Sort: building name   ││
+    │ └──────────────────────┘│
+    └───────────┬─────────────┘
+                │
+    ┌───────────▼─────────────┐
+    │ Return sorted list:     │
+    │ "Office 203 — 2 away"   │
+    │ "Office 210 — 9 away"   │
+    │ "Bldg B, Floor 1"       │
+    └─────────────────────────┘
+```
+
+---
+
+## 7. Company Wizard — Compass Expansion Flow
+
+```
+    ┌────────────────────────┐
+    │ Step 5: Features       │
+    │ Employee toggles       │
+    │ "Compass" ON           │
+    └───────────┬────────────┘
+                │
+    ┌───────────▼────────────┐
+    │ System validates:       │
+    │ - Lock Spaces           │
+    │ - Lock People           │
+    │ - Lock Conference       │
+    │ Show: "Compass mode     │
+    │ replaces individual     │
+    │ space management with   │
+    │ full booking system"    │
+    └───────────┬────────────┘
+                │
+    ┌───────────▼────────────┐
+    │ INSERT 4 new steps      │
+    │ into wizard:            │
+    │                         │
+    │ Step 6: Buildings       │
+    │   - Branch selector     │
+    │   - Add buildings       │
+    │   - Per building: name, │
+    │     code                │
+    │   - Single-building     │
+    │     mode toggle         │
+    │                         │
+    │ Step 7: Floor Setup     │
+    │   - Per building        │
+    │   - Floor count, prefix │
+    │   - Space ranges        │
+    │   - Preview externalIds │
+    │                         │
+    │ Step 8: Booking Rules   │
+    │   - Max duration        │
+    │   - Check-in window     │
+    │   - Auto-release toggle │
+    │   - Max concurrent      │
+    │                         │
+    │ Step 9: Employees       │
+    │   - CSV upload          │
+    │   - Manual add          │
+    │   - Skip (add later)    │
+    └───────────┬────────────┘
+                │
+    ┌───────────▼────────────┐
+    │ Step 10: Review & Create│
+    │ (expanded review shows  │
+    │ all Compass config)     │
+    └─────────────────────────┘
+```
+
+---
+
+## 8. ESL Sync Trigger Flow
+
+```
+    ┌────────────────────────────────────────────────────────────┐
+    │                Booking Event Triggers                       │
+    │                                                            │
+    │  BOOK ──▶ "Reserved: John Doe, Until 18:00"               │
+    │  CHECK_IN ──▶ "Occupied: John Doe"                        │
+    │  RELEASE ──▶ "Available"                                   │
+    │  CANCEL ──▶ "Available"                                    │
+    │  AUTO_RELEASE ──▶ "Available"                              │
+    │  NO_SHOW ──▶ "Available"                                   │
+    │  PERMANENT_ASSIGN ──▶ "John Doe, Engineering" (static)    │
+    └──────────────────────┬─────────────────────────────────────┘
+                           │
+               ┌───────────▼───────────┐
+               │ Throttle check:       │
+               │ Last sync for this    │──SKIP──▶ (wait for next)
+               │ space < 30s ago?      │
+               └───────────┬───────────┘
+                           │PROCEED
+               ┌───────────▼───────────┐
+               │ Resolve ESL template  │
+               │ for space.spaceType   │
+               └───────────┬───────────┘
+                           │
+               ┌───────────▼───────────┐
+               │ Build article data    │
+               │ from booking + space  │
+               │ + companyUser         │
+               └───────────┬───────────┘
+                           │
+               ┌───────────▼───────────┐
+               │ Enqueue AIMS sync item│
+               │ (existing sync queue) │
+               └───────────┬───────────┘
+                           │
+               ┌───────────▼───────────┐
+               │ AIMS API pushes to    │
+               │ physical ESL label    │
+               └───────────────────────┘
+```
