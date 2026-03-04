@@ -9,7 +9,7 @@
 import { useEffect } from 'react';
 import {
     Box, Typography, Stack, Card, CardContent, Grid, LinearProgress,
-    Skeleton, Alert, useMediaQuery, useTheme,
+    Skeleton, Alert, useTheme,
 } from '@mui/material';
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
@@ -77,7 +77,6 @@ function OverviewSkeleton() {
 export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
     const { t } = useTranslation();
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const {
         storeSummary, labelModels,
         overviewLoading, overviewError, fetchOverview,
