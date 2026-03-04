@@ -7,10 +7,8 @@ import { useTheme } from '@mui/material';
 import {
     companyService,
     type Company,
-    type CreateCompanyDto,
     type UpdateCompanyDto,
     type UpdateAimsConfigDto,
-    type AimsStoreInfo,
 } from '@shared/infrastructure/services/companyService';
 import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
 import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
@@ -66,14 +64,6 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
     const [companyFeatures, setCompanyFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
     const [spaceType, setSpaceType] = useState<SpaceType>('office');
 
-    // Create Mode Wizard State
-    const [wizardStep, setWizardStep] = useState(0);
-    const [connecting, setConnecting] = useState(false);
-    const [connectError, setConnectError] = useState<string | null>(null);
-    const [aimsStores, setAimsStores] = useState<AimsStoreInfo[]>([]);
-    const [selectedStoreCode, setSelectedStoreCode] = useState<string | null>(null);
-    const [storeFriendlyName, setStoreFriendlyName] = useState('');
-
     // Initialize form when dialog opens
     useEffect(() => {
         if (open) {
@@ -108,6 +98,8 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                     checkConnectionStatus(company.id);
                 }
             } else {
+                // Create mode is handled by CreateCompanyWizard (own state).
+                // Reset edit-mode fields for safety.
                 setName('');
                 setCode('');
                 setLocation('');
@@ -118,12 +110,6 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                 setAimsUsername('');
                 setAimsPassword('');
                 setCodeValid(null);
-                setWizardStep(0);
-                setConnecting(false);
-                setConnectError(null);
-                setAimsStores([]);
-                setSelectedStoreCode(null);
-                setStoreFriendlyName('');
                 setCompanyFeatures({ ...DEFAULT_COMPANY_FEATURES });
                 setSpaceType('office');
             }
@@ -278,63 +264,6 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         }
     };
 
-    // Create Mode: Wizard Logic
-    const isStep1Valid = () => {
-        if (!code || code.length < 3 || !codeValid) return false;
-        if (!aimsCluster || !aimsUsername || !aimsPassword) return false;
-        return true;
-    };
-
-    const handleConnectAndFetch = async () => {
-        if (!isStep1Valid()) return;
-        setConnecting(true);
-        setConnectError(null);
-        setAimsStores([]);
-
-        try {
-            const result = await companyService.fetchAimsStores({
-                baseUrl: aimsBaseUrl.trim(),
-                cluster: aimsCluster.trim(),
-                username: aimsUsername.trim(),
-                password: aimsPassword,
-                companyCode: code.trim(),
-            });
-
-            if (!result.success) {
-                setConnectError(result.error || t('settings.companies.connectionTestError'));
-                return;
-            }
-
-            if (result.stores.length === 0) {
-                setConnectError(t('settings.companies.noAimsStores'));
-                return;
-            }
-
-            setAimsStores(result.stores);
-            setSelectedStoreCode(null);
-            setStoreFriendlyName('');
-            setWizardStep(1);
-        } catch (err: any) {
-            setConnectError(err.response?.data?.message || err.message || t('settings.companies.connectionTestError'));
-        } finally {
-            setConnecting(false);
-        }
-    };
-
-    const handleSelectStore = (storeCode: string) => {
-        setSelectedStoreCode(storeCode);
-        const store = aimsStores.find(s => s.code === storeCode);
-        if (store) {
-            setStoreFriendlyName(store.name || '');
-        }
-    };
-
-    const isStep2Valid = () => {
-        if (!selectedStoreCode) return false;
-        if (!name.trim()) return false;
-        return true;
-    };
-
     // Submit Handlers
     const isEditValid = () => {
         if (!name.trim()) return false;
@@ -375,43 +304,6 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         }
     };
 
-    const handleCreateSubmit = async () => {
-        if (!isStep2Valid()) return;
-        setSubmitting(true);
-        setError(null);
-        try {
-            const createData: CreateCompanyDto = {
-                name: name.trim(),
-                code: code.trim(),
-                location: location.trim() || undefined,
-                description: description.trim() || undefined,
-                aimsConfig: {
-                    baseUrl: aimsBaseUrl.trim(),
-                    cluster: aimsCluster.trim(),
-                    username: aimsUsername.trim(),
-                    password: aimsPassword,
-                },
-                companyFeatures,
-                spaceType,
-            };
-            const result = await companyService.create(createData);
-            const newCompanyId = result.id;
-
-            if (selectedStoreCode && newCompanyId) {
-                await companyService.createStore(newCompanyId, {
-                    name: storeFriendlyName.trim() || selectedStoreCode,
-                    code: selectedStoreCode,
-                });
-            }
-
-            onSave();
-        } catch (err: any) {
-            setError(err.response?.data?.message || t('settings.companies.saveError'));
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     return {
         // Common
         isEdit, isRtl, submitting, error, setError, company,
@@ -436,11 +328,5 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         testingConnection, connectionTestResult, setConnectionTestResult,
         isConnected, handleTestConnection, handleDisconnect,
         isEditValid, handleEditSubmit,
-
-        // Create Mode
-        wizardStep, setWizardStep, connecting, connectError, setConnectError,
-        aimsStores, selectedStoreCode, storeFriendlyName, setStoreFriendlyName,
-        isStep1Valid, isStep2Valid,
-        handleConnectAndFetch, handleSelectStore, handleCreateSubmit,
     };
 }

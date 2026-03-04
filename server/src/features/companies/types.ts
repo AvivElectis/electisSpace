@@ -58,9 +58,9 @@ export const createCompanySchema = z.object({
     spaceType: spaceTypeSchema.optional(),
 });
 
-/** Extended create company schema with multi-store + config */
+/** Extended create company schema with multi-store + config (backward-compatible) */
 export const createCompanyFullSchema = createCompanySchema.extend({
-    stores: z.array(createStoreSchema).min(1, 'At least one store is required'),
+    stores: z.array(createStoreSchema).default([]),
     articleFormat: z.record(z.unknown()).optional(),
     fieldMapping: z.record(z.unknown()).optional(),
 });
