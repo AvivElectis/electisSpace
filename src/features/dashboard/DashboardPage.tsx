@@ -12,8 +12,7 @@ import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
-import { useGateways } from '@features/aims-management/application/useGateways';
-import { useLabelsOverview } from '@features/aims-management/application/useLabelsOverview';
+import { useAimsOverview } from '@features/aims-management/application/useAimsOverview';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
 
 // Lazy load dialogs - not needed on initial render
@@ -64,8 +63,7 @@ export function DashboardPage() {
     // AIMS data (conditionally loaded when feature is enabled)
     const { canAccessFeature } = useAuthContext();
     const isAimsEnabled = canAccessFeature('aims-management');
-    const { gateways, fetchGateways: fetchAimsGateways } = useGateways(activeStoreId);
-    const { stats: aimsLabelStats, fetchLabels: fetchAimsLabels } = useLabelsOverview(activeStoreId);
+    const { storeSummary: aimsStoreSummary, labelModels: aimsLabelModels, fetchOverview: fetchAimsOverview } = useAimsOverview(activeStoreId);
 
     // Fetch all data from server on mount / store switch so dashboard shows real counts
     useEffect(() => {
@@ -74,8 +72,7 @@ export function DashboardPage() {
             conferenceController.fetchRooms();
             peopleStore.fetchPeople();
             if (isAimsEnabled) {
-                fetchAimsGateways();
-                fetchAimsLabels();
+                fetchAimsOverview();
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,16 +114,6 @@ export function DashboardPage() {
         conferenceController.conferenceRooms.reduce((count, r) => count + (r.assignedLabels?.length || 0), 0),
         [conferenceController.conferenceRooms]
     );
-
-    // Stats - AIMS
-    const aimsGatewayStats = useMemo(() => {
-        const total = gateways.length;
-        const online = gateways.filter((g: any) => {
-            const s = (g.status || g.networkStatus || '').toUpperCase();
-            return s === 'ONLINE' || s === 'CONNECTED';
-        }).length;
-        return { total, online, offline: total - online };
-    }, [gateways]);
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
@@ -232,16 +219,10 @@ export function DashboardPage() {
 
                 {/* AIMS Area - Only show when feature is enabled */}
                 {isAimsEnabled && (
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 12 }}>
                         <DashboardAimsCard
-                            totalGateways={aimsGatewayStats.total}
-                            onlineGateways={aimsGatewayStats.online}
-                            offlineGateways={aimsGatewayStats.offline}
-                            totalLabels={aimsLabelStats.total}
-                            onlineLabels={aimsLabelStats.online}
-                            batteryGood={aimsLabelStats.battery.good}
-                            batteryLow={aimsLabelStats.battery.low}
-                            batteryCritical={aimsLabelStats.battery.critical}
+                            storeSummary={aimsStoreSummary}
+                            labelModels={aimsLabelModels}
                             isMobile={isMobile}
                         />
                     </Grid>
