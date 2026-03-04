@@ -18,8 +18,8 @@ import type { WizardStoreData } from '../wizardTypes';
 
 // Common timezones
 const TIMEZONES = [
-    'UTC', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
-    'Asia/Jerusalem', 'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Kolkata',
+    'Asia/Jerusalem', 'UTC', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
+    'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Kolkata',
     'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
     'Australia/Sydney', 'Pacific/Auckland',
 ];
@@ -50,7 +50,7 @@ export function StoreSelectionStep({
                 {
                     code: store.code,
                     name: store.name || store.code,
-                    timezone: 'UTC',
+                    timezone: 'Asia/Jerusalem',
                     labelCount: store.labelCount,
                     gatewayCount: store.gatewayCount,
                     selected: true,
