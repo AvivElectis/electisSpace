@@ -1,5 +1,7 @@
 import { conferenceRepository } from './repository.js';
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
+import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import type {
     ConferenceUserContext,
     ConferenceRoomStats,
@@ -147,26 +149,77 @@ export const conferenceService = {
     },
 
     /**
-     * Request ESL page flip for a room
+     * Get current page for all conference room labels from AIMS
+     * Returns map of labelCode → currentPage
      */
-    async flipPage(userContext: ConferenceUserContext, roomId: string) {
+    async getLabelPages(userContext: ConferenceUserContext, storeId: string): Promise<Record<string, number>> {
+        validateStoreAccess(storeId, userContext);
+
+        // Get all conference rooms for this store
+        const storeIds = getEffectiveStoreIds(userContext);
+        const rooms = await conferenceRepository.list(storeIds, storeId);
+
+        // Collect all label codes
+        const labelCodes: string[] = [];
+        for (const room of rooms) {
+            if (room.labelCode) labelCodes.push(room.labelCode);
+            if (room.assignedLabels?.length) {
+                for (const lc of room.assignedLabels) {
+                    if (!labelCodes.includes(lc)) labelCodes.push(lc);
+                }
+            }
+        }
+
+        if (labelCodes.length === 0) return {};
+
+        // Fetch all labels from AIMS for this store (they include currentPage)
+        const labels = await aimsGateway.fetchLabels(storeId);
+        const pageMap: Record<string, number> = {};
+        for (const label of labels) {
+            if (labelCodes.includes(label.labelCode)) {
+                pageMap[label.labelCode] = (label as any).currentPage ?? 1;
+            }
+        }
+
+        return pageMap;
+    },
+
+    /**
+     * Flip ESL page for a room — direct AIMS API call (not queued)
+     * Supports multiple labels per room (all get same page)
+     * Page 1 = Available, Page 2 = Busy
+     */
+    async flipPage(userContext: ConferenceUserContext, roomId: string, page: number) {
         const storeIds = getEffectiveStoreIds(userContext);
         const existing = await conferenceRepository.getByIdWithAccess(roomId, storeIds);
         if (!existing) {
             throw 'NOT_FOUND';
         }
 
-        if (!existing.labelCode) {
+        // Collect all label codes for this room
+        const labelCodes: string[] = [];
+        if (existing.labelCode) labelCodes.push(existing.labelCode);
+        if (existing.assignedLabels?.length) {
+            for (const lc of existing.assignedLabels) {
+                if (!labelCodes.includes(lc)) labelCodes.push(lc);
+            }
+        }
+
+        if (labelCodes.length === 0) {
             throw 'NO_LABEL_ASSIGNED';
         }
 
-        // Queue job to flip ESL page in AIMS
-        await syncQueueService.queueUpdate(existing.storeId, 'conference', existing.id, { flipPage: true });
+        // Direct AIMS API call — requires 200 for success
+        appLogger.info('ConferenceService', `Flipping page for room ${roomId}`, { labelCodes, page });
+        const result = await aimsGateway.changeLabelPage(existing.storeId, labelCodes, page);
+        appLogger.info('ConferenceService', `Page flip successful for room ${roomId}`, { labelCodes, page });
 
         return {
-            message: 'Page flip requested',
+            message: 'Page flip successful',
             roomId: existing.id,
-            labelCode: existing.labelCode,
+            labelCodes,
+            page,
+            aimsResponse: result,
         };
     },
 };

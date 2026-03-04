@@ -21,6 +21,10 @@ import {
     Fab,
     Badge,
     Collapse,
+    Radio,
+    RadioGroup,
+    FormControlLabel,
+    CircularProgress,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
@@ -33,7 +37,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
 import { useConferenceController } from '../application/useConferenceController';
@@ -44,6 +48,7 @@ import { useAuthContext } from '@features/auth/application/useAuthContext';
 import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
+import { conferenceApi } from '../infrastructure/conferenceApi';
 
 // Lazy load dialog - not needed on initial render
 const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
@@ -90,10 +95,101 @@ export function ConferencePage() {
     const [searchOpen, setSearchOpen] = useState(false);
     const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
+    // Simple conference mode state
+    const { activeStoreEffectiveFeatures } = useAuthContext();
+    const isSimpleMode = activeStoreEffectiveFeatures?.simpleConferenceMode ?? false;
+    const [labelPages, setLabelPages] = useState<Record<string, number>>({});
+    const [labelPagesLoading, setLabelPagesLoading] = useState(false);
+    const [flippingRoomId, setFlippingRoomId] = useState<string | null>(null);
+    const [flipSnackbar, setFlipSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
+    const labelPagesFetchedRef = useRef(false);
+
+    // Fetch label pages from AIMS when in simple mode
+    useEffect(() => {
+        if (!isSimpleMode || !isAppReady || !activeStoreId || labelPagesFetchedRef.current) return;
+        labelPagesFetchedRef.current = true;
+        setLabelPagesLoading(true);
+        conferenceApi.getLabelPages(activeStoreId)
+            .then(pages => setLabelPages(pages))
+            .catch(() => {})
+            .finally(() => setLabelPagesLoading(false));
+    }, [isSimpleMode, isAppReady, activeStoreId]);
+
+    // Reset label pages fetch ref when store changes
+    useEffect(() => {
+        labelPagesFetchedRef.current = false;
+    }, [activeStoreId]);
+
+    // Get room page status: check all labels for this room, return the dominant page
+    const getRoomPage = useCallback((room: ConferenceRoom): number => {
+        const codes: string[] = [];
+        if (room.labelCode) codes.push(room.labelCode);
+        if (room.assignedLabels?.length) {
+            for (const lc of room.assignedLabels) {
+                if (!codes.includes(lc)) codes.push(lc);
+            }
+        }
+        if (codes.length === 0) return 1; // Default: available
+        // Use the first label's page as the room's status
+        for (const code of codes) {
+            if (labelPages[code] !== undefined) return labelPages[code];
+        }
+        return 1; // Default: available
+    }, [labelPages]);
+
+    // Handle page flip for simple mode
+    const handleFlipPage = useCallback(async (room: ConferenceRoom, targetPage: number) => {
+        const serverId = room.serverId || room.id;
+        setFlippingRoomId(room.id);
+        try {
+            const result = await conferenceApi.flipPage(serverId, targetPage);
+            // Update local label pages state
+            if (result.labelCodes) {
+                setLabelPages(prev => {
+                    const next = { ...prev };
+                    for (const lc of result.labelCodes) {
+                        next[lc] = targetPage;
+                    }
+                    return next;
+                });
+            }
+            setFlipSnackbar({ message: t('conference.flipPageSuccess'), severity: 'success' });
+        } catch {
+            setFlipSnackbar({ message: t('conference.flipPageFailed'), severity: 'error' });
+        } finally {
+            setFlippingRoomId(null);
+        }
+    }, [t]);
+
     // SSE real-time sync — alert when other users modify conference rooms
     useStoreEvents({
         onConferenceChanged: (event) => {
             console.log('[ConferencePage] SSE event received:', event);
+
+            // Handle page-flip events from other users
+            if (event.action === 'page-flip') {
+                const { labelCodes, page } = event as any;
+                if (labelCodes && page !== undefined) {
+                    setLabelPages(prev => {
+                        const next = { ...prev };
+                        for (const lc of labelCodes) {
+                            next[lc] = page;
+                        }
+                        return next;
+                    });
+                }
+                setSseAlert({
+                    message: t('conference.roomChangedByOther', {
+                        defaultValue: '{{user}} {{action}} conference room {{roomId}}',
+                        user: event.userName || 'Another user',
+                        action: page === 2 ? 'set as occupied' : 'set as available',
+                        roomId: event.roomId || 'Unknown',
+                    }),
+                    severity: 'info',
+                });
+                return;
+            }
+
             const actionText = event.action === 'create' ? 'added' :
                               event.action === 'update' ? 'updated' :
                               event.action === 'delete' ? 'deleted' :
@@ -211,6 +307,181 @@ export function ConferencePage() {
         '&:hover': { boxShadow: '0px 0px 1px 1px #6666663b' }
     }), []);
 
+    // ─── Simple Conference Mode Rendering ─────────────────────────────────
+    if (isSimpleMode) {
+        return (
+            <Box>
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
+                        {t('conference.title')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {t('conference.manage')}
+                    </Typography>
+                </Box>
+
+                {/* Stats */}
+                <Stack direction="row" gap={2} sx={{ mb: 3 }}>
+                    <Typography variant="body2" fontWeight={600}>
+                        {conferenceController.conferenceRooms.length} {t('conference.totalRooms')}
+                    </Typography>
+                </Stack>
+
+                {conferenceController.isFetching ? (
+                    <Stack gap={2}>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <Skeleton key={i} variant="rounded" height={64} />
+                        ))}
+                    </Stack>
+                ) : labelPagesLoading ? (
+                    <Stack alignItems="center" gap={2} sx={{ py: 4 }}>
+                        <CircularProgress size={32} />
+                        <Typography variant="body2" color="text.secondary">
+                            {t('conference.loadingPages')}
+                        </Typography>
+                    </Stack>
+                ) : conferenceController.conferenceRooms.length === 0 ? (
+                    <Card>
+                        <CardContent sx={{ py: 8, textAlign: 'center' }}>
+                            <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                            <Typography variant="h6">{t('conference.noRoomsYet')}</Typography>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Stack gap={1}>
+                        {filteredRooms.map((room) => {
+                            const roomPage = getRoomPage(room);
+                            const isFlipping = flippingRoomId === room.id;
+                            const hasLabels = !!(room.labelCode || (room.assignedLabels && room.assignedLabels.length > 0));
+                            const labelCount = new Set([
+                                ...(room.labelCode ? [room.labelCode] : []),
+                                ...(room.assignedLabels || []),
+                            ]).size;
+
+                            return (
+                                <Card
+                                    key={room.id}
+                                    variant="outlined"
+                                    sx={{
+                                        transition: 'background-color 0.2s',
+                                        bgcolor: roomPage === 2 ? 'error.50' : 'transparent',
+                                        borderColor: roomPage === 2 ? 'error.main' : 'divider',
+                                    }}
+                                >
+                                    <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                                        <Stack
+                                            direction="row"
+                                            alignItems="center"
+                                            justifyContent="space-between"
+                                            gap={2}
+                                        >
+                                            {/* Room info */}
+                                            <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+                                                <Typography
+                                                    variant="body2"
+                                                    fontWeight={700}
+                                                    dir="ltr"
+                                                    sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
+                                                >
+                                                    {room.id}
+                                                </Typography>
+                                                <Typography variant="body1" fontWeight={500} noWrap>
+                                                    {room.roomName || room.data?.roomName || room.id}
+                                                </Typography>
+                                                {hasLabels && labelCount > 1 && (
+                                                    <Chip
+                                                        label={`${labelCount} ${t('conference.labels')}`}
+                                                        size="small"
+                                                        variant="outlined"
+                                                        sx={{ height: 20, fontSize: '0.7rem' }}
+                                                    />
+                                                )}
+                                            </Stack>
+
+                                            {/* Status radio */}
+                                            {hasLabels ? (
+                                                <RadioGroup
+                                                    row
+                                                    value={String(roomPage)}
+                                                    onChange={(_e, value) => {
+                                                        if (!isFlipping && canEdit) {
+                                                            handleFlipPage(room, Number(value));
+                                                        }
+                                                    }}
+                                                >
+                                                    <FormControlLabel
+                                                        value="1"
+                                                        disabled={isFlipping || !canEdit}
+                                                        control={<Radio size="small" color="success" />}
+                                                        label={
+                                                            <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                                {t('conference.available')}
+                                                            </Typography>
+                                                        }
+                                                        sx={{ mr: 1 }}
+                                                    />
+                                                    <FormControlLabel
+                                                        value="2"
+                                                        disabled={isFlipping || !canEdit}
+                                                        control={<Radio size="small" color="error" />}
+                                                        label={
+                                                            <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                                {t('conference.inMeeting')}
+                                                            </Typography>
+                                                        }
+                                                    />
+                                                    {isFlipping && <CircularProgress size={20} sx={{ ml: 1 }} />}
+                                                </RadioGroup>
+                                            ) : (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {t('conference.noScheduledMeetings')}
+                                                </Typography>
+                                            )}
+                                        </Stack>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </Stack>
+                )}
+
+                {/* Page flip snackbar */}
+                <Snackbar
+                    open={!!flipSnackbar}
+                    autoHideDuration={4000}
+                    onClose={() => setFlipSnackbar(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                    <Alert
+                        onClose={() => setFlipSnackbar(null)}
+                        severity={flipSnackbar?.severity || 'info'}
+                        sx={{ width: '100%' }}
+                    >
+                        {flipSnackbar?.message}
+                    </Alert>
+                </Snackbar>
+
+                {/* SSE Alert Snackbar */}
+                <Snackbar
+                    open={!!sseAlert}
+                    autoHideDuration={6000}
+                    onClose={() => setSseAlert(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                >
+                    <Alert
+                        onClose={() => setSseAlert(null)}
+                        severity={sseAlert?.severity || 'info'}
+                        sx={{ width: '100%' }}
+                    >
+                        {sseAlert?.message}
+                    </Alert>
+                </Snackbar>
+                <ConfirmDialog />
+            </Box>
+        );
+    }
+
+    // ─── Full Conference Mode Rendering ────────────────────────────────────
     return (
         <Box>
             {/* Header Section */}

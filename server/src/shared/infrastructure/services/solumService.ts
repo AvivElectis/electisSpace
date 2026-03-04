@@ -511,16 +511,20 @@ export class SolumService {
     }
 
     /**
-     * Change label page/template
+     * Change label page (AIMS API: POST /api/v2/common/labels/page)
+     * Body: { pageChangeList: [{ labelCode, page }] }
+     * Page values: 1-7 (1=Available, 2=Busy for conference simple mode)
      */
-    async changeLabelPage(config: SolumConfig, token: string, labelCode: string, page: number): Promise<AimsApiResponse> {
+    async changeLabelPage(config: SolumConfig, token: string, labelCodes: string[], page: number): Promise<AimsApiResponse> {
         if (!config.storeCode) throw new Error('Store code required');
 
-        const url = this.buildUrl(config, `/common/api/v2/common/labels/changePage?company=${config.companyName}&store=${config.storeCode}`);
+        const url = this.buildUrl(config, `/common/api/v2/common/labels/page?company=${config.companyName}&store=${config.storeCode}`);
+
+        const pageChangeList = labelCodes.map(labelCode => ({ labelCode, page }));
 
         return this.withRetry('changeLabelPage', async () => {
             try {
-                const response = await this.client.post(url, { labelCode, page }, {
+                const response = await this.client.post(url, { pageChangeList }, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 return response.data;

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { conferenceService } from './service.js';
-import { createRoomSchema, updateRoomSchema, toggleMeetingSchema } from './types.js';
+import { createRoomSchema, updateRoomSchema, toggleMeetingSchema, flipPageSchema } from './types.js';
 import type { ConferenceUserContext } from './types.js';
 import { notFound, badRequest, conflict, forbidden } from '../../shared/middleware/index.js';
 import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
@@ -188,12 +188,48 @@ export const conferenceController = {
     },
 
     /**
-     * POST /conference/:id/flip-page - Manually flip ESL page
+     * GET /conference/label-pages - Get current page for all conference room labels
+     */
+    async getLabelPages(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userContext = getUserContext(req);
+            const storeId = req.query.storeId as string;
+            if (!storeId) {
+                return next(badRequest('storeId query parameter is required'));
+            }
+            const pageMap = await conferenceService.getLabelPages(userContext, storeId);
+            res.json(pageMap);
+        } catch (error) {
+            next(mapServiceError(error));
+        }
+    },
+
+    /**
+     * POST /conference/:id/flip-page - Flip ESL page directly via AIMS
+     * Body: { page: 1-7 } (1=Available, 2=Busy)
      */
     async flipPage(req: Request, res: Response, next: NextFunction) {
         try {
             const userContext = getUserContext(req);
-            const result = await conferenceService.flipPage(userContext, req.params.id as string);
+            const { page } = flipPageSchema.parse(req.body);
+            const result = await conferenceService.flipPage(userContext, req.params.id as string, page);
+
+            // Broadcast page flip to all clients in this store
+            const room = await conferenceService.getById(userContext, req.params.id as string);
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore(room.storeId, {
+                type: 'conference:page-flip',
+                payload: {
+                    action: 'page-flip',
+                    roomId: room.externalId,
+                    serverId: room.id,
+                    page,
+                    labelCodes: result.labelCodes,
+                    userName: req.user?.email || 'Unknown',
+                },
+                excludeClientId: sseClientId,
+            });
+
             res.json(result);
         } catch (error) {
             next(mapServiceError(error));
