@@ -300,15 +300,61 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelTypes')}</Typography>
                             </Stack>
                             {Array.isArray(labelModels) && labelModels.length > 0 ? (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, maxHeight: 100, overflowY: 'auto' }}>
-                                    {labelModels.map((model: any, i: number) => (
-                                        <Chip
-                                            key={i}
-                                            label={`${model.labelType || model.type || 'Unknown'}: ${model.count ?? 0}`}
-                                            size="small"
-                                            variant="outlined"
-                                        />
-                                    ))}
+                                <Box sx={{
+                                    maxHeight: 108,
+                                    overflowY: 'auto',
+                                    '&::-webkit-scrollbar': { width: 3 },
+                                    '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.300', borderRadius: 2 },
+                                }}>
+                                    {labelModels
+                                        .sort((a: any, b: any) => (b.count ?? 0) - (a.count ?? 0))
+                                        .map((model: any, i: number) => {
+                                            const name = model.labelType || model.type || 'Unknown';
+                                            const count = model.count ?? 0;
+                                            // Shorten: "GRAPHIC_2_9_RED_NFC_INT_RT" → "2.9 RED NFC"
+                                            const short = name
+                                                .replace(/^GRAPHIC_/, '')
+                                                .replace(/_INT_RT$/, '')
+                                                .replace(/_/g, ' ')
+                                                .replace(/(\d) (\d)/g, '$1.$2');
+                                            return (
+                                                <Stack
+                                                    key={i}
+                                                    direction="row"
+                                                    alignItems="center"
+                                                    sx={{
+                                                        py: 0.25,
+                                                        borderBottom: i < labelModels.length - 1 ? 1 : 0,
+                                                        borderColor: 'divider',
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            flex: 1,
+                                                            fontFamily: 'monospace',
+                                                            fontSize: '0.7rem',
+                                                            letterSpacing: '0.02em',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                        title={name}
+                                                    >
+                                                        {short}
+                                                    </Typography>
+                                                    <Typography
+                                                        variant="caption"
+                                                        fontWeight={700}
+                                                        color="text.primary"
+                                                        dir="ltr"
+                                                        sx={{ minWidth: 28, textAlign: 'end', fontSize: '0.7rem' }}
+                                                    >
+                                                        {count}
+                                                    </Typography>
+                                                </Stack>
+                                            );
+                                        })}
                                 </Box>
                             ) : (
                                 <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>
