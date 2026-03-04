@@ -356,9 +356,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Box>
 
                 {/* Sync Status Indicator - Fixed at bottom end (RTL-aware) */}
-                <Box sx={{ 
-                    position: 'fixed', 
-                    bottom: { xs: 16, sm: 24 }, 
+                <Box sx={{
+                    position: 'fixed',
+                    bottom: { xs: 16, sm: 24 },
                     insetInlineEnd: { xs: 16, sm: 24 },
                     zIndex: (theme) => theme.zIndex.fab,
                 }}>

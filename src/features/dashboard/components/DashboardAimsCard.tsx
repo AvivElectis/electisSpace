@@ -127,13 +127,19 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                     </Stack>
 
                     {/* 1. Gateways */}
-                    <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>
+                        {t('aims.gatewayHealth')}
+                    </Typography>
+                    <Stack direction="row" gap={1} sx={{ mb: 1.5 }}>
                         <MobileStatTile value={gwOnline} label={t('aims.online')} color="success" />
                         <MobileStatTile value={gwOffline} label={t('aims.offline')} color="error" />
                     </Stack>
 
                     {/* 2. Labels */}
-                    <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>
+                        {t('aims.labelHealth')}
+                    </Typography>
+                    <Stack direction="row" gap={1} sx={{ mb: 1.5 }}>
                         <MobileStatTile value={lblOnline} label={t('aims.online')} color="success" />
                         <MobileStatTile value={lblOffline} label={t('aims.offline')} color="error" />
                         <MobileStatTile value={lblTotal} label={t('aims.totalLabels')} color="primary" />
@@ -326,15 +332,63 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelTypes')}</Typography>
                             </Stack>
                             {Array.isArray(labelModels) && labelModels.length > 0 ? (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                    {labelModels.map((model: any, i: number) => (
-                                        <Chip
-                                            key={i}
-                                            label={`${model.labelType || model.type || 'Unknown'}: ${model.count ?? 0}`}
-                                            size="small"
-                                            variant="outlined"
-                                        />
-                                    ))}
+                                <Box sx={{
+                                    maxHeight: 108,
+                                    overflowY: 'auto',
+                                    '&::-webkit-scrollbar': { width: 4 },
+                                    '&::-webkit-scrollbar-track': { bgcolor: 'grey.100', borderRadius: 2 },
+                                    '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 2 },
+                                    scrollbarWidth: 'thin',
+                                }}>
+                                    {labelModels
+                                        .sort((a: any, b: any) => (b.count ?? 0) - (a.count ?? 0))
+                                        .map((model: any, i: number) => {
+                                            const name = model.labelType || model.type || 'Unknown';
+                                            const count = model.count ?? 0;
+                                            // Shorten: "GRAPHIC_2_9_RED_NFC_INT_RT" → "2.9 RED NFC"
+                                            const short = name
+                                                .replace(/^GRAPHIC_/, '')
+                                                .replace(/_INT_RT$/, '')
+                                                .replace(/_/g, ' ')
+                                                .replace(/(\d) (\d)/g, '$1.$2');
+                                            return (
+                                                <Stack
+                                                    key={i}
+                                                    direction="row"
+                                                    alignItems="center"
+                                                    sx={{
+                                                        py: 0.25,
+                                                        borderBottom: i < labelModels.length - 1 ? 1 : 0,
+                                                        borderColor: 'divider',
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            flex: 1,
+                                                            fontFamily: 'monospace',
+                                                            fontSize: '0.7rem',
+                                                            letterSpacing: '0.02em',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                        title={name}
+                                                    >
+                                                        {short}
+                                                    </Typography>
+                                                    <Typography
+                                                        variant="caption"
+                                                        fontWeight={700}
+                                                        color="text.primary"
+                                                        dir="ltr"
+                                                        sx={{ minWidth: 28, textAlign: 'end', fontSize: '0.7rem' }}
+                                                    >
+                                                        {count}
+                                                    </Typography>
+                                                </Stack>
+                                            );
+                                        })}
                                 </Box>
                             ) : (
                                 <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>

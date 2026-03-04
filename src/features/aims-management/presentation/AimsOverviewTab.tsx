@@ -8,8 +8,8 @@
 
 import { useEffect } from 'react';
 import {
-    Box, Typography, Stack, Card, CardContent, Grid, LinearProgress, Chip,
-    Skeleton, Alert, useMediaQuery, useTheme,
+    Box, Typography, Stack, Card, CardContent, Grid, LinearProgress,
+    Skeleton, Alert, useTheme,
 } from '@mui/material';
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
@@ -77,7 +77,6 @@ function OverviewSkeleton() {
 export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
     const { t } = useTranslation();
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const {
         storeSummary, labelModels,
         overviewLoading, overviewError, fetchOverview,
@@ -298,15 +297,61 @@ export function AimsOverviewTab({ storeId }: AimsOverviewTabProps) {
                             <Typography variant="h6">{t('aims.labelTypes')}</Typography>
                         </Stack>
                         {Array.isArray(labelModels) && labelModels.length > 0 ? (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                {labelModels.map((model: any, i: number) => (
-                                    <Chip
-                                        key={i}
-                                        label={`${model.labelType || model.type || 'Unknown'}: ${model.count ?? 0}`}
-                                        size={isMobile ? 'small' : 'medium'}
-                                        variant="outlined"
-                                    />
-                                ))}
+                            <Box sx={{
+                                maxHeight: 200,
+                                overflowY: 'auto',
+                                '&::-webkit-scrollbar': { width: 4 },
+                                '&::-webkit-scrollbar-track': { bgcolor: 'grey.100', borderRadius: 2 },
+                                '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 2 },
+                                scrollbarWidth: 'thin',
+                            }}>
+                                {labelModels
+                                    .sort((a: any, b: any) => (b.count ?? 0) - (a.count ?? 0))
+                                    .map((model: any, i: number) => {
+                                        const name = model.labelType || model.type || 'Unknown';
+                                        const count = model.count ?? 0;
+                                        const short = name
+                                            .replace(/^GRAPHIC_/, '')
+                                            .replace(/_INT_RT$/, '')
+                                            .replace(/_/g, ' ')
+                                            .replace(/(\d) (\d)/g, '$1.$2');
+                                        return (
+                                            <Stack
+                                                key={i}
+                                                direction="row"
+                                                alignItems="center"
+                                                sx={{
+                                                    py: 0.5,
+                                                    borderBottom: i < labelModels.length - 1 ? 1 : 0,
+                                                    borderColor: 'divider',
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        flex: 1,
+                                                        fontFamily: 'monospace',
+                                                        letterSpacing: '0.02em',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                    }}
+                                                    title={name}
+                                                >
+                                                    {short}
+                                                </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    fontWeight={700}
+                                                    color="text.primary"
+                                                    dir="ltr"
+                                                    sx={{ minWidth: 36, textAlign: 'end' }}
+                                                >
+                                                    {count}
+                                                </Typography>
+                                            </Stack>
+                                        );
+                                    })}
                             </Box>
                         ) : (
                             <Typography color="text.secondary" variant="body2">
