@@ -338,7 +338,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                             <Typography variant="subtitle2" fontWeight={600}>
                                 {t(STEP_LABELS[activeStep])}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
                                 {activeStep + 1} / {STEP_LABELS.length}
                             </Typography>
                         </Box>
