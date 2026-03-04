@@ -168,9 +168,11 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     // Auto-sync on app load and when store changes
     // Tracks which store was last synced so switching stores triggers a new sync
+    // Only sync when the 'sync' feature is enabled for the active company
+    const isSyncEnabled = canAccessFeature('sync');
     const lastSyncedStoreId = useRef<string | null>(null);
     useEffect(() => {
-        if (activeStoreId && authReady && sync && lastSyncedStoreId.current !== activeStoreId) {
+        if (activeStoreId && authReady && sync && isSyncEnabled && lastSyncedStoreId.current !== activeStoreId) {
             lastSyncedStoreId.current = activeStoreId;
             logger.info('MainLayout', 'Auto-syncing on app load / store switch', { storeId: activeStoreId });
             const syncTimeout = setTimeout(() => {
@@ -180,7 +182,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             }, 500);
             return () => clearTimeout(syncTimeout);
         }
-    }, [activeStoreId, authReady, sync]);
+    }, [activeStoreId, authReady, sync, isSyncEnabled]);
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
@@ -355,10 +357,11 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </Container>
                 </Box>
 
-                {/* Sync Status Indicator - Fixed at bottom end (RTL-aware) */}
-                <Box sx={{ 
-                    position: 'fixed', 
-                    bottom: { xs: 16, sm: 24 }, 
+                {/* Sync Status Indicator - Fixed at bottom end (RTL-aware), only when sync feature enabled */}
+                {isSyncEnabled && (
+                <Box sx={{
+                    position: 'fixed',
+                    bottom: { xs: 16, sm: 24 },
                     insetInlineEnd: { xs: 16, sm: 24 },
                     zIndex: (theme) => theme.zIndex.fab,
                 }}>
@@ -378,6 +381,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         autoSyncInterval={settings.autoSyncInterval}
                     />
                 </Box>
+                )}
 
                 {/* Settings Dialog - Lazy loaded */}
                 {settingsOpen && (
