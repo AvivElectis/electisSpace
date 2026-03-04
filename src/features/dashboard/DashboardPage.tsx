@@ -60,9 +60,8 @@ export function DashboardPage() {
     // People store (before useEffect so fetchPeople is available)
     const peopleStore = usePeopleStore();
 
-    // AIMS data (conditionally loaded when feature is enabled)
-    const { canAccessFeature } = useAuthContext();
-    const isAimsEnabled = canAccessFeature('aims-management');
+    // Feature access — dashboard only shows enabled sections
+    const { canAccessFeature: can } = useAuthContext();
     const { storeSummary: aimsStoreSummary, labelModels: aimsLabelModels, fetchOverview: fetchAimsOverview } = useAimsOverview(activeStoreId);
 
     // Fetch all data from server on mount / store switch so dashboard shows real counts
@@ -71,12 +70,12 @@ export function DashboardPage() {
             spaceController.fetchSpaces();
             conferenceController.fetchRooms();
             peopleStore.fetchPeople();
-            if (isAimsEnabled) {
+            if (can('aims-management')) {
                 fetchAimsOverview();
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady, activeStoreId, isAimsEnabled]);
+    }, [isAppReady, activeStoreId, can('aims-management')]);
 
     // Stats - Spaces
     const totalSpaces = spaceController.spaces.length;
@@ -182,8 +181,8 @@ export function DashboardPage() {
             )}
 
             <Grid container spacing={{ xs: 1.5, md: 3 }}>
-                {/* Spaces Area - Only show when People Manager mode is OFF */}
-                {!isPeopleManagerMode && (
+                {/* Spaces Area - Only show when feature enabled and People Manager mode is OFF */}
+                {can('spaces') && !isPeopleManagerMode && (
                     <Grid size={{ xs: 12, md: 6 }}>
                         <DashboardSpacesCard
                             spaceTypeIcon={spaceTypeIcon}
@@ -199,8 +198,8 @@ export function DashboardPage() {
                     </Grid>
                 )}
 
-                {/* People Manager Area - Only show when People Manager mode is ON */}
-                {isPeopleManagerMode && (
+                {/* People Manager Area - Only show when feature enabled and People Manager mode is ON */}
+                {can('people') && isPeopleManagerMode && (
                     <Grid size={{ xs: 12, md: 6 }}>
                         <DashboardPeopleCard
                             totalPeople={totalPeople}
@@ -214,7 +213,8 @@ export function DashboardPage() {
                     </Grid>
                 )}
 
-                {/* Conference Area */}
+                {/* Conference Area - Only show when feature is enabled */}
+                {can('conference') && (
                 <Grid size={{ xs: 12, md: 6 }}>
                     <DashboardConferenceCard
                         totalRooms={totalRooms}
@@ -228,9 +228,10 @@ export function DashboardPage() {
                         isMobile={isMobile}
                     />
                 </Grid>
+                )}
 
                 {/* AIMS Area - Only show when feature is enabled */}
-                {isAimsEnabled && (
+                {can('aims-management') && (
                     <Grid size={{ xs: 12 }}>
                         <DashboardAimsCard
                             storeSummary={aimsStoreSummary}
