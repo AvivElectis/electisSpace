@@ -969,6 +969,7 @@
             "delimiter": "Delimiter",
             "basicInfoFields": "Basic Info Fields",
             "dataFields": "Data Fields",
+            "mappingInfoTitle": "Mapping Info",
             "fieldMappingTitle": "Map AIMS Fields",
             "aimsField": "AIMS Field",
             "displayName": "Display Name",

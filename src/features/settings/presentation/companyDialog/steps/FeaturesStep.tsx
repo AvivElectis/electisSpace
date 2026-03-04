@@ -128,13 +128,13 @@ export function FeaturesStep({
                                         </Typography>
                                     }
                                 />
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 5.5 }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ms: 5.5 }}>
                                     {card.desc}
                                 </Typography>
 
                                 {/* Conference mode selector */}
                                 {card.key === 'conferenceEnabled' && card.enabled && (
-                                    <Box sx={{ ml: 5.5, mt: 1 }}>
+                                    <Box sx={{ ms: 5.5, mt: 1 }}>
                                         <FormControl size="small" sx={{ minWidth: 200 }}>
                                             <Select
                                                 value={features.simpleConferenceMode ? 'simple' : 'full'}

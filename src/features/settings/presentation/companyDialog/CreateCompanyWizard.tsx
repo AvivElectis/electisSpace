@@ -21,6 +21,8 @@ import {
     Alert,
     CircularProgress,
     Box,
+    Typography,
+    LinearProgress,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
@@ -269,7 +271,6 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         codeAvailable={codeAvailable}
                         codeChecking={codeChecking}
                         codeError={codeError}
-                        isRtl={isRtl}
                     />
                 );
             case 1:
@@ -330,20 +331,47 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     </Alert>
                 )}
 
-                <Stepper
-                    activeStep={activeStep}
-                    alternativeLabel={!isMobile}
-                    orientation={isMobile ? 'vertical' : 'horizontal'}
-                    sx={{ mb: 3, mt: 1 }}
-                >
-                    {STEP_LABELS.map((labelKey, index) => (
-                        <Step key={labelKey} completed={index < activeStep}>
-                            <StepLabel>
-                                {isMobile ? undefined : t(labelKey)}
-                            </StepLabel>
-                        </Step>
-                    ))}
-                </Stepper>
+                {isMobile ? (
+                    /* Mobile: compact step indicator with progress bar */
+                    <Box sx={{ mb: 2, mt: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                {t(STEP_LABELS[activeStep])}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {activeStep + 1} / {STEP_LABELS.length}
+                            </Typography>
+                        </Box>
+                        <LinearProgress
+                            variant="determinate"
+                            value={((activeStep + 1) / STEP_LABELS.length) * 100}
+                            sx={{ height: 6, borderRadius: 3 }}
+                        />
+                    </Box>
+                ) : (
+                    /* Desktop/Tablet: full horizontal stepper */
+                    <Stepper
+                        activeStep={activeStep}
+                        alternativeLabel
+                        sx={{
+                            mb: 3,
+                            mt: 1,
+                            // RTL: flip connector positioning
+                            ...(isRtl && {
+                                '& .MuiStepConnector-root': {
+                                    left: 'calc(50% + 20px)',
+                                    right: 'calc(-50% + 20px)',
+                                },
+                            }),
+                        }}
+                    >
+                        {STEP_LABELS.map((labelKey, index) => (
+                            <Step key={labelKey} completed={index < activeStep}>
+                                <StepLabel>{t(labelKey)}</StepLabel>
+                            </Step>
+                        ))}
+                    </Stepper>
+                )}
 
                 {renderStep()}
             </DialogContent>

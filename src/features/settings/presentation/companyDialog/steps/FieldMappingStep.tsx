@@ -14,6 +14,8 @@ import {
     Paper,
     Divider,
     Chip,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { ArticleFormat } from '@features/configuration/domain/types';
@@ -53,6 +55,8 @@ export function FieldMappingStep({
     onUpdate,
 }: FieldMappingStepProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // Auto-generate if no mapping exists
     const mapping = fieldMapping || (articleFormat ? generateInitialMapping(articleFormat) : null);
@@ -102,21 +106,54 @@ export function FieldMappingStep({
 
             {/* Field mapping table */}
             <Paper variant="outlined" sx={{ p: 1 }}>
-                <Box sx={{ display: 'flex', gap: 1, px: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 1 }}>
-                        {t('settings.companies.aimsField')}
-                    </Typography>
-                    <Typography variant="caption" fontWeight={600} sx={{ flex: 1 }}>
-                        {t('settings.companies.displayName')}
-                    </Typography>
-                    <Typography variant="caption" fontWeight={600} sx={{ width: 60, textAlign: 'center' }}>
-                        {t('settings.companies.visible')}
-                    </Typography>
-                </Box>
+                {!isMobile && (
+                    <Box sx={{ display: 'flex', gap: 1, px: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+                        <Typography variant="caption" fontWeight={600} sx={{ flex: 1 }}>
+                            {t('settings.companies.aimsField')}
+                        </Typography>
+                        <Typography variant="caption" fontWeight={600} sx={{ flex: 1 }}>
+                            {t('settings.companies.displayName')}
+                        </Typography>
+                        <Typography variant="caption" fontWeight={600} sx={{ width: 60, textAlign: 'center' }}>
+                            {t('settings.companies.visible')}
+                        </Typography>
+                    </Box>
+                )}
                 <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
                     {fieldKeys.map((fieldKey) => {
                         const fm = mapping.fields[fieldKey];
-                        return (
+                        return isMobile ? (
+                            <Box
+                                key={fieldKey}
+                                sx={{
+                                    px: 1,
+                                    py: 1,
+                                    borderBottom: 1,
+                                    borderColor: 'divider',
+                                    '&:last-child': { borderBottom: 0 },
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                                        {fieldKey}
+                                    </Typography>
+                                    <Switch
+                                        checked={fm.visible}
+                                        onChange={(e) => handleFieldChange(fieldKey, 'visible', e.target.checked)}
+                                        size="small"
+                                    />
+                                </Box>
+                                <TextField
+                                    value={fm.friendlyNameEn}
+                                    onChange={(e) => handleFieldChange(fieldKey, 'friendlyNameEn', e.target.value)}
+                                    size="small"
+                                    variant="outlined"
+                                    fullWidth
+                                    placeholder={t('settings.companies.displayName')}
+                                    inputProps={{ style: { fontSize: '0.85rem' } }}
+                                />
+                            </Box>
+                        ) : (
                             <Box
                                 key={fieldKey}
                                 sx={{
@@ -156,8 +193,8 @@ export function FieldMappingStep({
             </Divider>
 
             {/* Conference mapping */}
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                <FormControl size="small" sx={{ flex: 1, minWidth: 180 }}>
+            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 1.5 }}>
+                <FormControl size="small" sx={{ flex: 1 }}>
                     <InputLabel>{t('settings.companies.meetingNameField')}</InputLabel>
                     <Select
                         value={mapping.conferenceMapping.meetingName}
@@ -171,7 +208,7 @@ export function FieldMappingStep({
                     </Select>
                 </FormControl>
 
-                <FormControl size="small" sx={{ flex: 1, minWidth: 180 }}>
+                <FormControl size="small" sx={{ flex: 1 }}>
                     <InputLabel>{t('settings.companies.meetingTimeField')}</InputLabel>
                     <Select
                         value={mapping.conferenceMapping.meetingTime}
@@ -185,7 +222,7 @@ export function FieldMappingStep({
                     </Select>
                 </FormControl>
 
-                <FormControl size="small" sx={{ flex: 1, minWidth: 180 }}>
+                <FormControl size="small" sx={{ flex: 1 }}>
                     <InputLabel>{t('settings.companies.participantsField')}</InputLabel>
                     <Select
                         value={mapping.conferenceMapping.participants}

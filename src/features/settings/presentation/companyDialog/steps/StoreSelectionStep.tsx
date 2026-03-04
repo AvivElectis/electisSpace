@@ -9,6 +9,8 @@ import {
     Checkbox,
     Chip,
     Autocomplete,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { AimsStoreInfo } from '@shared/infrastructure/services/companyService';
@@ -34,6 +36,8 @@ export function StoreSelectionStep({
     onUpdate,
 }: StoreSelectionStepProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const isSelected = (code: string) => selectedStores.some(s => s.code === code);
 
@@ -92,10 +96,16 @@ export function StoreSelectionStep({
                         >
                             {/* Store header row — clickable to toggle */}
                             <Box
-                                sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: isMobile ? 'flex-start' : 'center',
+                                    gap: 1.5,
+                                    cursor: 'pointer',
+                                    flexWrap: isMobile ? 'wrap' : 'nowrap',
+                                }}
                                 onClick={() => handleToggle(store)}
                             >
-                                <Checkbox checked={selected} size="small" sx={{ p: 0 }} />
+                                <Checkbox checked={selected} size="small" sx={{ p: 0, mt: isMobile ? 0.5 : 0 }} />
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                     <Typography variant="body2" fontWeight={600} noWrap>
                                         {store.name || store.code}
@@ -106,7 +116,7 @@ export function StoreSelectionStep({
                                         {store.country && `, ${store.country}`}
                                     </Typography>
                                 </Box>
-                                <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                                <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ...(isMobile && { ms: 4, mt: 0.5 }) }}>
                                     <Chip size="small" label={`${store.labelCount} ${t('settings.companies.labelCount')}`} variant="outlined" />
                                     <Chip size="small" label={`${store.gatewayCount} ${t('settings.companies.gatewayCount')}`} variant="outlined" />
                                 </Box>
@@ -114,13 +124,19 @@ export function StoreSelectionStep({
 
                             {/* Inline fields when selected */}
                             {selected && storeData && (
-                                <Box sx={{ mt: 1.5, ml: 4, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                                <Box sx={{
+                                    mt: 1.5,
+                                    ms: isMobile ? 0 : 4,
+                                    display: 'flex',
+                                    flexDirection: isMobile ? 'column' : 'row',
+                                    gap: 1.5,
+                                }}>
                                     <TextField
                                         label={t('settings.companies.storeName')}
                                         value={storeData.name}
                                         onChange={(e) => handleFieldUpdate(store.code, 'name', e.target.value)}
                                         size="small"
-                                        sx={{ flex: 1, minWidth: 180 }}
+                                        sx={{ flex: 1, minWidth: isMobile ? undefined : 180 }}
                                         inputProps={{ maxLength: 100 }}
                                     />
                                     <Autocomplete
@@ -128,7 +144,7 @@ export function StoreSelectionStep({
                                         onChange={(_, v) => v && handleFieldUpdate(store.code, 'timezone', v)}
                                         options={TIMEZONES}
                                         size="small"
-                                        sx={{ minWidth: 200 }}
+                                        sx={{ minWidth: isMobile ? undefined : 200 }}
                                         renderInput={(params) => (
                                             <TextField {...params} label={t('settings.companies.storeTimezone')} />
                                         )}

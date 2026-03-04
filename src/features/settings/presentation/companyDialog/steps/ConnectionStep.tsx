@@ -34,7 +34,6 @@ interface ConnectionStepProps {
     codeAvailable: boolean | null;
     codeChecking: boolean;
     codeError: string | null;
-    isRtl: boolean;
 }
 
 export function ConnectionStep({
@@ -46,7 +45,6 @@ export function ConnectionStep({
     codeAvailable,
     codeChecking,
     codeError,
-    isRtl,
 }: ConnectionStepProps) {
     const { t } = useTranslation();
 
@@ -67,7 +65,7 @@ export function ConnectionStep({
                 {t('settings.companies.wizardStep1Info')}
             </Typography>
 
-            {/* Company Code */}
+            {/* Company Code — always LTR (uppercase letters only) */}
             <TextField
                 label={t('settings.companies.codeLabel')}
                 value={formData.companyCode}
@@ -88,7 +86,7 @@ export function ConnectionStep({
                         </InputAdornment>
                     ),
                 }}
-                inputProps={{ maxLength: 10, style: { textTransform: 'uppercase', fontFamily: 'monospace' } }}
+                inputProps={{ maxLength: 10, style: { textTransform: 'uppercase', fontFamily: 'monospace', direction: 'ltr' } }}
             />
 
             {/* Company Name */}
@@ -136,22 +134,26 @@ export function ConnectionStep({
             />
 
             {/* Password */}
-            <Box sx={{ display: 'flex', flexDirection: isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
-                <TextField
-                    label={t('settings.companies.aimsPassword')}
-                    type={formData.showPassword ? 'text' : 'password'}
-                    value={formData.aimsPassword}
-                    onChange={(e) => onUpdate({ aimsPassword: e.target.value })}
-                    sx={{ flex: 1 }}
-                    required
-                />
-                <IconButton
-                    onClick={() => onUpdate({ showPassword: !formData.showPassword })}
-                    sx={{ mt: 1, border: 1, borderColor: 'divider', borderRadius: 1, width: 40, height: 40 }}
-                >
-                    {formData.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                </IconButton>
-            </Box>
+            <TextField
+                label={t('settings.companies.aimsPassword')}
+                type={formData.showPassword ? 'text' : 'password'}
+                value={formData.aimsPassword}
+                onChange={(e) => onUpdate({ aimsPassword: e.target.value })}
+                required
+                InputProps={{
+                    endAdornment: (
+                        <InputAdornment position="end">
+                            <IconButton
+                                onClick={() => onUpdate({ showPassword: !formData.showPassword })}
+                                edge="end"
+                                size="small"
+                            >
+                                {formData.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                        </InputAdornment>
+                    ),
+                }}
+            />
 
             {/* Test Connection button */}
             <Button

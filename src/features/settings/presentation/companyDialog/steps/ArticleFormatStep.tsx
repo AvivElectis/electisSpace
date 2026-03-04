@@ -125,7 +125,7 @@ export function ArticleFormatStep({
             {articleFormat.mappingInfo && (
                 <Paper variant="outlined" sx={{ p: 1.5 }}>
                     <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                        Mapping Info
+                        {t('settings.companies.mappingInfoTitle')}
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {Object.entries(articleFormat.mappingInfo).map(([key, value]) => (
