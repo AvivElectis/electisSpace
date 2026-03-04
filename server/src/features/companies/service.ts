@@ -22,6 +22,7 @@ import type {
     CompanyListResponse,
     CompanyDetailResponse,
     CreateCompanyDto,
+    CreateCompanyFullDto,
     UpdateCompanyDto,
     UpdateAimsConfigDto,
     CodeValidationResponse,
@@ -235,9 +236,12 @@ export const companyService = {
     },
 
     /**
-     * Create a new company
+     * Create a new company.
+     * Accepts optional multi-store list, article format, and field mapping
+     * from the 6-step wizard. Falls back to legacy single-store behavior
+     * when `stores` is not provided.
      */
-    async create(data: CreateCompanyDto): Promise<CompanyListItem> {
+    async create(data: CreateCompanyDto | CreateCompanyFullDto): Promise<CompanyListItem> {
         const upperCode = data.code.toUpperCase();
 
         // Check code uniqueness
@@ -255,12 +259,24 @@ export const companyService = {
         // Build initial settings with company features
         const companyFeatures = data.companyFeatures ?? DEFAULT_COMPANY_FEATURES;
         const spaceType = data.spaceType ?? DEFAULT_SPACE_TYPE;
+
+        // Check for extended wizard fields
+        const fullData = data as CreateCompanyFullDto;
+
         // Sync legacy peopleManagerEnabled flag
-        const initialSettings = {
+        const initialSettings: Record<string, unknown> = {
             companyFeatures: { ...companyFeatures },
             spaceType,
             peopleManagerEnabled: companyFeatures.peopleEnabled,
         };
+
+        // Save article format and field mapping from wizard
+        if (fullData.articleFormat) {
+            initialSettings.solumArticleFormat = fullData.articleFormat;
+        }
+        if (fullData.fieldMapping) {
+            initialSettings.solumMappingConfig = fullData.fieldMapping;
+        }
 
         const company = await companyRepository.create({
             code: upperCode,
@@ -273,6 +289,22 @@ export const companyService = {
             aimsPasswordEnc: encryptedPassword,
             settings: initialSettings as unknown as Prisma.InputJsonValue,
         });
+
+        // Create stores from wizard multi-store selection
+        if (fullData.stores && fullData.stores.length > 0) {
+            for (const storeData of fullData.stores) {
+                await prisma.store.create({
+                    data: {
+                        companyId: company.id,
+                        code: storeData.code,
+                        name: storeData.name || storeData.code,
+                        timezone: storeData.timezone || 'UTC',
+                        syncEnabled: true, // Wizard validates AIMS connection, safe to enable
+                        isActive: true,
+                    },
+                });
+            }
+        }
 
         // Auto-assign all PLATFORM_ADMIN users to the new company with SUPER_USER + allStoresAccess
         const platformAdmins = await prisma.user.findMany({
@@ -295,21 +327,25 @@ export const companyService = {
             });
         }
 
+        // Re-fetch to get accurate store count after creation
+        const updatedCompany = await companyRepository.findWithCounts(company.id);
+        const finalCompany = updatedCompany || company;
+
         return {
-            id: company.id,
-            code: company.code,
-            name: company.name,
-            location: company.location,
-            description: company.description,
-            isActive: company.isActive,
-            storeCount: company._count.stores,
-            userCount: company._count.userCompanies,
+            id: finalCompany.id,
+            code: finalCompany.code,
+            name: finalCompany.name,
+            location: finalCompany.location,
+            description: finalCompany.description,
+            isActive: finalCompany.isActive,
+            storeCount: finalCompany._count.stores,
+            userCount: finalCompany._count.userCompanies,
             userRoleId: null,
             aimsConfigured: !!(company.aimsBaseUrl && company.aimsUsername),
             companyFeatures,
             spaceType,
-            createdAt: company.createdAt,
-            updatedAt: company.updatedAt,
+            createdAt: finalCompany.createdAt,
+            updatedAt: finalCompany.updatedAt,
         };
     },
 
@@ -463,6 +499,39 @@ export const companyService = {
                 success: false,
                 stores: [],
                 error: error.message || 'Failed to connect to AIMS',
+            };
+        }
+    },
+
+    /**
+     * Fetch article format from AIMS using raw credentials (pre-save, for wizard).
+     * Same pattern as fetchAimsStores — no company exists yet.
+     */
+    async fetchArticleFormat(params: {
+        baseUrl: string;
+        cluster?: string;
+        username: string;
+        password: string;
+        companyCode: string;
+    }) {
+        const { baseUrl, cluster, username, password, companyCode } = params;
+
+        try {
+            const format = await aimsGateway.fetchArticleFormatWithCredentials(
+                { baseUrl, cluster, username, password },
+                companyCode
+            );
+
+            return {
+                success: true,
+                format,
+            };
+        } catch (error: any) {
+            appLogger.error('CompanyService', 'Failed to fetch article format from AIMS', { error: String(error) });
+            return {
+                success: false,
+                format: null,
+                error: error.message || 'Failed to fetch article format',
             };
         }
     },

@@ -40,7 +40,14 @@ export const companyFeaturesSchema = z.object({
 /** Space type enum */
 export const spaceTypeSchema = z.enum(['office', 'room', 'chair', 'person-tag']);
 
-/** Create company schema */
+/** Store to create alongside company */
+export const createStoreSchema = z.object({
+    code: z.string().min(1, 'Store code is required'),
+    name: z.string().max(100).optional(),
+    timezone: z.string().default('UTC'),
+});
+
+/** Create company schema (base — legacy single-store) */
 export const createCompanySchema = z.object({
     code: companyCodeSchema,
     name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
@@ -49,6 +56,13 @@ export const createCompanySchema = z.object({
     aimsConfig: aimsConfigSchema.optional(),
     companyFeatures: companyFeaturesSchema.optional(),
     spaceType: spaceTypeSchema.optional(),
+});
+
+/** Extended create company schema with multi-store + config (backward-compatible) */
+export const createCompanyFullSchema = createCompanySchema.extend({
+    stores: z.array(createStoreSchema).default([]),
+    articleFormat: z.record(z.unknown()).optional(),
+    fieldMapping: z.record(z.unknown()).optional(),
 });
 
 /** Update company schema */
@@ -106,6 +120,12 @@ export interface CreateCompanyDto {
     };
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+}
+
+export interface CreateCompanyFullDto extends CreateCompanyDto {
+    stores: Array<{ code: string; name?: string; timezone?: string }>;
+    articleFormat?: Record<string, unknown>;
+    fieldMapping?: Record<string, unknown>;
 }
 
 export interface UpdateCompanyDto {

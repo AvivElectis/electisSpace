@@ -318,7 +318,7 @@ export function CompaniesTab() {
                                             label={company.storeCount ?? company._count?.stores ?? 0}
                                             size="small"
                                             onClick={() => handleManageStores(company)}
-                                            sx={{ px: 1.5, cursor: 'pointer' }}
+                                            sx={{ px: 2, cursor: 'pointer' }}
                                         />
                                         <Tooltip title={company.aimsConfigured ? t('settings.companies.aimsConfigured') : t('settings.companies.aimsNotConfigured')}>
                                             <Chip
@@ -328,7 +328,7 @@ export function CompaniesTab() {
                                                 onClick={() => handleAimsSettings(company)}
                                                 color={company.aimsConfigured ? 'success' : 'default'}
                                                 variant="outlined"
-                                                sx={{ cursor: 'pointer' }}
+                                                sx={{ px: 2, cursor: 'pointer' }}
                                             />
                                         </Tooltip>
                                         <Chip
@@ -336,7 +336,7 @@ export function CompaniesTab() {
                                             size="small"
                                             color={company.isActive ? 'success' : 'default'}
                                             variant={company.isActive ? 'filled' : 'outlined'}
-                                            sx={{ px: 1.5 }}
+                                            sx={{ px: 2 }}
                                         />
                                     </Stack>
                                 </CardContent>

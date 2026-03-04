@@ -181,6 +181,16 @@ export const syncRepository = {
     },
 
     /**
+     * Find all spaces for a store (batch lookup for sync)
+     */
+    async findAllSpacesByStore(storeId: string) {
+        return prisma.space.findMany({
+            where: { storeId },
+            select: { id: true, externalId: true, data: true, labelCode: true },
+        });
+    },
+
+    /**
      * Create space
      */
     async createSpace(data: {
@@ -192,6 +202,59 @@ export const syncRepository = {
         lastSyncedAt: Date;
     }) {
         return prisma.space.create({ data });
+    },
+
+    /**
+     * Batch create spaces
+     */
+    async createSpaceBatch(items: {
+        storeId: string;
+        externalId: string;
+        labelCode: string | null;
+        data: Prisma.InputJsonValue;
+        syncStatus: SyncStatus;
+        lastSyncedAt: Date;
+    }[]) {
+        if (items.length === 0) return;
+        return prisma.space.createMany({ data: items });
+    },
+
+    /**
+     * Batch upsert: create new spaces + update existing in a single transaction
+     */
+    async batchUpsertSpaces(
+        creates: {
+            storeId: string;
+            externalId: string;
+            labelCode: string | null;
+            data: Prisma.InputJsonValue;
+            syncStatus: SyncStatus;
+            lastSyncedAt: Date;
+        }[],
+        updates: { id: string; data: Prisma.InputJsonValue; labelCode: string | null }[],
+        now: Date,
+    ) {
+        const ops: Prisma.PrismaPromise<any>[] = [];
+
+        if (creates.length > 0) {
+            ops.push(prisma.space.createMany({ data: creates }));
+        }
+
+        for (const u of updates) {
+            ops.push(prisma.space.update({
+                where: { id: u.id },
+                data: {
+                    data: u.data,
+                    labelCode: u.labelCode,
+                    syncStatus: 'SYNCED',
+                    lastSyncedAt: now,
+                },
+            }));
+        }
+
+        if (ops.length > 0) {
+            await prisma.$transaction(ops);
+        }
     },
 
     /**

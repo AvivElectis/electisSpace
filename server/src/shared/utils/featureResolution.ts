@@ -22,10 +22,10 @@ export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
 
 export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     spacesEnabled: false,
-    peopleEnabled: true,
-    conferenceEnabled: true,
+    peopleEnabled: false,
+    conferenceEnabled: false,
     simpleConferenceMode: false,
-    labelsEnabled: true,
+    labelsEnabled: false,
     aimsManagementEnabled: false,
 };
 

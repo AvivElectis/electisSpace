@@ -24,6 +24,7 @@ info:
   termsOfService: 'http://swagger.io/terms/'
   contact:
     name: API Support at
+    
     email: saassupport@solu-m.com
     url: https://eu.common.solumesl.com/
   x-logo:

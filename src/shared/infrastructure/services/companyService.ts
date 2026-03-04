@@ -72,7 +72,7 @@ export interface CompanyListResponse {
     };
 }
 
-/** Create company DTO */
+/** Create company DTO (base — legacy single-store) */
 export interface CreateCompanyDto {
     name: string;
     code: string; // 3+ uppercase letters, unique
@@ -86,6 +86,13 @@ export interface CreateCompanyDto {
     };
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+}
+
+/** Extended create company DTO (wizard with multi-store + config) */
+export interface CreateCompanyFullDto extends CreateCompanyDto {
+    stores: Array<{ code: string; name?: string; timezone?: string }>;
+    articleFormat?: Record<string, unknown>;
+    fieldMapping?: Record<string, unknown>;
 }
 
 /** Update company DTO */
@@ -211,9 +218,10 @@ export const companyService = {
     },
 
     /**
-     * Create a new company (PLATFORM_ADMIN only)
+     * Create a new company (PLATFORM_ADMIN only).
+     * Accepts extended payload with stores[], articleFormat, fieldMapping from wizard.
      */
-    create: async (data: CreateCompanyDto): Promise<Company> => {
+    create: async (data: CreateCompanyDto | CreateCompanyFullDto): Promise<Company> => {
         const response = await api.post<Company>('/companies', data);
         return response.data;
     },
@@ -262,6 +270,14 @@ export const companyService = {
      */
     fetchAimsStores: async (data: FetchAimsStoresRequest): Promise<FetchAimsStoresResponse> => {
         const response = await api.post<FetchAimsStoresResponse>('/companies/aims/stores', data);
+        return response.data;
+    },
+
+    /**
+     * Fetch article format from AIMS using raw credentials (for company creation wizard)
+     */
+    fetchArticleFormat: async (data: FetchAimsStoresRequest): Promise<{ success: boolean; format: any; error?: string }> => {
+        const response = await api.post<{ success: boolean; format: any; error?: string }>('/companies/aims/article-format', data);
         return response.data;
     },
 

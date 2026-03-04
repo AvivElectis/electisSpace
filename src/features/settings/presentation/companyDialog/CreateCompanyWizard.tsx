@@ -1,384 +1,412 @@
 /**
- * CreateCompanyWizard - 2-step wizard for creating companies
- * Step 1: Company code + AIMS credentials → Connect
- * Step 2: Pick store from AIMS + company details
+ * CreateCompanyWizard — 6-step wizard for creating companies
+ *
+ * Steps:
+ * 0: AIMS Connection + Company Info
+ * 1: Multi-Store Selection
+ * 2: Article Format (auto-fetched)
+ * 3: Field Mapping
+ * 4: Features
+ * 5: Review & Create
  */
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
     DialogTitle,
     DialogContent,
     DialogActions,
     Button,
-    TextField,
-    Box,
-    Typography,
-    Alert,
-    CircularProgress,
-    InputAdornment,
-    IconButton,
-    Divider,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Stepper,
     Step,
     StepLabel,
-    Checkbox,
-    Chip,
-    Paper,
-    Switch,
-    FormControlLabel,
+    Alert,
+    CircularProgress,
+    Box,
+    Typography,
+    LinearProgress,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import CloudIcon from '@mui/icons-material/Cloud';
-import BusinessIcon from '@mui/icons-material/Business';
-import StorefrontIcon from '@mui/icons-material/Storefront';
-import TuneIcon from '@mui/icons-material/Tune';
 import { useTranslation } from 'react-i18next';
-import type { useCompanyDialogState } from './useCompanyDialogState';
-
-type State = ReturnType<typeof useCompanyDialogState>;
+import {
+    companyService,
+    type AimsStoreInfo,
+    type CreateCompanyFullDto,
+} from '@shared/infrastructure/services/companyService';
+import {
+    ConnectionStep,
+    StoreSelectionStep,
+    ArticleFormatStep,
+    FieldMappingStep,
+    FeaturesStep,
+    ReviewStep,
+} from './steps';
+import { INITIAL_WIZARD_DATA, type WizardFormData, type WizardStoreData } from './wizardTypes';
 
 interface Props {
-    state: State;
     onClose: () => void;
+    onSave: () => void;
 }
 
-export function CreateCompanyWizard({ state, onClose }: Props) {
-    const { t } = useTranslation();
+const STEP_LABELS = [
+    'settings.companies.wizardStep1',
+    'settings.companies.wizardStep2',
+    'settings.companies.wizardStep3',
+    'settings.companies.wizardStep4',
+    'settings.companies.wizardStep5',
+    'settings.companies.wizardStep6',
+];
 
-    const wizardSteps = [
-        t('settings.companies.wizardStepCredentials'),
-        t('settings.companies.wizardStepStores'),
-    ];
+export function CreateCompanyWizard({ onClose, onSave }: Props) {
+    const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isRtl = theme.direction === 'rtl';
+
+    // Wizard state
+    const [activeStep, setActiveStep] = useState(0);
+    const [formData, setFormData] = useState<WizardFormData>({ ...INITIAL_WIZARD_DATA });
+
+    // Step 1 — connection
+    const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'connected' | 'failed'>('idle');
+    const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [aimsStores, setAimsStores] = useState<AimsStoreInfo[]>([]);
+
+    // Code validation
+    const [codeAvailable, setCodeAvailable] = useState<boolean | null>(null);
+    const [codeChecking, setCodeChecking] = useState(false);
+    const [codeError, setCodeError] = useState<string | null>(null);
+
+    // Step 3 — article format
+    const [articleFormatLoading, setArticleFormatLoading] = useState(false);
+    const [articleFormatError, setArticleFormatError] = useState<string | null>(null);
+
+    // Submit
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Code validation with debounce
+    const codeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+    useEffect(() => {
+        const code = formData.companyCode;
+        if (!code || code.length < 3) {
+            setCodeAvailable(null);
+            setCodeError(null);
+            return;
+        }
+        if (!/^[A-Z]{3,}$/.test(code)) {
+            setCodeAvailable(false);
+            setCodeError(t('settings.companies.codeInvalidFormat'));
+            return;
+        }
+        codeTimerRef.current && clearTimeout(codeTimerRef.current);
+        codeTimerRef.current = setTimeout(async () => {
+            setCodeChecking(true);
+            try {
+                const result = await companyService.validateCode(code);
+                setCodeAvailable(result.available);
+                setCodeError(result.available ? null : t('settings.companies.codeExists'));
+            } catch {
+                setCodeError(t('settings.companies.codeValidationError'));
+            } finally {
+                setCodeChecking(false);
+            }
+        }, 500);
+        return () => codeTimerRef.current && clearTimeout(codeTimerRef.current);
+    }, [formData.companyCode, t]);
+
+    const updateFormData = useCallback((partial: Partial<WizardFormData>) => {
+        setFormData(prev => ({ ...prev, ...partial }));
+    }, []);
+
+    // Step 1: Test connection + fetch stores
+    const handleConnectionTest = useCallback(async () => {
+        setConnectionStatus('testing');
+        setConnectionError(null);
+        try {
+            const result = await companyService.fetchAimsStores({
+                baseUrl: formData.aimsBaseUrl.trim(),
+                cluster: formData.aimsCluster.trim(),
+                username: formData.aimsUsername.trim(),
+                password: formData.aimsPassword,
+                companyCode: formData.companyCode.trim(),
+            });
+
+            if (!result.success) {
+                setConnectionStatus('failed');
+                setConnectionError(result.error || t('settings.companies.connectionFailed'));
+                return false;
+            }
+
+            setAimsStores(result.stores);
+            setConnectionStatus('connected');
+            updateFormData({ connectionTested: true });
+            return true;
+        } catch (err: any) {
+            setConnectionStatus('failed');
+            setConnectionError(err.response?.data?.message || err.message || t('settings.companies.connectionFailed'));
+            return false;
+        }
+    }, [formData, t, updateFormData]);
+
+    // Step 3: Fetch article format
+    const handleFetchArticleFormat = useCallback(async () => {
+        setArticleFormatLoading(true);
+        setArticleFormatError(null);
+        try {
+            const result = await companyService.fetchArticleFormat({
+                baseUrl: formData.aimsBaseUrl.trim(),
+                cluster: formData.aimsCluster.trim(),
+                username: formData.aimsUsername.trim(),
+                password: formData.aimsPassword,
+                companyCode: formData.companyCode.trim(),
+            });
+
+            if (result.success && result.format) {
+                updateFormData({ articleFormat: result.format });
+            } else {
+                setArticleFormatError(result.error || t('settings.companies.articleFormatError'));
+            }
+        } catch (err: any) {
+            setArticleFormatError(err.response?.data?.message || err.message || t('settings.companies.articleFormatError'));
+        } finally {
+            setArticleFormatLoading(false);
+        }
+    }, [formData, t, updateFormData]);
+
+    // Validation per step
+    const isStepValid = (step: number): boolean => {
+        switch (step) {
+            case 0:
+                return !!(
+                    formData.companyCode.length >= 3 &&
+                    codeAvailable &&
+                    formData.companyName.trim() &&
+                    formData.aimsUsername &&
+                    formData.aimsPassword &&
+                    connectionStatus === 'connected'
+                );
+            case 1:
+                return formData.stores.length > 0;
+            case 2:
+                return !!formData.articleFormat; // Must be fetched
+            case 3:
+                return true; // Field mapping is optional (auto-generated)
+            case 4:
+                return true; // Features selection is optional (all off is valid)
+            case 5:
+                return true; // Review — always valid
+            default:
+                return false;
+        }
+    };
+
+    const handleNext = () => {
+        if (activeStep < 5) {
+            setActiveStep(prev => prev + 1);
+        }
+    };
+
+    const handleBack = () => {
+        if (activeStep > 0) {
+            setActiveStep(prev => prev - 1);
+        }
+    };
+
+    const handleGoToStep = (step: number) => {
+        setActiveStep(step);
+    };
+
+    // Store selection handler
+    const handleStoresUpdate = useCallback((stores: WizardStoreData[]) => {
+        updateFormData({ stores });
+    }, [updateFormData]);
+
+    // Submit: create company with full payload
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        setError(null);
+        try {
+            const createData: CreateCompanyFullDto = {
+                name: formData.companyName.trim(),
+                code: formData.companyCode.trim(),
+                location: formData.location.trim() || undefined,
+                description: formData.description.trim() || undefined,
+                aimsConfig: {
+                    baseUrl: formData.aimsBaseUrl.trim(),
+                    cluster: formData.aimsCluster.trim(),
+                    username: formData.aimsUsername.trim(),
+                    password: formData.aimsPassword,
+                },
+                stores: formData.stores.map(s => ({
+                    code: s.code,
+                    name: s.name || s.code,
+                    timezone: s.timezone || 'UTC',
+                })),
+                companyFeatures: formData.features,
+                spaceType: formData.spaceType,
+                articleFormat: formData.articleFormat as unknown as Record<string, unknown> | undefined,
+                fieldMapping: formData.fieldMapping as unknown as Record<string, unknown> | undefined,
+            };
+
+            await companyService.create(createData);
+            onSave();
+        } catch (err: any) {
+            setError(err.response?.data?.message || t('settings.companies.saveError'));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Render current step
+    const renderStep = () => {
+        switch (activeStep) {
+            case 0:
+                return (
+                    <ConnectionStep
+                        formData={formData}
+                        onUpdate={updateFormData}
+                        onConnectionTest={handleConnectionTest}
+                        connectionStatus={connectionStatus}
+                        connectionError={connectionError}
+                        codeAvailable={codeAvailable}
+                        codeChecking={codeChecking}
+                        codeError={codeError}
+                    />
+                );
+            case 1:
+                return (
+                    <StoreSelectionStep
+                        aimsStores={aimsStores}
+                        selectedStores={formData.stores}
+                        onUpdate={handleStoresUpdate}
+                    />
+                );
+            case 2:
+                return (
+                    <ArticleFormatStep
+                        articleFormat={formData.articleFormat}
+                        loading={articleFormatLoading}
+                        error={articleFormatError}
+                        onFetch={handleFetchArticleFormat}
+                        onUpdate={(format) => updateFormData({ articleFormat: format })}
+                    />
+                );
+            case 3:
+                return (
+                    <FieldMappingStep
+                        articleFormat={formData.articleFormat}
+                        fieldMapping={formData.fieldMapping}
+                        onUpdate={(mapping) => updateFormData({ fieldMapping: mapping })}
+                    />
+                );
+            case 4:
+                return (
+                    <FeaturesStep
+                        features={formData.features}
+                        spaceType={formData.spaceType}
+                        hasConferenceMapping={
+                            !!(formData.fieldMapping?.conferenceMapping?.meetingName)
+                        }
+                        onUpdate={(features, spaceType) => updateFormData({ features, spaceType })}
+                    />
+                );
+            case 5:
+                return (
+                    <ReviewStep
+                        formData={formData}
+                        onGoToStep={handleGoToStep}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
         <>
             <DialogTitle>{t('settings.companies.createTitle')}</DialogTitle>
             <DialogContent dividers>
-                {state.error && (
-                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => state.setError(null)}>
-                        {state.error}
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                        {error}
                     </Alert>
                 )}
 
-                <Stepper activeStep={state.wizardStep} sx={{ mb: 3, mt: 1 }}>
-                    {wizardSteps.map((label) => (
-                        <Step key={label}>
-                            <StepLabel>{label}</StepLabel>
-                        </Step>
-                    ))}
-                </Stepper>
-
-                {/* Step 1: Code + AIMS Credentials */}
-                {state.wizardStep === 0 && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            {t('settings.companies.wizardStep1Info')}
-                        </Typography>
-
-                        {/* Company Code */}
-                        <TextField
-                            label={t('settings.companies.codeLabel')}
-                            value={state.code}
-                            onChange={(e) => state.handleCodeChange(e.target.value)}
-                            required
-                            error={!!state.codeError}
-                            helperText={state.codeError || t('settings.companies.codeHelp')}
-                            InputProps={{
-                                endAdornment: state.code.length >= 3 && (
-                                    <InputAdornment position="end">
-                                        {state.codeValidating ? (
-                                            <CircularProgress size={20} />
-                                        ) : state.codeValid === true ? (
-                                            <CheckCircleIcon color="success" />
-                                        ) : state.codeValid === false ? (
-                                            <ErrorIcon color="error" />
-                                        ) : null}
-                                    </InputAdornment>
-                                )
-                            }}
-                            inputProps={{ maxLength: 10, style: { textTransform: 'uppercase', fontFamily: 'monospace' } }}
-                        />
-
-                        <Divider sx={{ my: 1 }}>
-                            <Chip icon={<CloudIcon />} label={t('settings.companies.aimsConfig')} size="small" />
-                        </Divider>
-
-                        {/* Cluster */}
-                        <FormControl fullWidth>
-                            <InputLabel>{t('settings.companies.aimsCluster')}</InputLabel>
-                            <Select
-                                value={state.aimsCluster || 'c1'}
-                                label={t('settings.companies.aimsCluster')}
-                                onChange={(e) => {
-                                    const cluster = e.target.value;
-                                    state.setAimsCluster(cluster);
-                                    const baseUrl = cluster === 'common' ? 'https://eu.common.solumesl.com/common' : 'https://eu.common.solumesl.com/c1/common';
-                                    state.setAimsBaseUrl(baseUrl);
-                                    state.setConnectError(null);
-                                }}
-                            >
-                                <MenuItem value="c1">C1 (eu.common.solumesl.com/c1/common)</MenuItem>
-                                <MenuItem value="common">Common (eu.common.solumesl.com/common)</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        {/* Username */}
-                        <TextField
-                            label={t('settings.companies.aimsUsername')}
-                            value={state.aimsUsername}
-                            onChange={(e) => { state.setAimsUsername(e.target.value); state.setConnectError(null); }}
-                            placeholder="admin@company.com"
-                            required
-                        />
-
-                        {/* Password */}
-                        <Box sx={{ display: 'flex', flexDirection: state.isRtl ? 'row-reverse' : 'row', gap: 1, alignItems: 'flex-start' }}>
-                            <TextField
-                                label={t('settings.companies.aimsPassword')}
-                                type={state.showPassword ? 'text' : 'password'}
-                                value={state.aimsPassword}
-                                onChange={(e) => { state.setAimsPassword(e.target.value); state.setConnectError(null); }}
-                                sx={{ flex: 1 }}
-                                required
-                            />
-                            <IconButton
-                                onClick={() => state.setShowPassword(!state.showPassword)}
-                                sx={{ mt: 1, border: 1, borderColor: 'divider', borderRadius: 1, width: 40, height: 40 }}
-                            >
-                                {state.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                            </IconButton>
+                {isMobile ? (
+                    /* Mobile: compact step indicator with progress bar */
+                    <Box sx={{ mb: 2, mt: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                {t(STEP_LABELS[activeStep])}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
+                                {activeStep + 1} / {STEP_LABELS.length}
+                            </Typography>
                         </Box>
-
-                        {state.connectError && (
-                            <Alert severity="error" onClose={() => state.setConnectError(null)}>
-                                {state.connectError}
-                            </Alert>
-                        )}
+                        <LinearProgress
+                            variant="determinate"
+                            value={((activeStep + 1) / STEP_LABELS.length) * 100}
+                            sx={{ height: 6, borderRadius: 3 }}
+                        />
                     </Box>
+                ) : (
+                    /* Desktop/Tablet: full horizontal stepper */
+                    <Stepper
+                        activeStep={activeStep}
+                        alternativeLabel
+                        sx={{
+                            mb: 3,
+                            mt: 1,
+                            // RTL: flip connector positioning
+                            ...(isRtl && {
+                                '& .MuiStepConnector-root': {
+                                    left: 'calc(50% + 20px)',
+                                    right: 'calc(-50% + 20px)',
+                                },
+                            }),
+                        }}
+                    >
+                        {STEP_LABELS.map((labelKey, index) => (
+                            <Step key={labelKey} completed={index < activeStep}>
+                                <StepLabel>{t(labelKey)}</StepLabel>
+                            </Step>
+                        ))}
+                    </Stepper>
                 )}
 
-                {/* Step 2: Pick Store + Company Details */}
-                {state.wizardStep === 1 && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            {t('settings.companies.wizardStep2Info')}
-                        </Typography>
-
-                        {/* Store Selection */}
-                        <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <StorefrontIcon fontSize="small" />
-                            {t('settings.companies.selectStore')} ({state.aimsStores.length})
-                        </Typography>
-
-                        <Box sx={{ maxHeight: 220, overflowY: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                            {state.aimsStores.map((store) => (
-                                <Paper
-                                    key={store.code}
-                                    elevation={0}
-                                    sx={{
-                                        p: 1.5,
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                        borderBottom: 1,
-                                        borderColor: 'divider',
-                                        bgcolor: state.selectedStoreCode === store.code ? 'action.selected' : 'transparent',
-                                        '&:hover': { bgcolor: state.selectedStoreCode === store.code ? 'action.selected' : 'action.hover' },
-                                        '&:last-child': { borderBottom: 0 },
-                                    }}
-                                    onClick={() => state.handleSelectStore(store.code)}
-                                >
-                                    <Checkbox
-                                        checked={state.selectedStoreCode === store.code}
-                                        size="small"
-                                        sx={{ p: 0 }}
-                                    />
-                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                        <Typography variant="body2" fontWeight={600} noWrap>
-                                            {store.name || store.code}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                            {t('settings.companies.storeCode')}: {store.code}
-                                            {store.city && ` · ${store.city}`}
-                                            {store.country && `, ${store.country}`}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                                        <Typography variant="caption" color="text.secondary" display="block">
-                                            {store.labelCount} {t('settings.companies.labels')} · {store.gatewayCount} {t('settings.companies.gateways')}
-                                        </Typography>
-                                    </Box>
-                                </Paper>
-                            ))}
-                        </Box>
-
-                        {state.selectedStoreCode && (
-                            <>
-                                <Divider sx={{ my: 1 }}>
-                                    <Chip icon={<BusinessIcon />} label={t('settings.companies.companyDetails')} size="small" />
-                                </Divider>
-
-                                <TextField
-                                    label={t('settings.companies.storeFriendlyName')}
-                                    value={state.storeFriendlyName}
-                                    onChange={(e) => state.setStoreFriendlyName(e.target.value)}
-                                    placeholder={state.aimsStores.find(s => s.code === state.selectedStoreCode)?.name || ''}
-                                    helperText={t('settings.companies.storeFriendlyNameHelp')}
-                                    inputProps={{ maxLength: 100 }}
-                                />
-
-                                <TextField
-                                    label={t('settings.companies.nameLabel')}
-                                    value={state.name}
-                                    onChange={(e) => state.setName(e.target.value)}
-                                    required
-                                    inputProps={{ maxLength: 100 }}
-                                />
-
-                                <TextField
-                                    label={t('settings.companies.locationLabel')}
-                                    value={state.location}
-                                    onChange={(e) => state.setLocation(e.target.value)}
-                                    placeholder={t('settings.companies.locationPlaceholder')}
-                                    inputProps={{ maxLength: 255 }}
-                                />
-
-                                <Divider sx={{ my: 1 }}>
-                                    <Chip icon={<TuneIcon />} label={t('settings.companies.featuresTab', 'Features')} size="small" />
-                                </Divider>
-
-                                <FormControl fullWidth size="small">
-                                    <InputLabel>{t('settings.companies.spaceTypeLabel', 'Space Type')}</InputLabel>
-                                    <Select
-                                        value={state.spaceType}
-                                        label={t('settings.companies.spaceTypeLabel', 'Space Type')}
-                                        onChange={(e) => state.setSpaceType(e.target.value as any)}
-                                    >
-                                        <MenuItem value="office">{t('settings.offices')}</MenuItem>
-                                        <MenuItem value="room">{t('settings.rooms')}</MenuItem>
-                                        <MenuItem value="chair">{t('settings.chairs')}</MenuItem>
-                                        <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
-                                    </Select>
-                                </FormControl>
-
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    {/* Spaces / People — single toggle with mode selector */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <FormControlLabel
-                                            control={
-                                                <Switch
-                                                    checked={state.companyFeatures.spacesEnabled || state.companyFeatures.peopleEnabled}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            state.handleFeatureToggle('peopleEnabled', true);
-                                                        } else {
-                                                            state.handleFeatureToggle('spacesEnabled', false);
-                                                            state.handleFeatureToggle('peopleEnabled', false);
-                                                        }
-                                                    }}
-                                                    size="small"
-                                                />
-                                            }
-                                            label={t('settings.companies.spacesOrPeopleLabel', 'Spaces / People')}
-                                            sx={{ minWidth: 160 }}
-                                        />
-                                        {(state.companyFeatures.spacesEnabled || state.companyFeatures.peopleEnabled) && (
-                                            <FormControl size="small" sx={{ minWidth: 140 }}>
-                                                <Select
-                                                    value={state.companyFeatures.spacesEnabled ? 'spaces' : 'people'}
-                                                    onChange={(e) => {
-                                                        if (e.target.value === 'spaces') {
-                                                            state.handleFeatureToggle('spacesEnabled', true);
-                                                        } else {
-                                                            state.handleFeatureToggle('peopleEnabled', true);
-                                                        }
-                                                    }}
-                                                >
-                                                    <MenuItem value="spaces">{t('navigation.spaces')}</MenuItem>
-                                                    <MenuItem value="people">{t('navigation.people')}</MenuItem>
-                                                </Select>
-                                            </FormControl>
-                                        )}
-                                    </Box>
-
-                                    {/* Conference — single toggle with mode selector */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <FormControlLabel
-                                            control={
-                                                <Switch
-                                                    checked={state.companyFeatures.conferenceEnabled}
-                                                    onChange={(e) => state.handleFeatureToggle('conferenceEnabled', e.target.checked)}
-                                                    size="small"
-                                                />
-                                            }
-                                            label={t('navigation.conference')}
-                                            sx={{ minWidth: 160 }}
-                                        />
-                                        {state.companyFeatures.conferenceEnabled && (
-                                            <FormControl size="small" sx={{ minWidth: 140 }}>
-                                                <Select
-                                                    value={state.companyFeatures.simpleConferenceMode ? 'simple' : 'standard'}
-                                                    onChange={(e) => state.handleFeatureToggle('simpleConferenceMode', e.target.value === 'simple')}
-                                                >
-                                                    <MenuItem value="standard">{t('settings.companies.conferenceStandard', 'Standard')}</MenuItem>
-                                                    <MenuItem value="simple">{t('settings.companies.conferenceSimple', 'Simple')}</MenuItem>
-                                                </Select>
-                                            </FormControl>
-                                        )}
-                                    </Box>
-
-                                    <FormControlLabel
-                                        control={<Switch checked={state.companyFeatures.labelsEnabled} onChange={(e) => state.handleFeatureToggle('labelsEnabled', e.target.checked)} size="small" />}
-                                        label={t('labels.title')}
-                                    />
-
-                                    <FormControlLabel
-                                        control={<Switch checked={state.companyFeatures.aimsManagementEnabled} onChange={(e) => state.handleFeatureToggle('aimsManagementEnabled', e.target.checked)} size="small" />}
-                                        label={t('settings.companies.aimsManagement', 'AIMS Management')}
-                                    />
-                                </Box>
-                            </>
-                        )}
-                    </Box>
-                )}
+                {renderStep()}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
                 <Box>
-                    {state.wizardStep > 0 && (
-                        <Button onClick={() => state.setWizardStep(0)} disabled={state.submitting}>
-                            {t('common.back')}
+                    {activeStep > 0 && (
+                        <Button onClick={handleBack} disabled={submitting}>
+                            {t('settings.companies.back')}
                         </Button>
                     )}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button onClick={onClose} disabled={state.submitting}>
+                    <Button onClick={onClose} disabled={submitting}>
                         {t('common.cancel')}
                     </Button>
-                    {state.wizardStep === 0 && (
+                    {activeStep < 5 ? (
                         <Button
                             variant="contained"
-                            onClick={state.handleConnectAndFetch}
-                            disabled={!state.isStep1Valid() || state.connecting}
-                            startIcon={state.connecting ? <CircularProgress size={16} /> : <CloudIcon />}
+                            onClick={handleNext}
+                            disabled={!isStepValid(activeStep)}
                         >
-                            {t('settings.companies.connectAndFetch')}
+                            {t('settings.companies.next')}
                         </Button>
-                    )}
-                    {state.wizardStep === 1 && (
+                    ) : (
                         <Button
                             variant="contained"
-                            onClick={state.handleCreateSubmit}
-                            disabled={!state.isStep2Valid() || state.submitting}
-                            startIcon={state.submitting ? <CircularProgress size={16} /> : null}
+                            onClick={handleSubmit}
+                            disabled={submitting}
+                            startIcon={submitting ? <CircularProgress size={16} /> : null}
                         >
-                            {t('common.create')}
+                            {submitting
+                                ? t('settings.companies.creating')
+                                : t('settings.companies.createCompany')}
                         </Button>
                     )}
                 </Box>
