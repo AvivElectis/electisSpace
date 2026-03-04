@@ -33,6 +33,10 @@ export const toggleMeetingSchema = z.object({
     participants: z.array(z.string()).optional(),
 });
 
+export const flipPageSchema = z.object({
+    page: z.number().int().min(1).max(7),
+});
+
 // ============================================================================
 // DTOs
 // ============================================================================
@@ -40,6 +44,7 @@ export const toggleMeetingSchema = z.object({
 export type CreateRoomDTO = z.infer<typeof createRoomSchema>;
 export type UpdateRoomDTO = z.infer<typeof updateRoomSchema>;
 export type ToggleMeetingDTO = z.infer<typeof toggleMeetingSchema>;
+export type FlipPageDTO = z.infer<typeof flipPageSchema>;
 
 // ============================================================================
 // Interfaces

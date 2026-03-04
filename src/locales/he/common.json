@@ -452,7 +452,13 @@
         "startTime": "זמן התחלה",
         "endTime": "זמן סיום",
         "participantsHelper": "רשימת משתתפים מופרדת בפסיקים",
-        "preview": "תצוגה מקדימה:"
+        "preview": "תצוגה מקדימה:",
+        "roomStatus": "סטטוס חדר",
+        "flipPageFailed": "שינוי סטטוס החדר נכשל",
+        "flipPageSuccess": "סטטוס החדר שונה בהצלחה",
+        "inMeeting": "בפגישה",
+        "loadingPages": "טוען סטטוס חדרים...",
+        "labels": "תגיות"
     },
     "sync": {
         "title": "סינכרון",

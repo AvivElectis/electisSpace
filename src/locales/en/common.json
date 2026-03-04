@@ -441,7 +441,13 @@
         "startTime": "Start Time",
         "endTime": "End Time",
         "participantsHelper": "Comma-separated list of participants",
-        "preview": "Preview:"
+        "preview": "Preview:",
+        "roomStatus": "Room Status",
+        "flipPageFailed": "Failed to change room status",
+        "flipPageSuccess": "Room status changed successfully",
+        "inMeeting": "In a Meeting",
+        "loadingPages": "Loading room status...",
+        "labels": "Labels"
     },
     "sync": {
         "title": "Synchronization",

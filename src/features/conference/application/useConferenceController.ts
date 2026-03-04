@@ -255,10 +255,12 @@ export function useConferenceController({
 
     /**
      * Flip label page (direct AIMS operation for ESL labels)
+     * Page 1 = Available, Page 2 = Busy
+     * Supports multiple labels per room
      */
     const flipLabelPage = useCallback(
-        async (labelCode: string, currentPage: number): Promise<void> => {
-            await flipLabelPageInternal(labelCode, currentPage);
+        async (labelCodes: string[], targetPage: number): Promise<void> => {
+            await flipLabelPageInternal(labelCodes, targetPage);
         },
         [flipLabelPageInternal]
     );

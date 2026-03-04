@@ -313,31 +313,30 @@ export async function unlinkLabel(
 }
 
 /**
- * Update label page (for simple conference mode)
- * @param config - SoluM configuration
- * @param storeId - Store number
- * @param token - Access token
- * @param labelCode - Label code
- * @param page - Page number (0 or 1)
+ * Update label page (AIMS API: POST /api/v2/common/labels/page)
+ * Body: { pageChangeList: [{ labelCode, page }] }
+ * Page values: 1-7 (1=Available, 2=Busy for conference simple mode)
  */
 export async function updateLabelPage(
     config: SolumConfig,
     storeId: string,
     token: string,
-    labelCode: string,
+    labelCodes: string[],
     page: number
 ): Promise<void> {
-    logger.info('SolumLabelsService', 'Updating label page', { labelCode, page });
+    logger.info('SolumLabelsService', 'Updating label page', { labelCodes, page });
 
-    const url = buildUrl(config, `/common/api/v2/common/labels/changePage?company=${config.companyName}&store=${storeId}`);
+    const url = buildUrl(config, `/common/api/v2/common/labels/page?company=${config.companyName}&store=${storeId}`);
+
+    const pageChangeList = labelCodes.map(labelCode => ({ labelCode, page }));
 
     const response = await fetch(url, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ page }),
+        body: JSON.stringify({ pageChangeList }),
     });
 
     if (!response.ok) {
