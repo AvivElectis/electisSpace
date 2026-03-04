@@ -1,75 +1,89 @@
-import { Box, Card, CardContent, Typography, Stack, LinearProgress, Chip } from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, Grid, LinearProgress, Chip, Button } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RouterIcon from '@mui/icons-material/Router';
+import LabelIcon from '@mui/icons-material/Label';
+import UpdateOutlined from '@mui/icons-material/Update';
+import BatteryChargingFullOutlined from '@mui/icons-material/BatteryChargingFull';
+import SignalCellularAltOutlined from '@mui/icons-material/SignalCellularAlt';
+import CategoryOutlined from '@mui/icons-material/CategoryOutlined';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MobileStatTile } from './MobileStatTile';
 
 interface DashboardAimsCardProps {
-    totalGateways: number;
-    onlineGateways: number;
-    offlineGateways: number;
-    totalLabels: number;
-    onlineLabels: number;
+    storeSummary: any;
+    labelModels: any[];
     isMobile?: boolean;
-    // Battery health indicators (optional for backward compatibility)
-    batteryGood?: number;
-    batteryLow?: number;
-    batteryCritical?: number;
-    // Additional label status counts (optional)
-    labelsTimeout?: number;
-    labelsProcessing?: number;
 }
 
-export function DashboardAimsCard({
-    totalGateways,
-    onlineGateways,
-    offlineGateways,
-    totalLabels,
-    onlineLabels,
-    isMobile,
-    batteryGood,
-    batteryLow,
-    batteryCritical,
-    labelsTimeout: _labelsTimeout,
-    labelsProcessing: _labelsProcessing,
-}: DashboardAimsCardProps) {
+/** Compact progress bar for dashboard sub-sections */
+function MiniHealthBar({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+    const pct = total > 0 ? (value / total) * 100 : 0;
+    return (
+        <Box sx={{ mb: 1 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.25 }}>
+                <Typography variant="caption" color="text.secondary">{label}</Typography>
+                <Typography variant="caption" fontWeight={600} dir="ltr">
+                    {value}/{total}
+                </Typography>
+            </Stack>
+            <LinearProgress
+                variant="determinate"
+                value={pct}
+                sx={{
+                    height: 6,
+                    borderRadius: 3,
+                    bgcolor: 'grey.200',
+                    '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 3 },
+                }}
+            />
+        </Box>
+    );
+}
+
+/** Icon badge used in section headers */
+function SectionIcon({ icon, bgcolor }: { icon: React.ReactNode; bgcolor: string }) {
+    return (
+        <Box sx={{ bgcolor, borderRadius: 1.5, p: 0.5, display: 'flex', lineHeight: 0 }}>
+            {icon}
+        </Box>
+    );
+}
+
+export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: DashboardAimsCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    const gatewayHealthPercent = totalGateways > 0 ? Math.round((onlineGateways / totalGateways) * 100) : 0;
+    // Extract data from storeSummary with safe defaults
+    const gwOnline = storeSummary?.onlineGwCount ?? 0;
+    const gwOffline = storeSummary?.offlineGwCount ?? 0;
+    const gwTotal = gwOnline + gwOffline;
 
-    const hasBatteryData = batteryGood !== undefined || batteryLow !== undefined || batteryCritical !== undefined;
+    const lblTotal = storeSummary?.totalLabelCount ?? 0;
+    const lblOnline = storeSummary?.onlineLabelCount ?? 0;
+    const lblOffline = storeSummary?.offlineLabelCount ?? 0;
 
-    const batteryChips = hasBatteryData ? (
-        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                {t('aims.batteryHealth')}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                {batteryGood != null && batteryGood > 0 && (
-                    <Chip size="small" label={`${t('aims.batteryGood')}: ${batteryGood}`} color="success" variant="outlined" />
-                )}
-                {batteryLow != null && batteryLow > 0 && (
-                    <Chip size="small" label={`${t('aims.batteryLow')}: ${batteryLow}`} color="warning" variant="outlined" />
-                )}
-                {batteryCritical != null && batteryCritical > 0 && (
-                    <Chip size="small" label={`${t('aims.batteryCritical')}: ${batteryCritical}`} color="error" variant="outlined" />
-                )}
-                {/* Show "all good" when there are labels but no low/critical */}
-                {batteryGood === 0 && batteryLow === 0 && batteryCritical === 0 && totalLabels > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                        {t('aims.batteryGood')}
-                    </Typography>
-                )}
-            </Box>
-        </Box>
-    ) : null;
+    const lblUpdated = storeSummary?.updatedLabelCount ?? 0;
+    const lblInProgress = storeSummary?.inProgressLabelCount ?? 0;
+    const lblNotUpdated = storeSummary?.notUpdatedLabelCount ?? 0;
 
+    const batGood = storeSummary?.goodBatteryCount ?? 0;
+    const batLow = storeSummary?.lowBatteryCount ?? 0;
+    const batTotal = batGood + batLow;
+
+    const sigExcellent = storeSummary?.excellentSignalLabelCount ?? 0;
+    const sigGood = storeSummary?.goodSignalLabelCount ?? 0;
+    const sigBad = storeSummary?.badSignalLabelCount ?? 0;
+    const sigTotal = sigExcellent + sigGood + sigBad;
+
+    const gwHealthPct = gwTotal > 0 ? Math.round((gwOnline / gwTotal) * 100) : 0;
+
+    // --- Mobile layout ---
     if (isMobile) {
         return (
             <Card data-testid="aims-card">
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    {/* Tappable header */}
                     <Stack
                         direction="row"
                         alignItems="center"
@@ -84,10 +98,10 @@ export function DashboardAimsCard({
                         <ArrowForwardIcon fontSize="small" color="action" />
                     </Stack>
 
-                    {/* Hero number */}
+                    {/* Hero — gateway health */}
                     <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, mb: 2 }}>
-                        <Typography variant="h2" fontWeight={700} color="primary.main">
-                            {totalGateways}
+                        <Typography variant="h2" fontWeight={700} color="primary.main" dir="ltr">
+                            {gwTotal}
                         </Typography>
                         <Typography variant="subtitle2" color="text.secondary">
                             {t('aims.totalGateways')}
@@ -98,55 +112,67 @@ export function DashboardAimsCard({
                     <Stack gap={0.5} sx={{ mb: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                             <Typography variant="subtitle2" color="text.secondary">
-                                {t('aims.online')} <span dir="ltr">{onlineGateways}/{totalGateways}</span>
+                                {t('aims.online')} <span dir="ltr">{gwOnline}/{gwTotal}</span>
                             </Typography>
                             <Typography variant="subtitle2" fontWeight={600} color="text.secondary" dir="ltr">
-                                {gatewayHealthPercent}%
+                                {gwHealthPct}%
                             </Typography>
                         </Stack>
                         <LinearProgress
                             variant="determinate"
-                            value={gatewayHealthPercent}
+                            value={gwHealthPct}
                             color="success"
                             sx={{ height: 8, borderRadius: 4 }}
                         />
                     </Stack>
 
-                    {/* Stat tiles */}
+                    {/* Stat tiles — gateways */}
                     <Stack direction="row" gap={1} sx={{ mb: 1 }}>
-                        <MobileStatTile
-                            value={onlineGateways}
-                            label={t('aims.online')}
-                            color="success"
-                        />
-                        <MobileStatTile
-                            value={offlineGateways}
-                            label={t('aims.offline')}
-                            color="error"
-                        />
-                    </Stack>
-                    <Stack direction="row" gap={1}>
-                        <MobileStatTile
-                            value={totalLabels}
-                            label={t('aims.totalLabels')}
-                            color="primary"
-                        />
-                        <MobileStatTile
-                            value={onlineLabels}
-                            label={t('aims.onlineLabels')}
-                            color="info"
-                        />
+                        <MobileStatTile value={gwOnline} label={t('aims.online')} color="success" />
+                        <MobileStatTile value={gwOffline} label={t('aims.offline')} color="error" />
                     </Stack>
 
-                    {batteryChips}
+                    {/* Stat tiles — labels */}
+                    <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                        <MobileStatTile value={lblTotal} label={t('aims.totalLabels')} color="primary" />
+                        <MobileStatTile value={lblOnline} label={t('aims.online')} color="info" />
+                    </Stack>
+
+                    {/* Battery & Signal chips */}
+                    {batTotal > 0 && (
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                                {t('aims.batteryHealth')}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                {batGood > 0 && <Chip size="small" label={`${t('aims.batteryGood')}: ${batGood}`} color="success" variant="outlined" />}
+                                {batLow > 0 && <Chip size="small" label={`${t('aims.batteryLow')}: ${batLow}`} color="warning" variant="outlined" />}
+                            </Box>
+                        </Box>
+                    )}
+
+                    {sigTotal > 0 && (
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                                {t('aims.signalDistribution')}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                {sigExcellent > 0 && <Chip size="small" label={`${t('aims.signalExcellent')}: ${sigExcellent}`} color="success" variant="outlined" />}
+                                {sigGood > 0 && <Chip size="small" label={`${t('aims.signalGood')}: ${sigGood}`} color="info" variant="outlined" />}
+                                {sigBad > 0 && <Chip size="small" label={`${t('aims.signalBad')}: ${sigBad}`} color="error" variant="outlined" />}
+                            </Box>
+                        </Box>
+                    )}
                 </CardContent>
             </Card>
         );
     }
 
+    // --- Desktop layout ---
     return (
         <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="aims-card">
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                {/* Header */}
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
                     <Stack direction="row" gap={1} alignItems="center">
                         <RouterIcon color="primary" sx={{ fontSize: 28 }} />
@@ -154,85 +180,127 @@ export function DashboardAimsCard({
                             {t('aims.management')}
                         </Typography>
                     </Stack>
-                    <Stack
-                        direction="row"
-                        alignItems="center"
-                        gap={0.5}
+                    <Button
+                        variant="text"
+                        size="small"
+                        endIcon={<ArrowForwardIcon />}
                         onClick={() => navigate('/aims-management')}
-                        sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+                        sx={{ fontSize: '0.95rem' }}
                     >
-                        <Typography variant="body2" color="primary">
-                            {t('dashboard.toAims', 'To AIMS')}
-                        </Typography>
-                        <ArrowForwardIcon fontSize="small" />
-                    </Stack>
+                        {t('dashboard.toAims', 'To AIMS')}
+                    </Button>
                 </Stack>
 
-                <Stack gap={2}>
-                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            {t('aims.totalGateways')}
-                        </Typography>
-                        <Typography variant="h3" fontWeight={600} color="primary.main">
-                            {totalGateways}
-                        </Typography>
-                    </Box>
+                {/* 2x3 grid of health sub-sections */}
+                <Grid container spacing={1.5}>
+                    {/* Gateway Health */}
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                            <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
+                                <SectionIcon icon={<RouterIcon sx={{ color: 'white', fontSize: 16 }} />} bgcolor="primary.main" />
+                                <Typography variant="subtitle2" fontWeight={600}>{t('aims.gatewayHealth')}</Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }} dir="ltr">
+                                    {gwTotal}
+                                </Typography>
+                            </Stack>
+                            <MiniHealthBar label={t('aims.online')} value={gwOnline} total={gwTotal} color="success.main" />
+                            <MiniHealthBar label={t('aims.offline')} value={gwOffline} total={gwTotal} color="error.main" />
+                        </Box>
+                    </Grid>
 
-                    {/* Gateway health bar */}
-                    <Stack gap={0.5}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Typography variant="body2" color="text.secondary">
-                                {t('aims.online')} <span dir="ltr">{onlineGateways}/{totalGateways}</span>
-                            </Typography>
-                            <Typography variant="body2" fontWeight={600} dir="ltr">
-                                {gatewayHealthPercent}%
-                            </Typography>
-                        </Stack>
-                        <LinearProgress
-                            variant="determinate"
-                            value={gatewayHealthPercent}
-                            color="success"
-                            sx={{ height: 8, borderRadius: 4 }}
-                        />
-                    </Stack>
+                    {/* Label Health */}
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                            <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
+                                <SectionIcon icon={<LabelIcon sx={{ color: 'white', fontSize: 16 }} />} bgcolor="info.main" />
+                                <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelHealth')}</Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }} dir="ltr">
+                                    {lblTotal}
+                                </Typography>
+                            </Stack>
+                            <MiniHealthBar label={t('aims.online')} value={lblOnline} total={lblTotal} color="success.main" />
+                            <MiniHealthBar label={t('aims.offline')} value={lblOffline} total={lblTotal} color="error.main" />
+                        </Box>
+                    </Grid>
 
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('aims.online')}
-                            </Typography>
-                            <Typography variant="h5" fontWeight={500} color="success.main">
-                                {onlineGateways}
-                            </Typography>
+                    {/* Update Progress */}
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                            <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
+                                <SectionIcon icon={<UpdateOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="success.main" />
+                                <Typography variant="subtitle2" fontWeight={600}>{t('aims.productUpdates')}</Typography>
+                            </Stack>
+                            <MiniHealthBar label={t('aims.success')} value={lblUpdated} total={lblTotal} color="success.main" />
+                            {lblInProgress > 0 && (
+                                <MiniHealthBar label={t('aims.status')} value={lblInProgress} total={lblTotal} color="warning.main" />
+                            )}
+                            {lblNotUpdated > 0 && (
+                                <MiniHealthBar label={t('aims.failed')} value={lblNotUpdated} total={lblTotal} color="error.main" />
+                            )}
                         </Box>
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('aims.offline')}
-                            </Typography>
-                            <Typography variant="h5" fontWeight={500} color="error.main">
-                                {offlineGateways}
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('aims.totalLabels')}
-                            </Typography>
-                            <Typography variant="h5" fontWeight={500}>
-                                {totalLabels}
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('aims.onlineLabels')}
-                            </Typography>
-                            <Typography variant="h5" fontWeight={500} color="info.main">
-                                {onlineLabels}
-                            </Typography>
-                        </Box>
-                    </Box>
+                    </Grid>
 
-                    {batteryChips}
-                </Stack>
+                    {/* Battery Health */}
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                            <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
+                                <SectionIcon icon={<BatteryChargingFullOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="warning.main" />
+                                <Typography variant="subtitle2" fontWeight={600}>{t('aims.batteryHealth')}</Typography>
+                            </Stack>
+                            {batTotal > 0 ? (
+                                <>
+                                    <MiniHealthBar label={t('aims.batteryGood')} value={batGood} total={batTotal} color="success.main" />
+                                    <MiniHealthBar label={t('aims.batteryLow')} value={batLow} total={batTotal} color="warning.main" />
+                                </>
+                            ) : (
+                                <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>
+                            )}
+                        </Box>
+                    </Grid>
+
+                    {/* Signal Quality */}
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                            <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
+                                <SectionIcon icon={<SignalCellularAltOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="info.main" />
+                                <Typography variant="subtitle2" fontWeight={600}>{t('aims.signalDistribution')}</Typography>
+                            </Stack>
+                            {sigTotal > 0 ? (
+                                <>
+                                    <MiniHealthBar label={t('aims.signalExcellent')} value={sigExcellent} total={sigTotal} color="success.main" />
+                                    <MiniHealthBar label={t('aims.signalGood')} value={sigGood} total={sigTotal} color="info.main" />
+                                    <MiniHealthBar label={t('aims.signalBad')} value={sigBad} total={sigTotal} color="error.main" />
+                                </>
+                            ) : (
+                                <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>
+                            )}
+                        </Box>
+                    </Grid>
+
+                    {/* Label Models */}
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                            <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
+                                <SectionIcon icon={<CategoryOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="secondary.main" />
+                                <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelTypes')}</Typography>
+                            </Stack>
+                            {Array.isArray(labelModels) && labelModels.length > 0 ? (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {labelModels.map((model: any, i: number) => (
+                                        <Chip
+                                            key={i}
+                                            label={`${model.labelType || model.type || 'Unknown'}: ${model.count ?? 0}`}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    ))}
+                                </Box>
+                            ) : (
+                                <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>
+                            )}
+                        </Box>
+                    </Grid>
+                </Grid>
             </CardContent>
         </Card>
     );
