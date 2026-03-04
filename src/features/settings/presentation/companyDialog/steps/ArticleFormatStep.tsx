@@ -1,7 +1,8 @@
 /**
  * Wizard Step 3: Article Format — Fetch & Confirm
+ * Two view modes: Visual summary or JSON editor with edit support.
  */
-import { useEffect } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import {
     Box,
     Typography,
@@ -11,16 +12,26 @@ import {
     Alert,
     Button,
     Paper,
+    ToggleButtonGroup,
+    ToggleButton,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import CodeIcon from '@mui/icons-material/Code';
 import { useTranslation } from 'react-i18next';
 import type { ArticleFormat } from '@features/configuration/domain/types';
+
+// Lazy load the heavy JSON editor (~1MB vanilla-jsoneditor)
+const ArticleFormatEditor = lazy(() =>
+    import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
+);
 
 interface ArticleFormatStepProps {
     articleFormat: ArticleFormat | null;
     loading: boolean;
     error: string | null;
     onFetch: () => Promise<void>;
+    onUpdate: (format: ArticleFormat) => void;
 }
 
 export function ArticleFormatStep({
@@ -28,8 +39,10 @@ export function ArticleFormatStep({
     loading,
     error,
     onFetch,
+    onUpdate,
 }: ArticleFormatStepProps) {
     const { t } = useTranslation();
+    const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual');
 
     // Auto-fetch on mount if not yet loaded
     useEffect(() => {
@@ -73,72 +86,126 @@ export function ArticleFormatStep({
         );
     }
 
+    const handleJsonSave = async (newFormat: ArticleFormat): Promise<boolean> => {
+        onUpdate(newFormat);
+        return true;
+    };
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Alert severity="success" sx={{ mb: 1 }}>
                 {t('settings.companies.articleFormatFetched')}
             </Alert>
 
-            {/* Basic info: extension and delimiter */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                    label={t('settings.companies.fileExtension')}
-                    value={articleFormat.fileExtension || ''}
+            {/* View mode toggle */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={(_, v) => v && setViewMode(v)}
                     size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ width: 120 }}
-                />
-                <TextField
-                    label={t('settings.companies.delimiter')}
-                    value={articleFormat.delimeter || ''}
+                >
+                    <ToggleButton value="visual">
+                        <ViewListIcon sx={{ mr: 0.5 }} fontSize="small" />
+                        {t('settings.companies.visualView')}
+                    </ToggleButton>
+                    <ToggleButton value="json">
+                        <CodeIcon sx={{ mr: 0.5 }} fontSize="small" />
+                        {t('settings.companies.jsonView')}
+                    </ToggleButton>
+                </ToggleButtonGroup>
+
+                <Button
+                    variant="text"
                     size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ width: 120 }}
-                />
+                    startIcon={<RefreshIcon />}
+                    onClick={onFetch}
+                >
+                    {t('settings.companies.refetchArticleFormat')}
+                </Button>
             </Box>
 
-            {/* Basic info fields */}
-            <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                    {t('settings.companies.basicInfoFields')}
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {articleFormat.articleBasicInfo?.map((field) => (
-                        <Chip key={field} label={field} size="small" variant="outlined" color="primary" />
-                    ))}
-                </Box>
-            </Paper>
-
-            {/* Data fields */}
-            <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                    {t('settings.companies.dataFields')} ({articleFormat.articleData?.length || 0})
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {articleFormat.articleData?.map((field) => (
-                        <Chip key={field} label={field} size="small" variant="outlined" />
-                    ))}
-                </Box>
-            </Paper>
-
-            {/* Mapping info */}
-            {articleFormat.mappingInfo && (
-                <Paper variant="outlined" sx={{ p: 1.5 }}>
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                        {t('settings.companies.mappingInfoTitle')}
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {Object.entries(articleFormat.mappingInfo).map(([key, value]) => (
-                            <Chip
-                                key={key}
-                                label={`${key}: ${value}`}
-                                size="small"
-                                variant="outlined"
-                                color="info"
-                            />
-                        ))}
+            {viewMode === 'visual' ? (
+                /* ===== Visual View ===== */
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* Basic info: extension and delimiter */}
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <TextField
+                            label={t('settings.companies.fileExtension')}
+                            value={articleFormat.fileExtension || ''}
+                            size="small"
+                            InputProps={{ readOnly: true }}
+                            sx={{ width: 120 }}
+                        />
+                        <TextField
+                            label={t('settings.companies.delimiter')}
+                            value={articleFormat.delimeter || ''}
+                            size="small"
+                            InputProps={{ readOnly: true }}
+                            sx={{ width: 120 }}
+                        />
                     </Box>
-                </Paper>
+
+                    {/* Basic info fields */}
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                            {t('settings.companies.basicInfoFields')}
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {articleFormat.articleBasicInfo?.map((field) => (
+                                <Chip key={field} label={field} size="small" variant="outlined" color="primary" />
+                            ))}
+                        </Box>
+                    </Paper>
+
+                    {/* Data fields */}
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                            {t('settings.companies.dataFields')} ({articleFormat.articleData?.length || 0})
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {articleFormat.articleData?.map((field) => (
+                                <Chip key={field} label={field} size="small" variant="outlined" />
+                            ))}
+                        </Box>
+                    </Paper>
+
+                    {/* Mapping info */}
+                    {articleFormat.mappingInfo && (
+                        <Paper variant="outlined" sx={{ p: 1.5 }}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                                {t('settings.companies.mappingInfoTitle')}
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {Object.entries(articleFormat.mappingInfo).map(([key, value]) => (
+                                    <Chip
+                                        key={key}
+                                        label={`${key}: ${value}`}
+                                        size="small"
+                                        variant="outlined"
+                                        color="info"
+                                    />
+                                ))}
+                            </Box>
+                        </Paper>
+                    )}
+                </Box>
+            ) : (
+                /* ===== JSON Editor View ===== */
+                <Suspense fallback={
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                        <CircularProgress />
+                    </Box>
+                }>
+                    <Alert severity="info" variant="outlined" sx={{ mb: 1 }}>
+                        {t('settings.companies.jsonEditHint')}
+                    </Alert>
+                    <ArticleFormatEditor
+                        schema={articleFormat}
+                        onSave={handleJsonSave}
+                        readOnly={false}
+                    />
+                </Suspense>
             )}
         </Box>
     );

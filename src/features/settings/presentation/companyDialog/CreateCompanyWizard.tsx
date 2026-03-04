@@ -288,6 +288,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         loading={articleFormatLoading}
                         error={articleFormatError}
                         onFetch={handleFetchArticleFormat}
+                        onUpdate={(format) => updateFormData({ articleFormat: format })}
                     />
                 );
             case 3:
