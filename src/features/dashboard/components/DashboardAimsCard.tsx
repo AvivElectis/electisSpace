@@ -303,8 +303,10 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                                 <Box sx={{
                                     maxHeight: 108,
                                     overflowY: 'auto',
-                                    '&::-webkit-scrollbar': { width: 3 },
-                                    '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.300', borderRadius: 2 },
+                                    '&::-webkit-scrollbar': { width: 4 },
+                                    '&::-webkit-scrollbar-track': { bgcolor: 'grey.100', borderRadius: 2 },
+                                    '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 2 },
+                                    scrollbarWidth: 'thin',
                                 }}>
                                     {labelModels
                                         .sort((a: any, b: any) => (b.count ?? 0) - (a.count ?? 0))
