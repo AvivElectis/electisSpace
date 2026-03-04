@@ -90,41 +90,72 @@ Platform (electisSpace SaaS)
        ├── Company Settings (global rules, defaults, integrations)
        └── Branch (= AIMS Store, physical location)
             ├── Branch Settings (overrides, local rules)
-            ├── Floor (physical floor level)
-            │    ├── Area/Zone (wing, department area, open space section)
-            │    │    └── Space (individual bookable unit)
-            │    └── Space (spaces not in an area)
-            └── Space (spaces without floor assignment)
+            └── Building / Site (physical structure within the branch)
+                 ├── Floor (physical floor level)
+                 │    ├── Area/Zone (wing, department area, open space section)
+                 │    │    └── Space (individual bookable unit)
+                 │    └── Space (spaces not in an area)
+                 └── Space (spaces without floor assignment)
 ```
+
+A **Branch** can contain one or more **Buildings** (also called Sites). This supports campuses, business parks, or multi-building office complexes that operate as a single AIMS store. If a branch has only one building, it is created automatically and can be hidden in the UI (single-building mode).
 
 ### Entity Definitions
 
 | Entity | Description | Key Properties |
 |--------|-------------|----------------|
 | **Company** | Customer org, maps to AIMS organization | name, code, AIMS config, settings, integrations |
-| **Branch** | Physical location, maps to AIMS store | name, code, address, timezone, floors[], settings |
-| **Floor** | Physical floor level | number, name, prefix (for space numbering) |
+| **Branch** | Physical location, maps to AIMS store | name, code, address, timezone, buildings[], settings |
+| **Building** | Physical structure within a branch | name, code, address (optional, inherits from branch), floors[] |
+| **Floor** | Physical floor level within a building | number, name, prefix (for space numbering) |
 | **Area** | Logical grouping within floor | name, type (wing/department/open-space/zone) |
-| **Space** | Bookable unit | number, type, status, floor, area, capacity, amenities |
+| **Space** | Bookable unit | number, type, status, building, floor, area, capacity, amenities |
+
+### Single vs Multi-Building Branches
+
+| Scenario | Behavior |
+|----------|----------|
+| **Single building** (most common) | A default building is auto-created with the branch name. Building selector hidden in UI. Floors/spaces belong to this implicit building. |
+| **Multi-building campus** | Admin adds buildings to the branch. Each building has its own floors and space numbering. Building selector shown in Compass and admin UI. |
+
+Examples:
+```
+Branch: "Tel Aviv Campus" (single AIMS store)
+  ├── Building A — "Main Office"
+  │    ├── Floor 1 → prefix "A1", spaces: A101-A150
+  │    └── Floor 2 → prefix "A2", spaces: A201-A250
+  └── Building B — "R&D Center"
+       ├── Floor 1 → prefix "B1", spaces: B101-B130
+       └── Floor 2 → prefix "B2", spaces: B201-B230
+
+Branch: "Haifa Office" (single building, single AIMS store)
+  └── (default building, hidden in UI)
+       ├── Floor 1 → prefix "1", spaces: 100-150
+       └── Floor 2 → prefix "2", spaces: 200-250
+```
 
 ### Floor & Space Numbering
 
-Floors define a **prefix** and **range** for automatic space numbering:
+Floors define a **prefix** and **range** for automatic space numbering. In multi-building branches, the building code is typically part of the prefix:
 
 ```
-Floor 1 → prefix: "1", range: 100-199 → spaces: 100, 101, 102...
-Floor 2 → prefix: "2", range: 200-299 → spaces: 200, 201, 202...
-Floor G → prefix: "G", range: G01-G50 → spaces: G01, G02, G03...
+Building A, Floor 1 → prefix: "A1", range: A101-A199 → spaces: A101, A102...
+Building A, Floor 2 → prefix: "A2", range: A201-A299 → spaces: A201, A202...
+Building B, Floor G → prefix: "BG", range: BG01-BG50 → spaces: BG01, BG02...
+
+Single building, Floor 1 → prefix: "1", range: 100-199 → spaces: 100, 101, 102...
 ```
 
 This maps directly to AIMS article IDs (externalId).
 
 ### Batch Operations
 
+- **Create building with floors**: Admin specifies building name/code, number of floors → system scaffolds structure
 - **Create floor with N spaces**: Admin specifies floor, prefix, count → system generates spaces
-- **Assign area to range**: Select spaces 200-220 → assign to "Marketing Wing"
-- **Change type for range**: Select spaces 300-310 → change from Office to Desk
+- **Assign area to range**: Select spaces A200-A220 → assign to "Marketing Wing"
+- **Change type for range**: Select spaces B300-B310 → change from Office to Desk
 - **Apply rules to range**: Select spaces 400-450 → set 4-hour max booking
+- **Move spaces between buildings**: Reassign spaces from Building A to Building B (updates prefix)
 
 ---
 
@@ -177,6 +208,7 @@ By default, all spaces are bookable. Admins can:
 interface Space {
   id: string;                    // UUID
   branchId: string;              // FK → Branch (was storeId)
+  buildingId?: string;           // FK → Building
   floorId?: string;              // FK → Floor
   areaId?: string;               // FK → Area
 
@@ -526,19 +558,24 @@ electisSpace/
 
 ### 7.7 Friend Proximity Algorithm
 
-Friends are **not** located by map or GPS. Proximity is calculated by:
+Friends are **not** located by map or GPS. Proximity is calculated by building → floor → space number:
 
 ```
 1. Get friend's current space (booked + checked in)
-2. Get friend's floor and space number
-3. Find available spaces on same floor
-4. Sort by numeric distance: |availableSpace.number - friend.number|
+2. Get friend's building, floor, and space sortOrder
+3. Find available spaces prioritized by:
+   a. Same building + same floor (closest by sortOrder)
+   b. Same building + different floor (closest floor number)
+   c. Different building (show building name)
+4. Sort by numeric distance: |availableSpace.sortOrder - friend.sortOrder|
 5. Show "N spaces from [friend]" in results
 ```
 
-If friend is on a different floor:
+Display examples:
 ```
-"Dan is on Floor 3 — 2 spaces available near him"
+Same building, same floor:   "Dan — Office A203, 2 spaces away"
+Same building, diff floor:   "Dan is on Floor 3, Building A — 2 spaces available near him"
+Different building:           "Dan is in Building B, Floor 1 — 5 spaces available"
 ```
 
 ### 7.8 Offline Support
@@ -686,25 +723,48 @@ interface ConferenceRoomMapping {
 
 ```prisma
 // ======================
-// Floors
+// Buildings / Sites
 // ======================
-model Floor {
+model Building {
   id        String   @id @default(uuid())
-  branchId  String   @map("branch_id")     // was storeId
-  number    Int                              // Floor number (0, 1, 2, -1)
-  name      String   @db.VarChar(50)        // "Ground Floor", "Floor 2"
-  prefix    String   @db.VarChar(10)        // "G", "1", "2"
-  rangeStart String? @map("range_start") @db.VarChar(20) // "100"
-  rangeEnd   String? @map("range_end") @db.VarChar(20)   // "199"
+  branchId  String   @map("branch_id")     // FK → Store (branch)
+  name      String   @db.VarChar(100)      // "Main Office", "R&D Center"
+  code      String   @db.VarChar(10)       // "A", "B", "MAIN" — used in space prefixes
+  address   String?  @db.VarChar(500)      // Optional, inherits from branch if null
+  sortOrder Int      @default(0) @map("sort_order")
+  isDefault Boolean  @default(false) @map("is_default") // Auto-created building for single-building branches
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   branch    Store    @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  areas     Area[]
-  spaces    Space[]
+  floors    Floor[]
+  spaces    Space[]  // Spaces can reference building directly (without floor)
 
-  @@unique([branchId, number])
+  @@unique([branchId, code])
+  @@map("buildings")
+}
+
+// ======================
+// Floors
+// ======================
+model Floor {
+  id         String   @id @default(uuid())
+  buildingId String   @map("building_id")   // FK → Building
+  number     Int                              // Floor number (0, 1, 2, -1)
+  name       String   @db.VarChar(50)        // "Ground Floor", "Floor 2"
+  prefix     String   @db.VarChar(10)        // "G", "1", "A2"
+  rangeStart String?  @map("range_start") @db.VarChar(20) // "A101"
+  rangeEnd   String?  @map("range_end") @db.VarChar(20)   // "A199"
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  areas      Area[]
+  spaces     Space[]
+
+  @@unique([buildingId, number])
   @@map("floors")
 }
 
@@ -1054,17 +1114,25 @@ PATCH  /api/v2/branches/:branchId/spaces/batch-type    # Batch change type
 DELETE /api/v2/branches/:branchId/spaces/:id           # Delete space
 ```
 
+#### Buildings
+```
+GET    /api/v2/branches/:branchId/buildings             # List buildings
+POST   /api/v2/branches/:branchId/buildings             # Create building
+PATCH  /api/v2/buildings/:id                             # Update building
+DELETE /api/v2/buildings/:id                             # Delete building (cascade floors/spaces)
+```
+
 #### Floors & Areas
 ```
-GET    /api/v2/branches/:branchId/floors               # List floors
-POST   /api/v2/branches/:branchId/floors               # Create floor (with spaces)
-PATCH  /api/v2/branches/:branchId/floors/:id           # Update floor
-DELETE /api/v2/branches/:branchId/floors/:id           # Delete floor
+GET    /api/v2/buildings/:buildingId/floors              # List floors in building
+POST   /api/v2/buildings/:buildingId/floors              # Create floor (with spaces)
+PATCH  /api/v2/floors/:id                                # Update floor
+DELETE /api/v2/floors/:id                                # Delete floor
 
-GET    /api/v2/floors/:floorId/areas                    # List areas
-POST   /api/v2/floors/:floorId/areas                    # Create area
-PATCH  /api/v2/areas/:id                                # Update area
-DELETE /api/v2/areas/:id                                # Delete area
+GET    /api/v2/floors/:floorId/areas                     # List areas
+POST   /api/v2/floors/:floorId/areas                     # Create area
+PATCH  /api/v2/areas/:id                                 # Update area
+DELETE /api/v2/areas/:id                                 # Delete area
 ```
 
 #### Bookings
