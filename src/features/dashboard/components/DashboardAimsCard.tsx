@@ -78,7 +78,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
 
     const gwHealthPct = gwTotal > 0 ? Math.round((gwOnline / gwTotal) * 100) : 0;
 
-    // --- Mobile layout ---
+    // --- Mobile layout — all 6 categories ---
     if (isMobile) {
         return (
             <Card data-testid="aims-card">
@@ -126,40 +126,81 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                         />
                     </Stack>
 
-                    {/* Stat tiles — gateways */}
+                    {/* 1. Gateways */}
                     <Stack direction="row" gap={1} sx={{ mb: 1 }}>
                         <MobileStatTile value={gwOnline} label={t('aims.online')} color="success" />
                         <MobileStatTile value={gwOffline} label={t('aims.offline')} color="error" />
                     </Stack>
 
-                    {/* Stat tiles — labels */}
+                    {/* 2. Labels */}
                     <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+                        <MobileStatTile value={lblOnline} label={t('aims.online')} color="success" />
+                        <MobileStatTile value={lblOffline} label={t('aims.offline')} color="error" />
                         <MobileStatTile value={lblTotal} label={t('aims.totalLabels')} color="primary" />
-                        <MobileStatTile value={lblOnline} label={t('aims.online')} color="info" />
                     </Stack>
 
-                    {/* Battery & Signal chips */}
-                    {batTotal > 0 && (
-                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                                {t('aims.batteryHealth')}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                {batGood > 0 && <Chip size="small" label={`${t('aims.batteryGood')}: ${batGood}`} color="success" variant="outlined" />}
-                                {batLow > 0 && <Chip size="small" label={`${t('aims.batteryLow')}: ${batLow}`} color="warning" variant="outlined" />}
-                            </Box>
-                        </Box>
-                    )}
+                    {/* 3. Update Progress */}
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: 'block' }}>
+                            {t('aims.productUpdates')}
+                        </Typography>
+                        <Stack direction="row" gap={1}>
+                            <MobileStatTile value={lblUpdated} label={t('aims.success')} color="success" />
+                            {lblInProgress > 0 && (
+                                <MobileStatTile value={lblInProgress} label={t('aims.status')} color="warning" />
+                            )}
+                            {lblNotUpdated > 0 && (
+                                <MobileStatTile value={lblNotUpdated} label={t('aims.failed')} color="error" />
+                            )}
+                        </Stack>
+                    </Box>
 
-                    {sigTotal > 0 && (
+                    {/* 4. Battery Health */}
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: 'block' }}>
+                            {t('aims.batteryHealth')}
+                        </Typography>
+                        {batTotal > 0 ? (
+                            <Stack direction="row" gap={1}>
+                                <MobileStatTile value={batGood} label={t('aims.batteryGood')} color="success" />
+                                <MobileStatTile value={batLow} label={t('aims.batteryLow')} color="warning" />
+                            </Stack>
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>
+                        )}
+                    </Box>
+
+                    {/* 5. Signal Quality */}
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: 'block' }}>
+                            {t('aims.signalDistribution')}
+                        </Typography>
+                        {sigTotal > 0 ? (
+                            <Stack direction="row" gap={1}>
+                                <MobileStatTile value={sigExcellent} label={t('aims.signalExcellent')} color="success" />
+                                <MobileStatTile value={sigGood} label={t('aims.signalGood')} color="info" />
+                                <MobileStatTile value={sigBad} label={t('aims.signalBad')} color="error" />
+                            </Stack>
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">{t('aims.noDetails')}</Typography>
+                        )}
+                    </Box>
+
+                    {/* 6. Label Models */}
+                    {Array.isArray(labelModels) && labelModels.length > 0 && (
                         <Box sx={{ mt: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                                {t('aims.signalDistribution')}
+                            <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: 'block' }}>
+                                {t('aims.labelTypes')}
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                {sigExcellent > 0 && <Chip size="small" label={`${t('aims.signalExcellent')}: ${sigExcellent}`} color="success" variant="outlined" />}
-                                {sigGood > 0 && <Chip size="small" label={`${t('aims.signalGood')}: ${sigGood}`} color="info" variant="outlined" />}
-                                {sigBad > 0 && <Chip size="small" label={`${t('aims.signalBad')}: ${sigBad}`} color="error" variant="outlined" />}
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {labelModels.map((model: any, i: number) => (
+                                    <Chip
+                                        key={i}
+                                        label={`${model.labelType || model.type || 'Unknown'}: ${model.count ?? 0}`}
+                                        size="small"
+                                        variant="outlined"
+                                    />
+                                ))}
                             </Box>
                         </Box>
                     )}
