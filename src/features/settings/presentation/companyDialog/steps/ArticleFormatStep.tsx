@@ -193,20 +193,22 @@ export function ArticleFormatStep({
                 </Box>
             ) : (
                 /* ===== JSON Editor View ===== */
-                <Suspense fallback={
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                        <CircularProgress />
-                    </Box>
-                }>
-                    <Alert severity="info" variant="outlined" sx={{ mb: 1 }}>
-                        {t('settings.companies.jsonEditHint')}
-                    </Alert>
-                    <ArticleFormatEditor
-                        schema={articleFormat}
-                        onSave={handleJsonSave}
-                        readOnly={false}
-                    />
-                </Suspense>
+                <Box sx={{ mx: { xs: -2, sm: 0 } }}>
+                    <Suspense fallback={
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                            <CircularProgress />
+                        </Box>
+                    }>
+                        <Alert severity="info" variant="outlined" sx={{ mb: 1 }}>
+                            {t('settings.companies.jsonEditHint')}
+                        </Alert>
+                        <ArticleFormatEditor
+                            schema={articleFormat}
+                            onSave={handleJsonSave}
+                            readOnly={false}
+                        />
+                    </Suspense>
+                </Box>
             )}
         </Box>
     );
