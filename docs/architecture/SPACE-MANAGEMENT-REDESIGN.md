@@ -17,6 +17,7 @@
 5. [Space Assignment Rules Engine](#5-space-assignment-rules-engine)
 6. [Role-Based Access Control (RBAC)](#6-role-based-access-control-rbac)
 7. [electisCompass — User App Architecture](#7-electiscompass--user-app-architecture)
+7B. [Internationalization (i18n) — Full EN + HE Support](#7b-internationalization-i18n--full-en--he-support)
 8. [External Integrations](#8-external-integrations)
 9. [Database Schema Evolution](#9-database-schema-evolution)
 10. [API Architecture](#10-api-architecture)
@@ -104,8 +105,8 @@ A **Branch** can contain one or more **Buildings** (also called Sites). This sup
 
 | Entity | Description | Key Properties |
 |--------|-------------|----------------|
-| **Company** | Customer org, maps to AIMS organization | name, code, AIMS config, settings, integrations |
-| **Branch** | Physical location, maps to AIMS store | name, code, address, timezone, buildings[], settings |
+| **Company** | Customer org, maps to AIMS organization | name, code, AIMS config, settings, integrations, defaultLanguage (`en`/`he`) |
+| **Branch** | Physical location, maps to AIMS store | name, code, address, timezone, locale (`en`/`he`), buildings[], settings |
 | **Building** | Physical structure within a branch | name, code, address (optional, inherits from branch), floors[] |
 | **Floor** | Physical floor level within a building | number, name, prefix (for space numbering) |
 | **Area** | Logical grouping within floor | name, type (wing/department/open-space/zone) |
@@ -429,7 +430,8 @@ interface CompanyUser {
 | Forms | React Hook Form + Zod | Same pattern |
 | Routing | React Router (HashRouter) | Same pattern |
 | Mobile | Capacitor 7 (Android + iOS) | iOS added |
-| i18n | i18next (EN + HE) | Same locales |
+| i18n | i18next (EN + HE) | Full RTL support, shared locale keys |
+| RTL | MUI direction + stylis-plugin-rtl | Hebrew = RTL, English = LTR |
 | Real-time | Socket.IO client | For live space status |
 
 ### 7.3 Project Structure
@@ -586,6 +588,162 @@ Compass should work offline for:
 - Caching last-known friend locations
 
 Booking/releasing requires connectivity (show clear offline indicator).
+
+---
+
+## 7B. Internationalization (i18n) — Full EN + HE Support
+
+Both electisSpace and electisCompass must provide **complete English and Hebrew support** with full RTL layout switching. This is a first-class requirement, not an afterthought.
+
+### Current State (electisSpace)
+
+The existing app already has a solid i18n foundation:
+
+| Component | Implementation |
+|-----------|---------------|
+| i18n library | i18next + react-i18next + i18next-browser-languagedetector |
+| Locale files | `src/locales/en/common.json` (~1763 lines), `src/locales/he/common.json` (~1778 lines) |
+| Lazy loading | Only the active language is loaded at startup; the other loads on demand via dynamic import |
+| Language detection | `localStorage` → `navigator.language` → fallback `en` |
+| RTL handling | MUI `direction: 'rtl'` + `stylis-plugin-rtl` for Emotion CSS |
+| Font | "Assistant" as primary (supports both Latin and Hebrew glyphs) |
+| Document direction | `document.dir` and `lang` attribute updated on language change |
+
+### i18n Architecture for Both Apps
+
+```
+shared/
+├── locales/
+│   ├── en/
+│   │   ├── common.json         # Shared keys (space types, statuses, errors)
+│   │   ├── admin.json          # electisSpace-only keys
+│   │   └── compass.json        # electisCompass-only keys
+│   └── he/
+│       ├── common.json         # Shared keys (Hebrew)
+│       ├── admin.json          # electisSpace-only keys (Hebrew)
+│       └── compass.json        # electisCompass-only keys (Hebrew)
+```
+
+#### Why split locale files?
+
+| Namespace | Used By | Example Keys |
+|-----------|---------|-------------|
+| `common` | Both apps | Space types, booking statuses, error messages, shared UI (buttons, dialogs), entity names (company, branch, building, floor) |
+| `admin` | electisSpace only | "Create booking rule", "Sync queue", "Company wizard", AIMS management |
+| `compass` | electisCompass only | "Find a space", "Check in", "Friends nearby", "Auto-assign me", "My bookings" |
+
+This prevents loading ~1800 admin translation keys in the Compass mobile app (saves bundle size).
+
+### RTL Layout Rules
+
+Both apps must follow these RTL-aware patterns:
+
+| Pattern | LTR (English) | RTL (Hebrew) |
+|---------|--------------|--------------|
+| Text alignment | Left | Right |
+| Navigation flow | Left → Right | Right → Left |
+| Icons with direction (arrows, chevrons) | `→` | `←` (auto-flipped by MUI) |
+| Form label position | Left of input | Right of input (MUI handles) |
+| Drawer position | Left side | Right side |
+| Bottom nav order | Home, Search, Bookings, Profile | Profile, Bookings, Search, Home |
+| Number display | LTR within RTL context | Same — numbers always LTR |
+| Phone numbers | LTR | LTR (use `dir="ltr"` on phone fields) |
+| Date/time format | `Mar 4, 2026 14:30` | `4 במרץ 2026 14:30` |
+
+#### CSS Rules for RTL Compatibility
+
+```css
+/* CORRECT — use logical properties */
+margin-inline-start: 8px;    /* left in LTR, right in RTL */
+padding-inline-end: 16px;
+border-inline-start: 2px solid;
+text-align: start;
+
+/* WRONG — physical properties break in RTL */
+margin-left: 8px;
+padding-right: 16px;
+border-left: 2px solid;
+text-align: left;
+```
+
+The existing electisSpace theme already uses logical properties (`marginInline`, `paddingInlineStart`, `paddingInlineEnd`) in MUI component overrides. Compass must follow the same pattern.
+
+### Compass-Specific i18n Considerations
+
+#### Mobile-First Hebrew UX
+
+| Element | EN | HE |
+|---------|----|----|
+| Home greeting | "Good morning, Aviv" | "בוקר טוב, אביב" |
+| Space card | "Office 204, Floor 2" | "משרד 204, קומה 2" |
+| Booking status | "Until 18:00" | "עד 18:00" |
+| Friend proximity | "Dan — 2 spaces away" | "דן — 2 מקומות ממך" |
+| Auto-assign button | "Auto-Assign Me" | "שבץ אותי אוטומטית" |
+| Check-in button | "Check In" | "צ'ק אין" |
+| Empty state | "No bookings yet" | "אין הזמנות עדיין" |
+
+#### Server-Side i18n
+
+Email templates and push notifications must also be bilingual:
+
+| Template | EN | HE |
+|----------|----|----|
+| Booking confirmation | "Your space Office 204 is booked until 18:00" | "המקום שלך משרד 204 הוזמן עד 18:00" |
+| Check-in reminder | "Please check in to Office 204 within 15 minutes" | "נא לבצע צ'ק אין למשרד 204 תוך 15 דקות" |
+| Auto-release notice | "Your booking for Office 204 was released (no show)" | "ההזמנה שלך למשרד 204 שוחררה (לא הגעת)" |
+| Password reset code | "Your verification code is: 123456" | "קוד האימות שלך הוא: 123456" |
+
+The server determines the user's language from:
+1. `CompanyUser.preferences.language` (if set)
+2. Company default language (company settings)
+3. Fallback: `'en'`
+
+#### Locale-Aware Data Formatting
+
+| Data Type | EN Format | HE Format | Library |
+|-----------|-----------|-----------|---------|
+| Date | `Mar 4, 2026` | `4 במרץ 2026` | date-fns with `he` locale |
+| Time | `2:30 PM` or `14:30` (24h pref) | `14:30` (24h default) | date-fns |
+| Relative time | `in 2 hours` | `בעוד שעתיים` | date-fns `formatDistance` |
+| Phone | `+972 50-123-4567` | `050-123-4567+972` | Custom (libphonenumber-js) |
+| Day names | `Monday` | `יום שני` | date-fns |
+| "No results" | `No spaces available` | `אין מקומות פנויים` | i18next |
+
+#### Plural Rules
+
+Hebrew has complex plural forms (singular, dual for 2, plural for 3+). Use i18next plural interpolation:
+
+```json
+// en/compass.json
+{
+  "spacesAvailable": "{{count}} space available",
+  "spacesAvailable_other": "{{count}} spaces available"
+}
+
+// he/compass.json
+{
+  "spacesAvailable_one": "מקום אחד פנוי",
+  "spacesAvailable_two": "שני מקומות פנויים",
+  "spacesAvailable_other": "{{count}} מקומות פנויים"
+}
+```
+
+### Translation Workflow
+
+| Step | Action |
+|------|--------|
+| 1 | Developer adds English key to appropriate namespace (`common`, `admin`, or `compass`) |
+| 2 | Developer adds Hebrew key to matching namespace file |
+| 3 | Both files must stay in sync — CI check validates matching keys |
+| 4 | New Compass keys use `compass` namespace; shared keys use `common` |
+| 5 | Server email templates: add to `server/src/locales/en.json` and `server/src/locales/he.json` |
+
+### Language Switching
+
+| App | Behavior |
+|-----|----------|
+| **electisSpace** | Language toggle in settings. Persisted to `localStorage`. RTL switches instantly (MUI theme re-creates). |
+| **electisCompass** | Language in profile settings. Persisted to `CompanyUser.preferences.language` on server + `localStorage` for offline. Default based on branch locale or device language. |
 
 ---
 
@@ -856,7 +1014,8 @@ model CompanyUser {
   externalSource String? @map("external_source") @db.VarChar(20)
 
   // Preferences
-  preferences   Json     @default("{}")
+  language      String   @default("en") @db.VarChar(5) // "en" or "he"
+  preferences   Json     @default("{}")  // { darkTheme: true, preferredSpaceType?, isLocationVisible: true }
 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -1580,19 +1739,39 @@ Text Primary:   #212121
 Text Secondary: #757575
 ```
 
-### Typography (Mobile-First)
+### Typography (Mobile-First, Bilingual)
 ```
-H1: 28px / Bold    — Screen titles
-H2: 22px / SemiBold — Section headers
-Body: 16px / Regular — Content (minimum for readability)
+Font Stack:     "Assistant", -apple-system, BlinkMacSystemFont, "SF Pro", Arial
+                (Assistant supports both Latin and Hebrew glyphs natively)
+
+H1: 28px / Bold (700)    — Screen titles
+H2: 22px / SemiBold (600) — Section headers
+Body: 16px / Regular (400) — Content (minimum for mobile readability)
 Caption: 14px / Regular — Secondary info
-Button: 16px / Bold — Touch targets (min 48px height)
+Button: 16px / Bold (700) — Touch targets (min 48px height)
+
+Hebrew note: Assistant font renders Hebrew at visually similar sizes to Latin.
+             No font-size adjustments needed per language.
+```
+
+### RTL-Aware Layout
+```
+┌─ LTR (English) ──────────┐    ┌─ RTL (Hebrew) ──────────────┐
+│ [←] Find a Space          │    │          חפש מקום [→]       │
+│                            │    │                              │
+│ 🟢 Office 201             │    │              201 משרד 🟢    │
+│ Floor 2, Area A            │    │         אזור A, קומה 2     │
+│              [BOOK] │    │    │ [הזמן]                       │
+│                            │    │                              │
+│ 🏠  🔍  📋  👤            │    │            👤  📋  🔍  🏠   │
+└────────────────────────────┘    └──────────────────────────────┘
 ```
 
 ### Touch Targets
 - Minimum button height: 48px
 - Minimum tap area: 44x44px
 - Spacing between interactive elements: 8px minimum
+- Hebrew buttons may need wider min-width (Hebrew words are often longer)
 
 ---
 
@@ -1609,14 +1788,28 @@ shared/
 ├── api/
 │   ├── client.ts         # Axios instance factory
 │   └── interceptors.ts   # Auth refresh interceptor
+├── locales/              # Split locale files for both apps
+│   ├── en/
+│   │   ├── common.json   # Shared keys used by both apps
+│   │   ├── admin.json    # electisSpace-only keys
+│   │   └── compass.json  # electisCompass-only keys
+│   └── he/
+│       ├── common.json   # Shared keys (Hebrew)
+│       ├── admin.json    # electisSpace-only (Hebrew)
+│       └── compass.json  # electisCompass-only (Hebrew)
+├── i18n/
+│   ├── config.ts         # Shared i18n initialization (lazy-load, detection)
+│   ├── dateLocales.ts    # date-fns locale mapping (en-US, he)
+│   └── pluralRules.ts    # Hebrew dual/plural helpers
 ├── utils/
-│   ├── date.ts           # date-fns wrappers with timezone
-│   ├── i18n.ts           # Shared i18n setup
+│   ├── date.ts           # date-fns wrappers with timezone + locale
+│   ├── format.ts         # Locale-aware number/phone formatting
 │   └── platform.ts       # Platform detection
 └── theme/
     ├── tokens.ts         # Design tokens (colors, spacing)
-    └── dark.ts           # Dark theme configuration
-    └── light.ts          # Light theme configuration
+    ├── dark.ts           # Dark theme configuration
+    ├── light.ts          # Light theme configuration
+    └── rtl.ts            # RTL cache config (stylis-plugin-rtl)
 ```
 
 Both Vite configs reference this shared directory via path aliases:
@@ -1627,4 +1820,13 @@ resolve: {
     '@shared': path.resolve(__dirname, '../shared'),
   }
 }
+```
+
+Each app loads only its own namespaces:
+```typescript
+// electisSpace i18n init
+ns: ['common', 'admin']
+
+// electisCompass i18n init
+ns: ['common', 'compass']
 ```
