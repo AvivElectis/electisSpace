@@ -300,7 +300,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelTypes')}</Typography>
                             </Stack>
                             {Array.isArray(labelModels) && labelModels.length > 0 ? (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, maxHeight: 100, overflowY: 'auto' }}>
                                     {labelModels.map((model: any, i: number) => (
                                         <Chip
                                             key={i}
