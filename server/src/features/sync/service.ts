@@ -232,15 +232,13 @@ export const syncService = {
             if (!articleId) continue;
 
             const existingSpace = spaceMap.get(articleId);
-            const articleData = {
+            // The AIMS article `data` field is a Record<string, string> containing
+            // all article fields (ITEM_NAME, ITEM_ID, etc.). Store it directly.
+            const articleData: Record<string, unknown> = {
                 name: article.articleName || article.article_name,
-                data1: article.data1,
-                data2: article.data2,
-                data3: article.data3,
-                data4: article.data4,
-                data5: article.data5,
-                nfc: article.nfc,
+                ...(article.data || {}),
             };
+            if (article.nfc) articleData.nfc = article.nfc;
 
             if (existingSpace) {
                 updates.push({

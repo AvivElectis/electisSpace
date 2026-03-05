@@ -181,7 +181,8 @@ export const syncRepository = {
     },
 
     /**
-     * Find all spaces for a store (batch lookup for sync)
+     * Find all spaces for a store (batch lookup for sync).
+     * Only selects core sync fields — compass fields are never touched by sync.
      */
     async findAllSpacesByStore(storeId: string) {
         return prisma.space.findMany({
@@ -191,7 +192,7 @@ export const syncRepository = {
     },
 
     /**
-     * Create space
+     * Create space (sync only — no compass fields).
      */
     async createSpace(data: {
         storeId: string;
@@ -220,7 +221,10 @@ export const syncRepository = {
     },
 
     /**
-     * Batch upsert: create new spaces + update existing in a single transaction
+     * Batch upsert: create new spaces + update existing in a single transaction.
+     * SAFETY: Only updates core sync fields (data, labelCode, syncStatus, lastSyncedAt).
+     * Compass fields (building_id, floor_id, area_id, compass_mode, etc.) are NEVER
+     * touched by sync operations to prevent cross-feature data corruption.
      */
     async batchUpsertSpaces(
         creates: {
