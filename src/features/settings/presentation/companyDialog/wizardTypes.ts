@@ -15,6 +15,15 @@ export interface WizardStoreData {
     selected: boolean;
 }
 
+export interface WizardFloor {
+    name: string;
+}
+
+export interface WizardBuilding {
+    name: string;
+    floors: WizardFloor[];
+}
+
 export interface CompassConfig {
     maxDurationMinutes: number;
     maxAdvanceBookingDays: number;
@@ -51,6 +60,9 @@ export interface WizardFormData {
 
     // Compass Configuration (shown when compassEnabled)
     compassConfig: CompassConfig;
+
+    // Building Hierarchy (shown when compassEnabled)
+    buildings: WizardBuilding[];
 }
 
 export const DEFAULT_COMPASS_CONFIG: CompassConfig = {
@@ -86,4 +98,5 @@ export const INITIAL_WIZARD_DATA: WizardFormData = {
     },
     spaceType: 'office',
     compassConfig: { ...DEFAULT_COMPASS_CONFIG },
+    buildings: [],
 };

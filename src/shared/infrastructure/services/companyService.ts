@@ -100,6 +100,10 @@ export interface CreateCompanyFullDto extends CreateCompanyDto {
         autoReleaseMinutes: number;
         maxConcurrentBookings: number;
     };
+    buildings?: Array<{
+        name: string;
+        floors: Array<{ name: string }>;
+    }>;
 }
 
 /** Update company DTO */

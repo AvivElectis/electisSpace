@@ -41,6 +41,7 @@ import {
     FieldMappingStep,
     FeaturesStep,
     CompassConfigStep,
+    BuildingHierarchyStep,
     ReviewStep,
 } from './steps';
 import { INITIAL_WIZARD_DATA, type WizardFormData, type WizardStoreData } from './wizardTypes';
@@ -60,6 +61,7 @@ const BASE_STEP_LABELS = [
 ];
 
 const COMPASS_STEP_LABEL = 'settings.companies.wizardStepCompass';
+const BUILDINGS_STEP_LABEL = 'settings.companies.wizardStepBuildings';
 
 export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const { t } = useTranslation();
@@ -127,10 +129,11 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const compassEnabled = formData.features.compassEnabled;
     const stepLabels = useMemo(() => {
         if (!compassEnabled) return BASE_STEP_LABELS;
-        // Insert compass step before the last (Review) step
+        // Insert compass config + building hierarchy steps before Review
         return [
             ...BASE_STEP_LABELS.slice(0, 5),
             COMPASS_STEP_LABEL,
+            BUILDINGS_STEP_LABEL,
             BASE_STEP_LABELS[5],
         ];
     }, [compassEnabled]);
@@ -204,7 +207,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         if (!compassEnabled) {
             return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'review'][step] || '';
         }
-        return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'compassConfig', 'review'][step] || '';
+        return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'compassConfig', 'buildings', 'review'][step] || '';
     };
 
     // Validation per step (by identity, not index)
@@ -230,6 +233,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 return true;
             case 'compassConfig':
                 return true;
+            case 'buildings':
+                return true; // Buildings are optional — user can skip
             case 'review':
                 return true;
             default:
@@ -285,6 +290,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 fieldMapping: formData.fieldMapping as unknown as Record<string, unknown> | undefined,
                 ...(formData.features.compassEnabled && {
                     compassConfig: formData.compassConfig,
+                    buildings: formData.buildings,
                 }),
             };
 
@@ -356,6 +362,13 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     <CompassConfigStep
                         config={formData.compassConfig}
                         onUpdate={(compassConfig) => updateFormData({ compassConfig })}
+                    />
+                );
+            case 'buildings':
+                return (
+                    <BuildingHierarchyStep
+                        buildings={formData.buildings}
+                        onUpdate={(buildings) => updateFormData({ buildings })}
                     />
                 );
             case 'review':

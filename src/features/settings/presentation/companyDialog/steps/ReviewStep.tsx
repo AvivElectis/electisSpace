@@ -170,6 +170,23 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
                     </Stack>
                 </Paper>
             )}
+
+            {/* Section 7: Building Hierarchy (only when enabled) */}
+            {compassEnabled && formData.buildings.length > 0 && (
+                <Paper variant="outlined" sx={{ p: 1.5 }}>
+                    <SectionHeader title={t('settings.companies.reviewBuildings')} step={6} onGoToStep={onGoToStep} />
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {formData.buildings.map((building) => (
+                            <Chip
+                                key={building.name}
+                                label={`${building.name} (${t('settings.companies.floorCount', { count: building.floors.length })})`}
+                                size="small"
+                                variant="outlined"
+                            />
+                        ))}
+                    </Box>
+                </Paper>
+            )}
         </Box>
     );
 }
