@@ -29,8 +29,7 @@ export function ProfilePage() {
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'he' : 'en';
-        i18n.changeLanguage(newLang);
-        document.documentElement.dir = newLang === 'he' ? 'rtl' : 'ltr';
+        i18n.changeLanguage(newLang); // Direction auto-set by i18n config
     };
 
     return (
