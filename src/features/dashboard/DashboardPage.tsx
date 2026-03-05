@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useMemo, useEffect, lazy, Suspense, useCallback } from 'react';
 
 // Features
+import api from '@shared/infrastructure/services/apiClient';
 import { useSpaceController } from '@features/space/application/useSpaceController';
 import { useConferenceController } from '@features/conference/application/useConferenceController';
 import { useSettingsController } from '@features/settings/application/useSettingsController';
@@ -26,6 +27,7 @@ import {
     DashboardConferenceCard,
     DashboardPeopleCard,
     DashboardAimsCard,
+    DashboardCompassCard,
     DashboardSkeleton,
     QuickActionsPanel,
 } from './components';
@@ -62,7 +64,12 @@ export function DashboardPage() {
 
     // Feature access — dashboard only shows enabled sections
     const { canAccessFeature: can } = useAuthContext();
+    const { activeCompanyId } = useAuthStore();
     const { storeSummary: aimsStoreSummary, labelModels: aimsLabelModels, fetchOverview: fetchAimsOverview } = useAimsOverview(activeStoreId);
+
+    // Compass dashboard summary
+    const [compassSummary, setCompassSummary] = useState<any>(null);
+    const [compassLoading, setCompassLoading] = useState(false);
 
     // Fetch all data from server on mount / store switch so dashboard shows real counts
     useEffect(() => {
@@ -73,9 +80,16 @@ export function DashboardPage() {
             if (can('aims-management')) {
                 fetchAimsOverview();
             }
+            if (can('compass') && activeCompanyId) {
+                setCompassLoading(true);
+                api.get(`/v2/admin/compass/dashboard/summary/${activeCompanyId}`)
+                    .then(res => setCompassSummary(res.data.data))
+                    .catch(() => setCompassSummary(null))
+                    .finally(() => setCompassLoading(false));
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady, activeStoreId, can('aims-management')]);
+    }, [isAppReady, activeStoreId, can('aims-management'), can('compass')]);
 
     // Stats - Spaces
     const totalSpaces = spaceController.spaces.length;
@@ -231,6 +245,16 @@ export function DashboardPage() {
                         isMobile={isMobile}
                     />
                 </Grid>
+                )}
+
+                {/* Compass Area - Only show when feature is enabled */}
+                {can('compass') && (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <DashboardCompassCard
+                            summary={compassSummary}
+                            loading={compassLoading}
+                        />
+                    </Grid>
                 )}
 
                 {/* AIMS Area - Only show when feature is enabled */}

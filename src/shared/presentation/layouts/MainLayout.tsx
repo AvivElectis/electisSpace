@@ -9,6 +9,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LabelIcon from '@mui/icons-material/Label';
 import RouterIcon from '@mui/icons-material/Router';
+import ExploreIcon from '@mui/icons-material/Explore';
 import { AppHeader } from './AppHeader';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
@@ -133,6 +134,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
         { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
+        { labelKey: 'navigation.compass', value: '/compass', icon: <ExploreIcon fontSize="small" />, feature: 'compass' },
         { labelKey: 'navigation.aimsManagement', value: '/aims-management', icon: <RouterIcon fontSize="small" />, feature: 'aims-management' },
     ];
 

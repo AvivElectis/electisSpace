@@ -1,5 +1,6 @@
 /**
- * Shared types for the 6-step Company Creation Wizard
+ * Shared types for the Company Creation Wizard
+ * Base: 6 steps. When Compass is enabled, a 7th step is added.
  */
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
@@ -12,6 +13,14 @@ export interface WizardStoreData {
     labelCount?: number;
     gatewayCount?: number;
     selected: boolean;
+}
+
+export interface CompassConfig {
+    maxDurationMinutes: number;
+    maxAdvanceBookingDays: number;
+    checkInWindowMinutes: number;
+    autoReleaseMinutes: number;
+    maxConcurrentBookings: number;
 }
 
 export interface WizardFormData {
@@ -39,7 +48,18 @@ export interface WizardFormData {
     // Step 5: Features
     features: CompanyFeatures;
     spaceType: SpaceType;
+
+    // Compass Configuration (shown when compassEnabled)
+    compassConfig: CompassConfig;
 }
+
+export const DEFAULT_COMPASS_CONFIG: CompassConfig = {
+    maxDurationMinutes: 480,
+    maxAdvanceBookingDays: 14,
+    checkInWindowMinutes: 15,
+    autoReleaseMinutes: 30,
+    maxConcurrentBookings: 1,
+};
 
 export const INITIAL_WIZARD_DATA: WizardFormData = {
     companyCode: '',
@@ -62,6 +82,8 @@ export const INITIAL_WIZARD_DATA: WizardFormData = {
         simpleConferenceMode: false,
         labelsEnabled: false,
         aimsManagementEnabled: false,
+        compassEnabled: false,
     },
     spaceType: 'office',
+    compassConfig: { ...DEFAULT_COMPASS_CONFIG },
 };

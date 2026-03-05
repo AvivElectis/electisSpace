@@ -1,0 +1,29 @@
+{
+  "recommendations": [
+    // HTML & CSS
+    "ecmel.vscode-html-css",
+    "bradlc.vscode-tailwindcss",
+    "pranaygp.vscode-css-peek",
+    "zignd.html-css-class-completion",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-close-tag",
+    "naumovs.color-highlight",
+
+    // React & TypeScript
+    "dsznajder.es7-react-js-snippets",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Prisma
+    "Prisma.prisma",
+
+    // Docker
+    "ms-azuretools.vscode-docker",
+
+    // i18n
+    "lokalise.i18n-ally",
+
+    // Git
+    "eamodio.gitlens"
+  ]
+}

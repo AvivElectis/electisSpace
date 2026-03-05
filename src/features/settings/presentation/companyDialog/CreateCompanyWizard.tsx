@@ -1,15 +1,17 @@
 /**
- * CreateCompanyWizard — 6-step wizard for creating companies
+ * CreateCompanyWizard — dynamic wizard for creating companies
  *
- * Steps:
+ * Base Steps (6):
  * 0: AIMS Connection + Company Info
  * 1: Multi-Store Selection
  * 2: Article Format (auto-fetched)
  * 3: Field Mapping
  * 4: Features
  * 5: Review & Create
+ *
+ * When Compass is enabled, a 6th config step is inserted before Review (7 total).
  */
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
     DialogTitle,
     DialogContent,
@@ -38,6 +40,7 @@ import {
     ArticleFormatStep,
     FieldMappingStep,
     FeaturesStep,
+    CompassConfigStep,
     ReviewStep,
 } from './steps';
 import { INITIAL_WIZARD_DATA, type WizardFormData, type WizardStoreData } from './wizardTypes';
@@ -47,7 +50,7 @@ interface Props {
     onSave: () => void;
 }
 
-const STEP_LABELS = [
+const BASE_STEP_LABELS = [
     'settings.companies.wizardStep1',
     'settings.companies.wizardStep2',
     'settings.companies.wizardStep3',
@@ -55,6 +58,8 @@ const STEP_LABELS = [
     'settings.companies.wizardStep5',
     'settings.companies.wizardStep6',
 ];
+
+const COMPASS_STEP_LABEL = 'settings.companies.wizardStepCompass';
 
 export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const { t } = useTranslation();
@@ -118,6 +123,27 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         setFormData(prev => ({ ...prev, ...partial }));
     }, []);
 
+    // Dynamic steps: insert Compass Config step before Review when compassEnabled
+    const compassEnabled = formData.features.compassEnabled;
+    const stepLabels = useMemo(() => {
+        if (!compassEnabled) return BASE_STEP_LABELS;
+        // Insert compass step before the last (Review) step
+        return [
+            ...BASE_STEP_LABELS.slice(0, 5),
+            COMPASS_STEP_LABEL,
+            BASE_STEP_LABELS[5],
+        ];
+    }, [compassEnabled]);
+    const totalSteps = stepLabels.length;
+    const lastStep = totalSteps - 1;
+
+    // Clamp activeStep when compass is toggled off and user was on compass/review step
+    useEffect(() => {
+        if (activeStep >= totalSteps) {
+            setActiveStep(totalSteps - 1);
+        }
+    }, [activeStep, totalSteps]);
+
     // Step 1: Test connection + fetch stores
     const handleConnectionTest = useCallback(async () => {
         setConnectionStatus('testing');
@@ -173,10 +199,19 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         }
     }, [formData, t, updateFormData]);
 
-    // Validation per step
+    // Map visual step index to logical step identity
+    const getStepId = (step: number): string => {
+        if (!compassEnabled) {
+            return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'review'][step] || '';
+        }
+        return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'compassConfig', 'review'][step] || '';
+    };
+
+    // Validation per step (by identity, not index)
     const isStepValid = (step: number): boolean => {
-        switch (step) {
-            case 0:
+        const id = getStepId(step);
+        switch (id) {
+            case 'connection':
                 return !!(
                     formData.companyCode.length >= 3 &&
                     codeAvailable &&
@@ -185,23 +220,25 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     formData.aimsPassword &&
                     connectionStatus === 'connected'
                 );
-            case 1:
+            case 'stores':
                 return formData.stores.length > 0;
-            case 2:
-                return !!formData.articleFormat; // Must be fetched
-            case 3:
-                return true; // Field mapping is optional (auto-generated)
-            case 4:
-                return true; // Features selection is optional (all off is valid)
-            case 5:
-                return true; // Review — always valid
+            case 'articleFormat':
+                return !!formData.articleFormat;
+            case 'fieldMapping':
+                return true;
+            case 'features':
+                return true;
+            case 'compassConfig':
+                return true;
+            case 'review':
+                return true;
             default:
                 return false;
         }
     };
 
     const handleNext = () => {
-        if (activeStep < 5) {
+        if (activeStep < lastStep) {
             setActiveStep(prev => prev + 1);
         }
     };
@@ -246,6 +283,9 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 spaceType: formData.spaceType,
                 articleFormat: formData.articleFormat as unknown as Record<string, unknown> | undefined,
                 fieldMapping: formData.fieldMapping as unknown as Record<string, unknown> | undefined,
+                ...(formData.features.compassEnabled && {
+                    compassConfig: formData.compassConfig,
+                }),
             };
 
             await companyService.create(createData);
@@ -257,10 +297,11 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         }
     };
 
-    // Render current step
+    // Render current step by identity
     const renderStep = () => {
-        switch (activeStep) {
-            case 0:
+        const id = getStepId(activeStep);
+        switch (id) {
+            case 'connection':
                 return (
                     <ConnectionStep
                         formData={formData}
@@ -273,7 +314,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         codeError={codeError}
                     />
                 );
-            case 1:
+            case 'stores':
                 return (
                     <StoreSelectionStep
                         aimsStores={aimsStores}
@@ -281,7 +322,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         onUpdate={handleStoresUpdate}
                     />
                 );
-            case 2:
+            case 'articleFormat':
                 return (
                     <ArticleFormatStep
                         articleFormat={formData.articleFormat}
@@ -291,7 +332,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         onUpdate={(format) => updateFormData({ articleFormat: format })}
                     />
                 );
-            case 3:
+            case 'fieldMapping':
                 return (
                     <FieldMappingStep
                         articleFormat={formData.articleFormat}
@@ -299,7 +340,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         onUpdate={(mapping) => updateFormData({ fieldMapping: mapping })}
                     />
                 );
-            case 4:
+            case 'features':
                 return (
                     <FeaturesStep
                         features={formData.features}
@@ -310,10 +351,18 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         onUpdate={(features, spaceType) => updateFormData({ features, spaceType })}
                     />
                 );
-            case 5:
+            case 'compassConfig':
+                return (
+                    <CompassConfigStep
+                        config={formData.compassConfig}
+                        onUpdate={(compassConfig) => updateFormData({ compassConfig })}
+                    />
+                );
+            case 'review':
                 return (
                     <ReviewStep
                         formData={formData}
+                        compassEnabled={compassEnabled}
                         onGoToStep={handleGoToStep}
                     />
                 );
@@ -337,15 +386,15 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     <Box sx={{ mb: 2, mt: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                             <Typography variant="subtitle2" fontWeight={600}>
-                                {t(STEP_LABELS[activeStep])}
+                                {t(stepLabels[activeStep])}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
-                                {activeStep + 1} / {STEP_LABELS.length}
+                                {activeStep + 1} / {totalSteps}
                             </Typography>
                         </Box>
                         <LinearProgress
                             variant="determinate"
-                            value={((activeStep + 1) / STEP_LABELS.length) * 100}
+                            value={((activeStep + 1) / totalSteps) * 100}
                             sx={{ height: 6, borderRadius: 3 }}
                         />
                     </Box>
@@ -366,7 +415,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                             }),
                         }}
                     >
-                        {STEP_LABELS.map((labelKey, index) => (
+                        {stepLabels.map((labelKey, index) => (
                             <Step key={labelKey} completed={index < activeStep}>
                                 <StepLabel>{t(labelKey)}</StepLabel>
                             </Step>
@@ -389,7 +438,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     <Button onClick={onClose} disabled={submitting}>
                         {t('common.cancel')}
                     </Button>
-                    {activeStep < 5 ? (
+                    {activeStep < lastStep ? (
                         <Button
                             variant="contained"
                             onClick={handleNext}

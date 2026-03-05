@@ -212,6 +212,7 @@
         "sync": "סינכרון",
         "aims-management": "ניהול AIMS",
         "aimsManagement": "ניהול AIMS",
+        "compass": "קומפס",
         "settings": "הגדרות"
     },
     "common": {
@@ -965,6 +966,7 @@
             "wizardStep4": "מיפוי שדות",
             "wizardStep5": "תכונות",
             "wizardStep6": "סקירה ויצירה",
+            "wizardStepCompass": "הגדרות Compass",
             "connectionTesting": "בודק...",
             "connectionSuccess": "חיבור הצליח",
             "connectionFailed": "חיבור נכשל",
@@ -1004,6 +1006,8 @@
             "featureLabelsDesc": "ניהול תגיות ESL וסנכרון.",
             "featureAims": "ניהול AIMS",
             "featureAimsDesc": "ניהול מלא של נתבים, תגיות ותבניות.",
+            "featureCompass": "Compass - הזמנת מקומות עבודה",
+            "featureCompassDesc": "הזמנת מקום עבודה, צ'ק-אין וקרבה לחברים. נועל חללים, אנשים וחדרי ישיבות.",
             "mutualExclusiveWarning": "לא ניתן להפעיל חללים ואנשים בו-זמנית",
             "requiresConferenceMapping": "דורש מיפוי שדות ישיבות (שלב 4)",
             "conferenceModeSimple": "פשוט (דפדוף עמודים)",
@@ -1014,6 +1018,21 @@
             "reviewArticleFormat": "פורמט מוצרים",
             "reviewFieldMapping": "מיפוי שדות",
             "reviewFeatures": "תכונות",
+            "reviewCompassConfig": "הגדרות Compass",
+            "compassConfigInfo": "הגדר כללי הזמנה ברירת מחדל עבור Compass. ניתן להתאים לכל סניף לאחר היצירה.",
+            "compassMaxDuration": "משך הזמנה מקסימלי",
+            "compassMaxDurationDesc": "המשך המרבי להזמנה בודדת.",
+            "compassMaxAdvance": "הזמנה מראש מקסימלית",
+            "compassMaxAdvanceDesc": "כמה ימים מראש עובדים יכולים להזמין.",
+            "compassCheckInWindow": "חלון צ׳ק-אין",
+            "compassCheckInWindowDesc": "זמן לאחר תחילת ההזמנה לביצוע צ׳ק-אין לפני שחרור אוטומטי.",
+            "compassAutoRelease": "שחרור אוטומטי",
+            "compassAutoReleaseDesc": "זמן ללא צ׳ק-אין לפני שהמקום משוחרר אוטומטית.",
+            "compassMaxConcurrent": "הזמנות בו-זמניות",
+            "compassMaxConcurrentDesc": "מספר הזמנות פעילות מרבי לעובד בו-זמנית.",
+            "compassMinutes": "דק׳",
+            "compassDays": "ימים",
+            "compassBookings": "הזמנות",
             "createCompany": "צור חברה",
             "creating": "יוצר...",
             "back": "חזרה",
@@ -1775,5 +1794,23 @@
                 "previewFailed": "תצוגה מקדימה של AIMS לא זמינה — מציג קירוב מקומי"
             }
         }
+    },
+    "compass": {
+        "dashboard": {
+            "title": "Compass מרחב עבודה",
+            "employees": "עובדים",
+            "spaces": "חללים",
+            "checkedIn": "נוכחים",
+            "occupancy": "תפוסה",
+            "todayBookings": "הזמנות היום",
+            "checkInRate": "שיעור צ'ק-אין"
+        },
+        "navigation": {
+            "bookings": "הזמנות",
+            "employees": "עובדים",
+            "spaces": "חללים",
+            "rules": "כללים"
+        },
+        "managedByCompass": "מנוהל על ידי Compass"
     }
 }

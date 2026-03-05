@@ -18,6 +18,7 @@ import type { WizardFormData } from '../wizardTypes';
 
 interface ReviewStepProps {
     formData: WizardFormData;
+    compassEnabled?: boolean;
     onGoToStep: (step: number) => void;
 }
 
@@ -44,7 +45,7 @@ function FeatureChip({ label, enabled }: { label: string; enabled: boolean }) {
     );
 }
 
-export function ReviewStep({ formData, onGoToStep }: ReviewStepProps) {
+export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepProps) {
     const { t } = useTranslation();
 
     const visibleFieldCount = formData.fieldMapping
@@ -137,8 +138,38 @@ export function ReviewStep({ formData, onGoToStep }: ReviewStepProps) {
                     <FeatureChip label={t('settings.companies.featureConference')} enabled={formData.features.conferenceEnabled} />
                     <FeatureChip label={t('settings.companies.featureLabels')} enabled={formData.features.labelsEnabled} />
                     <FeatureChip label={t('settings.companies.featureAims')} enabled={formData.features.aimsManagementEnabled} />
+                    <FeatureChip label={t('settings.companies.featureCompass')} enabled={formData.features.compassEnabled} />
                 </Box>
             </Paper>
+
+            {/* Section 6: Compass Config (only when enabled) */}
+            {compassEnabled && (
+                <Paper variant="outlined" sx={{ p: 1.5 }}>
+                    <SectionHeader title={t('settings.companies.reviewCompassConfig')} step={5} onGoToStep={onGoToStep} />
+                    <Stack spacing={0.5}>
+                        <Typography variant="body2">
+                            <strong>{t('settings.companies.compassMaxDuration')}:</strong>{' '}
+                            {formData.compassConfig.maxDurationMinutes} {t('settings.companies.compassMinutes')}
+                        </Typography>
+                        <Typography variant="body2">
+                            <strong>{t('settings.companies.compassMaxAdvance')}:</strong>{' '}
+                            {formData.compassConfig.maxAdvanceBookingDays} {t('settings.companies.compassDays')}
+                        </Typography>
+                        <Typography variant="body2">
+                            <strong>{t('settings.companies.compassCheckInWindow')}:</strong>{' '}
+                            {formData.compassConfig.checkInWindowMinutes} {t('settings.companies.compassMinutes')}
+                        </Typography>
+                        <Typography variant="body2">
+                            <strong>{t('settings.companies.compassAutoRelease')}:</strong>{' '}
+                            {formData.compassConfig.autoReleaseMinutes} {t('settings.companies.compassMinutes')}
+                        </Typography>
+                        <Typography variant="body2">
+                            <strong>{t('settings.companies.compassMaxConcurrent')}:</strong>{' '}
+                            {formData.compassConfig.maxConcurrentBookings} {t('settings.companies.compassBookings')}
+                        </Typography>
+                    </Stack>
+                </Paper>
+            )}
         </Box>
     );
 }

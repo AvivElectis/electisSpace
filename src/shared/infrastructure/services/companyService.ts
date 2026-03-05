@@ -93,6 +93,13 @@ export interface CreateCompanyFullDto extends CreateCompanyDto {
     stores: Array<{ code: string; name?: string; timezone?: string }>;
     articleFormat?: Record<string, unknown>;
     fieldMapping?: Record<string, unknown>;
+    compassConfig?: {
+        maxDurationMinutes: number;
+        maxAdvanceBookingDays: number;
+        checkInWindowMinutes: number;
+        autoReleaseMinutes: number;
+        maxConcurrentBookings: number;
+    };
 }
 
 /** Update company DTO */

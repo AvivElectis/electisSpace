@@ -46,6 +46,13 @@ export function FeaturesStep({
         if (key === 'conferenceEnabled' && !value) {
             updated.simpleConferenceMode = false;
         }
+        // Compass locks spaces, people, and conference
+        if (key === 'compassEnabled' && value) {
+            updated.spacesEnabled = false;
+            updated.peopleEnabled = false;
+            updated.conferenceEnabled = false;
+            updated.simpleConferenceMode = false;
+        }
 
         onUpdate(updated, spaceType);
     };
@@ -85,6 +92,12 @@ export function FeaturesStep({
             desc: t('settings.companies.featureAimsDesc'),
             enabled: features.aimsManagementEnabled,
         },
+        {
+            key: 'compassEnabled' as const,
+            label: t('settings.companies.featureCompass'),
+            desc: t('settings.companies.featureCompassDesc'),
+            enabled: features.compassEnabled,
+        },
     ];
 
     return (
@@ -120,6 +133,10 @@ export function FeaturesStep({
                                             checked={card.enabled}
                                             onChange={(e) => handleToggle(card.key, e.target.checked)}
                                             size="small"
+                                            disabled={
+                                                features.compassEnabled &&
+                                                ['spacesEnabled', 'peopleEnabled', 'conferenceEnabled'].includes(card.key)
+                                            }
                                         />
                                     }
                                     label={

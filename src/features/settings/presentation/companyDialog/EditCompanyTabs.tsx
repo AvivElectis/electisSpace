@@ -1,10 +1,11 @@
 /**
- * EditCompanyTabs - Edit mode with 5 tabs matching wizard sections:
+ * EditCompanyTabs - Edit mode with 6 tabs matching wizard sections:
  * 1. Basic Info (company details + AIMS connection)
  * 2. Stores (existing store list, link to StoresDialog)
  * 3. Article Format (display saved format, re-fetch from AIMS)
  * 4. Field Mapping (editable field mapping with save)
  * 5. Features (space type + feature toggles)
+ * 6. Integrations (directory sync — Microsoft 365, Google Workspace, Okta)
  */
 import {
     DialogTitle,
@@ -43,16 +44,20 @@ import StoreIcon from '@mui/icons-material/Store';
 import DescriptionIcon from '@mui/icons-material/Description';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import TuneIcon from '@mui/icons-material/Tune';
+import SyncIcon from '@mui/icons-material/Sync';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { useCompanyDialogState } from './useCompanyDialogState';
 import { settingsService } from '@shared/infrastructure/services/settingsService';
 import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
+import { integrationService, type Integration, type Provider, type IntegrationType } from '@shared/infrastructure/services/integrationService';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
 
@@ -93,6 +98,17 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     const [fieldMappingSaving, setFieldMappingSaving] = useState(false);
     const [fieldMappingSaved, setFieldMappingSaved] = useState(false);
 
+    // Integrations tab state
+    const [integrations, setIntegrations] = useState<Integration[]>([]);
+    const [integrationsLoading, setIntegrationsLoading] = useState(false);
+    const [showAddIntegration, setShowAddIntegration] = useState(false);
+    const [newProvider, setNewProvider] = useState<Provider>('MICROSOFT_365');
+    const [newType, setNewType] = useState<IntegrationType>('USER_DIRECTORY');
+    const [newCredentials, setNewCredentials] = useState<Record<string, string>>({});
+    const [newSyncInterval, setNewSyncInterval] = useState(1440);
+    const [integrationSaving, setIntegrationSaving] = useState(false);
+    const [syncingId, setSyncingId] = useState<string | null>(null);
+
     // Fetch stores + settings on open
     useEffect(() => {
         if (!state.company?.id) return;
@@ -116,7 +132,22 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                 }
             })
             .catch(() => {});
+
+        // Fetch integrations
+        fetchIntegrations(companyId);
     }, [state.company?.id]);
+
+    const fetchIntegrations = useCallback(async (companyId: string) => {
+        setIntegrationsLoading(true);
+        try {
+            const list = await integrationService.list(companyId);
+            setIntegrations(list);
+        } catch {
+            // Ignore — integrations might not be available for this user role
+        } finally {
+            setIntegrationsLoading(false);
+        }
+    }, []);
 
     // Re-fetch article format from AIMS
     const handleRefetchArticleFormat = useCallback(async () => {
@@ -164,6 +195,76 @@ export function EditCompanyTabs({ state, onClose }: Props) {
         }
     }, [state.company?.id, fieldMapping, state, t]);
 
+    // Integration handlers
+    const handleAddIntegration = useCallback(async () => {
+        if (!state.company?.id) return;
+        setIntegrationSaving(true);
+        try {
+            await integrationService.create(state.company.id, {
+                provider: newProvider,
+                type: newType,
+                credentials: newCredentials,
+                syncIntervalMinutes: newSyncInterval,
+            });
+            setShowAddIntegration(false);
+            setNewCredentials({});
+            await fetchIntegrations(state.company.id);
+        } catch (err: any) {
+            state.setError(err.response?.data?.error?.message || 'Failed to create integration');
+        } finally {
+            setIntegrationSaving(false);
+        }
+    }, [state.company?.id, newProvider, newType, newCredentials, newSyncInterval, state, fetchIntegrations]);
+
+    const handleDeleteIntegration = useCallback(async (id: string) => {
+        if (!state.company?.id) return;
+        try {
+            await integrationService.remove(state.company.id, id);
+            setIntegrations(prev => prev.filter(i => i.id !== id));
+        } catch (err: any) {
+            state.setError(err.response?.data?.error?.message || 'Failed to delete integration');
+        }
+    }, [state]);
+
+    const handleTriggerSync = useCallback(async (id: string, fullSync = false) => {
+        if (!state.company?.id) return;
+        setSyncingId(id);
+        try {
+            await integrationService.triggerSync(state.company.id, id, fullSync);
+            await fetchIntegrations(state.company.id);
+        } catch (err: any) {
+            state.setError(err.response?.data?.error?.message || 'Sync failed');
+        } finally {
+            setSyncingId(null);
+        }
+    }, [state, fetchIntegrations]);
+
+    const handleToggleIntegration = useCallback(async (id: string, isActive: boolean) => {
+        if (!state.company?.id) return;
+        try {
+            await integrationService.update(state.company.id, id, { isActive });
+            setIntegrations(prev => prev.map(i => i.id === id ? { ...i, isActive } : i));
+        } catch (err: any) {
+            state.setError(err.response?.data?.error?.message || 'Failed to update integration');
+        }
+    }, [state]);
+
+    const getCredentialFields = (provider: Provider) => {
+        switch (provider) {
+            case 'MICROSOFT_365': return ['tenantId', 'clientId', 'clientSecret'];
+            case 'GOOGLE_WORKSPACE': return ['serviceAccountJson', 'adminEmail', 'domain'];
+            case 'OKTA': return ['domain', 'apiToken'];
+        }
+    };
+
+    const providerLabel = (provider: Provider) => {
+        switch (provider) {
+            case 'MICROSOFT_365': return 'Microsoft 365';
+            case 'GOOGLE_WORKSPACE': return 'Google Workspace';
+            case 'OKTA': return 'Okta';
+        }
+    };
+
     // Field mapping helpers
     const articleDataFields = articleFormat?.articleData || [];
 
@@ -188,6 +289,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     <Tab icon={<DescriptionIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.reviewArticleFormat', 'Article Format')} sx={{ minHeight: 48 }} />
                     <Tab icon={<AccountTreeIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.reviewFieldMapping', 'Field Mapping')} sx={{ minHeight: 48 }} />
                     <Tab icon={<TuneIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.featuresTab', 'Features')} sx={{ minHeight: 48 }} />
+                    <Tab icon={<SyncIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.integrationsTab', 'Integrations')} sx={{ minHeight: 48 }} />
                 </Tabs>
 
                 {/* Tab 0: Basic Info */}
@@ -638,6 +740,192 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             }
                             label={t('settings.companies.aimsManagement', 'AIMS Management')}
                         />
+                    </Box>
+                </TabPanel>
+
+                {/* Tab 5: Integrations */}
+                <TabPanel value={state.activeTab} index={5}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {integrationsLoading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                <CircularProgress size={32} />
+                            </Box>
+                        ) : (
+                            <>
+                                {integrations.length === 0 && !showAddIntegration && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+                                        {t('settings.companies.noIntegrations', 'No directory sync integrations configured.')}
+                                    </Typography>
+                                )}
+
+                                {/* Existing integrations */}
+                                {integrations.map((integration) => (
+                                    <Paper key={integration.id} variant="outlined" sx={{ p: 2 }}>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                            <Stack direction="row" alignItems="center" gap={1}>
+                                                <Typography variant="subtitle2">{providerLabel(integration.provider)}</Typography>
+                                                <Chip
+                                                    size="small"
+                                                    label={integration.type.replace('_', ' ')}
+                                                    variant="outlined"
+                                                />
+                                                <Chip
+                                                    size="small"
+                                                    label={integration.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
+                                                    color={integration.isActive ? 'success' : 'default'}
+                                                    variant="outlined"
+                                                />
+                                            </Stack>
+                                            <Stack direction="row" gap={0.5}>
+                                                <Switch
+                                                    size="small"
+                                                    checked={integration.isActive}
+                                                    onChange={(e) => handleToggleIntegration(integration.id, e.target.checked)}
+                                                />
+                                                <Button
+                                                    size="small"
+                                                    startIcon={syncingId === integration.id ? <CircularProgress size={14} /> : <SyncIcon />}
+                                                    onClick={() => handleTriggerSync(integration.id)}
+                                                    disabled={syncingId === integration.id || !integration.isActive}
+                                                >
+                                                    {t('settings.companies.syncNow', 'Sync')}
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    color="error"
+                                                    startIcon={<DeleteIcon />}
+                                                    onClick={() => handleDeleteIntegration(integration.id)}
+                                                >
+                                                    {t('common.delete', 'Delete')}
+                                                </Button>
+                                            </Stack>
+                                        </Stack>
+                                        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {t('settings.companies.syncInterval', 'Interval')}: {integration.syncIntervalMinutes}m
+                                            </Typography>
+                                            {integration.lastSyncAt && (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {t('settings.companies.lastSync', 'Last sync')}: {new Date(integration.lastSyncAt).toLocaleString()}
+                                                </Typography>
+                                            )}
+                                            {integration.lastSyncStatus && (
+                                                <Chip
+                                                    size="small"
+                                                    label={integration.lastSyncStatus}
+                                                    color={integration.lastSyncStatus === 'SUCCESS' ? 'success' : integration.lastSyncStatus === 'PARTIAL' ? 'warning' : 'error'}
+                                                    variant="outlined"
+                                                />
+                                            )}
+                                        </Stack>
+                                        {integration.lastSyncStats && (
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                {t('settings.companies.syncStats', 'Created')}: {integration.lastSyncStats.created},
+                                                {' '}{t('settings.companies.syncUpdated', 'Updated')}: {integration.lastSyncStats.updated},
+                                                {' '}{t('settings.companies.syncDeactivated', 'Deactivated')}: {integration.lastSyncStats.deactivated}
+                                            </Typography>
+                                        )}
+                                        {integration.lastSyncError && (
+                                            <Alert severity="error" sx={{ mt: 1 }}>
+                                                {integration.lastSyncError}
+                                            </Alert>
+                                        )}
+                                    </Paper>
+                                ))}
+
+                                {/* Add integration form */}
+                                {showAddIntegration ? (
+                                    <Paper variant="outlined" sx={{ p: 2 }}>
+                                        <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                                            {t('settings.companies.addIntegration', 'Add Integration')}
+                                        </Typography>
+                                        <Stack spacing={2}>
+                                            <FormControl fullWidth size="small">
+                                                <InputLabel>{t('settings.companies.provider', 'Provider')}</InputLabel>
+                                                <Select
+                                                    value={newProvider}
+                                                    label={t('settings.companies.provider', 'Provider')}
+                                                    onChange={(e) => {
+                                                        setNewProvider(e.target.value as Provider);
+                                                        setNewCredentials({});
+                                                    }}
+                                                >
+                                                    <MenuItem value="MICROSOFT_365">Microsoft 365</MenuItem>
+                                                    <MenuItem value="GOOGLE_WORKSPACE">Google Workspace</MenuItem>
+                                                    <MenuItem value="OKTA">Okta</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                            <FormControl fullWidth size="small">
+                                                <InputLabel>{t('settings.companies.integrationType', 'Type')}</InputLabel>
+                                                <Select
+                                                    value={newType}
+                                                    label={t('settings.companies.integrationType', 'Type')}
+                                                    onChange={(e) => setNewType(e.target.value as IntegrationType)}
+                                                >
+                                                    <MenuItem value="USER_DIRECTORY">{t('settings.companies.userDirectory', 'User Directory')}</MenuItem>
+                                                    {newProvider !== 'OKTA' && (
+                                                        <MenuItem value="CALENDAR_ROOMS">{t('settings.companies.calendarRooms', 'Calendar / Rooms')}</MenuItem>
+                                                    )}
+                                                    {newProvider !== 'OKTA' && (
+                                                        <MenuItem value="BOTH">{t('settings.companies.both', 'Both')}</MenuItem>
+                                                    )}
+                                                </Select>
+                                            </FormControl>
+                                            <TextField
+                                                size="small"
+                                                label={t('settings.companies.syncIntervalMinutes', 'Sync Interval (minutes)')}
+                                                type="number"
+                                                value={newSyncInterval}
+                                                onChange={(e) => setNewSyncInterval(Math.max(15, parseInt(e.target.value) || 1440))}
+                                                inputProps={{ min: 15, max: 10080 }}
+                                            />
+
+                                            <Divider />
+                                            <Typography variant="caption" color="text.secondary">
+                                                {t('settings.companies.credentials', 'Credentials')}
+                                            </Typography>
+
+                                            {getCredentialFields(newProvider).map((field) => (
+                                                <TextField
+                                                    key={field}
+                                                    size="small"
+                                                    label={field}
+                                                    value={newCredentials[field] || ''}
+                                                    onChange={(e) => setNewCredentials(prev => ({ ...prev, [field]: e.target.value }))}
+                                                    type={field.toLowerCase().includes('secret') || field.toLowerCase().includes('token') || field.toLowerCase().includes('json') ? 'password' : 'text'}
+                                                    multiline={field === 'serviceAccountJson'}
+                                                    rows={field === 'serviceAccountJson' ? 4 : undefined}
+                                                />
+                                            ))}
+
+                                            <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                                                <Button size="small" onClick={() => { setShowAddIntegration(false); setNewCredentials({}); }}>
+                                                    {t('common.cancel')}
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    onClick={handleAddIntegration}
+                                                    disabled={integrationSaving || getCredentialFields(newProvider).some(f => !newCredentials[f])}
+                                                    startIcon={integrationSaving ? <CircularProgress size={14} /> : null}
+                                                >
+                                                    {t('common.save')}
+                                                </Button>
+                                            </Stack>
+                                        </Stack>
+                                    </Paper>
+                                ) : (
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => setShowAddIntegration(true)}
+                                        sx={{ alignSelf: 'flex-start' }}
+                                    >
+                                        {t('settings.companies.addIntegration', 'Add Integration')}
+                                    </Button>
+                                )}
+                            </>
+                        )}
                     </Box>
                 </TabPanel>
             </DialogContent>

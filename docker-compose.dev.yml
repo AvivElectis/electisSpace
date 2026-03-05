@@ -4,6 +4,10 @@
 # Includes PostgreSQL + Redis + API server in a single stack
 # with an internal network (no external dependencies).
 #
+# Client SPAs run locally (not containerized in dev):
+#   npm run dev           → Admin SPA on :3000
+#   npm run dev:compass   → Compass SPA on :3002
+#
 # Usage:
 #   docker compose -f docker-compose.dev.yml up -d --build
 #   docker compose -f docker-compose.dev.yml down

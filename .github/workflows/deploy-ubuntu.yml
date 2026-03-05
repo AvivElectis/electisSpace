@@ -49,11 +49,12 @@ jobs:
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml run --rm -T server npx prisma migrate deploy
 
             echo "=== Starting core services ==="
-            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --remove-orphans server client
+            docker compose -f docker-compose.infra.yml -f docker-compose.app.yml up -d --remove-orphans server client compass
 
             echo "=== Health check ==="
             sleep 10
-            curl -f http://localhost:3071/health || (echo "Health check failed!" && exit 1)
+            curl -f http://localhost:3071/health || (echo "Admin health check failed!" && exit 1)
+            curl -f http://localhost:3072/ || (echo "Compass health check failed!" && exit 1)
 
             echo "=== Deployment complete ==="
             docker compose -f docker-compose.infra.yml -f docker-compose.app.yml ps

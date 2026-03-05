@@ -1,0 +1,143 @@
+{
+    "app": {
+        "name": "electisCompass",
+        "tagline": "הזמנת מקום עבודה חכמה",
+        "slogan": "פשוט למצוא מקום"
+    },
+    "nav": {
+        "home": "בית",
+        "find": "מצא מקום",
+        "bookings": "הזמנות",
+        "profile": "פרופיל"
+    },
+    "auth": {
+        "loginTitle": "electisCompass",
+        "welcome": "ברוכים הבאים",
+        "loginSubtitle": "התחבר עם האימייל הארגוני שלך",
+        "emailLabel": "כתובת אימייל",
+        "emailPlaceholder": "הזן את האימייל הארגוני שלך",
+        "codeLabel": "קוד אימות",
+        "sendCode": "שלח קוד",
+        "verify": "אמת",
+        "codeSentTo": "קוד נשלח ל-{{email}}",
+        "logout": "התנתק",
+        "biometricTitle": "הפעל זיהוי ביומטרי",
+        "biometricDescription": "השתמש בטביעת אצבע או זיהוי פנים לפתיחה מהירה של electisCompass.",
+        "enableBiometric": "הפעל",
+        "notNow": "לא עכשיו"
+    },
+    "home": {
+        "greeting": "היי, {{name}}",
+        "activeBooking": "ההזמנה הפעילה שלך",
+        "noActiveBooking": "אין הזמנה פעילה",
+        "findSpace": "מצא מקום",
+        "quickActions": "פעולות מהירות",
+        "bookSpace": "הזמן מקום",
+        "myBookings": "ההזמנות שלי"
+    },
+    "find": {
+        "title": "מצא מקום",
+        "searchPlaceholder": "חפש לפי שם או אזור...",
+        "selectFilters": "בחר מסננים למציאת חללים פנויים",
+        "building": "בניין",
+        "floor": "קומה",
+        "all": "הכל",
+        "sortName": "שם",
+        "sortFloor": "קומה",
+        "sortNearFriends": "ליד חברים",
+        "noSpaces": "לא נמצאו מקומות",
+        "available": "פנוי",
+        "unavailable": "תפוס",
+        "availableFrom": "פנוי מ-{{time}}",
+        "availableCount_one": "{{count}} פנוי",
+        "availableCount_other": "{{count}} פנויים",
+        "capacity_one": "אדם {{count}}",
+        "capacity_other": "{{count}} אנשים",
+        "friendsNearby_one": "חבר {{count}} בקרבת מקום",
+        "friendsNearby_other": "{{count}} חברים בקרבת מקום",
+        "book": "הזמן",
+        "unknownFloor": "אחר"
+    },
+    "booking": {
+        "bookSpace": "הזמן {{name}}",
+        "date": "תאריך",
+        "startTime": "שעת התחלה",
+        "endTime": "שעת סיום",
+        "duration": "משך",
+        "notes": "הערות",
+        "notesPlaceholder": "הוסף הערה (אופציונלי)",
+        "cancel": "ביטול",
+        "confirmBooking": "אשר הזמנה",
+        "checkIn": "צ׳ק אין",
+        "release": "שחרר",
+        "extend": "הארך",
+        "cancelBtn": "בטל",
+        "checkInSuccess": "צ׳ק אין בוצע בהצלחה",
+        "releaseSuccess": "המקום שוחרר",
+        "extendSuccess": "ההזמנה הוארכה",
+        "cancelSuccess": "ההזמנה בוטלה",
+        "checkedInAt": "צ׳ק אין ב-{{time}}",
+        "extendTitle": "הארך הזמנה",
+        "newEndTime": "שעת סיום חדשה",
+        "cancelTitle": "בטל הזמנה",
+        "cancelConfirm": "האם אתה בטוח שברצונך לבטל הזמנה זו?",
+        "releaseTitle": "שחרר מקום",
+        "releaseConfirm": "האם אתה בטוח שברצונך לשחרר מקום זה?",
+        "yes": "כן",
+        "no": "לא",
+        "status": {
+            "BOOKED": "הוזמן",
+            "CHECKED_IN": "צ׳ק אין",
+            "RELEASED": "שוחרר",
+            "AUTO_RELEASED": "שוחרר אוטומטית",
+            "NO_SHOW": "לא הגיע",
+            "CANCELLED": "בוטל"
+        }
+    },
+    "bookings": {
+        "title": "ההזמנות שלי",
+        "upcoming": "קרובות",
+        "past": "עבר",
+        "active": "פעילות",
+        "upcomingSection": "קרובות",
+        "noUpcoming": "אין הזמנות קרובות",
+        "noPast": "אין הזמנות בעבר"
+    },
+    "friends": {
+        "title": "חברים",
+        "pendingRequests": "בקשות ממתינות",
+        "checkedIn": "נמצאים כאן",
+        "allFriends": "כל החברים",
+        "here": "כאן",
+        "noFriends": "אין חברים עדיין",
+        "addFriend": "הוסף חבר",
+        "emailLabel": "כתובת אימייל של חבר",
+        "sendRequest": "שלח בקשה",
+        "requestSent": "בקשת חברות נשלחה!"
+    },
+    "profile": {
+        "friends": "חברים",
+        "language": "שפה",
+        "settings": "הגדרות",
+        "logout": "התנתק"
+    },
+    "common": {
+        "loading": "טוען...",
+        "error": "משהו השתבש",
+        "retry": "נסה שוב",
+        "ok": "אישור",
+        "save": "שמור",
+        "delete": "מחק",
+        "close": "סגור",
+        "confirm": "אשר",
+        "offline": "אתה במצב לא מקוון",
+        "noResults": "לא נמצאו תוצאות"
+    },
+    "errors": {
+        "network": "שגיאת רשת. בדוק את החיבור שלך.",
+        "serverError": "שגיאת שרת. נסה שוב מאוחר יותר.",
+        "unauthorized": "פג תוקף ההתחברות. אנא התחבר מחדש.",
+        "invalidCode": "קוד אימות לא תקין או שפג תוקפו",
+        "tooManyAttempts": "יותר מדי ניסיונות. נסה שוב מאוחר יותר."
+    }
+}

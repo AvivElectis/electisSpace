@@ -1,0 +1,143 @@
+{
+    "app": {
+        "name": "electisCompass",
+        "tagline": "Smart Workspace Booking",
+        "slogan": "Simply find a spot"
+    },
+    "nav": {
+        "home": "Home",
+        "find": "Find Space",
+        "bookings": "Bookings",
+        "profile": "Profile"
+    },
+    "auth": {
+        "loginTitle": "electisCompass",
+        "welcome": "Welcome",
+        "loginSubtitle": "Sign in with your work email",
+        "emailLabel": "Email address",
+        "emailPlaceholder": "Enter your work email",
+        "codeLabel": "Verification code",
+        "sendCode": "Send Code",
+        "verify": "Verify",
+        "codeSentTo": "Code sent to {{email}}",
+        "logout": "Sign Out",
+        "biometricTitle": "Enable Biometric Login",
+        "biometricDescription": "Use fingerprint or face recognition to unlock electisCompass quickly on future visits.",
+        "enableBiometric": "Enable",
+        "notNow": "Not Now"
+    },
+    "home": {
+        "greeting": "Hi, {{name}}",
+        "activeBooking": "Your Active Booking",
+        "noActiveBooking": "No active booking",
+        "findSpace": "Find a Space",
+        "quickActions": "Quick Actions",
+        "bookSpace": "Book Space",
+        "myBookings": "My Bookings"
+    },
+    "find": {
+        "title": "Find Space",
+        "searchPlaceholder": "Search by name or area...",
+        "selectFilters": "Select filters to find available spaces",
+        "building": "Building",
+        "floor": "Floor",
+        "all": "All",
+        "sortName": "Name",
+        "sortFloor": "Floor",
+        "sortNearFriends": "Near Friends",
+        "noSpaces": "No spaces found",
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "availableFrom": "Available from {{time}}",
+        "availableCount_one": "{{count}} available",
+        "availableCount_other": "{{count}} available",
+        "capacity_one": "{{count}} person",
+        "capacity_other": "{{count}} people",
+        "friendsNearby_one": "{{count}} friend nearby",
+        "friendsNearby_other": "{{count}} friends nearby",
+        "book": "Book",
+        "unknownFloor": "Other"
+    },
+    "booking": {
+        "bookSpace": "Book {{name}}",
+        "date": "Date",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "duration": "Duration",
+        "notes": "Notes",
+        "notesPlaceholder": "Add a note (optional)",
+        "cancel": "Cancel",
+        "confirmBooking": "Confirm Booking",
+        "checkIn": "Check In",
+        "release": "Release",
+        "extend": "Extend",
+        "cancelBtn": "Cancel",
+        "checkInSuccess": "Checked in successfully",
+        "releaseSuccess": "Space released",
+        "extendSuccess": "Booking extended",
+        "cancelSuccess": "Booking cancelled",
+        "checkedInAt": "Checked in at {{time}}",
+        "extendTitle": "Extend Booking",
+        "newEndTime": "New End Time",
+        "cancelTitle": "Cancel Booking",
+        "cancelConfirm": "Are you sure you want to cancel this booking?",
+        "releaseTitle": "Release Space",
+        "releaseConfirm": "Are you sure you want to release this space?",
+        "yes": "Yes",
+        "no": "No",
+        "status": {
+            "BOOKED": "Booked",
+            "CHECKED_IN": "Checked In",
+            "RELEASED": "Released",
+            "AUTO_RELEASED": "Auto Released",
+            "NO_SHOW": "No Show",
+            "CANCELLED": "Cancelled"
+        }
+    },
+    "bookings": {
+        "title": "My Bookings",
+        "upcoming": "Upcoming",
+        "past": "Past",
+        "active": "Active",
+        "upcomingSection": "Upcoming",
+        "noUpcoming": "No upcoming bookings",
+        "noPast": "No past bookings"
+    },
+    "friends": {
+        "title": "Friends",
+        "pendingRequests": "Pending Requests",
+        "checkedIn": "Checked In",
+        "allFriends": "All Friends",
+        "here": "Here",
+        "noFriends": "No friends yet",
+        "addFriend": "Add Friend",
+        "emailLabel": "Friend's email address",
+        "sendRequest": "Send Request",
+        "requestSent": "Friend request sent!"
+    },
+    "profile": {
+        "friends": "Friends",
+        "language": "Language",
+        "settings": "Settings",
+        "logout": "Sign Out"
+    },
+    "common": {
+        "loading": "Loading...",
+        "error": "Something went wrong",
+        "retry": "Retry",
+        "ok": "OK",
+        "save": "Save",
+        "delete": "Delete",
+        "close": "Close",
+        "confirm": "Confirm",
+        "offline": "You are offline",
+        "noResults": "No results found"
+    },
+    "errors": {
+        "network": "Network error. Check your connection.",
+        "serverError": "Server error. Try again later.",
+        "unauthorized": "Session expired. Please sign in again.",
+        "invalidCode": "Invalid or expired verification code",
+        "tooManyAttempts": "Too many attempts. Try again later."
+    }
+}

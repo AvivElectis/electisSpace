@@ -7,3 +7,4 @@ export { DashboardAimsCard } from './DashboardAimsCard';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { QuickActionsPanel } from './QuickActionsPanel';
 export { MobileStatTile } from './MobileStatTile';
+export { DashboardCompassCard } from './DashboardCompassCard';

@@ -212,6 +212,7 @@
         "sync": "Synchronization",
         "aims-management": "AIMS Management",
         "aimsManagement": "AIMS Management",
+        "compass": "Compass",
         "settings": "Settings"
     },
     "common": {
@@ -954,6 +955,7 @@
             "wizardStep4": "Field Mapping",
             "wizardStep5": "Features",
             "wizardStep6": "Review & Create",
+            "wizardStepCompass": "Compass Config",
             "connectionTesting": "Testing...",
             "connectionSuccess": "Connected successfully",
             "connectionFailed": "Connection failed",
@@ -993,6 +995,8 @@
             "featureLabelsDesc": "ESL label management and synchronization.",
             "featureAims": "AIMS Management",
             "featureAimsDesc": "Full gateway, label, and template management.",
+            "featureCompass": "Compass Workspace Booking",
+            "featureCompassDesc": "Employee workspace booking, check-in, and friend proximity. Locks Spaces, People, and Conference features.",
             "mutualExclusiveWarning": "Spaces and People cannot both be enabled",
             "requiresConferenceMapping": "Requires conference field mapping (Step 4)",
             "conferenceModeSimple": "Simple (page flipping)",
@@ -1003,6 +1007,21 @@
             "reviewArticleFormat": "Article Format",
             "reviewFieldMapping": "Field Mapping",
             "reviewFeatures": "Features",
+            "reviewCompassConfig": "Compass Configuration",
+            "compassConfigInfo": "Configure default booking rules for Compass. These can be customized per-branch after creation.",
+            "compassMaxDuration": "Max Booking Duration",
+            "compassMaxDurationDesc": "Maximum duration for a single booking.",
+            "compassMaxAdvance": "Max Advance Booking",
+            "compassMaxAdvanceDesc": "How far ahead employees can book.",
+            "compassCheckInWindow": "Check-in Window",
+            "compassCheckInWindowDesc": "Time after booking start to check in before auto-release.",
+            "compassAutoRelease": "Auto-Release Timeout",
+            "compassAutoReleaseDesc": "Time without check-in before the space is automatically released.",
+            "compassMaxConcurrent": "Max Concurrent Bookings",
+            "compassMaxConcurrentDesc": "Maximum active bookings per employee at the same time.",
+            "compassMinutes": "min",
+            "compassDays": "days",
+            "compassBookings": "bookings",
             "createCompany": "Create Company",
             "creating": "Creating...",
             "back": "Back",
@@ -1760,5 +1779,23 @@
                 "previewFailed": "AIMS preview unavailable — showing local approximation"
             }
         }
+    },
+    "compass": {
+        "dashboard": {
+            "title": "Compass Workspace",
+            "employees": "Employees",
+            "spaces": "Spaces",
+            "checkedIn": "Checked In",
+            "occupancy": "Occupancy",
+            "todayBookings": "bookings today",
+            "checkInRate": "Check-in Rate"
+        },
+        "navigation": {
+            "bookings": "Bookings",
+            "employees": "Employees",
+            "spaces": "Spaces",
+            "rules": "Rules"
+        },
+        "managedByCompass": "Managed by Compass"
     }
 }

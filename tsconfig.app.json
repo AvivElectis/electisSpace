@@ -37,11 +37,15 @@
       ],
       "@test/*": [
         "./src/test/*"
+      ],
+      "@electis/shared/*": [
+        "./shared/*"
       ]
     }
   },
   "include": [
-    "src"
+    "src",
+    "shared"
   ],
   "exclude": [
     "src/**/__tests__/**",

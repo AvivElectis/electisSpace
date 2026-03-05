@@ -80,9 +80,50 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 5
 
+  build-compass-android:
+    name: Build Compass Android (Capacitor)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Compass web app
+        run: npm run build:compass
+
+      - name: Sync Capacitor (Compass)
+        working-directory: ./compass
+        run: npx cap sync android
+
+      - name: Build Compass Android APK
+        working-directory: ./compass/android
+        run: ./gradlew assembleRelease
+
+      - name: Upload Compass Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: compass-android-apk
+          path: compass/android/app/build/outputs/apk/release/*.apk
+          retention-days: 5
+
   create-release:
     name: Create GitHub Release
-    needs: [build-windows, build-android]
+    needs: [build-windows, build-android, build-compass-android]
     runs-on: ubuntu-latest
     
     steps:
@@ -100,6 +141,12 @@ jobs:
         with:
           name: android-apk
           path: ./release-artifacts/android
+
+      - name: Download Compass Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: compass-android-apk
+          path: ./release-artifacts/compass-android
       
       - name: Extract version from tag
         id: version
@@ -116,5 +163,6 @@ jobs:
             release-artifacts/windows/*.exe
             release-artifacts/windows/latest.yml
             release-artifacts/android/*.apk
+            release-artifacts/compass-android/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

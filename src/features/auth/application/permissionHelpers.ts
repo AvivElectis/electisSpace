@@ -37,7 +37,7 @@ const STORE_ROLE_HIERARCHY: Record<string, number> = {
 };
 
 // Feature names
-export type Feature = 'dashboard' | 'spaces' | 'conference' | 'people' | 'sync' | 'settings' | 'labels' | 'aims-management';
+export type Feature = 'dashboard' | 'spaces' | 'conference' | 'people' | 'sync' | 'settings' | 'labels' | 'aims-management' | 'compass';
 
 /**
  * Check if user is a Platform Admin
@@ -149,6 +149,7 @@ export function isFeatureEnabled(features: CompanyFeatures | undefined | null, f
         case 'conference': return features.conferenceEnabled;
         case 'labels': return features.labelsEnabled;
         case 'aims-management': return features.aimsManagementEnabled;
+        case 'compass': return features.compassEnabled;
         default: return true;
     }
 }
@@ -157,7 +158,7 @@ export function isFeatureEnabled(features: CompanyFeatures | undefined | null, f
  * Get the list of Feature names that are effectively enabled for a store.
  */
 export function getEffectiveEnabledFeatures(user: User | null, storeId: string): Feature[] {
-    const allFeatures: Feature[] = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels', 'aims-management'];
+    const allFeatures: Feature[] = ['dashboard', 'spaces', 'conference', 'people', 'sync', 'settings', 'labels', 'aims-management', 'compass'];
     if (!user) return [];
 
     const store = user.stores.find(s => s.id === storeId);
