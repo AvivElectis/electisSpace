@@ -16,6 +16,7 @@ export interface CompanyFeatures {
     simpleConferenceMode: boolean;
     labelsEnabled: boolean;
     aimsManagementEnabled: boolean;
+    compassEnabled: boolean;
 }
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
@@ -27,6 +28,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     simpleConferenceMode: false,
     labelsEnabled: false,
     aimsManagementEnabled: false,
+    compassEnabled: false,
 };
 
 export const DEFAULT_SPACE_TYPE: SpaceType = 'office';
@@ -67,6 +69,7 @@ export const ALL_FEATURES_ENABLED: CompanyFeatures = {
     simpleConferenceMode: false,
     labelsEnabled: true,
     aimsManagementEnabled: false,
+    compassEnabled: false,
 };
 
 /**
@@ -93,6 +96,7 @@ export function extractCompanyFeatures(settings: Record<string, unknown> | null 
         simpleConferenceMode: f.simpleConferenceMode ?? DEFAULT_COMPANY_FEATURES.simpleConferenceMode,
         labelsEnabled: f.labelsEnabled ?? DEFAULT_COMPANY_FEATURES.labelsEnabled,
         aimsManagementEnabled: f.aimsManagementEnabled ?? false,
+        compassEnabled: f.compassEnabled ?? false,
     };
 }
 

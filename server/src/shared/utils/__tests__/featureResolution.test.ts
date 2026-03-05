@@ -10,8 +10,8 @@ import {
 } from '../featureResolution.js';
 
 describe('resolveEffectiveFeatures', () => {
-    const companyF: CompanyFeatures = { spacesEnabled: true, peopleEnabled: true, conferenceEnabled: false, simpleConferenceMode: false, labelsEnabled: true, aimsManagementEnabled: true };
-    const storeF: CompanyFeatures = { spacesEnabled: false, peopleEnabled: true, conferenceEnabled: true, simpleConferenceMode: true, labelsEnabled: false, aimsManagementEnabled: false };
+    const companyF: CompanyFeatures = { spacesEnabled: true, peopleEnabled: true, conferenceEnabled: false, simpleConferenceMode: false, labelsEnabled: true, aimsManagementEnabled: true, compassEnabled: false };
+    const storeF: CompanyFeatures = { spacesEnabled: false, peopleEnabled: true, conferenceEnabled: true, simpleConferenceMode: true, labelsEnabled: false, aimsManagementEnabled: false, compassEnabled: false };
 
     it('should return store features when provided', () => { expect(resolveEffectiveFeatures(companyF, storeF)).toEqual(storeF); });
     it('should return company features when no store override', () => { expect(resolveEffectiveFeatures(companyF, null)).toEqual(companyF); });

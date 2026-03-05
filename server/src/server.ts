@@ -8,6 +8,8 @@ import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProces
 // externalId instead of assignedSpaceId) that caused infinite re-sync loops.
 // import { aimsVerificationJob } from './shared/infrastructure/jobs/AimsVerificationJob.js';
 import { aimsPullSyncJob } from './shared/infrastructure/jobs/AimsPullSyncJob.js';
+import { startCompassBookingJobs, stopCompassBookingJobs } from './shared/infrastructure/jobs/CompassBookingJobs.js';
+import { integrationSyncProcessor } from './features/integrations/integrationSyncProcessor.js';
 
 /**
  * Ensure admin user exists and password matches ADMIN_PASSWORD env var.
@@ -62,6 +64,12 @@ const startServer = async () => {
         aimsPullSyncJob.start(60 * 1000); // Reconcile DB→AIMS every 60 seconds
         console.log('✅ AIMS Reconciliation Job started');
 
+        startCompassBookingJobs();
+        console.log('✅ Compass Booking Jobs started');
+
+        integrationSyncProcessor.start();
+        console.log('✅ Integration Sync Processor started');
+
         // Start HTTP server
         const server = app.listen(config.port, () => {
             console.log(`
@@ -90,6 +98,9 @@ const startServer = async () => {
 
             aimsPullSyncJob.stop();
             console.log('AIMS Reconciliation Job stopped');
+
+            integrationSyncProcessor.stop();
+            console.log('Integration Sync Processor stopped');
 
             server.close(async () => {
                 console.log('HTTP server closed');

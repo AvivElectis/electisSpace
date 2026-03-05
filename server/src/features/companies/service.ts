@@ -4,7 +4,7 @@
  * @description Business logic layer for companies. Orchestrates repository calls,
  * handles authorization, and applies business rules.
  */
-import { GlobalRole, Prisma } from '@prisma/client';
+import { GlobalRole, Prisma, BookingRuleType } from '@prisma/client';
 import { companyRepository } from './repository.js';
 import { encrypt } from '../../shared/utils/encryption.js';
 import { config, prisma } from '../../config/index.js';
@@ -325,6 +325,32 @@ export const companyService = {
                     allStoresAccess: true,
                 },
             });
+        }
+
+        // Create default Compass booking rules when compass is enabled
+        if (companyFeatures.compassEnabled && fullData.compassConfig) {
+            const cc = fullData.compassConfig;
+            const ruleDefaults: Array<{ name: string; ruleType: BookingRuleType; config: Record<string, number> }> = [
+                { name: 'Max Duration', ruleType: BookingRuleType.MAX_DURATION, config: { maxMinutes: cc.maxDurationMinutes } },
+                { name: 'Max Advance Booking', ruleType: BookingRuleType.MAX_ADVANCE_BOOKING, config: { maxDays: cc.maxAdvanceBookingDays } },
+                { name: 'Check-in Window', ruleType: BookingRuleType.CHECK_IN_WINDOW, config: { windowMinutes: cc.checkInWindowMinutes } },
+                { name: 'Auto Release', ruleType: BookingRuleType.AUTO_RELEASE, config: { timeoutMinutes: cc.autoReleaseMinutes } },
+                { name: 'Max Concurrent', ruleType: BookingRuleType.MAX_CONCURRENT, config: { maxBookings: cc.maxConcurrentBookings } },
+            ];
+            for (const rule of ruleDefaults) {
+                await prisma.bookingRule.create({
+                    data: {
+                        companyId: company.id,
+                        name: rule.name,
+                        ruleType: rule.ruleType,
+                        config: rule.config as unknown as Prisma.InputJsonValue,
+                        applyTo: 'ALL_BRANCHES',
+                        priority: 0,
+                        isActive: true,
+                    },
+                });
+            }
+            appLogger.info('Companies', `Created ${ruleDefaults.length} default Compass booking rules for ${company.code}`);
         }
 
         // Re-fetch to get accurate store count after creation

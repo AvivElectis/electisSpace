@@ -32,6 +32,12 @@ import storeEventsRoutes from './features/stores/events.routes.js';
 import logsRoutes from './features/logs/routes.js';
 import aimsManagementRoutes from './features/aims-management/routes.js';
 import { rolesRouter } from './features/roles/index.js';
+import { compassAuthRoutes } from './features/compass-auth/index.js';
+import { compassBookingRoutes, adminBookingRoutes, adminBookingRuleRoutes } from './features/compass-bookings/index.js';
+import { compassSpaceRoutes, compassBuildingRoutes, adminCompassSpaceRoutes } from './features/compass-spaces/index.js';
+import { compassFriendRoutes, adminEmployeeRoutes } from './features/compass-friends/index.js';
+import { compassDashboardRoutes } from './features/compass-dashboard/index.js';
+import { integrationRoutes } from './features/integrations/index.js';
 import { appLogger } from './shared/infrastructure/services/appLogger.js';
 
 // Create Express app
@@ -175,6 +181,27 @@ apiRouter.use('/', storeRoutes); // Store routes mounted at root — MUST be aft
 apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
+
+// ======================
+// Compass API Routes (v2)
+// ======================
+const compassRouter = express.Router();
+compassRouter.use('/auth', compassAuthRoutes);
+compassRouter.use('/bookings', compassBookingRoutes);
+compassRouter.use('/spaces', compassSpaceRoutes);
+compassRouter.use('/buildings', compassBuildingRoutes);
+compassRouter.use('/friends', compassFriendRoutes);
+app.use('/api/v2/compass', compassRouter);
+
+// Admin Compass routes (under v2, admin JWT auth)
+app.use('/api/v2/admin/compass/bookings', adminBookingRoutes);
+app.use('/api/v2/admin/compass/rules', adminBookingRuleRoutes);
+app.use('/api/v2/admin/compass/spaces', adminCompassSpaceRoutes);
+app.use('/api/v2/admin/compass/employees', adminEmployeeRoutes);
+app.use('/api/v2/admin/compass/dashboard', compassDashboardRoutes);
+
+// Integration routes (admin auth, company-scoped)
+app.use('/api/v2/admin/companies/:companyId/integrations', integrationRoutes);
 
 // ======================
 // Static Frontend (production only)

@@ -32,6 +32,7 @@ export const companyFeaturesSchema = z.object({
     simpleConferenceMode: z.boolean(),
     labelsEnabled: z.boolean(),
     aimsManagementEnabled: z.boolean(),
+    compassEnabled: z.boolean().default(false),
 }).refine(
     (data) => !(data.spacesEnabled && data.peopleEnabled),
     { message: 'Spaces and People cannot both be enabled' }
@@ -58,11 +59,21 @@ export const createCompanySchema = z.object({
     spaceType: spaceTypeSchema.optional(),
 });
 
+/** Compass default booking rules config */
+export const compassConfigSchema = z.object({
+    maxDurationMinutes: z.number().int().min(30).max(1440),
+    maxAdvanceBookingDays: z.number().int().min(1).max(90),
+    checkInWindowMinutes: z.number().int().min(5).max(60),
+    autoReleaseMinutes: z.number().int().min(5).max(120),
+    maxConcurrentBookings: z.number().int().min(1).max(5),
+});
+
 /** Extended create company schema with multi-store + config (backward-compatible) */
 export const createCompanyFullSchema = createCompanySchema.extend({
     stores: z.array(createStoreSchema).default([]),
     articleFormat: z.record(z.unknown()).optional(),
     fieldMapping: z.record(z.unknown()).optional(),
+    compassConfig: compassConfigSchema.optional(),
 });
 
 /** Update company schema */
@@ -126,6 +137,13 @@ export interface CreateCompanyFullDto extends CreateCompanyDto {
     stores: Array<{ code: string; name?: string; timezone?: string }>;
     articleFormat?: Record<string, unknown>;
     fieldMapping?: Record<string, unknown>;
+    compassConfig?: {
+        maxDurationMinutes: number;
+        maxAdvanceBookingDays: number;
+        checkInWindowMinutes: number;
+        autoReleaseMinutes: number;
+        maxConcurrentBookings: number;
+    };
 }
 
 export interface UpdateCompanyDto {

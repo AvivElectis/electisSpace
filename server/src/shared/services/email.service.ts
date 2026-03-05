@@ -152,6 +152,132 @@ const createMailOptions = (recipient: string, subject: string, html: string) => 
   };
 };
 
+// Compass-branded mail options
+const createCompassMailOptions = (recipient: string, subject: string, html: string) => {
+  const rawHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>${subject}</title>
+        <style>
+          body {
+            font-family: 'Assistant', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            margin: 0;
+            padding: 0;
+          }
+          .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #1a1a2e;
+            padding: 40px 0;
+          }
+          .main {
+            background-color: #ffffff;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 580px;
+            border-spacing: 0;
+            font-family: 'Assistant', 'Segoe UI', sans-serif;
+            color: #171717;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+          }
+          .header {
+            padding: 32px 0 16px;
+            text-align: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+          }
+          .logo-text {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            text-decoration: none;
+            display: inline-block;
+          }
+          .slogan {
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 6px;
+          }
+          .content {
+            padding: 32px 40px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #334155;
+          }
+          .code-container {
+            margin: 32px 0;
+            text-align: center;
+            direction: ltr;
+          }
+          .code {
+            display: inline-block;
+            background-color: #f0f9ff;
+            color: #0f3460;
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            padding: 20px 48px;
+            border-radius: 16px;
+            border: 2px dashed #bae6fd;
+            font-family: 'Courier New', monospace;
+          }
+          .footer {
+            background-color: #f8fafc;
+            padding: 24px;
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            border-top: 1px solid #f1f5f9;
+          }
+          h2 {
+            color: #0f172a;
+            font-weight: 700;
+            margin-top: 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="wrapper">
+          <table class="main" role="presentation" align="center">
+            <tr>
+              <td class="header">
+                <div class="logo-text">electisCompass</div>
+                <div class="slogan">Simply find a spot</div>
+              </td>
+            </tr>
+            <tr>
+              <td class="content">
+                ${html}
+              </td>
+            </tr>
+            <tr>
+              <td class="footer">
+                <p style="margin: 0 0 8px;">This message was sent automatically from electisCompass.</p>
+                <p style="margin: 0;">&copy; ${new Date().getFullYear()} Electis. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const inlineCss = juice(rawHtml);
+
+  return {
+    from: process.env.EXCHANGE_NO_REPLY || 'noReply@electis.co.il',
+    to: recipient,
+    subject: subject,
+    html: inlineCss,
+  };
+};
+
 // Email service
 export class EmailService {
   /**
@@ -277,6 +403,46 @@ export class EmailService {
     const mailOptions = createMailOptions(email, 'הסיסמה שונתה - electisSpace', html);
     
     await transporter.sendMail(mailOptions);
+  }
+
+  /**
+   * Send Compass login verification code email
+   */
+  static async sendCompassLoginCode(email: string, code: string, displayName?: string): Promise<void> {
+    const name = displayName || 'User';
+    const subject = `Verification Code: ${code} - electisCompass`;
+
+    const html = `
+      <h2>Hi ${name},</h2>
+
+      <p>We received a login request for your <strong>electisCompass</strong> account.</p>
+
+      <p>Enter this verification code to sign in:</p>
+
+      <div class="code-container">
+        <span class="code">${code}</span>
+      </div>
+
+      <p style="text-align: center; color: #64748b; font-size: 14px;">This code expires in 10 minutes.</p>
+
+      <p style="margin-top: 32px; font-size: 14px; color: #64748b;">If you didn't request this, you can safely ignore this email.</p>
+    `;
+
+    const transporter = createTransporter();
+    const mailOptions = createCompassMailOptions(email, subject, html);
+
+    if (process.env.NODE_ENV === 'test') {
+      appLogger.info('Email', `[TEST] Compass code sent to ${email}: ${code}`);
+      return;
+    }
+
+    try {
+      await transporter.sendMail(mailOptions);
+      appLogger.info('Email', `Compass verification email sent to ${email}`);
+    } catch (error) {
+      appLogger.error('Email', 'Error sending Compass verification email', { error: String(error) });
+      throw error;
+    }
   }
 
   /**

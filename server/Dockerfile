@@ -19,6 +19,7 @@ RUN npx prisma generate
 COPY server/prisma.config.ts ./prisma.config.ts
 COPY server/tsconfig.json ./
 COPY server/src ./src/
+COPY shared/ ./shared/
 
 RUN npm run build
 

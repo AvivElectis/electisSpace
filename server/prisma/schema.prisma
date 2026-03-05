@@ -36,10 +36,18 @@ model Company {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   
+  // Compass (workspace booking) — all nullable for backward compatibility
+  compassEnabled  Boolean  @default(false) @map("compass_enabled")
+  compassConfig   Json?    @map("compass_config") // CompassFeatureConfig JSON
+
   // Relations
   stores          Store[]
   userCompanies   UserCompany[]
   roles           Role[]
+  companyUsers    CompanyUser[]
+  bookingRules    BookingRule[]
+  buildings       Building[]
+  integrations    IntegrationConfig[]
 
   @@map("companies")
 }
@@ -82,7 +90,9 @@ model Store {
   spacesLists     SpacesList[]
   auditLogs       AuditLog[]
   syncQueue       SyncQueueItem[]
-  
+  bookings        Booking[]
+  companyUsers    CompanyUser[]
+
   @@unique([companyId, code])
   @@index([companyId])
   @@map("stores")
@@ -322,28 +332,52 @@ model Space {
 
   // Dynamic data fields
   data         Json       @default("{}")
-  
+
   // Sync status
   syncStatus   SyncStatus @default(PENDING) @map("sync_status")
   lastSyncedAt DateTime?  @map("last_synced_at")
-  
+
+  // Compass fields — all nullable for backward compatibility
+  buildingId      String?      @map("building_id")
+  floorId         String?      @map("floor_id")
+  areaId          String?      @map("area_id")
+  compassMode     CompassSpaceMode? @map("compass_mode")
+  compassCapacity Int?         @map("compass_capacity")
+  compassAmenities String[]    @default([]) @map("compass_amenities")
+  permanentAssigneeId String?  @map("permanent_assignee_id")
+  sortOrder       Int          @default(0) @map("sort_order")
+  deletedAt       DateTime?    @map("deleted_at")
+
+  // Map position (for floor plan editor)
+  mapX            Float?       @map("map_x")
+  mapY            Float?       @map("map_y")
+  mapRotation     Float?       @map("map_rotation")
+
   // Audit
   createdById String? @map("created_by")
   updatedById String? @map("updated_by")
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
-  store           Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdBy       User?                    @relation("SpaceCreatedBy", fields: [createdById], references: [id])
-  updatedBy       User?                    @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
-  listMemberships PeopleListMembership[]
-  
+  store               Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  building            Building?                @relation(fields: [buildingId], references: [id])
+  floor               Floor?                   @relation(fields: [floorId], references: [id])
+  area                Area?                    @relation(fields: [areaId], references: [id])
+  permanentAssignee   CompanyUser?             @relation("PermanentSpace", fields: [permanentAssigneeId], references: [id])
+  createdBy           User?                    @relation("SpaceCreatedBy", fields: [createdById], references: [id])
+  updatedBy           User?                    @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
+  listMemberships     PeopleListMembership[]
+  bookings            Booking[]
+
   @@unique([storeId, externalId])
   @@index([storeId])
   @@index([labelCode])
+  @@index([buildingId])
+  @@index([floorId])
+  @@index([compassMode])
   @@map("spaces")
 }
 
@@ -569,4 +603,361 @@ enum StoreStatus {
   MAINTENANCE
   OFFLINE
   ARCHIVED
+}
+
+// ============================================================
+// Compass Models (Workspace Booking)
+// ============================================================
+
+// ======================
+// Buildings — Company-scoped hierarchy
+// ======================
+model Building {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  storeId   String   @map("store_id")
+  name      String   @db.VarChar(100)
+  code      String   @db.VarChar(20)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  floors  Floor[]
+  spaces  Space[]
+
+  @@unique([companyId, storeId, code])
+  @@index([companyId])
+  @@index([storeId])
+  @@map("buildings")
+}
+
+// ======================
+// Floors — Building-scoped
+// ======================
+model Floor {
+  id         String  @id @default(uuid())
+  buildingId String  @map("building_id")
+  name       String  @db.VarChar(100)
+  prefix     String  @db.VarChar(20)
+  sortOrder  Int     @default(0) @map("sort_order")
+  rangeStart String? @map("range_start") @db.VarChar(20)
+  rangeEnd   String? @map("range_end") @db.VarChar(20)
+  isActive   Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  areas      Area[]
+  spaces     Space[]
+  floorPlans FloorPlan[]
+
+  @@unique([buildingId, prefix])
+  @@index([buildingId])
+  @@map("floors")
+}
+
+// ======================
+// Areas — Floor-scoped
+// ======================
+model Area {
+  id        String   @id @default(uuid())
+  floorId   String   @map("floor_id")
+  name      String   @db.VarChar(100)
+  type      AreaType @default(ZONE)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  floor  Floor   @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  spaces Space[]
+
+  @@index([floorId])
+  @@map("areas")
+}
+
+enum AreaType {
+  WING
+  ZONE
+  DEPARTMENT
+  SECTION
+}
+
+// ======================
+// Floor Plans — Floor-scoped
+// ======================
+model FloorPlan {
+  id          String @id @default(uuid())
+  floorId     String @map("floor_id")
+  branchId    String @map("branch_id")
+  companyId   String @map("company_id")
+  name        String @db.VarChar(100)
+  imageUrl    String @map("image_url") @db.VarChar(500)
+  imageWidth  Int    @map("image_width")
+  imageHeight Int    @map("image_height")
+  mimeType    String @map("mime_type") @db.VarChar(50)
+  fileSize    Int    @map("file_size")
+  scale       Float  @default(1.0)
+  rotation    Float  @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  floor Floor @relation(fields: [floorId], references: [id], onDelete: Cascade)
+
+  @@unique([floorId, branchId])
+  @@index([companyId])
+  @@map("floor_plans")
+}
+
+// ======================
+// CompanyUser — Compass employee accounts
+// ======================
+model CompanyUser {
+  id           String  @id @default(uuid())
+  companyId    String  @map("company_id")
+  branchId     String  @map("branch_id")
+  buildingId   String? @map("building_id")
+  floorId      String? @map("floor_id")
+  areaId       String? @map("area_id")
+
+  email        String  @db.VarChar(255)
+  phone        String? @db.VarChar(50)
+  displayName  String  @map("display_name") @db.VarChar(200)
+  avatarUrl    String? @map("avatar_url") @db.VarChar(500)
+
+  role         CompanyUserRole @default(EMPLOYEE)
+  isActive     Boolean         @default(true) @map("is_active")
+  preferences  Json            @default("{}") // preferred space type, notifications, etc.
+  externalId   String?         @map("external_id") @db.VarChar(255) // for directory sync
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  company             Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch              Store       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  bookings            Booking[]
+  permanentSpaces     Space[]     @relation("PermanentSpace")
+  sentFriendRequests  Friendship[] @relation("FriendshipRequester")
+  receivedFriendRequests Friendship[] @relation("FriendshipAddressee")
+  compassDeviceTokens CompanyUserDeviceToken[]
+  compassVerificationCodes CompanyUserVerificationCode[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([branchId])
+  @@index([externalId])
+  @@map("company_users")
+}
+
+enum CompanyUserRole {
+  EMPLOYEE
+  MANAGER
+}
+
+// ======================
+// Booking — Workspace reservations
+// ======================
+model Booking {
+  id             String        @id @default(uuid())
+  companyUserId  String        @map("company_user_id")
+  spaceId        String        @map("space_id")
+  branchId       String        @map("branch_id")
+  companyId      String        @map("company_id")
+
+  startTime      DateTime      @map("start_time")
+  endTime        DateTime?     @map("end_time") // null for permanent assignments
+  status         BookingStatus @default(BOOKED)
+
+  checkedInAt    DateTime?     @map("checked_in_at")
+  releasedAt     DateTime?     @map("released_at")
+  autoReleased   Boolean       @default(false) @map("auto_released")
+  bookedBy       String?       @map("booked_by") // admin who booked on behalf
+  notes          String?       @db.VarChar(500)
+
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  companyUser CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+  space       Space       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  branch      Store       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, startTime, endTime])
+  @@index([companyUserId, startTime])
+  @@index([companyId, status])
+  @@index([status, endTime])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  BOOKED
+  CHECKED_IN
+  RELEASED
+  AUTO_RELEASED
+  CANCELLED
+  NO_SHOW
+}
+
+// ======================
+// BookingRule — Configurable booking constraints
+// ======================
+model BookingRule {
+  id           String           @id @default(uuid())
+  companyId    String           @map("company_id")
+  name         String           @db.VarChar(100)
+  ruleType     BookingRuleType  @map("rule_type")
+  isActive     Boolean          @default(true) @map("is_active")
+  priority     Int              @default(0)
+  config       Json             @default("{}") // rule-specific configuration
+  applyTo      RuleApplyTo      @default(ALL_BRANCHES) @map("apply_to")
+  targetBranchIds String[]      @default([]) @map("target_branch_ids")
+  targetSpaceTypes String[]     @default([]) @map("target_space_types")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("booking_rules")
+}
+
+enum BookingRuleType {
+  MAX_DURATION
+  MAX_ADVANCE_BOOKING
+  MAX_CONCURRENT
+  CHECK_IN_WINDOW
+  AUTO_RELEASE
+  BLOCKED_TIMES
+}
+
+enum RuleApplyTo {
+  ALL_BRANCHES
+  SELECTED_BRANCHES
+}
+
+// ======================
+// Friendship — Bidirectional with acceptance
+// ======================
+model Friendship {
+  id           String           @id @default(uuid())
+  requesterId  String           @map("requester_id")
+  addresseeId  String           @map("addressee_id")
+  companyId    String           @map("company_id")
+  status       FriendshipStatus @default(PENDING)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  requester CompanyUser @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee CompanyUser @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+  @@index([companyId])
+  @@map("friendships")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+// ======================
+// Compass Space Mode
+// ======================
+enum CompassSpaceMode {
+  AVAILABLE
+  EXCLUDED
+  PERMANENT
+  MAINTENANCE
+}
+
+// ======================
+// CompanyUserDeviceToken — Persistent mobile auth for Compass
+// ======================
+model CompanyUserDeviceToken {
+  id           String   @id @default(uuid())
+  companyUserId String  @map("company_user_id")
+  tokenHash    String   @map("token_hash") @db.VarChar(255)
+  deviceName   String?  @map("device_name") @db.VarChar(255)
+  platform     String?  @db.VarChar(50) // ANDROID, IOS, WEB
+  lastUsedAt   DateTime @map("last_used_at") @default(now())
+  expiresAt    DateTime @map("expires_at")
+  revoked      Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  companyUser CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([companyUserId])
+  @@map("company_user_device_tokens")
+}
+
+// ======================
+// CompanyUserVerificationCode — Email login codes for Compass
+// ======================
+model CompanyUserVerificationCode {
+  id            String   @id @default(uuid())
+  companyUserId String?  @map("company_user_id")
+  email         String   @db.VarChar(255)
+  codeHash      String   @map("code_hash") @db.VarChar(255)
+  expiresAt     DateTime @map("expires_at")
+  attempts      Int      @default(0)
+  consumed      Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  companyUser CompanyUser? @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+
+  @@index([email, consumed])
+  @@index([companyUserId])
+  @@map("company_user_verification_codes")
+}
+
+// ======================
+// IntegrationConfig — External provider sync settings
+// ======================
+model IntegrationConfig {
+  id         String @id @default(uuid())
+  companyId  String @map("company_id")
+  provider   String @db.VarChar(50) // MICROSOFT_365, GOOGLE_WORKSPACE, OKTA
+  type       String @db.VarChar(50) // USER_DIRECTORY, CALENDAR_ROOMS, BOTH
+  isActive   Boolean @default(false) @map("is_active")
+
+  // Encrypted credentials (AES-256-GCM)
+  credentials    String @db.Text // encrypted JSON blob
+  credentialsIv  String @map("credentials_iv") @db.VarChar(64)
+  credentialsTag String @map("credentials_tag") @db.VarChar(64)
+
+  // Sync configuration
+  syncIntervalMinutes Int     @default(1440) @map("sync_interval_minutes") // default daily
+  lastSyncAt          DateTime? @map("last_sync_at")
+  lastSyncStatus      String?   @map("last_sync_status") @db.VarChar(50) // SUCCESS, PARTIAL, FAILED
+  lastSyncError       String?   @map("last_sync_error") @db.Text
+  lastSyncStats       Json?     @map("last_sync_stats") // { created, updated, deactivated }
+
+  // Delta / sync tokens for incremental sync
+  syncToken String? @map("sync_token") @db.Text
+
+  // Field mapping configuration
+  fieldMapping Json? @map("field_mapping")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, provider, type])
+  @@index([companyId])
+  @@map("integration_configs")
 }
