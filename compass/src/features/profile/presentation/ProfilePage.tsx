@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Box,
     Typography,
@@ -11,18 +12,20 @@ import {
     Divider,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
+import { AccessibilityDialog } from '@shared/components/AccessibilityDialog';
 
 export function ProfilePage() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const user = useCompassAuthStore((s) => s.user);
     const logout = useCompassAuthStore((s) => s.logout);
+    const [a11yOpen, setA11yOpen] = useState(false);
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'he' : 'en';
@@ -38,6 +41,7 @@ export function ProfilePage() {
                     <Avatar
                         src={user?.avatarUrl ?? undefined}
                         sx={{ width: 56, height: 56, bgcolor: 'primary.main' }}
+                        aria-label={user?.displayName ?? undefined}
                     >
                         {user?.displayName?.charAt(0) ?? '?'}
                     </Avatar>
@@ -54,7 +58,7 @@ export function ProfilePage() {
 
             {/* Menu */}
             <Card variant="outlined">
-                <List disablePadding>
+                <List disablePadding aria-label={t('profile.settings')}>
                     <ListItemButton onClick={() => navigate('/friends')}>
                         <ListItemIcon><PeopleIcon /></ListItemIcon>
                         <ListItemText primary={t('profile.friends')} />
@@ -68,9 +72,9 @@ export function ProfilePage() {
                         />
                     </ListItemButton>
                     <Divider />
-                    <ListItemButton>
-                        <ListItemIcon><SettingsIcon /></ListItemIcon>
-                        <ListItemText primary={t('profile.settings')} />
+                    <ListItemButton onClick={() => setA11yOpen(true)}>
+                        <ListItemIcon><AccessibilityNewIcon /></ListItemIcon>
+                        <ListItemText primary={t('profile.accessibility')} />
                     </ListItemButton>
                     <Divider />
                     <ListItemButton onClick={logout}>
@@ -82,6 +86,8 @@ export function ProfilePage() {
                     </ListItemButton>
                 </List>
             </Card>
+
+            <AccessibilityDialog open={a11yOpen} onClose={() => setA11yOpen(false)} />
         </Box>
     );
 }

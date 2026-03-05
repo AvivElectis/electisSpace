@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline, Box } from '@mui/material';
-import { theme } from '@shared/theme/theme';
+import { ThemeProvider, CssBaseline, Box, useMediaQuery } from '@mui/material';
+import { getActiveTheme } from '@shared/theme/theme';
+import { usePreferencesStore } from '@shared/stores/usePreferencesStore';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
 import { LoginPage } from '@features/auth/presentation/LoginPage';
 import { BiometricEnrollDialog } from '@features/auth/presentation/BiometricEnrollDialog';
@@ -56,7 +57,6 @@ function BiometricEnrollment() {
 
     useEffect(() => {
         if (loginStep !== 'done') return;
-        // After first successful login on native, offer biometric enrollment
         if (!isNative) return;
 
         (async () => {
@@ -92,8 +92,30 @@ function BiometricEnrollment() {
 }
 
 export default function App() {
+    const themeMode = usePreferencesStore((s) => s.themeMode);
+    const { fontSize, highContrast, reducedMotion } = usePreferencesStore((s) => s.accessibility);
+
+    // Listen to system dark mode changes
+    const systemDark = useMediaQuery('(prefers-color-scheme: dark)');
+
+    const activeTheme = useMemo(
+        () => getActiveTheme(themeMode, fontSize, highContrast),
+        [themeMode, fontSize, highContrast, systemDark],
+    );
+
+    // Apply reduced motion to document
+    useEffect(() => {
+        if (reducedMotion) {
+            document.documentElement.style.setProperty('--transition-speed', '0s');
+            document.documentElement.classList.add('reduce-motion');
+        } else {
+            document.documentElement.style.removeProperty('--transition-speed');
+            document.documentElement.classList.remove('reduce-motion');
+        }
+    }, [reducedMotion]);
+
     return (
-        <ThemeProvider theme={theme}>
+        <ThemeProvider theme={activeTheme}>
             <CssBaseline />
             <AppLaunchGuard>
                 <HashRouter>

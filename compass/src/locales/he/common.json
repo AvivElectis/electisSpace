@@ -118,8 +118,22 @@
     "profile": {
         "friends": "חברים",
         "language": "שפה",
+        "accessibility": "תצוגה ונגישות",
         "settings": "הגדרות",
         "logout": "התנתק"
+    },
+    "accessibility": {
+        "title": "תצוגה ונגישות",
+        "theme": "ערכת נושא",
+        "light": "בהיר",
+        "dark": "כהה",
+        "system": "מערכת",
+        "fontSize": "גודל טקסט",
+        "highContrast": "ניגודיות גבוהה",
+        "highContrastDesc": "הגדל רוחב מסגרות וניגודיות לשיפור הנראות",
+        "reducedMotion": "צמצם תנועה",
+        "reducedMotionDesc": "מזער אנימציות ומעברים",
+        "reset": "אפס לברירת מחדל"
     },
     "common": {
         "loading": "טוען...",

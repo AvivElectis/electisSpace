@@ -118,8 +118,22 @@
     "profile": {
         "friends": "Friends",
         "language": "Language",
+        "accessibility": "Display & Accessibility",
         "settings": "Settings",
         "logout": "Sign Out"
+    },
+    "accessibility": {
+        "title": "Display & Accessibility",
+        "theme": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "fontSize": "Text Size",
+        "highContrast": "High Contrast",
+        "highContrastDesc": "Increase border width and contrast for better visibility",
+        "reducedMotion": "Reduce Motion",
+        "reducedMotionDesc": "Minimize animations and transitions",
+        "reset": "Reset to Defaults"
     },
     "common": {
         "loading": "Loading...",
