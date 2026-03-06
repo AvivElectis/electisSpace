@@ -12,12 +12,11 @@
  *   - Platform admins always bypass AIMS checks
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Paper, Typography, Stack, Button, CircularProgress } from '@mui/material';
 import StoreIcon from '@mui/icons-material/Store';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
-import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useTranslation } from 'react-i18next';
 import { authService } from '@shared/infrastructure/services/authService';
 import type { StoreConnectionInfo } from '@shared/infrastructure/services/authService';
@@ -40,7 +39,7 @@ type ConnectionState =
 export function StoreRequiredGuard({ children }: StoreRequiredGuardProps) {
     const { t } = useTranslation();
     const user = useAuthStore(state => state.user);
-    const activeStoreId = useSettingsStore(state => state.activeStoreId);
+    const activeStoreId = useAuthStore(state => state.activeStoreId);
     const setActiveStore = useAuthStore(state => state.setActiveStore);
 
     const [connectionState, setConnectionState] = useState<ConnectionState>({ status: 'idle' });
@@ -75,17 +74,28 @@ export function StoreRequiredGuard({ children }: StoreRequiredGuardProps) {
         }
     }, [user, setActiveStore, t]);
 
-    // If user has no stores or is not logged in, just render children
+    // If user is not logged in, just render children
     if (!user) return <>{children}</>;
 
-    // If a store is already selected, render children
-    if (activeStoreId) return <>{children}</>;
+    // Validate activeStoreId still exists in user's accessible stores
+    const storeStillValid = activeStoreId && user.stores.some(s => s.id === activeStoreId);
 
-    // Single-store users: auto-select their store
-    if (user.stores.length === 1 && !autoSelectTriggered.current && connectionState.status === 'idle') {
-        autoSelectTriggered.current = true;
-        // Use microtask to avoid calling during render
-        queueMicrotask(() => checkStoreConnection(user.stores[0].id));
+    // If a store is selected and valid, render children
+    if (storeStillValid) return <>{children}</>;
+
+    // Platform admins bypass store checks — they can access settings even with no stores
+    if (user.globalRole === 'PLATFORM_ADMIN') return <>{children}</>;
+
+    // Single-store users: auto-select their store (via effect to avoid side-effects during render)
+    const shouldAutoSelect = user.stores.length === 1 && !autoSelectTriggered.current && connectionState.status === 'idle';
+    useEffect(() => {
+        if (shouldAutoSelect && user.stores.length === 1) {
+            autoSelectTriggered.current = true;
+            checkStoreConnection(user.stores[0].id);
+        }
+    }, [shouldAutoSelect, user.stores, checkStoreConnection]);
+
+    if (shouldAutoSelect || (user.stores.length === 1 && connectionState.status === 'checking')) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
                 <CircularProgress size={24} sx={{ mr: 1 }} />

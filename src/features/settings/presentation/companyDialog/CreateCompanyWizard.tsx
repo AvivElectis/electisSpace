@@ -9,7 +9,7 @@
  * 4: Features
  * 5: Review & Create
  *
- * When Compass is enabled, a 6th config step is inserted before Review (7 total).
+ * When Compass is enabled, 2 extra steps are inserted before Review (Compass Config + Buildings = 8 total).
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
@@ -140,7 +140,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const totalSteps = stepLabels.length;
     const lastStep = totalSteps - 1;
 
-    // Clamp activeStep when compass is toggled off and user was on compass/review step
+    // Clamp activeStep when compass is toggled off and user was on a removed step
     useEffect(() => {
         if (activeStep >= totalSteps) {
             setActiveStep(totalSteps - 1);
@@ -231,8 +231,16 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 return true;
             case 'features':
                 return true;
-            case 'compassConfig':
-                return true;
+            case 'compassConfig': {
+                const cc = formData.compassConfig;
+                return (
+                    typeof cc.maxDurationMinutes === 'number' && cc.maxDurationMinutes >= 30 &&
+                    typeof cc.maxAdvanceBookingDays === 'number' && cc.maxAdvanceBookingDays >= 1 &&
+                    typeof cc.checkInWindowMinutes === 'number' && cc.checkInWindowMinutes >= 5 &&
+                    typeof cc.autoReleaseMinutes === 'number' && cc.autoReleaseMinutes >= 5 &&
+                    typeof cc.maxConcurrentBookings === 'number' && cc.maxConcurrentBookings >= 1
+                );
+            }
             case 'buildings':
                 return true; // Buildings are optional — user can skip
             case 'review':
@@ -336,6 +344,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         error={articleFormatError}
                         onFetch={handleFetchArticleFormat}
                         onUpdate={(format) => updateFormData({ articleFormat: format })}
+                        compassEnabled={compassEnabled}
                     />
                 );
             case 'fieldMapping':

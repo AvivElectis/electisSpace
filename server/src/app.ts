@@ -177,13 +177,24 @@ apiRouter.use('/spaces-lists', spacesListsRoutes);
 apiRouter.use('/logs', logsRoutes);
 apiRouter.use('/aims', aimsManagementRoutes);
 apiRouter.use('/roles', rolesRouter);
+
+// Admin Compass routes (accessed via admin app with v1 baseURL)
+apiRouter.use('/admin/compass/bookings', adminBookingRoutes);
+apiRouter.use('/admin/compass/rules', adminBookingRuleRoutes);
+apiRouter.use('/admin/compass/spaces', adminCompassSpaceRoutes);
+apiRouter.use('/admin/compass/employees', adminEmployeeRoutes);
+apiRouter.use('/admin/compass/dashboard', compassDashboardRoutes);
+
+// Integration routes (admin auth, company-scoped)
+apiRouter.use('/admin/companies/:companyId/integrations', integrationRoutes);
+
 apiRouter.use('/', storeRoutes); // Store routes mounted at root — MUST be after named routes (applies authenticate globally)
 apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
 
 app.use(`/api/${config.apiVersion}`, apiRouter);
 
 // ======================
-// Compass API Routes (v2)
+// Compass API Routes (v2 — mobile app)
 // ======================
 const compassRouter = express.Router();
 compassRouter.use('/auth', compassAuthRoutes);
@@ -192,16 +203,6 @@ compassRouter.use('/spaces', compassSpaceRoutes);
 compassRouter.use('/buildings', compassBuildingRoutes);
 compassRouter.use('/friends', compassFriendRoutes);
 app.use('/api/v2/compass', compassRouter);
-
-// Admin Compass routes (under v2, admin JWT auth)
-app.use('/api/v2/admin/compass/bookings', adminBookingRoutes);
-app.use('/api/v2/admin/compass/rules', adminBookingRuleRoutes);
-app.use('/api/v2/admin/compass/spaces', adminCompassSpaceRoutes);
-app.use('/api/v2/admin/compass/employees', adminEmployeeRoutes);
-app.use('/api/v2/admin/compass/dashboard', compassDashboardRoutes);
-
-// Integration routes (admin auth, company-scoped)
-app.use('/api/v2/admin/companies/:companyId/integrations', integrationRoutes);
 
 // ======================
 // Static Frontend (production only)

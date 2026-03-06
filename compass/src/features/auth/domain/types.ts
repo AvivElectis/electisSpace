@@ -30,4 +30,5 @@ export interface AuthState {
     loginStep: 'email' | 'code' | 'done';
     loginEmail: string;
     error: string | null;
+    codeExpiryMinutes: number | null;
 }

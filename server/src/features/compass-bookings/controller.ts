@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { badRequest } from '../../shared/middleware/index.js';
+import { badRequest, notFound } from '../../shared/middleware/index.js';
 import {
     createBookingSchema,
     extendBookingSchema,
@@ -152,8 +152,8 @@ export const adminCancel = async (req: Request, res: Response, next: NextFunctio
         const bookingId = req.params.bookingId as string;
         const companyId = req.params.companyId as string;
         const booking = await repo.findBookingById(bookingId, companyId);
-        if (!booking) throw badRequest('Booking not found');
-        const updated = await service.cancel(bookingId, booking.companyUserId, companyId);
+        if (!booking) throw notFound('Booking not found');
+        const updated = await service.adminCancel(bookingId, companyId);
         res.json({ data: updated });
     } catch (error) {
         next(error);

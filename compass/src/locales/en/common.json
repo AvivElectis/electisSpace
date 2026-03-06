@@ -20,6 +20,8 @@
         "sendCode": "Send Code",
         "verify": "Verify",
         "codeSentTo": "Code sent to {{email}}",
+        "codeExpiresIn": "The code expires in {{minutes}} minutes",
+        "devCodeLabel": "Dev mode code",
         "logout": "Sign Out",
         "biometricTitle": "Enable Biometric Login",
         "biometricDescription": "Use fingerprint or face recognition to unlock electisCompass quickly on future visits.",

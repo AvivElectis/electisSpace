@@ -73,20 +73,22 @@ export function ConnectionStep({
                 required
                 error={!!codeError}
                 helperText={codeError || t('settings.companies.codeHelp')}
-                InputProps={{
-                    endAdornment: formData.companyCode.length >= 3 && (
-                        <InputAdornment position="end">
-                            {codeChecking ? (
-                                <CircularProgress size={20} />
-                            ) : codeAvailable === true ? (
-                                <CheckCircleIcon color="success" />
-                            ) : codeAvailable === false ? (
-                                <ErrorIcon color="error" />
-                            ) : null}
-                        </InputAdornment>
-                    ),
+                slotProps={{
+                    input: {
+                        endAdornment: formData.companyCode.length >= 3 && (
+                            <InputAdornment position="end">
+                                {codeChecking ? (
+                                    <CircularProgress size={20} />
+                                ) : codeAvailable === true ? (
+                                    <CheckCircleIcon color="success" />
+                                ) : codeAvailable === false ? (
+                                    <ErrorIcon color="error" />
+                                ) : null}
+                            </InputAdornment>
+                        ),
+                    },
+                    htmlInput: { maxLength: 10, style: { textTransform: 'uppercase', fontFamily: 'monospace', direction: 'ltr' } },
                 }}
-                inputProps={{ maxLength: 10, style: { textTransform: 'uppercase', fontFamily: 'monospace', direction: 'ltr' } }}
             />
 
             {/* Company Name */}
@@ -95,7 +97,7 @@ export function ConnectionStep({
                 value={formData.companyName}
                 onChange={(e) => onUpdate({ companyName: e.target.value })}
                 required
-                inputProps={{ maxLength: 100 }}
+                slotProps={{ htmlInput: { maxLength: 100 } }}
             />
 
             {/* Location */}
@@ -104,7 +106,7 @@ export function ConnectionStep({
                 value={formData.location}
                 onChange={(e) => onUpdate({ location: e.target.value })}
                 placeholder={t('settings.companies.locationPlaceholder')}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{ htmlInput: { maxLength: 255 } }}
             />
 
             <Divider sx={{ my: 1 }}>

@@ -150,7 +150,7 @@ export function FieldMappingStep({
                                     variant="outlined"
                                     fullWidth
                                     placeholder={t('settings.companies.displayName')}
-                                    inputProps={{ style: { fontSize: '0.85rem' } }}
+                                    slotProps={{ htmlInput: { style: { fontSize: '0.85rem' } } }}
                                 />
                             </Box>
                         ) : (
@@ -174,7 +174,7 @@ export function FieldMappingStep({
                                     size="small"
                                     variant="standard"
                                     sx={{ flex: 1 }}
-                                    inputProps={{ style: { fontSize: '0.85rem' } }}
+                                    slotProps={{ htmlInput: { style: { fontSize: '0.85rem' } } }}
                                 />
                                 <Switch
                                     checked={fm.visible}

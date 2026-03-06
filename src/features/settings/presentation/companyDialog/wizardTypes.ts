@@ -1,6 +1,6 @@
 /**
  * Shared types for the Company Creation Wizard
- * Base: 6 steps. When Compass is enabled, a 7th step is added.
+ * Base: 6 steps. When Compass is enabled, 2 extra steps are inserted (Compass Config + Buildings), making 8 total.
  */
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
@@ -16,10 +16,12 @@ export interface WizardStoreData {
 }
 
 export interface WizardFloor {
+    id: string;
     name: string;
 }
 
 export interface WizardBuilding {
+    id: string;
     name: string;
     floors: WizardFloor[];
 }

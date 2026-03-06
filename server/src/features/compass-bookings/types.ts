@@ -23,7 +23,6 @@ export const createBookingRuleSchema = z.object({
         'MAX_CONCURRENT',
         'CHECK_IN_WINDOW',
         'AUTO_RELEASE',
-        'BLOCKED_TIMES',
     ]),
     config: z.record(z.unknown()),
     applyTo: z.enum(['ALL_BRANCHES', 'SPECIFIC_BRANCHES']).optional(),

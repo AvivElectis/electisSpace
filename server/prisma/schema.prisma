@@ -152,7 +152,8 @@ model User {
   updatedSpaces      Space[]        @relation("SpaceUpdatedBy")
   createdLists       PeopleList[]
   createdSpacesLists SpacesList[]   @relation("SpacesListCreatedBy")
-  
+  linkedCompanyUser  CompanyUser?   // one-to-one back-reference for compass admin link
+
   @@map("users")
 }
 
@@ -735,6 +736,7 @@ model CompanyUser {
   isActive     Boolean         @default(true) @map("is_active")
   preferences  Json            @default("{}") // preferred space type, notifications, etc.
   externalId   String?         @map("external_id") @db.VarChar(255) // for directory sync
+  linkedUserId String?         @unique @map("linked_user_id") // FK to User (admin link)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -742,6 +744,7 @@ model CompanyUser {
   // Relations
   company             Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   branch              Store       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  linkedUser          User?       @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
   bookings            Booking[]
   permanentSpaces     Space[]     @relation("PermanentSpace")
   sentFriendRequests  Friendship[] @relation("FriendshipRequester")
@@ -759,6 +762,7 @@ model CompanyUser {
 enum CompanyUserRole {
   EMPLOYEE
   MANAGER
+  ADMIN
 }
 
 // ======================

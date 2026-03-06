@@ -3,6 +3,7 @@ import type { CompassUser } from '../domain/types';
 
 interface LoginResponse {
     message: string;
+    codeExpiryMinutes: number;
 }
 
 interface VerifyResponse {

@@ -1,6 +1,7 @@
 import { badRequest, notFound, conflict, forbidden } from '../../shared/middleware/index.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import { emitBookingEvent } from '../../shared/infrastructure/services/compassSocket.js';
+import { prisma } from '../../config/index.js';
 import * as repo from './repository.js';
 import * as ruleEngine from './ruleEngine.js';
 
@@ -18,25 +19,33 @@ export const createBooking = async (params: {
 }) => {
     const { companyUserId, companyId, branchId, spaceId, startTime, endTime, bookedBy, notes } = params;
 
+    // L3: Require endTime
+    if (!endTime) {
+        throw badRequest('End time is required');
+    }
+
+    // S2: Verify space belongs to the user's branch
+    const space = await prisma.space.findUnique({ where: { id: spaceId }, select: { storeId: true } });
+    if (!space) throw notFound('Space not found');
+    if (space.storeId !== branchId) throw forbidden('Space does not belong to your branch');
+
     // Resolve rules for this branch
     const rules = await ruleEngine.resolveRules(companyId, branchId);
 
     // Validate duration
-    if (endTime) {
-        const durationMs = endTime.getTime() - startTime.getTime();
-        const durationMinutes = durationMs / (1000 * 60);
+    const durationMs = endTime.getTime() - startTime.getTime();
+    const durationMinutes = durationMs / (1000 * 60);
 
-        if (durationMinutes < rules.minBookingDurationMinutes) {
-            throw badRequest('BOOKING_TOO_SHORT', {
-                min: rules.minBookingDurationMinutes,
-            });
-        }
+    if (durationMinutes < rules.minBookingDurationMinutes) {
+        throw badRequest('BOOKING_TOO_SHORT', {
+            min: rules.minBookingDurationMinutes,
+        });
+    }
 
-        if (durationMinutes > rules.maxBookingDurationMinutes) {
-            throw badRequest('BOOKING_TOO_LONG', {
-                max: rules.maxBookingDurationMinutes,
-            });
-        }
+    if (durationMinutes > rules.maxBookingDurationMinutes) {
+        throw badRequest('BOOKING_TOO_LONG', {
+            max: rules.maxBookingDurationMinutes,
+        });
     }
 
     // Validate advance booking
@@ -48,37 +57,57 @@ export const createBooking = async (params: {
         });
     }
 
-    // Check concurrent bookings limit
-    const activeCount = await repo.countActiveByUser(companyUserId, companyId);
-    if (activeCount >= rules.maxConcurrentBookings) {
-        throw badRequest('MAX_CONCURRENT_BOOKINGS_EXCEEDED', {
-            max: rules.maxConcurrentBookings,
+    // L2: Atomic conflict check + concurrent limit + create in a serializable transaction
+    const booking = await prisma.$transaction(async (tx) => {
+        // Check concurrent bookings limit inside transaction for atomicity
+        const activeCount = await tx.booking.count({
+            where: {
+                companyUserId,
+                companyId,
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+            },
         });
-    }
+        if (activeCount >= rules.maxConcurrentBookings) {
+            throw badRequest('MAX_CONCURRENT_BOOKINGS_EXCEEDED', {
+                max: rules.maxConcurrentBookings,
+            });
+        }
 
-    // Check for conflicts
-    const conflicts = await repo.findActiveBySpace(spaceId, startTime, endTime);
-    if (conflicts.length > 0) {
-        throw conflict('SPACE_ALREADY_BOOKED');
-    }
+        const conflicts = await tx.booking.findMany({
+            where: {
+                spaceId,
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+                startTime: { lt: endTime },
+                OR: [{ endTime: null }, { endTime: { gt: startTime } }],
+            },
+        });
+        if (conflicts.length > 0) {
+            throw conflict('SPACE_ALREADY_BOOKED');
+        }
 
-    // Create the booking
-    const booking = await repo.createBooking({
-        companyUserId,
-        spaceId,
-        branchId,
-        companyId,
-        startTime,
-        endTime,
-        bookedBy,
-        notes,
-    });
+        return tx.booking.create({
+            data: {
+                companyUserId,
+                spaceId,
+                branchId,
+                companyId,
+                startTime,
+                endTime,
+                bookedBy: bookedBy ?? null,
+                notes: notes ?? null,
+            },
+            include: {
+                space: { select: { id: true, externalId: true, data: true, buildingId: true, floorId: true } },
+                companyUser: { select: { id: true, displayName: true, email: true } },
+            },
+        });
+    }, { isolationLevel: 'Serializable' });
 
     appLogger.info('CompassBooking', `Booking created: ${booking.id}`, {
         spaceId,
         companyUserId,
         startTime: startTime.toISOString(),
-        endTime: endTime?.toISOString(),
+        endTime: endTime.toISOString(),
     });
 
     emitBookingEvent('space:booked', branchId, {
@@ -86,7 +115,7 @@ export const createBooking = async (params: {
         spaceId,
         companyUserId,
         startTime: startTime.toISOString(),
-        endTime: endTime?.toISOString(),
+        endTime: endTime.toISOString(),
     });
 
     return booking;
@@ -204,6 +233,34 @@ export const cancel = async (bookingId: string, companyUserId: string, companyId
     return updated;
 };
 
+// ─── Admin Cancel (allows BOOKED or CHECKED_IN) ─────
+
+export const adminCancel = async (bookingId: string, companyId: string) => {
+    const booking = await repo.findBookingById(bookingId, companyId);
+    if (!booking) {
+        throw notFound('Booking not found');
+    }
+
+    if (!['BOOKED', 'CHECKED_IN'].includes(booking.status)) {
+        throw badRequest('INVALID_BOOKING_STATUS', {
+            current: booking.status,
+            expected: 'BOOKED or CHECKED_IN',
+        });
+    }
+
+    const updated = await repo.updateBookingStatus(bookingId, 'CANCELLED');
+
+    appLogger.info('CompassBooking', `Admin cancelled: ${bookingId}`, { companyUserId: booking.companyUserId });
+
+    emitBookingEvent('space:released', booking.branchId, {
+        bookingId,
+        spaceId: booking.spaceId,
+        companyUserId: booking.companyUserId,
+    });
+
+    return updated;
+};
+
 // ─── Extend ──────────────────────────────────────────
 
 export const extend = async (
@@ -243,20 +300,30 @@ export const extend = async (
         });
     }
 
-    // Check for conflicts in the extended window
-    const conflicts = await repo.findActiveBySpace(
-        booking.spaceId,
-        booking.endTime,
-        newEndTime,
-        bookingId,
-    );
-    if (conflicts.length > 0) {
-        throw conflict('SPACE_ALREADY_BOOKED');
-    }
+    // Atomic conflict check + update in a serializable transaction
+    const updated = await prisma.$transaction(async (tx) => {
+        const conflicts = await tx.booking.findMany({
+            where: {
+                spaceId: booking.spaceId,
+                id: { not: bookingId },
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+                startTime: { lt: newEndTime },
+                OR: [{ endTime: null }, { endTime: { gt: booking.endTime! } }],
+            },
+        });
+        if (conflicts.length > 0) {
+            throw conflict('SPACE_ALREADY_BOOKED');
+        }
 
-    const updated = await repo.updateBookingStatus(bookingId, booking.status, {
-        endTime: newEndTime,
-    });
+        return tx.booking.update({
+            where: { id: bookingId },
+            data: { endTime: newEndTime },
+            include: {
+                space: { select: { id: true, externalId: true, data: true, buildingId: true, floorId: true } },
+                companyUser: { select: { id: true, displayName: true, email: true } },
+            },
+        });
+    }, { isolationLevel: 'Serializable' });
 
     appLogger.info('CompassBooking', `Extended: ${bookingId}`, {
         companyUserId,
@@ -268,16 +335,26 @@ export const extend = async (
 
 // ─── List User Bookings ──────────────────────────────
 
+const VALID_BOOKING_STATUSES = new Set([
+    'BOOKED', 'CHECKED_IN', 'RELEASED', 'AUTO_RELEASED', 'CANCELLED', 'NO_SHOW',
+]);
+
 export const listUserBookings = async (
     companyUserId: string,
     companyId: string,
     status?: string,
 ) => {
-    const statusFilter = status
-        ? (status.split(',') as any[])
-        : undefined;
+    let statusFilter: string[] | undefined;
+    if (status) {
+        const values = status.split(',').filter(s => s.trim());
+        const invalid = values.filter(v => !VALID_BOOKING_STATUSES.has(v));
+        if (invalid.length > 0) {
+            throw badRequest(`Invalid booking status: ${invalid.join(', ')}`);
+        }
+        statusFilter = values;
+    }
 
-    return repo.findByUser(companyUserId, companyId, statusFilter);
+    return repo.findByUser(companyUserId, companyId, statusFilter as any);
 };
 
 // ─── Auto-Release Job Logic ──────────────────────────
@@ -288,11 +365,22 @@ export const processAutoRelease = async () => {
 
     let count = 0;
     for (const booking of expired) {
-        await repo.updateBookingStatus(booking.id, 'AUTO_RELEASED', {
-            autoReleased: true,
-            releasedAt: now,
-        });
-        count++;
+        try {
+            await repo.updateBookingStatus(booking.id, 'AUTO_RELEASED', {
+                autoReleased: true,
+                releasedAt: now,
+            });
+
+            emitBookingEvent('space:released', booking.branchId, {
+                bookingId: booking.id,
+                spaceId: booking.spaceId,
+                status: 'AUTO_RELEASED',
+            });
+
+            count++;
+        } catch (error) {
+            appLogger.error('CompassBooking', `Failed to auto-release booking ${booking.id}`, { error: String(error) });
+        }
     }
 
     if (count > 0) {
@@ -306,30 +394,41 @@ export const processAutoRelease = async () => {
 
 export const processNoShows = async () => {
     const now = new Date();
-    // Default check-in window: 15 minutes
-    const defaultWindow = ruleEngine.getDefaults().checkInWindowMinutes;
-    const cutoff = new Date(now.getTime() - defaultWindow * 60 * 1000);
+    // Use a generous 24h cutoff to capture all candidates;
+    // per-booking rule resolution below handles accurate filtering
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     const candidates = await repo.findNoShowBookings(cutoff);
 
     let count = 0;
     for (const booking of candidates) {
-        // Resolve per-branch rules for accurate check-in window
-        const rules = await ruleEngine.resolveRules(
-            booking.companyId,
-            booking.branchId,
-        );
+        try {
+            // Resolve per-branch rules for accurate check-in window
+            const rules = await ruleEngine.resolveRules(
+                booking.companyId,
+                booking.branchId,
+            );
 
-        const deadline = new Date(
-            booking.startTime.getTime() + rules.checkInWindowMinutes * 60 * 1000,
-        );
+            const deadline = new Date(
+                booking.startTime.getTime() + rules.checkInWindowMinutes * 60 * 1000,
+            );
 
-        if (now > deadline && rules.autoReleaseOnNoShow) {
-            await repo.updateBookingStatus(booking.id, 'NO_SHOW', {
-                autoReleased: true,
-                releasedAt: now,
-            });
-            count++;
+            if (now > deadline && rules.autoReleaseOnNoShow) {
+                await repo.updateBookingStatus(booking.id, 'NO_SHOW', {
+                    autoReleased: true,
+                    releasedAt: now,
+                });
+
+                emitBookingEvent('space:released', booking.branchId, {
+                    bookingId: booking.id,
+                    spaceId: booking.spaceId,
+                    status: 'NO_SHOW',
+                });
+
+                count++;
+            }
+        } catch (error) {
+            appLogger.error('CompassBooking', `Failed to process no-show for booking ${booking.id}`, { error: String(error) });
         }
     }
 

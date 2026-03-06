@@ -210,6 +210,13 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
             if (feature === 'conferenceEnabled' && !value) {
                 updated.simpleConferenceMode = false;
             }
+            // Compass locks spaces, people, and conference
+            if (feature === 'compassEnabled' && value) {
+                updated.spacesEnabled = false;
+                updated.peopleEnabled = false;
+                updated.conferenceEnabled = false;
+                updated.simpleConferenceMode = false;
+            }
             return updated;
         });
     };

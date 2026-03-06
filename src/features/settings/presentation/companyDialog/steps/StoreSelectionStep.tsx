@@ -137,7 +137,7 @@ export function StoreSelectionStep({
                                         onChange={(e) => handleFieldUpdate(store.code, 'name', e.target.value)}
                                         size="small"
                                         sx={{ flex: 1, minWidth: isMobile ? undefined : 180 }}
-                                        inputProps={{ maxLength: 100 }}
+                                        slotProps={{ htmlInput: { maxLength: 100 } }}
                                     />
                                     <Autocomplete
                                         value={storeData.timezone}

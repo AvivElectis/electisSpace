@@ -35,12 +35,18 @@ export function BuildingHierarchyStep({ buildings, onUpdate }: BuildingHierarchy
         buildings.length > 0 ? 0 : null,
     );
     const [newBuildingName, setNewBuildingName] = useState('');
-    const [newFloorNames, setNewFloorNames] = useState<Record<number, string>>({});
+    const [newFloorNames, setNewFloorNames] = useState<Record<string, string>>({});
+
+    const isDuplicateBuilding = (name: string) =>
+        buildings.some(b => b.name.toLowerCase() === name.trim().toLowerCase());
+
+    const isDuplicateFloor = (buildingIndex: number, name: string) =>
+        buildings[buildingIndex]?.floors.some(f => f.name.toLowerCase() === name.trim().toLowerCase());
 
     const handleAddBuilding = () => {
         const name = newBuildingName.trim();
-        if (!name) return;
-        const updated = [...buildings, { name, floors: [] }];
+        if (!name || isDuplicateBuilding(name)) return;
+        const updated = [...buildings, { id: crypto.randomUUID(), name, floors: [] }];
         onUpdate(updated);
         setNewBuildingName('');
         setExpandedBuilding(updated.length - 1);
@@ -55,14 +61,14 @@ export function BuildingHierarchyStep({ buildings, onUpdate }: BuildingHierarchy
         }
     };
 
-    const handleAddFloor = (buildingIndex: number) => {
-        const name = (newFloorNames[buildingIndex] || '').trim();
-        if (!name) return;
+    const handleAddFloor = (buildingIndex: number, buildingId: string) => {
+        const name = (newFloorNames[buildingId] || '').trim();
+        if (!name || isDuplicateFloor(buildingIndex, name)) return;
         const updated = buildings.map((b, i) =>
-            i === buildingIndex ? { ...b, floors: [...b.floors, { name }] } : b,
+            i === buildingIndex ? { ...b, floors: [...b.floors, { id: crypto.randomUUID(), name }] } : b,
         );
         onUpdate(updated);
-        setNewFloorNames((prev) => ({ ...prev, [buildingIndex]: '' }));
+        setNewFloorNames((prev) => ({ ...prev, [buildingId]: '' }));
     };
 
     const handleRemoveFloor = (buildingIndex: number, floorIndex: number) => {
@@ -83,7 +89,7 @@ export function BuildingHierarchyStep({ buildings, onUpdate }: BuildingHierarchy
             {/* Building list */}
             <Stack spacing={1.5}>
                 {buildings.map((building, bi) => (
-                    <Paper key={bi} variant="outlined" sx={{ overflow: 'hidden' }}>
+                    <Paper key={building.id} variant="outlined" sx={{ overflow: 'hidden' }}>
                         {/* Building header */}
                         <Box
                             sx={{
@@ -129,12 +135,12 @@ export function BuildingHierarchyStep({ buildings, onUpdate }: BuildingHierarchy
                                     <Stack spacing={0.5} sx={{ mb: 1.5 }}>
                                         {building.floors.map((floor, fi) => (
                                             <Box
-                                                key={fi}
+                                                key={floor.id}
                                                 sx={{
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: 1,
-                                                    ps: 2,
+                                                    pl: 2,
                                                 }}
                                             >
                                                 <Typography variant="body2" sx={{ flex: 1 }}>
@@ -153,28 +159,31 @@ export function BuildingHierarchyStep({ buildings, onUpdate }: BuildingHierarchy
                                 )}
 
                                 {/* Add floor input */}
-                                <Box sx={{ display: 'flex', gap: 1, ps: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 1, pl: 2 }}>
                                     <TextField
                                         size="small"
                                         placeholder={t('settings.companies.floorNamePlaceholder')}
-                                        value={newFloorNames[bi] || ''}
+                                        value={newFloorNames[building.id] || ''}
                                         onChange={(e) =>
-                                            setNewFloorNames((prev) => ({ ...prev, [bi]: e.target.value }))
+                                            setNewFloorNames((prev) => ({ ...prev, [building.id]: e.target.value }))
                                         }
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
-                                                handleAddFloor(bi);
+                                                handleAddFloor(bi, building.id);
                                             }
                                         }}
+                                        slotProps={{ htmlInput: { maxLength: 100 } }}
+                                        error={isDuplicateFloor(bi, newFloorNames[building.id] || '')}
+                                        helperText={isDuplicateFloor(bi, newFloorNames[building.id] || '') ? t('settings.companies.duplicateName', 'Name already exists') : undefined}
                                         sx={{ flex: 1 }}
                                     />
                                     <Button
                                         size="small"
                                         variant="outlined"
                                         startIcon={<AddIcon />}
-                                        onClick={() => handleAddFloor(bi)}
-                                        disabled={!(newFloorNames[bi] || '').trim()}
+                                        onClick={() => handleAddFloor(bi, building.id)}
+                                        disabled={!(newFloorNames[building.id] || '').trim()}
                                     >
                                         {t('settings.companies.addFloor')}
                                     </Button>
@@ -202,6 +211,9 @@ export function BuildingHierarchyStep({ buildings, onUpdate }: BuildingHierarchy
                                 handleAddBuilding();
                             }
                         }}
+                        slotProps={{ htmlInput: { maxLength: 100 } }}
+                        error={isDuplicateBuilding(newBuildingName)}
+                        helperText={isDuplicateBuilding(newBuildingName) ? t('settings.companies.duplicateName', 'Name already exists') : undefined}
                         sx={{ flex: 1 }}
                     />
                     <Button

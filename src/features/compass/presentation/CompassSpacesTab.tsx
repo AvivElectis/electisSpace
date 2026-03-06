@@ -6,18 +6,8 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
-import api from '@shared/infrastructure/services/apiClient';
-
-interface CompassSpace {
-    id: string;
-    name: string;
-    type: string;
-    compassMode: string | null;
-    building?: { name: string } | null;
-    floor?: { name: string } | null;
-    area?: { name: string } | null;
-    permanentAssignee?: { displayName: string } | null;
-}
+import { compassAdminApi } from '../infrastructure/compassAdminApi';
+import type { CompassSpace } from '../domain/types';
 
 const modeColors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
     AVAILABLE: 'success',
@@ -30,32 +20,36 @@ export function CompassSpacesTab() {
     const { t } = useTranslation();
     const { activeStoreId } = useAuthStore();
     const [spaces, setSpaces] = useState<CompassSpace[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [updatingSpaceId, setUpdatingSpaceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [modeFilter, setModeFilter] = useState<string>('all');
 
-    const fetchSpaces = useCallback(async () => {
+    const fetchSpaces = useCallback(async (showLoading = false) => {
         if (!activeStoreId) return;
-        setLoading(true);
+        if (showLoading) setInitialLoading(true);
         try {
-            const res = await api.get(`/v2/admin/compass/spaces/${activeStoreId}`);
+            const res = await compassAdminApi.listSpaces(activeStoreId);
             setSpaces(res.data.data || []);
             setError(null);
         } catch {
-            setError('Failed to load spaces');
+            setError(t('errors.loadFailed'));
         } finally {
-            setLoading(false);
+            setInitialLoading(false);
         }
     }, [activeStoreId]);
 
-    useEffect(() => { fetchSpaces(); }, [fetchSpaces]);
+    useEffect(() => { fetchSpaces(true); }, [fetchSpaces]);
 
     const handleModeChange = async (spaceId: string, mode: string) => {
+        setUpdatingSpaceId(spaceId);
         try {
-            await api.put(`/v2/admin/compass/spaces/${spaceId}/mode`, { mode });
-            fetchSpaces();
+            await compassAdminApi.updateSpaceMode(spaceId, mode);
+            await fetchSpaces();
         } catch {
-            setError('Failed to update space mode');
+            setError(t('errors.saveFailed'));
+        } finally {
+            setUpdatingSpaceId(null);
         }
     };
 
@@ -63,7 +57,7 @@ export function CompassSpacesTab() {
         ? spaces
         : spaces.filter(s => s.compassMode === modeFilter);
 
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+    if (initialLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
     return (
         <Box>
@@ -78,11 +72,11 @@ export function CompassSpacesTab() {
                     onChange={(e) => setModeFilter(e.target.value)}
                     sx={{ minWidth: 150 }}
                 >
-                    <MenuItem value="all">{t('common.all', 'All')}</MenuItem>
-                    <MenuItem value="AVAILABLE">Available</MenuItem>
-                    <MenuItem value="PERMANENT">Permanent</MenuItem>
-                    <MenuItem value="MAINTENANCE">Maintenance</MenuItem>
-                    <MenuItem value="EXCLUDED">Excluded</MenuItem>
+                    <MenuItem value="all">{t('common.all')}</MenuItem>
+                    <MenuItem value="AVAILABLE">{t('compass.spaceMode.AVAILABLE')}</MenuItem>
+                    <MenuItem value="PERMANENT">{t('compass.spaceMode.PERMANENT')}</MenuItem>
+                    <MenuItem value="MAINTENANCE">{t('compass.spaceMode.MAINTENANCE')}</MenuItem>
+                    <MenuItem value="EXCLUDED">{t('compass.spaceMode.EXCLUDED')}</MenuItem>
                 </TextField>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {filtered.length} {t('compass.navigation.spaces').toLowerCase()}
@@ -123,12 +117,13 @@ export function CompassSpacesTab() {
                                             size="small"
                                             value={s.compassMode || ''}
                                             onChange={(e) => handleModeChange(s.id, e.target.value)}
+                                            disabled={updatingSpaceId === s.id}
                                             sx={{ minWidth: 130 }}
                                         >
-                                            <MenuItem value="AVAILABLE">Available</MenuItem>
-                                            <MenuItem value="PERMANENT">Permanent</MenuItem>
-                                            <MenuItem value="MAINTENANCE">Maintenance</MenuItem>
-                                            <MenuItem value="EXCLUDED">Excluded</MenuItem>
+                                            <MenuItem value="AVAILABLE">{t('compass.spaceMode.AVAILABLE')}</MenuItem>
+                                            <MenuItem value="PERMANENT">{t('compass.spaceMode.PERMANENT')}</MenuItem>
+                                            <MenuItem value="MAINTENANCE">{t('compass.spaceMode.MAINTENANCE')}</MenuItem>
+                                            <MenuItem value="EXCLUDED">{t('compass.spaceMode.EXCLUDED')}</MenuItem>
                                         </TextField>
                                     </TableCell>
                                     <TableCell>

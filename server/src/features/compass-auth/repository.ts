@@ -8,7 +8,11 @@ const BCRYPT_ROUNDS = 12;
 
 export const findCompanyUserByEmail = async (email: string) => {
     return prisma.companyUser.findFirst({
-        where: { email, isActive: true },
+        where: {
+            email,
+            isActive: true,
+            company: { compassEnabled: true },
+        },
         include: {
             company: { select: { id: true, name: true, compassEnabled: true } },
             branch: { select: { id: true, name: true, code: true } },

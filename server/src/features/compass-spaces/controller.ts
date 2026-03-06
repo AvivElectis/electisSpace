@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { badRequest } from '../../shared/middleware/index.js';
+import { badRequest, forbidden } from '../../shared/middleware/index.js';
+import { isPlatformAdmin, canManageCompany } from '../../features/companies/service.js';
+import { prisma } from '../../config/index.js';
 import { spacesQuerySchema, updateSpaceModeSchema } from './types.js';
 import * as service from './service.js';
 
@@ -62,6 +64,19 @@ export const updateMode = async (req: Request, res: Response, next: NextFunction
         const parsed = updateSpaceModeSchema.safeParse(req.body);
         if (!parsed.success) {
             throw badRequest('Invalid request', parsed.error.format());
+        }
+
+        // Authorization: resolve space → store → company, then check admin access
+        const user = req.user!;
+        if (!isPlatformAdmin(user)) {
+            const spaceRecord = await prisma.space.findUnique({
+                where: { id: req.params.id as string },
+                select: { store: { select: { companyId: true } } },
+            });
+            if (!spaceRecord) throw badRequest('Space not found');
+            if (!canManageCompany(user, spaceRecord.store.companyId)) {
+                throw forbidden('Not authorized to manage this company');
+            }
         }
 
         const space = await service.updateSpaceMode(

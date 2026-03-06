@@ -14,6 +14,16 @@ export const findFriendship = async (userId: string, friendId: string) => {
     });
 };
 
+export const findFriendshipById = async (id: string, companyId?: string) => {
+    return prisma.friendship.findFirst({
+        where: { id, ...(companyId ? { companyId } : {}) },
+        include: {
+            requester: { select: { id: true, displayName: true, email: true, avatarUrl: true } },
+            addressee: { select: { id: true, displayName: true, email: true, avatarUrl: true } },
+        },
+    });
+};
+
 export const findFriends = async (userId: string, status?: FriendshipStatus) => {
     return prisma.friendship.findMany({
         where: {

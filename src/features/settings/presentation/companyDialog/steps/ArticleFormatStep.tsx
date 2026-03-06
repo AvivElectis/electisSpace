@@ -26,12 +26,19 @@ const ArticleFormatEditor = lazy(() =>
     import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
 );
 
+const COMPASS_ARTICLE_DATA_FIELDS = [
+    'BUILDING_NAME', 'FLOOR_NAME', 'AREA_NAME',
+    'SPACE_MODE', 'SPACE_CAPACITY', 'SPACE_AMENITIES', 'SPACE_TYPE',
+    'BOOKING_STATUS', 'BOOKED_BY', 'BOOKING_TIME',
+];
+
 interface ArticleFormatStepProps {
     articleFormat: ArticleFormat | null;
     loading: boolean;
     error: string | null;
     onFetch: () => Promise<void>;
     onUpdate: (format: ArticleFormat) => void;
+    compassEnabled?: boolean;
 }
 
 export function ArticleFormatStep({
@@ -40,6 +47,7 @@ export function ArticleFormatStep({
     error,
     onFetch,
     onUpdate,
+    compassEnabled,
 }: ArticleFormatStepProps) {
     const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual');
@@ -49,7 +57,7 @@ export function ArticleFormatStep({
         if (!articleFormat && !loading && !error) {
             onFetch();
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [articleFormat, loading, error, onFetch]);
 
     if (loading) {
         return (
@@ -135,14 +143,14 @@ export function ArticleFormatStep({
                             label={t('settings.companies.fileExtension')}
                             value={articleFormat.fileExtension || ''}
                             size="small"
-                            InputProps={{ readOnly: true }}
+                            slotProps={{ input: { readOnly: true } }}
                             sx={{ width: 120 }}
                         />
                         <TextField
                             label={t('settings.companies.delimiter')}
                             value={articleFormat.delimeter || ''}
                             size="small"
-                            InputProps={{ readOnly: true }}
+                            slotProps={{ input: { readOnly: true } }}
                             sx={{ width: 120 }}
                         />
                     </Box>
@@ -158,6 +166,20 @@ export function ArticleFormatStep({
                             ))}
                         </Box>
                     </Paper>
+
+                    {/* Compass fields info */}
+                    {compassEnabled && (
+                        <Alert severity="info" variant="outlined">
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                {t('compass.compassFormatInfo')}
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {COMPASS_ARTICLE_DATA_FIELDS.map((field) => (
+                                    <Chip key={field} label={field} size="small" color="info" />
+                                ))}
+                            </Box>
+                        </Alert>
+                    )}
 
                     {/* Data fields */}
                     <Paper variant="outlined" sx={{ p: 1.5 }}>

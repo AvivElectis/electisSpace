@@ -8,8 +8,10 @@
  * 6. Integrations (directory sync — Microsoft 365, Google Workspace, Okta)
  */
 import {
+    Dialog,
     DialogTitle,
     DialogContent,
+    DialogContentText,
     DialogActions,
     Button,
     TextField,
@@ -108,6 +110,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     const [newSyncInterval, setNewSyncInterval] = useState(1440);
     const [integrationSaving, setIntegrationSaving] = useState(false);
     const [syncingId, setSyncingId] = useState<string | null>(null);
+    const [confirmDeleteIntegration, setConfirmDeleteIntegration] = useState<string | null>(null);
 
     // Fetch stores + settings on open
     useEffect(() => {
@@ -210,7 +213,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             setNewCredentials({});
             await fetchIntegrations(state.company.id);
         } catch (err: any) {
-            state.setError(err.response?.data?.error?.message || 'Failed to create integration');
+            state.setError(err.response?.data?.error?.message || t('errors.saveFailed'));
         } finally {
             setIntegrationSaving(false);
         }
@@ -222,7 +225,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             await integrationService.remove(state.company.id, id);
             setIntegrations(prev => prev.filter(i => i.id !== id));
         } catch (err: any) {
-            state.setError(err.response?.data?.error?.message || 'Failed to delete integration');
+            state.setError(err.response?.data?.error?.message || t('errors.saveFailed'));
         }
     }, [state]);
 
@@ -233,7 +236,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             await integrationService.triggerSync(state.company.id, id, fullSync);
             await fetchIntegrations(state.company.id);
         } catch (err: any) {
-            state.setError(err.response?.data?.error?.message || 'Sync failed');
+            state.setError(err.response?.data?.error?.message || t('errors.saveFailed'));
         } finally {
             setSyncingId(null);
         }
@@ -245,7 +248,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             await integrationService.update(state.company.id, id, { isActive });
             setIntegrations(prev => prev.map(i => i.id === id ? { ...i, isActive } : i));
         } catch (err: any) {
-            state.setError(err.response?.data?.error?.message || 'Failed to update integration');
+            state.setError(err.response?.data?.error?.message || t('errors.saveFailed'));
         }
     }, [state]);
 
@@ -299,21 +302,21 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             label={t('settings.companies.codeLabel')}
                             value={state.code}
                             disabled
-                            inputProps={{ style: { textTransform: 'uppercase', fontFamily: 'monospace' } }}
+                            slotProps={{ htmlInput: { style: { textTransform: 'uppercase', fontFamily: 'monospace' } } }}
                         />
                         <TextField
                             label={t('settings.companies.nameLabel')}
                             value={state.name}
                             onChange={(e) => state.setName(e.target.value)}
                             required
-                            inputProps={{ maxLength: 100 }}
+                            slotProps={{ htmlInput: { maxLength: 100 } }}
                         />
                         <TextField
                             label={t('settings.companies.locationLabel')}
                             value={state.location}
                             onChange={(e) => state.setLocation(e.target.value)}
                             placeholder={t('settings.companies.locationPlaceholder')}
-                            inputProps={{ maxLength: 255 }}
+                            slotProps={{ htmlInput: { maxLength: 255 } }}
                         />
                         <TextField
                             label={t('settings.companies.descriptionLabel')}
@@ -646,6 +649,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                 value={state.spaceType}
                                 label={t('settings.companies.spaceTypeLabel', 'Space Type')}
                                 onChange={(e) => state.setSpaceType(e.target.value as any)}
+                                disabled={state.companyFeatures.compassEnabled}
                             >
                                 <MenuItem value="office">{t('settings.offices')}</MenuItem>
                                 <MenuItem value="room">{t('settings.rooms')}</MenuItem>
@@ -657,6 +661,17 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                         <Divider />
 
                         <Typography variant="subtitle2">{t('settings.companies.enabledFeatures', 'Enabled Features')}</Typography>
+
+                        {/* Compass — workspace booking mode */}
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={state.companyFeatures.compassEnabled}
+                                    onChange={(e) => state.handleFeatureToggle('compassEnabled', e.target.checked)}
+                                />
+                            }
+                            label={t('settings.companies.featureCompass')}
+                        />
 
                         {/* Spaces / People — single toggle with mode selector */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -672,6 +687,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                 state.handleFeatureToggle('peopleEnabled', false);
                                             }
                                         }}
+                                        disabled={state.companyFeatures.compassEnabled}
                                     />
                                 }
                                 label={t('settings.companies.spacesOrPeopleLabel', 'Spaces / People')}
@@ -703,6 +719,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                     <Switch
                                         checked={state.companyFeatures.conferenceEnabled}
                                         onChange={(e) => state.handleFeatureToggle('conferenceEnabled', e.target.checked)}
+                                        disabled={state.companyFeatures.compassEnabled}
                                     />
                                 }
                                 label={t('navigation.conference')}
@@ -794,7 +811,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                     size="small"
                                                     color="error"
                                                     startIcon={<DeleteIcon />}
-                                                    onClick={() => handleDeleteIntegration(integration.id)}
+                                                    onClick={() => setConfirmDeleteIntegration(integration.id)}
                                                 >
                                                     {t('common.delete', 'Delete')}
                                                 </Button>
@@ -846,8 +863,10 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                     value={newProvider}
                                                     label={t('settings.companies.provider', 'Provider')}
                                                     onChange={(e) => {
-                                                        setNewProvider(e.target.value as Provider);
+                                                        const provider = e.target.value as Provider;
+                                                        setNewProvider(provider);
                                                         setNewCredentials({});
+                                                        if (provider === 'OKTA') setNewType('USER_DIRECTORY');
                                                     }}
                                                 >
                                                     <MenuItem value="MICROSOFT_365">Microsoft 365</MenuItem>
@@ -877,7 +896,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                 type="number"
                                                 value={newSyncInterval}
                                                 onChange={(e) => setNewSyncInterval(Math.max(15, parseInt(e.target.value) || 1440))}
-                                                inputProps={{ min: 15, max: 10080 }}
+                                                slotProps={{ htmlInput: { min: 15, max: 10080 } }}
                                             />
 
                                             <Divider />
@@ -935,6 +954,26 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     {t('common.save')}
                 </Button>
             </DialogActions>
+
+            {/* Confirmation dialog for deleting an integration */}
+            <Dialog open={!!confirmDeleteIntegration} onClose={() => setConfirmDeleteIntegration(null)}>
+                <DialogTitle>{t('common.confirm')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>{t('common.confirmDelete')}</DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDeleteIntegration(null)}>{t('common.cancel')}</Button>
+                    <Button
+                        color="error"
+                        onClick={async () => {
+                            if (confirmDeleteIntegration) await handleDeleteIntegration(confirmDeleteIntegration);
+                            setConfirmDeleteIntegration(null);
+                        }}
+                    >
+                        {t('common.delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* AIMS Settings Dialog */}
             {state.company && (

@@ -42,7 +42,7 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
             platform,
         });
 
-        // Set refresh token as httpOnly cookie
+        // Set refresh token as httpOnly cookie (never send in body)
         res.cookie('compassRefreshToken', result.refreshToken, {
             httpOnly: true,
             secure: config.isProd,
@@ -51,7 +51,8 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
             path: '/',
         });
 
-        res.json(result);
+        const { refreshToken: _rt, ...responseBody } = result;
+        res.json(responseBody);
     } catch (error) {
         next(error);
     }
@@ -71,7 +72,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 
         const result = await service.refreshAccessToken(refreshToken);
 
-        // Set new refresh token cookie
+        // Set new refresh token cookie (never send in body)
         res.cookie('compassRefreshToken', result.refreshToken, {
             httpOnly: true,
             secure: config.isProd,
@@ -80,7 +81,8 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
             path: '/',
         });
 
-        res.json(result);
+        const { refreshToken: _rt, ...responseBody } = result;
+        res.json(responseBody);
     } catch (error) {
         next(error);
     }
@@ -105,7 +107,7 @@ export const deviceAuth = async (req: Request, res: Response, next: NextFunction
         const { email, deviceToken } = parsed.data;
         const result = await service.authenticateWithDeviceToken(deviceToken, email);
 
-        // Set refresh token as httpOnly cookie
+        // Set refresh token as httpOnly cookie (never send in body)
         res.cookie('compassRefreshToken', result.refreshToken, {
             httpOnly: true,
             secure: config.isProd,
@@ -114,7 +116,8 @@ export const deviceAuth = async (req: Request, res: Response, next: NextFunction
             path: '/',
         });
 
-        res.json(result);
+        const { refreshToken: _rt, ...responseBody } = result;
+        res.json(responseBody);
     } catch (error) {
         next(error);
     }

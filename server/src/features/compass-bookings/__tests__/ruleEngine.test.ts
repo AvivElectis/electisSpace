@@ -135,12 +135,12 @@ describe('resolveRules', () => {
         expect(result.maxConcurrentBookings).toBe(5);
     });
 
-    it('should filter rules by SPECIFIC_BRANCHES', async () => {
+    it('should filter rules by SELECTED_BRANCHES', async () => {
         mockFindRules.mockResolvedValue([
             {
                 ruleType: 'MAX_DURATION',
                 config: { value: 120 },
-                applyTo: 'SPECIFIC_BRANCHES',
+                applyTo: 'SELECTED_BRANCHES',
                 targetBranchIds: ['branch-2', 'branch-3'],
                 targetSpaceTypes: [],
                 priority: 1,
@@ -153,12 +153,12 @@ describe('resolveRules', () => {
         expect(result.maxBookingDurationMinutes).toBe(600); // default unchanged
     });
 
-    it('should apply rule when branch is in SPECIFIC_BRANCHES list', async () => {
+    it('should apply rule when branch is in SELECTED_BRANCHES list', async () => {
         mockFindRules.mockResolvedValue([
             {
                 ruleType: 'MAX_DURATION',
                 config: { value: 120 },
-                applyTo: 'SPECIFIC_BRANCHES',
+                applyTo: 'SELECTED_BRANCHES',
                 targetBranchIds: ['branch-1', 'branch-2'],
                 targetSpaceTypes: [],
                 priority: 1,
@@ -203,6 +203,24 @@ describe('resolveRules', () => {
         const result = await resolveRules('company-1', 'branch-1', 'DESK');
 
         expect(result.maxConcurrentBookings).toBe(3);
+    });
+
+    it('should skip space-type-scoped rules when no spaceType is provided', async () => {
+        mockFindRules.mockResolvedValue([
+            {
+                ruleType: 'MAX_CONCURRENT',
+                config: { value: 3 },
+                applyTo: 'ALL_BRANCHES',
+                targetBranchIds: [],
+                targetSpaceTypes: ['DESK'],
+                priority: 1,
+            },
+        ]);
+
+        // No spaceType provided — rule should be skipped
+        const result = await resolveRules('company-1', 'branch-1');
+
+        expect(result.maxConcurrentBookings).toBe(1); // default
     });
 
     it('should apply rule with empty targetSpaceTypes to all space types', async () => {
@@ -303,7 +321,7 @@ describe('resolveRules', () => {
             {
                 ruleType: 'MAX_CONCURRENT',
                 config: { value: 5 },
-                applyTo: 'SPECIFIC_BRANCHES',
+                applyTo: 'SELECTED_BRANCHES',
                 targetBranchIds: ['branch-1'],
                 targetSpaceTypes: [],
                 priority: 10, // branch-specific override
@@ -328,7 +346,7 @@ describe('resolveRules', () => {
             {
                 ruleType: 'MAX_CONCURRENT',
                 config: { value: 5 },
-                applyTo: 'SPECIFIC_BRANCHES',
+                applyTo: 'SELECTED_BRANCHES',
                 targetBranchIds: ['branch-1'],
                 targetSpaceTypes: [],
                 priority: 10,

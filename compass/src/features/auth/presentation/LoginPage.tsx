@@ -18,8 +18,9 @@ import { useCompassAuthStore } from '../application/useCompassAuthStore';
 import { LanguageToggle } from '@shared/components/LanguageToggle';
 
 export function LoginPage() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const muiTheme = useTheme();
+    const isRtl = i18n.dir() === 'rtl';
     const {
         loginStep,
         loginEmail,
@@ -43,11 +44,15 @@ export function LoginPage() {
 
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
+    const [codeExpiryMinutes, setCodeExpiryMinutes] = useState<number | null>(null);
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) return;
         await sendLoginCode(email.trim().toLowerCase());
+        // Read expiry from store after sendLoginCode completes
+        const state = useCompassAuthStore.getState();
+        setCodeExpiryMinutes(state.codeExpiryMinutes);
     };
 
     const handleCodeSubmit = async (e?: React.FormEvent) => {
@@ -121,14 +126,22 @@ export function LoginPage() {
 
                     {loginStep === 'code' && (
                         <Box component="form" onSubmit={handleCodeSubmit}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <IconButton onClick={resetLoginFlow} size="small">
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+                                <IconButton
+                                    onClick={resetLoginFlow}
+                                    size="small"
+                                    sx={isRtl ? { transform: 'scaleX(-1)' } : undefined}
+                                >
                                     <ArrowBackIcon />
                                 </IconButton>
                                 <Typography variant="body2" color="text.secondary">
                                     {t('auth.codeSentTo', { email: loginEmail })}
                                 </Typography>
                             </Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                                {t('auth.codeExpiresIn', { minutes: codeExpiryMinutes ?? 15 })}
+                            </Typography>
+
                             <TextField
                                 fullWidth
                                 label={t('auth.codeLabel')}

@@ -53,6 +53,7 @@ export const acceptRequest = async (req: Request, res: Response, next: NextFunct
         const result = await service.acceptRequest(
             req.compassUser!.id,
             req.params.id as string,
+            req.compassUser!.companyId,
         );
 
         res.json({ data: result });
@@ -68,6 +69,7 @@ export const removeFriend = async (req: Request, res: Response, next: NextFuncti
         const result = await service.removeFriend(
             req.compassUser!.id,
             req.params.id as string,
+            req.compassUser!.companyId,
         );
 
         res.json(result);
@@ -83,6 +85,7 @@ export const blockUser = async (req: Request, res: Response, next: NextFunction)
         const result = await service.blockUser(
             req.compassUser!.id,
             req.params.id as string,
+            req.compassUser!.companyId,
         );
 
         res.json(result);

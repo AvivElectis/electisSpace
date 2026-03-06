@@ -82,7 +82,7 @@ export function DashboardPage() {
             }
             if (can('compass') && activeCompanyId) {
                 setCompassLoading(true);
-                api.get(`/v2/admin/compass/dashboard/summary/${activeCompanyId}`)
+                api.get(`/admin/compass/dashboard/summary/${activeCompanyId}`)
                     .then(res => setCompassSummary(res.data.data))
                     .catch(() => setCompassSummary(null))
                     .finally(() => setCompassLoading(false));

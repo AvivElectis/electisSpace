@@ -152,19 +152,20 @@ const createMailOptions = (recipient: string, subject: string, html: string) => 
   };
 };
 
-// Compass-branded mail options
+// Compass-branded mail options — same SMTP as electisSpace, different visual template
 const createCompassMailOptions = (recipient: string, subject: string, html: string) => {
   const rawHtml = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <title>${subject}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
         <style>
           body {
-            font-family: 'Assistant', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1a1a2e;
             margin: 0;
             padding: 0;
@@ -181,28 +182,31 @@ const createCompassMailOptions = (recipient: string, subject: string, html: stri
             width: 100%;
             max-width: 580px;
             border-spacing: 0;
-            font-family: 'Assistant', 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             color: #171717;
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             overflow: hidden;
           }
           .header {
-            padding: 32px 0 16px;
+            padding: 32px 0 24px;
             text-align: center;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
           }
           .logo-text {
-            font-size: 26px;
-            font-weight: 800;
-            color: #ffffff;
+            font-size: 28px;
+            font-weight: 500;
+            font-family: 'Orbitron', 'Century Gothic', 'Segoe UI', Arial, sans-serif;
             text-decoration: none;
             display: inline-block;
+            letter-spacing: 0.5px;
           }
-          .slogan {
-            font-size: 14px;
-            color: rgba(255,255,255,0.7);
-            margin-top: 6px;
+          .tagline {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
           }
           .content {
             padding: 32px 40px;
@@ -217,14 +221,14 @@ const createCompassMailOptions = (recipient: string, subject: string, html: stri
           }
           .code {
             display: inline-block;
-            background-color: #f0f9ff;
+            background-color: #f0f4ff;
             color: #0f3460;
             font-size: 38px;
             font-weight: 700;
             letter-spacing: 8px;
             padding: 20px 48px;
             border-radius: 16px;
-            border: 2px dashed #bae6fd;
+            border: 2px dashed #c7d2fe;
             font-family: 'Courier New', monospace;
           }
           .footer {
@@ -247,8 +251,10 @@ const createCompassMailOptions = (recipient: string, subject: string, html: stri
           <table class="main" role="presentation" align="center">
             <tr>
               <td class="header">
-                <div class="logo-text">electisCompass</div>
-                <div class="slogan">Simply find a spot</div>
+                <div class="logo-text">
+                  <span style="color: #60a5fa;">electis</span><span style="color: #ffffff;">Compass</span>
+                </div>
+                <div class="tagline">Smart Workspace Booking</div>
               </td>
             </tr>
             <tr>
@@ -410,22 +416,51 @@ export class EmailService {
    */
   static async sendCompassLoginCode(email: string, code: string, displayName?: string): Promise<void> {
     const name = displayName || 'User';
+    const codeChars = code.split('');
     const subject = `Verification Code: ${code} - electisCompass`;
 
     const html = `
-      <h2>Hi ${name},</h2>
-
-      <p>We received a login request for your <strong>electisCompass</strong> account.</p>
-
-      <p>Enter this verification code to sign in:</p>
-
-      <div class="code-container">
-        <span class="code">${code}</span>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="display: inline-block; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); color: #ffffff; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;">
+          🔐 Verification Code
+        </div>
       </div>
 
-      <p style="text-align: center; color: #64748b; font-size: 14px;">This code expires in 10 minutes.</p>
+      <h2 style="text-align: center; font-size: 22px; color: #0f172a; margin: 0 0 8px;">Hi ${name},</h2>
+      <p style="text-align: center; color: #64748b; font-size: 15px; margin: 0 0 32px;">
+        We received a sign-in request for your <strong>electisCompass</strong> account.
+      </p>
 
-      <p style="margin-top: 32px; font-size: 14px; color: #64748b;">If you didn't request this, you can safely ignore this email.</p>
+      <p style="text-align: center; font-size: 14px; color: #475569; margin: 0 0 16px; font-weight: 600;">
+        Enter this code to continue:
+      </p>
+
+      <div style="text-align: center; margin: 0 0 16px; direction: ltr;">
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            ${codeChars.map(digit => `
+              <td style="padding: 0 4px;">
+                <div style="width: 48px; height: 60px; background: linear-gradient(180deg, #f0f4ff 0%, #e8eeff 100%); border: 2px solid #c7d2fe; border-radius: 12px; font-size: 28px; font-weight: 800; color: #1e3a5f; font-family: 'Courier New', monospace; line-height: 60px; text-align: center;">
+                  ${digit}
+                </div>
+              </td>
+            `).join('')}
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align: center; margin: 0 0 32px;">
+        <div style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 8px; font-size: 13px;">
+          ⏱️ This code expires in <strong>15 minutes</strong>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center;">
+        <p style="font-size: 13px; color: #94a3b8; margin: 0;">
+          If you didn't request this code, you can safely ignore this email.<br/>
+          Someone may have entered your email address by mistake.
+        </p>
+      </div>
     `;
 
     const transporter = createTransporter();

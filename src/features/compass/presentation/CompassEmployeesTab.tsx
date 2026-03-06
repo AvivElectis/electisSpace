@@ -10,60 +10,72 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
-import api from '@shared/infrastructure/services/apiClient';
-
-interface Employee {
-    id: string;
-    email: string;
-    displayName: string;
-    phone: string | null;
-    role: string;
-    isActive: boolean;
-    createdAt: string;
-}
+import { compassAdminApi } from '../infrastructure/compassAdminApi';
+import type { Employee } from '../domain/types';
 
 export function CompassEmployeesTab() {
     const { t } = useTranslation();
     const { activeCompanyId, activeStoreId } = useAuthStore();
     const [employees, setEmployees] = useState<Employee[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [addOpen, setAddOpen] = useState(false);
     const [newEmail, setNewEmail] = useState('');
     const [newName, setNewName] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [confirmDeactivate, setConfirmDeactivate] = useState<Employee | null>(null);
 
-    const fetchEmployees = useCallback(async () => {
+    const fetchEmployees = useCallback(async (showLoading = false) => {
         if (!activeCompanyId) return;
-        setLoading(true);
+        if (showLoading) setInitialLoading(true);
         try {
-            const res = await api.get(`/v2/admin/compass/employees/${activeCompanyId}`);
+            const res = await compassAdminApi.listEmployees(activeCompanyId);
             setEmployees(res.data.data || []);
             setError(null);
         } catch {
-            setError('Failed to load employees');
+            setError(t('errors.loadFailed'));
         } finally {
-            setLoading(false);
+            setInitialLoading(false);
         }
     }, [activeCompanyId]);
 
-    useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
+    useEffect(() => { fetchEmployees(true); }, [fetchEmployees]);
 
     const handleToggleActive = async (employee: Employee) => {
+        if (employee.isActive) {
+            setConfirmDeactivate(employee);
+            return;
+        }
         try {
-            await api.put(`/v2/admin/compass/employees/${activeCompanyId}/${employee.id}`, {
-                isActive: !employee.isActive,
-            });
+            await compassAdminApi.updateEmployee(activeCompanyId!, employee.id, { isActive: true });
             fetchEmployees();
         } catch {
-            setError('Failed to update employee');
+            setError(t('errors.saveFailed'));
+        }
+    };
+
+    const handleConfirmDeactivate = async () => {
+        if (!confirmDeactivate || !activeCompanyId) return;
+        try {
+            await compassAdminApi.updateEmployee(activeCompanyId, confirmDeactivate.id, { isActive: false });
+            fetchEmployees();
+        } catch {
+            setError(t('errors.saveFailed'));
+        } finally {
+            setConfirmDeactivate(null);
         }
     };
 
     const handleAdd = async () => {
         if (!newEmail.trim() || !newName.trim() || !activeCompanyId || !activeStoreId) return;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail.trim())) {
+            setEmailError(t('errors.invalidEmail', 'Invalid email address'));
+            return;
+        }
         try {
-            await api.post(`/v2/admin/compass/employees/${activeCompanyId}`, {
+            await compassAdminApi.createEmployee(activeCompanyId, {
                 branchId: activeStoreId,
                 email: newEmail.trim().toLowerCase(),
                 displayName: newName.trim(),
@@ -73,7 +85,7 @@ export function CompassEmployeesTab() {
             setAddOpen(false);
             fetchEmployees();
         } catch {
-            setError('Failed to add employee');
+            setError(t('errors.saveFailed'));
         }
     };
 
@@ -83,7 +95,7 @@ export function CompassEmployeesTab() {
             e.email.toLowerCase().includes(search.toLowerCase()))
         : employees;
 
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+    if (initialLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
     return (
         <Box>
@@ -102,8 +114,9 @@ export function CompassEmployeesTab() {
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={() => setAddOpen(true)}
+                    disabled={!activeStoreId}
                 >
-                    {t('common.add', 'Add')}
+                    {t('compass.addEmployee')}
                 </Button>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {filtered.length} {t('compass.navigation.employees').toLowerCase()}
@@ -152,6 +165,7 @@ export function CompassEmployeesTab() {
                                             size="small"
                                             color={e.isActive ? 'error' : 'success'}
                                             onClick={() => handleToggleActive(e)}
+                                            aria-label={e.isActive ? t('compass.deactivateEmployee') : t('common.activate')}
                                         >
                                             {e.isActive ? <BlockIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
                                         </IconButton>
@@ -163,8 +177,22 @@ export function CompassEmployeesTab() {
                 </Table>
             </TableContainer>
 
-            <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>{t('common.add', 'Add')} {t('compass.navigation.employees')}</DialogTitle>
+            {/* Confirmation dialog for deactivating an employee */}
+            <Dialog open={!!confirmDeactivate} onClose={() => setConfirmDeactivate(null)}>
+                <DialogTitle>{t('common.confirm')}</DialogTitle>
+                <DialogContent>
+                    <Typography>{t('compass.confirmDeactivate')}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDeactivate(null)}>{t('common.cancel')}</Button>
+                    <Button color="error" onClick={handleConfirmDeactivate}>
+                        {t('common.confirm')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={addOpen} onClose={() => { setAddOpen(false); setNewEmail(''); setNewName(''); setEmailError(''); }} maxWidth="xs" fullWidth>
+                <DialogTitle>{t('compass.addEmployee')}</DialogTitle>
                 <DialogContent>
                     <TextField
                         fullWidth
@@ -178,11 +206,13 @@ export function CompassEmployeesTab() {
                         label={t('common.email', 'Email')}
                         type="email"
                         value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
+                        onChange={(e) => { setNewEmail(e.target.value); setEmailError(''); }}
+                        error={!!emailError}
+                        helperText={emailError}
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAddOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
+                    <Button onClick={() => { setAddOpen(false); setNewEmail(''); setNewName(''); setEmailError(''); }}>{t('common.cancel', 'Cancel')}</Button>
                     <Button variant="contained" onClick={handleAdd} disabled={!newEmail.trim() || !newName.trim()}>
                         {t('common.add', 'Add')}
                     </Button>

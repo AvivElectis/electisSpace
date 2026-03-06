@@ -26,6 +26,20 @@
 import type { ArticleFormat, MappingInfo } from './solumService.js';
 import type { AimsArticle } from './aims.types.js';
 
+/** Optional compass data to merge into a space article */
+export interface CompassArticleData {
+    buildingName?: string;
+    floorName?: string;
+    areaName?: string;
+    spaceMode?: string;
+    spaceCapacity?: number;
+    spaceAmenities?: string;
+    spaceType?: string;
+    bookingStatus?: string;
+    bookedBy?: string;
+    bookingTime?: string;
+}
+
 /**
  * Build an AIMS article for a Space entity.
  * articleId = space.externalId
@@ -34,9 +48,24 @@ import type { AimsArticle } from './aims.types.js';
 export function buildSpaceArticle(
     space: { externalId: string; data: any },
     format: ArticleFormat | null,
+    compassData?: CompassArticleData,
 ): AimsArticle {
-    const data = (space.data ?? {}) as Record<string, any>;
+    const data = { ...(space.data ?? {}) } as Record<string, any>;
     const mapping = format?.mappingInfo;
+
+    // Merge compass fields into data if provided
+    if (compassData) {
+        if (compassData.buildingName) data['BUILDING_NAME'] = compassData.buildingName;
+        if (compassData.floorName) data['FLOOR_NAME'] = compassData.floorName;
+        if (compassData.areaName) data['AREA_NAME'] = compassData.areaName;
+        if (compassData.spaceMode) data['SPACE_MODE'] = compassData.spaceMode;
+        if (compassData.spaceCapacity !== undefined) data['SPACE_CAPACITY'] = String(compassData.spaceCapacity);
+        if (compassData.spaceAmenities) data['SPACE_AMENITIES'] = compassData.spaceAmenities;
+        if (compassData.spaceType) data['SPACE_TYPE'] = compassData.spaceType;
+        if (compassData.bookingStatus) data['BOOKING_STATUS'] = compassData.bookingStatus;
+        if (compassData.bookedBy) data['BOOKED_BY'] = compassData.bookedBy;
+        if (compassData.bookingTime) data['BOOKING_TIME'] = compassData.bookingTime;
+    }
 
     // Determine articleName: use the key from mappingInfo (e.g., ITEM_NAME)
     const nameKey = mapping?.articleName; // e.g., "ITEM_NAME"

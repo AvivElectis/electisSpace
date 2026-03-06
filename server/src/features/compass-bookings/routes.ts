@@ -6,7 +6,7 @@
  */
 import { Router } from 'express';
 import { compassAuthenticate, requireCompassEnabled } from '../../shared/middleware/compassAuth.js';
-import { authenticate, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, requireCompassAdmin } from '../../shared/middleware/index.js';
 import * as controller from './controller.js';
 
 // ======================
@@ -40,10 +40,10 @@ compassBookingRoutes.delete('/:id', controller.cancel);
 export const adminBookingRoutes = Router();
 
 // GET    /compass/bookings/:companyId     — List bookings for a company
-adminBookingRoutes.get('/:companyId', authenticate, controller.adminList);
+adminBookingRoutes.get('/:companyId', authenticate, requireCompassAdmin(), controller.adminList);
 
 // PATCH  /compass/bookings/:companyId/:bookingId/cancel — Cancel a booking (admin)
-adminBookingRoutes.patch('/:companyId/:bookingId/cancel', authenticate, controller.adminCancel);
+adminBookingRoutes.patch('/:companyId/:bookingId/cancel', authenticate, requireCompassAdmin(), controller.adminCancel);
 
 // ======================
 // Admin Booking Rule Routes (Admin JWT)
@@ -51,13 +51,13 @@ adminBookingRoutes.patch('/:companyId/:bookingId/cancel', authenticate, controll
 export const adminBookingRuleRoutes = Router();
 
 // GET    /compass/rules/:companyId     — List rules for a company
-adminBookingRuleRoutes.get('/:companyId', authenticate, controller.listRules);
+adminBookingRuleRoutes.get('/:companyId', authenticate, requireCompassAdmin(), controller.listRules);
 
 // POST   /compass/rules/:companyId     — Create a rule
-adminBookingRuleRoutes.post('/:companyId', authenticate, controller.createRule);
+adminBookingRuleRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.createRule);
 
 // PUT    /compass/rules/:companyId/:ruleId  — Update a rule
-adminBookingRuleRoutes.put('/:companyId/:ruleId', authenticate, controller.updateRule);
+adminBookingRuleRoutes.put('/:companyId/:ruleId', authenticate, requireCompassAdmin(), controller.updateRule);
 
 // DELETE /compass/rules/:companyId/:ruleId  — Delete a rule
-adminBookingRuleRoutes.delete('/:companyId/:ruleId', authenticate, controller.deleteRule);
+adminBookingRuleRoutes.delete('/:companyId/:ruleId', authenticate, requireCompassAdmin(), controller.deleteRule);

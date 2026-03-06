@@ -1,9 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../../config/index.js';
-import { unauthorized, forbidden } from './errorHandler.js';
+import { unauthorized, forbidden, badRequest } from './errorHandler.js';
 import { prisma } from '../../config/index.js';
 import type { CompassJwtPayload } from '../../features/compass-auth/types.js';
+import { isPlatformAdmin, canManageCompany } from '../../features/companies/service.js';
 
 // Extend Express Request with compassUser
 declare global {
@@ -89,6 +90,71 @@ export const requireCompassEnabled = async (
     } catch (error) {
         next(error);
     }
+};
+
+/**
+ * Middleware to verify the admin user can manage the specified company's Compass data.
+ * Requires PLATFORM_ADMIN role or company admin access.
+ * Must be used AFTER `authenticate`.
+ */
+export const requireCompassAdmin = (paramName = 'companyId') => {
+    return async (req: Request, _res: Response, next: NextFunction) => {
+        try {
+            const companyId = req.params[paramName] as string | undefined;
+            if (!companyId) {
+                throw badRequest('Company ID required');
+            }
+
+            const user = (req as any).user;
+            if (!user) {
+                throw unauthorized('Not authenticated');
+            }
+
+            if (isPlatformAdmin(user)) return next();
+            if (canManageCompany(user, companyId)) return next();
+
+            throw forbidden('Not authorized to manage this company');
+        } catch (error) {
+            next(error);
+        }
+    };
+};
+
+/**
+ * Middleware to verify admin access via a store/branch param.
+ * Resolves the store's company, then checks admin access.
+ * Must be used AFTER `authenticate`.
+ */
+export const requireCompassAdminForStore = (paramName = 'branchId') => {
+    return async (req: Request, _res: Response, next: NextFunction) => {
+        try {
+            const storeId = req.params[paramName] as string | undefined;
+            if (!storeId) {
+                throw badRequest('Store ID required');
+            }
+
+            const user = (req as any).user;
+            if (!user) {
+                throw unauthorized('Not authenticated');
+            }
+
+            if (isPlatformAdmin(user)) return next();
+
+            const store = await prisma.store.findUnique({
+                where: { id: storeId },
+                select: { companyId: true },
+            });
+            if (!store) {
+                throw badRequest('Store not found');
+            }
+
+            if (canManageCompany(user, store.companyId)) return next();
+
+            throw forbidden('Not authorized to manage this company');
+        } catch (error) {
+            next(error);
+        }
+    };
 };
 
 /**

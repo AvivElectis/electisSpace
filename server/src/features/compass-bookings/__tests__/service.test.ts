@@ -3,6 +3,21 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock prisma (hoisted to avoid TDZ issues)
+const { mockPrismaSpace, mockPrismaBooking, mockTransaction } = vi.hoisted(() => ({
+    mockPrismaSpace: { findUnique: vi.fn() },
+    mockPrismaBooking: { findMany: vi.fn(), create: vi.fn() },
+    mockTransaction: vi.fn(),
+}));
+
+vi.mock('../../../config/index.js', () => ({
+    prisma: {
+        space: mockPrismaSpace,
+        booking: mockPrismaBooking,
+        $transaction: (...args: any[]) => mockTransaction(...args),
+    },
+}));
+
 // Mock repository
 vi.mock('../repository.js', () => ({
     countActiveByUser: vi.fn(),
@@ -62,7 +77,7 @@ import * as repo from '../repository.js';
 import * as ruleEngine from '../ruleEngine.js';
 import * as service from '../service.js';
 
-const mockRepo = repo as {
+const mockRepo = repo as unknown as {
     countActiveByUser: ReturnType<typeof vi.fn>;
     findActiveBySpace: ReturnType<typeof vi.fn>;
     createBooking: ReturnType<typeof vi.fn>;
@@ -122,18 +137,40 @@ describe('createBooking', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockRuleEngine.resolveRules.mockResolvedValue(defaultRules);
+        // Default: space exists and belongs to branch
+        mockPrismaSpace.findUnique.mockResolvedValue({ storeId: 'branch-1' });
+        // Default: transaction executes the callback
+        mockTransaction.mockImplementation(async (cb: any) => cb({
+            booking: {
+                count: vi.fn().mockResolvedValue(0),
+                findMany: vi.fn().mockResolvedValue([]),
+                create: vi.fn().mockResolvedValue({ id: 'booking-new', ...baseParams }),
+            },
+        }));
     });
 
     it('should create a booking successfully', async () => {
-        mockRepo.countActiveByUser.mockResolvedValue(0);
-        mockRepo.findActiveBySpace.mockResolvedValue([]);
-        mockRepo.createBooking.mockResolvedValue({ id: 'booking-new', ...baseParams });
-
         const result = await service.createBooking(baseParams);
 
         expect(result.id).toBe('booking-new');
-        expect(mockRepo.createBooking).toHaveBeenCalledOnce();
         expect(mockRuleEngine.resolveRules).toHaveBeenCalledWith('company-1', 'branch-1');
+    });
+
+    it('should throw when endTime is null', async () => {
+        const params = {
+            ...baseParams,
+            endTime: null as Date | null,
+        };
+
+        await expect(service.createBooking(params))
+            .rejects.toThrow('End time is required');
+    });
+
+    it('should throw when space does not belong to branch', async () => {
+        mockPrismaSpace.findUnique.mockResolvedValue({ storeId: 'other-branch' });
+
+        await expect(service.createBooking(baseParams))
+            .rejects.toThrow('Space does not belong to your branch');
     });
 
     it('should throw BOOKING_TOO_SHORT when duration is below minimum', async () => {
@@ -173,33 +210,29 @@ describe('createBooking', () => {
     });
 
     it('should throw MAX_CONCURRENT_BOOKINGS_EXCEEDED when at limit', async () => {
-        mockRepo.countActiveByUser.mockResolvedValue(1); // max is 1
+        mockTransaction.mockImplementation(async (cb: any) => cb({
+            booking: {
+                count: vi.fn().mockResolvedValue(1), // max is 1
+                findMany: vi.fn().mockResolvedValue([]),
+                create: vi.fn(),
+            },
+        }));
 
         await expect(service.createBooking(baseParams))
             .rejects.toThrow('MAX_CONCURRENT_BOOKINGS_EXCEEDED');
     });
 
     it('should throw SPACE_ALREADY_BOOKED on conflict', async () => {
-        mockRepo.countActiveByUser.mockResolvedValue(0);
-        mockRepo.findActiveBySpace.mockResolvedValue([{ id: 'existing-booking' }]);
+        mockTransaction.mockImplementation(async (cb: any) => cb({
+            booking: {
+                count: vi.fn().mockResolvedValue(0),
+                findMany: vi.fn().mockResolvedValue([{ id: 'existing-booking' }]),
+                create: vi.fn(),
+            },
+        }));
 
         await expect(service.createBooking(baseParams))
             .rejects.toThrow('SPACE_ALREADY_BOOKED');
-    });
-
-    it('should allow open-ended bookings (no endTime) without duration validation', async () => {
-        const params = {
-            ...baseParams,
-            endTime: null as Date | null,
-        };
-
-        mockRepo.countActiveByUser.mockResolvedValue(0);
-        mockRepo.findActiveBySpace.mockResolvedValue([]);
-        mockRepo.createBooking.mockResolvedValue({ id: 'booking-open', ...params });
-
-        const result = await service.createBooking(params);
-
-        expect(result.id).toBe('booking-open');
     });
 });
 
@@ -405,7 +438,14 @@ describe('extend', () => {
 
     it('should throw SPACE_ALREADY_BOOKED on conflict in extended window', async () => {
         mockRepo.findBookingById.mockResolvedValue(mockBookingBooked);
-        mockRepo.findActiveBySpace.mockResolvedValue([{ id: 'conflict-booking' }]);
+        mockTransaction.mockImplementation(async (fn: (tx: any) => any) => {
+            return fn({
+                booking: {
+                    findMany: vi.fn().mockResolvedValue([{ id: 'conflict-booking' }]),
+                    update: vi.fn(),
+                },
+            });
+        });
 
         await expect(
             service.extend('booking-1', 'user-1', 'company-1', new Date('2026-03-05T11:00:00Z')),
@@ -414,21 +454,20 @@ describe('extend', () => {
 
     it('should extend successfully', async () => {
         mockRepo.findBookingById.mockResolvedValue(mockBookingBooked);
-        mockRepo.findActiveBySpace.mockResolvedValue([]);
-        mockRepo.updateBookingStatus.mockResolvedValue({
-            ...mockBookingBooked,
-            endTime: new Date('2026-03-05T11:00:00Z'),
+        const newEnd = new Date('2026-03-05T11:00:00Z');
+        const extendedBooking = { ...mockBookingBooked, endTime: newEnd };
+        mockTransaction.mockImplementation(async (fn: (tx: any) => any) => {
+            return fn({
+                booking: {
+                    findMany: vi.fn().mockResolvedValue([]),
+                    update: vi.fn().mockResolvedValue(extendedBooking),
+                },
+            });
         });
 
-        const newEnd = new Date('2026-03-05T11:00:00Z');
         const result = await service.extend('booking-1', 'user-1', 'company-1', newEnd);
 
         expect(result.endTime).toEqual(newEnd);
-        expect(mockRepo.updateBookingStatus).toHaveBeenCalledWith(
-            'booking-1',
-            'BOOKED',
-            { endTime: newEnd },
-        );
     });
 });
 
@@ -474,8 +513,8 @@ describe('processAutoRelease', () => {
 
     it('should auto-release expired bookings', async () => {
         mockRepo.findExpiredBookings.mockResolvedValue([
-            { id: 'b1' },
-            { id: 'b2' },
+            { id: 'b1', branchId: 'branch-1', spaceId: 'space-1' },
+            { id: 'b2', branchId: 'branch-1', spaceId: 'space-2' },
         ]);
         mockRepo.updateBookingStatus.mockResolvedValue({});
 
@@ -513,6 +552,7 @@ describe('processNoShows', () => {
                 id: 'b1',
                 companyId: 'company-1',
                 branchId: 'branch-1',
+                spaceId: 'space-1',
                 startTime: pastStart,
             },
         ]);
@@ -539,6 +579,7 @@ describe('processNoShows', () => {
                 id: 'b1',
                 companyId: 'company-1',
                 branchId: 'branch-1',
+                spaceId: 'space-1',
                 startTime: pastStart,
             },
         ]);

@@ -20,6 +20,8 @@
         "sendCode": "שלח קוד",
         "verify": "אמת",
         "codeSentTo": "קוד נשלח ל-{{email}}",
+        "codeExpiresIn": "הקוד תקף ל-{{minutes}} דקות",
+        "devCodeLabel": "קוד במצב פיתוח",
         "logout": "התנתק",
         "biometricTitle": "הפעל זיהוי ביומטרי",
         "biometricDescription": "השתמש בטביעת אצבע או זיהוי פנים לפתיחה מהירה של electisCompass.",

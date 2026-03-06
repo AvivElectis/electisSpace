@@ -230,6 +230,8 @@
         "reset": "איפוס",
         "apply": "החל",
         "confirm": "אישור",
+        "confirmDelete": "האם אתה בטוח שברצונך למחוק פריט זה?",
+        "confirmCancel": "האם אתה בטוח שברצונך לבטל הזמנה זו?",
         "back": "חזור",
         "next": "הבא",
         "loading": "טוען...",
@@ -248,6 +250,7 @@
         "info": "מידע",
         "active": "פעיל",
         "inactive": "לא פעיל",
+        "activate": "הפעל",
         "rowsPerPage": "שורות בעמוד",
         "saving": "שומר...",
         "name": "שם",
@@ -283,7 +286,14 @@
         "never": "אף פעם",
         "refresh": "רענן",
         "retry": "נסה שוב",
-        "type": "סוג"
+        "type": "סוג",
+        "email": "אימייל",
+        "role": "תפקיד",
+        "value": "ערך",
+        "scope": "טווח",
+        "mode": "מצב",
+        "saved": "נשמר",
+        "noResults": "לא נמצאו תוצאות"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -1031,8 +1041,13 @@
             "compassMaxConcurrent": "הזמנות בו-זמניות",
             "compassMaxConcurrentDesc": "מספר הזמנות פעילות מרבי לעובד בו-זמנית.",
             "compassMinutes": "דק׳",
+            "compassHours": "שעות",
             "compassDays": "ימים",
+            "compassFullDay": "יום מלא",
+            "compassFullDayDesc": "עובדים יכולים להזמין ליום מלא (24 שעות).",
+            "compassDurationRange": "{{min}} – {{max}}",
             "compassBookings": "הזמנות",
+            "minValue": "מינימום: {{min}}",
             "wizardStepBuildings": "בניינים",
             "buildingHierarchyInfo": "הגדר את הבניינים והקומות שלך. אזורים ניתן להגדיר לאחר היצירה בדף ניהול Compass.",
             "addBuilding": "הוסף בניין",
@@ -1040,6 +1055,7 @@
             "addFloor": "הוסף קומה",
             "floorNamePlaceholder": "שם קומה (לדוגמה: קומה 1)",
             "floorCount": "{{count}} קומה/ות",
+            "duplicateName": "שם כבר קיים",
             "noBuildingsYet": "לא נוספו בניינים עדיין. הוסף לפחות בניין אחד כדי להתחיל.",
             "reviewBuildings": "היררכיית בניינים",
             "createCompany": "צור חברה",
@@ -1054,7 +1070,23 @@
             "storesManageHint": "השתמש בדיאלוג החנויות מדף ההגדרות כדי להוסיף, לערוך או להסיר חנויות.",
             "noArticleFormat": "לא נשמר פורמט מוצרים. אחזר מ-AIMS כדי להגדיר.",
             "refetchArticleFormat": "אחזר מחדש מ-AIMS",
-            "saveFieldMapping": "שמור מיפוי"
+            "saveFieldMapping": "שמור מיפוי",
+            "integrationsTab": "אינטגרציות",
+            "noIntegrations": "לא הוגדרו אינטגרציות סנכרון.",
+            "addIntegration": "הוסף אינטגרציה",
+            "syncNow": "סנכרן",
+            "syncInterval": "מרווח",
+            "lastSync": "סנכרון אחרון",
+            "syncStats": "נוצרו",
+            "syncUpdated": "עודכנו",
+            "syncDeactivated": "הושבתו",
+            "provider": "ספק",
+            "integrationType": "סוג",
+            "userDirectory": "ספריית משתמשים",
+            "calendarRooms": "לוח שנה / חדרים",
+            "both": "שניהם",
+            "syncIntervalMinutes": "מרווח סנכרון (דקות)",
+            "credentials": "אישורים"
         },
         "stores": {
             "dialogTitle": "ניהול חנויות",
@@ -1134,7 +1166,9 @@
         "saveFailed": "השמירה נכשלה",
         "loadFailed": "הטעינה נכשלה",
         "unknownError": "אירעה שגיאה לא ידועה",
-        "idExists": "מזהה זה כבר קיים"
+        "invalidEmail": "כתובת אימייל לא תקינה",
+        "idExists": "מזהה זה כבר קיים",
+        "serverError": "אירעה שגיאה. אנא נסה שוב."
     },
     "messages": {
         "saved": "נשמר בהצלחה",
@@ -1659,10 +1693,6 @@
         "invalidInput": "קלט לא חוקי",
         "invalidSpaceId": "מזהה חלל לא חוקי"
     },
-    "errors": {
-        "required": "שדה חובה",
-        "idExists": "המזהה כבר קיים"
-    },
     "labels": {
         "title": "ניהול תגיות",
         "notConfigured": "SOLUM API לא מוגדר. אנא הגדר את הגדרות SOLUM תחילה.",
@@ -1812,7 +1842,12 @@
             "checkedIn": "נוכחים",
             "occupancy": "תפוסה",
             "todayBookings": "הזמנות היום",
-            "checkInRate": "שיעור צ'ק-אין"
+            "checkInRate": "שיעור צ'ק-אין",
+            "building": "בניין",
+            "floor": "קומה",
+            "assignee": "מוקצה",
+            "start": "התחלה",
+            "end": "סיום"
         },
         "navigation": {
             "bookings": "הזמנות",
@@ -1820,6 +1855,39 @@
             "spaces": "חללים",
             "rules": "כללים"
         },
-        "managedByCompass": "מנוהל על ידי Compass"
+        "managedByCompass": "מנוהל על ידי Compass",
+        "spaceMode": {
+            "AVAILABLE": "פנוי",
+            "PERMANENT": "קבוע",
+            "MAINTENANCE": "תחזוקה",
+            "EXCLUDED": "מוחרג"
+        },
+        "bookingStatus": {
+            "BOOKED": "הוזמן",
+            "CHECKED_IN": "צ׳ק אין",
+            "RELEASED": "שוחרר",
+            "AUTO_RELEASED": "שוחרר אוטומטית",
+            "CANCELLED": "בוטל",
+            "NO_SHOW": "לא הגיע"
+        },
+        "ruleType": {
+            "MAX_DURATION": "משך מקסימלי",
+            "MAX_ADVANCE_BOOKING": "הזמנה מראש מקסימלית",
+            "MAX_CONCURRENT": "מקסימום במקביל",
+            "CHECK_IN_WINDOW": "חלון צ׳ק אין",
+            "AUTO_RELEASE": "שחרור אוטומטי",
+            "AUTO_RELEASE": "שחרור אוטומטי"
+        },
+        "scope": {
+            "all": "הכל",
+            "selected": "נבחרים"
+        },
+        "addRule": "הוסף כלל",
+        "addEmployee": "הוסף עובד",
+        "cancelBooking": "בטל הזמנה",
+        "deleteRule": "מחק כלל",
+        "deactivateEmployee": "השבת עובד",
+        "confirmDeactivate": "האם אתה בטוח שברצונך להשבית עובד זה?",
+        "compassFormatInfo": "השדות הבאים יתווספו אוטומטית לפורמט המאמר עבור הזמנת מקומות עבודה:"
     }
 }

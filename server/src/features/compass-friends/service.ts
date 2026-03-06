@@ -73,9 +73,8 @@ export const sendRequest = async (requesterId: string, addresseeId: string) => {
 
 // ─── Accept Friend Request ───────────────────────────
 
-export const acceptRequest = async (userId: string, friendshipId: string) => {
-    const friendships = await repo.findFriends(userId);
-    const friendship = friendships.find(f => f.id === friendshipId);
+export const acceptRequest = async (userId: string, friendshipId: string, companyId?: string) => {
+    const friendship = await repo.findFriendshipById(friendshipId, companyId);
 
     if (!friendship) {
         throw notFound('Friend request not found');
@@ -97,9 +96,8 @@ export const acceptRequest = async (userId: string, friendshipId: string) => {
 
 // ─── Remove Friend / Decline Request ─────────────────
 
-export const removeFriend = async (userId: string, friendshipId: string) => {
-    const friendships = await repo.findFriends(userId);
-    const friendship = friendships.find(f => f.id === friendshipId);
+export const removeFriend = async (userId: string, friendshipId: string, companyId?: string) => {
+    const friendship = await repo.findFriendshipById(friendshipId, companyId);
 
     if (!friendship) {
         throw notFound('Friendship not found');
@@ -117,12 +115,15 @@ export const removeFriend = async (userId: string, friendshipId: string) => {
 
 // ─── Block User ──────────────────────────────────────
 
-export const blockUser = async (userId: string, friendshipId: string) => {
-    const friendships = await repo.findFriends(userId);
-    const friendship = friendships.find(f => f.id === friendshipId);
+export const blockUser = async (userId: string, friendshipId: string, companyId?: string) => {
+    const friendship = await repo.findFriendshipById(friendshipId, companyId);
 
     if (!friendship) {
         throw notFound('Friendship not found');
+    }
+
+    if (friendship.requesterId !== userId && friendship.addresseeId !== userId) {
+        throw forbidden('Not your friendship');
     }
 
     await repo.updateFriendshipStatus(friendshipId, 'BLOCKED');

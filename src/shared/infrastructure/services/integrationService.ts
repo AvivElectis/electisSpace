@@ -43,7 +43,7 @@ export interface UpdateIntegrationPayload {
 // ─── API ───────────────────────────────────────────
 
 const basePath = (companyId: string) =>
-    `/v2/admin/companies/${companyId}/integrations`;
+    `/admin/companies/${companyId}/integrations`;
 
 export const integrationService = {
     async list(companyId: string): Promise<Integration[]> {

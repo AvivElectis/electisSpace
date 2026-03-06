@@ -26,22 +26,29 @@ export const summary = async (req: Request, res: Response, next: NextFunction) =
                     deletedAt: null,
                 },
             }),
+            // Today's bookings excluding cancelled/no-show
             prisma.booking.count({
                 where: {
                     companyId,
                     startTime: { gte: todayStart, lt: todayEnd },
+                    status: { notIn: ['CANCELLED', 'NO_SHOW'] },
                 },
             }),
+            // Active bookings scoped to current time window
             prisma.booking.count({
                 where: {
                     companyId,
                     status: { in: ['BOOKED', 'CHECKED_IN'] },
+                    startTime: { lt: now },
+                    OR: [{ endTime: null }, { endTime: { gt: now } }],
                 },
             }),
+            // Checked-in count scoped to today's bookings
             prisma.booking.count({
                 where: {
                     companyId,
                     status: 'CHECKED_IN',
+                    startTime: { gte: todayStart, lt: todayEnd },
                 },
             }),
         ]);

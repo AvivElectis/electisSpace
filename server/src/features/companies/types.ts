@@ -61,11 +61,17 @@ export const createCompanySchema = z.object({
 
 /** Compass default booking rules config */
 export const compassConfigSchema = z.object({
-    maxDurationMinutes: z.number().int().min(30).max(1440),
+    maxDurationMinutes: z.number().int().min(30).max(43200), // up to 30 days
     maxAdvanceBookingDays: z.number().int().min(1).max(90),
     checkInWindowMinutes: z.number().int().min(5).max(60),
     autoReleaseMinutes: z.number().int().min(5).max(120),
     maxConcurrentBookings: z.number().int().min(1).max(5),
+});
+
+/** Building hierarchy for compass company setup */
+const buildingSchema = z.object({
+    name: z.string().min(1),
+    floors: z.array(z.object({ name: z.string().min(1) })).default([]),
 });
 
 /** Extended create company schema with multi-store + config (backward-compatible) */
@@ -74,6 +80,7 @@ export const createCompanyFullSchema = createCompanySchema.extend({
     articleFormat: z.record(z.unknown()).optional(),
     fieldMapping: z.record(z.unknown()).optional(),
     compassConfig: compassConfigSchema.optional(),
+    buildings: z.array(buildingSchema).optional(),
 });
 
 /** Update company schema */
@@ -144,6 +151,10 @@ export interface CreateCompanyFullDto extends CreateCompanyDto {
         autoReleaseMinutes: number;
         maxConcurrentBookings: number;
     };
+    buildings?: Array<{
+        name: string;
+        floors: Array<{ name: string }>;
+    }>;
 }
 
 export interface UpdateCompanyDto {

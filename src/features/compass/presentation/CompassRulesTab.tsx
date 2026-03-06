@@ -3,91 +3,79 @@ import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, Chip, IconButton, Button, TextField,
     MenuItem, Stack, CircularProgress, Alert, Dialog, DialogTitle,
-    DialogContent, DialogActions, Switch,
+    DialogContent, DialogContentText, DialogActions, Switch,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
-import api from '@shared/infrastructure/services/apiClient';
+import { compassAdminApi } from '../infrastructure/compassAdminApi';
+import type { BookingRule, RuleType } from '../domain/types';
 
-interface BookingRule {
-    id: string;
-    name: string;
-    ruleType: string;
-    isActive: boolean;
-    priority: number;
-    config: Record<string, any>;
-    applyTo: string;
-}
-
-const RULE_TYPES = [
+const RULE_TYPES: RuleType[] = [
     'MAX_DURATION',
     'MAX_ADVANCE_BOOKING',
     'MAX_CONCURRENT',
     'CHECK_IN_WINDOW',
     'AUTO_RELEASE',
-    'BLOCKED_TIMES',
 ];
 
-const ruleTypeLabels: Record<string, string> = {
-    MAX_DURATION: 'Max Duration',
-    MAX_ADVANCE_BOOKING: 'Max Advance Booking',
-    MAX_CONCURRENT: 'Max Concurrent',
-    CHECK_IN_WINDOW: 'Check-in Window',
-    AUTO_RELEASE: 'Auto Release',
-    BLOCKED_TIMES: 'Blocked Times',
-};
+// ruleTypeLabels moved to use t() calls inside the component
 
 export function CompassRulesTab() {
     const { t } = useTranslation();
     const { activeCompanyId } = useAuthStore();
     const [rules, setRules] = useState<BookingRule[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [addOpen, setAddOpen] = useState(false);
     const [newName, setNewName] = useState('');
     const [newType, setNewType] = useState('MAX_DURATION');
     const [newValue, setNewValue] = useState('');
+    const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
-    const fetchRules = useCallback(async () => {
+    const fetchRules = useCallback(async (showLoading = false) => {
         if (!activeCompanyId) return;
-        setLoading(true);
+        if (showLoading) setInitialLoading(true);
         try {
-            const res = await api.get(`/v2/admin/compass/rules/${activeCompanyId}`);
+            const res = await compassAdminApi.listRules(activeCompanyId);
             setRules(res.data.data || []);
             setError(null);
         } catch {
-            setError('Failed to load rules');
+            setError(t('errors.loadFailed'));
         } finally {
-            setLoading(false);
+            setInitialLoading(false);
         }
     }, [activeCompanyId]);
 
-    useEffect(() => { fetchRules(); }, [fetchRules]);
+    useEffect(() => { fetchRules(true); }, [fetchRules]);
 
     const handleToggle = async (rule: BookingRule) => {
         try {
-            await api.put(`/v2/admin/compass/rules/${activeCompanyId}/${rule.id}`, { isActive: !rule.isActive });
+            await compassAdminApi.updateRule(activeCompanyId!, rule.id, { isActive: !rule.isActive });
             fetchRules();
         } catch {
-            setError('Failed to update rule');
+            setError(t('errors.saveFailed'));
         }
     };
 
     const handleDelete = async (ruleId: string) => {
+        setDeleting(true);
         try {
-            await api.delete(`/v2/admin/compass/rules/${activeCompanyId}/${ruleId}`);
+            await compassAdminApi.deleteRule(activeCompanyId!, ruleId);
             fetchRules();
         } catch {
-            setError('Failed to delete rule');
+            setError(t('errors.saveFailed'));
+        } finally {
+            setDeleting(false);
         }
     };
 
     const handleAdd = async () => {
         if (!newName.trim() || !activeCompanyId) return;
         try {
-            await api.post(`/v2/admin/compass/rules/${activeCompanyId}`, {
+            await compassAdminApi.createRule(activeCompanyId, {
                 name: newName.trim(),
                 ruleType: newType,
                 config: { value: Number(newValue) || 0 },
@@ -97,7 +85,7 @@ export function CompassRulesTab() {
             setAddOpen(false);
             fetchRules();
         } catch {
-            setError('Failed to add rule');
+            setError(t('errors.saveFailed'));
         }
     };
 
@@ -107,7 +95,7 @@ export function CompassRulesTab() {
         return JSON.stringify(cfg);
     };
 
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+    if (initialLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
     return (
         <Box>
@@ -115,7 +103,7 @@ export function CompassRulesTab() {
 
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
                 <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
-                    {t('common.add', 'Add')} {t('compass.navigation.rules')}
+                    {t('compass.addRule')}
                 </Button>
             </Stack>
 
@@ -147,12 +135,12 @@ export function CompassRulesTab() {
                                         <Typography variant="body2" fontWeight={500}>{rule.name}</Typography>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip label={ruleTypeLabels[rule.ruleType] || rule.ruleType} size="small" variant="outlined" />
+                                        <Chip label={t(`compass.ruleType.${rule.ruleType}`, rule.ruleType)} size="small" variant="outlined" />
                                     </TableCell>
                                     <TableCell>{getConfigSummary(rule)}</TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={rule.applyTo === 'ALL_BRANCHES' ? 'All' : 'Selected'}
+                                            label={rule.applyTo === 'ALL_BRANCHES' ? t('compass.scope.all') : t('compass.scope.selected')}
                                             size="small"
                                             variant="outlined"
                                         />
@@ -165,7 +153,7 @@ export function CompassRulesTab() {
                                         />
                                     </TableCell>
                                     <TableCell align="right">
-                                        <IconButton size="small" color="error" onClick={() => handleDelete(rule.id)}>
+                                        <IconButton size="small" color="error" onClick={() => setConfirmDelete(rule.id)} aria-label={t('compass.deleteRule')}>
                                             <DeleteIcon fontSize="small" />
                                         </IconButton>
                                     </TableCell>
@@ -177,7 +165,7 @@ export function CompassRulesTab() {
             </TableContainer>
 
             <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>{t('common.add', 'Add')} {t('compass.navigation.rules')}</DialogTitle>
+                <DialogTitle>{t('compass.addRule')}</DialogTitle>
                 <DialogContent>
                     <TextField
                         fullWidth
@@ -195,7 +183,7 @@ export function CompassRulesTab() {
                         sx={{ mb: 2 }}
                     >
                         {RULE_TYPES.map(rt => (
-                            <MenuItem key={rt} value={rt}>{ruleTypeLabels[rt]}</MenuItem>
+                            <MenuItem key={rt} value={rt}>{t(`compass.ruleType.${rt}`, rt)}</MenuItem>
                         ))}
                     </TextField>
                     <TextField
@@ -210,6 +198,27 @@ export function CompassRulesTab() {
                     <Button onClick={() => setAddOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
                     <Button variant="contained" onClick={handleAdd} disabled={!newName.trim()}>
                         {t('common.add', 'Add')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Confirmation dialog for deleting a rule */}
+            <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)}>
+                <DialogTitle>{t('common.confirm')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>{t('common.confirmDelete')}</DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDelete(null)}>{t('common.cancel')}</Button>
+                    <Button
+                        color="error"
+                        disabled={deleting}
+                        onClick={async () => {
+                            if (confirmDelete) await handleDelete(confirmDelete);
+                            setConfirmDelete(null);
+                        }}
+                    >
+                        {t('common.delete')}
                     </Button>
                 </DialogActions>
             </Dialog>

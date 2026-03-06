@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { compassAuthenticate, requireCompassEnabled } from '../../shared/middleware/compassAuth.js';
-import { authenticate } from '../../shared/middleware/index.js';
+import { authenticate, requireCompassAdmin } from '../../shared/middleware/index.js';
 import * as controller from './controller.js';
 
 // Employee routes (Compass JWT)
@@ -18,6 +18,6 @@ compassFriendRoutes.delete('/:id', controller.removeFriend);
 // Admin employee routes (Admin JWT)
 export const adminEmployeeRoutes = Router();
 
-adminEmployeeRoutes.get('/:companyId', authenticate, controller.listEmployees);
-adminEmployeeRoutes.post('/:companyId', authenticate, controller.createEmployee);
-adminEmployeeRoutes.put('/:companyId/:userId', authenticate, controller.updateEmployee);
+adminEmployeeRoutes.get('/:companyId', authenticate, requireCompassAdmin(), controller.listEmployees);
+adminEmployeeRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.createEmployee);
+adminEmployeeRoutes.put('/:companyId/:userId', authenticate, requireCompassAdmin(), controller.updateEmployee);

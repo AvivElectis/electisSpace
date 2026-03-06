@@ -2,24 +2,71 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/index.js';
 import { unauthorized, forbidden, badRequest, tooManyRequests } from '../../shared/middleware/index.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
+import type { CompanyUserRole } from '@prisma/client';
 import type { CompassJwtPayload, CompassUserInfo, CompassTokenResponse } from './types.js';
+import { prisma } from '../../config/index.js';
 import * as repo from './repository.js';
 import { EmailService } from '../../shared/services/email.service.js';
 
 const COMPASS_TOKEN_TYPE = 'COMPASS' as const;
-const CODE_EXPIRY_MINUTES = 10;
+const CODE_EXPIRY_MINUTES = 15;
 const DEVICE_TOKEN_EXPIRY_DAYS = 365;
 const ACCESS_TOKEN_EXPIRY_SECONDS = 900; // 15 minutes
 
 // ─── Login (send verification code) ──────────────────
 
-export const sendLoginCode = async (email: string): Promise<{ message: string }> => {
-    const user = await repo.findCompanyUserByEmail(email);
+export const sendLoginCode = async (email: string): Promise<{ message: string; codeExpiryMinutes: number }> => {
+    let user = await repo.findCompanyUserByEmail(email);
+
+    // If no CompanyUser found, check if an admin User exists with access to a compass-enabled company
+    if (!user) {
+        const adminUser = await prisma.user.findUnique({
+            where: { email, isActive: true },
+            select: {
+                id: true, email: true, firstName: true, lastName: true,
+                globalRole: true,
+                userCompanies: {
+                    select: {
+                        company: { select: { id: true, name: true, compassEnabled: true } },
+                    },
+                },
+                userStores: {
+                    select: { storeId: true },
+                    take: 1,
+                },
+            },
+        });
+
+        if (adminUser) {
+            // Find first compass-enabled company the admin has access to
+            const compassCompany = adminUser.userCompanies.find(uc => uc.company.compassEnabled);
+            if (compassCompany && adminUser.userStores[0]) {
+                // Auto-create CompanyUser linked to admin (upsert to avoid race condition)
+                const displayName = [adminUser.firstName, adminUser.lastName].filter(Boolean).join(' ') || adminUser.email.split('@')[0];
+                await prisma.companyUser.upsert({
+                    where: { companyId_email: { companyId: compassCompany.company.id, email: adminUser.email } },
+                    update: {},
+                    create: {
+                        companyId: compassCompany.company.id,
+                        branchId: adminUser.userStores[0].storeId,
+                        email: adminUser.email,
+                        displayName,
+                        role: 'ADMIN',
+                        linkedUserId: adminUser.id,
+                        isActive: true,
+                    },
+                });
+                appLogger.info('CompassAuth', `Auto-created Compass ADMIN for admin user ${email}`);
+                // Re-fetch with proper relations
+                user = await repo.findCompanyUserByEmail(email);
+            }
+        }
+    }
 
     if (!user) {
         // Don't reveal whether the email exists
         appLogger.info('CompassAuth', `Login attempt for unknown email`, { email });
-        return { message: 'If this email is registered, a verification code has been sent.' };
+        return { message: 'If this email is registered, a verification code has been sent.', codeExpiryMinutes: CODE_EXPIRY_MINUTES };
     }
 
     if (!user.company.compassEnabled) {
@@ -45,7 +92,10 @@ export const sendLoginCode = async (email: string): Promise<{ message: string }>
         appLogger.info('CompassAuth', `Verification code for ${email}: ${code}`);
     }
 
-    return { message: 'If this email is registered, a verification code has been sent.' };
+    return {
+        message: 'If this email is registered, a verification code has been sent.',
+        codeExpiryMinutes: CODE_EXPIRY_MINUTES,
+    };
 };
 
 // ─── Verify Code & Issue Tokens ──────────────────────
@@ -69,9 +119,11 @@ export const verifyCodeAndLogin = async (
         throw unauthorized('Invalid or expired verification code');
     }
 
+    // Increment attempts unconditionally before verifying (pessimistic approach)
+    await repo.incrementCodeAttempts(verificationCode.id);
+
     const isValid = await repo.verifyCode(code, verificationCode.codeHash);
     if (!isValid) {
-        await repo.incrementCodeAttempts(verificationCode.id);
         throw unauthorized('Invalid or expired verification code');
     }
 
@@ -100,6 +152,7 @@ export const verifyCodeAndLogin = async (
     return {
         ...tokens,
         user: mapToUserInfo(user),
+        ...(deviceToken && { deviceToken }),
     };
 };
 
@@ -188,13 +241,13 @@ const generateCompassTokens = (
     companyUserId: string,
     companyId: string,
     branchId: string,
-    role: string,
+    role: CompanyUserRole,
 ) => {
     const accessPayload: CompassJwtPayload = {
         sub: companyUserId,
         companyId,
         branchId,
-        role: role as any,
+        role,
         tokenType: COMPASS_TOKEN_TYPE,
     };
 

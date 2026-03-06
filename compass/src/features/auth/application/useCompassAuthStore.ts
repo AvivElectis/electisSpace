@@ -21,12 +21,18 @@ export const useCompassAuthStore = create<AuthState & AuthActions>((set, get) =>
     loginStep: 'email',
     loginEmail: '',
     error: null,
+    codeExpiryMinutes: null,
 
     sendLoginCode: async (email: string) => {
         set({ isLoading: true, error: null });
         try {
-            await authApi.login(email);
-            set({ loginStep: 'code', loginEmail: email, isLoading: false });
+            const { data } = await authApi.login(email);
+            set({
+                loginStep: 'code',
+                loginEmail: email,
+                isLoading: false,
+                codeExpiryMinutes: data.codeExpiryMinutes,
+            });
         } catch (error: any) {
             set({
                 error: error?.response?.data?.error?.message || 'Failed to send code',
@@ -93,6 +99,7 @@ export const useCompassAuthStore = create<AuthState & AuthActions>((set, get) =>
             loginStep: 'email',
             loginEmail: '',
             error: null,
+            codeExpiryMinutes: null,
         });
     },
 
@@ -102,6 +109,7 @@ export const useCompassAuthStore = create<AuthState & AuthActions>((set, get) =>
         loginStep: 'email',
         loginEmail: '',
         error: null,
+        codeExpiryMinutes: null,
     }),
 }));
 

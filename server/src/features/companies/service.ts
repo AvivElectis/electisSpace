@@ -30,6 +30,17 @@ import type {
 } from './types.js';
 
 // ======================
+// Compass Article Data Fields
+// ======================
+
+/** Fields added to AIMS article format when compass is enabled */
+const COMPASS_ARTICLE_DATA_FIELDS = [
+    'BUILDING_NAME', 'FLOOR_NAME', 'AREA_NAME',
+    'SPACE_MODE', 'SPACE_CAPACITY', 'SPACE_AMENITIES', 'SPACE_TYPE',
+    'BOOKING_STATUS', 'BOOKED_BY', 'BOOKING_TIME',
+];
+
+// ======================
 // Authorization Helpers
 // ======================
 
@@ -272,86 +283,179 @@ export const companyService = {
 
         // Save article format and field mapping from wizard
         if (fullData.articleFormat) {
+            // When compass is enabled, inject compass data fields into article format
+            if (companyFeatures.compassEnabled) {
+                const format = fullData.articleFormat as Record<string, any>;
+                const existingData = Array.isArray(format.articleData) ? format.articleData as string[] : [];
+                const merged = [...new Set([...existingData, ...COMPASS_ARTICLE_DATA_FIELDS])];
+                format.articleData = merged;
+                appLogger.info('Companies', `Injected ${COMPASS_ARTICLE_DATA_FIELDS.length} compass fields into article format`);
+            }
             initialSettings.solumArticleFormat = fullData.articleFormat;
         }
         if (fullData.fieldMapping) {
             initialSettings.solumMappingConfig = fullData.fieldMapping;
         }
 
-        const company = await companyRepository.create({
-            code: upperCode,
-            name: data.name,
-            location: data.location,
-            description: data.description,
-            aimsBaseUrl: data.aimsConfig?.baseUrl,
-            aimsCluster: data.aimsConfig?.cluster,
-            aimsUsername: data.aimsConfig?.username,
-            aimsPasswordEnc: encryptedPassword,
-            settings: initialSettings as unknown as Prisma.InputJsonValue,
-        });
-
-        // Create stores from wizard multi-store selection
-        if (fullData.stores && fullData.stores.length > 0) {
-            for (const storeData of fullData.stores) {
-                await prisma.store.create({
-                    data: {
-                        companyId: company.id,
-                        code: storeData.code,
-                        name: storeData.name || storeData.code,
-                        timezone: storeData.timezone || 'UTC',
-                        syncEnabled: true, // Wizard validates AIMS connection, safe to enable
-                        isActive: true,
-                    },
-                });
-            }
-        }
-
-        // Auto-assign all PLATFORM_ADMIN users to the new company with SUPER_USER + allStoresAccess
-        const platformAdmins = await prisma.user.findMany({
-            where: { globalRole: GlobalRole.PLATFORM_ADMIN },
-            select: { id: true },
-        });
-        for (const admin of platformAdmins) {
-            await prisma.userCompany.upsert({
-                where: { userId_companyId: { userId: admin.id, companyId: company.id } },
-                create: {
-                    userId: admin.id,
-                    companyId: company.id,
-                    roleId: 'role-admin',
-                    allStoresAccess: true,
+        const company = await prisma.$transaction(async (tx) => {
+            const created = await tx.company.create({
+                data: {
+                    code: upperCode,
+                    name: data.name,
+                    location: data.location ?? null,
+                    description: data.description ?? null,
+                    aimsBaseUrl: data.aimsConfig?.baseUrl ?? null,
+                    aimsCluster: data.aimsConfig?.cluster ?? null,
+                    aimsUsername: data.aimsConfig?.username ?? null,
+                    aimsPasswordEnc: encryptedPassword ?? null,
+                    settings: initialSettings as unknown as Prisma.InputJsonValue,
                 },
-                update: {
-                    roleId: 'role-admin',
-                    allStoresAccess: true,
-                },
+                include: { _count: { select: { stores: true, userCompanies: true } } },
             });
-        }
 
-        // Create default Compass booking rules when compass is enabled
-        if (companyFeatures.compassEnabled && fullData.compassConfig) {
-            const cc = fullData.compassConfig;
-            const ruleDefaults: Array<{ name: string; ruleType: BookingRuleType; config: Record<string, number> }> = [
-                { name: 'Max Duration', ruleType: BookingRuleType.MAX_DURATION, config: { maxMinutes: cc.maxDurationMinutes } },
-                { name: 'Max Advance Booking', ruleType: BookingRuleType.MAX_ADVANCE_BOOKING, config: { maxDays: cc.maxAdvanceBookingDays } },
-                { name: 'Check-in Window', ruleType: BookingRuleType.CHECK_IN_WINDOW, config: { windowMinutes: cc.checkInWindowMinutes } },
-                { name: 'Auto Release', ruleType: BookingRuleType.AUTO_RELEASE, config: { timeoutMinutes: cc.autoReleaseMinutes } },
-                { name: 'Max Concurrent', ruleType: BookingRuleType.MAX_CONCURRENT, config: { maxBookings: cc.maxConcurrentBookings } },
-            ];
-            for (const rule of ruleDefaults) {
-                await prisma.bookingRule.create({
-                    data: {
-                        companyId: company.id,
-                        name: rule.name,
-                        ruleType: rule.ruleType,
-                        config: rule.config as unknown as Prisma.InputJsonValue,
-                        applyTo: 'ALL_BRANCHES',
-                        priority: 0,
-                        isActive: true,
+            // Create stores from wizard multi-store selection
+            if (fullData.stores && fullData.stores.length > 0) {
+                for (const storeData of fullData.stores) {
+                    await tx.store.create({
+                        data: {
+                            companyId: created.id,
+                            code: storeData.code,
+                            name: storeData.name || storeData.code,
+                            timezone: storeData.timezone || 'UTC',
+                            syncEnabled: true,
+                            isActive: true,
+                        },
+                    });
+                }
+            }
+
+            // Auto-assign all PLATFORM_ADMIN users to the new company
+            const platformAdmins = await tx.user.findMany({
+                where: { globalRole: GlobalRole.PLATFORM_ADMIN },
+                select: { id: true },
+            });
+            for (const admin of platformAdmins) {
+                await tx.userCompany.upsert({
+                    where: { userId_companyId: { userId: admin.id, companyId: created.id } },
+                    create: {
+                        userId: admin.id,
+                        companyId: created.id,
+                        roleId: 'role-admin',
+                        allStoresAccess: true,
+                    },
+                    update: {
+                        roleId: 'role-admin',
+                        allStoresAccess: true,
                     },
                 });
             }
-            appLogger.info('Companies', `Created ${ruleDefaults.length} default Compass booking rules for ${company.code}`);
-        }
+
+            // Create default Compass booking rules when compass is enabled
+            if (companyFeatures.compassEnabled && fullData.compassConfig) {
+                const cc = fullData.compassConfig;
+                const ruleDefaults: Array<{ name: string; ruleType: BookingRuleType; config: Record<string, number> }> = [
+                    { name: 'Max Duration', ruleType: BookingRuleType.MAX_DURATION, config: { value: cc.maxDurationMinutes } },
+                    { name: 'Max Advance Booking', ruleType: BookingRuleType.MAX_ADVANCE_BOOKING, config: { value: cc.maxAdvanceBookingDays } },
+                    { name: 'Check-in Window', ruleType: BookingRuleType.CHECK_IN_WINDOW, config: { value: cc.checkInWindowMinutes } },
+                    { name: 'Auto Release', ruleType: BookingRuleType.AUTO_RELEASE, config: { value: cc.autoReleaseMinutes } },
+                    { name: 'Max Concurrent', ruleType: BookingRuleType.MAX_CONCURRENT, config: { value: cc.maxConcurrentBookings } },
+                ];
+                for (const rule of ruleDefaults) {
+                    await tx.bookingRule.create({
+                        data: {
+                            companyId: created.id,
+                            name: rule.name,
+                            ruleType: rule.ruleType,
+                            config: rule.config as unknown as Prisma.InputJsonValue,
+                            applyTo: 'ALL_BRANCHES',
+                            priority: 0,
+                            isActive: true,
+                        },
+                    });
+                }
+                appLogger.info('Companies', `Created ${ruleDefaults.length} default Compass booking rules for ${created.code}`);
+
+                // Auto-create CompanyUser records for platform admins
+                const firstStoreData = fullData.stores?.[0];
+                if (firstStoreData) {
+                    const store = await tx.store.findFirst({
+                        where: { companyId: created.id, code: firstStoreData.code },
+                        select: { id: true },
+                    });
+                    if (store) {
+                        for (const admin of platformAdmins) {
+                            const adminUser = await tx.user.findUnique({
+                                where: { id: admin.id },
+                                select: { id: true, email: true, firstName: true, lastName: true },
+                            });
+                            if (!adminUser) continue;
+
+                            const existing = await tx.companyUser.findFirst({
+                                where: { companyId: created.id, linkedUserId: adminUser.id },
+                            });
+                            if (existing) continue;
+
+                            const existingByEmail = await tx.companyUser.findUnique({
+                                where: { companyId_email: { companyId: created.id, email: adminUser.email } },
+                            });
+                            if (existingByEmail) continue;
+
+                            const displayName = [adminUser.firstName, adminUser.lastName].filter(Boolean).join(' ') || adminUser.email.split('@')[0];
+                            await tx.companyUser.create({
+                                data: {
+                                    companyId: created.id,
+                                    branchId: store.id,
+                                    email: adminUser.email,
+                                    displayName,
+                                    role: 'ADMIN',
+                                    linkedUserId: adminUser.id,
+                                    isActive: true,
+                                },
+                            });
+                            appLogger.info('Companies', `Auto-created Compass ADMIN CompanyUser for ${adminUser.email} in ${created.code}`);
+                        }
+                    }
+                }
+            }
+
+            // Create building hierarchy when compass is enabled
+            if (companyFeatures.compassEnabled && fullData.buildings?.length) {
+                const firstStore = await tx.store.findFirst({
+                    where: { companyId: created.id },
+                    select: { id: true },
+                });
+                if (firstStore) {
+                    for (let bi = 0; bi < fullData.buildings.length; bi++) {
+                        const b = fullData.buildings[bi];
+                        if (!b.name?.trim()) continue;
+                        const building = await tx.building.create({
+                            data: {
+                                companyId: created.id,
+                                storeId: firstStore.id,
+                                name: b.name.trim(),
+                                code: b.name.trim().substring(0, 20).toUpperCase().replace(/\s+/g, '_'),
+                                sortOrder: bi,
+                            },
+                        });
+                        for (let fi = 0; fi < (b.floors?.length ?? 0); fi++) {
+                            const f = b.floors[fi];
+                            if (!f.name?.trim()) continue;
+                            await tx.floor.create({
+                                data: {
+                                    buildingId: building.id,
+                                    name: f.name.trim(),
+                                    prefix: f.name.trim().substring(0, 20).toUpperCase().replace(/\s+/g, '_'),
+                                    sortOrder: fi,
+                                },
+                            });
+                        }
+                    }
+                    appLogger.info('Companies', `Created ${fullData.buildings.length} buildings for ${created.code}`);
+                }
+            }
+
+            return created;
+        });
 
         // Re-fetch to get accurate store count after creation
         const updatedCompany = await companyRepository.findWithCounts(company.id);

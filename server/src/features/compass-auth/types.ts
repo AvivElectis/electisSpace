@@ -49,6 +49,7 @@ export interface CompassTokenResponse {
     refreshToken: string;
     expiresIn: number;
     user: CompassUserInfo;
+    deviceToken?: string;
 }
 
 export interface CompassRefreshResponse {

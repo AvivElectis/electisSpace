@@ -230,6 +230,8 @@
         "reset": "Reset",
         "apply": "Apply",
         "confirm": "Confirm",
+        "confirmDelete": "Are you sure you want to delete this item?",
+        "confirmCancel": "Are you sure you want to cancel this booking?",
         "back": "Back",
         "next": "Next",
         "loading": "Loading...",
@@ -248,6 +250,7 @@
         "info": "Information",
         "active": "Active",
         "inactive": "Inactive",
+        "activate": "Activate",
         "rowsPerPage": "Rows per page",
         "dialog": {
             "confirm": "Confirm",
@@ -280,7 +283,15 @@
         "never": "Never",
         "refresh": "Refresh",
         "retry": "Retry",
-        "type": "Type"
+        "type": "Type",
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "value": "Value",
+        "scope": "Scope",
+        "mode": "Mode",
+        "saved": "Saved",
+        "noResults": "No results found"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -1020,8 +1031,13 @@
             "compassMaxConcurrent": "Max Concurrent Bookings",
             "compassMaxConcurrentDesc": "Maximum active bookings per employee at the same time.",
             "compassMinutes": "min",
+            "compassHours": "hours",
             "compassDays": "days",
+            "compassFullDay": "Full day",
+            "compassFullDayDesc": "Employees can book for a full day (24 hours).",
+            "compassDurationRange": "{{min}} – {{max}}",
             "compassBookings": "bookings",
+            "minValue": "Minimum: {{min}}",
             "wizardStepBuildings": "Buildings",
             "buildingHierarchyInfo": "Define your buildings and floors. Areas can be configured after creation in the Compass admin page.",
             "addBuilding": "Add Building",
@@ -1029,6 +1045,7 @@
             "addFloor": "Add Floor",
             "floorNamePlaceholder": "Floor name (e.g. Floor 1)",
             "floorCount": "{{count}} floor(s)",
+            "duplicateName": "Name already exists",
             "noBuildingsYet": "No buildings added yet. Add at least one building to get started.",
             "reviewBuildings": "Building Hierarchy",
             "createCompany": "Create Company",
@@ -1043,7 +1060,23 @@
             "storesManageHint": "Use the Stores dialog from the settings page to add, edit, or remove stores.",
             "noArticleFormat": "No article format stored. Fetch from AIMS to configure.",
             "refetchArticleFormat": "Re-fetch from AIMS",
-            "saveFieldMapping": "Save Mapping"
+            "saveFieldMapping": "Save Mapping",
+            "integrationsTab": "Integrations",
+            "noIntegrations": "No directory sync integrations configured.",
+            "addIntegration": "Add Integration",
+            "syncNow": "Sync",
+            "syncInterval": "Interval",
+            "lastSync": "Last sync",
+            "syncStats": "Created",
+            "syncUpdated": "Updated",
+            "syncDeactivated": "Deactivated",
+            "provider": "Provider",
+            "integrationType": "Type",
+            "userDirectory": "User Directory",
+            "calendarRooms": "Calendar / Rooms",
+            "both": "Both",
+            "syncIntervalMinutes": "Sync Interval (minutes)",
+            "credentials": "Credentials"
         },
         "stores": {
             "dialogTitle": "Manage Stores",
@@ -1123,7 +1156,9 @@
         "saveFailed": "Failed to save",
         "loadFailed": "Failed to load",
         "unknownError": "An unknown error occurred",
-        "idExists": "This ID already exists"
+        "invalidEmail": "Invalid email address",
+        "idExists": "This ID already exists",
+        "serverError": "An error occurred. Please try again."
     },
     "messages": {
         "saved": "Saved successfully",
@@ -1644,10 +1679,6 @@
         "invalidInput": "Invalid input",
         "invalidSpaceId": "Invalid space ID"
     },
-    "errors": {
-        "required": "This field is required",
-        "idExists": "This ID already exists"
-    },
     "labels": {
         "title": "Labels Management",
         "notConfigured": "SOLUM API is not configured. Please configure your SOLUM settings first.",
@@ -1797,7 +1828,12 @@
             "checkedIn": "Checked In",
             "occupancy": "Occupancy",
             "todayBookings": "bookings today",
-            "checkInRate": "Check-in Rate"
+            "checkInRate": "Check-in Rate",
+            "building": "Building",
+            "floor": "Floor",
+            "assignee": "Assignee",
+            "start": "Start",
+            "end": "End"
         },
         "navigation": {
             "bookings": "Bookings",
@@ -1805,6 +1841,39 @@
             "spaces": "Spaces",
             "rules": "Rules"
         },
-        "managedByCompass": "Managed by Compass"
+        "managedByCompass": "Managed by Compass",
+        "spaceMode": {
+            "AVAILABLE": "Available",
+            "PERMANENT": "Permanent",
+            "MAINTENANCE": "Maintenance",
+            "EXCLUDED": "Excluded"
+        },
+        "bookingStatus": {
+            "BOOKED": "Booked",
+            "CHECKED_IN": "Checked In",
+            "RELEASED": "Released",
+            "AUTO_RELEASED": "Auto Released",
+            "CANCELLED": "Cancelled",
+            "NO_SHOW": "No Show"
+        },
+        "ruleType": {
+            "MAX_DURATION": "Max Duration",
+            "MAX_ADVANCE_BOOKING": "Max Advance Booking",
+            "MAX_CONCURRENT": "Max Concurrent",
+            "CHECK_IN_WINDOW": "Check-in Window",
+            "AUTO_RELEASE": "Auto Release",
+            "AUTO_RELEASE": "Auto Release"
+        },
+        "scope": {
+            "all": "All",
+            "selected": "Selected"
+        },
+        "addRule": "Add Rule",
+        "addEmployee": "Add Employee",
+        "cancelBooking": "Cancel Booking",
+        "deleteRule": "Delete Rule",
+        "deactivateEmployee": "Deactivate Employee",
+        "confirmDeactivate": "Are you sure you want to deactivate this employee?",
+        "compassFormatInfo": "The following fields will be automatically added to the article format for compass workspace booking:"
     }
 }

@@ -23,7 +23,7 @@ vi.mock('../repository.js', () => ({
     revokeDeviceToken: vi.fn(),
 }));
 
-// Mock config
+// Mock config + prisma
 vi.mock('../../../config/index.js', () => ({
     config: {
         isDev: false,
@@ -33,6 +33,10 @@ vi.mock('../../../config/index.js', () => ({
             accessExpiresIn: '15m',
             refreshExpiresIn: '7d',
         },
+    },
+    prisma: {
+        user: { findUnique: vi.fn().mockResolvedValue(null) },
+        companyUser: { upsert: vi.fn().mockResolvedValue({}) },
     },
 }));
 
@@ -72,7 +76,7 @@ vi.mock('../../../shared/middleware/index.js', () => {
 import * as repo from '../repository.js';
 import * as service from '../service.js';
 
-const mockRepo = repo as {
+const mockRepo = repo as unknown as {
     findCompanyUserByEmail: ReturnType<typeof vi.fn>;
     findCompanyUserById: ReturnType<typeof vi.fn>;
     generateCode: ReturnType<typeof vi.fn>;
@@ -125,6 +129,7 @@ describe('sendLoginCode', () => {
         const result = await service.sendLoginCode('unknown@example.com');
 
         expect(result.message).toContain('If this email is registered');
+        expect(result.codeExpiryMinutes).toBe(15);
         expect(mockRepo.createVerificationCode).not.toHaveBeenCalled();
     });
 
@@ -144,6 +149,7 @@ describe('sendLoginCode', () => {
         const result = await service.sendLoginCode('test@example.com');
 
         expect(result.message).toContain('If this email is registered');
+        expect(result.codeExpiryMinutes).toBe(15);
         expect(mockRepo.generateCode).toHaveBeenCalledOnce();
         expect(mockRepo.hashCode).toHaveBeenCalledWith('123456');
         expect(mockRepo.createVerificationCode).toHaveBeenCalledWith(
@@ -197,7 +203,7 @@ describe('verifyCodeAndLogin', () => {
             .rejects.toThrow('Invalid or expired verification code');
     });
 
-    it('should increment attempts on invalid code', async () => {
+    it('should increment attempts before verifying code (pessimistic)', async () => {
         mockRepo.findCompanyUserByEmail.mockResolvedValue(mockUser);
         mockRepo.findValidVerificationCode.mockResolvedValue({
             id: 'code-1',
@@ -208,7 +214,9 @@ describe('verifyCodeAndLogin', () => {
         await expect(service.verifyCodeAndLogin('test@example.com', '000000'))
             .rejects.toThrow('Invalid or expired verification code');
 
+        // Attempts incremented before code verification
         expect(mockRepo.incrementCodeAttempts).toHaveBeenCalledWith('code-1');
+        expect(mockRepo.incrementCodeAttempts).toHaveBeenCalledBefore(mockRepo.verifyCode);
     });
 
     it('should return tokens on valid code', async () => {

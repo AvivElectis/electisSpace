@@ -55,8 +55,8 @@ export const resolveRules = async (
         if (!ruleAppliesToBranch(rule, branchId)) continue;
 
         // Check if rule applies to this space type
-        if (spaceType && rule.targetSpaceTypes.length > 0) {
-            if (!rule.targetSpaceTypes.includes(spaceType)) continue;
+        if (rule.targetSpaceTypes.length > 0) {
+            if (!spaceType || !rule.targetSpaceTypes.includes(spaceType)) continue;
         }
 
         // Apply the rule value
@@ -85,7 +85,7 @@ const ruleAppliesToBranch = (
     switch (rule.applyTo) {
         case 'ALL_BRANCHES':
             return true;
-        case 'SPECIFIC_BRANCHES':
+        case 'SELECTED_BRANCHES':
             return rule.targetBranchIds.includes(branchId);
         default:
             return true;

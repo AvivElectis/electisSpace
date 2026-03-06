@@ -19,6 +19,7 @@ import {
     buildConferenceArticle,
     buildEmptySlotArticle,
     type ConferenceMappingConfig,
+    type CompassArticleData,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
 import type { AimsArticle } from '../services/aims.types.js';
@@ -49,6 +50,7 @@ interface ProcessResult {
 interface StoreCompanySettings {
     globalFieldAssignments: Record<string, string> | undefined;
     conferenceMapping: ConferenceMappingConfig | null;
+    compassEnabled: boolean;
 }
 
 /**
@@ -227,11 +229,16 @@ export class SyncQueueProcessor {
                 }
             }
 
-            // Update store's lastAimsSyncAt
-            await prisma.store.update({
-                where: { id: storeId },
-                data: { lastAimsSyncAt: new Date() },
-            });
+            // Only update lastAimsSyncAt if at least one item succeeded
+            const storeSucceeded = storeItems.length - storeItems.filter(
+                item => result.errors.some(e => e.itemId === item.id),
+            ).length;
+            if (storeSucceeded > 0) {
+                await prisma.store.update({
+                    where: { id: storeId },
+                    data: { lastAimsSyncAt: new Date() },
+                });
+            }
 
             // Notify frontend clients that person sync statuses have changed
             const hasPersonItems = storeItems.some(item => item.entityType === 'person');
@@ -291,7 +298,7 @@ export class SyncQueueProcessor {
                 where: { id: storeId },
                 select: { companyId: true },
             });
-            if (!store) return { globalFieldAssignments: undefined, conferenceMapping: null };
+            if (!store) return { globalFieldAssignments: undefined, conferenceMapping: null, compassEnabled: false };
 
             // Try Redis cache first
             const cacheKey = `company-settings:${store.companyId}`;
@@ -309,6 +316,7 @@ export class SyncQueueProcessor {
             const mappingConfig = settings.solumMappingConfig || {};
             const globalFields = mappingConfig.globalFieldAssignments;
             const conferenceMapping = mappingConfig.conferenceMapping;
+            const companyFeatures = settings.companyFeatures || {};
 
             return {
                 globalFieldAssignments: globalFields && Object.keys(globalFields).length > 0
@@ -317,10 +325,11 @@ export class SyncQueueProcessor {
                 conferenceMapping: conferenceMapping?.meetingName && conferenceMapping?.meetingTime && conferenceMapping?.participants
                     ? conferenceMapping as ConferenceMappingConfig
                     : null,
+                compassEnabled: !!companyFeatures.compassEnabled,
             };
         } catch (error: any) {
             appLogger.warn('SyncQueue', `Could not fetch company settings for store ${storeId}: ${error.message}`);
-            return { globalFieldAssignments: undefined, conferenceMapping: null };
+            return { globalFieldAssignments: undefined, conferenceMapping: null, compassEnabled: false };
         }
     }
 
@@ -402,9 +411,44 @@ export class SyncQueueProcessor {
             case 'space': {
                 const space = await prisma.space.findUnique({
                     where: { id: entityId },
+                    include: storeSettings?.compassEnabled ? {
+                        building: { select: { name: true } },
+                        floor: { select: { name: true } },
+                        area: { select: { name: true } },
+                    } : undefined,
                 });
                 if (!space) return null;
-                return buildSpaceArticle(space, format);
+
+                // Build compass data for compass-enabled companies
+                let compassData: CompassArticleData | undefined;
+                if (storeSettings?.compassEnabled) {
+                    const spaceAny = space as any;
+                    // Fetch active booking for this space
+                    const activeBooking = await prisma.booking.findFirst({
+                        where: {
+                            spaceId: entityId,
+                            status: { in: ['BOOKED', 'CHECKED_IN'] },
+                            startTime: { lte: new Date() },
+                            endTime: { gte: new Date() },
+                        },
+                        include: { companyUser: { select: { displayName: true } } },
+                        orderBy: { startTime: 'asc' },
+                    });
+
+                    compassData = {
+                        buildingName: spaceAny.building?.name,
+                        floorName: spaceAny.floor?.name,
+                        areaName: spaceAny.area?.name,
+                        spaceMode: spaceAny.compassMode || undefined,
+                        spaceType: spaceAny.type || undefined,
+                        bookingStatus: activeBooking?.status || 'AVAILABLE',
+                        bookedBy: activeBooking?.companyUser?.displayName || undefined,
+                        bookingTime: activeBooking
+                            ? `${activeBooking.startTime.toISOString()} - ${activeBooking.endTime?.toISOString() ?? ''}`
+                            : undefined,
+                    };
+                }
+                return buildSpaceArticle(space, format, compassData);
             }
 
             case 'person': {
