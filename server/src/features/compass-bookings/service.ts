@@ -400,14 +400,22 @@ export const processNoShows = async () => {
 
     const candidates = await repo.findNoShowBookings(cutoff);
 
+    // Cache resolved rules per company+branch to avoid redundant DB queries
+    const rulesCache = new Map<string, ruleEngine.ResolvedRules>();
+
     let count = 0;
     for (const booking of candidates) {
         try {
-            // Resolve per-branch rules for accurate check-in window
-            const rules = await ruleEngine.resolveRules(
-                booking.companyId,
-                booking.branchId,
-            );
+            // Resolve per-branch rules for accurate check-in window (cached)
+            const cacheKey = `${booking.companyId}:${booking.branchId}`;
+            let rules = rulesCache.get(cacheKey);
+            if (!rules) {
+                rules = await ruleEngine.resolveRules(
+                    booking.companyId,
+                    booking.branchId,
+                );
+                rulesCache.set(cacheKey, rules);
+            }
 
             const deadline = new Date(
                 booking.startTime.getTime() + rules.checkInWindowMinutes * 60 * 1000,

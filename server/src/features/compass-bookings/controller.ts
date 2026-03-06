@@ -198,8 +198,10 @@ export const updateRule = async (req: Request, res: Response, next: NextFunction
             throw badRequest('Invalid request', parsed.error.format());
         }
 
+        const companyId = req.params.companyId as string;
         const rule = await repo.updateRule(
             req.params.ruleId as string,
+            companyId,
             parsed.data,
         );
 
@@ -211,7 +213,8 @@ export const updateRule = async (req: Request, res: Response, next: NextFunction
 
 export const deleteRule = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await repo.deleteRule(req.params.ruleId as string);
+        const companyId = req.params.companyId as string;
+        await repo.deleteRule(req.params.ruleId as string, companyId);
         res.json({ message: 'Rule deleted' });
     } catch (error) {
         next(error);

@@ -228,6 +228,7 @@ export function ArticleFormatStep({
                             schema={articleFormat}
                             onSave={handleJsonSave}
                             readOnly={false}
+                            initialOpen
                         />
                     </Suspense>
                 </Box>

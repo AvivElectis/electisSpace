@@ -1,5 +1,5 @@
 import { prisma } from '../../config/index.js';
-import type { BookingStatus, Prisma } from '@prisma/client';
+import type { BookingStatus } from '@prisma/client';
 
 // ─── Booking Queries ─────────────────────────────────
 
@@ -11,26 +11,6 @@ export const findBookingById = async (id: string, companyId: string) => {
             companyUser: { select: { id: true, displayName: true, email: true } },
         },
     });
-};
-
-export const findActiveBySpace = async (
-    spaceId: string,
-    startTime: Date,
-    endTime: Date | null,
-    excludeBookingId?: string,
-) => {
-    const where: Prisma.BookingWhereInput = {
-        spaceId,
-        status: { in: ['BOOKED', 'CHECKED_IN'] },
-        startTime: { lt: endTime ?? new Date('9999-12-31') },
-        ...(endTime ? { OR: [{ endTime: { gt: startTime } }, { endTime: null }] } : {}),
-    };
-
-    if (excludeBookingId) {
-        where.id = { not: excludeBookingId };
-    }
-
-    return prisma.booking.findMany({ where });
 };
 
 export const findByUser = async (
@@ -71,16 +51,6 @@ export const findByCompany = async (
         },
         orderBy: { startTime: 'desc' },
         take: 200,
-    });
-};
-
-export const countActiveByUser = async (companyUserId: string, companyId: string) => {
-    return prisma.booking.count({
-        where: {
-            companyUserId,
-            companyId,
-            status: { in: ['BOOKED', 'CHECKED_IN'] },
-        },
     });
 };
 
@@ -197,7 +167,7 @@ export const createRule = async (data: {
     });
 };
 
-export const updateRule = async (id: string, data: Partial<{
+export const updateRule = async (id: string, companyId: string, data: Partial<{
     name: string;
     config: unknown;
     isActive: boolean;
@@ -206,12 +176,18 @@ export const updateRule = async (id: string, data: Partial<{
     targetSpaceTypes: string[];
     priority: number;
 }>) => {
+    // Verify the rule belongs to the company before updating
+    const existing = await prisma.bookingRule.findFirst({ where: { id, companyId } });
+    if (!existing) throw new Error('Rule not found');
     return prisma.bookingRule.update({
         where: { id },
         data: data as any,
     });
 };
 
-export const deleteRule = async (id: string) => {
+export const deleteRule = async (id: string, companyId: string) => {
+    // Verify the rule belongs to the company before deleting
+    const existing = await prisma.bookingRule.findFirst({ where: { id, companyId } });
+    if (!existing) throw new Error('Rule not found');
     return prisma.bookingRule.delete({ where: { id } });
 };

@@ -179,7 +179,7 @@ export const createCompanyUser = async (data: {
     });
 };
 
-export const updateCompanyUser = async (id: string, data: Partial<{
+export const updateCompanyUser = async (id: string, companyId: string, data: Partial<{
     displayName: string;
     role: string;
     branchId: string;
@@ -187,6 +187,9 @@ export const updateCompanyUser = async (id: string, data: Partial<{
     floorId: string | null;
     isActive: boolean;
 }>) => {
+    // Verify the user belongs to the company before updating
+    const existing = await prisma.companyUser.findFirst({ where: { id, companyId } });
+    if (!existing) throw new Error('Company user not found');
     return prisma.companyUser.update({
         where: { id },
         data: data as any,

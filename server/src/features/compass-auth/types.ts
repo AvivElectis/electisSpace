@@ -21,7 +21,7 @@ export const compassRefreshSchema = z.object({
 
 export const compassDeviceAuthSchema = z.object({
     email: z.string().email().max(255),
-    deviceToken: z.string(),
+    deviceToken: z.string().min(1).max(200),
 });
 
 export const compassDeviceRegisterSchema = z.object({

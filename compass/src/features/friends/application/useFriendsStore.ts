@@ -30,7 +30,7 @@ export const useFriendsStore = create<FriendsState & FriendsActions>((set, get) 
         set({ isLoading: true, error: null });
         try {
             const { data } = await friendsApi.list();
-            set({ friends: data.friends, isLoading: false });
+            set({ friends: data.data, isLoading: false });
         } catch (error: any) {
             set({
                 error: error?.response?.data?.error?.message || 'Failed to load friends',
@@ -42,7 +42,7 @@ export const useFriendsStore = create<FriendsState & FriendsActions>((set, get) 
     fetchFriendLocations: async () => {
         try {
             const { data } = await friendsApi.getLocations();
-            set({ friends: data.friends });
+            set({ friends: data.data });
         } catch {
             // Silently fail
         }
@@ -51,7 +51,7 @@ export const useFriendsStore = create<FriendsState & FriendsActions>((set, get) 
     fetchPendingRequests: async () => {
         try {
             const { data } = await friendsApi.getPendingRequests();
-            set({ pendingRequests: data.requests });
+            set({ pendingRequests: data.data });
         } catch {
             // Silently fail
         }

@@ -32,7 +32,7 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
     fetchActiveBooking: async () => {
         try {
             const { data } = await bookingApi.getActive();
-            set({ activeBooking: data.booking });
+            set({ activeBooking: data.data });
         } catch {
             // No active booking
             set({ activeBooking: null });
@@ -43,12 +43,12 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
         set({ isLoading: true, error: null });
         try {
             const [upcomingRes, pastRes] = await Promise.all([
-                bookingApi.list({ upcoming: true }),
-                bookingApi.list({ status: 'past' }),
+                bookingApi.list({ status: 'BOOKED,CHECKED_IN' }),
+                bookingApi.list({ status: 'RELEASED,AUTO_RELEASED,CANCELLED,NO_SHOW' }),
             ]);
             set({
-                upcomingBookings: upcomingRes.data.bookings,
-                pastBookings: pastRes.data.bookings,
+                upcomingBookings: upcomingRes.data.data,
+                pastBookings: pastRes.data.data,
                 isLoading: false,
             });
         } catch (error: any) {
@@ -67,7 +67,7 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
             get().fetchActiveBooking();
             get().fetchBookings();
             set({ isLoading: false });
-            return result.booking;
+            return result.data;
         } catch (error: any) {
             set({
                 error: error?.response?.data?.error?.message || 'Failed to create booking',
@@ -81,7 +81,7 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
         set({ error: null });
         try {
             const { data } = await bookingApi.checkIn(id);
-            set({ activeBooking: data.booking });
+            set({ activeBooking: data.data });
             return true;
         } catch (error: any) {
             set({ error: error?.response?.data?.error?.message || 'Failed to check in' });
@@ -106,7 +106,7 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
         set({ error: null });
         try {
             const { data: result } = await bookingApi.extend(id, data);
-            set({ activeBooking: result.booking });
+            set({ activeBooking: result.data });
             return true;
         } catch (error: any) {
             set({ error: error?.response?.data?.error?.message || 'Failed to extend booking' });

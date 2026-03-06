@@ -33,6 +33,10 @@ export function LoginPage() {
         setError,
     } = useCompassAuthStore();
 
+    const [email, setEmail] = useState('');
+    const [code, setCode] = useState('');
+    const [codeExpiryMinutes, setCodeExpiryMinutes] = useState<number | null>(null);
+
     // Redirect to home after successful login
     if (isAuthenticated) {
         return <Navigate to="/" replace />;
@@ -41,10 +45,6 @@ export function LoginPage() {
     const logoSrc = muiTheme.palette.mode === 'dark'
         ? '/logo_dark_transparent.png'
         : '/logo_bright_transparent.png';
-
-    const [email, setEmail] = useState('');
-    const [code, setCode] = useState('');
-    const [codeExpiryMinutes, setCodeExpiryMinutes] = useState<number | null>(null);
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

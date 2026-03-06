@@ -21,6 +21,7 @@ interface ArticleFormatEditorProps {
     schema: ArticleFormat | null;
     onSave?: (newSchema: ArticleFormat) => Promise<boolean>;
     readOnly?: boolean;
+    initialOpen?: boolean;
 }
 
 /**
@@ -33,14 +34,15 @@ interface ArticleFormatEditorProps {
 export function ArticleFormatEditor({
     schema,
     onSave,
-    readOnly = false  // User requirement: editing allowed by default
+    readOnly = false,  // User requirement: editing allowed by default
+    initialOpen = false,
 }: ArticleFormatEditorProps) {
     const { t } = useTranslation();
     const editorRef = useRef<HTMLDivElement>(null);
     const jsonEditorRef = useRef<ReturnType<typeof createJSONEditor> | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isOpen, setIsOpen] = useState(false); // Collapsible state
+    const [isOpen, setIsOpen] = useState(initialOpen); // Collapsible state
 
     // Initialize and manage editor only when open
     useEffect(() => {

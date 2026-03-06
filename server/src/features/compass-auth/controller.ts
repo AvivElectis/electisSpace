@@ -62,9 +62,7 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
 
 export const refresh = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const refreshToken =
-            req.body?.refreshToken ||
-            req.cookies?.compassRefreshToken;
+        const refreshToken = req.cookies?.compassRefreshToken;
 
         if (!refreshToken) {
             throw badRequest('Refresh token required');

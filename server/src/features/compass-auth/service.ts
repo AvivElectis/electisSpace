@@ -288,7 +288,9 @@ export const revokeDevice = async (companyUserId: string, deviceTokenId: string)
 
 // ─── Helpers ─────────────────────────────────────────
 
-const mapToUserInfo = (user: any): CompassUserInfo => ({
+type CompassUserRecord = NonNullable<Awaited<ReturnType<typeof repo.findCompanyUserByEmail>>>;
+
+const mapToUserInfo = (user: CompassUserRecord): CompassUserInfo => ({
     id: user.id,
     email: user.email,
     displayName: user.displayName,

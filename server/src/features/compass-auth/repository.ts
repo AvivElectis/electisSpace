@@ -111,16 +111,6 @@ export const findActiveDeviceTokens = async (companyUserId: string) => {
     });
 };
 
-export const findDeviceTokenByHash = async (companyUserId: string) => {
-    return prisma.companyUserDeviceToken.findMany({
-        where: {
-            companyUserId,
-            revoked: false,
-            expiresAt: { gt: new Date() },
-        },
-    });
-};
-
 export const updateDeviceTokenLastUsed = async (id: string) => {
     return prisma.companyUserDeviceToken.update({
         where: { id },

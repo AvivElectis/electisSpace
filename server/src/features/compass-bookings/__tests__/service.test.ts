@@ -20,8 +20,6 @@ vi.mock('../../../config/index.js', () => ({
 
 // Mock repository
 vi.mock('../repository.js', () => ({
-    countActiveByUser: vi.fn(),
-    findActiveBySpace: vi.fn(),
     createBooking: vi.fn(),
     findBookingById: vi.fn(),
     updateBookingStatus: vi.fn(),
@@ -78,8 +76,6 @@ import * as ruleEngine from '../ruleEngine.js';
 import * as service from '../service.js';
 
 const mockRepo = repo as unknown as {
-    countActiveByUser: ReturnType<typeof vi.fn>;
-    findActiveBySpace: ReturnType<typeof vi.fn>;
     createBooking: ReturnType<typeof vi.fn>;
     findBookingById: ReturnType<typeof vi.fn>;
     updateBookingStatus: ReturnType<typeof vi.fn>;

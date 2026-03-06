@@ -3,16 +3,16 @@ import type { Friend, FriendRequest } from '../domain/types';
 
 export const friendsApi = {
     list: () =>
-        compassApi.get<{ friends: Friend[] }>('/friends'),
+        compassApi.get<{ data: Friend[] }>('/friends'),
 
     getLocations: () =>
-        compassApi.get<{ friends: Friend[] }>('/friends/locations'),
+        compassApi.get<{ data: Friend[] }>('/friends/locations'),
 
     sendRequest: (email: string) =>
-        compassApi.post<{ friendship: { id: string } }>('/friends/request', { email }),
+        compassApi.post<{ data: { id: string } }>('/friends/request', { email }),
 
     getPendingRequests: () =>
-        compassApi.get<{ requests: FriendRequest[] }>('/friends/requests'),
+        compassApi.get<{ data: FriendRequest[] }>('/friends/requests'),
 
     acceptRequest: (friendshipId: string) =>
         compassApi.patch<{ success: boolean }>(`/friends/${friendshipId}/accept`),

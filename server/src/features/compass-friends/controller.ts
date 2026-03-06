@@ -143,8 +143,10 @@ export const updateEmployee = async (req: Request, res: Response, next: NextFunc
             throw badRequest('Invalid request', parsed.error.format());
         }
 
+        const companyId = req.params.companyId as string;
         const user = await repo.updateCompanyUser(
             req.params.userId as string,
+            companyId,
             parsed.data as any,
         );
 

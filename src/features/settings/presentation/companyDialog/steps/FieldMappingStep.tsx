@@ -176,12 +176,13 @@ export function FieldMappingStep({
                                     sx={{ flex: 1 }}
                                     slotProps={{ htmlInput: { style: { fontSize: '0.85rem' } } }}
                                 />
-                                <Switch
-                                    checked={fm.visible}
-                                    onChange={(e) => handleFieldChange(fieldKey, 'visible', e.target.checked)}
-                                    size="small"
-                                    sx={{ width: 60 }}
-                                />
+                                <Box sx={{ width: 60, display: 'flex', justifyContent: 'center' }}>
+                                    <Switch
+                                        checked={fm.visible}
+                                        onChange={(e) => handleFieldChange(fieldKey, 'visible', e.target.checked)}
+                                        size="small"
+                                    />
+                                </Box>
                             </Box>
                         );
                     })}
