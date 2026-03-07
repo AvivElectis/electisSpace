@@ -37,6 +37,7 @@ import { compassBookingRoutes, adminBookingRoutes, adminBookingRuleRoutes } from
 import { compassSpaceRoutes, compassBuildingRoutes, adminCompassSpaceRoutes } from './features/compass-spaces/index.js';
 import { compassFriendRoutes, adminEmployeeRoutes } from './features/compass-friends/index.js';
 import { compassDashboardRoutes } from './features/compass-dashboard/index.js';
+import { adminDepartmentRoutes, adminTeamRoutes } from './features/compass-organization/index.js';
 import { integrationRoutes } from './features/integrations/index.js';
 import { appLogger } from './shared/infrastructure/services/appLogger.js';
 
@@ -184,6 +185,8 @@ apiRouter.use('/admin/compass/rules', adminBookingRuleRoutes);
 apiRouter.use('/admin/compass/spaces', adminCompassSpaceRoutes);
 apiRouter.use('/admin/compass/employees', adminEmployeeRoutes);
 apiRouter.use('/admin/compass/dashboard', compassDashboardRoutes);
+apiRouter.use('/admin/compass/departments', adminDepartmentRoutes);
+apiRouter.use('/admin/compass/teams', adminTeamRoutes);
 
 // Integration routes (admin auth, company-scoped)
 apiRouter.use('/admin/companies/:companyId/integrations', integrationRoutes);
