@@ -6,6 +6,7 @@ import { CompassBookingsTab } from './CompassBookingsTab';
 import { CompassSpacesTab } from './CompassSpacesTab';
 import { CompassEmployeesTab } from './CompassEmployeesTab';
 import { CompassRulesTab } from './CompassRulesTab';
+import { CompassOrganizationTab } from './CompassOrganizationTab';
 
 export function CompassPage() {
     const { t } = useTranslation();
@@ -25,12 +26,14 @@ export function CompassPage() {
                 <Tab label={t('compass.navigation.spaces')} />
                 <Tab label={t('compass.navigation.employees')} />
                 <Tab label={t('compass.navigation.rules')} />
+                <Tab label={t('compass.navigation.organization')} />
             </Tabs>
 
             {tab === 0 && <CompassBookingsTab />}
             {tab === 1 && <CompassSpacesTab />}
             {tab === 2 && <CompassEmployeesTab />}
             {tab === 3 && <CompassRulesTab />}
+            {tab === 4 && <CompassOrganizationTab />}
         </Box>
     );
 }

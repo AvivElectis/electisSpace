@@ -2,12 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, Chip, TextField, MenuItem,
-    Stack, CircularProgress, Alert,
+    Stack, CircularProgress, Alert, Button, Dialog, DialogTitle,
+    DialogContent, DialogActions,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
 import type { CompassSpace } from '../domain/types';
+import api from '@shared/infrastructure/services/apiClient';
 
 const modeColors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
     AVAILABLE: 'success',
@@ -24,6 +27,9 @@ export function CompassSpacesTab() {
     const [updatingSpaceId, setUpdatingSpaceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [modeFilter, setModeFilter] = useState<string>('all');
+    const [addOpen, setAddOpen] = useState(false);
+    const [newSpaceName, setNewSpaceName] = useState('');
+    const [newSpaceId, setNewSpaceId] = useState('');
 
     const fetchSpaces = useCallback(async (showLoading = false) => {
         if (!activeStoreId) return;
@@ -53,6 +59,24 @@ export function CompassSpacesTab() {
         }
     };
 
+    const handleAddSpace = async () => {
+        if (!newSpaceName.trim() || !activeStoreId) return;
+        const externalId = newSpaceId.trim() || newSpaceName.trim().toUpperCase().replace(/\s+/g, '-');
+        try {
+            await api.post('/spaces', {
+                storeId: activeStoreId,
+                externalId,
+                data: { ITEM_NAME: newSpaceName.trim() },
+            });
+            setNewSpaceName('');
+            setNewSpaceId('');
+            setAddOpen(false);
+            fetchSpaces();
+        } catch {
+            setError(t('errors.saveFailed'));
+        }
+    };
+
     const filtered = modeFilter === 'all'
         ? spaces
         : spaces.filter(s => s.compassMode === modeFilter);
@@ -63,7 +87,7 @@ export function CompassSpacesTab() {
         <Box>
             {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <Stack direction="row" gap={2} sx={{ mb: 2 }} flexWrap="wrap" alignItems="center">
                 <TextField
                     select
                     size="small"
@@ -78,6 +102,15 @@ export function CompassSpacesTab() {
                     <MenuItem value="MAINTENANCE">{t('compass.spaceMode.MAINTENANCE')}</MenuItem>
                     <MenuItem value="EXCLUDED">{t('compass.spaceMode.EXCLUDED')}</MenuItem>
                 </TextField>
+                <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setAddOpen(true)}
+                    disabled={!activeStoreId}
+                >
+                    {t('compass.addSpace', 'Add Space')}
+                </Button>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {filtered.length} {t('compass.navigation.spaces').toLowerCase()}
                 </Typography>
@@ -90,6 +123,7 @@ export function CompassSpacesTab() {
                             <TableCell>{t('common.name', 'Name')}</TableCell>
                             <TableCell>{t('compass.dashboard.building', 'Building')}</TableCell>
                             <TableCell>{t('compass.dashboard.floor', 'Floor')}</TableCell>
+                            <TableCell>{t('compass.dashboard.area', 'Area')}</TableCell>
                             <TableCell>{t('common.mode', 'Mode')}</TableCell>
                             <TableCell>{t('compass.dashboard.assignee', 'Assignee')}</TableCell>
                         </TableRow>
@@ -97,7 +131,7 @@ export function CompassSpacesTab() {
                     <TableBody>
                         {filtered.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center">
+                                <TableCell colSpan={6} align="center">
                                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                                         {t('common.noResults', 'No results found')}
                                     </Typography>
@@ -111,6 +145,7 @@ export function CompassSpacesTab() {
                                     </TableCell>
                                     <TableCell>{s.building?.name || '—'}</TableCell>
                                     <TableCell>{s.floor?.name || '—'}</TableCell>
+                                    <TableCell>{s.area?.name || '—'}</TableCell>
                                     <TableCell>
                                         <TextField
                                             select
@@ -135,6 +170,34 @@ export function CompassSpacesTab() {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Add Space Dialog */}
+            <Dialog open={addOpen} onClose={() => { setAddOpen(false); setNewSpaceName(''); setNewSpaceId(''); }} maxWidth="xs" fullWidth>
+                <DialogTitle>{t('compass.addSpace', 'Add Space')}</DialogTitle>
+                <DialogContent>
+                    <Stack gap={2} sx={{ mt: 1 }}>
+                        <TextField
+                            fullWidth
+                            label={t('common.name', 'Name')}
+                            value={newSpaceName}
+                            onChange={(e) => setNewSpaceName(e.target.value)}
+                        />
+                        <TextField
+                            fullWidth
+                            label={t('common.id', 'ID')}
+                            value={newSpaceId}
+                            onChange={(e) => setNewSpaceId(e.target.value)}
+                            helperText={t('compass.spaceIdHelper', 'Leave empty to auto-generate from name')}
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => { setAddOpen(false); setNewSpaceName(''); setNewSpaceId(''); }}>{t('common.cancel', 'Cancel')}</Button>
+                    <Button variant="contained" onClick={handleAddSpace} disabled={!newSpaceName.trim()}>
+                        {t('common.add', 'Add')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

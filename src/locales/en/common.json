@@ -1852,7 +1852,8 @@
             "bookings": "Bookings",
             "employees": "Employees",
             "spaces": "Spaces",
-            "rules": "Rules"
+            "rules": "Rules",
+            "organization": "Organization"
         },
         "managedByCompass": "Managed by Compass",
         "spaceMode": {
@@ -1891,9 +1892,31 @@
         "deleteRule": "Delete Rule",
         "deactivateEmployee": "Deactivate Employee",
         "confirmDeactivate": "Are you sure you want to deactivate this employee?",
-        "compassFormatInfo": "The following fields will be automatically added to the article format for compass workspace booking:"
-    },
-    "compass": {
+        "compassFormatInfo": "The following fields will be automatically added to the article format for compass workspace booking:",
+        "organization": {
+            "title": "Organization",
+            "departments": "Departments",
+            "teams": "Teams",
+            "addDepartment": "Add Department",
+            "addTeam": "Add Team",
+            "editDepartment": "Edit Department",
+            "editTeam": "Edit Team",
+            "parentDepartment": "Parent Department",
+            "manager": "Manager",
+            "teamLead": "Team Lead",
+            "members": "Members",
+            "addMember": "Add Member",
+            "jobTitle": "Job Title",
+            "employeeNumber": "Employee Number",
+            "costCenter": "Cost Center",
+            "noMembers": "No members yet",
+            "noDepartments": "No departments yet",
+            "noTeams": "No teams yet",
+            "departmentName": "Department Name",
+            "departmentCode": "Department Code",
+            "teamName": "Team Name",
+            "color": "Color"
+        },
         "workHours": {
             "title": "Work Hours",
             "workWeekStart": "Work Week Start",

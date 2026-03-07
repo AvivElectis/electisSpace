@@ -43,3 +43,23 @@ export interface Employee {
     isActive: boolean;
     createdAt: string;
 }
+
+export interface Department {
+    id: string;
+    name: string;
+    code: string | null;
+    parentId: string | null;
+    manager: { id: string; displayName: string } | null;
+    color: string | null;
+    sortOrder: number;
+    _count: { members: number; children: number };
+}
+
+export interface Team {
+    id: string;
+    name: string;
+    department: { id: string; name: string } | null;
+    lead: { id: string; displayName: string } | null;
+    color: string | null;
+    _count: { members: number };
+}

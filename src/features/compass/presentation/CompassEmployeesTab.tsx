@@ -101,7 +101,7 @@ export function CompassEmployeesTab() {
         <Box>
             {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <Stack direction="row" gap={2} sx={{ mb: 2 }} flexWrap="wrap" alignItems="center">
                 <TextField
                     size="small"
                     placeholder={t('common.search', 'Search...')}
@@ -130,7 +130,7 @@ export function CompassEmployeesTab() {
                             <TableCell>{t('common.name', 'Name')}</TableCell>
                             <TableCell>{t('common.email', 'Email')}</TableCell>
                             <TableCell>{t('common.role', 'Role')}</TableCell>
-                            <TableCell>{t('common.status', 'Status')}</TableCell>
+                            <TableCell>{t('common.status.title', 'Status')}</TableCell>
                             <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
                         </TableRow>
                     </TableHead>
@@ -151,7 +151,7 @@ export function CompassEmployeesTab() {
                                     </TableCell>
                                     <TableCell>{e.email}</TableCell>
                                     <TableCell>
-                                        <Chip label={e.role} size="small" variant="outlined" />
+                                        <Chip label={t(`roles.${e.role.toLowerCase()}`, e.role)} size="small" variant="outlined" />
                                     </TableCell>
                                     <TableCell>
                                         <Chip

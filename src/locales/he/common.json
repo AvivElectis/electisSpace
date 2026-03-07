@@ -1866,7 +1866,8 @@
             "bookings": "הזמנות",
             "employees": "עובדים",
             "spaces": "חללים",
-            "rules": "כללים"
+            "rules": "כללים",
+            "organization": "מבנה ארגוני"
         },
         "managedByCompass": "מנוהל על ידי Compass",
         "spaceMode": {
@@ -1905,9 +1906,31 @@
         "deleteRule": "מחק כלל",
         "deactivateEmployee": "השבת עובד",
         "confirmDeactivate": "האם אתה בטוח שברצונך להשבית עובד זה?",
-        "compassFormatInfo": "השדות הבאים יתווספו אוטומטית לפורמט המאמר עבור הזמנת מקומות עבודה:"
-    },
-    "compass": {
+        "compassFormatInfo": "השדות הבאים יתווספו אוטומטית לפורמט המאמר עבור הזמנת מקומות עבודה:",
+        "organization": {
+            "title": "מבנה ארגוני",
+            "departments": "מחלקות",
+            "teams": "צוותים",
+            "addDepartment": "הוספת מחלקה",
+            "addTeam": "הוספת צוות",
+            "editDepartment": "עריכת מחלקה",
+            "editTeam": "עריכת צוות",
+            "parentDepartment": "מחלקת אם",
+            "manager": "מנהל",
+            "teamLead": "ראש צוות",
+            "members": "חברים",
+            "addMember": "הוספת חבר",
+            "jobTitle": "תפקיד",
+            "employeeNumber": "מספר עובד",
+            "costCenter": "מרכז עלות",
+            "noMembers": "אין חברים עדיין",
+            "noDepartments": "אין מחלקות עדיין",
+            "noTeams": "אין צוותים עדיין",
+            "departmentName": "שם מחלקה",
+            "departmentCode": "קוד מחלקה",
+            "teamName": "שם צוות",
+            "color": "צבע"
+        },
         "workHours": {
             "title": "שעות עבודה",
             "workWeekStart": "תחילת שבוע עבודה",
