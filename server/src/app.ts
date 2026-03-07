@@ -38,6 +38,7 @@ import { compassSpaceRoutes, compassBuildingRoutes, adminCompassSpaceRoutes } fr
 import { compassFriendRoutes, adminEmployeeRoutes } from './features/compass-friends/index.js';
 import { compassDashboardRoutes } from './features/compass-dashboard/index.js';
 import { adminDepartmentRoutes, adminTeamRoutes } from './features/compass-organization/index.js';
+import { adminAmenityRoutes, adminNeighborhoodRoutes, compassAmenityRoutes, compassNeighborhoodRoutes } from './features/compass-amenities/index.js';
 import { integrationRoutes } from './features/integrations/index.js';
 import { appLogger } from './shared/infrastructure/services/appLogger.js';
 
@@ -187,6 +188,8 @@ apiRouter.use('/admin/compass/employees', adminEmployeeRoutes);
 apiRouter.use('/admin/compass/dashboard', compassDashboardRoutes);
 apiRouter.use('/admin/compass/departments', adminDepartmentRoutes);
 apiRouter.use('/admin/compass/teams', adminTeamRoutes);
+apiRouter.use('/admin/compass/amenities', adminAmenityRoutes);
+apiRouter.use('/admin/compass/neighborhoods', adminNeighborhoodRoutes);
 
 // Integration routes (admin auth, company-scoped)
 apiRouter.use('/admin/companies/:companyId/integrations', integrationRoutes);
@@ -205,6 +208,8 @@ compassRouter.use('/bookings', compassBookingRoutes);
 compassRouter.use('/spaces', compassSpaceRoutes);
 compassRouter.use('/buildings', compassBuildingRoutes);
 compassRouter.use('/friends', compassFriendRoutes);
+compassRouter.use('/amenities', compassAmenityRoutes);
+compassRouter.use('/neighborhoods', compassNeighborhoodRoutes);
 app.use('/api/v2/compass', compassRouter);
 
 // ======================
