@@ -4,6 +4,7 @@ import { emitBookingEvent } from '../../shared/infrastructure/services/compassSo
 import { prisma } from '../../config/index.js';
 import * as repo from './repository.js';
 import * as ruleEngine from './ruleEngine.js';
+import { resolveWorkHours, isWithinWorkingHours } from './workHoursService.js';
 
 // ─── Create Booking ──────────────────────────────────
 
@@ -55,6 +56,26 @@ export const createBooking = async (params: {
         throw badRequest('BOOKING_TOO_FAR_AHEAD', {
             maxDays: rules.advanceBookingDays,
         });
+    }
+
+    // Validate against work hours if enforced
+    if (rules.enforceWorkingHours) {
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { workingHoursStart: true, workingHoursEnd: true, workingDays: true, defaultTimezone: true },
+        });
+        const store = await prisma.store.findUnique({
+            where: { id: branchId },
+            select: { workingHoursStart: true, workingHoursEnd: true, workingDays: true },
+        });
+        const workHours = resolveWorkHours(
+            company ? { ...company, workingDays: company.workingDays as Record<string, boolean> | null } : {},
+            store ? { ...store, workingDays: store.workingDays as Record<string, boolean> | null } : {},
+        );
+
+        if (!isWithinWorkingHours(startTime, endTime, workHours)) {
+            throw badRequest('BOOKING_OUTSIDE_WORKING_HOURS');
+        }
     }
 
     // L2: Atomic conflict check + concurrent limit + create in a serializable transaction
@@ -355,6 +376,88 @@ export const listUserBookings = async (
     }
 
     return repo.findByUser(companyUserId, companyId, statusFilter as any);
+};
+
+// ─── Admin Create Booking (skips rules, allows null endTime) ────
+
+export const adminCreateBooking = async (params: {
+    companyUserId: string;
+    companyId: string;
+    branchId: string;
+    spaceId: string;
+    startTime: Date;
+    endTime: Date | null;
+    notes?: string;
+}) => {
+    const { companyUserId, companyId, branchId, spaceId, startTime, endTime, notes } = params;
+
+    // Verify space belongs to the branch
+    const space = await prisma.space.findUnique({ where: { id: spaceId }, select: { storeId: true } });
+    if (!space) throw notFound('Space not found');
+    if (space.storeId !== branchId) throw forbidden('Space does not belong to this branch');
+
+    // Verify employee exists and belongs to company
+    const employee = await prisma.companyUser.findFirst({ where: { id: companyUserId, companyId } });
+    if (!employee) throw notFound('Employee not found');
+
+    // Atomic conflict check + create
+    const booking = await prisma.$transaction(async (tx) => {
+        const conflictWhere: any = {
+            spaceId,
+            status: { in: ['BOOKED', 'CHECKED_IN'] },
+        };
+
+        if (endTime) {
+            // Finite reservation: check overlap
+            conflictWhere.startTime = { lt: endTime };
+            conflictWhere.OR = [{ endTime: null }, { endTime: { gt: startTime } }];
+        } else {
+            // Open-ended reservation: conflicts with anything that hasn't ended before start
+            conflictWhere.OR = [
+                { endTime: null },
+                { endTime: { gt: startTime } },
+            ];
+        }
+
+        const conflicts = await tx.booking.findMany({ where: conflictWhere });
+        if (conflicts.length > 0) {
+            throw conflict('SPACE_ALREADY_BOOKED');
+        }
+
+        return tx.booking.create({
+            data: {
+                companyUserId,
+                spaceId,
+                branchId,
+                companyId,
+                startTime,
+                endTime: endTime ?? null,
+                bookedBy: 'ADMIN',
+                notes: notes ?? null,
+            },
+            include: {
+                space: { select: { id: true, externalId: true, data: true, buildingId: true, floorId: true } },
+                companyUser: { select: { id: true, displayName: true, email: true } },
+            },
+        });
+    }, { isolationLevel: 'Serializable' });
+
+    appLogger.info('CompassBooking', `Admin booking created: ${booking.id}`, {
+        spaceId,
+        companyUserId,
+        startTime: startTime.toISOString(),
+        endTime: endTime?.toISOString() ?? 'unlimited',
+    });
+
+    emitBookingEvent('space:booked', branchId, {
+        bookingId: booking.id,
+        spaceId,
+        companyUserId,
+        startTime: startTime.toISOString(),
+        endTime: endTime?.toISOString() ?? null,
+    });
+
+    return booking;
 };
 
 // ─── Auto-Release Job Logic ──────────────────────────

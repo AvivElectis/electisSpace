@@ -23,6 +23,7 @@ const EXPECTED_DEFAULTS: ResolvedRules = {
     maxConcurrentBookings: 1,
     autoReleaseOnNoShow: true,
     bookingGranularityMinutes: 30,
+    enforceWorkingHours: false,
 };
 
 // ─── getDefaults ────────────────────────────────────
@@ -356,5 +357,19 @@ describe('resolveRules', () => {
         const result = await resolveRules('company-1', 'branch-99');
 
         expect(result.maxConcurrentBookings).toBe(2); // only the company-wide rule applies
+    });
+
+    it('should resolve enforceWorkingHours when BLOCKED_TIMES rule is set', async () => {
+        mockFindRules.mockResolvedValue([{
+            ruleType: 'BLOCKED_TIMES',
+            config: { value: true },
+            applyTo: 'ALL_BRANCHES',
+            targetBranchIds: [],
+            targetSpaceTypes: [],
+            priority: 1,
+        }]);
+
+        const result = await resolveRules('company-1', 'branch-1');
+        expect(result.enforceWorkingHours).toBe(true);
     });
 });

@@ -10,6 +10,7 @@ export interface ResolvedRules {
     maxConcurrentBookings: number;
     autoReleaseOnNoShow: boolean;
     bookingGranularityMinutes: number;
+    enforceWorkingHours: boolean;
 }
 
 const PLATFORM_DEFAULTS: ResolvedRules = {
@@ -20,6 +21,7 @@ const PLATFORM_DEFAULTS: ResolvedRules = {
     maxConcurrentBookings: 1,
     autoReleaseOnNoShow: true,
     bookingGranularityMinutes: 30,
+    enforceWorkingHours: false,
 };
 
 // Rule type → resolved field mapping
@@ -29,6 +31,7 @@ const RULE_TYPE_MAP: Record<string, keyof ResolvedRules> = {
     MAX_CONCURRENT: 'maxConcurrentBookings',
     CHECK_IN_WINDOW: 'checkInWindowMinutes',
     AUTO_RELEASE: 'autoReleaseOnNoShow',
+    BLOCKED_TIMES: 'enforceWorkingHours',
 };
 
 // ─── Rule Resolution ─────────────────────────────────
