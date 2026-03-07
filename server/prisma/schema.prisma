@@ -40,6 +40,15 @@ model Company {
   compassEnabled  Boolean  @default(false) @map("compass_enabled")
   compassConfig   Json?    @map("compass_config") // CompassFeatureConfig JSON
 
+  // Work week configuration
+  workWeekStart     Int?      @default(0)    @map("work_week_start")   // 0=Sunday..6=Saturday
+  workWeekEnd       Int?      @default(4)    @map("work_week_end")     // inclusive
+  workingDays       Json?     @map("working_days")                     // { "0": false, "1": true, ... }
+  workingHoursStart String?   @map("working_hours_start") @db.VarChar(5) // "08:00" (HH:MM)
+  workingHoursEnd   String?   @map("working_hours_end") @db.VarChar(5)   // "17:00"
+  defaultTimezone   String?   @map("default_timezone") @db.VarChar(50)   // "Asia/Jerusalem"
+  defaultLocale     String?   @map("default_locale") @db.VarChar(10)     // "en" or "he"
+
   // Relations
   stores          Store[]
   userCompanies   UserCompany[]
@@ -75,7 +84,27 @@ model Store {
   status          StoreStatus @default(ACTIVE)
   statusChangedAt DateTime?   @map("status_changed_at")
   statusNote      String?     @map("status_note") @db.VarChar(500)
-  
+
+  // Structured address
+  addressLine1      String?   @map("address_line1") @db.VarChar(255)
+  addressLine2      String?   @map("address_line2") @db.VarChar(255)
+  city              String?   @db.VarChar(100)
+  state             String?   @db.VarChar(100)
+  postalCode        String?   @map("postal_code") @db.VarChar(20)
+  country           String?   @db.VarChar(2)   // ISO 3166-1 alpha-2
+
+  latitude          Float?
+  longitude         Float?
+
+  // Capacity
+  totalDesks        Int?      @map("total_desks")
+  maxOccupancy      Int?      @map("max_occupancy")
+
+  // Operating hours (overrides company defaults if set)
+  workingDays       Json?     @map("working_days")
+  workingHoursStart String?   @map("working_hours_start") @db.VarChar(5)
+  workingHoursEnd   String?   @map("working_hours_end") @db.VarChar(5)
+
   // Timestamps
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -775,6 +804,7 @@ model Booking {
   branchId       String        @map("branch_id")
   companyId      String        @map("company_id")
 
+  title          String?       @db.VarChar(255) // Meeting/booking title
   startTime      DateTime      @map("start_time")
   endTime        DateTime?     @map("end_time") // null for permanent assignments
   status         BookingStatus @default(BOOKED)
