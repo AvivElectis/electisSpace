@@ -144,6 +144,30 @@ export class BookingService {
     return booking;
   }
 
+  /**
+   * Admin booking creation — bypasses rule validation.
+   * Allows null endTime for open-ended "until cancellation" reservations.
+   * Uses Serializable transaction isolation for atomic conflict detection.
+   * Sets bookedBy to 'ADMIN' to distinguish from employee-created bookings.
+   */
+  async adminCreateBooking(params: {
+    companyUserId: string;
+    companyId: string;
+    branchId: string;
+    spaceId: string;
+    startTime: Date;
+    endTime: Date | null;
+    notes?: string;
+  }): Promise<BookingEntity> {
+    // 1. Verify space belongs to branch + employee exists in company
+    // 2. Atomic conflict check + create in Serializable transaction
+    //    - For open-ended: conflict = any active booking with startTime >= param.startTime
+    //    - For finite: conflict = overlapping time range
+    // 3. Create booking with bookedBy: 'ADMIN', status: 'BOOKED'
+    // 4. Emit space:booked event via Socket.IO
+    // 5. Queue AIMS sync
+  }
+
   async checkIn(bookingId: string, userId: string): Promise<BookingEntity> {
     const booking = await this.getBookingOrFail(bookingId, userId);
 

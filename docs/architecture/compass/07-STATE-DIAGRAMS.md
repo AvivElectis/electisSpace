@@ -18,8 +18,8 @@
               ┌─────┴─────┐
               │           │        ┌──────────────────┐
   Employee ──▶│  BOOKED   │───────▶│    NO_SHOW       │
-  books       │           │        │ (check-in window │
-              └─────┬─────┘        │  expired, auto-  │
+  books  OR   │           │        │ (check-in window │
+  Admin ─────▶└─────┬─────┘        │  expired, auto-  │
                     │              │  release enabled) │
                     │              └──────────────────┘
                     │
@@ -45,12 +45,18 @@
 
 
 State Transitions:
+  (new) → BOOKED             (employee action: book, OR admin action: reserve space)
   BOOKED → CHECKED_IN        (employee action: check-in)
-  BOOKED → CANCELLED         (employee action: cancel)
+  BOOKED → CANCELLED         (employee action: cancel, OR admin action: cancel)
   BOOKED → NO_SHOW           (system: no-show job, when autoReleaseOnNoShow=true)
   BOOKED → AUTO_RELEASED     (system: auto-release job, endTime passed)
   CHECKED_IN → RELEASED      (employee action: release early)
   CHECKED_IN → AUTO_RELEASED (system: auto-release job, endTime passed)
+
+  Admin-created bookings (bookedBy='ADMIN'):
+  - Skip rule validation (max concurrent, advance limit, etc.)
+  - May have null endTime ("until cancellation" — no auto-release)
+  - Same state transitions after creation
 
 Terminal States: CANCELLED, NO_SHOW, RELEASED, AUTO_RELEASED
 ```
@@ -59,13 +65,18 @@ Terminal States: CANCELLED, NO_SHOW, RELEASED, AUTO_RELEASED
 
 | Current State | Event | Guard | Next State | Side Effects |
 |--------------|-------|-------|------------|-------------|
+| (new) | `employee.book` | Rules pass, no conflicts | BOOKED | AIMS sync, Socket.IO, push notification |
+| (new) | `admin.reserve` | No conflicts (rules bypassed) | BOOKED | AIMS sync, Socket.IO. Sets `bookedBy='ADMIN'` |
 | BOOKED | `employee.checkIn` | Within check-in window | CHECKED_IN | AIMS sync, Socket.IO, friend location update |
 | BOOKED | `employee.cancel` | — | CANCELLED | AIMS sync (→ Available), Socket.IO |
+| BOOKED | `admin.cancel` | — | CANCELLED | AIMS sync (→ Available), Socket.IO |
 | BOOKED | `system.noShowCheck` | Window expired AND autoRelease=true | NO_SHOW | AIMS sync, Socket.IO, push notification |
-| BOOKED | `system.autoRelease` | endTime < now | AUTO_RELEASED | AIMS sync, Socket.IO, push notification |
+| BOOKED | `system.autoRelease` | endTime < now AND endTime IS NOT NULL | AUTO_RELEASED | AIMS sync, Socket.IO, push notification |
 | CHECKED_IN | `employee.release` | — | RELEASED | AIMS sync, Socket.IO, friend location clear |
-| CHECKED_IN | `system.autoRelease` | endTime < now | AUTO_RELEASED | AIMS sync, Socket.IO, push notification |
+| CHECKED_IN | `system.autoRelease` | endTime < now AND endTime IS NOT NULL | AUTO_RELEASED | AIMS sync, Socket.IO, push notification |
 | CHECKED_IN | `employee.extend` | No conflicts, within max duration | CHECKED_IN | Update endTime, AIMS sync |
+
+> **Note:** Bookings with `endTime=null` ("until cancellation") are never auto-released. They must be manually cancelled or released.
 
 ---
 

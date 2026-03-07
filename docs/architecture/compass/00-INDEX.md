@@ -77,4 +77,5 @@ electisCompass is a **flagship additive feature** for the electisSpace platform.
 13. Read **15-MONOREPO-STRUCTURE** for repository layout and build system
 14. Read **16-ADVANCED-CAPABILITIES** for analytics, SSO, webhooks, API, tickets, and chat
 15. Read **18-FLOOR-PLANS-AND-LBS** for map/floor plan editor and AIMS LBS integration
-16. Use **17-IMPLEMENTATION-TODO** as the agent task list (190+ tasks, bottom→top)
+16. Use **17-IMPLEMENTATION-TODO** as the agent task list (269 tasks, bottom→top, Phases 0-24)
+17. Read **[Structure Enhancement Design](../plans/2026-03-07-compass-structure-enhancement-design.md)** for Phases 21-24 (work hours, departments, amenities, recurring bookings)

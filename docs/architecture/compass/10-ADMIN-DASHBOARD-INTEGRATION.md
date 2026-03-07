@@ -228,7 +228,17 @@ When Compass is enabled, the following admin pages are added to electisSpace:
 └────────────────────────────────────────────────────────────────┘
 ```
 
-Admin actions per booking: Cancel, Extend, Reassign Space.
+Admin actions per booking:
+- **Reserve Space** — Create a booking for an employee (dialog with employee autocomplete, space autocomplete, datetime pickers, "Until Cancellation" checkbox, notes). Bypasses all booking rules. Supports open-ended reservations (null endTime).
+- **Cancel** — Cancel an active (BOOKED or CHECKED_IN) booking with confirmation dialog.
+- **Extend** — Extend booking end time (with conflict check).
+- **Reassign Space** — Move booking to a different space.
+
+**Compass-Dedicated Article Format:** When a company is created with `compassEnabled=true`, the server automatically:
+1. Uses `COMPASS_ARTICLE_FORMAT` constant (not the fetched/configured format)
+2. Sets `COMPASS_FIELD_MAPPING` with all compass-specific fields
+3. Pushes the article format to AIMS via `saveArticleFormatWithCredentials()`
+4. The wizard shows the format as read-only and skips the field mapping step
 
 ### 4.2 Compass Spaces Page (`/compass/spaces`)
 

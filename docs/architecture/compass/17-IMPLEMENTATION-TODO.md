@@ -394,6 +394,171 @@
 
 ---
 
+## Phase 19: Already Implemented — Admin Bookings & Reserve Space
+> Ref: [Design Doc](../../plans/2026-03-07-compass-structure-enhancement-design.md)
+>
+> **Status:** ✅ IMPLEMENTED (2026-03-07)
+
+| ID | Task | Dependencies | Status | Details |
+|----|------|-------------|--------|---------|
+| P19-01 | Admin booking creation endpoint | P3-04 | ✅ Done | `POST /admin/compass/bookings/:companyId` — admin reserves space for employee |
+| P19-02 | Admin booking schema + validation | P19-01 | ✅ Done | `adminCreateBookingSchema` in compass-bookings/types.ts, nullable endTime |
+| P19-03 | Admin booking service | P19-01 | ✅ Done | `adminCreateBooking()` — skips rule validation, atomic conflict check, supports open-ended reservations |
+| P19-04 | Reserve Space dialog (Admin UI) | P19-01 | ✅ Done | Employee/space autocomplete, datetime pickers, "Until Cancellation" checkbox |
+| P19-05 | Booking management UI enhancements | P6-06 | ✅ Done | Status filter, booking count, cancel confirmation dialog |
+| P19-06 | Compass-dedicated article format constant | — | ✅ Done | `COMPASS_ARTICLE_FORMAT` + `COMPASS_FIELD_MAPPING` constants in companies/service.ts |
+| P19-07 | Auto-push article format to AIMS | P19-06 | ✅ Done | On compass company creation, push format to AIMS via `saveArticleFormatWithCredentials()` |
+| P19-08 | Article builder — compass meeting fields | P19-06 | ✅ Done | `CURRENT_MEETING_*`, `NEXT1_MEETING_*`, `NEXT2_MEETING_*` fields in article builder |
+| P19-09 | SyncQueueProcessor — compass space sync | P19-08 | ✅ Done | Space sync populates building, floor, area, mode, capacity, amenities, booking status |
+| P19-10 | Wizard — read-only article format for compass | P19-06 | ✅ Done | ArticleFormatStep shows compass format as read-only when compass enabled |
+| P19-11 | Wizard — skip field mapping for compass | P19-06 | ✅ Done | FieldMapping step skipped, compass uses dedicated mapping |
+| P19-12 | Space type icons in admin UI | — | ✅ Done | CompassSpacesTab shows type-specific icons (desk, room, phone booth, etc.) |
+
+---
+
+## Phase 20: Already Implemented — Core Compass Infrastructure
+> **Status:** ✅ IMPLEMENTED (Phases 0-9 partial)
+>
+> These items from Phases 0-9 are already implemented in the codebase.
+
+| ID | Task | Status | Details |
+|----|------|--------|---------|
+| P20-01 | Monorepo + shared/ directory | ✅ Done | `shared/types/`, `shared/constants/`, compass app scaffold |
+| P20-02 | Compass Dockerfile + docker-compose | ✅ Done | `compass/Dockerfile`, services in `docker-compose.app.yml` and `docker-compose.dev.yml` |
+| P20-03 | Database schema (Booking, CompanyUser, etc.) | ✅ Done | All core models in `server/prisma/schema.prisma` |
+| P20-04 | Compass auth module | ✅ Done | Email+code login, JWT, device tokens, rate limiting |
+| P20-05 | Booking service + rules engine | ✅ Done | Create, check-in, release, cancel, extend, auto-release, no-show |
+| P20-06 | Compass spaces module | ✅ Done | Space listing, filtering, mode management |
+| P20-07 | Friends module | ✅ Done | Friend requests, acceptance, listing, check-in visibility |
+| P20-08 | Dashboard summary | ✅ Done | Compass dashboard card with stats |
+| P20-09 | Admin compass pages | ✅ Done | Spaces, Employees, Bookings, Rules tabs in CompassPage |
+| P20-10 | Compass mobile app | ✅ Done | Login, home, find, bookings, profile, friends, settings |
+| P20-11 | Company wizard — compass flow | ✅ Done | Building hierarchy, features, compass config, article format steps |
+| P20-12 | Socket.IO /compass namespace | ✅ Done | Real-time booking events |
+| P20-13 | Capacitor Android build | ✅ Done | `compass/android/`, gradle config, release workflow |
+| P20-14 | Integration adapters (Microsoft, Google, Okta) | ✅ Done | Directory sync adapters + credential encryption |
+| P20-15 | BullMQ auto-release + no-show jobs | ✅ Done | CompassBookingJobs with cron scheduling |
+
+---
+
+## Phase 21: Company Work Configuration + Store Address
+> Ref: [Structure Enhancement Design](../../plans/2026-03-07-compass-structure-enhancement-design.md) §2
+>
+> **Status:** 🔲 NOT STARTED
+> **Dependencies:** Phase 19, Phase 20
+> **Estimated effort:** ~3 days
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P21-01 | Add work config fields to Company model | — | `workWeekStart`, `workWeekEnd`, `workingDays` (JSON), `workingHoursStart`, `workingHoursEnd`, `defaultTimezone`, `defaultLocale` — all nullable |
+| P21-02 | Add address + capacity fields to Store model | — | `addressLine1/2`, `city`, `state`, `postalCode`, `country` (ISO 3166-1), `latitude`, `longitude`, `totalDesks`, `maxOccupancy` |
+| P21-03 | Add operating hours override fields to Store | P21-01 | `workingDays`, `workingHoursStart`, `workingHoursEnd` — overrides company defaults |
+| P21-04 | Create Prisma migration | P21-01, P21-02, P21-03 | `20260307_phase21_company_work_config` |
+| P21-05 | Implement work hours resolution chain | P21-04 | `resolveWorkHours(store, company)` — Store overrides Company overrides platform defaults |
+| P21-06 | Add work hours to RuleEngine resolved rules | P21-05 | `enforceWorkingHours` BookingRule, validate bookings against work hours |
+| P21-07 | Update companies service for new fields | P21-04 | Accept work hour fields in create/update |
+| P21-08 | Update companies Zod schemas | P21-07 | Add work hours + address validation schemas |
+| P21-09 | Add "Work Hours" section to EditCompanyTabs | P21-07 | Day checkboxes, time pickers, timezone selector |
+| P21-10 | Add address fields to StoreDialog | P21-07 | Address line 1/2, city, state, postal code, country dropdown |
+| P21-11 | Add work hours step to CreateCompanyWizard | P21-09 | Between features and review steps |
+| P21-12 | Add work hours warning to compass BookingDialog | P21-05 | Show warning if booking falls outside working hours |
+| P21-13 | Show branch address in compass ProfilePage | P21-02 | Display formatted address under branch name |
+| P21-14 | Add i18n keys for work hours + address | P21-09 | EN + HE translations for all new UI strings |
+
+---
+
+## Phase 22: Organizational Structure (Departments + Teams)
+> Ref: [Structure Enhancement Design](../../plans/2026-03-07-compass-structure-enhancement-design.md) §3
+>
+> **Status:** 🔲 NOT STARTED
+> **Dependencies:** Phase 20 (can run in parallel with Phase 21)
+> **Estimated effort:** ~4 days
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P22-01 | Create Department model | — | Self-referencing hierarchy (parentId), managerId FK to CompanyUser, code, color, sortOrder |
+| P22-02 | Create Team model | — | Optional departmentId, leadId FK to CompanyUser, color |
+| P22-03 | Create TeamMember junction model | P22-02 | Many-to-many: Team ↔ CompanyUser, role (MEMBER/LEAD) |
+| P22-04 | Add org fields to CompanyUser | P22-01 | `departmentId`, `jobTitle`, `employeeNumber`, `managerId` (self-ref), `costCenter`, `workSchedule` (JSON), `isRemote` |
+| P22-05 | Create Prisma migration | P22-01 to P22-04 | `20260307_phase22_org_structure` |
+| P22-06 | Create compass-organization feature module | P22-05 | `types.ts`, `service.ts`, `repository.ts`, `controller.ts`, `routes.ts` |
+| P22-07 | Implement department CRUD with cycle detection | P22-06 | Walk parentId chain on create/update, reject if cycle or depth > 5 |
+| P22-08 | Implement team CRUD + member management | P22-06 | Add/remove members, assign lead |
+| P22-09 | Add department tree API (admin) | P22-07 | `GET /admin/compass/departments/:companyId` — returns tree structure |
+| P22-10 | Add read-only compass endpoints | P22-06 | `GET /compass/departments`, `GET /compass/teams`, `GET /compass/teams/:id/members` |
+| P22-11 | Register new routes in server.ts | P22-06 | Mount compass-organization routes |
+| P22-12 | Create CompassOrganizationTab | P22-09 | Department tree view + team list with member counts |
+| P22-13 | Add dept/title fields to employee dialog | P22-12 | Department dropdown, job title, employee number in CompassEmployeesTab |
+| P22-14 | Show department in compass ProfilePage | P22-10 | Display department + job title in employee profile |
+| P22-15 | Add "My Team" filter in compass FindPage | P22-10 | Filter chip showing spaces near team members |
+| P22-16 | Add department badge in compass FriendsPage | P22-10 | Show department next to friend names |
+| P22-17 | Add i18n keys for organization | P22-12 | EN + HE translations |
+| P22-18 | Add performance indexes | P22-05 | `departments(companyId, isActive)`, `team_members(companyUserId)` |
+| P22-19 | Add Redis cache for department tree | P22-07 | 5-min TTL per company, invalidate on department CRUD |
+
+---
+
+## Phase 23: Space Types + Amenities + Neighborhoods
+> Ref: [Structure Enhancement Design](../../plans/2026-03-07-compass-structure-enhancement-design.md) §4
+>
+> **Status:** 🔲 NOT STARTED
+> **Dependencies:** Phase 22 (Department model for Neighborhood.departmentId)
+> **Estimated effort:** ~5 days
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P23-01 | Create SpaceType enum | — | DESK, MEETING_ROOM, PHONE_BOOTH, COLLABORATION_ZONE, PARKING, LOCKER, EVENT_SPACE |
+| P23-02 | Create Amenity model | — | companyId, name, nameHe, icon (MUI icon name), category (EQUIPMENT/FURNITURE/ACCESSIBILITY/CONNECTIVITY) |
+| P23-03 | Create SpaceAmenity junction model | P23-02 | Composite PK (spaceId, amenityId), quantity |
+| P23-04 | Create Neighborhood model | P22-01 | floorId, optional departmentId, name, color, description |
+| P23-05 | Add spaceType, neighborhoodId, min/maxCapacity to Space | P23-01, P23-04 | All nullable for backwards compatibility |
+| P23-06 | Create Prisma migration | P23-01 to P23-05 | `20260307_phase23_space_taxonomy` |
+| P23-07 | Write data migration script | P23-06 | Backfill spaceType from company settings, migrate compassAmenities[] to SpaceAmenity, copy compassCapacity to maxCapacity |
+| P23-08 | Create compass-amenities feature module | P23-06 | Admin CRUD for amenity catalog + neighborhood management |
+| P23-09 | Add amenity-based space filtering | P23-08 | `GET /compass/spaces?amenities=monitor,standing` — filter by amenity names |
+| P23-10 | Add spaceType + neighborhoodId to space queries | P23-05 | Update compass-spaces service/repository |
+| P23-11 | Update article builder for SPACE_TYPE | P23-01 | Add `SPACE_TYPE` field to `buildSpaceArticle()` — backwards-compatible |
+| P23-12 | Create CompassAmenitiesTab | P23-08 | Manage amenity catalog (name EN/HE, icon picker, category) |
+| P23-13 | Create CompassNeighborhoodsTab | P23-08 | Manage neighborhoods per floor (name, color, department affinity) |
+| P23-14 | Add type/neighborhood columns to CompassSpacesTab | P23-10 | Type dropdown, neighborhood column, amenity chips |
+| P23-15 | Add type/amenity filters to compass FindPage | P23-09 | Filter chips: Type, Amenities (multi-select), Neighborhood |
+| P23-16 | Show amenity icons on compass SpaceCard | P23-09 | Up to 4 amenity icons per card |
+| P23-17 | Add i18n keys for space types + amenities | P23-12 | EN + HE translations |
+| P23-18 | Add performance indexes | P23-06 | `amenities(companyId, isActive)`, `space_amenities(amenityId)`, `spaces(space_type, compass_mode)` |
+| P23-19 | Add Redis cache for amenity catalog | P23-08 | 10-min TTL per company |
+
+---
+
+## Phase 24: Recurring Bookings
+> Ref: [Structure Enhancement Design](../../plans/2026-03-07-compass-structure-enhancement-design.md) §5
+>
+> **Status:** 🔲 NOT STARTED
+> **Dependencies:** Phase 23
+> **Estimated effort:** ~5 days
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P24-01 | Create BookingType enum | — | HOT_DESK, MEETING, ADMIN_RESERVE, PERMANENT |
+| P24-02 | Add recurrence fields to Booking model | P24-01 | `bookingType`, `recurrenceRule` (iCal RRULE), `recurrenceGroupId`, `isRecurrence`, `parentBookingId`, `bookedById` |
+| P24-03 | Create Prisma migration | P24-01, P24-02 | `20260307_phase24_recurring_bookings` |
+| P24-04 | Install `rrule` npm package | — | `cd server && npm install rrule` |
+| P24-05 | Implement RecurrenceService | P24-03, P24-04 | `generateInstances()`, `createRecurringSeries()`, `cancelInstance()`, `cancelAllFuture()`, `modifyInstance()`, `modifyAllFuture()` |
+| P24-06 | Implement batch conflict detection | P24-05 | Single query: `WHERE spaceId = X AND startTime IN (...)` instead of N separate queries |
+| P24-07 | Add recurrence to booking creation flow | P24-05 | Accept optional `recurrenceRule`, generate instances, return conflicts for partial booking |
+| P24-08 | Add cancel scope query param | P24-05 | `DELETE /bookings/:id?scope=instance|future|all` |
+| P24-09 | Add recurrence to admin booking creation | P24-07 | Admin reserve with recurrence pattern support |
+| P24-10 | Add recurrence UI to CompassBookingsTab | P24-07 | Recurrence icon, group badge, "Cancel Series" option |
+| P24-11 | Add recurrence picker to Reserve dialog | P24-09 | None / Daily / Weekly (day checkboxes) / Custom RRULE + end date |
+| P24-12 | Add recurrence toggle to compass BookingDialog | P24-07 | Day selector (Mon-Sun checkboxes), end date picker |
+| P24-13 | Group recurring instances in compass BookingsPage | P24-07 | Visual grouping, "Part of series" badge |
+| P24-14 | Add cancel scope dialog in compass app | P24-08 | "Cancel this booking" / "Cancel all future" / "Cancel entire series" |
+| P24-15 | Implement SyncQueueProcessor dedup for recurrence | P24-07 | Prevent AIMS sync flood: one sync per space, not per booking instance |
+| P24-16 | Validate recurrence against work hours | P21-06, P24-05 | Skip non-working days, reject if all instances fall outside work hours |
+| P24-17 | Add i18n keys for recurrence | P24-10 | EN + HE translations |
+| P24-18 | Add performance indexes | P24-03 | `bookings(recurrence_group_id)`, `bookings(space_id, start_time, status)` |
+
+---
+
 ## Summary: Phase Dependencies
 
 ```
@@ -418,6 +583,16 @@ Phase 3 ──→ Phase 16 (Company API)
 Phase 1 + Phase 4 ──→ Phase 16B (Floor Plans & LBS)
 Phase 16B + Phase 8 ──→ Compass Map View
 
+Phase 19 + 20 (Already Implemented)
+  ├→ Phase 21 (Company Work Config + Store Address)
+  │    └→ Phase 24 (Recurring Bookings — needs work hours validation)
+  ├→ Phase 22 (Org Structure: Departments + Teams)
+  │    └→ Phase 23 (Space Types + Amenities + Neighborhoods)
+  │         └→ Phase 24 (Recurring Bookings)
+
+Phase 21 ∥ Phase 22 (can run in parallel)
+Phase 23 → Phase 24 (sequential)
+
 All Phases ──→ Phase 17 (Testing)
 All Phases ──→ Phase 18 (Deployment)
 ```
@@ -426,26 +601,32 @@ All Phases ──→ Phase 18 (Deployment)
 
 ## Task Count
 
-| Phase | Tasks | Category |
-|-------|-------|----------|
-| 0 — Monorepo Setup | 15 | Infrastructure |
-| 1 — Database Schema | 12 | Infrastructure |
-| 2 — Auth & Feature Gating | 10 | Core Server |
-| 3 — Bookings & Rules | 12 | Core Server |
-| 4 — Spaces, Friends, Proximity | 10 | Core Server |
-| 5 — Real-Time & Notifications | 6 | Core Server |
-| 6 — Admin Dashboard | 10 | Admin UI |
-| 7 — Company Wizard | 10 | Admin UI |
-| 8 — Compass App Core | 15 | Compass App |
-| 9 — Mobile (Capacitor) | 8 | Compass App |
-| 10 — Directory Sync | 12 | Integration |
-| 11 — SSO | 8 | Integration |
-| 12 — Analytics | 7 | Advanced |
-| 13 — Tickets | 7 | Advanced |
-| 14 — Chat | 7 | Advanced |
-| 15 — Webhooks | 6 | Advanced |
-| 16 — Company API | 7 | Advanced |
-| 16B — Floor Plans & LBS | 16 | Integration |
-| 17 — Testing | 12 | Quality |
-| 18 — Deployment | 9 | Operations |
-| **Total** | **199** | |
+| Phase | Tasks | Category | Status |
+|-------|-------|----------|--------|
+| 0 — Monorepo Setup | 15 | Infrastructure | ✅ Done |
+| 1 — Database Schema | 12 | Infrastructure | ✅ Done |
+| 2 — Auth & Feature Gating | 10 | Core Server | ✅ Done |
+| 3 — Bookings & Rules | 12 | Core Server | ✅ Done |
+| 4 — Spaces, Friends, Proximity | 10 | Core Server | ✅ Done |
+| 5 — Real-Time & Notifications | 6 | Core Server | ✅ Done |
+| 6 — Admin Dashboard | 10 | Admin UI | ✅ Done |
+| 7 — Company Wizard | 10 | Admin UI | ✅ Done |
+| 8 — Compass App Core | 15 | Compass App | ✅ Done |
+| 9 — Mobile (Capacitor) | 8 | Compass App | ✅ Done |
+| 10 — Directory Sync | 12 | Integration | ✅ Done |
+| 11 — SSO | 8 | Integration | 🔲 Not Started |
+| 12 — Analytics | 7 | Advanced | 🔲 Not Started |
+| 13 — Tickets | 7 | Advanced | 🔲 Not Started |
+| 14 — Chat | 7 | Advanced | 🔲 Not Started |
+| 15 — Webhooks | 6 | Advanced | 🔲 Not Started |
+| 16 — Company API | 7 | Advanced | 🔲 Not Started |
+| 16B — Floor Plans & LBS | 16 | Integration | 🔲 Not Started |
+| 17 — Testing | 12 | Quality | 🔄 Partial |
+| 18 — Deployment | 9 | Operations | 🔄 Partial |
+| 19 — Admin Bookings & Reserve | 12 | Enhancement | ✅ Done |
+| 20 — Core Compass Infrastructure | 15 | Summary | ✅ Done |
+| 21 — Company Work Config | 14 | Enhancement | 🔲 Not Started |
+| 22 — Org Structure | 19 | Enhancement | 🔲 Not Started |
+| 23 — Space Types + Amenities | 19 | Enhancement | 🔲 Not Started |
+| 24 — Recurring Bookings | 18 | Enhancement | 🔲 Not Started |
+| **Total** | **269** | | |
