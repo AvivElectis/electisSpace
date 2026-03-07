@@ -63,4 +63,14 @@ router.get('/company/:companyId/aims-config', settingsController.getAimsConfig);
 // Test AIMS connection
 router.post('/company/:companyId/aims-test', settingsController.testAimsConnection);
 
+// ======================
+// Work Configuration (Phase 21)
+// ======================
+
+// Update company work config
+router.put('/company/:companyId/work-config', requirePermission('settings', 'update'), settingsController.updateWorkConfig);
+
+// Update store address and capacity
+router.put('/store/:storeId/address', requirePermission('settings', 'update'), settingsController.updateStoreAddress);
+
 export default router;

@@ -68,6 +68,34 @@ export const compassConfigSchema = z.object({
     maxConcurrentBookings: z.number().int().min(1).max(5),
 });
 
+/** Work hours configuration for compass companies */
+export const workConfigSchema = z.object({
+    workWeekStart: z.number().int().min(0).max(6).optional(),
+    workWeekEnd: z.number().int().min(0).max(6).optional(),
+    workingDays: z.record(z.string(), z.boolean()).optional(),
+    workingHoursStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    workingHoursEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    defaultTimezone: z.string().max(50).optional(),
+    defaultLocale: z.string().max(10).optional(),
+});
+
+/** Store address and capacity configuration */
+export const storeAddressSchema = z.object({
+    addressLine1: z.string().max(255).optional(),
+    addressLine2: z.string().max(255).optional(),
+    city: z.string().max(100).optional(),
+    state: z.string().max(100).optional(),
+    postalCode: z.string().max(20).optional(),
+    country: z.string().length(2).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    totalDesks: z.number().int().min(0).optional(),
+    maxOccupancy: z.number().int().min(0).optional(),
+    workingDays: z.record(z.string(), z.boolean()).optional(),
+    workingHoursStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    workingHoursEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+});
+
 /** Building hierarchy for compass company setup */
 const buildingSchema = z.object({
     name: z.string().min(1),
@@ -77,10 +105,11 @@ const buildingSchema = z.object({
 /** Extended create company schema with multi-store + config (backward-compatible) */
 export const createCompanyFullSchema = createCompanySchema.extend({
     stores: z.array(createStoreSchema).default([]),
-    articleFormat: z.record(z.unknown()).optional(),
-    fieldMapping: z.record(z.unknown()).optional(),
+    articleFormat: z.record(z.unknown()).nullable().optional(),
+    fieldMapping: z.record(z.unknown()).nullable().optional(),
     compassConfig: compassConfigSchema.optional(),
     buildings: z.array(buildingSchema).optional(),
+    workConfig: workConfigSchema.optional(),
 });
 
 /** Update company schema */
@@ -108,6 +137,11 @@ export const fetchAimsStoresSchema = z.object({
     username: z.string().min(1, 'Username is required'),
     password: z.string().min(1, 'Password is required'),
     companyCode: z.string().min(1, 'Company code is required'),
+});
+
+/** Push article format to AIMS - raw credentials + format payload */
+export const pushArticleFormatSchema = fetchAimsStoresSchema.extend({
+    format: z.record(z.unknown()),
 });
 
 // ======================
@@ -155,6 +189,15 @@ export interface CreateCompanyFullDto extends CreateCompanyDto {
         name: string;
         floors: Array<{ name: string }>;
     }>;
+    workConfig?: {
+        workWeekStart?: number;
+        workWeekEnd?: number;
+        workingDays?: Record<string, boolean>;
+        workingHoursStart?: string;
+        workingHoursEnd?: string;
+        defaultTimezone?: string;
+        defaultLocale?: string;
+    };
 }
 
 export interface UpdateCompanyDto {

@@ -30,15 +30,71 @@ import type {
 } from './types.js';
 
 // ======================
-// Compass Article Data Fields
+// Compass Article Format
 // ======================
 
-/** Fields added to AIMS article format when compass is enabled */
-const COMPASS_ARTICLE_DATA_FIELDS = [
-    'BUILDING_NAME', 'FLOOR_NAME', 'AREA_NAME',
-    'SPACE_MODE', 'SPACE_CAPACITY', 'SPACE_AMENITIES', 'SPACE_TYPE',
-    'BOOKING_STATUS', 'BOOKED_BY', 'BOOKING_TIME',
-];
+import type { ArticleFormat } from '../../shared/infrastructure/services/solumService.js';
+
+/** Dedicated AIMS article format for compass-enabled companies */
+const COMPASS_ARTICLE_FORMAT: ArticleFormat = {
+    fileExtension: 'csv',
+    delimeter: ',',
+    articleBasicInfo: ['store', 'articleId', 'articleName', 'nfcUrl'],
+    articleData: [
+        'STORE_ID', 'ARTICLE_ID', 'ITEM_NAME', 'NFC_URL',
+        'BUILDING_NAME', 'FLOOR_NAME', 'AREA_NAME',
+        'SPACE_TYPE', 'SPACE_MODE', 'SPACE_CAPACITY', 'SPACE_AMENITIES',
+        'BOOKING_STATUS',
+        'CURRENT_MEETING_NAME', 'CURRENT_MEETING_ORGANIZER',
+        'CURRENT_MEETING_START', 'CURRENT_MEETING_END', 'CURRENT_MEETING_PARTICIPANTS',
+        'NEXT1_MEETING_NAME', 'NEXT1_MEETING_ORGANIZER',
+        'NEXT1_MEETING_START', 'NEXT1_MEETING_END', 'NEXT1_MEETING_PARTICIPANTS',
+        'NEXT2_MEETING_NAME', 'NEXT2_MEETING_ORGANIZER',
+        'NEXT2_MEETING_START', 'NEXT2_MEETING_END', 'NEXT2_MEETING_PARTICIPANTS',
+    ],
+    mappingInfo: {
+        store: 'STORE_ID',
+        articleId: 'ARTICLE_ID',
+        articleName: 'ITEM_NAME',
+        nfcUrl: 'NFC_URL',
+    },
+};
+
+/** Default field mapping for compass companies */
+const COMPASS_FIELD_MAPPING = {
+    uniqueIdField: 'ARTICLE_ID',
+    fields: {
+        ITEM_NAME: { friendlyNameEn: 'Space Name', friendlyNameHe: 'שם מקום', visible: true },
+        BUILDING_NAME: { friendlyNameEn: 'Building', friendlyNameHe: 'בניין', visible: true },
+        FLOOR_NAME: { friendlyNameEn: 'Floor', friendlyNameHe: 'קומה', visible: true },
+        AREA_NAME: { friendlyNameEn: 'Area', friendlyNameHe: 'אזור', visible: true },
+        SPACE_TYPE: { friendlyNameEn: 'Type', friendlyNameHe: 'סוג', visible: true },
+        SPACE_MODE: { friendlyNameEn: 'Mode', friendlyNameHe: 'מצב', visible: true },
+        SPACE_CAPACITY: { friendlyNameEn: 'Capacity', friendlyNameHe: 'קיבולת', visible: true },
+        SPACE_AMENITIES: { friendlyNameEn: 'Amenities', friendlyNameHe: 'מתקנים', visible: true },
+        BOOKING_STATUS: { friendlyNameEn: 'Status', friendlyNameHe: 'סטטוס', visible: true },
+        CURRENT_MEETING_NAME: { friendlyNameEn: 'Current Meeting', friendlyNameHe: 'פגישה נוכחית', visible: true },
+        CURRENT_MEETING_ORGANIZER: { friendlyNameEn: 'Organizer', friendlyNameHe: 'מארגן', visible: true },
+        CURRENT_MEETING_START: { friendlyNameEn: 'Start Time', friendlyNameHe: 'שעת התחלה', visible: true },
+        CURRENT_MEETING_END: { friendlyNameEn: 'End Time', friendlyNameHe: 'שעת סיום', visible: true },
+        CURRENT_MEETING_PARTICIPANTS: { friendlyNameEn: 'Participants', friendlyNameHe: 'משתתפים', visible: true },
+        NEXT1_MEETING_NAME: { friendlyNameEn: 'Next Meeting', friendlyNameHe: 'פגישה הבאה', visible: true },
+        NEXT1_MEETING_ORGANIZER: { friendlyNameEn: 'Next Organizer', friendlyNameHe: 'מארגן הבא', visible: true },
+        NEXT1_MEETING_START: { friendlyNameEn: 'Next Start', friendlyNameHe: 'התחלה הבאה', visible: true },
+        NEXT1_MEETING_END: { friendlyNameEn: 'Next End', friendlyNameHe: 'סיום הבא', visible: true },
+        NEXT1_MEETING_PARTICIPANTS: { friendlyNameEn: 'Next Participants', friendlyNameHe: 'משתתפים הבאים', visible: true },
+        NEXT2_MEETING_NAME: { friendlyNameEn: 'Meeting After', friendlyNameHe: 'פגישה אחר כך', visible: true },
+        NEXT2_MEETING_ORGANIZER: { friendlyNameEn: 'Organizer After', friendlyNameHe: 'מארגן אחר כך', visible: true },
+        NEXT2_MEETING_START: { friendlyNameEn: 'Start After', friendlyNameHe: 'התחלה אחר כך', visible: true },
+        NEXT2_MEETING_END: { friendlyNameEn: 'End After', friendlyNameHe: 'סיום אחר כך', visible: true },
+        NEXT2_MEETING_PARTICIPANTS: { friendlyNameEn: 'Participants After', friendlyNameHe: 'משתתפים אחר כך', visible: true },
+    },
+    conferenceMapping: {
+        meetingName: 'CURRENT_MEETING_NAME',
+        meetingTime: 'CURRENT_MEETING_START',
+        participants: 'CURRENT_MEETING_PARTICIPANTS',
+    },
+};
 
 // ======================
 // Authorization Helpers
@@ -282,19 +338,18 @@ export const companyService = {
         };
 
         // Save article format and field mapping from wizard
-        if (fullData.articleFormat) {
-            // When compass is enabled, inject compass data fields into article format
-            if (companyFeatures.compassEnabled) {
-                const format = fullData.articleFormat as Record<string, any>;
-                const existingData = Array.isArray(format.articleData) ? format.articleData as string[] : [];
-                const merged = [...new Set([...existingData, ...COMPASS_ARTICLE_DATA_FIELDS])];
-                format.articleData = merged;
-                appLogger.info('Companies', `Injected ${COMPASS_ARTICLE_DATA_FIELDS.length} compass fields into article format`);
+        if (companyFeatures.compassEnabled) {
+            // Compass companies use a dedicated format — ignore any fetched format
+            initialSettings.solumArticleFormat = COMPASS_ARTICLE_FORMAT;
+            initialSettings.solumMappingConfig = COMPASS_FIELD_MAPPING;
+            appLogger.info('Companies', 'Using dedicated compass article format and field mapping');
+        } else {
+            if (fullData.articleFormat) {
+                initialSettings.solumArticleFormat = fullData.articleFormat;
             }
-            initialSettings.solumArticleFormat = fullData.articleFormat;
-        }
-        if (fullData.fieldMapping) {
-            initialSettings.solumMappingConfig = fullData.fieldMapping;
+            if (fullData.fieldMapping) {
+                initialSettings.solumMappingConfig = fullData.fieldMapping;
+            }
         }
 
         const company = await prisma.$transaction(async (tx) => {
@@ -309,6 +364,14 @@ export const companyService = {
                     aimsUsername: data.aimsConfig?.username ?? null,
                     aimsPasswordEnc: encryptedPassword ?? null,
                     settings: initialSettings as unknown as Prisma.InputJsonValue,
+                    // Work configuration (Phase 21)
+                    workWeekStart: fullData.workConfig?.workWeekStart ?? undefined,
+                    workWeekEnd: fullData.workConfig?.workWeekEnd ?? undefined,
+                    workingDays: fullData.workConfig?.workingDays ? (fullData.workConfig.workingDays as unknown as Prisma.InputJsonValue) : undefined,
+                    workingHoursStart: fullData.workConfig?.workingHoursStart ?? undefined,
+                    workingHoursEnd: fullData.workConfig?.workingHoursEnd ?? undefined,
+                    defaultTimezone: fullData.workConfig?.defaultTimezone ?? undefined,
+                    defaultLocale: fullData.workConfig?.defaultLocale ?? undefined,
                 },
                 include: { _count: { select: { stores: true, userCompanies: true } } },
             });
@@ -456,6 +519,26 @@ export const companyService = {
 
             return created;
         });
+
+        // Push compass article format to AIMS after company creation
+        if (companyFeatures.compassEnabled && data.aimsConfig) {
+            try {
+                await aimsGateway.saveArticleFormatWithCredentials(
+                    {
+                        baseUrl: data.aimsConfig.baseUrl,
+                        cluster: data.aimsConfig.cluster || '',
+                        username: data.aimsConfig.username,
+                        password: data.aimsConfig.password,
+                    },
+                    upperCode,
+                    COMPASS_ARTICLE_FORMAT,
+                );
+                appLogger.info('Companies', `Pushed compass article format to AIMS for ${upperCode}`);
+            } catch (err: any) {
+                appLogger.warn('Companies', `Failed to push compass article format to AIMS: ${err.message}`);
+                // Non-fatal — format is saved in DB settings, can be pushed manually later
+            }
+        }
 
         // Re-fetch to get accurate store count after creation
         const updatedCompany = await companyRepository.findWithCounts(company.id);
@@ -662,6 +745,37 @@ export const companyService = {
                 success: false,
                 format: null,
                 error: error.message || 'Failed to fetch article format',
+            };
+        }
+    },
+
+    /**
+     * Push article format to AIMS using raw credentials (pre-save, for wizard).
+     * Same pattern as fetchArticleFormat — no company exists yet.
+     */
+    async pushArticleFormat(params: {
+        baseUrl: string;
+        cluster?: string;
+        username: string;
+        password: string;
+        companyCode: string;
+        format: Record<string, unknown>;
+    }) {
+        const { baseUrl, cluster, username, password, companyCode, format } = params;
+
+        try {
+            await aimsGateway.saveArticleFormatWithCredentials(
+                { baseUrl, cluster, username, password },
+                companyCode,
+                format as any
+            );
+
+            return { success: true };
+        } catch (error: any) {
+            appLogger.error('CompanyService', 'Failed to push article format to AIMS', { error: String(error) });
+            return {
+                success: false,
+                error: error.message || 'Failed to save article format to AIMS',
             };
         }
     },

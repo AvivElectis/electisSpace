@@ -8,6 +8,8 @@ import { notFound, badRequest, forbidden } from '../../shared/middleware/index.j
 import { settingsService } from './service.js';
 import { updateSettingsSchema, fieldMappingConfigSchema, articleFormatSchema } from './types.js';
 import type { SettingsUserContext } from './types.js';
+import { workConfigSchema, storeAddressSchema } from '../companies/types.js';
+import { prisma } from '../../config/index.js';
 
 // ======================
 // Helpers
@@ -38,12 +40,14 @@ export const settingsController = {
         try {
             const storeId = req.params.storeId as string;
             const user = getUserContext(req);
-            
+
             const result = await settingsService.getStoreSettings(storeId, user);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'STORE_NOT_FOUND') return next(notFound('Store'));
-            if (error.message === 'STORE_NOT_FOUND_OR_DENIED') return next(notFound('Store not found or access denied'));
+            // Graceful defaults for stale sessions referencing deleted stores
+            if (error.message === 'STORE_NOT_FOUND' || error.message === 'STORE_NOT_FOUND_OR_DENIED') {
+                return res.json({ storeId: req.params.storeId, storeName: '', storeCode: '', settings: {} });
+            }
             next(error);
         }
     },
@@ -84,12 +88,14 @@ export const settingsController = {
         try {
             const companyId = req.params.companyId as string;
             const user = getUserContext(req);
-            
+
             const result = await settingsService.getCompanySettings(companyId, user);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'COMPANY_NOT_FOUND') return next(notFound('Company'));
-            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
+            // Graceful defaults for stale sessions referencing deleted companies
+            if (error.message === 'COMPANY_NOT_FOUND' || error.message === 'COMPANY_NOT_FOUND_OR_DENIED') {
+                return res.json({ companyId: req.params.companyId, settings: {} });
+            }
             next(error);
         }
     },
@@ -130,11 +136,14 @@ export const settingsController = {
         try {
             const companyId = req.params.companyId as string;
             const user = getUserContext(req);
-            
+
             const result = await settingsService.getFieldMappings(companyId, user);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
+            // Graceful defaults for stale sessions
+            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') {
+                return res.json({ companyId: req.params.companyId, fieldMappings: null });
+            }
             next(error);
         }
     },
@@ -178,9 +187,14 @@ export const settingsController = {
             const result = await settingsService.getArticleFormat(companyId, user);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
-            if (error.message === 'AIMS_NOT_CONFIGURED') return next(badRequest('AIMS credentials not configured for this company'));
-            if (error.message === 'NO_STORE_FOR_COMPANY') return next(badRequest('No active store found for this company'));
+            // Graceful defaults for stale sessions or unconfigured companies
+            if (
+                error.message === 'COMPANY_NOT_FOUND_OR_DENIED' ||
+                error.message === 'AIMS_NOT_CONFIGURED' ||
+                error.message === 'NO_STORE_FOR_COMPANY'
+            ) {
+                return res.json({ companyId: req.params.companyId, format: null });
+            }
             if (error.message === 'AIMS_FORMAT_FETCH_FAILED') return next(badRequest('Failed to fetch article format from AIMS'));
             next(error);
         }
@@ -221,11 +235,14 @@ export const settingsController = {
         try {
             const companyId = req.params.companyId as string;
             const user = getUserContext(req);
-            
+
             const result = await settingsService.getAimsConfig(companyId, user);
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
+            // Graceful defaults for stale sessions
+            if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') {
+                return res.json({ companyId: req.params.companyId, aimsConfig: null });
+            }
             next(error);
         }
     },
@@ -238,11 +255,75 @@ export const settingsController = {
         try {
             const companyId = req.params.companyId as string;
             const user = getUserContext(req);
-            
+
             const result = await settingsService.testAimsConnection(companyId, user);
             res.json(result);
         } catch (error: any) {
             if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));
+            next(error);
+        }
+    },
+
+    // ======================
+    // Work Configuration (Phase 21)
+    // ======================
+
+    /**
+     * PUT /settings/company/:companyId/work-config
+     * Update company work configuration
+     */
+    async updateWorkConfig(req: Request, res: Response, next: NextFunction) {
+        try {
+            const parsed = workConfigSchema.safeParse(req.body);
+            if (!parsed.success) {
+                throw badRequest('Invalid work config');
+            }
+
+            const companyId = req.params.companyId as string;
+            const user = getUserContext(req);
+
+            // Verify user has access
+            const canManage = user.globalRole === 'PLATFORM_ADMIN' ||
+                user.companies?.some(c => c.id === companyId);
+            if (!canManage) throw forbidden('Access denied');
+
+            const company = await prisma.company.update({
+                where: { id: companyId },
+                data: {
+                    ...parsed.data,
+                    workingDays: parsed.data.workingDays ? (parsed.data.workingDays as any) : undefined,
+                },
+            });
+
+            res.json({ data: company });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    /**
+     * PUT /settings/store/:storeId/address
+     * Update store address and capacity
+     */
+    async updateStoreAddress(req: Request, res: Response, next: NextFunction) {
+        try {
+            const parsed = storeAddressSchema.safeParse(req.body);
+            if (!parsed.success) {
+                throw badRequest('Invalid store address data');
+            }
+
+            const storeId = req.params.storeId as string;
+
+            const store = await prisma.store.update({
+                where: { id: storeId },
+                data: {
+                    ...parsed.data,
+                    workingDays: parsed.data.workingDays ? (parsed.data.workingDays as any) : undefined,
+                },
+            });
+
+            res.json({ data: store });
+        } catch (error) {
             next(error);
         }
     },
