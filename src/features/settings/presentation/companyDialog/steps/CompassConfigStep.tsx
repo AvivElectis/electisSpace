@@ -2,7 +2,7 @@
  * Wizard Step: Compass Configuration
  * Shown when compassEnabled is ON. Sets default booking rules.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -37,6 +37,12 @@ export function CompassConfigStep({ config, onUpdate }: CompassConfigStepProps) 
     };
 
     const [durationMode, setDurationMode] = useState<DurationMode>(() => getDurationMode(config.maxDurationMinutes));
+
+    // Sync duration mode when config changes externally (e.g. draft restore)
+    useEffect(() => {
+        const expected = getDurationMode(config.maxDurationMinutes);
+        if (expected !== durationMode) setDurationMode(expected);
+    }, [config.maxDurationMinutes]);
 
     const minValues: Record<string, number> = {
         maxDurationMinutes: 30,
@@ -159,7 +165,7 @@ export function CompassConfigStep({ config, onUpdate }: CompassConfigStepProps) 
                 {t('settings.companies.compassConfigInfo')}
             </Alert>
 
-            <Stack spacing={1.5}>
+            <Stack spacing={2.5}>
                 {/* Max Duration — special field with mode selector */}
                 <Paper variant="outlined" sx={{ p: 2 }}>
                     <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
@@ -169,12 +175,13 @@ export function CompassConfigStep({ config, onUpdate }: CompassConfigStepProps) 
                         {t('settings.companies.compassMaxDurationDesc')}
                     </Typography>
 
-                    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap', gap: 2 }}>
                         <ToggleButtonGroup
                             value={durationMode}
                             exclusive
                             onChange={handleDurationModeChange}
                             size="small"
+                            sx={{ direction: 'ltr' }}
                         >
                             <ToggleButton value="minutes">{t('settings.companies.compassMinutes')}</ToggleButton>
                             <ToggleButton value="hours">{t('settings.companies.compassHours')}</ToggleButton>

@@ -17,9 +17,10 @@ interface CompanyDialogProps {
     onClose: () => void;
     onSave: () => void;
     company?: Company | null;
+    restoreDraftId?: string;
 }
 
-export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogProps) {
+export function CompanyDialog({ open, onClose, onSave, company, restoreDraftId }: CompanyDialogProps) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isEdit = !!company;
@@ -38,7 +39,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
         >
             {isEdit
                 ? <EditCompanyTabs state={state} onClose={onClose} />
-                : <CreateCompanyWizard onClose={onClose} onSave={onSave} />
+                : <CreateCompanyWizard onClose={onClose} onSave={onSave} restoreDraftId={restoreDraftId} />
             }
         </Dialog>
     );

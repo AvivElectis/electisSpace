@@ -34,6 +34,12 @@ export interface CompanyStore {
     };
     storeFeatures?: CompanyFeatures | null;
     storeSpaceType?: SpaceType | null;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
 }
 
 /** Company entity */
@@ -140,6 +146,22 @@ export interface UpdateStoreDto {
     isActive?: boolean;
     storeFeatures?: CompanyFeatures | null;
     storeSpaceType?: SpaceType | null;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+}
+
+/** Work configuration DTO for compass work hours */
+export interface WorkConfigDto {
+    workWeekStart?: number;
+    workWeekEnd?: number;
+    workingDays?: number[];
+    workingHoursStart?: string;
+    workingHoursEnd?: string;
+    defaultTimezone?: string;
 }
 
 /** Query parameters for company list */
@@ -292,6 +314,14 @@ export const companyService = {
         return response.data;
     },
 
+    /**
+     * Push article format to AIMS using raw credentials (for company creation wizard)
+     */
+    pushArticleFormat: async (data: FetchAimsStoresRequest & { format: Record<string, unknown> }): Promise<{ success: boolean; error?: string }> => {
+        const response = await api.post<{ success: boolean; error?: string }>('/companies/aims/article-format/push', data);
+        return response.data;
+    },
+
     // ========================================================================
     // Store CRUD
     // ========================================================================
@@ -342,6 +372,26 @@ export const companyService = {
         const response = await api.get<CodeValidationResponse>(
             `/companies/${companyId}/stores/validate-code/${code}`
         );
+        return response.data;
+    },
+
+    // ========================================================================
+    // Work Configuration (Compass)
+    // ========================================================================
+
+    /**
+     * Get work configuration for a company
+     */
+    getWorkConfig: async (companyId: string): Promise<WorkConfigDto> => {
+        const response = await api.get<WorkConfigDto>(`/companies/${companyId}/work-config`);
+        return response.data;
+    },
+
+    /**
+     * Update work configuration for a company
+     */
+    updateWorkConfig: async (companyId: string, data: WorkConfigDto): Promise<WorkConfigDto> => {
+        const response = await api.put<WorkConfigDto>(`/companies/${companyId}/work-config`, data);
         return response.data;
     },
 };

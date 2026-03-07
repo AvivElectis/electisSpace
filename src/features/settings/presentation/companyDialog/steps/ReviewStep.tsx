@@ -1,5 +1,5 @@
 /**
- * Wizard Step 6: Review & Create
+ * Wizard Step: Review & Create
  * Read-only summary of all previous steps. Sections clickable to jump back.
  */
 import {
@@ -48,6 +48,17 @@ function FeatureChip({ label, enabled }: { label: string; enabled: boolean }) {
 export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepProps) {
     const { t } = useTranslation();
 
+    // Dynamic step indices — compass inserts 2 extra steps (compassConfig + buildings) after features
+    const stepIndex = {
+        connection: 0,
+        stores: 1,
+        articleFormat: 2,
+        fieldMapping: 3,
+        features: 4,
+        compassConfig: 5,                       // only exists when compass enabled
+        buildings: compassEnabled ? 6 : -1,      // only exists when compass enabled
+    };
+
     const visibleFieldCount = formData.fieldMapping
         ? Object.values(formData.fieldMapping.fields).filter(f => f.visible).length
         : 0;
@@ -60,7 +71,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
 
             {/* Section 1: Company Info */}
             <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <SectionHeader title={t('settings.companies.reviewCompanyInfo')} step={0} onGoToStep={onGoToStep} />
+                <SectionHeader title={t('settings.companies.reviewCompanyInfo')} step={stepIndex.connection} onGoToStep={onGoToStep} />
                 <Stack spacing={0.5}>
                     <Typography variant="body2">
                         <strong>{t('settings.companies.codeLabel')}:</strong> {formData.companyCode}
@@ -84,7 +95,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
 
             {/* Section 2: Stores */}
             <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <SectionHeader title={t('settings.companies.reviewStores')} step={1} onGoToStep={onGoToStep} />
+                <SectionHeader title={t('settings.companies.reviewStores')} step={stepIndex.stores} onGoToStep={onGoToStep} />
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {formData.stores.map((store) => (
                         <Chip
@@ -99,7 +110,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
 
             {/* Section 3: Article Format */}
             <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <SectionHeader title={t('settings.companies.reviewArticleFormat')} step={2} onGoToStep={onGoToStep} />
+                <SectionHeader title={t('settings.companies.reviewArticleFormat')} step={stepIndex.articleFormat} onGoToStep={onGoToStep} />
                 {formData.articleFormat ? (
                     <Typography variant="body2">
                         {t('settings.companies.fileExtension')}: <strong>{formData.articleFormat.fileExtension}</strong>
@@ -115,7 +126,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
 
             {/* Section 4: Field Mapping */}
             <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <SectionHeader title={t('settings.companies.reviewFieldMapping')} step={3} onGoToStep={onGoToStep} />
+                <SectionHeader title={t('settings.companies.reviewFieldMapping')} step={stepIndex.fieldMapping} onGoToStep={onGoToStep} />
                 {formData.fieldMapping ? (
                     <Typography variant="body2">
                         {t('settings.companies.uniqueIdField')}: <strong>{formData.fieldMapping.uniqueIdField}</strong>
@@ -131,7 +142,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
 
             {/* Section 5: Features */}
             <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <SectionHeader title={t('settings.companies.reviewFeatures')} step={4} onGoToStep={onGoToStep} />
+                <SectionHeader title={t('settings.companies.reviewFeatures')} step={stepIndex.features} onGoToStep={onGoToStep} />
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     <FeatureChip label={t('settings.companies.featureSpaces')} enabled={formData.features.spacesEnabled} />
                     <FeatureChip label={t('settings.companies.featurePeople')} enabled={formData.features.peopleEnabled} />
@@ -145,7 +156,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
             {/* Section 6: Compass Config (only when enabled) */}
             {compassEnabled && (
                 <Paper variant="outlined" sx={{ p: 1.5 }}>
-                    <SectionHeader title={t('settings.companies.reviewCompassConfig')} step={5} onGoToStep={onGoToStep} />
+                    <SectionHeader title={t('settings.companies.reviewCompassConfig')} step={stepIndex.compassConfig} onGoToStep={onGoToStep} />
                     <Stack spacing={0.5}>
                         <Typography variant="body2">
                             <strong>{t('settings.companies.compassMaxDuration')}:</strong>{' '}
@@ -174,7 +185,7 @@ export function ReviewStep({ formData, compassEnabled, onGoToStep }: ReviewStepP
             {/* Section 7: Building Hierarchy (only when enabled) */}
             {compassEnabled && formData.buildings.length > 0 && (
                 <Paper variant="outlined" sx={{ p: 1.5 }}>
-                    <SectionHeader title={t('settings.companies.reviewBuildings')} step={6} onGoToStep={onGoToStep} />
+                    <SectionHeader title={t('settings.companies.reviewBuildings')} step={stepIndex.buildings} onGoToStep={onGoToStep} />
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {formData.buildings.map((building) => (
                             <Chip

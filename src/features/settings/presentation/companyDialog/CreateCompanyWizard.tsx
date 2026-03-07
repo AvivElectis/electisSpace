@@ -13,8 +13,10 @@
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
+    Dialog,
     DialogTitle,
     DialogContent,
+    DialogContentText,
     DialogActions,
     Button,
     Stepper,
@@ -44,11 +46,15 @@ import {
     BuildingHierarchyStep,
     ReviewStep,
 } from './steps';
-import { INITIAL_WIZARD_DATA, type WizardFormData, type WizardStoreData } from './wizardTypes';
+import { INITIAL_WIZARD_DATA, DEFAULT_COMPASS_CONFIG, COMPASS_ARTICLE_FORMAT_PREVIEW, type WizardFormData, type WizardStoreData } from './wizardTypes';
+import { useWizardDraftStore } from '../../application/useWizardDraftStore';
+
+const DRAFT_ID = 'company';
 
 interface Props {
     onClose: () => void;
     onSave: () => void;
+    restoreDraftId?: string;
 }
 
 const BASE_STEP_LABELS = [
@@ -63,11 +69,17 @@ const BASE_STEP_LABELS = [
 const COMPASS_STEP_LABEL = 'settings.companies.wizardStepCompass';
 const BUILDINGS_STEP_LABEL = 'settings.companies.wizardStepBuildings';
 
-export function CreateCompanyWizard({ onClose, onSave }: Props) {
+export function CreateCompanyWizard({ onClose, onSave, restoreDraftId }: Props) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isRtl = theme.direction === 'rtl';
+
+    // Draft persistence
+    const { getDraft, saveDraft, discardDraft } = useWizardDraftStore();
+    const [showDraftDialog, setShowDraftDialog] = useState(false);
+    const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+    const draftSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     // Wizard state
     const [activeStep, setActiveStep] = useState(0);
@@ -77,6 +89,26 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'connected' | 'failed'>('idle');
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [aimsStores, setAimsStores] = useState<AimsStoreInfo[]>([]);
+
+    // On mount: check for existing draft
+    useEffect(() => {
+        const draft = getDraft(DRAFT_ID);
+        if (restoreDraftId || draft) {
+            if (restoreDraftId) {
+                // Direct restore — skip dialog
+                const d = getDraft(restoreDraftId);
+                if (d) {
+                    setFormData(d.formData);
+                    setActiveStep(d.activeStep);
+                    if (d.connectionStatus) setConnectionStatus(d.connectionStatus);
+                    if (d.aimsStores) setAimsStores(d.aimsStores);
+                }
+            } else {
+                setShowDraftDialog(true);
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Code validation
     const [codeAvailable, setCodeAvailable] = useState<boolean | null>(null);
@@ -125,16 +157,33 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         setFormData(prev => ({ ...prev, ...partial }));
     }, []);
 
-    // Dynamic steps: insert Compass Config step before Review when compassEnabled
+    // Debounced auto-save to localStorage — only save if user has made meaningful progress
+    useEffect(() => {
+        const hasProgress = activeStep > 0 || formData.companyCode || formData.companyName || formData.aimsUsername;
+        if (!hasProgress) return;
+
+        draftSaveTimer.current && clearTimeout(draftSaveTimer.current);
+        draftSaveTimer.current = setTimeout(() => {
+            saveDraft(DRAFT_ID, activeStep, formData, { connectionStatus, aimsStores });
+        }, 1000);
+        return () => draftSaveTimer.current && clearTimeout(draftSaveTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeStep, formData, connectionStatus, aimsStores]);
+
+    // Dynamic steps: compass skips fieldMapping, adds compassConfig + buildings before Review
     const compassEnabled = formData.features.compassEnabled;
     const stepLabels = useMemo(() => {
         if (!compassEnabled) return BASE_STEP_LABELS;
-        // Insert compass config + building hierarchy steps before Review
+        // Compass: connection → stores → articleFormat(read-only) → features → compassConfig → buildings → review
+        // Skip fieldMapping step (index 3)
         return [
-            ...BASE_STEP_LABELS.slice(0, 5),
+            BASE_STEP_LABELS[0], // connection
+            BASE_STEP_LABELS[1], // stores
+            BASE_STEP_LABELS[2], // articleFormat
+            BASE_STEP_LABELS[4], // features (skip fieldMapping)
             COMPASS_STEP_LABEL,
             BUILDINGS_STEP_LABEL,
-            BASE_STEP_LABELS[5],
+            BASE_STEP_LABELS[5], // review
         ];
     }, [compassEnabled]);
     const totalSteps = stepLabels.length;
@@ -146,6 +195,40 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
             setActiveStep(totalSteps - 1);
         }
     }, [activeStep, totalSteps]);
+
+    // Reset connection status when credentials change (so user must re-test)
+    const credentialKey = `${formData.aimsBaseUrl}|${formData.aimsUsername}|${formData.aimsPassword}|${formData.aimsCluster}`;
+    const prevCredentialKey = useRef(credentialKey);
+    useEffect(() => {
+        if (prevCredentialKey.current !== credentialKey && connectionStatus !== 'idle' && connectionStatus !== 'testing') {
+            setConnectionStatus('idle');
+            setConnectionError(null);
+            setArticleFormatError(null);
+        }
+        prevCredentialKey.current = credentialKey;
+    }, [credentialKey, connectionStatus]);
+
+    // Also invalidate article format when credentials change (needs re-fetch)
+    const prevCredForFormat = useRef(credentialKey);
+    useEffect(() => {
+        if (prevCredForFormat.current !== credentialKey && formData.articleFormat) {
+            updateFormData({ articleFormat: null, fieldMapping: null });
+        }
+        prevCredForFormat.current = credentialKey;
+    }, [credentialKey, formData.articleFormat, updateFormData]);
+
+    // When compass is toggled on, set the dedicated format; when toggled off, clear it so user re-fetches
+    const prevCompassEnabled = useRef(compassEnabled);
+    useEffect(() => {
+        if (prevCompassEnabled.current !== compassEnabled) {
+            if (compassEnabled) {
+                updateFormData({ articleFormat: COMPASS_ARTICLE_FORMAT_PREVIEW, fieldMapping: null });
+            } else {
+                updateFormData({ articleFormat: null, fieldMapping: null });
+            }
+        }
+        prevCompassEnabled.current = compassEnabled;
+    }, [compassEnabled, updateFormData]);
 
     // Step 1: Test connection + fetch stores
     const handleConnectionTest = useCallback(async () => {
@@ -177,8 +260,14 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         }
     }, [formData, t, updateFormData]);
 
-    // Step 3: Fetch article format
+    // Step 3: Fetch article format (or use compass preview)
     const handleFetchArticleFormat = useCallback(async () => {
+        // Compass companies use a dedicated format — no need to fetch from AIMS
+        if (compassEnabled) {
+            updateFormData({ articleFormat: COMPASS_ARTICLE_FORMAT_PREVIEW });
+            return;
+        }
+
         setArticleFormatLoading(true);
         setArticleFormatError(null);
         try {
@@ -200,14 +289,32 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         } finally {
             setArticleFormatLoading(false);
         }
-    }, [formData, t, updateFormData]);
+    }, [formData, t, updateFormData, compassEnabled]);
+
+    // Push article format to AIMS (before company creation)
+    const handlePushArticleFormat = useCallback(async (format: any) => {
+        try {
+            const result = await companyService.pushArticleFormat({
+                baseUrl: formData.aimsBaseUrl.trim(),
+                cluster: formData.aimsCluster.trim(),
+                username: formData.aimsUsername.trim(),
+                password: formData.aimsPassword,
+                companyCode: formData.companyCode.trim(),
+                format: format as Record<string, unknown>,
+            });
+            return result;
+        } catch (err: any) {
+            return { success: false, error: err.response?.data?.message || err.message };
+        }
+    }, [formData]);
 
     // Map visual step index to logical step identity
     const getStepId = (step: number): string => {
         if (!compassEnabled) {
             return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'review'][step] || '';
         }
-        return ['connection', 'stores', 'articleFormat', 'fieldMapping', 'features', 'compassConfig', 'buildings', 'review'][step] || '';
+        // Compass: skip fieldMapping step
+        return ['connection', 'stores', 'articleFormat', 'features', 'compassConfig', 'buildings', 'review'][step] || '';
     };
 
     // Validation per step (by identity, not index)
@@ -294,15 +401,23 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 })),
                 companyFeatures: formData.features,
                 spaceType: formData.spaceType,
-                articleFormat: formData.articleFormat as unknown as Record<string, unknown> | undefined,
-                fieldMapping: formData.fieldMapping as unknown as Record<string, unknown> | undefined,
+                // Compass companies use server-side format — don't send from client
+                articleFormat: compassEnabled ? undefined : (formData.articleFormat ?? undefined) as Record<string, unknown> | undefined,
+                fieldMapping: compassEnabled ? undefined : (formData.fieldMapping ?? undefined) as Record<string, unknown> | undefined,
                 ...(formData.features.compassEnabled && {
-                    compassConfig: formData.compassConfig,
+                    compassConfig: {
+                        maxDurationMinutes: Number(formData.compassConfig.maxDurationMinutes) || DEFAULT_COMPASS_CONFIG.maxDurationMinutes,
+                        maxAdvanceBookingDays: Number(formData.compassConfig.maxAdvanceBookingDays) || DEFAULT_COMPASS_CONFIG.maxAdvanceBookingDays,
+                        checkInWindowMinutes: Number(formData.compassConfig.checkInWindowMinutes) || DEFAULT_COMPASS_CONFIG.checkInWindowMinutes,
+                        autoReleaseMinutes: Number(formData.compassConfig.autoReleaseMinutes) || DEFAULT_COMPASS_CONFIG.autoReleaseMinutes,
+                        maxConcurrentBookings: Number(formData.compassConfig.maxConcurrentBookings) || DEFAULT_COMPASS_CONFIG.maxConcurrentBookings,
+                    },
                     buildings: formData.buildings,
                 }),
             };
 
             await companyService.create(createData);
+            discardDraft(DRAFT_ID);
             onSave();
         } catch (err: any) {
             setError(err.response?.data?.message || t('settings.companies.saveError'));
@@ -345,6 +460,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         onFetch={handleFetchArticleFormat}
                         onUpdate={(format) => updateFormData({ articleFormat: format })}
                         compassEnabled={compassEnabled}
+                        readOnly={compassEnabled}
+                        onPushToAims={compassEnabled ? undefined : handlePushArticleFormat}
                     />
                 );
             case 'fieldMapping':
@@ -393,8 +510,75 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
         }
     };
 
+    const handleCloseRequest = () => {
+        // If user has progressed beyond step 0, confirm before closing
+        if (activeStep > 0 || formData.companyCode || formData.companyName) {
+            setShowCloseConfirm(true);
+        } else {
+            discardDraft(DRAFT_ID);
+            onClose();
+        }
+    };
+
+    const handleConfirmClose = () => {
+        setShowCloseConfirm(false);
+        // Draft stays in localStorage — user can resume later
+        onClose();
+    };
+
+    const handleDiscardAndClose = () => {
+        setShowCloseConfirm(false);
+        discardDraft(DRAFT_ID);
+        onClose();
+    };
+
+    const handleRestoreDraft = () => {
+        const draft = getDraft(DRAFT_ID);
+        if (draft) {
+            setFormData(draft.formData);
+            setActiveStep(draft.activeStep);
+            if (draft.connectionStatus) setConnectionStatus(draft.connectionStatus);
+            if (draft.aimsStores) setAimsStores(draft.aimsStores);
+        }
+        setShowDraftDialog(false);
+    };
+
+    const handleDiscardDraft = () => {
+        discardDraft(DRAFT_ID);
+        setShowDraftDialog(false);
+    };
+
     return (
         <>
+            {/* Draft restore dialog */}
+            <Dialog open={showDraftDialog} onClose={handleDiscardDraft}>
+                <DialogTitle>{t('settings.companies.wizardDraftContinue')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('settings.companies.wizardDraftFound')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDiscardDraft}>{t('settings.companies.wizardDraftDiscard')}</Button>
+                    <Button onClick={handleRestoreDraft} variant="contained">{t('settings.companies.wizardDraftContinue')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Close confirmation dialog */}
+            <Dialog open={showCloseConfirm} onClose={() => setShowCloseConfirm(false)}>
+                <DialogTitle>{t('common.confirm')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('settings.companies.wizardUnsavedChanges')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowCloseConfirm(false)}>{t('common.cancel')}</Button>
+                    <Button onClick={handleDiscardAndClose} color="error">{t('settings.companies.wizardDraftDiscard')}</Button>
+                    <Button onClick={handleConfirmClose} variant="contained">{t('common.close')}</Button>
+                </DialogActions>
+            </Dialog>
+
             <DialogTitle>{t('settings.companies.createTitle')}</DialogTitle>
             <DialogContent dividers>
                 {error && (
@@ -457,7 +641,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     )}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button onClick={onClose} disabled={submitting}>
+                    <Button onClick={handleCloseRequest} disabled={submitting}>
                         {t('common.cancel')}
                     </Button>
                     {activeStep < lastStep ? (

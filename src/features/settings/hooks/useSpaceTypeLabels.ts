@@ -1,5 +1,6 @@
 import { useSettingsController } from '../application/useSettingsController';
 import { useTranslation } from 'react-i18next';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
 
 type LabelKey = 'singular' | 'singularDef' | 'plural' | 'pluralDef' | 'add' | 'edit' | 'delete' | 'list';
 
@@ -9,10 +10,14 @@ type LabelKey = 'singular' | 'singularDef' | 'plural' | 'pluralDef' | 'add' | 'e
  */
 export function useSpaceTypeLabels() {
     const settingsController = useSettingsController();
+    const { activeStore, activeCompany } = useAuthContext();
     const { t } = useTranslation();
 
     const getLabel = (key: LabelKey): string => {
-        const type = settingsController.settings.spaceType;
+        // Prefer auth context (always fresh) over persisted settings store
+        const type = activeStore?.effectiveSpaceType
+            || activeCompany?.spaceType
+            || settingsController.settings.spaceType;
 
         // Map of space type to translation key prefixes
         const typeKeyMap: Record<string, string> = {

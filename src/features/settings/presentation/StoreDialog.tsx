@@ -107,6 +107,14 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
     const [storeFeatures, setStoreFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
     const [storeSpaceType, setStoreSpaceType] = useState<SpaceType>('office');
 
+    // Store address fields
+    const [addressLine1, setAddressLine1] = useState('');
+    const [addressLine2, setAddressLine2] = useState('');
+    const [city, setCity] = useState('');
+    const [storeState, setStoreState] = useState('');
+    const [postalCode, setPostalCode] = useState('');
+    const [country, setCountry] = useState('');
+
     // Store logo overrides
     const [logoOverrideEnabled, setLogoOverrideEnabled] = useState(false);
     const [storeLogo1, setStoreLogo1] = useState<string | undefined>(undefined);
@@ -136,6 +144,13 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
                     setStoreSpaceType('office');
                 }
+                // Initialize address fields
+                setAddressLine1(store.addressLine1 || '');
+                setAddressLine2(store.addressLine2 || '');
+                setCity(store.city || '');
+                setStoreState(store.state || '');
+                setPostalCode(store.postalCode || '');
+                setCountry(store.country || '');
                 // Fetch store settings to check for logo overrides
                 settingsService.getStoreSettings(store.id).then((res) => {
                     const settings = res.settings as Record<string, unknown>;
@@ -168,6 +183,13 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                 setLogoOverrideEnabled(false);
                 setStoreLogo1(undefined);
                 setStoreLogo2(undefined);
+                // Reset address fields
+                setAddressLine1('');
+                setAddressLine2('');
+                setCity('');
+                setStoreState('');
+                setPostalCode('');
+                setCountry('');
             }
             setError(null);
             setCodeError(null);
@@ -267,6 +289,12 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                     isActive,
                     storeFeatures: overrideEnabled ? storeFeatures : null,
                     storeSpaceType: overrideEnabled ? storeSpaceType : null,
+                    addressLine1: addressLine1.trim() || undefined,
+                    addressLine2: addressLine2.trim() || undefined,
+                    city: city.trim() || undefined,
+                    state: storeState.trim() || undefined,
+                    postalCode: postalCode.trim() || undefined,
+                    country: country.trim() || undefined,
                 };
                 await companyService.updateStore(store.id, updateData);
 
@@ -516,6 +544,66 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                     />
                                 </Box>
                             )}
+                        </>
+                    )}
+
+                    {/* Address Section (edit mode only) */}
+                    {isEdit && (
+                        <>
+                            <Divider sx={{ my: 1 }} />
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                {t('compass.address.title')}
+                            </Typography>
+                            <TextField
+                                label={t('compass.address.line1')}
+                                value={addressLine1}
+                                onChange={(e) => setAddressLine1(e.target.value)}
+                                size="small"
+                                inputProps={{ maxLength: 255 }}
+                            />
+                            <TextField
+                                label={t('compass.address.line2')}
+                                value={addressLine2}
+                                onChange={(e) => setAddressLine2(e.target.value)}
+                                size="small"
+                                inputProps={{ maxLength: 255 }}
+                            />
+                            <Box sx={{ display: 'flex', gap: 1.5 }}>
+                                <TextField
+                                    label={t('compass.address.city')}
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                    inputProps={{ maxLength: 100 }}
+                                />
+                                <TextField
+                                    label={t('compass.address.state')}
+                                    value={storeState}
+                                    onChange={(e) => setStoreState(e.target.value)}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                    inputProps={{ maxLength: 100 }}
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1.5 }}>
+                                <TextField
+                                    label={t('compass.address.postalCode')}
+                                    value={postalCode}
+                                    onChange={(e) => setPostalCode(e.target.value)}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                    inputProps={{ maxLength: 20 }}
+                                />
+                                <TextField
+                                    label={t('compass.address.country')}
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                    inputProps={{ maxLength: 100 }}
+                                />
+                            </Box>
                         </>
                     )}
 

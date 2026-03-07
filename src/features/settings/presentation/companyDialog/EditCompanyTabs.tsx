@@ -1,11 +1,12 @@
 /**
- * EditCompanyTabs - Edit mode with 6 tabs matching wizard sections:
+ * EditCompanyTabs - Edit mode with 6-7 tabs matching wizard sections:
  * 1. Basic Info (company details + AIMS connection)
  * 2. Stores (existing store list, link to StoresDialog)
  * 3. Article Format (display saved format, re-fetch from AIMS)
  * 4. Field Mapping (editable field mapping with save)
  * 5. Features (space type + feature toggles)
  * 6. Integrations (directory sync — Microsoft 365, Google Workspace, Okta)
+ * 7. Work Hours (compass only — working days, hours, timezone)
  */
 import {
     Dialog,
@@ -47,6 +48,9 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import TuneIcon from '@mui/icons-material/Tune';
 import SyncIcon from '@mui/icons-material/Sync';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -58,7 +62,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { useCompanyDialogState } from './useCompanyDialogState';
 import { settingsService } from '@shared/infrastructure/services/settingsService';
-import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
+import { companyService, type CompanyStore, type WorkConfigDto } from '@shared/infrastructure/services/companyService';
 import { integrationService, type Integration, type Provider, type IntegrationType } from '@shared/infrastructure/services/integrationService';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
@@ -111,6 +115,16 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     const [integrationSaving, setIntegrationSaving] = useState(false);
     const [syncingId, setSyncingId] = useState<string | null>(null);
     const [confirmDeleteIntegration, setConfirmDeleteIntegration] = useState<string | null>(null);
+
+    // Work Hours tab state
+    const [workingDays, setWorkingDays] = useState<number[]>([0, 1, 2, 3, 4]);
+    const [workingHoursStart, setWorkingHoursStart] = useState('08:00');
+    const [workingHoursEnd, setWorkingHoursEnd] = useState('18:00');
+    const [defaultTimezone, setDefaultTimezone] = useState('UTC');
+    const [workConfigLoading, setWorkConfigLoading] = useState(false);
+    const [workConfigSaving, setWorkConfigSaving] = useState(false);
+    const [workConfigSaved, setWorkConfigSaved] = useState(false);
+    const [workConfigLoaded, setWorkConfigLoaded] = useState(false);
 
     // Fetch stores + settings on open
     useEffect(() => {
@@ -268,6 +282,60 @@ export function EditCompanyTabs({ state, onClose }: Props) {
         }
     };
 
+    // Load work config when Work Hours tab is selected
+    useEffect(() => {
+        if (!state.company?.id || workConfigLoaded) return;
+        const isCompassEnabled = state.companyFeatures?.compassEnabled;
+        if (!isCompassEnabled) return;
+        // Only load when user switches to the Work Hours tab (index 6)
+        if (state.activeTab !== 6) return;
+        setWorkConfigLoading(true);
+        companyService.getWorkConfig(state.company.id)
+            .then((config: WorkConfigDto) => {
+                if (config.workingDays) setWorkingDays(config.workingDays);
+                if (config.workingHoursStart) setWorkingHoursStart(config.workingHoursStart);
+                if (config.workingHoursEnd) setWorkingHoursEnd(config.workingHoursEnd);
+                if (config.defaultTimezone) setDefaultTimezone(config.defaultTimezone);
+                setWorkConfigLoaded(true);
+            })
+            .catch(() => {
+                // Config may not exist yet — use defaults
+                setWorkConfigLoaded(true);
+            })
+            .finally(() => setWorkConfigLoading(false));
+    }, [state.company?.id, state.activeTab, state.companyFeatures?.compassEnabled, workConfigLoaded]);
+
+    // Save work config handler
+    const handleSaveWorkConfig = useCallback(async () => {
+        if (!state.company?.id) return;
+        setWorkConfigSaving(true);
+        try {
+            await companyService.updateWorkConfig(state.company.id, {
+                workingDays,
+                workingHoursStart,
+                workingHoursEnd,
+                defaultTimezone,
+            });
+            setWorkConfigSaved(true);
+            setTimeout(() => setWorkConfigSaved(false), 2000);
+        } catch {
+            state.setError(t('errors.saveFailed'));
+        } finally {
+            setWorkConfigSaving(false);
+        }
+    }, [state.company?.id, workingDays, workingHoursStart, workingHoursEnd, defaultTimezone, state, t]);
+
+    // Day labels for toggle buttons
+    const dayLabels = [
+        { value: 0, label: t('compass.workHours.sun') },
+        { value: 1, label: t('compass.workHours.mon') },
+        { value: 2, label: t('compass.workHours.tue') },
+        { value: 3, label: t('compass.workHours.wed') },
+        { value: 4, label: t('compass.workHours.thu') },
+        { value: 5, label: t('compass.workHours.fri') },
+        { value: 6, label: t('compass.workHours.sat') },
+    ];
+
     // Field mapping helpers
     const articleDataFields = articleFormat?.articleData || [];
 
@@ -293,6 +361,9 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     <Tab icon={<AccountTreeIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.reviewFieldMapping', 'Field Mapping')} sx={{ minHeight: 48 }} />
                     <Tab icon={<TuneIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.featuresTab', 'Features')} sx={{ minHeight: 48 }} />
                     <Tab icon={<SyncIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.integrationsTab', 'Integrations')} sx={{ minHeight: 48 }} />
+                    {state.companyFeatures.compassEnabled && (
+                        <Tab icon={<ScheduleIcon fontSize="small" />} iconPosition="start" label={t('compass.workHours.title')} sx={{ minHeight: 48 }} />
+                    )}
                 </Tabs>
 
                 {/* Tab 0: Basic Info */}
@@ -947,6 +1018,117 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                         )}
                     </Box>
                 </TabPanel>
+
+                {/* Tab 6: Work Hours (only when compass enabled) */}
+                {state.companyFeatures.compassEnabled && (
+                    <TabPanel value={state.activeTab} index={6}>
+                        {workConfigLoading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                <CircularProgress size={32} />
+                            </Box>
+                        ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                {/* Working Days */}
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                        {t('compass.workHours.workingDays')}
+                                    </Typography>
+                                    <ToggleButtonGroup
+                                        value={workingDays}
+                                        onChange={(_, newDays: number[]) => {
+                                            if (newDays.length > 0) {
+                                                setWorkingDays(newDays);
+                                                setWorkConfigSaved(false);
+                                            }
+                                        }}
+                                        size="small"
+                                        sx={{ flexWrap: 'wrap' }}
+                                    >
+                                        {dayLabels.map((day) => (
+                                            <ToggleButton key={day.value} value={day.value} sx={{ px: 2 }}>
+                                                {day.label}
+                                            </ToggleButton>
+                                        ))}
+                                    </ToggleButtonGroup>
+                                </Box>
+
+                                {/* Working Hours */}
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                        {t('compass.workHours.workingHours')}
+                                    </Typography>
+                                    <Stack direction={isMobile ? 'column' : 'row'} spacing={2}>
+                                        <TextField
+                                            label={t('compass.workHours.start')}
+                                            type="time"
+                                            value={workingHoursStart}
+                                            onChange={(e) => {
+                                                setWorkingHoursStart(e.target.value);
+                                                setWorkConfigSaved(false);
+                                            }}
+                                            slotProps={{ inputLabel: { shrink: true } }}
+                                            size="small"
+                                            sx={{ minWidth: 150 }}
+                                        />
+                                        <TextField
+                                            label={t('compass.workHours.end')}
+                                            type="time"
+                                            value={workingHoursEnd}
+                                            onChange={(e) => {
+                                                setWorkingHoursEnd(e.target.value);
+                                                setWorkConfigSaved(false);
+                                            }}
+                                            slotProps={{ inputLabel: { shrink: true } }}
+                                            size="small"
+                                            sx={{ minWidth: 150 }}
+                                        />
+                                    </Stack>
+                                </Box>
+
+                                {/* Timezone */}
+                                <Autocomplete
+                                    value={defaultTimezone}
+                                    onChange={(_, newValue) => {
+                                        setDefaultTimezone(newValue || 'UTC');
+                                        setWorkConfigSaved(false);
+                                    }}
+                                    options={[
+                                        'UTC', 'America/New_York', 'America/Chicago', 'America/Denver',
+                                        'America/Los_Angeles', 'America/Sao_Paulo', 'Europe/London',
+                                        'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow', 'Asia/Tokyo',
+                                        'Asia/Shanghai', 'Asia/Seoul', 'Asia/Singapore', 'Asia/Dubai',
+                                        'Asia/Jerusalem', 'Australia/Sydney', 'Pacific/Auckland',
+                                    ]}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label={t('settings.stores.timezoneLabel')}
+                                            size="small"
+                                        />
+                                    )}
+                                    freeSolo
+                                    disableClearable
+                                    size="small"
+                                />
+
+                                {/* Save button */}
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
+                                    {workConfigSaved && (
+                                        <Chip label={t('common.saved', 'Saved')} color="success" size="small" icon={<CheckCircleIcon />} />
+                                    )}
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={workConfigSaving ? <CircularProgress size={16} /> : <SaveIcon />}
+                                        onClick={handleSaveWorkConfig}
+                                        disabled={workConfigSaving}
+                                    >
+                                        {t('common.save')}
+                                    </Button>
+                                </Box>
+                            </Box>
+                        )}
+                    </TabPanel>
+                )}
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={state.submitting}>{t('common.cancel')}</Button>

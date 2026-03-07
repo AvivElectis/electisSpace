@@ -14,10 +14,16 @@ import {
     Paper,
     ToggleButtonGroup,
     ToggleButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CodeIcon from '@mui/icons-material/Code';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useTranslation } from 'react-i18next';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 
@@ -26,12 +32,6 @@ const ArticleFormatEditor = lazy(() =>
     import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
 );
 
-const COMPASS_ARTICLE_DATA_FIELDS = [
-    'BUILDING_NAME', 'FLOOR_NAME', 'AREA_NAME',
-    'SPACE_MODE', 'SPACE_CAPACITY', 'SPACE_AMENITIES', 'SPACE_TYPE',
-    'BOOKING_STATUS', 'BOOKED_BY', 'BOOKING_TIME',
-];
-
 interface ArticleFormatStepProps {
     articleFormat: ArticleFormat | null;
     loading: boolean;
@@ -39,6 +39,8 @@ interface ArticleFormatStepProps {
     onFetch: () => Promise<void>;
     onUpdate: (format: ArticleFormat) => void;
     compassEnabled?: boolean;
+    readOnly?: boolean;
+    onPushToAims?: (format: ArticleFormat) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function ArticleFormatStep({
@@ -48,9 +50,14 @@ export function ArticleFormatStep({
     onFetch,
     onUpdate,
     compassEnabled,
+    readOnly,
+    onPushToAims,
 }: ArticleFormatStepProps) {
     const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual');
+    const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
+    const [pushing, setPushing] = useState(false);
+    const [pushResult, setPushResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     // Auto-fetch on mount if not yet loaded
     useEffect(() => {
@@ -99,14 +106,46 @@ export function ArticleFormatStep({
         return true;
     };
 
+    const handlePushConfirm = async () => {
+        if (!articleFormat || !onPushToAims) return;
+        setPushConfirmOpen(false);
+        setPushing(true);
+        setPushResult(null);
+        try {
+            const result = await onPushToAims(articleFormat);
+            if (result.success) {
+                setPushResult({ type: 'success', message: t('settings.companies.articleFormatPushSuccess') });
+                onFetch(); // Refresh from AIMS
+            } else {
+                setPushResult({ type: 'error', message: result.error || t('settings.companies.articleFormatPushError') });
+            }
+        } catch {
+            setPushResult({ type: 'error', message: t('settings.companies.articleFormatPushError') });
+        } finally {
+            setPushing(false);
+        }
+    };
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Alert severity="success" sx={{ mb: 1 }}>
-                {t('settings.companies.articleFormatFetched')}
-            </Alert>
+            {readOnly ? (
+                <Alert severity="info" sx={{ mb: 1 }}>
+                    {t('settings.companies.compassArticleFormatInfo')}
+                </Alert>
+            ) : (
+                <Alert severity="success" sx={{ mb: 1 }}>
+                    {t('settings.companies.articleFormatFetched')}
+                </Alert>
+            )}
 
-            {/* View mode toggle */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {pushResult && (
+                <Alert severity={pushResult.type} onClose={() => setPushResult(null)}>
+                    {pushResult.message}
+                </Alert>
+            )}
+
+            {/* View mode toggle + actions (hidden in read-only mode) */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                 <ToggleButtonGroup
                     value={viewMode}
                     exclusive
@@ -124,15 +163,46 @@ export function ArticleFormatStep({
                     </ToggleButton>
                 </ToggleButtonGroup>
 
-                <Button
-                    variant="text"
-                    size="small"
-                    startIcon={<RefreshIcon />}
-                    onClick={onFetch}
-                >
-                    {t('settings.companies.refetchArticleFormat')}
-                </Button>
+                {!readOnly && (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        {onPushToAims && (
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={pushing ? <CircularProgress size={14} /> : <CloudUploadIcon />}
+                                onClick={() => setPushConfirmOpen(true)}
+                                disabled={pushing}
+                            >
+                                {pushing ? t('settings.companies.articleFormatPushing') : t('settings.companies.saveToAims', 'Save to AIMS')}
+                            </Button>
+                        )}
+                        <Button
+                            variant="text"
+                            size="small"
+                            startIcon={<RefreshIcon />}
+                            onClick={onFetch}
+                        >
+                            {t('settings.companies.refetchArticleFormat')}
+                        </Button>
+                    </Box>
+                )}
             </Box>
+
+            {/* Push confirmation dialog */}
+            <Dialog open={pushConfirmOpen} onClose={() => setPushConfirmOpen(false)}>
+                <DialogTitle>{t('settings.companies.articleFormatConfirmTitle')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('settings.companies.articleFormatPermanentWarning')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPushConfirmOpen(false)}>{t('common.cancel')}</Button>
+                    <Button onClick={handlePushConfirm} variant="contained" color="warning">
+                        {t('common.save')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {viewMode === 'visual' ? (
                 /* ===== Visual View ===== */
@@ -166,20 +236,6 @@ export function ArticleFormatStep({
                             ))}
                         </Box>
                     </Paper>
-
-                    {/* Compass fields info */}
-                    {compassEnabled && (
-                        <Alert severity="info" variant="outlined">
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                {t('compass.compassFormatInfo')}
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {COMPASS_ARTICLE_DATA_FIELDS.map((field) => (
-                                    <Chip key={field} label={field} size="small" color="info" />
-                                ))}
-                            </Box>
-                        </Alert>
-                    )}
 
                     {/* Data fields */}
                     <Paper variant="outlined" sx={{ p: 1.5 }}>
@@ -227,7 +283,7 @@ export function ArticleFormatStep({
                         <ArticleFormatEditor
                             schema={articleFormat}
                             onSave={handleJsonSave}
-                            readOnly={false}
+                            readOnly={!!readOnly}
                             initialOpen
                         />
                     </Suspense>

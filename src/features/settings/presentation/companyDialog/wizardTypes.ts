@@ -75,6 +75,31 @@ export const DEFAULT_COMPASS_CONFIG: CompassConfig = {
     maxConcurrentBookings: 1,
 };
 
+/** Client-side preview of the compass article format (mirrors server constant) */
+export const COMPASS_ARTICLE_FORMAT_PREVIEW: ArticleFormat = {
+    fileExtension: 'csv',
+    delimeter: ',',
+    articleBasicInfo: ['store', 'articleId', 'articleName', 'nfcUrl'],
+    articleData: [
+        'STORE_ID', 'ARTICLE_ID', 'ITEM_NAME', 'NFC_URL',
+        'BUILDING_NAME', 'FLOOR_NAME', 'AREA_NAME',
+        'SPACE_TYPE', 'SPACE_MODE', 'SPACE_CAPACITY', 'SPACE_AMENITIES',
+        'BOOKING_STATUS',
+        'CURRENT_MEETING_NAME', 'CURRENT_MEETING_ORGANIZER',
+        'CURRENT_MEETING_START', 'CURRENT_MEETING_END', 'CURRENT_MEETING_PARTICIPANTS',
+        'NEXT1_MEETING_NAME', 'NEXT1_MEETING_ORGANIZER',
+        'NEXT1_MEETING_START', 'NEXT1_MEETING_END', 'NEXT1_MEETING_PARTICIPANTS',
+        'NEXT2_MEETING_NAME', 'NEXT2_MEETING_ORGANIZER',
+        'NEXT2_MEETING_START', 'NEXT2_MEETING_END', 'NEXT2_MEETING_PARTICIPANTS',
+    ],
+    mappingInfo: {
+        store: 'STORE_ID',
+        articleId: 'ARTICLE_ID',
+        articleName: 'ITEM_NAME',
+        nfcUrl: 'NFC_URL',
+    },
+};
+
 export const INITIAL_WIZARD_DATA: WizardFormData = {
     companyCode: '',
     companyName: '',

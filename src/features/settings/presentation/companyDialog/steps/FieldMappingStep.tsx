@@ -2,6 +2,7 @@
  * Wizard Step 4: Field Mapping
  * Maps AIMS article fields to display names & visibility, plus conference mapping.
  */
+import { useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -58,8 +59,15 @@ export function FieldMappingStep({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    // Auto-generate if no mapping exists
+    // Auto-generate if no mapping exists and persist it back to form data
     const mapping = fieldMapping || (articleFormat ? generateInitialMapping(articleFormat) : null);
+
+    useEffect(() => {
+        if (!fieldMapping && mapping) {
+            onUpdate(mapping);
+        }
+    }, [fieldMapping, mapping, onUpdate]);
+
     if (!mapping) return null;
 
     const fieldKeys = Object.keys(mapping.fields);

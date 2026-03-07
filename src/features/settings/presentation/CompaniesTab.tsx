@@ -44,6 +44,8 @@ import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { companyService, type Company, type CompanyQueryParams } from '@shared/infrastructure/services/companyService';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { WizardPendingNotification } from './WizardPendingNotification';
+import { useWizardDraftStore } from '../application/useWizardDraftStore';
 
 // Lazy load dialogs - using default exports
 const CompanyDialog = lazy(() => import('./CompanyDialog'));
@@ -76,6 +78,14 @@ export function CompaniesTab() {
     const [storesDialogOpen, setStoresDialogOpen] = useState(false);
     const [aimsDialogOpen, setAimsDialogOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+    const [restoreDraftId, setRestoreDraftId] = useState<string | undefined>();
+
+    // Wizard draft state
+    const draftDismissedIds = useWizardDraftStore(s => s.dismissedIds);
+    const drafts = useWizardDraftStore(s => s.drafts);
+    const discardDraft = useWizardDraftStore(s => s.discardDraft);
+    const undismissDraft = useWizardDraftStore(s => s.undismissDraft);
+    const hasDismissedDraft = Object.keys(drafts).some(id => draftDismissedIds.includes(id));
 
     // Fetch Companies
     const fetchCompanies = useCallback(async () => {
@@ -172,9 +182,16 @@ export function CompaniesTab() {
         }
     };
 
+    const handleContinueDraft = (draftId: string) => {
+        setSelectedCompany(null);
+        setRestoreDraftId(draftId);
+        setCompanyDialogOpen(true);
+    };
+
     const handleDialogClose = () => {
         setCompanyDialogOpen(false);
         setSelectedCompany(null);
+        setRestoreDraftId(undefined);
     };
 
     const handleStoresDialogClose = () => {
@@ -189,7 +206,16 @@ export function CompaniesTab() {
         setSelectedCompany(null);
         fetchCompanies();
         // Refresh auth to pick up updated effectiveFeatures for nav tabs
-        useAuthStore.getState().validateSession();
+        const result = await useAuthStore.getState().validateSession();
+        if (result.valid) {
+            const state = useAuthStore.getState();
+            // Auto-select context if the user doesn't have one yet
+            if (state.activeCompanyId && state.activeStoreId) {
+                await state.setActiveContext(state.activeCompanyId, state.activeStoreId);
+            } else if (state.activeCompanyId) {
+                await state.setActiveCompany(state.activeCompanyId);
+            }
+        }
     };
 
     // Format date
@@ -250,6 +276,32 @@ export function CompaniesTab() {
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
                     {error}
+                </Alert>
+            )}
+
+            {/* Dismissed wizard draft banner */}
+            {hasDismissedDraft && (
+                <Alert
+                    severity="warning"
+                    sx={{ mb: 2 }}
+                    action={
+                        <>
+                            <Button size="small" color="inherit" onClick={() => {
+                                const draftId = Object.keys(drafts).find(id => draftDismissedIds.includes(id));
+                                if (draftId) handleContinueDraft(draftId);
+                            }}>
+                                {t('settings.companies.wizardDraftContinue')}
+                            </Button>
+                            <Button size="small" color="inherit" onClick={() => {
+                                const draftId = Object.keys(drafts).find(id => draftDismissedIds.includes(id));
+                                if (draftId) discardDraft(draftId);
+                            }}>
+                                {t('settings.companies.wizardDraftDiscard')}
+                            </Button>
+                        </>
+                    }
+                >
+                    {t('settings.companies.wizardDraftPending')}
                 </Alert>
             )}
 
@@ -545,6 +597,9 @@ export function CompaniesTab() {
             {/* Confirm Dialog */}
             <ConfirmDialog />
 
+            {/* Floating wizard draft notification */}
+            <WizardPendingNotification onContinue={handleContinueDraft} />
+
             {/* Company Dialog (Create/Edit) */}
             <Suspense fallback={null}>
                 {companyDialogOpen && (
@@ -553,6 +608,7 @@ export function CompaniesTab() {
                         onClose={handleDialogClose}
                         onSave={handleSave}
                         company={selectedCompany}
+                        restoreDraftId={restoreDraftId}
                     />
                 )}
             </Suspense>
