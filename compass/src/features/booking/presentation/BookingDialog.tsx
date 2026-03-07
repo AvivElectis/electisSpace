@@ -76,6 +76,37 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
     const [endTime, setEndTime] = useState(defaults.endTime);
     const [notes, setNotes] = useState('');
 
+    // Branch work hours config — will be populated when branch data is available
+    const branchWorkHours: {
+        workingHoursStart?: string;
+        workingHoursEnd?: string;
+        workingDays?: Record<string, boolean>;
+    } | null = null;
+
+    const isOutsideWorkHours = useMemo(() => {
+        if (!date || !startTime || !branchWorkHours) return false;
+
+        const selectedStart = new Date(`${date}T${startTime}`);
+        if (isNaN(selectedStart.getTime())) return false;
+
+        const startHour = selectedStart.getHours();
+        const startMinute = selectedStart.getMinutes();
+        const startMinutes = startHour * 60 + startMinute;
+
+        const [wStartH, wStartM] = (branchWorkHours.workingHoursStart || '08:00').split(':').map(Number);
+        const [wEndH, wEndM] = (branchWorkHours.workingHoursEnd || '17:00').split(':').map(Number);
+        const workStart = wStartH * 60 + wStartM;
+        const workEnd = wEndH * 60 + wEndM;
+
+        if (startMinutes < workStart || startMinutes >= workEnd) return true;
+
+        const dayOfWeek = selectedStart.getDay().toString();
+        const workingDays = branchWorkHours.workingDays;
+        if (workingDays && workingDays[dayOfWeek] === false) return true;
+
+        return false;
+    }, [date, startTime, branchWorkHours]);
+
     const duration = useMemo(() => {
         const start = new Date(`${date}T${startTime}`);
         const end = new Date(`${date}T${endTime}`);
@@ -172,6 +203,12 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
                         slotProps={{ inputLabel: { shrink: true } }}
                     />
                 </Box>
+
+                {isOutsideWorkHours && (
+                    <Alert severity="warning" sx={{ mt: 1, mb: 2 }}>
+                        {t('booking.outsideWorkHours')}
+                    </Alert>
+                )}
 
                 {duration && (
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

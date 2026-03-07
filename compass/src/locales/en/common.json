@@ -87,6 +87,7 @@
         "releaseConfirm": "Are you sure you want to release this space?",
         "yes": "Yes",
         "no": "No",
+        "outsideWorkHours": "This booking falls outside working hours",
         "status": {
             "BOOKED": "Booked",
             "CHECKED_IN": "Checked In",
@@ -122,6 +123,7 @@
         "language": "Language",
         "accessibility": "Display & Accessibility",
         "settings": "Settings",
+        "branchAddress": "Branch Address",
         "logout": "Sign Out"
     },
     "accessibility": {

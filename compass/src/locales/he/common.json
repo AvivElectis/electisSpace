@@ -87,6 +87,7 @@
         "releaseConfirm": "האם אתה בטוח שברצונך לשחרר מקום זה?",
         "yes": "כן",
         "no": "לא",
+        "outsideWorkHours": "הזמנה זו מחוץ לשעות העבודה",
         "status": {
             "BOOKED": "הוזמן",
             "CHECKED_IN": "צ׳ק אין",
@@ -122,6 +123,7 @@
         "language": "שפה",
         "accessibility": "תצוגה ונגישות",
         "settings": "הגדרות",
+        "branchAddress": "כתובת סניף",
         "logout": "התנתק"
     },
     "accessibility": {

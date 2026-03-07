@@ -15,6 +15,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
@@ -26,6 +27,9 @@ export function ProfilePage() {
     const user = useCompassAuthStore((s) => s.user);
     const logout = useCompassAuthStore((s) => s.logout);
     const [a11yOpen, setA11yOpen] = useState(false);
+
+    // Branch info — will be populated when branch details are available from a store/API
+    const branch: { addressLine1?: string; city?: string; country?: string } | null = null;
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'he' : 'en';
@@ -51,6 +55,14 @@ export function ProfilePage() {
                         <Typography variant="body2" color="text.secondary">
                             {user?.email}
                         </Typography>
+                        {branch?.city && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                <LocationOnIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                <Typography variant="caption" color="text.secondary">
+                                    {[branch.addressLine1, branch.city, branch.country].filter(Boolean).join(', ')}
+                                </Typography>
+                            </Box>
+                        )}
                     </Box>
                 </CardContent>
             </Card>
