@@ -1,5 +1,5 @@
 import { prisma } from '../../config/index.js';
-import type { CompassSpaceMode, Prisma } from '@prisma/client';
+import type { CompassSpaceMode, CompassSpaceType, Prisma } from '@prisma/client';
 
 // ─── Space Queries (Compass Context) ─────────────────
 
@@ -8,8 +8,10 @@ export const findCompassSpaces = async (params: {
     buildingId?: string;
     floorId?: string;
     areaId?: string;
-    spaceType?: string;
+    neighborhoodId?: string;
+    spaceType?: CompassSpaceType;
     amenities?: string[];
+    minCapacity?: number;
     compassMode?: CompassSpaceMode;
 }) => {
     const where: Prisma.SpaceWhereInput = {
@@ -23,8 +25,15 @@ export const findCompassSpaces = async (params: {
     if (params.buildingId) where.buildingId = params.buildingId;
     if (params.floorId) where.floorId = params.floorId;
     if (params.areaId) where.areaId = params.areaId;
+    if (params.neighborhoodId) where.neighborhoodId = params.neighborhoodId;
+    if (params.spaceType) where.compassSpaceType = params.spaceType;
     if (params.amenities?.length) {
-        where.compassAmenities = { hasSome: params.amenities };
+        where.structuredAmenities = {
+            some: { amenity: { name: { in: params.amenities } } },
+        };
+    }
+    if (params.minCapacity) {
+        where.maxCapacity = { gte: params.minCapacity };
     }
 
     return prisma.space.findMany({
@@ -36,9 +45,13 @@ export const findCompassSpaces = async (params: {
             buildingId: true,
             floorId: true,
             areaId: true,
+            neighborhoodId: true,
             compassMode: true,
+            compassSpaceType: true,
             compassCapacity: true,
             compassAmenities: true,
+            minCapacity: true,
+            maxCapacity: true,
             permanentAssigneeId: true,
             sortOrder: true,
             mapX: true,
@@ -47,7 +60,14 @@ export const findCompassSpaces = async (params: {
             building: { select: { id: true, name: true } },
             floor: { select: { id: true, name: true, sortOrder: true } },
             area: { select: { id: true, name: true } },
+            neighborhood: { select: { id: true, name: true } },
             permanentAssignee: { select: { id: true, displayName: true } },
+            structuredAmenities: {
+                select: {
+                    quantity: true,
+                    amenity: { select: { id: true, name: true, nameHe: true, icon: true, category: true } },
+                },
+            },
         },
         orderBy: { sortOrder: 'asc' },
     });

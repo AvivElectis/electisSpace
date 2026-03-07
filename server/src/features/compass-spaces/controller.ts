@@ -15,14 +15,17 @@ export const list = async (req: Request, res: Response, next: NextFunction) => {
         }
 
         const user = req.compassUser!;
-        const { buildingId, floorId, areaId, amenities, startTime, endTime } = parsed.data;
+        const { buildingId, floorId, areaId, neighborhoodId, spaceType, amenities, minCapacity, startTime, endTime } = parsed.data;
 
         const spaces = await service.listSpaces({
             branchId: user.branchId,
             buildingId,
             floorId,
             areaId,
+            neighborhoodId,
+            spaceType: spaceType as any,
             amenities: amenities?.split(',').filter(Boolean),
+            minCapacity,
             startTime: startTime ? new Date(startTime) : undefined,
             endTime: endTime ? new Date(endTime) : undefined,
         });

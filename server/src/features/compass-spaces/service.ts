@@ -1,6 +1,6 @@
 import { notFound, badRequest } from '../../shared/middleware/index.js';
 import * as repo from './repository.js';
-import type { CompassSpaceMode } from '@prisma/client';
+import type { CompassSpaceMode, CompassSpaceType } from '@prisma/client';
 
 // ─── List Compass Spaces with Availability ───────────
 
@@ -9,7 +9,10 @@ export const listSpaces = async (params: {
     buildingId?: string;
     floorId?: string;
     areaId?: string;
+    neighborhoodId?: string;
+    spaceType?: CompassSpaceType;
     amenities?: string[];
+    minCapacity?: number;
     startTime?: Date;
     endTime?: Date;
 }) => {
@@ -18,7 +21,10 @@ export const listSpaces = async (params: {
         buildingId: params.buildingId,
         floorId: params.floorId,
         areaId: params.areaId,
+        neighborhoodId: params.neighborhoodId,
+        spaceType: params.spaceType,
         amenities: params.amenities,
+        minCapacity: params.minCapacity,
     });
 
     // If time range provided, attach availability info
