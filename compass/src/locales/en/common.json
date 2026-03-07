@@ -124,6 +124,7 @@
         "accessibility": "Display & Accessibility",
         "settings": "Settings",
         "branchAddress": "Branch Address",
+        "department": "Department",
         "logout": "Sign Out"
     },
     "accessibility": {

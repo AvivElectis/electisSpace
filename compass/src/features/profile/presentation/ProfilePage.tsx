@@ -16,6 +16,7 @@ import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import BusinessIcon from '@mui/icons-material/Business';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
@@ -55,6 +56,14 @@ export function ProfilePage() {
                         <Typography variant="body2" color="text.secondary">
                             {user?.email}
                         </Typography>
+                        {user?.departmentName && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                <BusinessIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                <Typography variant="caption" color="text.secondary">
+                                    {t('profile.department')}: {user.departmentName}
+                                </Typography>
+                            </Box>
+                        )}
                         {branch?.city && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                                 <LocationOnIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
