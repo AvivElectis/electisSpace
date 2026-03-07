@@ -14,51 +14,52 @@ datasource db {
 // Companies (AIMS Organizations)
 // ======================
 model Company {
-  id              String   @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Company Identity
-  name            String   @db.VarChar(100)
-  code            String   @unique @db.VarChar(20)  // 3+ capital letters, AIMS unique identifier
-  location        String?  @db.VarChar(255)
-  description     String?  @db.Text
-  
+  name        String  @db.VarChar(100)
+  code        String  @unique @db.VarChar(20) // 3+ capital letters, AIMS unique identifier
+  location    String? @db.VarChar(255)
+  description String? @db.Text
+
   // AIMS API Configuration (encrypted in application layer)
-  aimsBaseUrl     String?  @map("aims_base_url") @db.VarChar(255)
-  aimsCluster     String?  @map("aims_cluster") @db.VarChar(50)
-  aimsUsername    String?  @map("aims_username") @db.VarChar(255)
-  aimsPasswordEnc String?  @map("aims_password_enc") @db.Text
-  
+  aimsBaseUrl     String? @map("aims_base_url") @db.VarChar(255)
+  aimsCluster     String? @map("aims_cluster") @db.VarChar(50)
+  aimsUsername    String? @map("aims_username") @db.VarChar(255)
+  aimsPasswordEnc String? @map("aims_password_enc") @db.Text
+
   // Company-wide settings
-  settings        Json     @default("{}")
-  isActive        Boolean  @default(true) @map("is_active")
-  
+  settings Json    @default("{}")
+  isActive Boolean @default(true) @map("is_active")
+
   // Timestamps
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   // Compass (workspace booking) — all nullable for backward compatibility
-  compassEnabled  Boolean  @default(false) @map("compass_enabled")
-  compassConfig   Json?    @map("compass_config") // CompassFeatureConfig JSON
+  compassEnabled Boolean @default(false) @map("compass_enabled")
+  compassConfig  Json?   @map("compass_config") // CompassFeatureConfig JSON
 
   // Work week configuration
-  workWeekStart     Int?      @default(0)    @map("work_week_start")   // 0=Sunday..6=Saturday
-  workWeekEnd       Int?      @default(4)    @map("work_week_end")     // inclusive
-  workingDays       Json?     @map("working_days")                     // { "0": false, "1": true, ... }
-  workingHoursStart String?   @map("working_hours_start") @db.VarChar(5) // "08:00" (HH:MM)
-  workingHoursEnd   String?   @map("working_hours_end") @db.VarChar(5)   // "17:00"
-  defaultTimezone   String?   @map("default_timezone") @db.VarChar(50)   // "Asia/Jerusalem"
-  defaultLocale     String?   @map("default_locale") @db.VarChar(10)     // "en" or "he"
+  workWeekStart     Int?    @default(0) @map("work_week_start") // 0=Sunday..6=Saturday
+  workWeekEnd       Int?    @default(4) @map("work_week_end") // inclusive
+  workingDays       Json?   @map("working_days") // { "0": false, "1": true, ... }
+  workingHoursStart String? @map("working_hours_start") @db.VarChar(5) // "08:00" (HH:MM)
+  workingHoursEnd   String? @map("working_hours_end") @db.VarChar(5) // "17:00"
+  defaultTimezone   String? @map("default_timezone") @db.VarChar(50) // "Asia/Jerusalem"
+  defaultLocale     String? @map("default_locale") @db.VarChar(10) // "en" or "he"
 
   // Relations
-  stores          Store[]
-  userCompanies   UserCompany[]
-  roles           Role[]
-  companyUsers    CompanyUser[]
-  bookingRules    BookingRule[]
-  buildings       Building[]
-  integrations    IntegrationConfig[]
-  departments     Department[]
-  teams           Team[]
+  stores        Store[]
+  userCompanies UserCompany[]
+  roles         Role[]
+  companyUsers  CompanyUser[]
+  bookingRules  BookingRule[]
+  buildings     Building[]
+  integrations  IntegrationConfig[]
+  departments   Department[]
+  teams         Team[]
+  amenities     Amenity[]
 
   @@map("companies")
 }
@@ -67,50 +68,50 @@ model Company {
 // Stores (AIMS Store Numbers)
 // ======================
 model Store {
-  id          String   @id @default(uuid())
-  companyId   String   @map("company_id")
-  
+  id        String @id @default(uuid())
+  companyId String @map("company_id")
+
   // Store Identity
-  name        String   @db.VarChar(100)
-  code        String   @db.VarChar(10)  // Numeric string: "01", "002", "200"
-  
+  name String @db.VarChar(100)
+  code String @db.VarChar(10) // Numeric string: "01", "002", "200"
+
   // Store-specific settings
-  settings    Json     @default("{}")
-  timezone    String   @default("UTC") @db.VarChar(50)
-  locale      String   @default("en") @db.VarChar(10)
-  syncEnabled Boolean  @default(true) @map("sync_enabled")
+  settings       Json      @default("{}")
+  timezone       String    @default("UTC") @db.VarChar(50)
+  locale         String    @default("en") @db.VarChar(10)
+  syncEnabled    Boolean   @default(true) @map("sync_enabled")
   lastAimsSyncAt DateTime? @map("last_aims_sync_at")
-  isActive    Boolean  @default(true) @map("is_active")
-  
+  isActive       Boolean   @default(true) @map("is_active")
+
   // Store status
   status          StoreStatus @default(ACTIVE)
   statusChangedAt DateTime?   @map("status_changed_at")
   statusNote      String?     @map("status_note") @db.VarChar(500)
 
   // Structured address
-  addressLine1      String?   @map("address_line1") @db.VarChar(255)
-  addressLine2      String?   @map("address_line2") @db.VarChar(255)
-  city              String?   @db.VarChar(100)
-  state             String?   @db.VarChar(100)
-  postalCode        String?   @map("postal_code") @db.VarChar(20)
-  country           String?   @db.VarChar(2)   // ISO 3166-1 alpha-2
+  addressLine1 String? @map("address_line1") @db.VarChar(255)
+  addressLine2 String? @map("address_line2") @db.VarChar(255)
+  city         String? @db.VarChar(100)
+  state        String? @db.VarChar(100)
+  postalCode   String? @map("postal_code") @db.VarChar(20)
+  country      String? @db.VarChar(2) // ISO 3166-1 alpha-2
 
-  latitude          Float?
-  longitude         Float?
+  latitude  Float?
+  longitude Float?
 
   // Capacity
-  totalDesks        Int?      @map("total_desks")
-  maxOccupancy      Int?      @map("max_occupancy")
+  totalDesks   Int? @map("total_desks")
+  maxOccupancy Int? @map("max_occupancy")
 
   // Operating hours (overrides company defaults if set)
-  workingDays       Json?     @map("working_days")
-  workingHoursStart String?   @map("working_hours_start") @db.VarChar(5)
-  workingHoursEnd   String?   @map("working_hours_end") @db.VarChar(5)
+  workingDays       Json?   @map("working_days")
+  workingHoursStart String? @map("working_hours_start") @db.VarChar(5)
+  workingHoursEnd   String? @map("working_hours_end") @db.VarChar(5)
 
   // Timestamps
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   // Relations
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   userStores      UserStore[]
@@ -133,45 +134,45 @@ model Store {
 // Users
 // ======================
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique @db.VarChar(255)
-  passwordHash String      @map("password_hash") @db.VarChar(255)
-  firstName    String?     @map("first_name") @db.VarChar(100)
-  lastName     String?     @map("last_name") @db.VarChar(100)
-  phone        String?     @db.VarChar(50)
-  avatarUrl    String?     @map("avatar_url") @db.VarChar(500)
-  
+  id           String  @id @default(uuid())
+  email        String  @unique @db.VarChar(255)
+  passwordHash String  @map("password_hash") @db.VarChar(255)
+  firstName    String? @map("first_name") @db.VarChar(100)
+  lastName     String? @map("last_name") @db.VarChar(100)
+  phone        String? @db.VarChar(50)
+  avatarUrl    String? @map("avatar_url") @db.VarChar(500)
+
   // Global role (for platform-wide admins only)
-  globalRole   GlobalRole? @map("global_role")
-  
+  globalRole GlobalRole? @map("global_role")
+
   // Active context (last selected company/store)
   activeCompanyId String? @map("active_company_id")
   activeStoreId   String? @map("active_store_id")
-  
+
   // User status and activity tracking
-  isActive     Boolean     @default(true) @map("is_active")
-  lastLogin    DateTime?   @map("last_login")
-  lastActivity DateTime?   @map("last_activity")  // Last API activity
-  loginCount   Int         @default(0) @map("login_count")
-  failedLoginAttempts Int  @default(0) @map("failed_login_attempts")
-  lockedUntil  DateTime?   @map("locked_until")   // Account lock after failed attempts
-  
+  isActive            Boolean   @default(true) @map("is_active")
+  lastLogin           DateTime? @map("last_login")
+  lastActivity        DateTime? @map("last_activity") // Last API activity
+  loginCount          Int       @default(0) @map("login_count")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") // Account lock after failed attempts
+
   // Password management
-  passwordChangedAt DateTime? @map("password_changed_at")
-  passwordResetRequired Boolean @default(false) @map("password_reset_required")
-  
+  passwordChangedAt     DateTime? @map("password_changed_at")
+  passwordResetRequired Boolean   @default(false) @map("password_reset_required")
+
   // Suspension tracking
   suspendedAt     DateTime? @map("suspended_at")
   suspendedReason String?   @map("suspended_reason") @db.VarChar(500)
   suspendedById   String?   @map("suspended_by_id")
-  
+
   // User preferences (JSON)
-  preferences  Json        @default("{}")  // UI preferences, notifications, etc.
-  
+  preferences Json @default("{}") // UI preferences, notifications, etc.
+
   // Timestamps
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   // Relations
   userCompanies      UserCompany[]
   userStores         UserStore[]
@@ -179,11 +180,11 @@ model User {
   deviceTokens       DeviceToken[]
   verificationCodes  VerificationCode[]
   auditLogs          AuditLog[]
-  createdSpaces      Space[]        @relation("SpaceCreatedBy")
-  updatedSpaces      Space[]        @relation("SpaceUpdatedBy")
+  createdSpaces      Space[]            @relation("SpaceCreatedBy")
+  updatedSpaces      Space[]            @relation("SpaceUpdatedBy")
   createdLists       PeopleList[]
-  createdSpacesLists SpacesList[]   @relation("SpacesListCreatedBy")
-  linkedCompanyUser  CompanyUser?   // one-to-one back-reference for compass admin link
+  createdSpacesLists SpacesList[]       @relation("SpacesListCreatedBy")
+  linkedCompanyUser  CompanyUser? // one-to-one back-reference for compass admin link
 
   @@map("users")
 }
@@ -197,20 +198,20 @@ enum GlobalRole {
 // User-Company Access (Many-to-Many)
 // ======================
 model UserCompany {
-  id              String      @id @default(uuid())
-  userId          String      @map("user_id")
-  companyId       String      @map("company_id")
-  roleId          String      @map("role_id")
-  allStoresAccess Boolean     @default(false) @map("all_stores_access")  // If true, user has access to ALL stores in company
+  id              String  @id @default(uuid())
+  userId          String  @map("user_id")
+  companyId       String  @map("company_id")
+  roleId          String  @map("role_id")
+  allStoresAccess Boolean @default(false) @map("all_stores_access") // If true, user has access to ALL stores in company
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyRole Role @relation(fields: [roleId], references: [id])
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyRole Role    @relation(fields: [roleId], references: [id])
 
   @@unique([userId, companyId])
   @@index([userId])
@@ -223,14 +224,14 @@ model UserCompany {
 // User-Store Access (Many-to-Many with Roles)
 // ======================
 model UserStore {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  storeId   String   @map("store_id")
-  roleId    String   @map("role_id")
+  id      String @id @default(uuid())
+  userId  String @map("user_id")
+  storeId String @map("store_id")
+  roleId  String @map("role_id")
 
   // Feature permissions (JSON array of enabled features)
   // Available features: "spaces", "conference", "people", "dashboard"
-  features  Json     @default("[\"dashboard\"]")
+  features Json @default("[\"dashboard\"]")
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -260,8 +261,8 @@ model Role {
   permissions Json      @default("{}")
   isDefault   Boolean   @default(false) @map("is_default")
 
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   company       Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   userStores    UserStore[]
@@ -287,13 +288,13 @@ model RefreshToken {
   tokenHash String   @map("token_hash") @db.VarChar(255)
   expiresAt DateTime @map("expires_at")
   revoked   Boolean  @default(false)
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([tokenHash])
   @@index([userId])
   @@map("refresh_tokens")
@@ -303,18 +304,18 @@ model RefreshToken {
 // Device Tokens (persistent mobile auth)
 // ======================
 model DeviceToken {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  tokenHash    String   @map("token_hash") @db.VarChar(255)
-  deviceId     String   @map("device_id") @db.VarChar(255)
-  deviceName   String?  @map("device_name") @db.VarChar(255)
-  platform     String?  @db.VarChar(50)
-  lastUsedAt   DateTime @map("last_used_at") @default(now())
-  lastIp       String?  @map("last_ip") @db.VarChar(45)
-  expiresAt    DateTime @map("expires_at")
-  revoked      Boolean  @default(false)
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  tokenHash  String   @map("token_hash") @db.VarChar(255)
+  deviceId   String   @map("device_id") @db.VarChar(255)
+  deviceName String?  @map("device_name") @db.VarChar(255)
+  platform   String?  @db.VarChar(50)
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+  lastIp     String?  @map("last_ip") @db.VarChar(45)
+  expiresAt  DateTime @map("expires_at")
+  revoked    Boolean  @default(false)
 
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -334,13 +335,13 @@ model VerificationCode {
   type      CodeType // LOGIN_2FA, PASSWORD_RESET
   expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId, type, used])
   @@index([code])
   @@map("verification_codes")
@@ -355,35 +356,39 @@ enum CodeType {
 // Spaces (Rooms/Desks/Chairs) - Store-scoped
 // ======================
 model Space {
-  id           String     @id @default(uuid())
-  storeId      String     @map("store_id")
-  externalId   String     @map("external_id") @db.VarChar(50)
-  labelCode    String?    @map("label_code") @db.VarChar(50)
-  templateName String?    @map("template_name") @db.VarChar(100)
+  id             String   @id @default(uuid())
+  storeId        String   @map("store_id")
+  externalId     String   @map("external_id") @db.VarChar(50)
+  labelCode      String?  @map("label_code") @db.VarChar(50)
+  templateName   String?  @map("template_name") @db.VarChar(100)
   assignedLabels String[] @default([]) @map("assigned_labels")
 
   // Dynamic data fields
-  data         Json       @default("{}")
+  data Json @default("{}")
 
   // Sync status
   syncStatus   SyncStatus @default(PENDING) @map("sync_status")
   lastSyncedAt DateTime?  @map("last_synced_at")
 
   // Compass fields — all nullable for backward compatibility
-  buildingId      String?      @map("building_id")
-  floorId         String?      @map("floor_id")
-  areaId          String?      @map("area_id")
-  compassMode     CompassSpaceMode? @map("compass_mode")
-  compassCapacity Int?         @map("compass_capacity")
-  compassAmenities String[]    @default([]) @map("compass_amenities")
-  permanentAssigneeId String?  @map("permanent_assignee_id")
-  sortOrder       Int          @default(0) @map("sort_order")
-  deletedAt       DateTime?    @map("deleted_at")
+  buildingId          String?           @map("building_id")
+  floorId             String?           @map("floor_id")
+  areaId              String?           @map("area_id")
+  compassMode         CompassSpaceMode? @map("compass_mode")
+  compassCapacity     Int?              @map("compass_capacity")
+  compassAmenities    String[]          @default([]) @map("compass_amenities")
+  compassSpaceType    CompassSpaceType? @map("compass_space_type")
+  neighborhoodId      String?           @map("neighborhood_id")
+  minCapacity         Int?              @map("min_capacity")
+  maxCapacity         Int?              @map("max_capacity")
+  permanentAssigneeId String?           @map("permanent_assignee_id")
+  sortOrder           Int               @default(0) @map("sort_order")
+  deletedAt           DateTime?         @map("deleted_at")
 
   // Map position (for floor plan editor)
-  mapX            Float?       @map("map_x")
-  mapY            Float?       @map("map_y")
-  mapRotation     Float?       @map("map_rotation")
+  mapX        Float? @map("map_x")
+  mapY        Float? @map("map_y")
+  mapRotation Float? @map("map_rotation")
 
   // Audit
   createdById String? @map("created_by")
@@ -394,15 +399,17 @@ model Space {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  store               Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  building            Building?                @relation(fields: [buildingId], references: [id])
-  floor               Floor?                   @relation(fields: [floorId], references: [id])
-  area                Area?                    @relation(fields: [areaId], references: [id])
-  permanentAssignee   CompanyUser?             @relation("PermanentSpace", fields: [permanentAssigneeId], references: [id])
-  createdBy           User?                    @relation("SpaceCreatedBy", fields: [createdById], references: [id])
-  updatedBy           User?                    @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
+  store               Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  building            Building?              @relation(fields: [buildingId], references: [id])
+  floor               Floor?                 @relation(fields: [floorId], references: [id])
+  area                Area?                  @relation(fields: [areaId], references: [id])
+  neighborhood        Neighborhood?          @relation(fields: [neighborhoodId], references: [id])
+  permanentAssignee   CompanyUser?           @relation("PermanentSpace", fields: [permanentAssigneeId], references: [id])
+  createdBy           User?                  @relation("SpaceCreatedBy", fields: [createdById], references: [id])
+  updatedBy           User?                  @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
   listMemberships     PeopleListMembership[]
   bookings            Booking[]
+  structuredAmenities SpaceAmenity[]
 
   @@unique([storeId, externalId])
   @@index([storeId])
@@ -410,6 +417,8 @@ model Space {
   @@index([buildingId])
   @@index([floorId])
   @@index([compassMode])
+  @@index([neighborhoodId])
+  @@index([compassSpaceType])
   @@map("spaces")
 }
 
@@ -417,15 +426,15 @@ model Space {
 // People - Store-scoped
 // ======================
 model Person {
-  id              String     @id @default(uuid())
-  storeId         String     @map("store_id")
-  externalId      String?    @map("external_id") @db.VarChar(50)
-  virtualSpaceId  String?    @map("virtual_space_id") @db.VarChar(50)
-  assignedSpaceId String?    @map("assigned_space_id")
-  
+  id              String  @id @default(uuid())
+  storeId         String  @map("store_id")
+  externalId      String? @map("external_id") @db.VarChar(50)
+  virtualSpaceId  String? @map("virtual_space_id") @db.VarChar(50)
+  assignedSpaceId String? @map("assigned_space_id")
+
   // Dynamic data fields
-  data            Json       @default("{}")
-  assignedLabels  String[]   @default([]) @map("assigned_labels")
+  data           Json     @default("{}")
+  assignedLabels String[] @default([]) @map("assigned_labels")
 
   // Sync status
   syncStatus   SyncStatus @default(PENDING) @map("sync_status")
@@ -436,7 +445,7 @@ model Person {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  store           Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store           Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
   listMemberships PeopleListMembership[]
 
   @@index([storeId])
@@ -450,11 +459,11 @@ model Person {
 // Conference Rooms - Store-scoped
 // ======================
 model ConferenceRoom {
-  id           String     @id @default(uuid())
-  storeId      String     @map("store_id")
-  externalId   String     @map("external_id") @db.VarChar(50)
-  roomName     String     @map("room_name") @db.VarChar(100)
-  labelCode    String?    @map("label_code") @db.VarChar(50)
+  id             String   @id @default(uuid())
+  storeId        String   @map("store_id")
+  externalId     String   @map("external_id") @db.VarChar(50)
+  roomName       String   @map("room_name") @db.VarChar(100)
+  labelCode      String?  @map("label_code") @db.VarChar(50)
   assignedLabels String[] @default([]) @map("assigned_labels")
 
   // Meeting status
@@ -463,17 +472,17 @@ model ConferenceRoom {
   startTime    String?  @map("start_time") @db.VarChar(10)
   endTime      String?  @map("end_time") @db.VarChar(10)
   participants String[] @default([])
-  
+
   // Sync status
   syncStatus SyncStatus @default(PENDING) @map("sync_status")
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
+
   @@unique([storeId, externalId])
   @@index([storeId])
   @@map("conference_rooms")
@@ -483,22 +492,22 @@ model ConferenceRoom {
 // People Lists - Store-scoped
 // ======================
 model PeopleList {
-  id          String   @id @default(uuid())
-  storeId     String   @map("store_id")
-  name        String   @db.VarChar(100)
-  storageName String   @map("storage_name") @db.VarChar(100)
-  content     Json     @default("[]")  // Snapshot: [{id, virtualSpaceId, data, assignedSpaceId}]
-  createdById String?  @map("created_by")
-  
+  id          String  @id @default(uuid())
+  storeId     String  @map("store_id")
+  name        String  @db.VarChar(100)
+  storageName String  @map("storage_name") @db.VarChar(100)
+  content     Json    @default("[]") // Snapshot: [{id, virtualSpaceId, data, assignedSpaceId}]
+  createdById String? @map("created_by")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
-  store       Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdBy   User?                    @relation(fields: [createdById], references: [id])
+  store       Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBy   User?                  @relation(fields: [createdById], references: [id])
   memberships PeopleListMembership[]
-  
+
   @@unique([storeId, storageName])
   @@unique([storeId, name])
   @@index([storeId])
@@ -509,19 +518,19 @@ model PeopleList {
 // People List Memberships (Many-to-Many)
 // ======================
 model PeopleListMembership {
-  id        String   @id @default(uuid())
-  personId  String   @map("person_id")
-  listId    String   @map("list_id")
-  spaceId   String?  @map("space_id")
-  
+  id       String  @id @default(uuid())
+  personId String  @map("person_id")
+  listId   String  @map("list_id")
+  spaceId  String? @map("space_id")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relations
   person Person     @relation(fields: [personId], references: [id], onDelete: Cascade)
   list   PeopleList @relation(fields: [listId], references: [id], onDelete: Cascade)
   space  Space?     @relation(fields: [spaceId], references: [id])
-  
+
   @@unique([personId, listId])
   @@index([personId])
   @@index([listId])
@@ -532,20 +541,20 @@ model PeopleListMembership {
 // Spaces Lists - Store-scoped
 // ======================
 model SpacesList {
-  id          String   @id @default(uuid())
-  storeId     String   @map("store_id")
-  name        String   @db.VarChar(100)
-  content     Json     @default("[]")  // Snapshot: [{id, externalId, data, labelCode, templateName}]
-  createdById String?  @map("created_by")
-  
+  id          String  @id @default(uuid())
+  storeId     String  @map("store_id")
+  name        String  @db.VarChar(100)
+  content     Json    @default("[]") // Snapshot: [{id, externalId, data, labelCode, templateName}]
+  createdById String? @map("created_by")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
-  store       Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdBy   User?  @relation("SpacesListCreatedBy", fields: [createdById], references: [id])
-  
+  store     Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("SpacesListCreatedBy", fields: [createdById], references: [id])
+
   @@unique([storeId, name])
   @@index([storeId])
   @@map("spaces_lists")
@@ -555,28 +564,28 @@ model SpacesList {
 // Audit Logs
 // ======================
 model AuditLog {
-  id         String   @id @default(uuid())
-  storeId    String?  @map("store_id")
-  userId     String?  @map("user_id")
-  action     String   @db.VarChar(50)
-  entityType String   @map("entity_type") @db.VarChar(50)
-  entityId   String?  @map("entity_id")
-  oldData    Json?    @map("old_data")
-  newData    Json?    @map("new_data")
-  ipAddress  String?  @map("ip_address") @db.VarChar(45)
-  userAgent  String?  @map("user_agent")
-  
+  id         String  @id @default(uuid())
+  storeId    String? @map("store_id")
+  userId     String? @map("user_id")
+  action     String  @db.VarChar(50)
+  entityType String  @map("entity_type") @db.VarChar(50)
+  entityId   String? @map("entity_id")
+  oldData    Json?   @map("old_data")
+  newData    Json?   @map("new_data")
+  ipAddress  String? @map("ip_address") @db.VarChar(45)
+  userAgent  String? @map("user_agent")
+
   // Permission context
   permissionChecked String? @map("permission_checked") @db.VarChar(100)
   wasAuthorized     Boolean @default(true) @map("was_authorized")
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relations
   store Store? @relation(fields: [storeId], references: [id])
   user  User?  @relation(fields: [userId], references: [id])
-  
+
   @@index([storeId])
   @@index([userId])
   @@index([entityType, entityId])
@@ -600,13 +609,13 @@ model SyncQueueItem {
   errorMessage String?     @map("error_message")
   scheduledAt  DateTime    @default(now()) @map("scheduled_at")
   processedAt  DateTime?   @map("processed_at")
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relations
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
+
   @@index([status, scheduledAt])
   @@index([storeId])
   @@map("sync_queue")
@@ -645,13 +654,13 @@ enum StoreStatus {
 // Buildings — Company-scoped hierarchy
 // ======================
 model Building {
-  id        String   @id @default(uuid())
-  companyId String   @map("company_id")
-  storeId   String   @map("store_id")
-  name      String   @db.VarChar(100)
-  code      String   @db.VarChar(20)
-  sortOrder Int      @default(0) @map("sort_order")
-  isActive  Boolean  @default(true) @map("is_active")
+  id        String  @id @default(uuid())
+  companyId String  @map("company_id")
+  storeId   String  @map("store_id")
+  name      String  @db.VarChar(100)
+  code      String  @db.VarChar(20)
+  sortOrder Int     @default(0) @map("sort_order")
+  isActive  Boolean @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -682,10 +691,11 @@ model Floor {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  areas      Area[]
-  spaces     Space[]
-  floorPlans FloorPlan[]
+  building      Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  areas         Area[]
+  spaces        Space[]
+  floorPlans    FloorPlan[]
+  neighborhoods Neighborhood[]
 
   @@unique([buildingId, prefix])
   @@index([buildingId])
@@ -751,17 +761,17 @@ model FloorPlan {
 // CompanyUser — Compass employee accounts
 // ======================
 model CompanyUser {
-  id           String  @id @default(uuid())
-  companyId    String  @map("company_id")
-  branchId     String  @map("branch_id")
-  buildingId   String? @map("building_id")
-  floorId      String? @map("floor_id")
-  areaId       String? @map("area_id")
+  id         String  @id @default(uuid())
+  companyId  String  @map("company_id")
+  branchId   String  @map("branch_id")
+  buildingId String? @map("building_id")
+  floorId    String? @map("floor_id")
+  areaId     String? @map("area_id")
 
-  email        String  @db.VarChar(255)
-  phone        String? @db.VarChar(50)
-  displayName  String  @map("display_name") @db.VarChar(200)
-  avatarUrl    String? @map("avatar_url") @db.VarChar(500)
+  email       String  @db.VarChar(255)
+  phone       String? @db.VarChar(50)
+  displayName String  @map("display_name") @db.VarChar(200)
+  avatarUrl   String? @map("avatar_url") @db.VarChar(500)
 
   role         CompanyUserRole @default(EMPLOYEE)
   isActive     Boolean         @default(true) @map("is_active")
@@ -770,35 +780,35 @@ model CompanyUser {
   linkedUserId String?         @unique @map("linked_user_id") // FK to User (admin link)
 
   // Org structure fields
-  departmentId     String?  @map("department_id")
-  jobTitle         String?  @map("job_title") @db.VarChar(100)
-  employeeNumber   String?  @map("employee_number") @db.VarChar(50)
-  managerId        String?  @map("manager_id")
-  costCenter       String?  @map("cost_center") @db.VarChar(50)
-  workSchedule     Json?    @map("work_schedule")
-  isRemote         Boolean  @default(false) @map("is_remote")
+  departmentId   String? @map("department_id")
+  jobTitle       String? @map("job_title") @db.VarChar(100)
+  employeeNumber String? @map("employee_number") @db.VarChar(50)
+  managerId      String? @map("manager_id")
+  costCenter     String? @map("cost_center") @db.VarChar(50)
+  workSchedule   Json?   @map("work_schedule")
+  isRemote       Boolean @default(false) @map("is_remote")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company             Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  branch              Store       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  linkedUser          User?       @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
-  bookings            Booking[]
-  permanentSpaces     Space[]     @relation("PermanentSpace")
-  sentFriendRequests  Friendship[] @relation("FriendshipRequester")
-  receivedFriendRequests Friendship[] @relation("FriendshipAddressee")
-  compassDeviceTokens CompanyUserDeviceToken[]
+  company                  Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch                   Store                         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  linkedUser               User?                         @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
+  bookings                 Booking[]
+  permanentSpaces          Space[]                       @relation("PermanentSpace")
+  sentFriendRequests       Friendship[]                  @relation("FriendshipRequester")
+  receivedFriendRequests   Friendship[]                  @relation("FriendshipAddressee")
+  compassDeviceTokens      CompanyUserDeviceToken[]
   compassVerificationCodes CompanyUserVerificationCode[]
 
   // Org structure relations
-  department         Department?  @relation("DeptMembers", fields: [departmentId], references: [id])
-  manager            CompanyUser? @relation("ManagerReports", fields: [managerId], references: [id])
+  department         Department?   @relation("DeptMembers", fields: [departmentId], references: [id])
+  manager            CompanyUser?  @relation("ManagerReports", fields: [managerId], references: [id])
   directReports      CompanyUser[] @relation("ManagerReports")
   teamMemberships    TeamMember[]
-  managedDepartments Department[] @relation("DeptManager")
-  ledTeams           Team[]       @relation("TeamLead")
+  managedDepartments Department[]  @relation("DeptManager")
+  ledTeams           Team[]        @relation("TeamLead")
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -817,25 +827,25 @@ enum CompanyUserRole {
 // Booking — Workspace reservations
 // ======================
 model Booking {
-  id             String        @id @default(uuid())
-  companyUserId  String        @map("company_user_id")
-  spaceId        String        @map("space_id")
-  branchId       String        @map("branch_id")
-  companyId      String        @map("company_id")
+  id            String @id @default(uuid())
+  companyUserId String @map("company_user_id")
+  spaceId       String @map("space_id")
+  branchId      String @map("branch_id")
+  companyId     String @map("company_id")
 
-  title          String?       @db.VarChar(255) // Meeting/booking title
-  startTime      DateTime      @map("start_time")
-  endTime        DateTime?     @map("end_time") // null for permanent assignments
-  status         BookingStatus @default(BOOKED)
+  title     String?       @db.VarChar(255) // Meeting/booking title
+  startTime DateTime      @map("start_time")
+  endTime   DateTime?     @map("end_time") // null for permanent assignments
+  status    BookingStatus @default(BOOKED)
 
-  checkedInAt    DateTime?     @map("checked_in_at")
-  releasedAt     DateTime?     @map("released_at")
-  autoReleased   Boolean       @default(false) @map("auto_released")
-  bookedBy       String?       @map("booked_by") // admin who booked on behalf
-  notes          String?       @db.VarChar(500)
+  checkedInAt  DateTime? @map("checked_in_at")
+  releasedAt   DateTime? @map("released_at")
+  autoReleased Boolean   @default(false) @map("auto_released")
+  bookedBy     String?   @map("booked_by") // admin who booked on behalf
+  notes        String?   @db.VarChar(500)
 
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   companyUser CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
@@ -862,16 +872,16 @@ enum BookingStatus {
 // BookingRule — Configurable booking constraints
 // ======================
 model BookingRule {
-  id           String           @id @default(uuid())
-  companyId    String           @map("company_id")
-  name         String           @db.VarChar(100)
-  ruleType     BookingRuleType  @map("rule_type")
-  isActive     Boolean          @default(true) @map("is_active")
-  priority     Int              @default(0)
-  config       Json             @default("{}") // rule-specific configuration
-  applyTo      RuleApplyTo      @default(ALL_BRANCHES) @map("apply_to")
-  targetBranchIds String[]      @default([]) @map("target_branch_ids")
-  targetSpaceTypes String[]     @default([]) @map("target_space_types")
+  id               String          @id @default(uuid())
+  companyId        String          @map("company_id")
+  name             String          @db.VarChar(100)
+  ruleType         BookingRuleType @map("rule_type")
+  isActive         Boolean         @default(true) @map("is_active")
+  priority         Int             @default(0)
+  config           Json            @default("{}") // rule-specific configuration
+  applyTo          RuleApplyTo     @default(ALL_BRANCHES) @map("apply_to")
+  targetBranchIds  String[]        @default([]) @map("target_branch_ids")
+  targetSpaceTypes String[]        @default([]) @map("target_space_types")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -900,11 +910,11 @@ enum RuleApplyTo {
 // Friendship — Bidirectional with acceptance
 // ======================
 model Friendship {
-  id           String           @id @default(uuid())
-  requesterId  String           @map("requester_id")
-  addresseeId  String           @map("addressee_id")
-  companyId    String           @map("company_id")
-  status       FriendshipStatus @default(PENDING)
+  id          String           @id @default(uuid())
+  requesterId String           @map("requester_id")
+  addresseeId String           @map("addressee_id")
+  companyId   String           @map("company_id")
+  status      FriendshipStatus @default(PENDING)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -935,17 +945,30 @@ enum CompassSpaceMode {
 }
 
 // ======================
+// Compass Space Type — workspace category for booking
+// ======================
+enum CompassSpaceType {
+  DESK
+  MEETING_ROOM
+  PHONE_BOOTH
+  COLLABORATION_ZONE
+  PARKING
+  LOCKER
+  EVENT_SPACE
+}
+
+// ======================
 // CompanyUserDeviceToken — Persistent mobile auth for Compass
 // ======================
 model CompanyUserDeviceToken {
-  id           String   @id @default(uuid())
-  companyUserId String  @map("company_user_id")
-  tokenHash    String   @map("token_hash") @db.VarChar(255)
-  deviceName   String?  @map("device_name") @db.VarChar(255)
-  platform     String?  @db.VarChar(50) // ANDROID, IOS, WEB
-  lastUsedAt   DateTime @map("last_used_at") @default(now())
-  expiresAt    DateTime @map("expires_at")
-  revoked      Boolean  @default(false)
+  id            String   @id @default(uuid())
+  companyUserId String   @map("company_user_id")
+  tokenHash     String   @map("token_hash") @db.VarChar(255)
+  deviceName    String?  @map("device_name") @db.VarChar(255)
+  platform      String?  @db.VarChar(50) // ANDROID, IOS, WEB
+  lastUsedAt    DateTime @default(now()) @map("last_used_at")
+  expiresAt     DateTime @map("expires_at")
+  revoked       Boolean  @default(false)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -981,24 +1004,25 @@ model CompanyUserVerificationCode {
 // Department — Company-scoped org hierarchy
 // ======================
 model Department {
-  id          String   @id @default(uuid())
-  companyId   String   @map("company_id")
-  name        String   @db.VarChar(100)
-  code        String?  @db.VarChar(20)
-  parentId    String?  @map("parent_id")
-  managerId   String?  @map("manager_id")
-  color       String?  @db.VarChar(7)
-  sortOrder   Int      @default(0) @map("sort_order")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  name      String   @db.VarChar(100)
+  code      String?  @db.VarChar(20)
+  parentId  String?  @map("parent_id")
+  managerId String?  @map("manager_id")
+  color     String?  @db.VarChar(7)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  parent      Department?   @relation("DeptHierarchy", fields: [parentId], references: [id])
-  children    Department[]  @relation("DeptHierarchy")
-  manager     CompanyUser?  @relation("DeptManager", fields: [managerId], references: [id])
-  members     CompanyUser[] @relation("DeptMembers")
-  teams       Team[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent        Department?    @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children      Department[]   @relation("DeptHierarchy")
+  manager       CompanyUser?   @relation("DeptManager", fields: [managerId], references: [id])
+  members       CompanyUser[]  @relation("DeptMembers")
+  teams         Team[]
+  neighborhoods Neighborhood[]
 
   @@unique([companyId, code])
   @@index([companyId, isActive])
@@ -1019,10 +1043,10 @@ model Team {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  department   Department?  @relation(fields: [departmentId], references: [id])
-  lead         CompanyUser? @relation("TeamLead", fields: [leadId], references: [id])
-  members      TeamMember[]
+  company    Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department Department?  @relation(fields: [departmentId], references: [id])
+  lead       CompanyUser? @relation("TeamLead", fields: [leadId], references: [id])
+  members    TeamMember[]
 
   @@index([companyId])
   @@map("teams")
@@ -1038,8 +1062,8 @@ model TeamMember {
   role          String   @default("MEMBER") @db.VarChar(20)
   joinedAt      DateTime @default(now()) @map("joined_at")
 
-  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  companyUser   CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  companyUser CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, companyUserId])
   @@index([companyUserId])
@@ -1047,14 +1071,75 @@ model TeamMember {
 }
 
 // ======================
+// Amenity — Company-scoped space amenities (projector, whiteboard, etc.)
+// ======================
+model Amenity {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  name      String   @db.VarChar(100)
+  nameHe    String?  @map("name_he") @db.VarChar(100)
+  icon      String?  @db.VarChar(50)
+  category  String   @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  spaces  SpaceAmenity[]
+
+  @@unique([companyId, name])
+  @@index([companyId, isActive])
+  @@map("amenities")
+}
+
+// ======================
+// SpaceAmenity — Many-to-many between Space and Amenity
+// ======================
+model SpaceAmenity {
+  spaceId   String @map("space_id")
+  amenityId String @map("amenity_id")
+  quantity  Int    @default(1)
+
+  space   Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([spaceId, amenityId])
+  @@index([amenityId])
+  @@map("space_amenities")
+}
+
+// ======================
+// Neighborhood — Floor-scoped grouping for spaces
+// ======================
+model Neighborhood {
+  id           String   @id @default(uuid())
+  floorId      String   @map("floor_id")
+  departmentId String?  @map("department_id")
+  name         String   @db.VarChar(100)
+  color        String?  @db.VarChar(7)
+  description  String?  @db.VarChar(500)
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  floor      Floor       @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id])
+  spaces     Space[]
+
+  @@index([floorId])
+  @@map("neighborhoods")
+}
+
+// ======================
 // IntegrationConfig — External provider sync settings
 // ======================
 model IntegrationConfig {
-  id         String @id @default(uuid())
-  companyId  String @map("company_id")
-  provider   String @db.VarChar(50) // MICROSOFT_365, GOOGLE_WORKSPACE, OKTA
-  type       String @db.VarChar(50) // USER_DIRECTORY, CALENDAR_ROOMS, BOTH
-  isActive   Boolean @default(false) @map("is_active")
+  id        String  @id @default(uuid())
+  companyId String  @map("company_id")
+  provider  String  @db.VarChar(50) // MICROSOFT_365, GOOGLE_WORKSPACE, OKTA
+  type      String  @db.VarChar(50) // USER_DIRECTORY, CALENDAR_ROOMS, BOTH
+  isActive  Boolean @default(false) @map("is_active")
 
   // Encrypted credentials (AES-256-GCM)
   credentials    String @db.Text // encrypted JSON blob
@@ -1062,7 +1147,7 @@ model IntegrationConfig {
   credentialsTag String @map("credentials_tag") @db.VarChar(64)
 
   // Sync configuration
-  syncIntervalMinutes Int     @default(1440) @map("sync_interval_minutes") // default daily
+  syncIntervalMinutes Int       @default(1440) @map("sync_interval_minutes") // default daily
   lastSyncAt          DateTime? @map("last_sync_at")
   lastSyncStatus      String?   @map("last_sync_status") @db.VarChar(50) // SUCCESS, PARTIAL, FAILED
   lastSyncError       String?   @map("last_sync_error") @db.Text
