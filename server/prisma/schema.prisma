@@ -57,6 +57,8 @@ model Company {
   bookingRules    BookingRule[]
   buildings       Building[]
   integrations    IntegrationConfig[]
+  departments     Department[]
+  teams           Team[]
 
   @@map("companies")
 }
@@ -767,6 +769,15 @@ model CompanyUser {
   externalId   String?         @map("external_id") @db.VarChar(255) // for directory sync
   linkedUserId String?         @unique @map("linked_user_id") // FK to User (admin link)
 
+  // Org structure fields
+  departmentId     String?  @map("department_id")
+  jobTitle         String?  @map("job_title") @db.VarChar(100)
+  employeeNumber   String?  @map("employee_number") @db.VarChar(50)
+  managerId        String?  @map("manager_id")
+  costCenter       String?  @map("cost_center") @db.VarChar(50)
+  workSchedule     Json?    @map("work_schedule")
+  isRemote         Boolean  @default(false) @map("is_remote")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -780,6 +791,14 @@ model CompanyUser {
   receivedFriendRequests Friendship[] @relation("FriendshipAddressee")
   compassDeviceTokens CompanyUserDeviceToken[]
   compassVerificationCodes CompanyUserVerificationCode[]
+
+  // Org structure relations
+  department         Department?  @relation("DeptMembers", fields: [departmentId], references: [id])
+  manager            CompanyUser? @relation("ManagerReports", fields: [managerId], references: [id])
+  directReports      CompanyUser[] @relation("ManagerReports")
+  teamMemberships    TeamMember[]
+  managedDepartments Department[] @relation("DeptManager")
+  ledTeams           Team[]       @relation("TeamLead")
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -956,6 +975,75 @@ model CompanyUserVerificationCode {
   @@index([email, consumed])
   @@index([companyUserId])
   @@map("company_user_verification_codes")
+}
+
+// ======================
+// Department — Company-scoped org hierarchy
+// ======================
+model Department {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  name        String   @db.VarChar(100)
+  code        String?  @db.VarChar(20)
+  parentId    String?  @map("parent_id")
+  managerId   String?  @map("manager_id")
+  color       String?  @db.VarChar(7)
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent      Department?   @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children    Department[]  @relation("DeptHierarchy")
+  manager     CompanyUser?  @relation("DeptManager", fields: [managerId], references: [id])
+  members     CompanyUser[] @relation("DeptMembers")
+  teams       Team[]
+
+  @@unique([companyId, code])
+  @@index([companyId, isActive])
+  @@map("departments")
+}
+
+// ======================
+// Team — Company-scoped, optionally department-scoped
+// ======================
+model Team {
+  id           String   @id @default(uuid())
+  companyId    String   @map("company_id")
+  departmentId String?  @map("department_id")
+  name         String   @db.VarChar(100)
+  leadId       String?  @map("lead_id")
+  color        String?  @db.VarChar(7)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  lead         CompanyUser? @relation("TeamLead", fields: [leadId], references: [id])
+  members      TeamMember[]
+
+  @@index([companyId])
+  @@map("teams")
+}
+
+// ======================
+// TeamMember — Many-to-many between Team and CompanyUser
+// ======================
+model TeamMember {
+  id            String   @id @default(uuid())
+  teamId        String   @map("team_id")
+  companyUserId String   @map("company_user_id")
+  role          String   @default("MEMBER") @db.VarChar(20)
+  joinedAt      DateTime @default(now()) @map("joined_at")
+
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  companyUser   CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, companyUserId])
+  @@index([companyUserId])
+  @@map("team_members")
 }
 
 // ======================
