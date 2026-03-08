@@ -93,3 +93,15 @@ export const updateMode = async (req: Request, res: Response, next: NextFunction
         next(error);
     }
 };
+
+// ─── GET /api/v2/admin/compass/buildings/:companyId ──
+
+export const adminListBuildings = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const companyId = req.params.companyId as string;
+        const buildings = await service.listBuildings(companyId);
+        res.json({ data: buildings });
+    } catch (error) {
+        next(error);
+    }
+};

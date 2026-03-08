@@ -113,6 +113,10 @@ export const compassAdminApi = {
     deleteAmenity: (companyId: string, id: string) =>
         api.delete(`/admin/compass/amenities/${companyId}/${id}`),
 
+    // Buildings (hierarchy: building → floors → areas)
+    listBuildings: (companyId: string) =>
+        api.get<{ data: Array<{ id: string; name: string; floors: Array<{ id: string; name: string }> }> }>(`/admin/compass/buildings/${companyId}`),
+
     // Neighborhoods
     listNeighborhoods: (floorId: string) =>
         api.get<{ data: Neighborhood[] }>(`/admin/compass/neighborhoods/${floorId}`),

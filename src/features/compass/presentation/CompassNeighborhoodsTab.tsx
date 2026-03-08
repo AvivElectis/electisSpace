@@ -1,52 +1,160 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, IconButton, TextField,
     Stack, CircularProgress, Alert, Button, Dialog, DialogTitle,
-    DialogContent, DialogActions, Chip,
+    DialogContent, DialogActions, Chip, MenuItem,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import LocationCityIcon from '@mui/icons-material/LocationCity';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
 import type { Department, Neighborhood } from '../domain/types';
+
+interface FloorOption {
+    id: string;
+    name: string;
+    buildingName: string;
+}
 
 export function CompassNeighborhoodsTab() {
     const { t } = useTranslation();
     const { activeCompanyId } = useAuthStore();
 
     const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+    const [floors, setFloors] = useState<FloorOption[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+    const [selectedFloorId, setSelectedFloorId] = useState('');
+
+    // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<Neighborhood | null>(null);
-    const [form, setForm] = useState({ name: '', color: '', description: '' });
+    const [form, setForm] = useState({ name: '', color: '', description: '', departmentId: '' });
+    const [saving, setSaving] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<Neighborhood | null>(null);
 
-    // Departments for dropdown
-    const [departments, setDepartments] = useState<Department[]>([]);
+    // Fetch buildings/floors hierarchy
+    useEffect(() => {
+        if (!activeCompanyId) return;
+        const fetchData = async () => {
+            try {
+                const [buildingsRes, deptsRes] = await Promise.all([
+                    compassAdminApi.listBuildings(activeCompanyId),
+                    compassAdminApi.listDepartments(activeCompanyId),
+                ]);
+                const floorOptions: FloorOption[] = [];
+                for (const building of buildingsRes.data.data || []) {
+                    for (const floor of building.floors || []) {
+                        floorOptions.push({
+                            id: floor.id,
+                            name: floor.name,
+                            buildingName: building.name,
+                        });
+                    }
+                }
+                setFloors(floorOptions);
+                setDepartments(deptsRes.data.data || []);
+                if (floorOptions.length > 0 && !selectedFloorId) {
+                    setSelectedFloorId(floorOptions[0].id);
+                }
+            } catch {
+                setError(t('errors.loadFailed', 'Failed to load data'));
+            } finally {
+                setInitialLoading(false);
+            }
+        };
+        fetchData();
+    }, [activeCompanyId]);
 
-    // Floor selection placeholder — full floor selector will be added when buildings/floors API is integrated
-    const [selectedFloorId] = useState<string | null>(null);
+    // Fetch neighborhoods when floor changes
+    const fetchNeighborhoods = useCallback(async () => {
+        if (!selectedFloorId) return;
+        setLoading(true);
+        try {
+            const res = await compassAdminApi.listNeighborhoods(selectedFloorId);
+            setNeighborhoods(res.data.data || []);
+            setError(null);
+        } catch {
+            setError(t('errors.loadFailed', 'Failed to load data'));
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedFloorId]);
+
+    useEffect(() => { fetchNeighborhoods(); }, [fetchNeighborhoods]);
+
+    const handleSave = async () => {
+        if (!form.name.trim() || !selectedFloorId) return;
+        setSaving(true);
+        try {
+            if (editing) {
+                await compassAdminApi.updateNeighborhood(editing.id, {
+                    name: form.name.trim(),
+                    color: form.color.trim() || null,
+                    description: form.description.trim() || null,
+                    departmentId: form.departmentId || null,
+                });
+            } else {
+                await compassAdminApi.createNeighborhood({
+                    name: form.name.trim(),
+                    floorId: selectedFloorId,
+                    color: form.color.trim() || undefined,
+                    description: form.description.trim() || undefined,
+                    departmentId: form.departmentId || undefined,
+                });
+            }
+            setDialogOpen(false);
+            fetchNeighborhoods();
+        } catch {
+            setError(t('errors.saveFailed', 'Failed to save'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!confirmDelete) return;
+        try {
+            await compassAdminApi.deleteNeighborhood(confirmDelete.id);
+            setConfirmDelete(null);
+            fetchNeighborhoods();
+        } catch {
+            setError(t('errors.saveFailed', 'Failed to save'));
+            setConfirmDelete(null);
+        }
+    };
+
+    const openAdd = () => {
+        setEditing(null);
+        setForm({ name: '', color: '', description: '', departmentId: '' });
+        setDialogOpen(true);
+    };
+
+    const openEdit = (n: Neighborhood) => {
+        setEditing(n);
+        setForm({
+            name: n.name,
+            color: n.color || '',
+            description: n.description || '',
+            departmentId: n.department?.id || '',
+        });
+        setDialogOpen(true);
+    };
 
     const renderColorDot = (color: string | null) => {
         if (!color) return null;
         return (
             <Box
                 sx={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    display: 'inline-block',
-                    verticalAlign: 'middle',
-                    mr: 1,
+                    width: 16, height: 16, borderRadius: '50%',
+                    backgroundColor: color, border: '1px solid', borderColor: 'divider',
+                    display: 'inline-block', verticalAlign: 'middle', mr: 1,
                 }}
             />
         );
@@ -59,22 +167,17 @@ export function CompassNeighborhoodsTab() {
             (n.description && n.description.toLowerCase().includes(search.toLowerCase())))
         : neighborhoods;
 
-    // Show placeholder until floor selector is available
-    if (!selectedFloorId) {
+    if (initialLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+
+    if (floors.length === 0) {
         return (
             <Box sx={{ textAlign: 'center', py: 6 }}>
-                <LocationCityIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary">
-                    {t('compass.neighborhoods.title')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {t('compass.neighborhoods.selectFloor')}
+                <Typography variant="body2" color="text.secondary">
+                    {t('compass.neighborhoods.selectFloor', 'No floors found. Create buildings and floors first.')}
                 </Typography>
             </Box>
         );
     }
-
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
     return (
         <Box>
@@ -83,21 +186,26 @@ export function CompassNeighborhoodsTab() {
             <Stack direction="row" gap={2} sx={{ mb: 2 }} flexWrap="wrap" alignItems="center">
                 <TextField
                     size="small"
+                    select
+                    label={t('compass.dashboard.floor', 'Floor')}
+                    value={selectedFloorId}
+                    onChange={(e) => setSelectedFloorId(e.target.value)}
+                    sx={{ minWidth: 220 }}
+                >
+                    {floors.map(f => (
+                        <MenuItem key={f.id} value={f.id}>
+                            {f.buildingName} — {f.name}
+                        </MenuItem>
+                    ))}
+                </TextField>
+                <TextField
+                    size="small"
                     placeholder={t('common.search', 'Search...')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     sx={{ minWidth: 200 }}
                 />
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => {
-                        setEditing(null);
-                        setForm({ name: '', color: '', description: '' });
-                        setDialogOpen(true);
-                    }}
-                >
+                <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={openAdd}>
                     {t('compass.neighborhoods.addNeighborhood')}
                 </Button>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
@@ -105,89 +213,89 @@ export function CompassNeighborhoodsTab() {
                 </Typography>
             </Stack>
 
-            <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>{t('compass.amenities.name')}</TableCell>
-                            <TableCell>{t('compass.neighborhoods.departmentAffinity')}</TableCell>
-                            <TableCell>{t('compass.neighborhoods.spacesCount')}</TableCell>
-                            <TableCell>{t('compass.neighborhoods.description')}</TableCell>
-                            <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filtered.length === 0 ? (
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+            ) : (
+                <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                        <TableHead>
                             <TableRow>
-                                <TableCell colSpan={5} align="center">
-                                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                                        {t('compass.neighborhoods.noNeighborhoods')}
-                                    </Typography>
-                                </TableCell>
+                                <TableCell>{t('common.name', 'Name')}</TableCell>
+                                <TableCell>{t('compass.neighborhoods.departmentAffinity')}</TableCell>
+                                <TableCell>{t('compass.neighborhoods.spacesCount')}</TableCell>
+                                <TableCell>{t('compass.neighborhoods.description')}</TableCell>
+                                <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
                             </TableRow>
-                        ) : (
-                            filtered.map((neighborhood) => (
-                                <TableRow key={neighborhood.id} hover>
-                                    <TableCell>
-                                        <Stack direction="row" alignItems="center">
-                                            {renderColorDot(neighborhood.color)}
-                                            <Typography variant="body2" fontWeight={500}>{neighborhood.name}</Typography>
-                                        </Stack>
-                                    </TableCell>
-                                    <TableCell>{neighborhood.department?.name || '—'}</TableCell>
-                                    <TableCell>
-                                        <Chip label={neighborhood._count.spaces} size="small" variant="outlined" />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 200 }}>
-                                            {neighborhood.description || '—'}
+                        </TableHead>
+                        <TableBody>
+                            {filtered.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center">
+                                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                                            {t('compass.neighborhoods.noNeighborhoods')}
                                         </Typography>
                                     </TableCell>
-                                    <TableCell align="right">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setEditing(neighborhood);
-                                                setForm({
-                                                    name: neighborhood.name,
-                                                    color: neighborhood.color || '',
-                                                    description: neighborhood.description || '',
-                                                });
-                                                setDialogOpen(true);
-                                            }}
-                                            aria-label={t('compass.neighborhoods.editNeighborhood')}
-                                        >
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" color="error" onClick={() => setConfirmDelete(neighborhood)} aria-label={t('common.delete', 'Delete')}>
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                            ) : (
+                                filtered.map((n) => (
+                                    <TableRow key={n.id} hover>
+                                        <TableCell>
+                                            <Stack direction="row" alignItems="center">
+                                                {renderColorDot(n.color)}
+                                                <Typography variant="body2" fontWeight={500}>{n.name}</Typography>
+                                            </Stack>
+                                        </TableCell>
+                                        <TableCell>{n.department?.name || '—'}</TableCell>
+                                        <TableCell>
+                                            <Chip label={n._count.spaces} size="small" variant="outlined" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 200 }}>
+                                                {n.description || '—'}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <IconButton size="small" onClick={() => openEdit(n)} aria-label={t('common.edit', 'Edit')}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" color="error" onClick={() => setConfirmDelete(n)} aria-label={t('common.delete', 'Delete')}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
 
             {/* Add/Edit Dialog */}
-            <Dialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
+            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>
                     {editing ? t('compass.neighborhoods.editNeighborhood') : t('compass.neighborhoods.addNeighborhood')}
                 </DialogTitle>
                 <DialogContent>
                     <TextField
                         fullWidth
-                        label={t('compass.amenities.name')}
+                        label={t('common.name', 'Name')}
                         value={form.name}
                         onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
                         sx={{ mt: 1, mb: 2 }}
                     />
+                    <TextField
+                        fullWidth
+                        select
+                        label={t('compass.neighborhoods.departmentAffinity')}
+                        value={form.departmentId}
+                        onChange={(e) => setForm(prev => ({ ...prev, departmentId: e.target.value }))}
+                        sx={{ mb: 2 }}
+                    >
+                        <MenuItem value="">{t('common.none', 'None')}</MenuItem>
+                        {departments.map(d => (
+                            <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+                        ))}
+                    </TextField>
                     <TextField
                         fullWidth
                         label={t('compass.neighborhoods.description')}
@@ -199,7 +307,7 @@ export function CompassNeighborhoodsTab() {
                     />
                     <TextField
                         fullWidth
-                        label={t('compass.organization.color')}
+                        label={t('compass.organization.color', 'Color')}
                         type="color"
                         value={form.color || '#1976d2'}
                         onChange={(e) => setForm(prev => ({ ...prev, color: e.target.value }))}
@@ -208,35 +316,8 @@ export function CompassNeighborhoodsTab() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
-                    <Button
-                        variant="contained"
-                        onClick={async () => {
-                            if (!selectedFloorId || !form.name.trim()) return;
-                            try {
-                                const payload = {
-                                    name: form.name.trim(),
-                                    floorId: selectedFloorId,
-                                    color: form.color.trim() || undefined,
-                                    description: form.description.trim() || undefined,
-                                };
-                                if (editing) {
-                                    await compassAdminApi.updateNeighborhood(editing.id, {
-                                        name: payload.name,
-                                        color: form.color.trim() || null,
-                                        description: form.description.trim() || null,
-                                    });
-                                } else {
-                                    await compassAdminApi.createNeighborhood(payload);
-                                }
-                                setDialogOpen(false);
-                                // Refresh would go here when floor selector is active
-                            } catch {
-                                setError(t('errors.saveFailed'));
-                            }
-                        }}
-                        disabled={!form.name.trim()}
-                    >
-                        {editing ? t('common.save', 'Save') : t('common.add', 'Add')}
+                    <Button variant="contained" onClick={handleSave} disabled={!form.name.trim() || saving}>
+                        {saving ? <CircularProgress size={20} /> : editing ? t('common.save', 'Save') : t('common.add', 'Add')}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -245,28 +326,11 @@ export function CompassNeighborhoodsTab() {
             <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)}>
                 <DialogTitle>{t('common.confirm')}</DialogTitle>
                 <DialogContent>
-                    <Typography>
-                        {t('common.confirmDelete', 'Are you sure you want to delete "{{name}}"?', { name: confirmDelete?.name })}
-                    </Typography>
+                    <Typography>{t('common.confirmDelete', 'Are you sure you want to delete this item?')}</Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setConfirmDelete(null)}>{t('common.cancel')}</Button>
-                    <Button
-                        color="error"
-                        onClick={async () => {
-                            if (!confirmDelete) return;
-                            try {
-                                await compassAdminApi.deleteNeighborhood(confirmDelete.id);
-                                setConfirmDelete(null);
-                                // Refresh would go here when floor selector is active
-                            } catch {
-                                setError(t('errors.saveFailed'));
-                                setConfirmDelete(null);
-                            }
-                        }}
-                    >
-                        {t('common.confirm')}
-                    </Button>
+                    <Button color="error" onClick={handleDelete}>{t('common.confirm')}</Button>
                 </DialogActions>
             </Dialog>
         </Box>

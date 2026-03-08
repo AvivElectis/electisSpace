@@ -56,7 +56,8 @@ function getValueUnit(ruleType: RuleType): string {
 }
 
 /** Returns a human-readable hint for the value field */
-function getValueHint(ruleType: RuleType, t: (key: string, fallback?: string) => string): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getValueHint(ruleType: RuleType, t: any): string {
     switch (ruleType) {
         case 'MAX_DURATION':
             return t('compass.ruleHint.maxDuration', 'Maximum booking duration in minutes');

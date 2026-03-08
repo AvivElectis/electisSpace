@@ -1,1 +1,1 @@
-export { compassSpaceRoutes, compassBuildingRoutes, adminCompassSpaceRoutes } from './routes.js';
+export { compassSpaceRoutes, compassBuildingRoutes, adminCompassSpaceRoutes, adminCompassBuildingRoutes } from './routes.js';
