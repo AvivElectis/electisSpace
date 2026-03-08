@@ -78,3 +78,23 @@ export const updateSpaceMode = async (
         mode === 'PERMANENT' ? permanentAssigneeId : null,
     );
 };
+
+// ─── Admin: Update Space Properties ──────────────────
+
+export const updateSpaceProperties = async (
+    spaceId: string,
+    data: {
+        compassSpaceType?: string | null;
+        compassCapacity?: number | null;
+        buildingId?: string | null;
+        floorId?: string | null;
+        areaId?: string | null;
+        neighborhoodId?: string | null;
+    },
+) => {
+    const space = await repo.findSpaceById(spaceId);
+    if (!space) {
+        throw notFound('Space not found');
+    }
+    return repo.updateCompassProperties(spaceId, data);
+};

@@ -149,6 +149,25 @@ export const updateCompassMode = async (
     });
 };
 
+// ─── Admin: Update Compass Properties ────────────────
+
+export const updateCompassProperties = async (
+    spaceId: string,
+    data: {
+        compassSpaceType?: string | null;
+        compassCapacity?: number | null;
+        buildingId?: string | null;
+        floorId?: string | null;
+        areaId?: string | null;
+        neighborhoodId?: string | null;
+    },
+) => {
+    return prisma.space.update({
+        where: { id: spaceId },
+        data: data as any,
+    });
+};
+
 // ─── Buildings / Floors / Areas ──────────────────────
 
 export const findBuildings = async (companyId: string) => {

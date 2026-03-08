@@ -28,15 +28,24 @@ export interface BookingRule {
     targetSpaceTypes?: CompassSpaceType[];
 }
 
+export type CompassSpaceType = 'DESK' | 'MEETING_ROOM' | 'PHONE_BOOTH' | 'COLLABORATION_ZONE' | 'PARKING' | 'LOCKER' | 'EVENT_SPACE';
+
 export interface CompassSpace {
     id: string;
     name: string;
     type: string;
     compassMode: SpaceMode | null;
-    building?: { name: string } | null;
-    floor?: { name: string } | null;
-    area?: { name: string } | null;
-    permanentAssignee?: { displayName: string } | null;
+    compassSpaceType: CompassSpaceType | null;
+    compassCapacity: number | null;
+    buildingId: string | null;
+    floorId: string | null;
+    areaId: string | null;
+    neighborhoodId: string | null;
+    building?: { id: string; name: string } | null;
+    floor?: { id: string; name: string } | null;
+    area?: { id: string; name: string } | null;
+    neighborhood?: { id: string; name: string } | null;
+    permanentAssignee?: { id: string; displayName: string } | null;
 }
 
 export interface Employee {
@@ -98,5 +107,3 @@ export interface Neighborhood {
     department: { id: string; name: string } | null;
     _count: { spaces: number };
 }
-
-export type CompassSpaceType = 'DESK' | 'MEETING_ROOM' | 'PHONE_BOOTH' | 'COLLABORATION_ZONE' | 'PARKING' | 'LOCKER' | 'EVENT_SPACE';

@@ -17,6 +17,7 @@ compassBuildingRoutes.get('/', controller.listBuildings);
 export const adminCompassSpaceRoutes = Router();
 adminCompassSpaceRoutes.get('/:branchId', authenticate, requireCompassAdminForStore('branchId'), controller.adminList);
 adminCompassSpaceRoutes.put('/:id/mode', authenticate, controller.updateMode);
+adminCompassSpaceRoutes.put('/:id/properties', authenticate, controller.updateProperties);
 
 // Admin buildings route (Admin JWT)
 export const adminCompassBuildingRoutes = Router();

@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { badRequest, forbidden } from '../../shared/middleware/index.js';
 import { isPlatformAdmin, canManageCompany } from '../../features/companies/service.js';
 import { prisma } from '../../config/index.js';
-import { spacesQuerySchema, updateSpaceModeSchema } from './types.js';
+import { spacesQuerySchema, updateSpaceModeSchema, updateSpacePropertiesSchema } from './types.js';
 import * as service from './service.js';
 
 // ─── GET /api/v2/compass/spaces ──────────────────────
@@ -86,6 +86,38 @@ export const updateMode = async (req: Request, res: Response, next: NextFunction
             req.params.id as string,
             parsed.data.mode as any,
             parsed.data.permanentAssigneeId,
+        );
+
+        res.json({ data: space });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ─── PUT /api/v2/admin/compass/spaces/:id/properties ─
+
+export const updateProperties = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const parsed = updateSpacePropertiesSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw badRequest('Invalid request', parsed.error.format());
+        }
+
+        const user = req.user!;
+        if (!isPlatformAdmin(user)) {
+            const spaceRecord = await prisma.space.findUnique({
+                where: { id: req.params.id as string },
+                select: { store: { select: { companyId: true } } },
+            });
+            if (!spaceRecord) throw badRequest('Space not found');
+            if (!canManageCompany(user, spaceRecord.store.companyId)) {
+                throw forbidden('Not authorized to manage this company');
+            }
+        }
+
+        const space = await service.updateSpaceProperties(
+            req.params.id as string,
+            parsed.data as any,
         );
 
         res.json({ data: space });

@@ -20,3 +20,15 @@ export const updateSpaceModeSchema = z.object({
     mode: z.enum(['AVAILABLE', 'EXCLUDED', 'PERMANENT', 'MAINTENANCE']),
     permanentAssigneeId: z.string().uuid().nullable().optional(),
 });
+
+export const updateSpacePropertiesSchema = z.object({
+    compassSpaceType: z.enum([
+        'DESK', 'MEETING_ROOM', 'PHONE_BOOTH',
+        'COLLABORATION_ZONE', 'PARKING', 'LOCKER', 'EVENT_SPACE',
+    ]).nullable().optional(),
+    compassCapacity: z.number().int().min(0).nullable().optional(),
+    buildingId: z.string().uuid().nullable().optional(),
+    floorId: z.string().uuid().nullable().optional(),
+    areaId: z.string().uuid().nullable().optional(),
+    neighborhoodId: z.string().uuid().nullable().optional(),
+});

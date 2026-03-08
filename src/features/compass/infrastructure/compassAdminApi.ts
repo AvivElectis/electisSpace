@@ -1,5 +1,5 @@
 import api from '@shared/infrastructure/services/apiClient';
-import type { Amenity, Booking, BookingRule, CompassSpace, Department, Employee, Neighborhood, SpaceMode, Team } from '../domain/types';
+import type { Amenity, Booking, BookingRule, CompassSpace, CompassSpaceType, Department, Employee, Neighborhood, SpaceMode, Team } from '../domain/types';
 
 export const compassAdminApi = {
     // Bookings
@@ -51,6 +51,15 @@ export const compassAdminApi = {
 
     updateSpaceMode: (spaceId: string, mode: SpaceMode, assigneeId?: string) =>
         api.put(`/admin/compass/spaces/${spaceId}/mode`, { mode, permanentAssigneeId: assigneeId }),
+
+    updateSpaceProperties: (spaceId: string, data: {
+        compassSpaceType?: CompassSpaceType | null;
+        compassCapacity?: number | null;
+        buildingId?: string | null;
+        floorId?: string | null;
+        areaId?: string | null;
+        neighborhoodId?: string | null;
+    }) => api.put(`/admin/compass/spaces/${spaceId}/properties`, data),
 
     // Employees
     listEmployees: (companyId: string) =>
