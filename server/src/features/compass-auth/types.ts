@@ -41,6 +41,7 @@ export interface CompassUserInfo {
     branchId: string;
     buildingId: string | null;
     floorId: string | null;
+    departmentName: string | null;
     preferences: unknown;
 }
 

@@ -300,5 +300,6 @@ const mapToUserInfo = (user: CompassUserRecord): CompassUserInfo => ({
     branchId: user.branchId,
     buildingId: user.buildingId,
     floorId: user.floorId,
+    departmentName: user.department?.name ?? null,
     preferences: user.preferences,
 });

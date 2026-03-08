@@ -111,6 +111,7 @@ const mockUser = {
     isActive: true,
     company: { id: 'company-1', name: 'Test Corp', compassEnabled: true },
     branch: { id: 'branch-1', name: 'HQ', code: 'HQ' },
+    department: { id: 'dept-1', name: 'Engineering' },
 };
 
 const mockUserCompassDisabled = {
@@ -235,6 +236,7 @@ describe('verifyCodeAndLogin', () => {
         expect(result.expiresIn).toBe(900);
         expect(result.user.email).toBe('test@example.com');
         expect(result.user.companyId).toBe('company-1');
+        expect(result.user.departmentName).toBe('Engineering');
         expect(mockRepo.consumeVerificationCode).toHaveBeenCalledWith('code-1');
     });
 

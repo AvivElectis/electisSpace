@@ -1,4 +1,5 @@
 import { prisma } from '../../config/index.js';
+import { notFound } from '../../shared/middleware/index.js';
 import type { FriendshipStatus } from '@prisma/client';
 
 // ─── Friendship Queries ──────────────────────────────
@@ -216,7 +217,7 @@ export const updateCompanyUser = async (id: string, companyId: string, data: Par
 }>) => {
     // Verify the user belongs to the company before updating
     const existing = await prisma.companyUser.findFirst({ where: { id, companyId } });
-    if (!existing) throw new Error('Company user not found');
+    if (!existing) throw notFound('Company user not found');
     return prisma.companyUser.update({
         where: { id },
         data: data as any,

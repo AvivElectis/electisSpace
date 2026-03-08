@@ -1,5 +1,6 @@
 import { rrulestr } from 'rrule';
 import { v4 as uuidv4 } from 'uuid';
+import { badRequest } from '../../shared/middleware/index.js';
 
 export const MAX_INSTANCES = 90;
 
@@ -15,7 +16,7 @@ export function generateInstances(params: {
 
     // Safety: must have COUNT or UNTIL to prevent infinite generation
     if (!ruleStr.includes('COUNT') && !ruleStr.includes('UNTIL')) {
-        throw new Error('RRULE must have COUNT or UNTIL to prevent infinite generation');
+        throw badRequest('RRULE must have COUNT or UNTIL to prevent infinite generation');
     }
 
     const rule = rrulestr(

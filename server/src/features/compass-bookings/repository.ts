@@ -1,4 +1,5 @@
 import { prisma } from '../../config/index.js';
+import { notFound, badRequest } from '../../shared/middleware/index.js';
 import type { BookingStatus } from '@prisma/client';
 
 // ─── Booking Queries ─────────────────────────────────
@@ -178,7 +179,7 @@ export const updateRule = async (id: string, companyId: string, data: Partial<{
 }>) => {
     // Verify the rule belongs to the company before updating
     const existing = await prisma.bookingRule.findFirst({ where: { id, companyId } });
-    if (!existing) throw new Error('Rule not found');
+    if (!existing) throw notFound('Rule not found');
     return prisma.bookingRule.update({
         where: { id },
         data: data as any,
@@ -188,6 +189,6 @@ export const updateRule = async (id: string, companyId: string, data: Partial<{
 export const deleteRule = async (id: string, companyId: string) => {
     // Verify the rule belongs to the company before deleting
     const existing = await prisma.bookingRule.findFirst({ where: { id, companyId } });
-    if (!existing) throw new Error('Rule not found');
+    if (!existing) throw notFound('Rule not found');
     return prisma.bookingRule.delete({ where: { id } });
 };
