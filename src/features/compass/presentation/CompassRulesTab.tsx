@@ -274,7 +274,7 @@ export function CompassRulesTab() {
                             <TableCell>{t('common.value', 'Value')}</TableCell>
                             <TableCell>{t('common.priority', 'Priority')}</TableCell>
                             <TableCell>{t('common.scope', 'Scope')}</TableCell>
-                            <TableCell>{t('compass.spaceTypes', 'Space Types')}</TableCell>
+                            <TableCell>{t('compass.targetSpaceTypes', 'Space Types')}</TableCell>
                             <TableCell>{t('common.active', 'Active')}</TableCell>
                             <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
                         </TableRow>
