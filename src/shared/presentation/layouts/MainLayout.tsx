@@ -125,16 +125,16 @@ export function MainLayout({ children }: MainLayoutProps) {
     // Build navigation tabs dynamically
     const allNavTabs: NavTab[] = [
         { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" />, feature: 'dashboard' },
-        { 
-            labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces', 
-            value: isPeopleManagerMode ? '/people' : '/spaces', 
+        { labelKey: 'navigation.compass', value: '/compass', icon: <ExploreIcon fontSize="small" />, feature: 'compass' },
+        {
+            labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces',
+            value: isPeopleManagerMode ? '/people' : '/spaces',
             icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
             dynamicLabel: true,
             feature: isPeopleManagerMode ? 'people' : 'spaces',
         },
         { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
         { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
-        { labelKey: 'navigation.compass', value: '/compass', icon: <ExploreIcon fontSize="small" />, feature: 'compass' },
         { labelKey: 'navigation.aimsManagement', value: '/aims-management', icon: <RouterIcon fontSize="small" />, feature: 'aims-management' },
     ];
 

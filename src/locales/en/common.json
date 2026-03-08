@@ -291,6 +291,7 @@
         "scope": "Scope",
         "mode": "Mode",
         "saved": "Saved",
+        "priority": "Priority",
         "noResults": "No results found"
     },
     "offline": {
@@ -1874,18 +1875,43 @@
         },
         "ruleType": {
             "MAX_DURATION": "Max Duration",
+            "MIN_DURATION": "Min Duration",
             "MAX_ADVANCE_BOOKING": "Max Advance Booking",
             "MAX_CONCURRENT": "Max Concurrent",
             "CHECK_IN_WINDOW": "Check-in Window",
             "AUTO_RELEASE": "Auto Release",
-            "AUTO_RELEASE": "Auto Release"
+            "BOOKING_GRANULARITY": "Booking Granularity"
         },
         "scope": {
             "all": "All",
             "selected": "Selected"
         },
         "addRule": "Add Rule",
+        "editRule": "Edit Rule",
         "addEmployee": "Add Employee",
+        "editEmployee": "Edit Employee",
+        "department": "Department",
+        "jobTitle": "Job Title",
+        "employeeNumber": "Employee Number",
+        "isRemote": "Remote Employee",
+        "createNewDepartment": "Create New",
+        "newDepartmentName": "New Department Name",
+        "pressEnterToCreate": "Press Enter to create or Escape to cancel",
+        "allSpaceTypes": "All",
+        "applyTo": "Apply To",
+        "targetBranches": "Target Branches",
+        "targetSpaceTypes": "Target Space Types",
+        "spaceTypesHint": "Leave empty to apply to all space types",
+        "priorityHint": "Higher priority rules take precedence (0-100)",
+        "ruleHint": {
+            "maxDuration": "Maximum booking duration in minutes",
+            "minDuration": "Minimum booking duration in minutes",
+            "maxAdvance": "How many days in advance bookings are allowed",
+            "maxConcurrent": "Maximum simultaneous active bookings per user",
+            "checkIn": "Minutes before/after start to allow check-in",
+            "autoRelease": "Minutes after start to auto-release if not checked in",
+            "granularity": "Booking time slots snap to this interval (minutes)"
+        },
         "addSpace": "Add Space",
         "spaceIdHelper": "Leave empty to auto-generate from name",
         "cancelBooking": "Cancel Booking",

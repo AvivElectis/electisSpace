@@ -142,7 +142,7 @@ export const findCompanyUserById = async (id: string) => {
 
 export const findCompanyUsers = async (companyId: string) => {
     return prisma.companyUser.findMany({
-        where: { companyId, isActive: true },
+        where: { companyId },
         select: {
             id: true,
             email: true,
@@ -152,6 +152,9 @@ export const findCompanyUsers = async (companyId: string) => {
             branchId: true,
             buildingId: true,
             floorId: true,
+            isActive: true,
+            departmentId: true,
+            jobTitle: true,
         },
         orderBy: { displayName: 'asc' },
     });
@@ -165,6 +168,13 @@ export const createCompanyUser = async (data: {
     role?: string;
     buildingId?: string;
     floorId?: string;
+    departmentId?: string;
+    jobTitle?: string;
+    employeeNumber?: string;
+    phone?: string;
+    managerId?: string;
+    costCenter?: string;
+    isRemote?: boolean;
 }) => {
     return prisma.companyUser.create({
         data: {
@@ -175,6 +185,13 @@ export const createCompanyUser = async (data: {
             role: (data.role as any) ?? 'EMPLOYEE',
             buildingId: data.buildingId ?? null,
             floorId: data.floorId ?? null,
+            departmentId: data.departmentId ?? null,
+            jobTitle: data.jobTitle ?? null,
+            employeeNumber: data.employeeNumber ?? null,
+            phone: data.phone ?? null,
+            managerId: data.managerId ?? null,
+            costCenter: data.costCenter ?? null,
+            isRemote: data.isRemote ?? false,
         },
     });
 };
@@ -186,6 +203,13 @@ export const updateCompanyUser = async (id: string, companyId: string, data: Par
     buildingId: string | null;
     floorId: string | null;
     isActive: boolean;
+    departmentId: string | null;
+    jobTitle: string | null;
+    employeeNumber: string | null;
+    phone: string | null;
+    managerId: string | null;
+    costCenter: string | null;
+    isRemote: boolean;
 }>) => {
     // Verify the user belongs to the company before updating
     const existing = await prisma.companyUser.findFirst({ where: { id, companyId } });

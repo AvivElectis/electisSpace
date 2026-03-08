@@ -1,6 +1,6 @@
 export type BookingStatus = 'BOOKED' | 'CHECKED_IN' | 'RELEASED' | 'AUTO_RELEASED' | 'CANCELLED' | 'NO_SHOW';
 export type SpaceMode = 'AVAILABLE' | 'PERMANENT' | 'MAINTENANCE' | 'EXCLUDED';
-export type RuleType = 'MAX_DURATION' | 'MAX_ADVANCE_BOOKING' | 'MAX_CONCURRENT' | 'CHECK_IN_WINDOW' | 'AUTO_RELEASE';
+export type RuleType = 'MAX_DURATION' | 'MAX_ADVANCE_BOOKING' | 'MAX_CONCURRENT' | 'CHECK_IN_WINDOW' | 'AUTO_RELEASE' | 'MIN_DURATION' | 'BOOKING_GRANULARITY';
 
 export interface Booking {
     id: string;
@@ -23,7 +23,9 @@ export interface BookingRule {
     isActive: boolean;
     priority: number;
     config: Record<string, unknown>;
-    applyTo: string;
+    applyTo: 'ALL_BRANCHES' | 'SELECTED_BRANCHES';
+    targetBranchIds?: string[];
+    targetSpaceTypes?: CompassSpaceType[];
 }
 
 export interface CompassSpace {
@@ -44,6 +46,8 @@ export interface Employee {
     phone: string | null;
     role: string;
     isActive: boolean;
+    departmentId: string | null;
+    jobTitle: string | null;
     createdAt: string;
 }
 

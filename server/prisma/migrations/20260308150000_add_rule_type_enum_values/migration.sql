@@ -1,0 +1,3 @@
+-- Add new BookingRuleType enum values
+ALTER TYPE "BookingRuleType" ADD VALUE IF NOT EXISTS 'MIN_DURATION';
+ALTER TYPE "BookingRuleType" ADD VALUE IF NOT EXISTS 'BOOKING_GRANULARITY';

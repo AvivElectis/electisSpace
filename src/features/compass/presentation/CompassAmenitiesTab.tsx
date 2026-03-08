@@ -152,7 +152,7 @@ export function CompassAmenitiesTab() {
                             <TableCell>{t('compass.amenities.nameHe')}</TableCell>
                             <TableCell>{t('compass.amenities.icon')}</TableCell>
                             <TableCell>{t('compass.amenities.category')}</TableCell>
-                            <TableCell>{t('common.status', 'Status')}</TableCell>
+                            <TableCell>{t('common.status.title', 'Status')}</TableCell>
                             <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
                         </TableRow>
                     </TableHead>

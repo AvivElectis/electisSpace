@@ -293,6 +293,7 @@
         "scope": "טווח",
         "mode": "מצב",
         "saved": "נשמר",
+        "priority": "עדיפות",
         "noResults": "לא נמצאו תוצאות"
     },
     "offline": {
@@ -1888,18 +1889,43 @@
         },
         "ruleType": {
             "MAX_DURATION": "משך מקסימלי",
+            "MIN_DURATION": "משך מינימלי",
             "MAX_ADVANCE_BOOKING": "הזמנה מראש מקסימלית",
             "MAX_CONCURRENT": "מקסימום במקביל",
             "CHECK_IN_WINDOW": "חלון צ׳ק אין",
             "AUTO_RELEASE": "שחרור אוטומטי",
-            "AUTO_RELEASE": "שחרור אוטומטי"
+            "BOOKING_GRANULARITY": "רזולוציית הזמנה"
         },
         "scope": {
             "all": "הכל",
             "selected": "נבחרים"
         },
         "addRule": "הוסף כלל",
+        "editRule": "ערוך כלל",
         "addEmployee": "הוסף עובד",
+        "editEmployee": "ערוך עובד",
+        "department": "מחלקה",
+        "jobTitle": "תפקיד",
+        "employeeNumber": "מספר עובד",
+        "isRemote": "עובד מרחוק",
+        "createNewDepartment": "צור חדש",
+        "newDepartmentName": "שם מחלקה חדשה",
+        "pressEnterToCreate": "לחץ Enter ליצירה או Escape לביטול",
+        "allSpaceTypes": "הכל",
+        "applyTo": "החל על",
+        "targetBranches": "סניפים יעד",
+        "targetSpaceTypes": "סוגי חללים יעד",
+        "spaceTypesHint": "השאר ריק להחלה על כל סוגי החללים",
+        "priorityHint": "כללים בעדיפות גבוהה יותר גוברים (0-100)",
+        "ruleHint": {
+            "maxDuration": "משך הזמנה מקסימלי בדקות",
+            "minDuration": "משך הזמנה מינימלי בדקות",
+            "maxAdvance": "כמה ימים מראש ניתן להזמין",
+            "maxConcurrent": "מספר הזמנות פעילות מקסימלי למשתמש",
+            "checkIn": "דקות לפני/אחרי ההתחלה לאפשר צ׳ק אין",
+            "autoRelease": "דקות אחרי ההתחלה לשחרור אוטומטי ללא צ׳ק אין",
+            "granularity": "משבצות זמן להזמנה מתחלקות למרווחים אלה (דקות)"
+        },
         "addSpace": "הוסף חלל",
         "spaceIdHelper": "השאר ריק ליצירה אוטומטית מהשם",
         "cancelBooking": "בטל הזמנה",

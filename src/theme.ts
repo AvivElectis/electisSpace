@@ -376,6 +376,13 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
                     },
                 },
             },
+            MuiTableCell: {
+                styleOverrides: {
+                    root: {
+                        textAlign: 'start',
+                    },
+                },
+            },
             MuiTablePagination: {
                 styleOverrides: {
                     root: {

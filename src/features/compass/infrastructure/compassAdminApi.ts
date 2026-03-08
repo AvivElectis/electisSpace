@@ -25,8 +25,16 @@ export const compassAdminApi = {
     listRules: (companyId: string) =>
         api.get<{ data: BookingRule[] }>(`/admin/compass/rules/${companyId}`),
 
-    createRule: (companyId: string, data: { name: string; ruleType: string; config: Record<string, unknown> }) =>
-        api.post(`/admin/compass/rules/${companyId}`, data),
+    createRule: (companyId: string, data: {
+        name: string;
+        ruleType: string;
+        config: Record<string, unknown>;
+        priority?: number;
+        applyTo?: string;
+        targetBranchIds?: string[];
+        targetSpaceTypes?: string[];
+        isActive?: boolean;
+    }) => api.post(`/admin/compass/rules/${companyId}`, data),
 
     updateRule: (companyId: string, ruleId: string, data: Partial<BookingRule>) =>
         api.put(`/admin/compass/rules/${companyId}/${ruleId}`, data),
@@ -45,8 +53,17 @@ export const compassAdminApi = {
     listEmployees: (companyId: string) =>
         api.get<{ data: Employee[] }>(`/admin/compass/employees/${companyId}`),
 
-    createEmployee: (companyId: string, data: { branchId: string; email: string; displayName: string }) =>
-        api.post(`/admin/compass/employees/${companyId}`, data),
+    createEmployee: (companyId: string, data: {
+        branchId: string;
+        email: string;
+        displayName: string;
+        role?: string;
+        departmentId?: string | null;
+        jobTitle?: string | null;
+        employeeNumber?: string | null;
+        phone?: string | null;
+        isRemote?: boolean;
+    }) => api.post(`/admin/compass/employees/${companyId}`, data),
 
     updateEmployee: (companyId: string, employeeId: string, data: Partial<Employee>) =>
         api.put(`/admin/compass/employees/${companyId}/${employeeId}`, data),
