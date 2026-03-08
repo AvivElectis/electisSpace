@@ -599,6 +599,73 @@ All Phases ──→ Phase 18 (Deployment)
 
 ---
 
+## Phase 25: Admin UI Polish, Bug Fixes & Missing Integrations
+> Ref: [2026-03-08-compass-admin-polish-design](../../plans/2026-03-08-compass-admin-polish-design.md)
+>
+> Discovered via comprehensive audit of all compass admin tabs, server APIs, and mobile app.
+
+### Phase 25A — Critical Bugs (P0)
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P25-01 | Fix Neighborhoods tab — fully implement | P23 | Tab is stubbed out. Wire up floor selector, fetch neighborhoods, fix API call signatures, add CRUD with confirmations. |
+| P25-02 | Fix Extend Booking API mismatch | P3 | Mobile sends `newEndTime`, server expects `endTime`. Align field name in `compass/src/features/booking/domain/types.ts`. |
+| P25-03 | Fix Block User API mismatch | P4 | Mobile sends `POST /friends/block` with userId, server expects `PATCH /friends/:id/block` with friendship ID. Fix `friendsApi.ts`. |
+| P25-04 | Fix Amenity filter parameter mismatch | P23 | Mobile sends `amenityIds`, server expects `amenities`. Fix `spacesApi.ts`. |
+| P25-05 | Fix Spaces tab raw API usage | P3 | Uses generic `api.post()` instead of `compassAdminApi.createSpace()`. Add method and update tab. |
+
+### Phase 25B — Admin UI Features (P1)
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P25-06 | Employee edit — add department, isActive, employeeNumber | P25-01 | Edit dialog missing department assignment, active toggle, and editable employee number. Add role hierarchy check for deactivation. |
+| P25-07 | Organization tab — team member management UI | P22 | API has `addTeamMember`/`removeTeamMember` but no UI. Add member autocomplete, list, and remove button. |
+| P25-08 | Spaces tab — enhance add/edit form | P23 | Add space type, floor/building, capacity, amenity assignment, neighborhood assignment to forms. |
+| P25-09 | Amenities tab — translate icon helper text | P23 | Hardcoded `"e.g. monitor, wifi, wheelchair"`. Add `compass.amenities.iconHint` to EN/HE locales. |
+| P25-10 | Rules tab — fix spaceType translation key | P23 | Uses `compass.spaceType.${st}` (singular), should be `compass.spaceTypes.${st}` (plural). |
+| P25-11 | Rules tab — save button loading spinner | P3 | Delete shows spinner but Save doesn't. Add `saving` state check. |
+| P25-12 | Bookings tab — add edit booking capability | P3 | Can only cancel, not edit time/notes/space. Add edit dialog. |
+
+### Phase 25C — Server Fixes (P1)
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P25-13 | Use AppError instead of generic Error | P3 | Three repos throw `new Error()` instead of `notFound()`. Returns 500 instead of 404. Fix in compass-bookings and compass-friends repositories. |
+| P25-14 | Populate departmentName in mobile auth response | P22 | `mapToUserInfo()` doesn't include department name. Join department table in user query. |
+
+### Phase 25D — Mobile Integration Gaps (P2)
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P25-15 | Fetch work hours config in BookingDialog | P21 | `branchWorkHours` hardcoded as `null`. Fetch from server API, enable validation. |
+| P25-16 | Fetch branch address in ProfilePage | P21 | Branch address hardcoded as `null`. Fetch and display. |
+| P25-17 | Subscribe to Socket.IO events in mobile | P5 | Server emits `space:booked`, `space:checkedIn`, `space:released`, `friend:request`, `friend:checkedIn` but mobile never listens. |
+| P25-18 | Implement friend requests feature | P4 | `compass/src/features/requests/` is completely empty. Build UI for pending requests, accept/decline. |
+| P25-19 | Add recurrence cancel scope dialog | P24 | Cancel action accepts `scope` but no UI offers instance/future/all choice. |
+| P25-20 | Add recurrence pattern display | P24 | No component to show recurrence info on bookings (pattern, end date, series count). |
+| P25-21 | Verify RRULE UNTIL date format | P24 | UNTIL format `20260315T235959Z` may not match server expectations. Align parsing. |
+
+### Phase 25E — Test Coverage (P2)
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P25-22 | Add mobile app unit tests | P25-15..P25-21 | Zero tests for any mobile feature. Priority: useBookingStore, useFriendsStore, useAuthStore. |
+| P25-23 | Add Phase 21-24 server tests | P25-13 | RecurrenceService edge cases, org hierarchy validation, amenity/neighborhood CRUD. |
+| P25-24 | Add compass admin E2E tests | P25-06..P25-12 | Playwright tests for all 7 compass admin tabs. |
+
+### Phase 25F — UX Polish (P3)
+
+| ID | Task | Dependencies | Details |
+|----|------|-------------|---------|
+| P25-25 | Fix tab state loss on compass page | — | Tab switching unmounts/remounts components. Use hidden display or cache state. |
+| P25-26 | Add deep linking for compass tabs | — | Support URL hash/query param for tab index. |
+| P25-27 | Amenities — explicit status toggle | — | Chip toggle is not obvious. Add Switch component. |
+| P25-28 | Add pagination for large lists | — | Organization and employees tabs load all records. Add server-side pagination. |
+| P25-29 | Add bulk operations | — | Bulk select, edit, delete across all tabs. |
+| P25-30 | Add CSV export/import | — | Export employees, departments, amenities to CSV. Bulk import. |
+
+---
+
 ## Task Count
 
 | Phase | Tasks | Category | Status |
@@ -629,4 +696,10 @@ All Phases ──→ Phase 18 (Deployment)
 | 22 — Org Structure | 19 | Enhancement | ✅ Done |
 | 23 — Space Types + Amenities | 19 | Enhancement | ✅ Done |
 | 24 — Recurring Bookings | 18 | Enhancement | ✅ Done |
-| **Total** | **269** | | |
+| 25A — Critical Bugs | 5 | Bug Fix | 🔲 Not Started |
+| 25B — Admin UI Features | 7 | Enhancement | 🔲 Not Started |
+| 25C — Server Fixes | 2 | Bug Fix | 🔲 Not Started |
+| 25D — Mobile Integration | 7 | Enhancement | 🔲 Not Started |
+| 25E — Test Coverage | 3 | Quality | 🔲 Not Started |
+| 25F — UX Polish | 6 | Enhancement | 🔲 Not Started |
+| **Total** | **299** | | |
