@@ -152,6 +152,19 @@
         "reducedMotionDesc": "מזער אנימציות ומעברים",
         "reset": "אפס לברירת מחדל"
     },
+    "recurrence": {
+        "title": "חזרה",
+        "none": "לא חוזר",
+        "daily": "יומי",
+        "weekdays": "כל יום חול",
+        "weekly": "שבועי",
+        "endsOn": "מסתיים ב",
+        "partOfSeries": "חלק מסדרה",
+        "cancelInstance": "בטל הזמנה זו בלבד",
+        "cancelFuture": "בטל הזמנה זו והבאות",
+        "cancelSeries": "בטל את כל הסדרה",
+        "cancelTitle": "ביטול הזמנה חוזרת"
+    },
     "common": {
         "loading": "טוען...",
         "error": "משהו השתבש",

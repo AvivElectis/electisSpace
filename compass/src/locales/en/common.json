@@ -152,6 +152,19 @@
         "reducedMotionDesc": "Minimize animations and transitions",
         "reset": "Reset to Defaults"
     },
+    "recurrence": {
+        "title": "Repeat",
+        "none": "Does not repeat",
+        "daily": "Daily",
+        "weekdays": "Every weekday",
+        "weekly": "Weekly",
+        "endsOn": "Ends on",
+        "partOfSeries": "Part of a series",
+        "cancelInstance": "Cancel this booking",
+        "cancelFuture": "Cancel this and future",
+        "cancelSeries": "Cancel entire series",
+        "cancelTitle": "Cancel Recurring Booking"
+    },
     "common": {
         "loading": "Loading...",
         "error": "Something went wrong",

@@ -13,10 +13,14 @@ import {
     Button,
     TextField,
     Snackbar,
+    List,
+    ListItemButton,
+    ListItemText,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useBookingStore } from '../application/useBookingStore';
 import { BookingCard } from './BookingCard';
+import type { CancelScope } from '../domain/types';
 
 export function BookingsPage() {
     const { t } = useTranslation();
@@ -40,6 +44,7 @@ export function BookingsPage() {
     const [extendDialogId, setExtendDialogId] = useState<string | null>(null);
     const [extendTime, setExtendTime] = useState('');
     const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+    const [recurringCancelId, setRecurringCancelId] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
     useEffect(() => {
@@ -82,11 +87,31 @@ export function BookingsPage() {
         }
     };
 
+    const handleRecurringCancel = async (scope: CancelScope) => {
+        if (!recurringCancelId) return;
+        const ok = await cancel(recurringCancelId, scope);
+        if (ok) {
+            setRecurringCancelId(null);
+            setSuccessMsg(t('booking.cancelSuccess'));
+        }
+    };
+
     // Split active from upcoming
     const activeBookings = activeBooking ? [activeBooking] : [];
     const futureBookings = upcomingBookings.filter(
         (b) => b.status === 'BOOKED' && b.id !== activeBooking?.id,
     );
+
+    const handleCancelRequest = (id: string) => {
+        // Check if this booking is part of a recurring series
+        const allBookings = [...activeBookings, ...futureBookings];
+        const booking = allBookings.find((b) => b.id === id);
+        if (booking?.recurrenceGroupId) {
+            setRecurringCancelId(id);
+        } else {
+            setCancelConfirmId(id);
+        }
+    };
 
     return (
         <Box sx={{ pb: 10 }}>
@@ -146,7 +171,7 @@ export function BookingsPage() {
                                     key={b.id}
                                     booking={b}
                                     onCheckIn={handleCheckIn}
-                                    onCancel={(id) => setCancelConfirmId(id)}
+                                    onCancel={(id) => handleCancelRequest(id)}
                                 />
                             ))}
                         </>
@@ -220,6 +245,29 @@ export function BookingsPage() {
                     </Button>
                     <Button variant="contained" color="error" onClick={handleCancelConfirm}>
                         {t('booking.yes')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Recurring cancel scope dialog */}
+            <Dialog open={!!recurringCancelId} onClose={() => setRecurringCancelId(null)}>
+                <DialogTitle>{t('recurrence.cancelTitle')}</DialogTitle>
+                <DialogContent sx={{ px: 0, pb: 0 }}>
+                    <List>
+                        <ListItemButton onClick={() => handleRecurringCancel('instance')}>
+                            <ListItemText primary={t('recurrence.cancelInstance')} />
+                        </ListItemButton>
+                        <ListItemButton onClick={() => handleRecurringCancel('future')}>
+                            <ListItemText primary={t('recurrence.cancelFuture')} />
+                        </ListItemButton>
+                        <ListItemButton onClick={() => handleRecurringCancel('all')}>
+                            <ListItemText primary={t('recurrence.cancelSeries')} />
+                        </ListItemButton>
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setRecurringCancelId(null)} color="inherit">
+                        {t('booking.cancel')}
                     </Button>
                 </DialogActions>
             </Dialog>

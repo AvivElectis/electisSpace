@@ -11,6 +11,10 @@ import {
     Slide,
     CircularProgress,
     Alert,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import type { TransitionProps } from '@mui/material/transitions';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -75,6 +79,8 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
     const [startTime, setStartTime] = useState(defaults.startTime);
     const [endTime, setEndTime] = useState(defaults.endTime);
     const [notes, setNotes] = useState('');
+    const [recurrenceType, setRecurrenceType] = useState<'none' | 'daily' | 'weekdays' | 'weekly'>('none');
+    const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
     // Branch work hours config — will be populated when branch data is available
     const branchWorkHours: {
@@ -121,6 +127,30 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
 
     const locationParts = [space.buildingName, space.floorName].filter(Boolean);
 
+    const buildRRule = (): string | undefined => {
+        if (recurrenceType === 'none') return undefined;
+
+        let rule = 'FREQ=';
+        switch (recurrenceType) {
+            case 'daily':
+                rule += 'DAILY';
+                break;
+            case 'weekdays':
+                rule += 'WEEKLY;BYDAY=MO,TU,WE,TH,FR';
+                break;
+            case 'weekly':
+                rule += 'WEEKLY';
+                break;
+        }
+
+        if (recurrenceEndDate) {
+            const untilDate = recurrenceEndDate.replace(/-/g, '') + 'T235959Z';
+            rule += `;UNTIL=${untilDate}`;
+        }
+
+        return rule;
+    };
+
     const handleConfirm = async () => {
         const startISO = new Date(`${date}T${startTime}:00`).toISOString();
         const endISO = new Date(`${date}T${endTime}:00`).toISOString();
@@ -130,6 +160,7 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
             startTime: startISO,
             endTime: endISO,
             notes: notes || undefined,
+            recurrenceRule: buildRRule(),
         });
 
         if (result) {
@@ -225,6 +256,36 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={t('booking.notesPlaceholder')}
                 />
+
+                {/* Recurrence section */}
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                    <InputLabel>{t('recurrence.title')}</InputLabel>
+                    <Select
+                        value={recurrenceType}
+                        label={t('recurrence.title')}
+                        onChange={(e) => setRecurrenceType(e.target.value as typeof recurrenceType)}
+                    >
+                        <MenuItem value="none">{t('recurrence.none')}</MenuItem>
+                        <MenuItem value="daily">{t('recurrence.daily')}</MenuItem>
+                        <MenuItem value="weekdays">{t('recurrence.weekdays')}</MenuItem>
+                        <MenuItem value="weekly">{t('recurrence.weekly')}</MenuItem>
+                    </Select>
+                </FormControl>
+
+                {recurrenceType !== 'none' && (
+                    <TextField
+                        label={t('recurrence.endsOn')}
+                        type="date"
+                        fullWidth
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        sx={{ mt: 2 }}
+                        slotProps={{
+                            inputLabel: { shrink: true },
+                            htmlInput: { min: date },
+                        }}
+                    />
+                )}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, pb: 3 }}>

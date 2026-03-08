@@ -12,6 +12,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import CancelIcon from '@mui/icons-material/Cancel';
+import RepeatIcon from '@mui/icons-material/Repeat';
 import { useTranslation } from 'react-i18next';
 import type { Booking } from '../domain/types';
 
@@ -94,6 +95,17 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel 
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {datePrefix}{formatTime(booking.startTime)} — {formatTime(booking.endTime)}
                 </Typography>
+
+                {(booking.isRecurrence || booking.recurrenceGroupId) && (
+                    <Chip
+                        icon={<RepeatIcon />}
+                        label={t('recurrence.partOfSeries')}
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                        sx={{ mt: 0.5 }}
+                    />
+                )}
 
                 {booking.checkedInAt && (
                     <Typography variant="caption" sx={{ color: 'success.main', mt: 0.5, display: 'block' }}>

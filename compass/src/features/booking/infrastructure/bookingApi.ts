@@ -1,5 +1,5 @@
 import compassApi from '@shared/api/compassApi';
-import type { Booking, CreateBookingRequest, ExtendBookingRequest } from '../domain/types';
+import type { Booking, CancelScope, CreateBookingRequest, ExtendBookingRequest } from '../domain/types';
 
 export const bookingApi = {
     list: (params?: { status?: string }) =>
@@ -20,8 +20,10 @@ export const bookingApi = {
     extend: (id: string, data: ExtendBookingRequest) =>
         compassApi.patch<{ data: Booking }>(`/bookings/${id}/extend`, data),
 
-    cancel: (id: string) =>
-        compassApi.delete<{ data: Booking }>(`/bookings/${id}`),
+    cancel: (id: string, scope?: CancelScope) =>
+        compassApi.delete<{ data: Booking }>(`/bookings/${id}`, {
+            params: scope ? { scope } : undefined,
+        }),
 
     getActive: () =>
         compassApi.get<{ data: Booking | null }>('/bookings/active'),

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Booking, CreateBookingRequest, ExtendBookingRequest } from '../domain/types';
+import type { Booking, CancelScope, CreateBookingRequest, ExtendBookingRequest } from '../domain/types';
 import { bookingApi } from '../infrastructure/bookingApi';
 
 interface BookingState {
@@ -17,7 +17,7 @@ interface BookingActions {
     checkIn: (id: string) => Promise<boolean>;
     release: (id: string) => Promise<boolean>;
     extend: (id: string, data: ExtendBookingRequest) => Promise<boolean>;
-    cancel: (id: string) => Promise<boolean>;
+    cancel: (id: string, scope?: CancelScope) => Promise<boolean>;
     clearError: () => void;
     updateBookingFromSocket: (booking: Booking) => void;
 }
@@ -114,10 +114,10 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
         }
     },
 
-    cancel: async (id) => {
+    cancel: async (id, scope?) => {
         set({ error: null });
         try {
-            await bookingApi.cancel(id);
+            await bookingApi.cancel(id, scope);
             get().fetchActiveBooking();
             get().fetchBookings();
             return true;

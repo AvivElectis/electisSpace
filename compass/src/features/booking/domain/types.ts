@@ -19,6 +19,9 @@ export interface Booking {
     checkedInAt: string | null;
     releasedAt: string | null;
     notes: string | null;
+    recurrenceRule: string | null;
+    recurrenceGroupId: string | null;
+    isRecurrence: boolean;
     createdAt: string;
     updatedAt: string;
     space?: SpaceSummary;
@@ -115,11 +118,14 @@ export interface SpaceFilters {
     amenityIds?: string[];
 }
 
+export type CancelScope = 'instance' | 'future' | 'all';
+
 export interface CreateBookingRequest {
     spaceId: string;
     startTime: string;
     endTime: string;
     notes?: string;
+    recurrenceRule?: string;
 }
 
 export interface ExtendBookingRequest {
