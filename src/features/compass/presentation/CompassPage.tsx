@@ -7,6 +7,8 @@ import { CompassSpacesTab } from './CompassSpacesTab';
 import { CompassEmployeesTab } from './CompassEmployeesTab';
 import { CompassRulesTab } from './CompassRulesTab';
 import { CompassOrganizationTab } from './CompassOrganizationTab';
+import { CompassAmenitiesTab } from './CompassAmenitiesTab';
+import { CompassNeighborhoodsTab } from './CompassNeighborhoodsTab';
 
 export function CompassPage() {
     const { t } = useTranslation();
@@ -21,12 +23,14 @@ export function CompassPage() {
                 </Typography>
             </Stack>
 
-            <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+            <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
                 <Tab label={t('compass.navigation.bookings')} />
                 <Tab label={t('compass.navigation.spaces')} />
                 <Tab label={t('compass.navigation.employees')} />
                 <Tab label={t('compass.navigation.rules')} />
                 <Tab label={t('compass.navigation.organization')} />
+                <Tab label={t('compass.navigation.amenities')} />
+                <Tab label={t('compass.navigation.neighborhoods')} />
             </Tabs>
 
             {tab === 0 && <CompassBookingsTab />}
@@ -34,6 +38,8 @@ export function CompassPage() {
             {tab === 2 && <CompassEmployeesTab />}
             {tab === 3 && <CompassRulesTab />}
             {tab === 4 && <CompassOrganizationTab />}
+            {tab === 5 && <CompassAmenitiesTab />}
+            {tab === 6 && <CompassNeighborhoodsTab />}
         </Box>
     );
 }

@@ -1853,7 +1853,9 @@
             "employees": "Employees",
             "spaces": "Spaces",
             "rules": "Rules",
-            "organization": "Organization"
+            "organization": "Organization",
+            "amenities": "Amenities",
+            "neighborhoods": "Neighborhoods"
         },
         "managedByCompass": "Managed by Compass",
         "spaceMode": {
@@ -1946,6 +1948,41 @@
             "capacity": "Capacity",
             "totalDesks": "Total Desks",
             "maxOccupancy": "Max Occupancy"
+        },
+        "spaceTypes": {
+            "DESK": "Desk",
+            "MEETING_ROOM": "Meeting Room",
+            "PHONE_BOOTH": "Phone Booth",
+            "COLLABORATION_ZONE": "Collaboration Zone",
+            "PARKING": "Parking",
+            "LOCKER": "Locker",
+            "EVENT_SPACE": "Event Space"
+        },
+        "amenities": {
+            "title": "Amenities",
+            "addAmenity": "Add Amenity",
+            "editAmenity": "Edit Amenity",
+            "name": "Name",
+            "nameHe": "Hebrew Name",
+            "icon": "Icon",
+            "category": "Category",
+            "noAmenities": "No amenities yet",
+            "active": "Active",
+            "inactive": "Inactive",
+            "EQUIPMENT": "Equipment",
+            "FURNITURE": "Furniture",
+            "ACCESSIBILITY": "Accessibility",
+            "CONNECTIVITY": "Connectivity"
+        },
+        "neighborhoods": {
+            "title": "Neighborhoods",
+            "addNeighborhood": "Add Neighborhood",
+            "editNeighborhood": "Edit Neighborhood",
+            "departmentAffinity": "Department Affinity",
+            "noNeighborhoods": "No neighborhoods yet",
+            "selectFloor": "Select a floor to manage neighborhoods",
+            "spacesCount": "Spaces",
+            "description": "Description"
         }
     }
 }

@@ -1867,7 +1867,9 @@
             "employees": "עובדים",
             "spaces": "חללים",
             "rules": "כללים",
-            "organization": "מבנה ארגוני"
+            "organization": "מבנה ארגוני",
+            "amenities": "מתקנים",
+            "neighborhoods": "שכונות"
         },
         "managedByCompass": "מנוהל על ידי Compass",
         "spaceMode": {
@@ -1960,6 +1962,41 @@
             "capacity": "קיבולת",
             "totalDesks": "סה״כ שולחנות",
             "maxOccupancy": "תפוסה מקסימלית"
+        },
+        "spaceTypes": {
+            "DESK": "שולחן",
+            "MEETING_ROOM": "חדר ישיבות",
+            "PHONE_BOOTH": "תא טלפון",
+            "COLLABORATION_ZONE": "אזור שיתוף פעולה",
+            "PARKING": "חניה",
+            "LOCKER": "לוקר",
+            "EVENT_SPACE": "אירוע"
+        },
+        "amenities": {
+            "title": "מתקנים",
+            "addAmenity": "הוספת מתקן",
+            "editAmenity": "עריכת מתקן",
+            "name": "שם",
+            "nameHe": "שם בעברית",
+            "icon": "אייקון",
+            "category": "קטגוריה",
+            "noAmenities": "אין מתקנים עדיין",
+            "active": "פעיל",
+            "inactive": "לא פעיל",
+            "EQUIPMENT": "ציוד",
+            "FURNITURE": "ריהוט",
+            "ACCESSIBILITY": "נגישות",
+            "CONNECTIVITY": "קישוריות"
+        },
+        "neighborhoods": {
+            "title": "שכונות",
+            "addNeighborhood": "הוספת שכונה",
+            "editNeighborhood": "עריכת שכונה",
+            "departmentAffinity": "זיקה למחלקה",
+            "noNeighborhoods": "אין שכונות עדיין",
+            "selectFloor": "בחר קומה לניהול שכונות",
+            "spacesCount": "חללים",
+            "description": "תיאור"
         }
     }
 }

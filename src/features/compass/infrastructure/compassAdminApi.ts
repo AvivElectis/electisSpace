@@ -1,5 +1,5 @@
 import api from '@shared/infrastructure/services/apiClient';
-import type { Booking, BookingRule, CompassSpace, Department, Employee, SpaceMode, Team } from '../domain/types';
+import type { Amenity, Booking, BookingRule, CompassSpace, Department, Employee, Neighborhood, SpaceMode, Team } from '../domain/types';
 
 export const compassAdminApi = {
     // Bookings
@@ -79,4 +79,30 @@ export const compassAdminApi = {
 
     removeTeamMember: (companyId: string, teamId: string, userId: string) =>
         api.delete(`/admin/compass/teams/${companyId}/${teamId}/members/${userId}`),
+
+    // Amenities
+    listAmenities: (companyId: string) =>
+        api.get<{ data: Amenity[] }>(`/admin/compass/amenities/${companyId}`),
+
+    createAmenity: (companyId: string, data: { name: string; nameHe?: string; icon?: string; category: string }) =>
+        api.post<{ data: Amenity }>(`/admin/compass/amenities/${companyId}`, data),
+
+    updateAmenity: (companyId: string, id: string, data: { name?: string; nameHe?: string | null; icon?: string | null; category?: string; isActive?: boolean }) =>
+        api.put<{ data: Amenity }>(`/admin/compass/amenities/${companyId}/${id}`, data),
+
+    deleteAmenity: (companyId: string, id: string) =>
+        api.delete(`/admin/compass/amenities/${companyId}/${id}`),
+
+    // Neighborhoods
+    listNeighborhoods: (floorId: string) =>
+        api.get<{ data: Neighborhood[] }>(`/admin/compass/neighborhoods/${floorId}`),
+
+    createNeighborhood: (data: { name: string; floorId: string; departmentId?: string; color?: string; description?: string }) =>
+        api.post<{ data: Neighborhood }>(`/admin/compass/neighborhoods`, data),
+
+    updateNeighborhood: (id: string, data: { name?: string; departmentId?: string | null; color?: string | null; description?: string | null }) =>
+        api.put<{ data: Neighborhood }>(`/admin/compass/neighborhoods/${id}`, data),
+
+    deleteNeighborhood: (id: string) =>
+        api.delete(`/admin/compass/neighborhoods/${id}`),
 };

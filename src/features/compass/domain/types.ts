@@ -63,3 +63,24 @@ export interface Team {
     color: string | null;
     _count: { members: number };
 }
+
+export interface Amenity {
+    id: string;
+    name: string;
+    nameHe: string | null;
+    icon: string | null;
+    category: string;
+    isActive: boolean;
+}
+
+export interface Neighborhood {
+    id: string;
+    name: string;
+    color: string | null;
+    description: string | null;
+    sortOrder: number;
+    department: { id: string; name: string } | null;
+    _count: { spaces: number };
+}
+
+export type CompassSpaceType = 'DESK' | 'MEETING_ROOM' | 'PHONE_BOOTH' | 'COLLABORATION_ZONE' | 'PARKING' | 'LOCKER' | 'EVENT_SPACE';
