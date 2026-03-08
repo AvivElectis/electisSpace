@@ -625,8 +625,8 @@ All Phases ──→ Phase 18 (Deployment)
 | 18 — Deployment | 9 | Operations | 🔄 Partial |
 | 19 — Admin Bookings & Reserve | 12 | Enhancement | ✅ Done |
 | 20 — Core Compass Infrastructure | 15 | Summary | ✅ Done |
-| 21 — Company Work Config | 14 | Enhancement | 🔲 Not Started |
-| 22 — Org Structure | 19 | Enhancement | 🔲 Not Started |
-| 23 — Space Types + Amenities | 19 | Enhancement | 🔲 Not Started |
-| 24 — Recurring Bookings | 18 | Enhancement | 🔲 Not Started |
+| 21 — Company Work Config | 14 | Enhancement | ✅ Done |
+| 22 — Org Structure | 19 | Enhancement | ✅ Done |
+| 23 — Space Types + Amenities | 19 | Enhancement | ✅ Done |
+| 24 — Recurring Bookings | 18 | Enhancement | ✅ Done |
 | **Total** | **269** | | |
