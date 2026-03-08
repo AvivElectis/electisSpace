@@ -11,6 +11,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
@@ -202,6 +204,47 @@ export function CompassOrganizationTab() {
         }
     };
 
+    // Team members dialog state
+    const [membersTeam, setMembersTeam] = useState<Team | null>(null);
+    const [addMemberId, setAddMemberId] = useState('');
+    const [savingMember, setSavingMember] = useState(false);
+
+    const openMembersDialog = (team: Team) => {
+        setMembersTeam(team);
+        setAddMemberId('');
+    };
+
+    const handleAddMember = async () => {
+        if (!activeCompanyId || !membersTeam || !addMemberId) return;
+        setSavingMember(true);
+        try {
+            await compassAdminApi.addTeamMember(activeCompanyId, membersTeam.id, addMemberId);
+            setAddMemberId('');
+            await fetchTeams();
+            // Update membersTeam with refreshed data
+            const res = await compassAdminApi.listTeams(activeCompanyId);
+            const updated = (res.data.data || []).find((tm: Team) => tm.id === membersTeam.id);
+            if (updated) setMembersTeam(updated);
+        } catch {
+            setTeamError(t('errors.saveFailed'));
+        } finally {
+            setSavingMember(false);
+        }
+    };
+
+    const handleRemoveMember = async (companyUserId: string) => {
+        if (!activeCompanyId || !membersTeam) return;
+        try {
+            await compassAdminApi.removeTeamMember(activeCompanyId, membersTeam.id, companyUserId);
+            await fetchTeams();
+            const res = await compassAdminApi.listTeams(activeCompanyId);
+            const updated = (res.data.data || []).find((tm: Team) => tm.id === membersTeam.id);
+            if (updated) setMembersTeam(updated);
+        } catch {
+            setTeamError(t('errors.saveFailed'));
+        }
+    };
+
     // Filtered lists
     const filteredDepts = deptSearch
         ? departments.filter(d =>
@@ -382,6 +425,9 @@ export function CompassOrganizationTab() {
                                             <Chip label={team._count.members} size="small" icon={<GroupIcon />} variant="outlined" />
                                         </TableCell>
                                         <TableCell align="right">
+                                            <IconButton size="small" onClick={() => openMembersDialog(team)} aria-label={t('compass.organization.manageMembers', 'Manage Members')}>
+                                                <PersonAddIcon fontSize="small" />
+                                            </IconButton>
                                             <IconButton size="small" onClick={() => openEditTeam(team)} aria-label={t('compass.organization.editTeam')}>
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
@@ -575,6 +621,81 @@ export function CompassOrganizationTab() {
                 <DialogActions>
                     <Button onClick={() => setConfirmDeleteTeam(null)}>{t('common.cancel')}</Button>
                     <Button color="error" onClick={handleDeleteTeam}>{t('common.confirm')}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Team Members Dialog */}
+            <Dialog open={!!membersTeam} onClose={() => setMembersTeam(null)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    {t('compass.organization.manageMembers', 'Manage Members')} — {membersTeam?.name}
+                </DialogTitle>
+                <DialogContent>
+                    <Stack direction="row" gap={1} sx={{ mb: 2, mt: 1 }}>
+                        <TextField
+                            fullWidth
+                            select
+                            size="small"
+                            label={t('compass.organization.addMember', 'Add Member')}
+                            value={addMemberId}
+                            onChange={(e) => setAddMemberId(e.target.value)}
+                        >
+                            <MenuItem value="">
+                                <em>{t('compass.organization.selectEmployee', 'Select employee...')}</em>
+                            </MenuItem>
+                            {employees
+                                .filter(e => e.isActive && !membersTeam?.members.some(m => m.companyUser.id === e.id))
+                                .map(e => (
+                                    <MenuItem key={e.id} value={e.id}>{e.displayName} ({e.email})</MenuItem>
+                                ))}
+                        </TextField>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={handleAddMember}
+                            disabled={!addMemberId || savingMember}
+                            sx={{ minWidth: 80 }}
+                        >
+                            {savingMember ? <CircularProgress size={20} /> : t('common.add', 'Add')}
+                        </Button>
+                    </Stack>
+
+                    <Divider sx={{ mb: 1 }} />
+
+                    {membersTeam?.members.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                            {t('compass.organization.noMembers', 'No members yet')}
+                        </Typography>
+                    ) : (
+                        <Table size="small">
+                            <TableBody>
+                                {membersTeam?.members.map((member) => (
+                                    <TableRow key={member.id}>
+                                        <TableCell>
+                                            <Typography variant="body2" fontWeight={500}>
+                                                {member.companyUser.displayName}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {member.companyUser.email}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => handleRemoveMember(member.companyUser.id)}
+                                                aria-label={t('compass.organization.removeMember', 'Remove')}
+                                            >
+                                                <PersonRemoveIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setMembersTeam(null)}>{t('common.close', 'Close')}</Button>
                 </DialogActions>
             </Dialog>
         </Box>

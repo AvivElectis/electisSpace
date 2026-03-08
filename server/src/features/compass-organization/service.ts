@@ -92,6 +92,9 @@ export const listTeams = async (companyId: string) => {
         include: {
             lead: { select: { id: true, displayName: true } },
             department: { select: { id: true, name: true } },
+            members: {
+                include: { companyUser: { select: { id: true, displayName: true, email: true } } },
+            },
             _count: { select: { members: true } },
         },
         orderBy: { name: 'asc' },

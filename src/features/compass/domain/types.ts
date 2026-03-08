@@ -64,12 +64,19 @@ export interface Department {
     _count: { members: number; children: number };
 }
 
+export interface TeamMember {
+    id: string;
+    companyUser: { id: string; displayName: string; email: string };
+    role: string;
+}
+
 export interface Team {
     id: string;
     name: string;
     department: { id: string; name: string } | null;
     lead: { id: string; displayName: string } | null;
     color: string | null;
+    members: TeamMember[];
     _count: { members: number };
 }
 
