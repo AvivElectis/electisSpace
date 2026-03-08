@@ -336,7 +336,7 @@ export function CompassRulesTab() {
                                                 rule.targetSpaceTypes!.map((st) => (
                                                     <Chip
                                                         key={st}
-                                                        label={t(`compass.spaceType.${st}`, st)}
+                                                        label={t(`compass.spaceTypes.${st}`, st)}
                                                         size="small"
                                                         variant="outlined"
                                                     />
@@ -513,7 +513,7 @@ export function CompassRulesTab() {
                         <Autocomplete
                             multiple
                             options={SPACE_TYPES}
-                            getOptionLabel={(opt) => t(`compass.spaceType.${opt}`, opt)}
+                            getOptionLabel={(opt) => t(`compass.spaceTypes.${opt}`, opt)}
                             value={form.targetSpaceTypes}
                             onChange={(_, selected) => updateForm({ targetSpaceTypes: selected })}
                             renderInput={(params) => (
@@ -529,7 +529,7 @@ export function CompassRulesTab() {
                                     return (
                                         <Chip
                                             key={key}
-                                            label={t(`compass.spaceType.${option}`, option)}
+                                            label={t(`compass.spaceTypes.${option}`, option)}
                                             size="small"
                                             {...rest}
                                         />

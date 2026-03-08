@@ -2010,6 +2010,7 @@
             "icon": "אייקון",
             "category": "קטגוריה",
             "noAmenities": "אין מתקנים עדיין",
+            "iconHint": "לדוגמה: monitor, wifi, wheelchair",
             "active": "פעיל",
             "inactive": "לא פעיל",
             "EQUIPMENT": "ציוד",

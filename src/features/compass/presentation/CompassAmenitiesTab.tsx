@@ -234,7 +234,7 @@ export function CompassAmenitiesTab() {
                         label={t('compass.amenities.icon')}
                         value={form.icon}
                         onChange={(e) => setForm(prev => ({ ...prev, icon: e.target.value }))}
-                        helperText="e.g. monitor, wifi, wheelchair"
+                        helperText={t('compass.amenities.iconHint', 'e.g. monitor, wifi, wheelchair')}
                         sx={{ mb: 2 }}
                     />
                     <TextField

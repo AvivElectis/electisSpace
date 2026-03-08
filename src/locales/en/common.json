@@ -1996,6 +1996,7 @@
             "icon": "Icon",
             "category": "Category",
             "noAmenities": "No amenities yet",
+            "iconHint": "e.g. monitor, wifi, wheelchair",
             "active": "Active",
             "inactive": "Inactive",
             "EQUIPMENT": "Equipment",
