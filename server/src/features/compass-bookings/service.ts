@@ -17,8 +17,26 @@ export const createBooking = async (params: {
     endTime: Date | null;
     bookedBy?: string;
     notes?: string;
+    recurrenceRule?: string;
 }) => {
     const { companyUserId, companyId, branchId, spaceId, startTime, endTime, bookedBy, notes } = params;
+
+    // If recurrence rule is provided, create a recurring series
+    if (params.recurrenceRule) {
+        const { createRecurringSeries } = await import('./recurrenceService.js');
+        return createRecurringSeries({
+            rrule: params.recurrenceRule,
+            startTime: startTime.toISOString().slice(11, 16),
+            endTime: endTime?.toISOString().slice(11, 16) ?? null,
+            spaceId,
+            companyUserId,
+            companyId,
+            branchId,
+            notes,
+            bookedBy,
+            prisma,
+        });
+    }
 
     // L3: Require endTime
     if (!endTime) {
@@ -224,7 +242,12 @@ export const release = async (bookingId: string, companyUserId: string, companyI
 
 // ─── Cancel ──────────────────────────────────────────
 
-export const cancel = async (bookingId: string, companyUserId: string, companyId: string) => {
+export const cancel = async (
+    bookingId: string,
+    companyUserId: string,
+    companyId: string,
+    scope?: 'instance' | 'future' | 'all',
+) => {
     const booking = await repo.findBookingById(bookingId, companyId);
     if (!booking) {
         throw notFound('Booking not found');
@@ -241,6 +264,34 @@ export const cancel = async (bookingId: string, companyUserId: string, companyId
         });
     }
 
+    // Handle scoped cancellation for recurring bookings
+    if (booking.recurrenceGroupId && (scope === 'all' || scope === 'future')) {
+        const result = await prisma.booking.updateMany({
+            where: {
+                recurrenceGroupId: booking.recurrenceGroupId,
+                status: { in: ['BOOKED'] },
+                ...(scope === 'future' ? { startTime: { gte: booking.startTime } } : {}),
+            },
+            data: { status: 'CANCELLED' },
+        });
+
+        appLogger.info('CompassBooking', `Cancelled ${result.count} recurring bookings (scope=${scope})`, {
+            companyUserId,
+            recurrenceGroupId: booking.recurrenceGroupId,
+        });
+
+        emitBookingEvent('space:released', booking.branchId, {
+            bookingId,
+            spaceId: booking.spaceId,
+            companyUserId,
+            scope,
+            cancelledCount: result.count,
+        });
+
+        return { cancelled: result.count, scope };
+    }
+
+    // Single instance cancellation (default)
     const updated = await repo.updateBookingStatus(bookingId, 'CANCELLED');
 
     appLogger.info('CompassBooking', `Cancelled: ${bookingId}`, { companyUserId });
@@ -256,7 +307,11 @@ export const cancel = async (bookingId: string, companyUserId: string, companyId
 
 // ─── Admin Cancel (allows BOOKED or CHECKED_IN) ─────
 
-export const adminCancel = async (bookingId: string, companyId: string) => {
+export const adminCancel = async (
+    bookingId: string,
+    companyId: string,
+    scope?: 'instance' | 'future' | 'all',
+) => {
     const booking = await repo.findBookingById(bookingId, companyId);
     if (!booking) {
         throw notFound('Booking not found');
@@ -267,6 +322,33 @@ export const adminCancel = async (bookingId: string, companyId: string) => {
             current: booking.status,
             expected: 'BOOKED or CHECKED_IN',
         });
+    }
+
+    // Handle scoped cancellation for recurring bookings
+    if (booking.recurrenceGroupId && (scope === 'all' || scope === 'future')) {
+        const result = await prisma.booking.updateMany({
+            where: {
+                recurrenceGroupId: booking.recurrenceGroupId,
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+                ...(scope === 'future' ? { startTime: { gte: booking.startTime } } : {}),
+            },
+            data: { status: 'CANCELLED' },
+        });
+
+        appLogger.info('CompassBooking', `Admin cancelled ${result.count} recurring bookings (scope=${scope})`, {
+            companyUserId: booking.companyUserId,
+            recurrenceGroupId: booking.recurrenceGroupId,
+        });
+
+        emitBookingEvent('space:released', booking.branchId, {
+            bookingId,
+            spaceId: booking.spaceId,
+            companyUserId: booking.companyUserId,
+            scope,
+            cancelledCount: result.count,
+        });
+
+        return { cancelled: result.count, scope };
     }
 
     const updated = await repo.updateBookingStatus(bookingId, 'CANCELLED');
@@ -388,8 +470,26 @@ export const adminCreateBooking = async (params: {
     startTime: Date;
     endTime: Date | null;
     notes?: string;
+    recurrenceRule?: string;
 }) => {
     const { companyUserId, companyId, branchId, spaceId, startTime, endTime, notes } = params;
+
+    // If recurrence rule is provided, create a recurring series
+    if (params.recurrenceRule) {
+        const { createRecurringSeries } = await import('./recurrenceService.js');
+        return createRecurringSeries({
+            rrule: params.recurrenceRule,
+            startTime: startTime.toISOString().slice(11, 16),
+            endTime: endTime?.toISOString().slice(11, 16) ?? null,
+            spaceId,
+            companyUserId,
+            companyId,
+            branchId,
+            notes,
+            bookedBy: 'ADMIN',
+            prisma,
+        });
+    }
 
     // Verify space belongs to the branch
     const space = await prisma.space.findUnique({ where: { id: spaceId }, select: { storeId: true } });

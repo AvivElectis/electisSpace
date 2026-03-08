@@ -536,6 +536,26 @@ export class AIMSGateway {
         return await solumService.fetchArticleFormat(config, tokens.accessToken);
     }
 
+    /**
+     * Save article format to AIMS using raw credentials (not yet saved to DB).
+     * Used during company creation wizard to push format changes before company exists.
+     */
+    async saveArticleFormatWithCredentials(credentials: AIMSCredentials, companyCode: string, format: ArticleFormat): Promise<void> {
+        const config: SolumConfig = {
+            baseUrl: credentials.baseUrl,
+            companyName: companyCode,
+            cluster: credentials.cluster,
+            username: credentials.username,
+            password: credentials.password,
+        };
+
+        // Login to get token
+        const tokens = await solumService.login(config);
+
+        // Push article format
+        await solumService.saveArticleFormat(config, tokens.accessToken, format);
+    }
+
     // ============== Label Operations ==============
 
     /**

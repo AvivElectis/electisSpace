@@ -306,10 +306,15 @@ export const useAuthStore = create<AuthState>()(
                             ...(deviceId ? { deviceId, deviceName, platform } : {}),
                         });
                         const { user } = response;
-                        
+
                         // Set active context from user or default to first company/store
-                        const activeCompanyId = user.activeCompanyId || user.companies?.[0]?.id || null;
-                        const activeStoreId = user.activeStoreId || user.stores?.[0]?.id || null;
+                        // Validate IDs still exist in accessible data (handles deleted companies/stores)
+                        const validCompanyId = user.activeCompanyId && user.companies?.some(c => c.id === user.activeCompanyId)
+                            ? user.activeCompanyId : null;
+                        const activeCompanyId = validCompanyId || user.companies?.[0]?.id || null;
+                        const validStoreId = user.activeStoreId && user.stores?.some(s => s.id === user.activeStoreId)
+                            ? user.activeStoreId : null;
+                        const activeStoreId = validStoreId || user.stores?.[0]?.id || null;
                         
                         set({
                             user,
@@ -394,10 +399,14 @@ export const useAuthStore = create<AuthState>()(
                 },
 
                 setUser: (user) => {
-                    const activeCompanyId = user?.activeCompanyId || user?.companies?.[0]?.id || null;
-                    const activeStoreId = user?.activeStoreId || user?.stores?.[0]?.id || null;
-                    set({ 
-                        user, 
+                    const validCompanyId = user?.activeCompanyId && user?.companies?.some(c => c.id === user.activeCompanyId)
+                        ? user.activeCompanyId : null;
+                    const activeCompanyId = validCompanyId || user?.companies?.[0]?.id || null;
+                    const validStoreId = user?.activeStoreId && user?.stores?.some(s => s.id === user.activeStoreId)
+                        ? user.activeStoreId : null;
+                    const activeStoreId = validStoreId || user?.stores?.[0]?.id || null;
+                    set({
+                        user,
                         isAuthenticated: !!user,
                         activeCompanyId,
                         activeStoreId,
@@ -440,8 +449,14 @@ export const useAuthStore = create<AuthState>()(
                         // Call the /me endpoint to validate the session
                         const response = await authService.me();
                         const { user } = response;
-                        const activeCompanyId = user.activeCompanyId || user.companies?.[0]?.id || null;
-                        const activeStoreId = user.activeStoreId || user.stores?.[0]?.id || null;
+                        // Validate that the active context still exists in the user's accessible data
+                        // (handles cases where a company/store was deleted but active_*_id still references it)
+                        const validCompanyId = user.activeCompanyId && user.companies?.some(c => c.id === user.activeCompanyId)
+                            ? user.activeCompanyId : null;
+                        const activeCompanyId = validCompanyId || user.companies?.[0]?.id || null;
+                        const validStoreId = user.activeStoreId && user.stores?.some(s => s.id === user.activeStoreId)
+                            ? user.activeStoreId : null;
+                        const activeStoreId = validStoreId || user.stores?.[0]?.id || null;
 
                         set({
                             user,

@@ -20,6 +20,7 @@ import {
     buildEmptySlotArticle,
     type ConferenceMappingConfig,
     type CompassArticleData,
+    type NextMeetingData,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
 import type { AimsArticle } from '../services/aims.types.js';
@@ -441,11 +442,13 @@ export class SyncQueueProcessor {
                         areaName: spaceAny.area?.name,
                         spaceMode: spaceAny.compassMode || undefined,
                         spaceType: spaceAny.type || undefined,
+                        spaceCapacity: spaceAny.compassCapacity ?? undefined,
+                        spaceAmenities: spaceAny.compassAmenities?.join(', ') || undefined,
                         bookingStatus: activeBooking?.status || 'AVAILABLE',
-                        bookedBy: activeBooking?.companyUser?.displayName || undefined,
-                        bookingTime: activeBooking
-                            ? `${activeBooking.startTime.toISOString()} - ${activeBooking.endTime?.toISOString() ?? ''}`
-                            : undefined,
+                        currentMeetingName: activeBooking?.title || activeBooking?.companyUser?.displayName || undefined,
+                        currentMeetingOrganizer: activeBooking?.companyUser?.displayName || undefined,
+                        currentMeetingStart: activeBooking?.startTime?.toISOString(),
+                        currentMeetingEnd: activeBooking?.endTime?.toISOString(),
                     };
                 }
                 return buildSpaceArticle(space, format, compassData);
@@ -470,7 +473,30 @@ export class SyncQueueProcessor {
                     where: { id: entityId },
                 });
                 if (!room) return null;
-                return buildConferenceArticle(room, format, storeSettings?.conferenceMapping);
+
+                // For compass companies, fetch next 2 upcoming meetings
+                let nextMeetings: Array<{ meetingName: string; organizer?: string; startTime: string; endTime: string; participants: string[] }> | undefined;
+                if (storeSettings?.compassEnabled) {
+                    const upcoming = await prisma.booking.findMany({
+                        where: {
+                            spaceId: entityId,
+                            status: { in: ['BOOKED'] },
+                            startTime: { gt: new Date() },
+                        },
+                        orderBy: { startTime: 'asc' },
+                        take: 2,
+                        include: { companyUser: { select: { displayName: true } } },
+                    });
+                    nextMeetings = upcoming.map(b => ({
+                        meetingName: b.title || '',
+                        organizer: b.companyUser?.displayName,
+                        startTime: b.startTime.toISOString(),
+                        endTime: b.endTime?.toISOString() || '',
+                        participants: [],
+                    }));
+                }
+
+                return buildConferenceArticle(room, format, storeSettings?.conferenceMapping, nextMeetings);
             }
 
             case 'empty_slot': {

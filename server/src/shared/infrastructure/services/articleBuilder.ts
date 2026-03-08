@@ -36,8 +36,32 @@ export interface CompassArticleData {
     spaceAmenities?: string;
     spaceType?: string;
     bookingStatus?: string;
-    bookedBy?: string;
-    bookingTime?: string;
+    // Current meeting/booking
+    currentMeetingName?: string;
+    currentMeetingOrganizer?: string;
+    currentMeetingStart?: string;
+    currentMeetingEnd?: string;
+    currentMeetingParticipants?: string;
+    // Next 2 meetings (conference rooms)
+    next1MeetingName?: string;
+    next1MeetingOrganizer?: string;
+    next1MeetingStart?: string;
+    next1MeetingEnd?: string;
+    next1MeetingParticipants?: string;
+    next2MeetingName?: string;
+    next2MeetingOrganizer?: string;
+    next2MeetingStart?: string;
+    next2MeetingEnd?: string;
+    next2MeetingParticipants?: string;
+}
+
+/** Data for next meetings on conference room articles */
+export interface NextMeetingData {
+    meetingName: string;
+    organizer?: string;
+    startTime: string;
+    endTime: string;
+    participants: string[];
 }
 
 /**
@@ -63,8 +87,23 @@ export function buildSpaceArticle(
         if (compassData.spaceAmenities) data['SPACE_AMENITIES'] = compassData.spaceAmenities;
         if (compassData.spaceType) data['SPACE_TYPE'] = compassData.spaceType;
         if (compassData.bookingStatus) data['BOOKING_STATUS'] = compassData.bookingStatus;
-        if (compassData.bookedBy) data['BOOKED_BY'] = compassData.bookedBy;
-        if (compassData.bookingTime) data['BOOKING_TIME'] = compassData.bookingTime;
+        // Current meeting
+        if (compassData.currentMeetingName) data['CURRENT_MEETING_NAME'] = compassData.currentMeetingName;
+        if (compassData.currentMeetingOrganizer) data['CURRENT_MEETING_ORGANIZER'] = compassData.currentMeetingOrganizer;
+        if (compassData.currentMeetingStart) data['CURRENT_MEETING_START'] = compassData.currentMeetingStart;
+        if (compassData.currentMeetingEnd) data['CURRENT_MEETING_END'] = compassData.currentMeetingEnd;
+        if (compassData.currentMeetingParticipants) data['CURRENT_MEETING_PARTICIPANTS'] = compassData.currentMeetingParticipants;
+        // Next meetings
+        if (compassData.next1MeetingName) data['NEXT1_MEETING_NAME'] = compassData.next1MeetingName;
+        if (compassData.next1MeetingOrganizer) data['NEXT1_MEETING_ORGANIZER'] = compassData.next1MeetingOrganizer;
+        if (compassData.next1MeetingStart) data['NEXT1_MEETING_START'] = compassData.next1MeetingStart;
+        if (compassData.next1MeetingEnd) data['NEXT1_MEETING_END'] = compassData.next1MeetingEnd;
+        if (compassData.next1MeetingParticipants) data['NEXT1_MEETING_PARTICIPANTS'] = compassData.next1MeetingParticipants;
+        if (compassData.next2MeetingName) data['NEXT2_MEETING_NAME'] = compassData.next2MeetingName;
+        if (compassData.next2MeetingOrganizer) data['NEXT2_MEETING_ORGANIZER'] = compassData.next2MeetingOrganizer;
+        if (compassData.next2MeetingStart) data['NEXT2_MEETING_START'] = compassData.next2MeetingStart;
+        if (compassData.next2MeetingEnd) data['NEXT2_MEETING_END'] = compassData.next2MeetingEnd;
+        if (compassData.next2MeetingParticipants) data['NEXT2_MEETING_PARTICIPANTS'] = compassData.next2MeetingParticipants;
     }
 
     // Determine articleName: use the key from mappingInfo (e.g., ITEM_NAME)
@@ -147,13 +186,36 @@ export function buildConferenceArticle(
     },
     format: ArticleFormat | null,
     conferenceMapping?: ConferenceMappingConfig | null,
+    nextMeetings?: NextMeetingData[],
 ): AimsArticle {
     const articleId = `C${room.externalId}`;
     const articleName = room.roomName || `Conference ${room.externalId}`;
 
     const conferenceData: Record<string, any> = {};
 
-    if (conferenceMapping && conferenceMapping.meetingName && conferenceMapping.meetingTime && conferenceMapping.participants) {
+    // Compass format: use standardized CURRENT_MEETING_* and NEXT*_MEETING_* fields
+    if (isCompassFormat(format)) {
+        conferenceData['BOOKING_STATUS'] = room.hasMeeting ? 'BOOKED' : 'AVAILABLE';
+        if (room.meetingName) conferenceData['CURRENT_MEETING_NAME'] = room.meetingName;
+        if (room.startTime) conferenceData['CURRENT_MEETING_START'] = room.startTime;
+        if (room.endTime) conferenceData['CURRENT_MEETING_END'] = room.endTime;
+        if (room.participants?.length > 0) conferenceData['CURRENT_MEETING_PARTICIPANTS'] = room.participants.join(', ');
+        // Next meetings
+        if (nextMeetings?.[0]) {
+            conferenceData['NEXT1_MEETING_NAME'] = nextMeetings[0].meetingName;
+            if (nextMeetings[0].organizer) conferenceData['NEXT1_MEETING_ORGANIZER'] = nextMeetings[0].organizer;
+            conferenceData['NEXT1_MEETING_START'] = nextMeetings[0].startTime;
+            conferenceData['NEXT1_MEETING_END'] = nextMeetings[0].endTime;
+            if (nextMeetings[0].participants?.length > 0) conferenceData['NEXT1_MEETING_PARTICIPANTS'] = nextMeetings[0].participants.join(', ');
+        }
+        if (nextMeetings?.[1]) {
+            conferenceData['NEXT2_MEETING_NAME'] = nextMeetings[1].meetingName;
+            if (nextMeetings[1].organizer) conferenceData['NEXT2_MEETING_ORGANIZER'] = nextMeetings[1].organizer;
+            conferenceData['NEXT2_MEETING_START'] = nextMeetings[1].startTime;
+            conferenceData['NEXT2_MEETING_END'] = nextMeetings[1].endTime;
+            if (nextMeetings[1].participants?.length > 0) conferenceData['NEXT2_MEETING_PARTICIPANTS'] = nextMeetings[1].participants.join(', ');
+        }
+    } else if (conferenceMapping && conferenceMapping.meetingName && conferenceMapping.meetingTime && conferenceMapping.participants) {
         // Use configured field names from company settings
         if (room.meetingName) {
             conferenceData[conferenceMapping.meetingName] = room.meetingName;
@@ -177,6 +239,11 @@ export function buildConferenceArticle(
     }
 
     return buildArticle(articleId, articleName, '', conferenceData, format);
+}
+
+/** Detect compass format by checking for compass-specific fields */
+export function isCompassFormat(format: ArticleFormat | null): boolean {
+    return !!format?.articleData?.includes('BOOKING_STATUS');
 }
 
 // ─── internal ───────────────────────────────────────────────────────────────

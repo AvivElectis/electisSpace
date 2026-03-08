@@ -42,6 +42,9 @@ export const adminBookingRoutes = Router();
 // GET    /compass/bookings/:companyId     — List bookings for a company
 adminBookingRoutes.get('/:companyId', authenticate, requireCompassAdmin(), controller.adminList);
 
+// POST   /compass/bookings/:companyId     — Admin create/reserve a booking
+adminBookingRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.adminCreate);
+
 // PATCH  /compass/bookings/:companyId/:bookingId/cancel — Cancel a booking (admin)
 adminBookingRoutes.patch('/:companyId/:bookingId/cancel', authenticate, requireCompassAdmin(), controller.adminCancel);
 

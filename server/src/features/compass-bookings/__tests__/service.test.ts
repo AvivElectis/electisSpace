@@ -148,7 +148,7 @@ describe('createBooking', () => {
     it('should create a booking successfully', async () => {
         const result = await service.createBooking(baseParams);
 
-        expect(result.id).toBe('booking-new');
+        expect((result as any).id).toBe('booking-new');
         expect(mockRuleEngine.resolveRules).toHaveBeenCalledWith('company-1', 'branch-1');
     });
 
@@ -393,7 +393,7 @@ describe('cancel', () => {
 
         const result = await service.cancel('booking-1', 'user-1', 'company-1');
 
-        expect(result.status).toBe('CANCELLED');
+        expect((result as any).status).toBe('CANCELLED');
         expect(mockRepo.updateBookingStatus).toHaveBeenCalledWith('booking-1', 'CANCELLED');
     });
 });

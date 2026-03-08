@@ -63,7 +63,7 @@ export function DashboardPage() {
     const peopleStore = usePeopleStore();
 
     // Feature access — dashboard only shows enabled sections
-    const { canAccessFeature: can } = useAuthContext();
+    const { canAccessFeature: can, activeStore, activeCompany } = useAuthContext();
     const { activeCompanyId } = useAuthStore();
     const { storeSummary: aimsStoreSummary, labelModels: aimsLabelModels, fetchOverview: fetchAimsOverview } = useAimsOverview(activeStoreId);
 
@@ -158,8 +158,11 @@ export function DashboardPage() {
         }
     }, [activeStoreId]);
 
-    // Extract space type for icons
-    const spaceTypeIcon = settingsController.settings.spaceType.split('.').pop()?.toLowerCase() || 'chair';
+    // Extract space type for icons — prefer auth context (always fresh) over persisted settings
+    const spaceTypeIcon = activeStore?.effectiveSpaceType
+        || activeCompany?.spaceType
+        || settingsController.settings.spaceType
+        || 'office';
 
     // Show skeleton while initial sync is in progress
     const isInitialLoading = syncState.status === 'syncing' && !syncState.lastSync;

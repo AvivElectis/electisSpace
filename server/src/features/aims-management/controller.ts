@@ -10,6 +10,11 @@ import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchem
 import { badRequest } from '../../shared/middleware/errorHandler.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 
+/** Check if error is a "No AIMS configuration" error (store has no AIMS setup). */
+function isNoAimsConfigError(error: unknown): boolean {
+    return error instanceof Error && error.message.includes('No AIMS');
+}
+
 /**
  * Extract active store ID from request.
  * Looks at query param, header, or user's active store.
@@ -392,7 +397,10 @@ async function getStoreSummary(req: Request, res: Response, next: NextFunction) 
         const storeId = getStoreId(req);
         const summary = await aimsManagementService.getStoreSummary(storeId);
         res.json({ data: summary });
-    } catch (error) { next(error); }
+    } catch (error) {
+        if (isNoAimsConfigError(error)) return res.json({ data: null });
+        next(error);
+    }
 }
 
 async function getLabelStatusSummary(req: Request, res: Response, next: NextFunction) {
@@ -400,7 +408,10 @@ async function getLabelStatusSummary(req: Request, res: Response, next: NextFunc
         const storeId = getStoreId(req);
         const summary = await aimsManagementService.getLabelStatusSummary(storeId);
         res.json({ data: summary });
-    } catch (error) { next(error); }
+    } catch (error) {
+        if (isNoAimsConfigError(error)) return res.json({ data: null });
+        next(error);
+    }
 }
 
 async function getGatewayStatusSummary(req: Request, res: Response, next: NextFunction) {
@@ -408,7 +419,10 @@ async function getGatewayStatusSummary(req: Request, res: Response, next: NextFu
         const storeId = getStoreId(req);
         const summary = await aimsManagementService.getGatewayStatusSummary(storeId);
         res.json({ data: summary });
-    } catch (error) { next(error); }
+    } catch (error) {
+        if (isNoAimsConfigError(error)) return res.json({ data: null });
+        next(error);
+    }
 }
 
 async function getLabelModels(req: Request, res: Response, next: NextFunction) {
@@ -416,7 +430,10 @@ async function getLabelModels(req: Request, res: Response, next: NextFunction) {
         const storeId = getStoreId(req);
         const models = await aimsManagementService.getLabelModels(storeId);
         res.json({ data: models });
-    } catch (error) { next(error); }
+    } catch (error) {
+        if (isNoAimsConfigError(error)) return res.json({ data: null });
+        next(error);
+    }
 }
 
 // ─── Whitelist ──────────────────────────────────────────────────────

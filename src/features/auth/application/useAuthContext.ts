@@ -18,6 +18,7 @@ import {
     hasStoreRole,
     hasCompanyRole,
     canAccessFeature,
+    isFeatureEnabled,
     getEffectiveEnabledFeatures,
     getAccessibleCompanies,
     getAccessibleStores,
@@ -134,13 +135,26 @@ export function useAuthContext(): AuthContext {
     );
     const highestRole = useMemo(() => getHighestRole(user), [user]);
 
+    // Company/store-level feature config (must be before canAccessFeatureFn which depends on it)
+    const activeCompanyFeatures = useMemo<CompanyFeatures | null>(() => {
+        if (!activeCompany) return null;
+        return activeCompany.companyFeatures ?? DEFAULT_COMPANY_FEATURES;
+    }, [activeCompany]);
+
     // Permission check functions bound to active context
     const canAccessFeatureFn = useMemo(() => {
         return (feature: Feature) => {
-            if (!activeStoreId) return isPlatformAdminFlag;
+            if (!activeStoreId) {
+                // No store selected — use company features if available
+                if (activeCompanyFeatures) {
+                    return isFeatureEnabled(activeCompanyFeatures, feature);
+                }
+                // No company either — platform admins see only always-on features
+                return isPlatformAdminFlag && (feature === 'dashboard' || feature === 'settings' || feature === 'sync');
+            }
             return canAccessFeature(user, activeStoreId, feature);
         };
-    }, [user, activeStoreId, isPlatformAdminFlag]);
+    }, [user, activeStoreId, activeCompanyFeatures, isPlatformAdminFlag]);
 
     const hasStoreRoleFn = useMemo(() => {
         return (minimumRole: string) => {
@@ -155,12 +169,6 @@ export function useAuthContext(): AuthContext {
             return hasCompanyRole(user, activeCompanyId, minimumRoleId);
         };
     }, [user, activeCompanyId, isPlatformAdminFlag]);
-
-    // Company/store-level feature config
-    const activeCompanyFeatures = useMemo<CompanyFeatures | null>(() => {
-        if (!activeCompany) return null;
-        return activeCompany.companyFeatures ?? DEFAULT_COMPANY_FEATURES;
-    }, [activeCompany]);
 
     const activeStoreEffectiveFeatures = useMemo<CompanyFeatures | null>(() => {
         if (!activeStore) return null;

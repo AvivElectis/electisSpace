@@ -2,7 +2,7 @@ import { Card, CardContent, Typography, Box, Chip, Stack, Skeleton } from '@mui/
 import { useTranslation } from 'react-i18next';
 import ExploreIcon from '@mui/icons-material/Explore';
 import PeopleIcon from '@mui/icons-material/People';
-import EventSeatIcon from '@mui/icons-material/EventSeat';
+import BusinessIcon from '@mui/icons-material/Business';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 
@@ -44,7 +44,7 @@ export function DashboardCompassCard({ summary, loading }: DashboardCompassCardP
             value: summary.totalEmployees,
         },
         {
-            icon: <EventSeatIcon fontSize="small" />,
+            icon: <BusinessIcon fontSize="small" />,
             label: t('compass.dashboard.spaces'),
             value: summary.totalSpaces,
         },

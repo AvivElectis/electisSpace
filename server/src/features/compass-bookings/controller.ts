@@ -6,6 +6,7 @@ import {
     bookingQuerySchema,
     createBookingRuleSchema,
     updateBookingRuleSchema,
+    adminCreateBookingSchema,
 } from './types.js';
 import * as service from './service.js';
 import * as repo from './repository.js';
@@ -19,10 +20,10 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
             throw badRequest('Invalid request', parsed.error.format());
         }
 
-        const { spaceId, startTime, endTime, notes } = parsed.data;
+        const { spaceId, startTime, endTime, notes, recurrenceRule } = parsed.data;
         const user = req.compassUser!;
 
-        const booking = await service.createBooking({
+        const result = await service.createBooking({
             companyUserId: user.id,
             companyId: user.companyId,
             branchId: user.branchId,
@@ -30,9 +31,10 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
             startTime: new Date(startTime),
             endTime: endTime ? new Date(endTime) : null,
             notes,
+            recurrenceRule,
         });
 
-        res.status(201).json({ data: booking });
+        res.status(201).json({ data: result });
     } catch (error) {
         next(error);
     }
@@ -122,13 +124,15 @@ export const extend = async (req: Request, res: Response, next: NextFunction) =>
 export const cancel = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const user = req.compassUser!;
-        const booking = await service.cancel(
+        const scope = req.query.scope as 'instance' | 'future' | 'all' | undefined;
+        const result = await service.cancel(
             req.params.id as string,
             user.id,
             user.companyId,
+            scope,
         );
 
-        res.json({ data: booking });
+        res.json({ data: result });
     } catch (error) {
         next(error);
     }
@@ -147,14 +151,42 @@ export const adminList = async (req: Request, res: Response, next: NextFunction)
     }
 };
 
+export const adminCreate = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const parsed = adminCreateBookingSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw badRequest('Invalid request', parsed.error.format());
+        }
+
+        const companyId = req.params.companyId as string;
+        const { companyUserId, branchId, spaceId, startTime, endTime, notes, recurrenceRule } = parsed.data;
+
+        const result = await service.adminCreateBooking({
+            companyUserId,
+            companyId,
+            branchId,
+            spaceId,
+            startTime: new Date(startTime),
+            endTime: endTime ? new Date(endTime) : null,
+            notes,
+            recurrenceRule,
+        });
+
+        res.status(201).json({ data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const adminCancel = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const bookingId = req.params.bookingId as string;
         const companyId = req.params.companyId as string;
+        const scope = req.query.scope as 'instance' | 'future' | 'all' | undefined;
         const booking = await repo.findBookingById(bookingId, companyId);
         if (!booking) throw notFound('Booking not found');
-        const updated = await service.adminCancel(bookingId, companyId);
-        res.json({ data: updated });
+        const result = await service.adminCancel(bookingId, companyId, scope);
+        res.json({ data: result });
     } catch (error) {
         next(error);
     }

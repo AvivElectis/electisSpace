@@ -42,7 +42,29 @@
       "Bash(npx vitest:*)",
       "Bash(git stash:*)",
       "Bash(npm run build:*)",
-      "Bash(openssl rand:*)"
+      "Bash(openssl rand:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:support.google.com)",
+      "WebFetch(domain:knowledge.workspace.google.com)",
+      "WebFetch(domain:googleapis.dev)",
+      "WebFetch(domain:docs.mobilitystream.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(echo exit: $?:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx cap:*)",
+      "Bash(npm search:*)",
+      "Bash(DATABASE_URL=\"postgresql://x:x@localhost:5432/x\" npx prisma:*)",
+      "Bash(cat:*)",
+      "Bash(docker:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:mui.com)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(npx vite:*)",
+      "Bash(node:*)",
+      "Bash(DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npx prisma:*)",
+      "Skill(commit-commands:commit)"
     ]
   }
 }

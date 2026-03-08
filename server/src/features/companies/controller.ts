@@ -12,6 +12,7 @@ import {
     updateCompanySchema,
     updateAimsConfigSchema,
     fetchAimsStoresSchema,
+    pushArticleFormatSchema,
 } from './types.js';
 import { notFound, conflict, badRequest, forbidden } from '../../shared/middleware/index.js';
 import type { UserContext } from './types.js';
@@ -278,6 +279,44 @@ export const companyController = {
                 username,
                 password,
                 companyCode,
+            });
+
+            res.json(result);
+        } catch (error: any) {
+            if (error.message?.includes('login failed') || error.message?.includes('401')) {
+                return next(badRequest('AIMS authentication failed. Please check your credentials.'));
+            }
+            next(error);
+        }
+    },
+
+    /**
+     * POST /companies/aims/article-format/push
+     * Push article format to AIMS using raw credentials (for wizard)
+     */
+    async pushArticleFormat(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = getUserContext(req);
+
+            // Only platform admins can push article format (creating companies)
+            if (!isPlatformAdmin(user)) {
+                throw forbidden('Only platform administrators can push article format');
+            }
+
+            const validation = pushArticleFormatSchema.safeParse(req.body);
+            if (!validation.success) {
+                throw badRequest(validation.error.errors[0].message);
+            }
+
+            const { baseUrl, cluster, username, password, companyCode, format } = validation.data;
+
+            const result = await companyService.pushArticleFormat({
+                baseUrl,
+                cluster,
+                username,
+                password,
+                companyCode,
+                format,
             });
 
             res.json(result);

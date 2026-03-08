@@ -261,7 +261,13 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                                                 fontSize: '0.65rem'
                                             }}
                                         >
-                                            {user.globalRole || user.stores?.[0]?.roleId || 'User'}
+                                            {user.globalRole === 'PLATFORM_ADMIN'
+                                                ? t('roles.platform_admin')
+                                                : user.globalRole === 'APP_VIEWER'
+                                                    ? t('roles.viewer')
+                                                    : user.stores?.[0]?.roleId
+                                                        ? t(`roles.${user.stores[0].roleId.replace('role-', '')}`, user.stores[0].roleId)
+                                                        : 'User'}
                                         </Typography>
                                     </Box>
                                 </Box>

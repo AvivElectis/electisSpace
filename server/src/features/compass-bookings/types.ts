@@ -7,6 +7,17 @@ export const createBookingSchema = z.object({
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
     notes: z.string().max(500).optional(),
+    recurrenceRule: z.string().max(255).optional(),
+});
+
+export const adminCreateBookingSchema = z.object({
+    companyUserId: z.string().uuid(),
+    branchId: z.string().uuid(),
+    spaceId: z.string().uuid(),
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime().nullable().optional(),
+    notes: z.string().max(500).optional(),
+    recurrenceRule: z.string().max(255).optional(),
 });
 
 export const extendBookingSchema = z.object({

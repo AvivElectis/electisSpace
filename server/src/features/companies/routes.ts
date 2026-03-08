@@ -43,6 +43,12 @@ router.post('/aims/stores', companyController.fetchAimsStores);
 router.post('/aims/article-format', companyController.fetchArticleFormat);
 
 /**
+ * POST /companies/aims/article-format/push
+ * Push article format to AIMS using raw credentials (for wizard)
+ */
+router.post('/aims/article-format/push', companyController.pushArticleFormat);
+
+/**
  * GET /companies/:id
  * Get company details with stores and users
  */
