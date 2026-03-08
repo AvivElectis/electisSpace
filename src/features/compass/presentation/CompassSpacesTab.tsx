@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Paper, Chip, TextField, MenuItem,
+    TableHead, TableRow, Paper, TextField, MenuItem,
     Stack, CircularProgress, Alert, Button, Dialog, DialogTitle,
     DialogContent, DialogActions,
 } from '@mui/material';
@@ -9,15 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
-import type { CompassSpace } from '../domain/types';
-import api from '@shared/infrastructure/services/apiClient';
-
-const modeColors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
-    AVAILABLE: 'success',
-    PERMANENT: 'info',
-    MAINTENANCE: 'warning',
-    EXCLUDED: 'default',
-};
+import type { CompassSpace, SpaceMode } from '../domain/types';
 
 export function CompassSpacesTab() {
     const { t } = useTranslation();
@@ -47,7 +39,7 @@ export function CompassSpacesTab() {
 
     useEffect(() => { fetchSpaces(true); }, [fetchSpaces]);
 
-    const handleModeChange = async (spaceId: string, mode: string) => {
+    const handleModeChange = async (spaceId: string, mode: SpaceMode) => {
         setUpdatingSpaceId(spaceId);
         try {
             await compassAdminApi.updateSpaceMode(spaceId, mode);
@@ -63,8 +55,7 @@ export function CompassSpacesTab() {
         if (!newSpaceName.trim() || !activeStoreId) return;
         const externalId = newSpaceId.trim() || newSpaceName.trim().toUpperCase().replace(/\s+/g, '-');
         try {
-            await api.post('/spaces', {
-                storeId: activeStoreId,
+            await compassAdminApi.createSpace(activeStoreId, {
                 externalId,
                 data: { ITEM_NAME: newSpaceName.trim() },
             });
@@ -151,7 +142,7 @@ export function CompassSpacesTab() {
                                             select
                                             size="small"
                                             value={s.compassMode || ''}
-                                            onChange={(e) => handleModeChange(s.id, e.target.value)}
+                                            onChange={(e) => handleModeChange(s.id, e.target.value as SpaceMode)}
                                             disabled={updatingSpaceId === s.id}
                                             sx={{ minWidth: 130 }}
                                         >

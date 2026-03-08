@@ -46,6 +46,9 @@ export const compassAdminApi = {
     listSpaces: (storeId: string) =>
         api.get<{ data: CompassSpace[] }>(`/admin/compass/spaces/${storeId}`),
 
+    createSpace: (storeId: string, data: { externalId: string; data: Record<string, string> }) =>
+        api.post('/spaces', { storeId, ...data }),
+
     updateSpaceMode: (spaceId: string, mode: SpaceMode, assigneeId?: string) =>
         api.put(`/admin/compass/spaces/${spaceId}/mode`, { mode, permanentAssigneeId: assigneeId }),
 
