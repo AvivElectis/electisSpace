@@ -155,6 +155,9 @@ export const findCompanyUsers = async (companyId: string) => {
             isActive: true,
             departmentId: true,
             jobTitle: true,
+            phone: true,
+            employeeNumber: true,
+            isRemote: true,
         },
         orderBy: { displayName: 'asc' },
     });

@@ -123,9 +123,9 @@ export function CompassEmployeesTab() {
             role: employee.role,
             departmentId: employee.departmentId || '',
             jobTitle: employee.jobTitle || '',
-            employeeNumber: '',
+            employeeNumber: employee.employeeNumber || '',
             phone: employee.phone || '',
-            isRemote: false,
+            isRemote: employee.isRemote ?? false,
         });
         setEmailError('');
         setCreatingDept(false);
@@ -212,6 +212,8 @@ export function CompassEmployeesTab() {
                 departmentId: form.departmentId || null,
                 jobTitle: form.jobTitle.trim() || null,
                 phone: form.phone.trim() || null,
+                employeeNumber: form.employeeNumber.trim() || null,
+                isRemote: form.isRemote,
             });
             closeEditDialog();
             fetchEmployees();
@@ -267,7 +269,7 @@ export function CompassEmployeesTab() {
         );
     }
 
-    const renderFormFields = (isEdit: boolean) => (
+    const renderFormFields = () => (
         <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
                 fullWidth
@@ -367,31 +369,27 @@ export function CompassEmployeesTab() {
                 value={form.jobTitle}
                 onChange={(e) => updateField('jobTitle', e.target.value)}
             />
-            {!isEdit && (
-                <TextField
-                    fullWidth
-                    label={t('compass.employeeNumber', 'Employee Number')}
-                    value={form.employeeNumber}
-                    onChange={(e) => updateField('employeeNumber', e.target.value)}
-                />
-            )}
+            <TextField
+                fullWidth
+                label={t('compass.employeeNumber', 'Employee Number')}
+                value={form.employeeNumber}
+                onChange={(e) => updateField('employeeNumber', e.target.value)}
+            />
             <TextField
                 fullWidth
                 label={t('common.phone', 'Phone')}
                 value={form.phone}
                 onChange={(e) => updateField('phone', e.target.value)}
             />
-            {!isEdit && (
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={form.isRemote}
-                            onChange={(e) => updateField('isRemote', e.target.checked)}
-                        />
-                    }
-                    label={t('compass.isRemote', 'Remote Employee')}
-                />
-            )}
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={form.isRemote}
+                        onChange={(e) => updateField('isRemote', e.target.checked)}
+                    />
+                }
+                label={t('compass.isRemote', 'Remote Employee')}
+            />
         </Stack>
     );
 
@@ -512,7 +510,7 @@ export function CompassEmployeesTab() {
             <Dialog open={addOpen} onClose={closeAddDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>{t('compass.addEmployee', 'Add Employee')}</DialogTitle>
                 <DialogContent>
-                    {renderFormFields(false)}
+                    {renderFormFields()}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeAddDialog} disabled={saving}>
@@ -532,7 +530,7 @@ export function CompassEmployeesTab() {
             <Dialog open={!!editEmployee} onClose={closeEditDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>{t('compass.editEmployee', 'Edit Employee')}</DialogTitle>
                 <DialogContent>
-                    {renderFormFields(true)}
+                    {renderFormFields()}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeEditDialog} disabled={saving}>

@@ -48,6 +48,8 @@ export interface Employee {
     isActive: boolean;
     departmentId: string | null;
     jobTitle: string | null;
+    employeeNumber: string | null;
+    isRemote: boolean;
     createdAt: string;
 }
 
