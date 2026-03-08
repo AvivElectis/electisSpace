@@ -29,8 +29,7 @@ export function ProfilePage() {
     const logout = useCompassAuthStore((s) => s.logout);
     const [a11yOpen, setA11yOpen] = useState(false);
 
-    // Branch info — will be populated when branch details are available from a store/API
-    const branch = null as { addressLine1?: string; city?: string; country?: string } | null;
+    const branchAddress = user?.branchAddress ?? null;
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'he' : 'en';
@@ -64,11 +63,11 @@ export function ProfilePage() {
                                 </Typography>
                             </Box>
                         )}
-                        {branch?.city && (
+                        {branchAddress && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                                 <LocationOnIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                                 <Typography variant="caption" color="text.secondary">
-                                    {[branch.addressLine1, branch.city, branch.country].filter(Boolean).join(', ')}
+                                    {branchAddress}
                                 </Typography>
                             </Box>
                         )}

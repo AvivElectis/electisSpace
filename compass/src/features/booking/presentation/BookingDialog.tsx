@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -21,7 +21,8 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBookingStore } from '../application/useBookingStore';
-import type { SpaceWithAvailability } from '../domain/types';
+import { bookingApi } from '../infrastructure/bookingApi';
+import type { SpaceWithAvailability, WorkHoursConfig } from '../domain/types';
 
 const SlideUp = forwardRef(function SlideUp(
     props: TransitionProps & { children: React.ReactElement },
@@ -82,12 +83,13 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
     const [recurrenceType, setRecurrenceType] = useState<'none' | 'daily' | 'weekdays' | 'weekly'>('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
-    // Branch work hours config — will be populated when branch data is available
-    const branchWorkHours = null as {
-        workingHoursStart?: string;
-        workingHoursEnd?: string;
-        workingDays?: Record<string, boolean>;
-    } | null;
+    const [branchWorkHours, setBranchWorkHours] = useState<WorkHoursConfig | null>(null);
+
+    useEffect(() => {
+        bookingApi.getWorkHours()
+            .then((res) => setBranchWorkHours(res.data.data))
+            .catch(() => { /* non-critical — warning just won't show */ });
+    }, []);
 
     const isOutsideWorkHours = useMemo(() => {
         if (!date || !startTime || !branchWorkHours) return false;

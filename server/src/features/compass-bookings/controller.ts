@@ -10,6 +10,8 @@ import {
 } from './types.js';
 import * as service from './service.js';
 import * as repo from './repository.js';
+import { prisma } from '../../config/index.js';
+import { resolveWorkHours } from './workHoursService.js';
 
 // ─── POST /api/v2/compass/bookings ───────────────────
 
@@ -248,6 +250,29 @@ export const deleteRule = async (req: Request, res: Response, next: NextFunction
         const companyId = req.params.companyId as string;
         await repo.deleteRule(req.params.ruleId as string, companyId);
         res.json({ message: 'Rule deleted' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ─── GET /api/v2/compass/bookings/work-hours ──────────
+
+export const getWorkHours = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.compassUser!;
+        const company = await prisma.company.findUnique({
+            where: { id: user.companyId },
+            select: { workingHoursStart: true, workingHoursEnd: true, workingDays: true, defaultTimezone: true },
+        });
+        const store = await prisma.store.findUnique({
+            where: { id: user.branchId },
+            select: { workingHoursStart: true, workingHoursEnd: true, workingDays: true },
+        });
+        const workHours = resolveWorkHours(
+            company ? { ...company, workingDays: company.workingDays as Record<string, boolean> | null } : {},
+            store ? { ...store, workingDays: store.workingDays as Record<string, boolean> | null } : {},
+        );
+        res.json({ data: workHours });
     } catch (error) {
         next(error);
     }

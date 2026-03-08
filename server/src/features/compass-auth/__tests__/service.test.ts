@@ -110,7 +110,7 @@ const mockUser = {
     preferences: {},
     isActive: true,
     company: { id: 'company-1', name: 'Test Corp', compassEnabled: true },
-    branch: { id: 'branch-1', name: 'HQ', code: 'HQ' },
+    branch: { id: 'branch-1', name: 'HQ', code: 'HQ', addressLine1: '123 Main St', city: 'Tel Aviv', country: 'IL' },
     department: { id: 'dept-1', name: 'Engineering' },
 };
 
@@ -237,6 +237,8 @@ describe('verifyCodeAndLogin', () => {
         expect(result.user.email).toBe('test@example.com');
         expect(result.user.companyId).toBe('company-1');
         expect(result.user.departmentName).toBe('Engineering');
+        expect(result.user.branchName).toBe('HQ');
+        expect(result.user.branchAddress).toBe('123 Main St, Tel Aviv, IL');
         expect(mockRepo.consumeVerificationCode).toHaveBeenCalledWith('code-1');
     });
 

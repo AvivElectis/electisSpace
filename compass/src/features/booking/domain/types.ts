@@ -131,3 +131,10 @@ export interface CreateBookingRequest {
 export interface ExtendBookingRequest {
     newEndTime: string;
 }
+
+export interface WorkHoursConfig {
+    workingHoursStart: string;
+    workingHoursEnd: string;
+    workingDays: Record<string, boolean>;
+    timezone: string;
+}

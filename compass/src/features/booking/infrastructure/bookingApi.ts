@@ -1,5 +1,5 @@
 import compassApi from '@shared/api/compassApi';
-import type { Booking, CancelScope, CreateBookingRequest, ExtendBookingRequest } from '../domain/types';
+import type { Booking, CancelScope, CreateBookingRequest, ExtendBookingRequest, WorkHoursConfig } from '../domain/types';
 
 export const bookingApi = {
     list: (params?: { status?: string }) =>
@@ -27,4 +27,7 @@ export const bookingApi = {
 
     getActive: () =>
         compassApi.get<{ data: Booking | null }>('/bookings/active'),
+
+    getWorkHours: () =>
+        compassApi.get<{ data: WorkHoursConfig }>('/bookings/work-hours'),
 };

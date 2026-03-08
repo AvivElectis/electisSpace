@@ -15,7 +15,7 @@ export const findCompanyUserByEmail = async (email: string) => {
         },
         include: {
             company: { select: { id: true, name: true, compassEnabled: true } },
-            branch: { select: { id: true, name: true, code: true } },
+            branch: { select: { id: true, name: true, code: true, addressLine1: true, city: true, country: true } },
             department: { select: { id: true, name: true } },
         },
     });
@@ -26,7 +26,7 @@ export const findCompanyUserById = async (id: string) => {
         where: { id },
         include: {
             company: { select: { id: true, name: true, compassEnabled: true } },
-            branch: { select: { id: true, name: true, code: true } },
+            branch: { select: { id: true, name: true, code: true, addressLine1: true, city: true, country: true } },
             department: { select: { id: true, name: true } },
         },
     });

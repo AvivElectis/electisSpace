@@ -20,6 +20,8 @@ export interface CompassUser {
     buildingId: string | null;
     floorId: string | null;
     departmentName: string | null;
+    branchName: string | null;
+    branchAddress: string | null;
     preferences: unknown;
 }
 

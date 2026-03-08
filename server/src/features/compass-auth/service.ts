@@ -301,5 +301,7 @@ const mapToUserInfo = (user: CompassUserRecord): CompassUserInfo => ({
     buildingId: user.buildingId,
     floorId: user.floorId,
     departmentName: user.department?.name ?? null,
+    branchName: user.branch?.name ?? null,
+    branchAddress: [user.branch?.addressLine1, user.branch?.city, user.branch?.country].filter(Boolean).join(', ') || null,
     preferences: user.preferences,
 });
