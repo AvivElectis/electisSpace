@@ -838,6 +838,13 @@ model Booking {
   endTime   DateTime?     @map("end_time") // null for permanent assignments
   status    BookingStatus @default(BOOKED)
 
+  // Booking type and recurrence (Phase 24)
+  bookingType       BookingType @default(HOT_DESK) @map("booking_type")
+  recurrenceRule    String?     @map("recurrence_rule") // iCal RRULE string
+  recurrenceGroupId String?     @map("recurrence_group_id")
+  isRecurrence      Boolean     @default(false) @map("is_recurrence")
+  parentBookingId   String?     @map("parent_booking_id")
+
   checkedInAt  DateTime? @map("checked_in_at")
   releasedAt   DateTime? @map("released_at")
   autoReleased Boolean   @default(false) @map("auto_released")
@@ -856,7 +863,15 @@ model Booking {
   @@index([companyUserId, startTime])
   @@index([companyId, status])
   @@index([status, endTime])
+  @@index([recurrenceGroupId])
   @@map("bookings")
+}
+
+enum BookingType {
+  HOT_DESK
+  MEETING
+  ADMIN_RESERVE
+  PERMANENT
 }
 
 enum BookingStatus {
