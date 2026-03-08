@@ -58,7 +58,19 @@
         "friendsNearby_one": "חבר {{count}} בקרבת מקום",
         "friendsNearby_other": "{{count}} חברים בקרבת מקום",
         "book": "הזמן",
-        "unknownFloor": "אחר"
+        "unknownFloor": "אחר",
+        "amenitiesFilter": "מתקנים",
+        "amenitiesFilterActive_one": "מתקן {{count}}",
+        "amenitiesFilterActive_other": "{{count}} מתקנים",
+        "spaceType": {
+            "DESK": "שולחן",
+            "MEETING_ROOM": "חדר ישיבות",
+            "PHONE_BOOTH": "תא טלפון",
+            "COLLABORATION_ZONE": "אזור שיתופי",
+            "PARKING": "חניה",
+            "LOCKER": "לוקר",
+            "EVENT_SPACE": "חלל אירועים"
+        }
     },
     "booking": {
         "bookSpace": "הזמן {{name}}",

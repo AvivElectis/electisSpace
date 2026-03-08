@@ -28,6 +28,23 @@ export interface Booking {
 
 export type SpaceMode = 'AVAILABLE' | 'EXCLUDED' | 'MAINTENANCE' | 'PERMANENT';
 
+export type CompassSpaceType =
+    | 'DESK'
+    | 'MEETING_ROOM'
+    | 'PHONE_BOOTH'
+    | 'COLLABORATION_ZONE'
+    | 'PARKING'
+    | 'LOCKER'
+    | 'EVENT_SPACE';
+
+export interface AmenityInfo {
+    id: string;
+    name: string;
+    nameHe: string | null;
+    icon: string | null;
+    category: string;
+}
+
 export interface SpaceSummary {
     id: string;
     externalId: string;
@@ -35,6 +52,8 @@ export interface SpaceSummary {
     compassMode: SpaceMode;
     compassCapacity: number | null;
     compassAmenities: string[];
+    compassSpaceType: CompassSpaceType | null;
+    structuredAmenities: AmenityInfo[];
     buildingName: string | null;
     floorName: string | null;
     floorSortOrder: number | null;
@@ -92,6 +111,8 @@ export interface SpaceFilters {
     endTime?: string;
     search?: string;
     sort?: 'name' | 'floor' | 'nearFriends';
+    spaceType?: CompassSpaceType;
+    amenityIds?: string[];
 }
 
 export interface CreateBookingRequest {

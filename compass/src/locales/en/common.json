@@ -58,7 +58,19 @@
         "friendsNearby_one": "{{count}} friend nearby",
         "friendsNearby_other": "{{count}} friends nearby",
         "book": "Book",
-        "unknownFloor": "Other"
+        "unknownFloor": "Other",
+        "amenitiesFilter": "Amenities",
+        "amenitiesFilterActive_one": "{{count}} amenity",
+        "amenitiesFilterActive_other": "{{count}} amenities",
+        "spaceType": {
+            "DESK": "Desk",
+            "MEETING_ROOM": "Meeting Room",
+            "PHONE_BOOTH": "Phone Booth",
+            "COLLABORATION_ZONE": "Collaboration Zone",
+            "PARKING": "Parking",
+            "LOCKER": "Locker",
+            "EVENT_SPACE": "Event Space"
+        }
     },
     "booking": {
         "bookSpace": "Book {{name}}",

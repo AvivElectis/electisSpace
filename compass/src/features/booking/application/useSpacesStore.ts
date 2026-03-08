@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import type { SpaceWithAvailability, Building, SpaceFilters } from '../domain/types';
+import type { SpaceWithAvailability, Building, SpaceFilters, AmenityInfo } from '../domain/types';
 import { spacesApi } from '../infrastructure/spacesApi';
 
 interface SpacesState {
     spaces: SpaceWithAvailability[];
     buildings: Building[];
+    amenities: AmenityInfo[];
     filters: SpaceFilters;
     isLoading: boolean;
     error: string | null;
@@ -13,6 +14,7 @@ interface SpacesState {
 interface SpacesActions {
     fetchSpaces: (filters?: SpaceFilters) => Promise<void>;
     fetchBuildings: () => Promise<void>;
+    fetchAmenities: () => Promise<void>;
     setFilters: (filters: Partial<SpaceFilters>) => void;
     clearFilters: () => void;
     updateSpaceFromSocket: (spaceId: string, available: boolean) => void;
@@ -23,6 +25,7 @@ const defaultFilters: SpaceFilters = {};
 export const useSpacesStore = create<SpacesState & SpacesActions>((set, get) => ({
     spaces: [],
     buildings: [],
+    amenities: [],
     filters: defaultFilters,
     isLoading: false,
     error: null,
@@ -47,6 +50,15 @@ export const useSpacesStore = create<SpacesState & SpacesActions>((set, get) => 
             set({ buildings: data.buildings });
         } catch {
             // Silently fail for building hierarchy
+        }
+    },
+
+    fetchAmenities: async () => {
+        try {
+            const { data } = await spacesApi.getAmenities();
+            set({ amenities: data.amenities });
+        } catch {
+            // Silently fail for amenities
         }
     },
 
