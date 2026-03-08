@@ -11,6 +11,9 @@ export interface Booking {
     status: BookingStatus;
     checkedInAt: string | null;
     notes: string | null;
+    recurrenceRule: string | null;
+    recurrenceGroupId: string | null;
+    isRecurrence: boolean;
 }
 
 export interface BookingRule {

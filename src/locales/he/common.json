@@ -1997,6 +1997,20 @@
             "selectFloor": "בחר קומה לניהול שכונות",
             "spacesCount": "חללים",
             "description": "תיאור"
+        },
+        "recurrence": {
+            "title": "חזרה",
+            "none": "לא חוזר",
+            "daily": "יומי",
+            "weekdays": "כל יום חול",
+            "weekly": "שבועי",
+            "endsOn": "מסתיים ב",
+            "conflicts": "{{count}} תאריכים עם התנגשויות",
+            "bookRemaining": "הזמן {{count}} נותרים",
+            "cancelInstance": "בטל הזמנה זו בלבד",
+            "cancelFuture": "בטל הזמנה זו והבאות",
+            "cancelSeries": "בטל את כל הסדרה",
+            "partOfSeries": "חלק מסדרה"
         }
     }
 }

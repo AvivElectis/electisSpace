@@ -6,8 +6,10 @@ export const compassAdminApi = {
     listBookings: (companyId: string, params?: { status?: string }) =>
         api.get<{ data: Booking[] }>(`/admin/compass/bookings/${companyId}`, { params }),
 
-    cancelBooking: (companyId: string, bookingId: string) =>
-        api.patch(`/admin/compass/bookings/${companyId}/${bookingId}/cancel`),
+    cancelBooking: (companyId: string, bookingId: string, scope?: 'instance' | 'future' | 'all') =>
+        api.patch(`/admin/compass/bookings/${companyId}/${bookingId}/cancel`, null, {
+            params: scope ? { scope } : undefined,
+        }),
 
     createBooking: (companyId: string, data: {
         companyUserId: string;
@@ -16,6 +18,7 @@ export const compassAdminApi = {
         startTime: string;
         endTime: string | null;
         notes?: string;
+        recurrenceRule?: string;
     }) => api.post<{ data: import('../domain/types').Booking }>(`/admin/compass/bookings/${companyId}`, data),
 
     // Rules

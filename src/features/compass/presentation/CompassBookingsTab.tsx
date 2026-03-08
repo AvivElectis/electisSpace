@@ -4,10 +4,12 @@ import {
     TableHead, TableRow, Paper, Chip, IconButton, TextField,
     MenuItem, Stack, CircularProgress, Alert, Dialog, DialogTitle,
     DialogContent, DialogContentText, DialogActions, Button,
-    FormControlLabel, Checkbox, Autocomplete,
+    FormControlLabel, Checkbox, Autocomplete, Tooltip,
+    RadioGroup, Radio,
 } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
+import RepeatIcon from '@mui/icons-material/Repeat';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
@@ -22,6 +24,24 @@ const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default' |
     NO_SHOW: 'warning',
 };
 
+type RecurrenceType = 'none' | 'daily' | 'weekdays' | 'weekly';
+type CancelScope = 'instance' | 'future' | 'all';
+
+function buildRRule(type: RecurrenceType, endDate: string): string | undefined {
+    if (type === 'none' || !endDate) return undefined;
+    const until = endDate.replace(/-/g, '') + 'T235959Z';
+    switch (type) {
+        case 'daily':
+            return `FREQ=DAILY;UNTIL=${until}`;
+        case 'weekdays':
+            return `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=${until}`;
+        case 'weekly':
+            return `FREQ=WEEKLY;UNTIL=${until}`;
+        default:
+            return undefined;
+    }
+}
+
 export function CompassBookingsTab() {
     const { t } = useTranslation();
     const { activeCompanyId, activeStoreId } = useAuthStore();
@@ -29,7 +49,8 @@ export function CompassBookingsTab() {
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
+    const [confirmCancel, setConfirmCancel] = useState<Booking | null>(null);
+    const [cancelScope, setCancelScope] = useState<CancelScope>('instance');
     const [cancelling, setCancelling] = useState(false);
 
     // Reserve dialog state
@@ -43,6 +64,8 @@ export function CompassBookingsTab() {
     const [untilCancellation, setUntilCancellation] = useState(false);
     const [reserveNotes, setReserveNotes] = useState('');
     const [reserving, setReserving] = useState(false);
+    const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
+    const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
     const fetchBookings = useCallback(async (showLoading = false) => {
         if (!activeCompanyId) return;
@@ -61,11 +84,12 @@ export function CompassBookingsTab() {
 
     useEffect(() => { fetchBookings(true); }, [fetchBookings]);
 
-    const handleCancel = async (bookingId: string) => {
+    const handleCancel = async (booking: Booking, scope?: CancelScope) => {
         if (!activeCompanyId) return;
         setCancelling(true);
         try {
-            await compassAdminApi.cancelBooking(activeCompanyId, bookingId);
+            const effectiveScope = booking.recurrenceGroupId ? scope : undefined;
+            await compassAdminApi.cancelBooking(activeCompanyId, booking.id, effectiveScope);
             fetchBookings();
         } catch {
             setError(t('errors.saveFailed'));
@@ -102,12 +126,15 @@ export function CompassBookingsTab() {
         setEndTime('');
         setUntilCancellation(false);
         setReserveNotes('');
+        setRecurrenceType('none');
+        setRecurrenceEndDate('');
     };
 
     const handleReserve = async () => {
         if (!activeCompanyId || !activeStoreId || !selectedEmployee || !selectedSpace || !startTime) return;
         setReserving(true);
         try {
+            const rrule = buildRRule(recurrenceType, recurrenceEndDate);
             await compassAdminApi.createBooking(activeCompanyId, {
                 companyUserId: selectedEmployee.id,
                 branchId: activeStoreId,
@@ -115,6 +142,7 @@ export function CompassBookingsTab() {
                 startTime: new Date(startTime).toISOString(),
                 endTime: untilCancellation ? null : (endTime ? new Date(endTime).toISOString() : null),
                 notes: reserveNotes.trim() || undefined,
+                recurrenceRule: rrule,
             });
             handleCloseReserve();
             fetchBookings();
@@ -130,7 +158,18 @@ export function CompassBookingsTab() {
         return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
-    const canReserve = selectedEmployee && selectedSpace && startTime && (untilCancellation || endTime);
+    const canReserve = selectedEmployee && selectedSpace && startTime && (untilCancellation || endTime)
+        && (recurrenceType === 'none' || recurrenceEndDate);
+
+    const handleOpenCancelDialog = (booking: Booking) => {
+        setConfirmCancel(booking);
+        setCancelScope('instance');
+    };
+
+    const handleCloseCancelDialog = () => {
+        setConfirmCancel(null);
+        setCancelScope('instance');
+    };
 
     if (initialLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
@@ -197,7 +236,16 @@ export function CompassBookingsTab() {
                                         <Typography variant="body2" fontWeight={500}>{b.companyUser.displayName}</Typography>
                                         <Typography variant="caption" color="text.secondary">{b.companyUser.email}</Typography>
                                     </TableCell>
-                                    <TableCell>{b.space?.name || '—'}</TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            {b.space?.name || '\u2014'}
+                                            {b.isRecurrence && (
+                                                <Tooltip title={t('compass.recurrence.partOfSeries')}>
+                                                    <RepeatIcon fontSize="small" sx={{ ml: 0.5 }} color="action" />
+                                                </Tooltip>
+                                            )}
+                                        </Box>
+                                    </TableCell>
                                     <TableCell>{formatTime(b.startTime)}</TableCell>
                                     <TableCell>{b.endTime ? formatTime(b.endTime) : t('compass.untilCancellation')}</TableCell>
                                     <TableCell>
@@ -209,7 +257,7 @@ export function CompassBookingsTab() {
                                     </TableCell>
                                     <TableCell align="right">
                                         {(b.status === 'BOOKED' || b.status === 'CHECKED_IN') && (
-                                            <IconButton size="small" color="error" onClick={() => setConfirmCancel(b.id)} aria-label={t('compass.cancelBooking')}>
+                                            <IconButton size="small" color="error" onClick={() => handleOpenCancelDialog(b)} aria-label={t('compass.cancelBooking')}>
                                                 <CancelIcon fontSize="small" />
                                             </IconButton>
                                         )}
@@ -222,19 +270,42 @@ export function CompassBookingsTab() {
             </TableContainer>
 
             {/* Confirmation dialog for cancelling a booking */}
-            <Dialog open={!!confirmCancel} onClose={() => setConfirmCancel(null)}>
+            <Dialog open={!!confirmCancel} onClose={handleCloseCancelDialog}>
                 <DialogTitle>{t('common.confirm')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>{t('common.confirmCancel')}</DialogContentText>
+                    {confirmCancel?.recurrenceGroupId && (
+                        <RadioGroup
+                            value={cancelScope}
+                            onChange={(e) => setCancelScope(e.target.value as CancelScope)}
+                            sx={{ mt: 2 }}
+                        >
+                            <FormControlLabel
+                                value="instance"
+                                control={<Radio />}
+                                label={t('compass.recurrence.cancelInstance')}
+                            />
+                            <FormControlLabel
+                                value="future"
+                                control={<Radio />}
+                                label={t('compass.recurrence.cancelFuture')}
+                            />
+                            <FormControlLabel
+                                value="all"
+                                control={<Radio />}
+                                label={t('compass.recurrence.cancelSeries')}
+                            />
+                        </RadioGroup>
+                    )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setConfirmCancel(null)}>{t('common.cancel')}</Button>
+                    <Button onClick={handleCloseCancelDialog}>{t('common.cancel')}</Button>
                     <Button
                         color="error"
                         disabled={cancelling}
                         onClick={async () => {
-                            if (confirmCancel) await handleCancel(confirmCancel);
-                            setConfirmCancel(null);
+                            if (confirmCancel) await handleCancel(confirmCancel, cancelScope);
+                            handleCloseCancelDialog();
                         }}
                     >
                         {t('common.confirm')}
@@ -288,6 +359,28 @@ export function CompassBookingsTab() {
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.target.value)}
                                 slotProps={{ inputLabel: { shrink: true } }}
+                            />
+                        )}
+                        <TextField
+                            select
+                            label={t('compass.recurrence.title')}
+                            value={recurrenceType}
+                            onChange={(e) => setRecurrenceType(e.target.value as RecurrenceType)}
+                            fullWidth
+                        >
+                            <MenuItem value="none">{t('compass.recurrence.none')}</MenuItem>
+                            <MenuItem value="daily">{t('compass.recurrence.daily')}</MenuItem>
+                            <MenuItem value="weekdays">{t('compass.recurrence.weekdays')}</MenuItem>
+                            <MenuItem value="weekly">{t('compass.recurrence.weekly')}</MenuItem>
+                        </TextField>
+                        {recurrenceType !== 'none' && (
+                            <TextField
+                                label={t('compass.recurrence.endsOn')}
+                                type="date"
+                                value={recurrenceEndDate}
+                                onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                                slotProps={{ inputLabel: { shrink: true } }}
+                                fullWidth
                             />
                         )}
                         <TextField

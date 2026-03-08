@@ -1983,6 +1983,20 @@
             "selectFloor": "Select a floor to manage neighborhoods",
             "spacesCount": "Spaces",
             "description": "Description"
+        },
+        "recurrence": {
+            "title": "Repeat",
+            "none": "Does not repeat",
+            "daily": "Daily",
+            "weekdays": "Every weekday",
+            "weekly": "Weekly",
+            "endsOn": "Ends on",
+            "conflicts": "{{count}} dates have conflicts",
+            "bookRemaining": "Book remaining {{count}}",
+            "cancelInstance": "Cancel this booking",
+            "cancelFuture": "Cancel this and future bookings",
+            "cancelSeries": "Cancel entire series",
+            "partOfSeries": "Part of a series"
         }
     }
 }
