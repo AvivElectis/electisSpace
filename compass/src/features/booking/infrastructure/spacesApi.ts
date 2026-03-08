@@ -3,10 +3,11 @@ import type { SpaceWithAvailability, Building, SpaceFilters, AmenityInfo } from 
 
 export const spacesApi = {
     list: (filters?: SpaceFilters) => {
-        // Convert amenityIds array to comma-separated string for query params
+        // Convert amenityIds array to comma-separated 'amenities' param (server expects 'amenities')
         const params: Record<string, unknown> = { ...filters };
         if (filters?.amenityIds?.length) {
-            params.amenityIds = filters.amenityIds.join(',');
+            params.amenities = filters.amenityIds.join(',');
+            delete params.amenityIds;
         }
         return compassApi.get<{ spaces: SpaceWithAvailability[] }>('/spaces', { params });
     },
