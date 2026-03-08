@@ -110,7 +110,7 @@ export const extend = async (req: Request, res: Response, next: NextFunction) =>
             req.params.id as string,
             user.id,
             user.companyId,
-            new Date(parsed.data.endTime),
+            new Date(parsed.data.newEndTime),
         );
 
         res.json({ data: booking });

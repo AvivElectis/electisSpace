@@ -21,7 +21,7 @@ export const adminCreateBookingSchema = z.object({
 });
 
 export const extendBookingSchema = z.object({
-    endTime: z.string().datetime(),
+    newEndTime: z.string().datetime(),
 });
 
 // ─── Booking Rule Schemas ────────────────────────────
