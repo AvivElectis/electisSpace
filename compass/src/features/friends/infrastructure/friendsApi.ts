@@ -23,6 +23,6 @@ export const friendsApi = {
     removeFriend: (friendshipId: string) =>
         compassApi.delete<{ success: boolean }>(`/friends/${friendshipId}`),
 
-    blockUser: (userId: string) =>
-        compassApi.post<{ success: boolean }>(`/friends/block`, { userId }),
+    blockUser: (friendshipId: string) =>
+        compassApi.patch<{ success: boolean }>(`/friends/${friendshipId}/block`),
 };
