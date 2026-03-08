@@ -246,7 +246,7 @@ export function CompassConfigStep({ config, onUpdate }: CompassConfigStepProps) 
                             value={config[field.key]}
                             onChange={(e) => handleChange(field.key, e.target.value)}
                             onBlur={() => {
-                                const val = config[field.key];
+                                const val = config[field.key] as number | string | undefined;
                                 if (val === '' || val === undefined || (typeof val === 'number' && val < field.min)) {
                                     onUpdate({ ...config, [field.key]: field.min });
                                 }

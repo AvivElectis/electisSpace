@@ -83,11 +83,11 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
     const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
     // Branch work hours config — will be populated when branch data is available
-    const branchWorkHours: {
+    const branchWorkHours = null as {
         workingHoursStart?: string;
         workingHoursEnd?: string;
         workingDays?: Record<string, boolean>;
-    } | null = null;
+    } | null;
 
     const isOutsideWorkHours = useMemo(() => {
         if (!date || !startTime || !branchWorkHours) return false;

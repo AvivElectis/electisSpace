@@ -13,7 +13,7 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
-import type { Booking, BookingStatus, CompassSpace, Employee } from '../domain/types';
+import type { Booking, CompassSpace, Employee } from '../domain/types';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
     BOOKED: 'info',

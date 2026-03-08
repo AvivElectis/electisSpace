@@ -30,7 +30,7 @@ export function ProfilePage() {
     const [a11yOpen, setA11yOpen] = useState(false);
 
     // Branch info — will be populated when branch details are available from a store/API
-    const branch: { addressLine1?: string; city?: string; country?: string } | null = null;
+    const branch = null as { addressLine1?: string; city?: string; country?: string } | null;
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'he' : 'en';

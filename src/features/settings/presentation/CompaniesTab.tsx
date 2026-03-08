@@ -84,7 +84,6 @@ export function CompaniesTab() {
     const draftDismissedIds = useWizardDraftStore(s => s.dismissedIds);
     const drafts = useWizardDraftStore(s => s.drafts);
     const discardDraft = useWizardDraftStore(s => s.discardDraft);
-    const undismissDraft = useWizardDraftStore(s => s.undismissDraft);
     const hasDismissedDraft = Object.keys(drafts).some(id => draftDismissedIds.includes(id));
 
     // Fetch Companies

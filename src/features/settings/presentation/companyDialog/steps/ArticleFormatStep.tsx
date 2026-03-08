@@ -49,7 +49,6 @@ export function ArticleFormatStep({
     error,
     onFetch,
     onUpdate,
-    compassEnabled,
     readOnly,
     onPushToAims,
 }: ArticleFormatStepProps) {
