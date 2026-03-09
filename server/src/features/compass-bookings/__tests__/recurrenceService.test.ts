@@ -1,4 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('../../../shared/middleware/index.js', () => ({
+    badRequest: (msg: string) => {
+        const err = new Error(msg);
+        (err as any).statusCode = 400;
+        return err;
+    },
+}));
+
 import { generateInstances, MAX_INSTANCES } from '../recurrenceService.js';
 
 describe('generateInstances', () => {
