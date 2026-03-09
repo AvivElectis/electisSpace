@@ -28,6 +28,7 @@ export function LoginPage() {
         isAuthenticated,
         error,
         sendLoginCode,
+        checkSso,
         verifyCode,
         resetLoginFlow,
         setError,
@@ -36,6 +37,7 @@ export function LoginPage() {
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
     const [codeExpiryMinutes, setCodeExpiryMinutes] = useState<number | null>(null);
+    const [ssoChecking, setSsoChecking] = useState(false);
 
     // Redirect to home after successful login
     if (isAuthenticated) {
@@ -49,8 +51,21 @@ export function LoginPage() {
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) return;
-        await sendLoginCode(email.trim().toLowerCase());
-        // Read expiry from store after sendLoginCode completes
+        const trimmedEmail = email.trim().toLowerCase();
+
+        // Check for SSO first
+        setSsoChecking(true);
+        const ssoResult = await checkSso(trimmedEmail);
+        setSsoChecking(false);
+
+        if (ssoResult.ssoEnabled && ssoResult.redirectUrl) {
+            // Redirect to SSO provider
+            window.location.href = ssoResult.redirectUrl;
+            return;
+        }
+
+        // No SSO — proceed with email code login
+        await sendLoginCode(trimmedEmail);
         const state = useCompassAuthStore.getState();
         setCodeExpiryMinutes(state.codeExpiryMinutes);
     };
@@ -116,10 +131,10 @@ export function LoginPage() {
                                 fullWidth
                                 variant="contained"
                                 type="submit"
-                                disabled={isLoading || !email.trim()}
+                                disabled={isLoading || ssoChecking || !email.trim()}
                                 size="large"
                             >
-                                {isLoading ? <CircularProgress size={24} /> : t('auth.sendCode')}
+                                {isLoading || ssoChecking ? <CircularProgress size={24} /> : t('auth.continue', 'Continue')}
                             </Button>
                         </Box>
                     )}

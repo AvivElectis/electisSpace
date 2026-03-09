@@ -5,6 +5,7 @@ import { getActiveTheme } from '@shared/theme/theme';
 import { usePreferencesStore } from '@shared/stores/usePreferencesStore';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
 import { LoginPage } from '@features/auth/presentation/LoginPage';
+import { SsoCallbackPage } from '@features/auth/presentation/SsoCallbackPage';
 import { BiometricEnrollDialog } from '@features/auth/presentation/BiometricEnrollDialog';
 import { HomePage } from '@features/booking/presentation/HomePage';
 import { FindPage } from '@features/booking/presentation/FindPage';
@@ -121,6 +122,7 @@ export default function App() {
                 <HashRouter>
                     <Routes>
                         <Route path="/login" element={<LoginPage />} />
+                        <Route path="/sso-callback" element={<SsoCallbackPage />} />
                         <Route
                             path="/*"
                             element={

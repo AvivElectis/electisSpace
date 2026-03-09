@@ -20,9 +20,18 @@ interface RefreshResponse {
     user: CompassUser;
 }
 
+interface SsoCheckResponse {
+    ssoEnabled: boolean;
+    protocol?: 'SAML' | 'OIDC';
+    redirectUrl?: string;
+}
+
 export const authApi = {
     login: (email: string) =>
         compassApi.post<LoginResponse>('/auth/login', { email }),
+
+    checkSso: (email: string) =>
+        compassApi.get<SsoCheckResponse>('/auth/sso/login', { params: { email } }),
 
     verify: (email: string, code: string) =>
         compassApi.post<VerifyResponse>('/auth/verify', { email, code }),

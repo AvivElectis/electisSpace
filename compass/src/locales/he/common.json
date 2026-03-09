@@ -18,6 +18,7 @@
         "emailPlaceholder": "הזן את האימייל הארגוני שלך",
         "codeLabel": "קוד אימות",
         "sendCode": "שלח קוד",
+        "continue": "המשך",
         "verify": "אמת",
         "codeSentTo": "קוד נשלח ל-{{email}}",
         "codeExpiresIn": "הקוד תקף ל-{{minutes}} דקות",

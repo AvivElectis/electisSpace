@@ -6,6 +6,8 @@ import { connectCompassSocket, disconnectCompassSocket } from '@shared/infrastru
 
 interface AuthActions {
     sendLoginCode: (email: string) => Promise<void>;
+    checkSso: (email: string) => Promise<{ ssoEnabled: boolean; redirectUrl?: string }>;
+    handleSsoCallback: (token: string, refreshToken: string) => void;
     verifyCode: (code: string) => Promise<void>;
     refresh: () => Promise<void>;
     logout: () => void;
@@ -22,6 +24,49 @@ export const useCompassAuthStore = create<AuthState & AuthActions>((set, get) =>
     loginEmail: '',
     error: null,
     codeExpiryMinutes: null,
+
+    checkSso: async (email: string) => {
+        try {
+            const { data } = await authApi.checkSso(email);
+            return data;
+        } catch {
+            return { ssoEnabled: false };
+        }
+    },
+
+    handleSsoCallback: (token: string, _refreshToken: string) => {
+        compassApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Decode user info from JWT payload — full profile will be loaded on next refresh
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            set({
+                user: {
+                    id: payload.userId,
+                    companyId: payload.companyId,
+                    email: payload.email,
+                    role: payload.role,
+                    displayName: payload.email,
+                    avatarUrl: null,
+                    branchId: '',
+                    buildingId: null,
+                    floorId: null,
+                    departmentName: null,
+                    branchName: null,
+                    branchAddress: null,
+                    preferences: null,
+                },
+                accessToken: token,
+                isAuthenticated: true,
+                isLoading: false,
+                loginStep: 'done',
+            });
+            // JWT expires in 15m, refresh at 14m
+            scheduleRefresh(14 * 60);
+            connectCompassSocket();
+        } catch {
+            set({ error: 'Failed to process SSO login', isLoading: false });
+        }
+    },
 
     sendLoginCode: async (email: string) => {
         set({ isLoading: true, error: null });

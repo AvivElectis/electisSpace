@@ -18,6 +18,7 @@
         "emailPlaceholder": "Enter your work email",
         "codeLabel": "Verification code",
         "sendCode": "Send Code",
+        "continue": "Continue",
         "verify": "Verify",
         "codeSentTo": "Code sent to {{email}}",
         "codeExpiresIn": "The code expires in {{minutes}} minutes",
