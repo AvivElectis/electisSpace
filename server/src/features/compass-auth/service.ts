@@ -286,6 +286,18 @@ export const revokeDevice = async (companyUserId: string, deviceTokenId: string)
     return { message: 'Device revoked' };
 };
 
+// ─── Expired Device Token Cleanup ────────────────────
+
+export const cleanupExpiredDeviceTokens = async (): Promise<number> => {
+    const result = await prisma.deviceToken.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+    });
+    if (result.count > 0) {
+        appLogger.info('CompassAuth', `Cleaned up ${result.count} expired device tokens`);
+    }
+    return result.count;
+};
+
 // ─── Helpers ─────────────────────────────────────────
 
 type CompassUserRecord = NonNullable<Awaited<ReturnType<typeof repo.findCompanyUserByEmail>>>;

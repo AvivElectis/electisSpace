@@ -1,6 +1,7 @@
 import { rrulestr } from 'rrule';
 import { v4 as uuidv4 } from 'uuid';
 import { badRequest } from '../../shared/middleware/index.js';
+import * as ruleEngine from './ruleEngine.js';
 
 export const MAX_INSTANCES = 90;
 
@@ -54,6 +55,34 @@ export async function createRecurringSeries(params: {
         endTime: params.endTime,
         refDate: new Date(),
     });
+
+    // Validate against booking rules
+    const rules = await ruleEngine.resolveRules(params.companyId, params.branchId);
+
+    // Validate duration per instance
+    if (params.endTime) {
+        const [endH, endM] = params.endTime.split(':').map(Number);
+        const [startH, startM] = params.startTime.split(':').map(Number);
+        const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+        if (durationMinutes < rules.minBookingDurationMinutes) {
+            throw badRequest('BOOKING_TOO_SHORT', { min: rules.minBookingDurationMinutes });
+        }
+        if (durationMinutes > rules.maxBookingDurationMinutes) {
+            throw badRequest('BOOKING_TOO_LONG', { max: rules.maxBookingDurationMinutes });
+        }
+    }
+
+    // Validate concurrent bookings limit
+    const activeCount = await params.prisma.booking.count({
+        where: {
+            companyUserId: params.companyUserId,
+            companyId: params.companyId,
+            status: { in: ['BOOKED', 'CHECKED_IN'] },
+        },
+    });
+    if (activeCount + dates.length > rules.maxConcurrentBookings) {
+        throw badRequest('MAX_CONCURRENT_BOOKINGS_EXCEEDED', { max: rules.maxConcurrentBookings });
+    }
 
     // Calculate duration from start/end times
     let durationMs: number | null = null;

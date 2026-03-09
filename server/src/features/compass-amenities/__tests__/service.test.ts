@@ -20,6 +20,10 @@ vi.mock('../../../config/index.js', () => ({
         floor: {
             findUnique: vi.fn(),
         },
+        space: {
+            findMany: vi.fn(),
+            update: vi.fn(),
+        },
     },
 }));
 
@@ -54,6 +58,10 @@ const mockPrisma = prisma as unknown as {
     };
     floor: {
         findUnique: ReturnType<typeof vi.fn>;
+    };
+    space: {
+        findMany: ReturnType<typeof vi.fn>;
+        update: ReturnType<typeof vi.fn>;
     };
 };
 
@@ -126,12 +134,38 @@ describe('updateAmenity', () => {
 describe('deleteAmenity', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('should soft-delete by setting isActive to false', async () => {
+    it('should soft-delete and clean up space references', async () => {
         mockPrisma.amenity.findUnique.mockResolvedValue({ id: 'a1', companyId: 'company-1' });
+        mockPrisma.space.findMany.mockResolvedValue([
+            { id: 's1', compassAmenities: ['a1', 'a2'] },
+        ]);
+        mockPrisma.space.update.mockResolvedValue({});
         mockPrisma.amenity.update.mockResolvedValue({ id: 'a1', isActive: false });
 
         await service.deleteAmenity('company-1', 'a1');
 
+        expect(mockPrisma.space.findMany).toHaveBeenCalledWith({
+            where: { compassAmenities: { has: 'a1' } },
+            select: { id: true, compassAmenities: true },
+        });
+        expect(mockPrisma.space.update).toHaveBeenCalledWith({
+            where: { id: 's1' },
+            data: { compassAmenities: ['a2'] },
+        });
+        expect(mockPrisma.amenity.update).toHaveBeenCalledWith({
+            where: { id: 'a1' },
+            data: { isActive: false },
+        });
+    });
+
+    it('should soft-delete without space cleanup when no spaces reference it', async () => {
+        mockPrisma.amenity.findUnique.mockResolvedValue({ id: 'a1', companyId: 'company-1' });
+        mockPrisma.space.findMany.mockResolvedValue([]);
+        mockPrisma.amenity.update.mockResolvedValue({ id: 'a1', isActive: false });
+
+        await service.deleteAmenity('company-1', 'a1');
+
+        expect(mockPrisma.space.update).not.toHaveBeenCalled();
         expect(mockPrisma.amenity.update).toHaveBeenCalledWith({
             where: { id: 'a1' },
             data: { isActive: false },

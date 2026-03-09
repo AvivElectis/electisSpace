@@ -4,18 +4,19 @@ import { prisma } from '../../config/index.js';
 const MAX_DEPTH = 5;
 
 async function detectCycle(departmentId: string, parentId: string): Promise<boolean> {
+    const visited = new Set<string>();
     let currentId: string | null = parentId;
-    let depth = 0;
-    while (currentId && depth < MAX_DEPTH) {
+    while (currentId) {
         if (currentId === departmentId) return true;
+        if (visited.has(currentId)) return true; // actual cycle in existing data
+        visited.add(currentId);
         const parent: { parentId: string | null } | null = await prisma.department.findUnique({
             where: { id: currentId },
             select: { parentId: true },
         });
         currentId = parent?.parentId ?? null;
-        depth++;
     }
-    return depth >= MAX_DEPTH;
+    return false;
 }
 
 export const createDepartment = async (companyId: string, data: {

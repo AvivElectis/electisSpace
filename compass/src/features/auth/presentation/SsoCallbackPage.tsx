@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { useSearchParams, Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { useCompassAuthStore } from '../application/useCompassAuthStore';
 
 export function SsoCallbackPage() {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const { handleSsoCallback, isAuthenticated } = useCompassAuthStore();
 
@@ -29,7 +31,7 @@ export function SsoCallbackPage() {
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Box sx={{ textAlign: 'center' }}>
                 <CircularProgress sx={{ mb: 2 }} />
-                <Typography>Completing SSO login...</Typography>
+                <Typography>{t('auth.completingSsoLogin', 'Completing SSO login...')}</Typography>
             </Box>
         </Box>
     );

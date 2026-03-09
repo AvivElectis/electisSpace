@@ -27,7 +27,8 @@
         "biometricTitle": "Enable Biometric Login",
         "biometricDescription": "Use fingerprint or face recognition to unlock electisCompass quickly on future visits.",
         "enableBiometric": "Enable",
-        "notNow": "Not Now"
+        "notNow": "Not Now",
+        "completingSsoLogin": "Completing SSO login..."
     },
     "home": {
         "greeting": "Hi, {{name}}",
@@ -101,6 +102,7 @@
         "yes": "Yes",
         "no": "No",
         "outsideWorkHours": "This booking falls outside working hours",
+        "untilCancellation": "Open-ended",
         "status": {
             "BOOKED": "Booked",
             "CHECKED_IN": "Checked In",

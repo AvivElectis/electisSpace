@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, Chip, IconButton, TextField,
@@ -334,12 +334,15 @@ export function CompassEmployeesTab() {
     const handleImportConfirm = async () => {
         if (!activeCompanyId || !activeStoreId || importPreview.length === 0) return;
         setImporting(true);
-        let created = 0;
-        let errors = 0;
-        for (const row of importPreview) {
-            if (!row.email || !row.displayName) { errors++; continue; }
-            try {
-                await compassAdminApi.createEmployee(activeCompanyId, {
+
+        // Validate rows first, separate valid from invalid
+        const validRows = importPreview.filter(row => row.email && row.displayName);
+        const invalidCount = importPreview.length - validRows.length;
+
+        // Use Promise.allSettled for concurrent import without race conditions
+        const results = await Promise.allSettled(
+            validRows.map(row =>
+                compassAdminApi.createEmployee(activeCompanyId, {
                     branchId: activeStoreId,
                     email: row.email.toLowerCase(),
                     displayName: row.displayName,
@@ -347,12 +350,12 @@ export function CompassEmployeesTab() {
                     jobTitle: row.jobTitle || null,
                     phone: row.phone || null,
                     employeeNumber: row.employeeNumber || null,
-                });
-                created++;
-            } catch {
-                errors++;
-            }
-        }
+                }),
+            ),
+        );
+
+        const created = results.filter(r => r.status === 'fulfilled').length;
+        const errors = results.filter(r => r.status === 'rejected').length + invalidCount;
         setImportResult({ created, errors });
         setImporting(false);
         if (created > 0) fetchEmployees();
@@ -370,11 +373,11 @@ export function CompassEmployeesTab() {
         return dept?.name || '-';
     };
 
-    const filtered = search
+    const filtered = useMemo(() => search
         ? employees.filter(e =>
-            e.displayName.toLowerCase().includes(search.toLowerCase()) ||
-            e.email.toLowerCase().includes(search.toLowerCase()))
-        : employees;
+            e.displayName.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
+            e.email.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
+        : employees, [employees, search]);
 
     const allSelected = filtered.length > 0 && filtered.every(e => selectedIds.has(e.id));
 

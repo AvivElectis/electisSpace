@@ -131,14 +131,21 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
 
     updateBookingFromSocket: (booking) => {
         const state = get();
-        if (state.activeBooking?.id === booking.id) {
+        // Only process if this booking belongs to current user's data
+        const isActiveBooking = state.activeBooking?.id === booking.id;
+        const isInUpcoming = state.upcomingBookings.some(b => b.id === booking.id);
+        const isInPast = state.pastBookings.some(b => b.id === booking.id);
+
+        if (!isActiveBooking && !isInUpcoming && !isInPast) return;
+
+        if (isActiveBooking) {
             if (['RELEASED', 'AUTO_RELEASED', 'NO_SHOW', 'CANCELLED'].includes(booking.status)) {
                 set({ activeBooking: null });
             } else {
                 set({ activeBooking: booking });
             }
         }
-        // Refresh lists
+        // Refresh lists only when a relevant booking changed
         get().fetchBookings();
     },
 }));

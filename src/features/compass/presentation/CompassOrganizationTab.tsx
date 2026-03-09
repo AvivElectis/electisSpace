@@ -214,17 +214,22 @@ export function CompassOrganizationTab() {
         setAddMemberId('');
     };
 
+    const refreshTeamMembers = async (teamId: string) => {
+        if (!activeCompanyId) return;
+        const res = await compassAdminApi.listTeams(activeCompanyId);
+        const allTeams = res.data.data || [];
+        setTeams(allTeams);
+        const updated = allTeams.find((tm: Team) => tm.id === teamId);
+        if (updated) setMembersTeam(updated);
+    };
+
     const handleAddMember = async () => {
         if (!activeCompanyId || !membersTeam || !addMemberId) return;
         setSavingMember(true);
         try {
             await compassAdminApi.addTeamMember(activeCompanyId, membersTeam.id, addMemberId);
             setAddMemberId('');
-            await fetchTeams();
-            // Update membersTeam with refreshed data
-            const res = await compassAdminApi.listTeams(activeCompanyId);
-            const updated = (res.data.data || []).find((tm: Team) => tm.id === membersTeam.id);
-            if (updated) setMembersTeam(updated);
+            await refreshTeamMembers(membersTeam.id);
         } catch {
             setTeamError(t('errors.saveFailed'));
         } finally {
@@ -236,10 +241,7 @@ export function CompassOrganizationTab() {
         if (!activeCompanyId || !membersTeam) return;
         try {
             await compassAdminApi.removeTeamMember(activeCompanyId, membersTeam.id, companyUserId);
-            await fetchTeams();
-            const res = await compassAdminApi.listTeams(activeCompanyId);
-            const updated = (res.data.data || []).find((tm: Team) => tm.id === membersTeam.id);
-            if (updated) setMembersTeam(updated);
+            await refreshTeamMembers(membersTeam.id);
         } catch {
             setTeamError(t('errors.saveFailed'));
         }

@@ -111,7 +111,22 @@ export function getDecryptedCredentials(integration: {
 
 // ─── Sync Execution ─────────────────────────────────
 
+const activeSyncs = new Set<string>();
+
 export async function executeSyncForIntegration(id: string, companyId: string, fullSync = false) {
+    if (activeSyncs.has(id)) {
+        throw badRequest('Sync already in progress for this integration');
+    }
+    activeSyncs.add(id);
+
+    try {
+        return await _executeSyncForIntegration(id, companyId, fullSync);
+    } finally {
+        activeSyncs.delete(id);
+    }
+}
+
+async function _executeSyncForIntegration(id: string, companyId: string, fullSync: boolean) {
     const integration = await getIntegration(id, companyId);
 
     if (!integration.isActive) {

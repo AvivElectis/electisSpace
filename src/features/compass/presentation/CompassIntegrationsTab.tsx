@@ -42,6 +42,7 @@ export function CompassIntegrationsTab() {
     const [integrations, setIntegrations] = useState<Integration[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [syncing, setSyncing] = useState<string | null>(null);
 
     // Add dialog state
@@ -130,8 +131,8 @@ export function CompassIntegrationsTab() {
             fetchIntegrations();
             // Use a temp success notification
             const msg = `${t('compass.integrations.syncComplete')}: ${result.created} ${t('common.create').toLowerCase()}, ${result.updated} ${t('common.update', 'updated').toLowerCase()}, ${result.deactivated} ${t('compass.integrations.deactivated', 'deactivated').toLowerCase()}`;
-            setError(msg); // We'll show as info below
-            setTimeout(() => setError(null), 5000);
+            setSuccessMessage(msg);
+            setTimeout(() => setSuccessMessage(null), 5000);
         } catch (err: any) {
             setError(err?.response?.data?.message || t('errors.saveFailed'));
         } finally {
@@ -165,12 +166,13 @@ export function CompassIntegrationsTab() {
 
     return (
         <Box>
+            {successMessage && (
+                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage(null)}>
+                    {successMessage}
+                </Alert>
+            )}
             {error && (
-                <Alert
-                    severity={error.includes(t('compass.integrations.syncComplete')) ? 'success' : 'error'}
-                    sx={{ mb: 2 }}
-                    onClose={() => setError(null)}
-                >
+                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
                     {error}
                 </Alert>
             )}

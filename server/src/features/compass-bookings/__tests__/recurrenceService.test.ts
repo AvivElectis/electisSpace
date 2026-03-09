@@ -8,6 +8,18 @@ vi.mock('../../../shared/middleware/index.js', () => ({
     },
 }));
 
+vi.mock('../ruleEngine.js', () => ({
+    resolveRules: vi.fn().mockResolvedValue({
+        minBookingDurationMinutes: 15,
+        maxBookingDurationMinutes: 480,
+        maxConcurrentBookings: 10,
+        advanceBookingDays: 30,
+        checkInWindowMinutes: 15,
+        autoReleaseOnNoShow: true,
+        enforceWorkingHours: false,
+    }),
+}));
+
 import { generateInstances, MAX_INSTANCES } from '../recurrenceService.js';
 
 describe('generateInstances', () => {

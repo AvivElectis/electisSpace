@@ -98,13 +98,17 @@ export function CompassSpacesTab() {
     // Load neighborhoods when floor changes in edit form
     useEffect(() => {
         if (!editForm.floorId) { setNeighborhoods([]); return; }
+        let cancelled = false;
         const load = async () => {
             try {
                 const res = await compassAdminApi.listNeighborhoods(activeCompanyId!, editForm.floorId);
-                setNeighborhoods((res.data.data || []).map((n: { id: string; name: string }) => ({ id: n.id, name: n.name })));
-            } catch { setNeighborhoods([]); }
+                if (!cancelled) {
+                    setNeighborhoods((res.data.data || []).map((n: { id: string; name: string }) => ({ id: n.id, name: n.name })));
+                }
+            } catch { if (!cancelled) setNeighborhoods([]); }
         };
         load();
+        return () => { cancelled = true; };
     }, [editForm.floorId]);
 
     const handleModeChange = async (spaceId: string, mode: SpaceMode) => {

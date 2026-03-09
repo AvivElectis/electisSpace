@@ -69,7 +69,7 @@ export function BookingsPage() {
             : upcomingBookings.find((b) => b.id === extendDialogId);
         if (!booking) return;
 
-        const date = booking.endTime.split('T')[0];
+        const date = (booking.endTime ?? booking.startTime).split('T')[0];
         const newEndISO = new Date(`${date}T${extendTime}:00`).toISOString();
         const ok = await extend(extendDialogId, { newEndTime: newEndISO });
         if (ok) {

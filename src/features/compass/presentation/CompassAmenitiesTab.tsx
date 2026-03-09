@@ -112,9 +112,9 @@ export function CompassAmenitiesTab() {
 
     const filtered = search
         ? amenities.filter(a =>
-            a.name.toLowerCase().includes(search.toLowerCase()) ||
-            (a.nameHe && a.nameHe.toLowerCase().includes(search.toLowerCase())) ||
-            a.category.toLowerCase().includes(search.toLowerCase()))
+            a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
+            (a.nameHe && a.nameHe.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ||
+            a.category.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
         : amenities;
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;

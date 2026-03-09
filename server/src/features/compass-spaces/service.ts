@@ -1,4 +1,5 @@
 import { notFound, badRequest } from '../../shared/middleware/index.js';
+import { prisma } from '../../config/index.js';
 import * as repo from './repository.js';
 import type { CompassSpaceMode, CompassSpaceType } from '@prisma/client';
 
@@ -70,6 +71,19 @@ export const updateSpaceMode = async (
 
     if (mode === 'PERMANENT' && !permanentAssigneeId) {
         throw badRequest('Permanent mode requires an assignee');
+    }
+
+    if (mode === 'PERMANENT' && permanentAssigneeId) {
+        const store = await prisma.store.findUnique({
+            where: { id: space.storeId },
+            select: { companyId: true },
+        });
+        const assignee = await prisma.companyUser.findFirst({
+            where: { id: permanentAssigneeId, companyId: store!.companyId, isActive: true },
+        });
+        if (!assignee) {
+            throw badRequest('Assignee not found, inactive, or does not belong to this company');
+        }
     }
 
     return repo.updateCompassMode(

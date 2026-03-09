@@ -38,7 +38,11 @@ export const useCompassAuthStore = create<AuthState & AuthActions>((set, get) =>
         compassApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         // Decode user info from JWT payload — full profile will be loaded on next refresh
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const base64 = token.split('.')[1];
+            const payload = JSON.parse(decodeURIComponent(
+                Array.from(atob(base64.replace(/-/g, '+').replace(/_/g, '/')),
+                    c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+            ));
             set({
                 user: {
                     id: payload.userId,

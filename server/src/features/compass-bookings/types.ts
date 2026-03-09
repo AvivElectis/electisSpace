@@ -6,6 +6,7 @@ export const createBookingSchema = z.object({
     spaceId: z.string().uuid(),
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
+    title: z.string().max(255).optional(),
     notes: z.string().max(500).optional(),
     recurrenceRule: z.string().max(255).optional(),
 });
@@ -16,6 +17,7 @@ export const adminCreateBookingSchema = z.object({
     spaceId: z.string().uuid(),
     startTime: z.string().datetime(),
     endTime: z.string().datetime().nullable().optional(),
+    title: z.string().max(255).optional(),
     notes: z.string().max(500).optional(),
     recurrenceRule: z.string().max(255).optional(),
 });

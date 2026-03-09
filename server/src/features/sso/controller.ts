@@ -7,6 +7,7 @@ import { badRequest } from '../../shared/middleware/index.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import { prisma } from '../../config/index.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? (() => {
     if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be set in production');
@@ -157,7 +158,9 @@ export async function initLogin(req: Request, res: Response, next: NextFunction)
             const oidcConfig = await client.discovery(new URL(config.discoveryUrl!), config.clientId!, config.clientSecret || undefined);
             const codeVerifier = client.randomPKCECodeVerifier();
             const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
-            const state = Buffer.from(JSON.stringify({ configId: config.id, codeVerifier })).toString('base64url');
+            const statePayload = JSON.stringify({ configId: config.id, codeVerifier, ts: Date.now() });
+            const stateHmac = crypto.createHmac('sha256', JWT_SECRET).update(statePayload).digest('base64url');
+            const state = Buffer.from(statePayload).toString('base64url') + '.' + stateHmac;
 
             const authUrl = client.buildAuthorizationUrl(oidcConfig, {
                 redirect_uri: redirectUri,
@@ -230,7 +233,21 @@ export async function oidcCallback(req: Request, res: Response, next: NextFuncti
         const { state, code } = req.query;
         if (!state || !code) throw badRequest('Missing state or code');
 
-        const stateData = JSON.parse(Buffer.from(state as string, 'base64url').toString());
+        // Verify HMAC-signed state to prevent CSRF
+        const stateStr = state as string;
+        const dotIdx = stateStr.lastIndexOf('.');
+        if (dotIdx === -1) throw badRequest('Invalid state parameter');
+        const statePayload = stateStr.slice(0, dotIdx);
+        const stateHmac = stateStr.slice(dotIdx + 1);
+        const expectedHmac = crypto.createHmac('sha256', JWT_SECRET).update(Buffer.from(statePayload, 'base64url').toString()).digest('base64url');
+        if (!crypto.timingSafeEqual(Buffer.from(stateHmac), Buffer.from(expectedHmac))) {
+            throw badRequest('State verification failed — possible CSRF attack');
+        }
+        const stateData = JSON.parse(Buffer.from(statePayload, 'base64url').toString());
+        // Reject state older than 10 minutes
+        if (Date.now() - (stateData.ts || 0) > 10 * 60 * 1000) {
+            throw badRequest('SSO state expired');
+        }
         const { configId, codeVerifier } = stateData;
 
         const config = await prisma.ssoConfig.findFirst({ where: { id: configId, isActive: true } });

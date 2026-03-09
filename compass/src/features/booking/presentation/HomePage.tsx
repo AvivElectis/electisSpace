@@ -96,10 +96,12 @@ export function HomePage() {
                                 minute: '2-digit',
                             })}
                             {' — '}
-                            {new Date(activeBooking.endTime).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
+                            {activeBooking.endTime
+                                ? new Date(activeBooking.endTime).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })
+                                : t('booking.untilCancellation', 'Open-ended')}
                         </Typography>
 
                         {isCheckedIn && activeBooking.checkedInAt && (

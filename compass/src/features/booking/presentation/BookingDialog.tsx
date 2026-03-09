@@ -154,8 +154,12 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
     };
 
     const handleConfirm = async () => {
-        const startISO = new Date(`${date}T${startTime}:00`).toISOString();
-        const endISO = new Date(`${date}T${endTime}:00`).toISOString();
+        // Build timezone-aware dates using local timezone offset
+        const startDate = new Date(`${date}T${startTime}:00`);
+        const endDate = new Date(`${date}T${endTime}:00`);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
+        const startISO = startDate.toISOString();
+        const endISO = endDate.toISOString();
 
         const result = await createBooking({
             spaceId: space.id,

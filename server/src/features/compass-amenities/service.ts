@@ -27,6 +27,23 @@ export const updateAmenity = async (companyId: string, id: string, data: Record<
 export const deleteAmenity = async (companyId: string, id: string) => {
     const amenity = await prisma.amenity.findUnique({ where: { id } });
     if (!amenity || amenity.companyId !== companyId) throw notFound('Amenity not found');
+
+    // Remove this amenity ID from all spaces that reference it
+    const spacesWithAmenity = await prisma.space.findMany({
+        where: { compassAmenities: { has: id } },
+        select: { id: true, compassAmenities: true },
+    });
+    if (spacesWithAmenity.length > 0) {
+        await Promise.all(
+            spacesWithAmenity.map(space =>
+                prisma.space.update({
+                    where: { id: space.id },
+                    data: { compassAmenities: space.compassAmenities.filter(aid => aid !== id) },
+                }),
+            ),
+        );
+    }
+
     return prisma.amenity.update({ where: { id }, data: { isActive: false } });
 };
 

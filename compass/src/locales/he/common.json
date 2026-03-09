@@ -27,7 +27,8 @@
         "biometricTitle": "הפעל זיהוי ביומטרי",
         "biometricDescription": "השתמש בטביעת אצבע או זיהוי פנים לפתיחה מהירה של electisCompass.",
         "enableBiometric": "הפעל",
-        "notNow": "לא עכשיו"
+        "notNow": "לא עכשיו",
+        "completingSsoLogin": "משלים התחברות SSO..."
     },
     "home": {
         "greeting": "היי, {{name}}",
@@ -101,6 +102,7 @@
         "yes": "כן",
         "no": "לא",
         "outsideWorkHours": "הזמנה זו מחוץ לשעות העבודה",
+        "untilCancellation": "ללא הגבלת זמן",
         "status": {
             "BOOKED": "הוזמן",
             "CHECKED_IN": "צ׳ק אין",

@@ -252,6 +252,8 @@ export function CompassBookingsTab() {
             [t('compass.dashboard.start')]: b.startTime ? new Date(b.startTime).toLocaleString() : '',
             [t('compass.dashboard.end')]: b.endTime ? new Date(b.endTime).toLocaleString() : t('compass.untilCancellation'),
             [t('common.status.title')]: b.status,
+            [t('compass.recurrence.title', 'Recurrence')]: b.isRecurrence ? t('common.yes', 'Yes') : t('common.no', 'No'),
+            [t('compass.recurrence.groupId', 'Recurrence Group')]: b.recurrenceGroupId || '',
             [t('common.notes')]: b.notes || '',
         }));
         const csv = Papa.unparse(rows);
@@ -286,7 +288,7 @@ export function CompassBookingsTab() {
                     size="small"
                     label={t('common.filter', 'Filter')}
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
                     sx={{ minWidth: 150 }}
                 >
                     <MenuItem value="all">{t('common.all')}</MenuItem>
