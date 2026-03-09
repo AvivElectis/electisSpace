@@ -83,4 +83,9 @@ export const ssoService = {
     async remove(companyId: string, id: string): Promise<void> {
         await api.delete(`${BASE(companyId)}/${id}`);
     },
+
+    async testConnection(companyId: string, data: Partial<CreateSsoConfigPayload>): Promise<{ success: boolean; error?: string; details?: Record<string, unknown> }> {
+        const res = await api.post(`${BASE(companyId)}/test`, data);
+        return res.data;
+    },
 };

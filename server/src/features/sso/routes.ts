@@ -9,6 +9,7 @@ ssoAdminRoutes.get('/:companyId/:id', authenticate, requireCompassAdmin(), contr
 ssoAdminRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.create);
 ssoAdminRoutes.put('/:companyId/:id', authenticate, requireCompassAdmin(), controller.update);
 ssoAdminRoutes.delete('/:companyId/:id', authenticate, requireCompassAdmin(), controller.remove);
+ssoAdminRoutes.post('/:companyId/test', authenticate, requireCompassAdmin(), controller.testConnection);
 
 // SSO auth flow routes (public — no auth required)
 export const ssoAuthRoutes = Router();

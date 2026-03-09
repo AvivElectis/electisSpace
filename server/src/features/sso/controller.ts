@@ -62,6 +62,72 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     } catch (err) { next(err); }
 }
 
+// ─── Test Connection ─────────────────────────────────
+
+export async function testConnection(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { protocol, ssoUrl, idpEntityId, x509Certificate, discoveryUrl, clientId } = req.body;
+
+        if (protocol === 'SAML') {
+            if (!ssoUrl) throw badRequest('SSO URL is required for SAML test');
+            // Test: fetch the SSO URL to verify it's reachable
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10_000);
+            try {
+                const resp = await fetch(ssoUrl, { method: 'GET', signal: controller.signal, redirect: 'manual' });
+                clearTimeout(timeout);
+                // SAML SSO URLs typically return 200 (login form) or 302 (redirect)
+                if (resp.status >= 500) {
+                    return res.json({ success: false, error: `SSO URL returned status ${resp.status}` });
+                }
+                return res.json({
+                    success: true,
+                    details: {
+                        ssoUrlReachable: true,
+                        ssoUrlStatus: resp.status,
+                        hasCertificate: !!x509Certificate,
+                        hasEntityId: !!idpEntityId,
+                    },
+                });
+            } catch (err: any) {
+                clearTimeout(timeout);
+                return res.json({ success: false, error: `Cannot reach SSO URL: ${err.message}` });
+            }
+        }
+
+        if (protocol === 'OIDC') {
+            if (!discoveryUrl) throw badRequest('Discovery URL is required for OIDC test');
+            // Test: fetch the OIDC discovery document
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10_000);
+            try {
+                const resp = await fetch(discoveryUrl, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (!resp.ok) {
+                    return res.json({ success: false, error: `Discovery URL returned status ${resp.status}` });
+                }
+                const doc = await resp.json() as Record<string, unknown>;
+                const hasRequired = !!(doc.authorization_endpoint && doc.token_endpoint && doc.issuer);
+                return res.json({
+                    success: hasRequired,
+                    error: hasRequired ? undefined : 'Discovery document missing required fields (authorization_endpoint, token_endpoint, issuer)',
+                    details: {
+                        issuer: doc.issuer,
+                        authorizationEndpoint: doc.authorization_endpoint,
+                        tokenEndpoint: doc.token_endpoint,
+                        hasClientId: !!clientId,
+                    },
+                });
+            } catch (err: any) {
+                clearTimeout(timeout);
+                return res.json({ success: false, error: `Cannot reach Discovery URL: ${err.message}` });
+            }
+        }
+
+        throw badRequest(`Unsupported protocol: ${protocol}`);
+    } catch (err) { next(err); }
+}
+
 // ─── SSO Login Flow ──────────────────────────────────
 
 export async function initLogin(req: Request, res: Response, next: NextFunction) {

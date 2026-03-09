@@ -9,6 +9,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { ssoService, type SsoConfig, type SsoProtocol, type CreateSsoConfigPayload } from '@shared/infrastructure/services/ssoService';
@@ -32,6 +34,8 @@ export function CompassSsoTab() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [testing, setTesting] = useState(false);
+    const [testResult, setTestResult] = useState<{ success: boolean; error?: string; details?: Record<string, unknown> } | null>(null);
 
     // Form state
     const [protocol, setProtocol] = useState<SsoProtocol>('SAML');
@@ -83,6 +87,7 @@ export function CompassSsoTab() {
         setDiscoveryUrl('');
         setScopes('openid profile email');
         setEditingId(null);
+        setTestResult(null);
     };
 
     const handleAdd = () => {
@@ -108,6 +113,29 @@ export function CompassSsoTab() {
         setScopes(config.scopes || 'openid profile email');
         setDialogOpen(true);
     };
+
+    const handleTestConnection = async () => {
+        if (!activeCompanyId) return;
+        setTesting(true);
+        setTestResult(null);
+        try {
+            const result = await ssoService.testConnection(activeCompanyId, {
+                protocol,
+                ssoUrl: ssoUrl || undefined,
+                idpEntityId: idpEntityId || undefined,
+                x509Certificate: x509Certificate || undefined,
+                discoveryUrl: discoveryUrl || undefined,
+                clientId: clientId || undefined,
+            });
+            setTestResult(result);
+        } catch (err: any) {
+            setTestResult({ success: false, error: err.message || 'Test failed' });
+        } finally {
+            setTesting(false);
+        }
+    };
+
+    const canTest = protocol === 'SAML' ? !!ssoUrl : !!discoveryUrl;
 
     const handleSave = async () => {
         if (!activeCompanyId) return;
@@ -354,11 +382,33 @@ export function CompassSsoTab() {
                                 />
                             </>
                         )}
+                        {/* Test Connection Result */}
+                        {testResult && (
+                            <Alert
+                                severity={testResult.success ? 'success' : 'error'}
+                                icon={testResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
+                            >
+                                {testResult.success
+                                    ? t('compass.sso.testSuccess', 'Connection test passed')
+                                    : testResult.error || t('compass.sso.testFailed', 'Connection test failed')}
+                            </Alert>
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
-                    <Button variant="contained" onClick={handleSave} disabled={saving || !domain}>
+                    <Button
+                        onClick={handleTestConnection}
+                        disabled={testing || !canTest}
+                        color="info"
+                    >
+                        {testing ? <CircularProgress size={20} /> : t('compass.sso.testConnection', 'Test Connection')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSave}
+                        disabled={saving || !domain || (testResult !== null && !testResult.success)}
+                    >
                         {saving ? <CircularProgress size={20} /> : t('common.save', 'Save')}
                     </Button>
                 </DialogActions>

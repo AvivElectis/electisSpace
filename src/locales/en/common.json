@@ -1912,7 +1912,10 @@
             "clientId": "Client ID",
             "clientSecret": "Client Secret",
             "scopes": "Scopes",
-            "leaveBlankKeep": "Leave blank to keep existing"
+            "leaveBlankKeep": "Leave blank to keep existing",
+            "testConnection": "Test Connection",
+            "testSuccess": "Connection test passed",
+            "testFailed": "Connection test failed"
         },
         "managedByCompass": "Managed by Compass",
         "spaceMode": {

@@ -1912,7 +1912,10 @@
             "clientId": "מזהה לקוח",
             "clientSecret": "סוד לקוח",
             "scopes": "Scopes",
-            "leaveBlankKeep": "השאר ריק כדי לשמור קיים"
+            "leaveBlankKeep": "השאר ריק כדי לשמור קיים",
+            "testConnection": "בדיקת חיבור",
+            "testSuccess": "בדיקת החיבור עברה בהצלחה",
+            "testFailed": "בדיקת החיבור נכשלה"
         },
         "managedByCompass": "מנוהל על ידי Compass",
         "spaceMode": {
