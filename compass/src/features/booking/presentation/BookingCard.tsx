@@ -39,6 +39,14 @@ function formatDate(dateStr: string): string {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ';
 }
 
+function describeRecurrence(rrule: string | null, t: (key: string) => string): string {
+    if (!rrule) return t('recurrence.partOfSeries');
+    if (rrule.includes('BYDAY=MO,TU,WE,TH,FR')) return t('recurrence.weekdays');
+    if (rrule.includes('FREQ=DAILY')) return t('recurrence.daily');
+    if (rrule.includes('FREQ=WEEKLY')) return t('recurrence.weekly');
+    return t('recurrence.partOfSeries');
+}
+
 const statusColors: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
     BOOKED: 'info',
     CHECKED_IN: 'success',
@@ -99,7 +107,7 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel 
                 {(booking.isRecurrence || booking.recurrenceGroupId) && (
                     <Chip
                         icon={<RepeatIcon />}
-                        label={t('recurrence.partOfSeries')}
+                        label={describeRecurrence(booking.recurrenceRule, t)}
                         size="small"
                         variant="outlined"
                         color="secondary"
