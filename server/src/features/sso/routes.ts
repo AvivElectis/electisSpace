@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticate, requireCompassAdmin } from '../../shared/middleware/index.js';
 import * as controller from './controller.js';
 
@@ -12,7 +13,18 @@ ssoAdminRoutes.delete('/:companyId/:id', authenticate, requireCompassAdmin(), co
 ssoAdminRoutes.post('/:companyId/test', authenticate, requireCompassAdmin(), controller.testConnection);
 
 // SSO auth flow routes (public — no auth required)
+const ssoAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    message: {
+        error: { code: 'SSO_RATE_LIMITED', message: 'Too many SSO requests, please try again later' },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 export const ssoAuthRoutes = Router();
+ssoAuthRoutes.use(ssoAuthLimiter);
 ssoAuthRoutes.get('/login', controller.initLogin);
 ssoAuthRoutes.post('/callback', controller.samlCallback); // SAML POST binding
 ssoAuthRoutes.get('/oidc/callback', controller.oidcCallback); // OIDC redirect

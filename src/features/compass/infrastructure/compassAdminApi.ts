@@ -142,15 +142,15 @@ export const compassAdminApi = {
         api.get<{ data: Array<{ id: string; name: string; floors: Array<{ id: string; name: string }> }> }>(`/admin/compass/buildings/${companyId}`),
 
     // Neighborhoods
-    listNeighborhoods: (floorId: string) =>
-        api.get<{ data: Neighborhood[] }>(`/admin/compass/neighborhoods/${floorId}`),
+    listNeighborhoods: (companyId: string, floorId: string) =>
+        api.get<{ data: Neighborhood[] }>(`/admin/compass/neighborhoods/${companyId}/${floorId}`),
 
-    createNeighborhood: (data: { name: string; floorId: string; departmentId?: string; color?: string; description?: string }) =>
-        api.post<{ data: Neighborhood }>(`/admin/compass/neighborhoods`, data),
+    createNeighborhood: (companyId: string, data: { name: string; floorId: string; departmentId?: string; color?: string; description?: string }) =>
+        api.post<{ data: Neighborhood }>(`/admin/compass/neighborhoods/${companyId}`, data),
 
-    updateNeighborhood: (id: string, data: { name?: string; departmentId?: string | null; color?: string | null; description?: string | null }) =>
-        api.put<{ data: Neighborhood }>(`/admin/compass/neighborhoods/${id}`, data),
+    updateNeighborhood: (companyId: string, id: string, data: { name?: string; departmentId?: string | null; color?: string | null; description?: string | null }) =>
+        api.put<{ data: Neighborhood }>(`/admin/compass/neighborhoods/${companyId}/${id}`, data),
 
-    deleteNeighborhood: (id: string) =>
-        api.delete(`/admin/compass/neighborhoods/${id}`),
+    deleteNeighborhood: (companyId: string, id: string) =>
+        api.delete(`/admin/compass/neighborhoods/${companyId}/${id}`),
 };

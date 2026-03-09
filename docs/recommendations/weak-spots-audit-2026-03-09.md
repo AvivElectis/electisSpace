@@ -2,31 +2,22 @@
 
 ## Critical Issues
 
-### 1. Neighborhood service missing companyId scoping
+### 1. ~~Neighborhood service missing companyId scoping~~ FIXED
 **Severity:** HIGH | **Files:** `server/src/features/compass-amenities/service.ts:37-68`
 
-`listNeighborhoods(floorId)`, `updateNeighborhood(id, data)`, and `deleteNeighborhood(id)` don't verify the floor/neighborhood belongs to the requesting user's company. Although protected by `requireCompassAdmin()` at the route level, a platform admin could accidentally modify neighborhoods belonging to a different company.
+~~`listNeighborhoods(floorId)`, `updateNeighborhood(id, data)`, and `deleteNeighborhood(id)` don't verify the floor/neighborhood belongs to the requesting user's company.~~
 
-**Fix:** Add company verification via floor → building → store → company chain in update/delete. For list, the floorId already scopes indirectly but should be validated.
+**Fixed:** Added companyId param to all routes, service functions verify floor→building→company chain. Routes also had a bug where `requireCompassAdmin()` couldn't find `companyId` param — now fixed with `/:companyId/...` paths.
 
-### 2. Admin compass-spaces routes missing requireCompassAdminForStore
-**Severity:** HIGH | **File:** `server/src/features/compass-spaces/routes.ts:19-20`
+### 2. ~~Admin compass-spaces routes missing requireCompassAdminForStore~~ FALSE POSITIVE
+**Severity:** ~~HIGH~~ N/A | **File:** `server/src/features/compass-spaces/routes.ts:19-20`
 
-```typescript
-adminCompassSpaceRoutes.put('/:id/mode', authenticate, controller.updateMode);
-adminCompassSpaceRoutes.put('/:id/properties', authenticate, controller.updateProperties);
-```
+**Not a vulnerability:** The controller (`updateMode`, `updateProperties`) already performs inline company verification via `isPlatformAdmin()` + `canManageCompany()` by resolving space→store→company. Route-level middleware is unnecessary since the param is a space ID, not a branch/company ID.
 
-These routes only require `authenticate` — any authenticated admin user could modify spaces in any company. Should use `requireCompassAdminForStore` or equivalent.
-
-### 3. SSO JWT_SECRET hardcoded fallback
+### 3. ~~SSO JWT_SECRET hardcoded fallback~~ FIXED
 **Severity:** MEDIUM | **File:** `server/src/features/sso/controller.ts:11`
 
-```typescript
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-```
-
-If `JWT_SECRET` env var is missing in production, tokens would be signed with `'dev-secret'`. Should throw at startup if missing in production.
+**Fixed:** Now throws at module load if `JWT_SECRET` is missing and `NODE_ENV === 'production'`. Falls back to `'dev-secret'` only in development.
 
 ---
 
@@ -56,10 +47,10 @@ None of the 9+ text fields have `inputProps.maxLength` — could submit arbitrar
 
 ## Data Integrity
 
-### 7. Booking race conditions on concurrent check-ins
+### 7. ~~Booking race conditions on concurrent check-ins~~ FIXED
 **File:** `server/src/features/compass-bookings/service.ts`
 
-The booking status transition (BOOKED → CHECKED_IN) doesn't use `SELECT FOR UPDATE` or optimistic locking. Two concurrent check-in requests for the same booking could both succeed.
+**Fixed:** `updateBookingStatus()` now uses `updateMany` with `expectedStatus` in the WHERE clause for atomic status transitions. Check-in and release operations pass the expected current status, preventing concurrent double-transitions.
 
 ### 8. SSO auto-provisioning creates user without default branch validation
 **File:** `server/src/features/sso/service.ts:120-127`
@@ -87,15 +78,15 @@ All tabs use `display:none` to preserve state. This means all 9 tabs mount their
 ### 11. No audit log for SSO config changes
 SSO config CRUD operations (create/update/delete) don't emit audit log entries. Changes to authentication configuration should be tracked.
 
-### 12. No rate limiting on SSO auth endpoints
+### 12. ~~No rate limiting on SSO auth endpoints~~ FIXED
 **File:** `server/src/features/sso/routes.ts`
 
-The public SSO auth routes (`/login`, `/callback`, `/oidc/callback`) have no rate limiting. Could be used for domain enumeration (checking which domains have SSO configured).
+**Fixed:** Added `ssoAuthLimiter` (30 requests per 15 minutes) to all public SSO auth routes.
 
-### 13. Delete confirmation missing for SSO configs
+### 13. ~~Delete confirmation missing for SSO configs~~ FIXED
 **File:** `src/features/compass/presentation/CompassSsoTab.tsx`
 
-The delete button calls `handleDelete` directly without a confirmation dialog, unlike the Integrations tab which has one.
+**Fixed:** Added `confirmDeleteId` state and confirmation dialog matching the pattern used in other tabs.
 
 ### 14. No way to view sync error details for integrations
 The integration table shows sync status chip but the full error message is only visible as a tooltip. Long errors get truncated.
@@ -147,17 +138,17 @@ The `_refreshToken` parameter in `handleSsoCallback` is accepted but not used. T
 
 ## Action Priority
 
-| # | Issue | Effort | Priority |
-|---|-------|--------|----------|
-| 2 | Missing requireCompassAdminForStore | 5 min | P0 |
-| 1 | Neighborhoods missing company scoping | 30 min | P0 |
-| 3 | JWT_SECRET hardcoded fallback | 5 min | P1 |
-| 12 | Rate limit SSO endpoints | 10 min | P1 |
-| 13 | Delete confirmation for SSO | 5 min | P1 |
-| 7 | Booking race condition | 30 min | P1 |
-| 4 | SSO schema length limits | 10 min | P2 |
-| 5 | Booking rule config schema | 10 min | P2 |
-| 6 | TextField maxLength | 15 min | P2 |
-| 9 | Test connection fetches all users | 15 min | P2 |
-| 10 | Lazy-load compass tabs | 30 min | P3 |
-| 11 | SSO audit log | 20 min | P3 |
+| # | Issue | Effort | Priority | Status |
+|---|-------|--------|----------|--------|
+| 2 | Missing requireCompassAdminForStore | — | — | False positive |
+| 1 | Neighborhoods missing company scoping | 30 min | P0 | **FIXED** |
+| 3 | JWT_SECRET hardcoded fallback | 5 min | P1 | **FIXED** |
+| 12 | Rate limit SSO endpoints | 10 min | P1 | **FIXED** |
+| 13 | Delete confirmation for SSO | 5 min | P1 | **FIXED** |
+| 7 | Booking race condition | 30 min | P1 | **FIXED** |
+| 4 | SSO schema length limits | 10 min | P2 | Open |
+| 5 | Booking rule config schema | 10 min | P2 | Open |
+| 6 | TextField maxLength | 15 min | P2 | Open |
+| 9 | Test connection fetches all users | 15 min | P2 | Open |
+| 10 | Lazy-load compass tabs | 30 min | P3 | Open |
+| 11 | SSO audit log | 20 min | P3 | Open |

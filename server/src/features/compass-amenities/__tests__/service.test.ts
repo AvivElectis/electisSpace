@@ -17,6 +17,9 @@ vi.mock('../../../config/index.js', () => ({
             findUnique: vi.fn(),
             update: vi.fn(),
         },
+        floor: {
+            findUnique: vi.fn(),
+        },
     },
 }));
 
@@ -48,6 +51,9 @@ const mockPrisma = prisma as unknown as {
         create: ReturnType<typeof vi.fn>;
         findUnique: ReturnType<typeof vi.fn>;
         update: ReturnType<typeof vi.fn>;
+    };
+    floor: {
+        findUnique: ReturnType<typeof vi.fn>;
     };
 };
 
@@ -147,9 +153,10 @@ describe('listNeighborhoods', () => {
 
     it('should return active neighborhoods for a floor', async () => {
         const neighborhoods = [{ id: 'n1', name: 'Zone A' }];
+        mockPrisma.floor.findUnique.mockResolvedValue({ id: 'floor-1', building: { companyId: 'company-1' } });
         mockPrisma.neighborhood.findMany.mockResolvedValue(neighborhoods);
 
-        const result = await service.listNeighborhoods('floor-1');
+        const result = await service.listNeighborhoods('company-1', 'floor-1');
 
         expect(result).toEqual(neighborhoods);
         expect(mockPrisma.neighborhood.findMany).toHaveBeenCalledWith({
@@ -168,9 +175,10 @@ describe('createNeighborhood', () => {
 
     it('should create a neighborhood', async () => {
         const created = { id: 'n1', name: 'Engineering Zone', floorId: 'floor-1' };
+        mockPrisma.floor.findUnique.mockResolvedValue({ id: 'floor-1', building: { companyId: 'company-1' } });
         mockPrisma.neighborhood.create.mockResolvedValue(created);
 
-        const result = await service.createNeighborhood({ name: 'Engineering Zone', floorId: 'floor-1' });
+        const result = await service.createNeighborhood('company-1', { name: 'Engineering Zone', floorId: 'floor-1' });
 
         expect(result).toEqual(created);
     });
@@ -180,10 +188,10 @@ describe('deleteNeighborhood', () => {
     beforeEach(() => vi.clearAllMocks());
 
     it('should soft-delete by setting isActive to false', async () => {
-        mockPrisma.neighborhood.findUnique.mockResolvedValue({ id: 'n1' });
+        mockPrisma.neighborhood.findUnique.mockResolvedValue({ id: 'n1', floor: { building: { companyId: 'company-1' } } });
         mockPrisma.neighborhood.update.mockResolvedValue({ id: 'n1', isActive: false });
 
-        await service.deleteNeighborhood('n1');
+        await service.deleteNeighborhood('company-1', 'n1');
 
         expect(mockPrisma.neighborhood.update).toHaveBeenCalledWith({
             where: { id: 'n1' },
@@ -194,7 +202,7 @@ describe('deleteNeighborhood', () => {
     it('should throw notFound when neighborhood does not exist', async () => {
         mockPrisma.neighborhood.findUnique.mockResolvedValue(null);
 
-        await expect(service.deleteNeighborhood('n1'))
+        await expect(service.deleteNeighborhood('company-1', 'n1'))
             .rejects.toThrow('Neighborhood not found');
     });
 });

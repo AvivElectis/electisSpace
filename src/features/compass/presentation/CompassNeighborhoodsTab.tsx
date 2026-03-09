@@ -77,7 +77,7 @@ export function CompassNeighborhoodsTab() {
         if (!selectedFloorId) return;
         setLoading(true);
         try {
-            const res = await compassAdminApi.listNeighborhoods(selectedFloorId);
+            const res = await compassAdminApi.listNeighborhoods(activeCompanyId!, selectedFloorId);
             setNeighborhoods(res.data.data || []);
             setError(null);
         } catch {
@@ -94,14 +94,14 @@ export function CompassNeighborhoodsTab() {
         setSaving(true);
         try {
             if (editing) {
-                await compassAdminApi.updateNeighborhood(editing.id, {
+                await compassAdminApi.updateNeighborhood(activeCompanyId!, editing.id, {
                     name: form.name.trim(),
                     color: form.color.trim() || null,
                     description: form.description.trim() || null,
                     departmentId: form.departmentId || null,
                 });
             } else {
-                await compassAdminApi.createNeighborhood({
+                await compassAdminApi.createNeighborhood(activeCompanyId!, {
                     name: form.name.trim(),
                     floorId: selectedFloorId,
                     color: form.color.trim() || undefined,
@@ -121,7 +121,7 @@ export function CompassNeighborhoodsTab() {
     const handleDelete = async () => {
         if (!confirmDelete) return;
         try {
-            await compassAdminApi.deleteNeighborhood(confirmDelete.id);
+            await compassAdminApi.deleteNeighborhood(activeCompanyId!, confirmDelete.id);
             setConfirmDelete(null);
             fetchNeighborhoods();
         } catch {

@@ -8,7 +8,10 @@ import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import { prisma } from '../../config/index.js';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'; // pragma: allowlist secret
+const JWT_SECRET = process.env.JWT_SECRET ?? (() => {
+    if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be set in production');
+    return 'dev-secret'; // pragma: allowlist secret
+})();
 const JWT_EXPIRES_IN = '15m';
 const REFRESH_EXPIRES_IN = '7d';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';

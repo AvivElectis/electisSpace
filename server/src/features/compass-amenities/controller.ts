@@ -66,35 +66,39 @@ export const compassListAmenities = async (req: Request, res: Response, next: Ne
 
 export const listNeighborhoods = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const companyId = req.params.companyId as string;
         const floorId = req.params.floorId as string;
-        const data = await service.listNeighborhoods(floorId);
+        const data = await service.listNeighborhoods(companyId, floorId);
         res.json({ data });
     } catch (error) { next(error); }
 };
 
 export const createNeighborhood = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const companyId = req.params.companyId as string;
         const parsed = createNeighborhoodSchema.safeParse(req.body);
         if (!parsed.success) throw badRequest('Invalid request');
-        const neighborhood = await service.createNeighborhood(parsed.data);
+        const neighborhood = await service.createNeighborhood(companyId, parsed.data);
         res.status(201).json({ data: neighborhood });
     } catch (error) { next(error); }
 };
 
 export const updateNeighborhood = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const companyId = req.params.companyId as string;
         const id = req.params.id as string;
         const parsed = updateNeighborhoodSchema.safeParse(req.body);
         if (!parsed.success) throw badRequest('Invalid request');
-        const neighborhood = await service.updateNeighborhood(id, parsed.data);
+        const neighborhood = await service.updateNeighborhood(companyId, id, parsed.data);
         res.json({ data: neighborhood });
     } catch (error) { next(error); }
 };
 
 export const deleteNeighborhood = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const companyId = req.params.companyId as string;
         const id = req.params.id as string;
-        await service.deleteNeighborhood(id);
+        await service.deleteNeighborhood(companyId, id);
         res.json({ message: 'Neighborhood deactivated' });
     } catch (error) { next(error); }
 };
@@ -105,8 +109,9 @@ export const deleteNeighborhood = async (req: Request, res: Response, next: Next
 
 export const compassListNeighborhoods = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const companyId = req.compassUser!.companyId;
         const floorId = req.params.floorId as string;
-        const data = await service.listNeighborhoods(floorId);
+        const data = await service.listNeighborhoods(companyId, floorId);
         res.json({ data });
     } catch (error) { next(error); }
 };

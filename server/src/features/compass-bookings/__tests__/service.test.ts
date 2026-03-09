@@ -304,6 +304,7 @@ describe('checkIn', () => {
             'booking-1',
             'CHECKED_IN',
             { checkedInAt: expect.any(Date) },
+            'BOOKED',
         );
     });
 });
@@ -351,6 +352,7 @@ describe('release', () => {
             'booking-1',
             'RELEASED',
             { releasedAt: expect.any(Date) },
+            'CHECKED_IN',
         );
     });
 });

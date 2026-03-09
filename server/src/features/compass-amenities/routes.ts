@@ -18,10 +18,10 @@ adminAmenityRoutes.delete('/:companyId/:id', authenticate, requireCompassAdmin()
 // ======================
 export const adminNeighborhoodRoutes = Router();
 
-adminNeighborhoodRoutes.get('/:floorId', authenticate, requireCompassAdmin(), controller.listNeighborhoods);
-adminNeighborhoodRoutes.post('/', authenticate, requireCompassAdmin(), controller.createNeighborhood);
-adminNeighborhoodRoutes.put('/:id', authenticate, requireCompassAdmin(), controller.updateNeighborhood);
-adminNeighborhoodRoutes.delete('/:id', authenticate, requireCompassAdmin(), controller.deleteNeighborhood);
+adminNeighborhoodRoutes.get('/:companyId/:floorId', authenticate, requireCompassAdmin(), controller.listNeighborhoods);
+adminNeighborhoodRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.createNeighborhood);
+adminNeighborhoodRoutes.put('/:companyId/:id', authenticate, requireCompassAdmin(), controller.updateNeighborhood);
+adminNeighborhoodRoutes.delete('/:companyId/:id', authenticate, requireCompassAdmin(), controller.deleteNeighborhood);
 
 // ======================
 // Compass Mobile Amenity Routes (Compass JWT — read-only)

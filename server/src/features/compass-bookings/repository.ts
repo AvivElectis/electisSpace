@@ -102,7 +102,29 @@ export const updateBookingStatus = async (
         autoReleased: boolean;
         endTime: Date;
     }>,
+    expectedStatus?: BookingStatus,
 ) => {
+    // Atomic status transition: only update if current status matches expected
+    if (expectedStatus) {
+        const result = await prisma.booking.updateMany({
+            where: { id, status: expectedStatus },
+            data: { status, ...extra },
+        });
+        if (result.count === 0) {
+            throw badRequest('BOOKING_STATUS_CHANGED', {
+                message: 'Booking status has already changed',
+            });
+        }
+        // Re-fetch with includes
+        return prisma.booking.findUniqueOrThrow({
+            where: { id },
+            include: {
+                space: { select: { id: true, externalId: true, data: true, buildingId: true, floorId: true } },
+                companyUser: { select: { id: true, displayName: true, email: true } },
+            },
+        });
+    }
+
     return prisma.booking.update({
         where: { id },
         data: { status, ...extra },

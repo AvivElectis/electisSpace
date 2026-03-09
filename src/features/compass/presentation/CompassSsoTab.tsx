@@ -36,6 +36,7 @@ export function CompassSsoTab() {
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; error?: string; details?: Record<string, unknown> } | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     // Form state
     const [protocol, setProtocol] = useState<SsoProtocol>('SAML');
@@ -178,13 +179,15 @@ export function CompassSsoTab() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!activeCompanyId) return;
+    const handleDelete = async () => {
+        if (!activeCompanyId || !confirmDeleteId) return;
         try {
-            await ssoService.remove(activeCompanyId, id);
+            await ssoService.remove(activeCompanyId, confirmDeleteId);
+            setConfirmDeleteId(null);
             fetchConfigs();
         } catch (err: any) {
             setError(err.message || 'Failed to delete SSO configuration');
+            setConfirmDeleteId(null);
         }
     };
 
@@ -268,7 +271,7 @@ export function CompassSsoTab() {
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title={t('common.delete', 'Delete')}>
-                                            <IconButton size="small" color="error" onClick={() => handleDelete(config.id)}>
+                                            <IconButton size="small" color="error" onClick={() => setConfirmDeleteId(config.id)}>
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
@@ -411,6 +414,18 @@ export function CompassSsoTab() {
                     >
                         {saving ? <CircularProgress size={20} /> : t('common.save', 'Save')}
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation */}
+            <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}>
+                <DialogTitle>{t('common.confirm')}</DialogTitle>
+                <DialogContent>
+                    <Typography>{t('common.confirmDelete', 'Are you sure you want to delete this item?')}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDeleteId(null)}>{t('common.cancel')}</Button>
+                    <Button color="error" onClick={handleDelete}>{t('common.confirm')}</Button>
                 </DialogActions>
             </Dialog>
         </Box>

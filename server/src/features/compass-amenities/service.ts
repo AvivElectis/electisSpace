@@ -34,7 +34,14 @@ export const deleteAmenity = async (companyId: string, id: string) => {
 // Neighborhood CRUD (floor-scoped)
 // ======================
 
-export const listNeighborhoods = async (floorId: string) => {
+export const listNeighborhoods = async (companyId: string, floorId: string) => {
+    // Verify floor belongs to the company
+    const floor = await prisma.floor.findUnique({
+        where: { id: floorId },
+        select: { building: { select: { companyId: true } } },
+    });
+    if (!floor || floor.building.companyId !== companyId) throw notFound('Floor not found');
+
     return prisma.neighborhood.findMany({
         where: { floorId, isActive: true },
         include: {
@@ -45,24 +52,37 @@ export const listNeighborhoods = async (floorId: string) => {
     });
 };
 
-export const createNeighborhood = async (data: {
+export const createNeighborhood = async (companyId: string, data: {
     name: string; floorId: string; departmentId?: string | null;
     color?: string; description?: string; sortOrder?: number;
 }) => {
+    // Verify floor belongs to the company
+    const floor = await prisma.floor.findUnique({
+        where: { id: data.floorId },
+        select: { building: { select: { companyId: true } } },
+    });
+    if (!floor || floor.building.companyId !== companyId) throw notFound('Floor not found');
+
     return prisma.neighborhood.create({
         data,
         include: { department: { select: { id: true, name: true } } },
     });
 };
 
-export const updateNeighborhood = async (id: string, data: Record<string, any>) => {
-    const neighborhood = await prisma.neighborhood.findUnique({ where: { id } });
-    if (!neighborhood) throw notFound('Neighborhood not found');
+export const updateNeighborhood = async (companyId: string, id: string, data: Record<string, any>) => {
+    const neighborhood = await prisma.neighborhood.findUnique({
+        where: { id },
+        select: { floor: { select: { building: { select: { companyId: true } } } } },
+    });
+    if (!neighborhood || neighborhood.floor.building.companyId !== companyId) throw notFound('Neighborhood not found');
     return prisma.neighborhood.update({ where: { id }, data });
 };
 
-export const deleteNeighborhood = async (id: string) => {
-    const neighborhood = await prisma.neighborhood.findUnique({ where: { id } });
-    if (!neighborhood) throw notFound('Neighborhood not found');
+export const deleteNeighborhood = async (companyId: string, id: string) => {
+    const neighborhood = await prisma.neighborhood.findUnique({
+        where: { id },
+        select: { floor: { select: { building: { select: { companyId: true } } } } },
+    });
+    if (!neighborhood || neighborhood.floor.building.companyId !== companyId) throw notFound('Neighborhood not found');
     return prisma.neighborhood.update({ where: { id }, data: { isActive: false } });
 };

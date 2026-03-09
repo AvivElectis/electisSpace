@@ -100,7 +100,7 @@ export function CompassSpacesTab() {
         if (!editForm.floorId) { setNeighborhoods([]); return; }
         const load = async () => {
             try {
-                const res = await compassAdminApi.listNeighborhoods(editForm.floorId);
+                const res = await compassAdminApi.listNeighborhoods(activeCompanyId!, editForm.floorId);
                 setNeighborhoods((res.data.data || []).map((n: { id: string; name: string }) => ({ id: n.id, name: n.name })));
             } catch { setNeighborhoods([]); }
         };

@@ -193,7 +193,7 @@ export const checkIn = async (bookingId: string, companyUserId: string, companyI
 
     const updated = await repo.updateBookingStatus(bookingId, 'CHECKED_IN', {
         checkedInAt: now,
-    });
+    }, 'BOOKED');
 
     appLogger.info('CompassBooking', `Check-in: ${bookingId}`, { companyUserId });
 
@@ -227,7 +227,7 @@ export const release = async (bookingId: string, companyUserId: string, companyI
 
     const updated = await repo.updateBookingStatus(bookingId, 'RELEASED', {
         releasedAt: new Date(),
-    });
+    }, 'CHECKED_IN');
 
     appLogger.info('CompassBooking', `Released: ${bookingId}`, { companyUserId });
 
