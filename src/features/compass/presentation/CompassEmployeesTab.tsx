@@ -52,6 +52,8 @@ export function CompassEmployeesTab() {
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
     // Dialog state
     const [addOpen, setAddOpen] = useState(false);
     const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
@@ -252,6 +254,25 @@ export function CompassEmployeesTab() {
         }
     };
 
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const handleBulkToggleActive = async (isActive: boolean) => {
+        if (!activeCompanyId || selectedIds.size === 0) return;
+        try {
+            await compassAdminApi.bulkUpdateEmployees(activeCompanyId, [...selectedIds], isActive);
+            setSelectedIds(new Set());
+            fetchEmployees();
+        } catch {
+            setError(t('errors.saveFailed', 'Failed to save'));
+        }
+    };
+
     const getDepartmentName = (departmentId: string | null): string => {
         if (!departmentId) return '-';
         const dept = departments.find(d => d.id === departmentId);
@@ -263,6 +284,16 @@ export function CompassEmployeesTab() {
             e.displayName.toLowerCase().includes(search.toLowerCase()) ||
             e.email.toLowerCase().includes(search.toLowerCase()))
         : employees;
+
+    const allSelected = filtered.length > 0 && filtered.every(e => selectedIds.has(e.id));
+
+    const toggleSelectAll = () => {
+        if (allSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filtered.map(e => e.id)));
+        }
+    };
 
     if (initialLoading) {
         return (
@@ -417,6 +448,26 @@ export function CompassEmployeesTab() {
                 >
                     {t('compass.addEmployee', 'Add Employee')}
                 </Button>
+                {selectedIds.size > 0 && (
+                    <>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            color="error"
+                            onClick={() => handleBulkToggleActive(false)}
+                        >
+                            {t('compass.bulkDeactivate', 'Deactivate')} ({selectedIds.size})
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            color="success"
+                            onClick={() => handleBulkToggleActive(true)}
+                        >
+                            {t('compass.bulkActivate', 'Activate')} ({selectedIds.size})
+                        </Button>
+                    </>
+                )}
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {pagination ? pagination.total : filtered.length} {t('compass.navigation.employees', 'employees').toLowerCase()}
                 </Typography>
@@ -426,6 +477,14 @@ export function CompassEmployeesTab() {
                 <Table size="small">
                     <TableHead>
                         <TableRow>
+                            <TableCell padding="checkbox">
+                                <Checkbox
+                                    size="small"
+                                    checked={allSelected}
+                                    indeterminate={selectedIds.size > 0 && !allSelected}
+                                    onChange={toggleSelectAll}
+                                />
+                            </TableCell>
                             <TableCell>{t('common.name', 'Name')}</TableCell>
                             <TableCell>{t('common.email', 'Email')}</TableCell>
                             <TableCell>{t('common.role', 'Role')}</TableCell>
@@ -438,7 +497,7 @@ export function CompassEmployeesTab() {
                     <TableBody>
                         {filtered.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} align="center">
+                                <TableCell colSpan={8} align="center">
                                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                                         {t('common.noResults', 'No results found')}
                                     </Typography>
@@ -446,7 +505,14 @@ export function CompassEmployeesTab() {
                             </TableRow>
                         ) : (
                             filtered.map((emp) => (
-                                <TableRow key={emp.id} hover>
+                                <TableRow key={emp.id} hover selected={selectedIds.has(emp.id)}>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            size="small"
+                                            checked={selectedIds.has(emp.id)}
+                                            onChange={() => toggleSelect(emp.id)}
+                                        />
+                                    </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" fontWeight={500}>
                                             {emp.displayName}

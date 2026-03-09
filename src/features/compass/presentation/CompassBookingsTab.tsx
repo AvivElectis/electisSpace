@@ -55,6 +55,7 @@ export function CompassBookingsTab() {
     const [confirmCancel, setConfirmCancel] = useState<Booking | null>(null);
     const [cancelScope, setCancelScope] = useState<CancelScope>('instance');
     const [cancelling, setCancelling] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     // Reserve dialog state
     const [reserveOpen, setReserveOpen] = useState(false);
@@ -208,6 +209,39 @@ export function CompassBookingsTab() {
     const canReserve = selectedEmployee && selectedSpace && startTime && (untilCancellation || endTime)
         && (recurrenceType === 'none' || recurrenceEndDate);
 
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const selectableBookings = bookings.filter(b => b.status === 'BOOKED' || b.status === 'CHECKED_IN');
+    const allSelected = selectableBookings.length > 0 && selectableBookings.every(b => selectedIds.has(b.id));
+
+    const toggleSelectAll = () => {
+        if (allSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(selectableBookings.map(b => b.id)));
+        }
+    };
+
+    const handleBulkCancel = async () => {
+        if (!activeCompanyId || selectedIds.size === 0) return;
+        setCancelling(true);
+        try {
+            await compassAdminApi.bulkCancelBookings(activeCompanyId, [...selectedIds]);
+            setSelectedIds(new Set());
+            fetchBookings();
+        } catch {
+            setError(t('errors.saveFailed'));
+        } finally {
+            setCancelling(false);
+        }
+    };
+
     const handleOpenCancelDialog = (booking: Booking) => {
         setConfirmCancel(booking);
         setCancelScope('instance');
@@ -250,6 +284,17 @@ export function CompassBookingsTab() {
                 >
                     {t('compass.reserveSpace')}
                 </Button>
+                {selectedIds.size > 0 && (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        onClick={handleBulkCancel}
+                        disabled={cancelling}
+                    >
+                        {t('compass.bulkCancel', 'Cancel Selected')} ({selectedIds.size})
+                    </Button>
+                )}
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {pagination ? `${pagination.total} ${t('compass.navigation.bookings').toLowerCase()}` : `${bookings.length} ${t('compass.navigation.bookings').toLowerCase()}`}
                 </Typography>
@@ -259,6 +304,14 @@ export function CompassBookingsTab() {
                 <Table size="small">
                     <TableHead>
                         <TableRow>
+                            <TableCell padding="checkbox">
+                                <Checkbox
+                                    size="small"
+                                    checked={allSelected}
+                                    indeterminate={selectedIds.size > 0 && !allSelected}
+                                    onChange={toggleSelectAll}
+                                />
+                            </TableCell>
                             <TableCell>{t('compass.navigation.employees')}</TableCell>
                             <TableCell>{t('compass.navigation.spaces')}</TableCell>
                             <TableCell>{t('compass.dashboard.start', 'Start')}</TableCell>
@@ -270,7 +323,7 @@ export function CompassBookingsTab() {
                     <TableBody>
                         {bookings.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center">
+                                <TableCell colSpan={7} align="center">
                                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                                         {t('common.noResults', 'No results found')}
                                     </Typography>
@@ -278,7 +331,16 @@ export function CompassBookingsTab() {
                             </TableRow>
                         ) : (
                             bookings.map((b) => (
-                                <TableRow key={b.id} hover>
+                                <TableRow key={b.id} hover selected={selectedIds.has(b.id)}>
+                                    <TableCell padding="checkbox">
+                                        {(b.status === 'BOOKED' || b.status === 'CHECKED_IN') ? (
+                                            <Checkbox
+                                                size="small"
+                                                checked={selectedIds.has(b.id)}
+                                                onChange={() => toggleSelect(b.id)}
+                                            />
+                                        ) : null}
+                                    </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" fontWeight={500}>{b.companyUser.displayName}</Typography>
                                         <Typography variant="caption" color="text.secondary">{b.companyUser.email}</Typography>

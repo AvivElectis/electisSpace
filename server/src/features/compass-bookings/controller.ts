@@ -8,6 +8,7 @@ import {
     updateBookingRuleSchema,
     adminCreateBookingSchema,
     adminUpdateBookingSchema,
+    bulkCancelBookingsSchema,
 } from './types.js';
 import * as service from './service.js';
 import * as repo from './repository.js';
@@ -215,6 +216,29 @@ export const adminCancel = async (req: Request, res: Response, next: NextFunctio
         if (!booking) throw notFound('Booking not found');
         const result = await service.adminCancel(bookingId, companyId, scope);
         res.json({ data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const adminBulkCancel = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const parsed = bulkCancelBookingsSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw badRequest('Invalid request', parsed.error.format());
+        }
+
+        const companyId = req.params.companyId as string;
+        const result = await prisma.booking.updateMany({
+            where: {
+                id: { in: parsed.data.bookingIds },
+                companyId,
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+            },
+            data: { status: 'CANCELLED' },
+        });
+
+        res.json({ data: { cancelled: result.count } });
     } catch (error) {
         next(error);
     }

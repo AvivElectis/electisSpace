@@ -20,6 +20,11 @@ export const createCompanyUserSchema = z.object({
     isRemote: z.boolean().optional(),
 });
 
+export const bulkUpdateEmployeesSchema = z.object({
+    employeeIds: z.array(z.string().uuid()).min(1).max(100),
+    isActive: z.boolean(),
+});
+
 export const updateCompanyUserSchema = z.object({
     displayName: z.string().min(1).max(100).optional(),
     role: z.enum(['EMPLOYEE', 'MANAGER', 'ADMIN']).optional(),

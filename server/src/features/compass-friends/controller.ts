@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { badRequest } from '../../shared/middleware/index.js';
-import { sendFriendRequestSchema, createCompanyUserSchema, updateCompanyUserSchema } from './types.js';
+import { sendFriendRequestSchema, createCompanyUserSchema, updateCompanyUserSchema, bulkUpdateEmployeesSchema } from './types.js';
 import * as service from './service.js';
 import * as repo from './repository.js';
 
@@ -133,6 +133,26 @@ export const createEmployee = async (req: Request, res: Response, next: NextFunc
         });
 
         res.status(201).json({ data: user });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const bulkUpdateEmployees = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const parsed = bulkUpdateEmployeesSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw badRequest('Invalid request', parsed.error.format());
+        }
+
+        const companyId = req.params.companyId as string;
+        const result = await repo.bulkUpdateEmployeeStatus(
+            parsed.data.employeeIds,
+            companyId,
+            parsed.data.isActive,
+        );
+
+        res.json({ data: { updated: result.count } });
     } catch (error) {
         next(error);
     }

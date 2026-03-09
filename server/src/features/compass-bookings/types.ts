@@ -60,6 +60,10 @@ export const adminUpdateBookingSchema = z.object({
     notes: z.string().max(500).nullable().optional(),
 });
 
+export const bulkCancelBookingsSchema = z.object({
+    bookingIds: z.array(z.string().uuid()).min(1).max(100),
+});
+
 // ─── Query Schemas ───────────────────────────────────
 
 export const bookingQuerySchema = z.object({

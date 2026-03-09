@@ -6,6 +6,9 @@ export const compassAdminApi = {
     listBookings: (companyId: string, params?: { status?: string; page?: number; pageSize?: number }) =>
         api.get<{ data: Booking[]; pagination: PaginationInfo }>(`/admin/compass/bookings/${companyId}`, { params }),
 
+    bulkCancelBookings: (companyId: string, bookingIds: string[]) =>
+        api.post<{ data: { cancelled: number } }>(`/admin/compass/bookings/${companyId}/bulk-cancel`, { bookingIds }),
+
     cancelBooking: (companyId: string, bookingId: string, scope?: 'instance' | 'future' | 'all') =>
         api.patch(`/admin/compass/bookings/${companyId}/${bookingId}/cancel`, null, {
             params: scope ? { scope } : undefined,
@@ -70,6 +73,9 @@ export const compassAdminApi = {
     // Employees
     listEmployees: (companyId: string, params?: { page?: number; pageSize?: number }) =>
         api.get<{ data: Employee[]; pagination: PaginationInfo }>(`/admin/compass/employees/${companyId}`, { params }),
+
+    bulkUpdateEmployees: (companyId: string, employeeIds: string[], isActive: boolean) =>
+        api.post<{ data: { updated: number } }>(`/admin/compass/employees/${companyId}/bulk-update`, { employeeIds, isActive }),
 
     createEmployee: (companyId: string, data: {
         branchId: string;

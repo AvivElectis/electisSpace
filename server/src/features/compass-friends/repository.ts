@@ -174,6 +174,20 @@ export const findCompanyUsers = async (companyId: string, page = 1, pageSize = 5
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 };
 
+export const bulkUpdateEmployeeStatus = async (
+    employeeIds: string[],
+    companyId: string,
+    isActive: boolean,
+) => {
+    return prisma.companyUser.updateMany({
+        where: {
+            id: { in: employeeIds },
+            companyId,
+        },
+        data: { isActive },
+    });
+};
+
 export const createCompanyUser = async (data: {
     companyId: string;
     branchId: string;

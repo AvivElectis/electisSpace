@@ -20,4 +20,5 @@ export const adminEmployeeRoutes = Router();
 
 adminEmployeeRoutes.get('/:companyId', authenticate, requireCompassAdmin(), controller.listEmployees);
 adminEmployeeRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.createEmployee);
+adminEmployeeRoutes.post('/:companyId/bulk-update', authenticate, requireCompassAdmin(), controller.bulkUpdateEmployees);
 adminEmployeeRoutes.put('/:companyId/:userId', authenticate, requireCompassAdmin(), controller.updateEmployee);

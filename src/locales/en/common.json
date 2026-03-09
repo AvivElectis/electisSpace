@@ -2060,7 +2060,10 @@
             "cancelSeries": "Cancel entire series",
             "partOfSeries": "Part of a series"
         },
-        "editBooking": "Edit Booking"
+        "editBooking": "Edit Booking",
+        "bulkCancel": "Cancel Selected",
+        "bulkDeactivate": "Deactivate",
+        "bulkActivate": "Activate"
     },
     "auditLog": {
         "title": "Audit Log",

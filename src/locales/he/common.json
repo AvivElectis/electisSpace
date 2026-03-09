@@ -2060,7 +2060,10 @@
             "cancelSeries": "בטל את כל הסדרה",
             "partOfSeries": "חלק מסדרה"
         },
-        "editBooking": "עריכת הזמנה"
+        "editBooking": "עריכת הזמנה",
+        "bulkCancel": "בטל נבחרים",
+        "bulkDeactivate": "השבת",
+        "bulkActivate": "הפעל"
     },
     "auditLog": {
         "title": "יומן פעילות",

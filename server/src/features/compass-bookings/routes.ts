@@ -48,6 +48,9 @@ adminBookingRoutes.get('/:companyId', authenticate, requireCompassAdmin(), contr
 // POST   /compass/bookings/:companyId     — Admin create/reserve a booking
 adminBookingRoutes.post('/:companyId', authenticate, requireCompassAdmin(), controller.adminCreate);
 
+// POST   /compass/bookings/:companyId/bulk-cancel       — Bulk cancel bookings (admin)
+adminBookingRoutes.post('/:companyId/bulk-cancel', authenticate, requireCompassAdmin(), controller.adminBulkCancel);
+
 // PATCH  /compass/bookings/:companyId/:bookingId/cancel — Cancel a booking (admin)
 adminBookingRoutes.patch('/:companyId/:bookingId/cancel', authenticate, requireCompassAdmin(), controller.adminCancel);
 
