@@ -133,6 +133,9 @@ export async function executeSyncForIntegration(id: string, companyId: string, f
         case 'OKTA':
             adapter = await createOktaAdapter(credentials);
             break;
+        case 'LDAP':
+            adapter = await createLdapAdapter(credentials);
+            break;
         default:
             throw badRequest(`Unsupported provider: ${integration.provider}`);
     }
@@ -245,4 +248,9 @@ async function createGoogleAdapter(credentials: Record<string, unknown>): Promis
 async function createOktaAdapter(credentials: Record<string, unknown>): Promise<DirectorySyncAdapter> {
     const { OktaUserSyncAdapter } = await import('./adapters/oktaAdapter.js');
     return new OktaUserSyncAdapter(credentials);
+}
+
+async function createLdapAdapter(credentials: Record<string, unknown>): Promise<DirectorySyncAdapter> {
+    const { LdapUserSyncAdapter } = await import('./adapters/ldapAdapter.js');
+    return new LdapUserSyncAdapter(credentials);
 }

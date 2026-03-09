@@ -266,19 +266,21 @@ export function EditCompanyTabs({ state, onClose }: Props) {
         }
     }, [state]);
 
-    const getCredentialFields = (provider: Provider) => {
+    const getCredentialFields = (provider: Provider): string[] => {
         switch (provider) {
             case 'MICROSOFT_365': return ['tenantId', 'clientId', 'clientSecret'];
             case 'GOOGLE_WORKSPACE': return ['serviceAccountJson', 'adminEmail', 'domain'];
             case 'OKTA': return ['domain', 'apiToken'];
+            case 'LDAP': return ['url', 'bindDn', 'bindPassword', 'searchBase', 'searchFilter'];
         }
     };
 
-    const providerLabel = (provider: Provider) => {
+    const providerLabel = (provider: Provider): string => {
         switch (provider) {
             case 'MICROSOFT_365': return 'Microsoft 365';
             case 'GOOGLE_WORKSPACE': return 'Google Workspace';
             case 'OKTA': return 'Okta';
+            case 'LDAP': return 'LDAP';
         }
     };
 
@@ -943,6 +945,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                     <MenuItem value="MICROSOFT_365">Microsoft 365</MenuItem>
                                                     <MenuItem value="GOOGLE_WORKSPACE">Google Workspace</MenuItem>
                                                     <MenuItem value="OKTA">Okta</MenuItem>
+                                                    <MenuItem value="LDAP">LDAP</MenuItem>
                                                 </Select>
                                             </FormControl>
                                             <FormControl fullWidth size="small">
@@ -953,10 +956,10 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                     onChange={(e) => setNewType(e.target.value as IntegrationType)}
                                                 >
                                                     <MenuItem value="USER_DIRECTORY">{t('settings.companies.userDirectory', 'User Directory')}</MenuItem>
-                                                    {newProvider !== 'OKTA' && (
+                                                    {newProvider !== 'OKTA' && newProvider !== 'LDAP' && (
                                                         <MenuItem value="CALENDAR_ROOMS">{t('settings.companies.calendarRooms', 'Calendar / Rooms')}</MenuItem>
                                                     )}
-                                                    {newProvider !== 'OKTA' && (
+                                                    {newProvider !== 'OKTA' && newProvider !== 'LDAP' && (
                                                         <MenuItem value="BOTH">{t('settings.companies.both', 'Both')}</MenuItem>
                                                     )}
                                                 </Select>

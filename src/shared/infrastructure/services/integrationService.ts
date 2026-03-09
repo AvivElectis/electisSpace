@@ -6,7 +6,7 @@ import api from './apiClient';
 
 // ─── Types ─────────────────────────────────────────
 
-export type Provider = 'MICROSOFT_365' | 'GOOGLE_WORKSPACE' | 'OKTA';
+export type Provider = 'MICROSOFT_365' | 'GOOGLE_WORKSPACE' | 'OKTA' | 'LDAP';
 export type IntegrationType = 'USER_DIRECTORY' | 'CALENDAR_ROOMS' | 'BOTH';
 export type SyncStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED';
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ─── Enums ──────────────────────────────────────────
 
-export const PROVIDERS = ['MICROSOFT_365', 'GOOGLE_WORKSPACE', 'OKTA'] as const;
+export const PROVIDERS = ['MICROSOFT_365', 'GOOGLE_WORKSPACE', 'OKTA', 'LDAP'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 export const INTEGRATION_TYPES = ['USER_DIRECTORY', 'CALENDAR_ROOMS', 'BOTH'] as const;
@@ -74,6 +74,15 @@ export interface OktaCredentials {
     clientId?: string;
     clientSecret?: string;
     authMethod: 'API_TOKEN' | 'OAUTH2';
+}
+
+export interface LdapCredentials {
+    url: string;               // e.g., "ldaps://ldap.company.com:636"
+    bindDn: string;            // e.g., "cn=admin,dc=company,dc=com"
+    bindPassword: string;
+    searchBase: string;        // e.g., "ou=users,dc=company,dc=com"
+    searchFilter: string;      // e.g., "(objectClass=person)"
+    useTls: boolean;
 }
 
 // ─── Zod schemas ────────────────────────────────────
