@@ -9,6 +9,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SyncIcon from '@mui/icons-material/Sync';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { integrationService, type Integration, type Provider, type IntegrationType } from '@shared/infrastructure/services/integrationService';
@@ -49,6 +51,8 @@ export function CompassIntegrationsTab() {
     const [credentials, setCredentials] = useState<Record<string, string>>({});
     const [syncInterval, setSyncInterval] = useState(1440);
     const [saving, setSaving] = useState(false);
+    const [testing, setTesting] = useState(false);
+    const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
 
     // Delete confirmation
     const [deleteTarget, setDeleteTarget] = useState<Integration | null>(null);
@@ -68,6 +72,20 @@ export function CompassIntegrationsTab() {
 
     useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
 
+    const handleTestConnection = async () => {
+        if (!activeCompanyId) return;
+        setTesting(true);
+        setTestResult(null);
+        try {
+            const result = await integrationService.testConnection(activeCompanyId, provider, credentials);
+            setTestResult(result);
+        } catch (err: any) {
+            setTestResult({ success: false, error: err.message || 'Test failed' });
+        } finally {
+            setTesting(false);
+        }
+    };
+
     const handleAdd = async () => {
         if (!activeCompanyId) return;
         setSaving(true);
@@ -80,6 +98,7 @@ export function CompassIntegrationsTab() {
             });
             setAddOpen(false);
             setCredentials({});
+            setTestResult(null);
             fetchIntegrations();
         } catch {
             setError(t('errors.saveFailed'));
@@ -300,11 +319,30 @@ export function CompassIntegrationsTab() {
                                 rows={field === 'serviceAccountJson' ? 4 : undefined}
                             />
                         ))}
+
+                        {/* Test Connection Result */}
+                        {testResult && (
+                            <Alert
+                                severity={testResult.success ? 'success' : 'error'}
+                                icon={testResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
+                            >
+                                {testResult.success
+                                    ? t('compass.integrations.testSuccess', 'Connection test passed')
+                                    : testResult.error || t('compass.integrations.testFailed', 'Connection test failed')}
+                            </Alert>
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAddOpen(false)}>{t('common.cancel')}</Button>
-                    <Button variant="contained" onClick={handleAdd} disabled={!canSave || saving}>
+                    <Button onClick={() => { setAddOpen(false); setTestResult(null); }}>{t('common.cancel')}</Button>
+                    <Button
+                        onClick={handleTestConnection}
+                        disabled={testing || !canSave}
+                        color="info"
+                    >
+                        {testing ? <CircularProgress size={20} /> : t('compass.integrations.testConnection', 'Test Connection')}
+                    </Button>
+                    <Button variant="contained" onClick={handleAdd} disabled={!canSave || saving || (testResult !== null && !testResult.success)}>
                         {saving ? <CircularProgress size={20} /> : t('common.save')}
                     </Button>
                 </DialogActions>

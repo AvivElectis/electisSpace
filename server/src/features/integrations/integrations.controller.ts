@@ -114,6 +114,19 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     }
 }
 
+export async function testConnection(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { provider, credentials } = req.body;
+        if (!provider || !credentials) {
+            return res.status(400).json({ success: false, error: 'Provider and credentials are required' });
+        }
+        const result = await service.testIntegrationConnection(provider, credentials);
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function triggerSync(req: Request, res: Response, next: NextFunction) {
     try {
         const companyId = req.params.companyId as string;

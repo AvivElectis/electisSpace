@@ -14,6 +14,9 @@ router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
 router.delete('/:id', controller.remove);
 
+// Test connection (before saving)
+router.post('/test-connection', controller.testConnection);
+
 // Sync trigger
 router.post('/:id/sync', controller.triggerSync);
 

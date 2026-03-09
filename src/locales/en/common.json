@@ -2113,7 +2113,10 @@
             "syncComplete": "Sync completed",
             "deactivated": "deactivated",
             "confirmDelete": "Are you sure you want to delete this integration?",
-            "empty": "No integrations configured yet"
+            "empty": "No integrations configured yet",
+            "testConnection": "Test Connection",
+            "testSuccess": "Connection test passed",
+            "testFailed": "Connection test failed"
         }
     },
     "auditLog": {

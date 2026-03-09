@@ -231,6 +231,61 @@ async function applyUserSync(companyId: string, users: NormalizedUser[]): Promis
     return result;
 }
 
+// ─── Test Connection ─────────────────────────────────
+
+export async function testIntegrationConnection(
+    provider: Provider,
+    credentials: Record<string, unknown>,
+): Promise<{ success: boolean; error?: string; details?: Record<string, unknown> }> {
+    try {
+        switch (provider) {
+            case 'MICROSOFT_365': {
+                // Try to acquire a token via MSAL
+                const { MicrosoftUserSyncAdapter } = await import('./adapters/microsoftAdapter.js');
+                const adapter = new MicrosoftUserSyncAdapter(credentials);
+                const result = await adapter.fetchUsers();
+                return {
+                    success: true,
+                    details: { usersFound: result.users.length, hasMore: result.hasMore },
+                };
+            }
+            case 'GOOGLE_WORKSPACE': {
+                const { GoogleUserSyncAdapter } = await import('./adapters/googleAdapter.js');
+                const adapter = new GoogleUserSyncAdapter(credentials);
+                const result = await adapter.fetchUsers();
+                return {
+                    success: true,
+                    details: { usersFound: result.users.length },
+                };
+            }
+            case 'OKTA': {
+                const { OktaUserSyncAdapter } = await import('./adapters/oktaAdapter.js');
+                const adapter = new OktaUserSyncAdapter(credentials);
+                const result = await adapter.fetchUsers();
+                return {
+                    success: true,
+                    details: { usersFound: result.users.length },
+                };
+            }
+            case 'LDAP': {
+                // For LDAP, just try to bind
+                const { LdapUserSyncAdapter } = await import('./adapters/ldapAdapter.js');
+                const adapter = new LdapUserSyncAdapter(credentials);
+                const result = await adapter.fetchUsers();
+                return {
+                    success: true,
+                    details: { usersFound: result.users.length },
+                };
+            }
+            default:
+                return { success: false, error: `Unsupported provider: ${provider}` };
+        }
+    } catch (err: any) {
+        appLogger.warn('Integrations', `Connection test failed for ${provider}: ${err.message}`);
+        return { success: false, error: err.message || 'Connection test failed' };
+    }
+}
+
 // ─── Adapter Factory Stubs ──────────────────────────
 // These will be replaced with real implementations in Phase 10 tasks P10-03/04/04B
 

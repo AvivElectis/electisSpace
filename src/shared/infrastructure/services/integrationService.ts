@@ -70,6 +70,11 @@ export const integrationService = {
         await api.delete(`${basePath(companyId)}/${id}`);
     },
 
+    async testConnection(companyId: string, provider: Provider, credentials: Record<string, string>): Promise<{ success: boolean; error?: string; details?: Record<string, unknown> }> {
+        const { data } = await api.post(`${basePath(companyId)}/test-connection`, { provider, credentials });
+        return data;
+    },
+
     async triggerSync(companyId: string, id: string, fullSync = false): Promise<{ created: number; updated: number; deactivated: number }> {
         const { data } = await api.post(`${basePath(companyId)}/${id}/sync`, { fullSync });
         return data.result;
