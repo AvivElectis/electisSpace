@@ -72,16 +72,29 @@ export async function createRecurringSeries(params: {
         }
     }
 
-    // Validate concurrent bookings limit
-    const activeCount = await params.prisma.booking.count({
-        where: {
-            companyUserId: params.companyUserId,
-            companyId: params.companyId,
-            status: { in: ['BOOKED', 'CHECKED_IN'] },
-        },
-    });
-    if (activeCount + dates.length > rules.maxConcurrentBookings) {
-        throw badRequest('MAX_CONCURRENT_BOOKINGS_EXCEEDED', { max: rules.maxConcurrentBookings });
+    // Validate concurrent bookings limit per-date
+    // Group recurrence dates by calendar day and check each day's total
+    const datesByDay = new Map<string, Date[]>();
+    for (const d of dates) {
+        const dayKey = d.toISOString().slice(0, 10);
+        const arr = datesByDay.get(dayKey) ?? [];
+        arr.push(d);
+        datesByDay.set(dayKey, arr);
+    }
+    for (const [dayKey, dayDates] of datesByDay) {
+        const dayStart = new Date(dayKey + 'T00:00:00Z');
+        const dayEnd = new Date(dayKey + 'T23:59:59Z');
+        const existingOnDay = await params.prisma.booking.count({
+            where: {
+                companyUserId: params.companyUserId,
+                companyId: params.companyId,
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+                startTime: { gte: dayStart, lte: dayEnd },
+            },
+        });
+        if (existingOnDay + dayDates.length > rules.maxConcurrentBookings) {
+            throw badRequest('MAX_CONCURRENT_BOOKINGS_EXCEEDED', { max: rules.maxConcurrentBookings });
+        }
     }
 
     // Calculate duration from start/end times
@@ -92,58 +105,63 @@ export async function createRecurringSeries(params: {
         durationMs = ((endH * 60 + endM) - (startH * 60 + startM)) * 60 * 1000;
     }
 
-    // Per-instance overlap conflict check (matches single-booking path logic)
-    const conflicts: Date[] = [];
-    const nonConflicting: Date[] = [];
+    // Conflict detection + creation in a single transaction for atomicity
+    const { conflicts, created } = await params.prisma.$transaction(async (tx: any) => {
+        const txConflicts: Date[] = [];
+        const txNonConflicting: Date[] = [];
 
-    for (const date of dates) {
-        const endDate = durationMs ? new Date(date.getTime() + durationMs) : null;
-        const conflictWhere: any = {
-            spaceId: params.spaceId,
-            status: { in: ['BOOKED', 'CHECKED_IN'] },
-        };
-
-        if (endDate) {
-            conflictWhere.startTime = { lt: endDate };
-            conflictWhere.OR = [{ endTime: null }, { endTime: { gt: date } }];
-        } else {
-            conflictWhere.OR = [{ endTime: null }, { endTime: { gt: date } }];
-        }
-
-        const existing = await params.prisma.booking.findFirst({
-            where: conflictWhere,
-            select: { id: true },
-        });
-
-        if (existing) {
-            conflicts.push(date);
-        } else {
-            nonConflicting.push(date);
-        }
-    }
-
-    // Create all non-conflicting booking instances in a transaction
-    const result = await params.prisma.$transaction(async (tx: any) => {
-        return tx.booking.createMany({
-            data: nonConflicting.map((date: Date) => ({
-                companyUserId: params.companyUserId,
+        for (const date of dates) {
+            const endDate = durationMs ? new Date(date.getTime() + durationMs) : null;
+            const conflictWhere: any = {
                 spaceId: params.spaceId,
-                branchId: params.branchId,
-                companyId: params.companyId,
-                startTime: date,
-                endTime: durationMs ? new Date(date.getTime() + durationMs) : null,
-                status: 'BOOKED',
-                bookingType: 'HOT_DESK',
-                recurrenceRule: params.rrule,
-                recurrenceGroupId: groupId,
-                isRecurrence: true,
-                bookedBy: params.bookedBy,
-                notes: params.notes,
-            })),
-        });
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+            };
+
+            if (endDate) {
+                conflictWhere.startTime = { lt: endDate };
+                conflictWhere.OR = [{ endTime: null }, { endTime: { gt: date } }];
+            } else {
+                conflictWhere.OR = [{ endTime: null }, { endTime: { gt: date } }];
+            }
+
+            const existing = await tx.booking.findFirst({
+                where: conflictWhere,
+                select: { id: true },
+            });
+
+            if (existing) {
+                txConflicts.push(date);
+            } else {
+                txNonConflicting.push(date);
+            }
+        }
+
+        let count = 0;
+        if (txNonConflicting.length > 0) {
+            const result = await tx.booking.createMany({
+                data: txNonConflicting.map((date: Date) => ({
+                    companyUserId: params.companyUserId,
+                    spaceId: params.spaceId,
+                    branchId: params.branchId,
+                    companyId: params.companyId,
+                    startTime: date,
+                    endTime: durationMs ? new Date(date.getTime() + durationMs) : null,
+                    status: 'BOOKED',
+                    bookingType: 'HOT_DESK',
+                    recurrenceRule: params.rrule,
+                    recurrenceGroupId: groupId,
+                    isRecurrence: true,
+                    bookedBy: params.bookedBy,
+                    notes: params.notes,
+                })),
+            });
+            count = result.count;
+        }
+
+        return { conflicts: txConflicts, created: count };
     });
 
-    return { groupId, created: result.count, conflicts };
+    return { groupId, created, conflicts };
 }
 
 // ─── Helpers ───────────────────────────────────────────

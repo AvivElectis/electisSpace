@@ -401,11 +401,11 @@ model Space {
 
   // Relations
   store               Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  building            Building?              @relation(fields: [buildingId], references: [id])
-  floor               Floor?                 @relation(fields: [floorId], references: [id])
-  area                Area?                  @relation(fields: [areaId], references: [id])
-  neighborhood        Neighborhood?          @relation(fields: [neighborhoodId], references: [id])
-  permanentAssignee   CompanyUser?           @relation("PermanentSpace", fields: [permanentAssigneeId], references: [id])
+  building            Building?              @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  floor               Floor?                 @relation(fields: [floorId], references: [id], onDelete: SetNull)
+  area                Area?                  @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  neighborhood        Neighborhood?          @relation(fields: [neighborhoodId], references: [id], onDelete: SetNull)
+  permanentAssignee   CompanyUser?           @relation("PermanentSpace", fields: [permanentAssigneeId], references: [id], onDelete: SetNull)
   createdBy           User?                  @relation("SpaceCreatedBy", fields: [createdById], references: [id])
   updatedBy           User?                  @relation("SpaceUpdatedBy", fields: [updatedById], references: [id])
   listMemberships     PeopleListMembership[]
@@ -584,8 +584,8 @@ model AuditLog {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  store Store? @relation(fields: [storeId], references: [id])
-  user  User?  @relation(fields: [userId], references: [id])
+  store Store? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([storeId])
   @@index([userId])
@@ -1036,9 +1036,9 @@ model Department {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  parent        Department?    @relation("DeptHierarchy", fields: [parentId], references: [id])
+  parent        Department?    @relation("DeptHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children      Department[]   @relation("DeptHierarchy")
-  manager       CompanyUser?   @relation("DeptManager", fields: [managerId], references: [id])
+  manager       CompanyUser?   @relation("DeptManager", fields: [managerId], references: [id], onDelete: SetNull)
   members       CompanyUser[]  @relation("DeptMembers")
   teams         Team[]
   neighborhoods Neighborhood[]
@@ -1063,8 +1063,8 @@ model Team {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   company    Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  department Department?  @relation(fields: [departmentId], references: [id])
-  lead       CompanyUser? @relation("TeamLead", fields: [leadId], references: [id])
+  department Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  lead       CompanyUser? @relation("TeamLead", fields: [leadId], references: [id], onDelete: SetNull)
   members    TeamMember[]
 
   @@index([companyId])

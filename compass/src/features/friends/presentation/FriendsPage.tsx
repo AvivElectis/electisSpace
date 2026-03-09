@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Box,
     Typography,
@@ -52,10 +52,14 @@ export function FriendsPage() {
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [addEmail, setAddEmail] = useState('');
     const [addSuccess, setAddSuccess] = useState(false);
+    const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         fetchFriends();
         fetchPendingRequests();
+        return () => {
+            if (successTimerRef.current) clearTimeout(successTimerRef.current);
+        };
     }, [fetchFriends, fetchPendingRequests]);
 
     const handleSendRequest = async () => {
@@ -63,7 +67,7 @@ export function FriendsPage() {
         if (ok) {
             setAddEmail('');
             setAddSuccess(true);
-            setTimeout(() => {
+            successTimerRef.current = setTimeout(() => {
                 setAddDialogOpen(false);
                 setAddSuccess(false);
             }, 1500);

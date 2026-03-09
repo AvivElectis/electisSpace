@@ -4,37 +4,47 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock prisma (hoisted to avoid TDZ issues)
-const { mockDepartment, mockTeam, mockTeamMember, mockCompanyUser } = vi.hoisted(() => ({
-    mockDepartment: {
+const { mockDepartment, mockTeam, mockTeamMember, mockCompanyUser, mockTransaction } = vi.hoisted(() => {
+    const dept = {
         findMany: vi.fn(),
         findUnique: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
-    },
-    mockTeam: {
+        updateMany: vi.fn(),
+    };
+    const team = {
         findMany: vi.fn(),
         findUnique: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
-    },
-    mockTeamMember: {
+    };
+    const teamMember = {
         findUnique: vi.fn(),
         create: vi.fn(),
         delete: vi.fn(),
-    },
-    mockCompanyUser: {
+    };
+    const companyUser = {
         findUnique: vi.fn(),
-    },
-}));
+    };
+    const $transaction = vi.fn();
+    return { mockDepartment: dept, mockTeam: team, mockTeamMember: teamMember, mockCompanyUser: companyUser, mockTransaction: $transaction };
+});
 
-vi.mock('../../../config/index.js', () => ({
-    prisma: {
+vi.mock('../../../config/index.js', () => {
+    const prisma = {
         department: mockDepartment,
         team: mockTeam,
         teamMember: mockTeamMember,
         companyUser: mockCompanyUser,
-    },
-}));
+        $transaction: mockTransaction,
+    };
+    // Pass-through: execute callback/array with the same prisma mock
+    mockTransaction.mockImplementation(async (arg: any) => {
+        if (typeof arg === 'function') return arg(prisma);
+        return Promise.all(arg);
+    });
+    return { prisma };
+});
 
 // Mock middleware error factories
 vi.mock('../../../shared/middleware/index.js', () => {
@@ -267,16 +277,22 @@ describe('updateDepartment', () => {
 describe('deleteDepartment', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('should soft delete a department (set isActive=false)', async () => {
+    it('should soft delete a department (set isActive=false, clear managerId, detach children)', async () => {
         mockDepartment.findUnique.mockResolvedValue(mockDeptData);
-        mockDepartment.update.mockResolvedValue({ ...mockDeptData, isActive: false });
+        mockDepartment.updateMany.mockResolvedValue({ count: 0 });
+        mockDepartment.update.mockResolvedValue({ ...mockDeptData, isActive: false, managerId: null });
 
         const result = await service.deleteDepartment(COMPANY_ID, 'dept-1');
 
         expect(result.isActive).toBe(false);
+        expect(result.managerId).toBeNull();
+        expect(mockDepartment.updateMany).toHaveBeenCalledWith({
+            where: { parentId: 'dept-1' },
+            data: { parentId: null },
+        });
         expect(mockDepartment.update).toHaveBeenCalledWith({
             where: { id: 'dept-1' },
-            data: { isActive: false },
+            data: { isActive: false, managerId: null },
         });
     });
 

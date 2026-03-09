@@ -27,22 +27,24 @@ export const createDepartment = async (companyId: string, data: {
     color?: string;
     sortOrder?: number;
 }) => {
-    if (data.parentId) {
-        const parent = await prisma.department.findUnique({ where: { id: data.parentId } });
-        if (!parent || parent.companyId !== companyId) throw notFound('Parent department not found');
-        let depth = 1;
-        let currentId: string | null = data.parentId;
-        while (currentId) {
-            const p: { parentId: string | null } | null = await prisma.department.findUnique({ where: { id: currentId }, select: { parentId: true } });
-            currentId = p?.parentId ?? null;
-            depth++;
+    return prisma.$transaction(async (tx) => {
+        if (data.parentId) {
+            const parent = await tx.department.findUnique({ where: { id: data.parentId } });
+            if (!parent || parent.companyId !== companyId) throw notFound('Parent department not found');
+            let depth = 1;
+            let currentId: string | null = data.parentId;
+            while (currentId) {
+                const p: { parentId: string | null } | null = await tx.department.findUnique({ where: { id: currentId }, select: { parentId: true } });
+                currentId = p?.parentId ?? null;
+                depth++;
+            }
+            if (depth > MAX_DEPTH) throw badRequest('MAX_DEPARTMENT_DEPTH_EXCEEDED');
         }
-        if (depth > MAX_DEPTH) throw badRequest('MAX_DEPARTMENT_DEPTH_EXCEEDED');
-    }
 
-    return prisma.department.create({
-        data: { companyId, ...data },
-        include: { manager: { select: { displayName: true } } },
+        return tx.department.create({
+            data: { companyId, ...data },
+            include: { manager: { select: { displayName: true } } },
+        });
     });
 };
 
@@ -72,7 +74,12 @@ export const updateDepartment = async (companyId: string, id: string, data: Reco
 export const deleteDepartment = async (companyId: string, id: string) => {
     const dept = await prisma.department.findUnique({ where: { id } });
     if (!dept || dept.companyId !== companyId) throw notFound('Department not found');
-    return prisma.department.update({ where: { id }, data: { isActive: false } });
+    return prisma.$transaction([
+        // Clear parent references from child departments
+        prisma.department.updateMany({ where: { parentId: id }, data: { parentId: null } }),
+        // Soft-delete and clear manager
+        prisma.department.update({ where: { id }, data: { isActive: false, managerId: null } }),
+    ]).then(([, updated]) => updated);
 };
 
 export const createTeam = async (companyId: string, data: {

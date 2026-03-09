@@ -119,11 +119,10 @@ export const verifyCodeAndLogin = async (
         throw unauthorized('Invalid or expired verification code');
     }
 
-    // Increment attempts unconditionally before verifying (pessimistic approach)
-    await repo.incrementCodeAttempts(verificationCode.id);
-
     const isValid = await repo.verifyCode(code, verificationCode.codeHash);
     if (!isValid) {
+        // Only increment attempts on failed verification to avoid penalizing correct guesses
+        await repo.incrementCodeAttempts(verificationCode.id);
         throw unauthorized('Invalid or expired verification code');
     }
 

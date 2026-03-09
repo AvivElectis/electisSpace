@@ -86,6 +86,21 @@ export const updateSpaceMode = async (
         }
     }
 
+    // When switching to PERMANENT, cancel active bookings by non-assignee users
+    if (mode === 'PERMANENT' && permanentAssigneeId) {
+        return prisma.$transaction(async (tx) => {
+            await tx.booking.updateMany({
+                where: {
+                    spaceId,
+                    status: { in: ['BOOKED', 'CHECKED_IN'] },
+                    companyUserId: { not: permanentAssigneeId },
+                },
+                data: { status: 'CANCELLED' },
+            });
+            return repo.updateCompassMode(spaceId, mode, permanentAssigneeId);
+        });
+    }
+
     return repo.updateCompassMode(
         spaceId,
         mode,

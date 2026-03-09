@@ -204,7 +204,7 @@ describe('verifyCodeAndLogin', () => {
             .rejects.toThrow('Invalid or expired verification code');
     });
 
-    it('should increment attempts before verifying code (pessimistic)', async () => {
+    it('should increment attempts only on failed verification', async () => {
         mockRepo.findCompanyUserByEmail.mockResolvedValue(mockUser);
         mockRepo.findValidVerificationCode.mockResolvedValue({
             id: 'code-1',
@@ -215,9 +215,9 @@ describe('verifyCodeAndLogin', () => {
         await expect(service.verifyCodeAndLogin('test@example.com', '000000'))
             .rejects.toThrow('Invalid or expired verification code');
 
-        // Attempts incremented before code verification
+        // Attempts incremented after failed code verification (not before)
+        expect(mockRepo.verifyCode).toHaveBeenCalledBefore(mockRepo.incrementCodeAttempts);
         expect(mockRepo.incrementCodeAttempts).toHaveBeenCalledWith('code-1');
-        expect(mockRepo.incrementCodeAttempts).toHaveBeenCalledBefore(mockRepo.verifyCode);
     });
 
     it('should return tokens on valid code', async () => {

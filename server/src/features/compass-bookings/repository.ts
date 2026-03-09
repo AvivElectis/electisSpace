@@ -160,6 +160,7 @@ export const findExpiredBookings = async (cutoff: Date) => {
         where: {
             status: { in: ['BOOKED', 'CHECKED_IN'] },
             endTime: { not: null, lt: cutoff },
+            space: { deletedAt: null },
         },
     });
 };
@@ -172,6 +173,7 @@ export const findNoShowBookings = async (cutoff: Date) => {
         where: {
             status: 'BOOKED',
             startTime: { lt: cutoff },
+            space: { deletedAt: null },
         },
         include: {
             space: { select: { id: true, storeId: true } },

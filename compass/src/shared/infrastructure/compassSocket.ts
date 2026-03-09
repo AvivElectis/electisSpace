@@ -39,43 +39,48 @@ export function connectCompassSocket() {
         // Connection error — Socket.IO will auto-retry
     });
 
+    // Safe handler wrapper to prevent unhandled errors from crashing the socket
+    const safeHandler = <T>(handler: (data: T) => void) => (data: T) => {
+        try { handler(data); } catch { /* socket event handler error — non-fatal */ }
+    };
+
     // ─── Space Events ────────────────────────────────
-    socket.on('space:booked', (data: { spaceId: string }) => {
+    socket.on('space:booked', safeHandler((data: { spaceId: string }) => {
         useSpacesStore.getState().updateSpaceFromSocket(data.spaceId, false);
-    });
+    }));
 
-    socket.on('space:released', (data: { spaceId: string }) => {
+    socket.on('space:released', safeHandler((data: { spaceId: string }) => {
         useSpacesStore.getState().updateSpaceFromSocket(data.spaceId, true);
-    });
+    }));
 
-    socket.on('space:checkedIn', (data: { spaceId: string }) => {
+    socket.on('space:checkedIn', safeHandler((data: { spaceId: string }) => {
         useSpacesStore.getState().updateSpaceFromSocket(data.spaceId, false);
-    });
+    }));
 
     // ─── Booking Events (for current user) ──────────
-    socket.on('booking:updated', (data: { booking: any }) => {
+    socket.on('booking:updated', safeHandler((data: { booking: any }) => {
         useBookingStore.getState().updateBookingFromSocket(data.booking);
-    });
+    }));
 
-    socket.on('booking:autoReleased', (data: { bookingId: string }) => {
+    socket.on('booking:autoReleased', safeHandler((data: { bookingId: string }) => {
         const active = useBookingStore.getState().activeBooking;
         if (active?.id === data.bookingId) {
             useBookingStore.getState().fetchActiveBooking();
         }
-    });
+    }));
 
     // ─── Friend Events ──────────────────────────────
-    socket.on('friend:request', () => {
+    socket.on('friend:request', safeHandler(() => {
         useFriendsStore.getState().fetchPendingRequests();
-    });
+    }));
 
-    socket.on('friend:checkedIn', () => {
+    socket.on('friend:checkedIn', safeHandler(() => {
         useSpacesStore.getState().fetchSpaces();
-    });
+    }));
 
-    socket.on('friend:left', () => {
+    socket.on('friend:left', safeHandler(() => {
         useSpacesStore.getState().fetchSpaces();
-    });
+    }));
 }
 
 export function disconnectCompassSocket() {

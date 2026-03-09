@@ -268,6 +268,7 @@ export const cancel = async (
         const result = await prisma.booking.updateMany({
             where: {
                 recurrenceGroupId: booking.recurrenceGroupId,
+                companyId,
                 status: { in: ['BOOKED'] },
                 ...(scope === 'future' ? { startTime: { gte: booking.startTime } } : {}),
             },
@@ -328,6 +329,7 @@ export const adminCancel = async (
         const result = await prisma.booking.updateMany({
             where: {
                 recurrenceGroupId: booking.recurrenceGroupId,
+                companyId,
                 status: { in: ['BOOKED', 'CHECKED_IN'] },
                 ...(scope === 'future' ? { startTime: { gte: booking.startTime } } : {}),
             },
@@ -410,7 +412,7 @@ export const extend = async (
                 id: { not: bookingId },
                 status: { in: ['BOOKED', 'CHECKED_IN'] },
                 startTime: { lt: newEndTime },
-                OR: [{ endTime: null }, { endTime: { gt: booking.endTime! } }],
+                OR: [{ endTime: null }, { endTime: { gt: booking.startTime } }],
             },
         });
         if (conflicts.length > 0) {
@@ -651,6 +653,9 @@ export const processAutoRelease = async () => {
     let count = 0;
     for (const booking of expired) {
         try {
+            // PERMANENT bookings should not be auto-released
+            if ((booking as any).bookingType === 'PERMANENT') continue;
+
             await repo.updateBookingStatus(booking.id, 'AUTO_RELEASED', {
                 autoReleased: true,
                 releasedAt: now,
@@ -701,6 +706,9 @@ export const processNoShows = async () => {
                 );
                 rulesCache.set(cacheKey, rules);
             }
+
+            // PERMANENT bookings are exempt from no-show detection
+            if ((booking as any).bookingType === 'PERMANENT') continue;
 
             const deadline = new Date(
                 booking.startTime.getTime() + rules.checkInWindowMinutes * 60 * 1000,

@@ -241,13 +241,15 @@ export const adminBulkCancel = async (req: Request, res: Response, next: NextFun
         }
 
         const companyId = req.params.companyId as string;
-        const result = await prisma.booking.updateMany({
-            where: {
-                id: { in: parsed.data.bookingIds },
-                companyId,
-                status: { in: ['BOOKED', 'CHECKED_IN'] },
-            },
-            data: { status: 'CANCELLED' },
+        const result = await prisma.$transaction(async (tx) => {
+            return tx.booking.updateMany({
+                where: {
+                    id: { in: parsed.data.bookingIds },
+                    companyId,
+                    status: { in: ['BOOKED', 'CHECKED_IN'] },
+                },
+                data: { status: 'CANCELLED' },
+            });
         });
 
         res.json({ data: { cancelled: result.count } });
