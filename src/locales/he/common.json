@@ -2059,7 +2059,8 @@
             "cancelFuture": "בטל הזמנה זו והבאות",
             "cancelSeries": "בטל את כל הסדרה",
             "partOfSeries": "חלק מסדרה"
-        }
+        },
+        "editBooking": "עריכת הזמנה"
     },
     "auditLog": {
         "title": "יומן פעילות",

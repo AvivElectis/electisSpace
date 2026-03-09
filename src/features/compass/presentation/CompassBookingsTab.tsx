@@ -8,6 +8,7 @@ import {
     RadioGroup, Radio,
 } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import { useTranslation } from 'react-i18next';
@@ -66,6 +67,48 @@ export function CompassBookingsTab() {
     const [reserving, setReserving] = useState(false);
     const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+
+    // Edit dialog state
+    const [editBooking, setEditBooking] = useState<Booking | null>(null);
+    const [editStartTime, setEditStartTime] = useState('');
+    const [editEndTime, setEditEndTime] = useState('');
+    const [editUntilCancellation, setEditUntilCancellation] = useState(false);
+    const [editNotes, setEditNotes] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const handleOpenEdit = (booking: Booking) => {
+        setEditBooking(booking);
+        setEditStartTime(new Date(booking.startTime).toISOString().slice(0, 16));
+        setEditEndTime(booking.endTime ? new Date(booking.endTime).toISOString().slice(0, 16) : '');
+        setEditUntilCancellation(!booking.endTime);
+        setEditNotes(booking.notes || '');
+    };
+
+    const handleCloseEdit = () => {
+        setEditBooking(null);
+        setEditStartTime('');
+        setEditEndTime('');
+        setEditUntilCancellation(false);
+        setEditNotes('');
+    };
+
+    const handleSaveEdit = async () => {
+        if (!activeCompanyId || !editBooking) return;
+        setSaving(true);
+        try {
+            await compassAdminApi.updateBooking(activeCompanyId, editBooking.id, {
+                startTime: new Date(editStartTime).toISOString(),
+                endTime: editUntilCancellation ? null : (editEndTime ? new Date(editEndTime).toISOString() : null),
+                notes: editNotes.trim() || null,
+            });
+            handleCloseEdit();
+            fetchBookings();
+        } catch {
+            setError(t('errors.saveFailed'));
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const fetchBookings = useCallback(async (showLoading = false) => {
         if (!activeCompanyId) return;
@@ -256,6 +299,11 @@ export function CompassBookingsTab() {
                                         />
                                     </TableCell>
                                     <TableCell align="right">
+                                        {b.status === 'BOOKED' && (
+                                            <IconButton size="small" onClick={() => handleOpenEdit(b)} aria-label={t('common.edit')}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
                                         {(b.status === 'BOOKED' || b.status === 'CHECKED_IN') && (
                                             <IconButton size="small" color="error" onClick={() => handleOpenCancelDialog(b)} aria-label={t('compass.cancelBooking')}>
                                                 <CancelIcon fontSize="small" />
@@ -309,6 +357,57 @@ export function CompassBookingsTab() {
                         }}
                     >
                         {t('common.confirm')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Booking Dialog */}
+            <Dialog open={!!editBooking} onClose={handleCloseEdit} maxWidth="sm" fullWidth>
+                <DialogTitle>{t('compass.editBooking', 'Edit Booking')}</DialogTitle>
+                <DialogContent>
+                    <Stack gap={2} sx={{ mt: 1 }}>
+                        <TextField
+                            label={t('compass.dashboard.start', 'Start')}
+                            type="datetime-local"
+                            value={editStartTime}
+                            onChange={(e) => setEditStartTime(e.target.value)}
+                            slotProps={{ inputLabel: { shrink: true } }}
+                        />
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={editUntilCancellation}
+                                    onChange={(e) => setEditUntilCancellation(e.target.checked)}
+                                />
+                            }
+                            label={t('compass.untilCancellation')}
+                        />
+                        {!editUntilCancellation && (
+                            <TextField
+                                label={t('compass.dashboard.end', 'End')}
+                                type="datetime-local"
+                                value={editEndTime}
+                                onChange={(e) => setEditEndTime(e.target.value)}
+                                slotProps={{ inputLabel: { shrink: true } }}
+                            />
+                        )}
+                        <TextField
+                            label={t('common.notes', 'Notes')}
+                            value={editNotes}
+                            onChange={(e) => setEditNotes(e.target.value)}
+                            multiline
+                            rows={2}
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEdit}>{t('common.cancel')}</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSaveEdit}
+                        disabled={!editStartTime || (!editUntilCancellation && !editEndTime) || saving}
+                    >
+                        {t('common.save')}
                     </Button>
                 </DialogActions>
             </Dialog>

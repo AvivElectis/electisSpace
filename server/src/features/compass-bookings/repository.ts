@@ -103,6 +103,24 @@ export const updateBookingStatus = async (
     });
 };
 
+export const updateBooking = async (
+    id: string,
+    data: Partial<{
+        startTime: Date;
+        endTime: Date | null;
+        notes: string | null;
+    }>,
+) => {
+    return prisma.booking.update({
+        where: { id },
+        data,
+        include: {
+            space: { select: { id: true, externalId: true, data: true, buildingId: true, floorId: true } },
+            companyUser: { select: { id: true, displayName: true, email: true } },
+        },
+    });
+};
+
 // ─── Auto-Release & No-Show Queries ──────────────────
 
 export const findExpiredBookings = async (cutoff: Date) => {

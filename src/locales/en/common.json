@@ -2055,7 +2055,8 @@
             "cancelFuture": "Cancel this and future bookings",
             "cancelSeries": "Cancel entire series",
             "partOfSeries": "Part of a series"
-        }
+        },
+        "editBooking": "Edit Booking"
     },
     "auditLog": {
         "title": "Audit Log",

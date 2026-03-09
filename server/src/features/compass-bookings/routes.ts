@@ -51,6 +51,9 @@ adminBookingRoutes.post('/:companyId', authenticate, requireCompassAdmin(), cont
 // PATCH  /compass/bookings/:companyId/:bookingId/cancel — Cancel a booking (admin)
 adminBookingRoutes.patch('/:companyId/:bookingId/cancel', authenticate, requireCompassAdmin(), controller.adminCancel);
 
+// PATCH  /compass/bookings/:companyId/:bookingId         — Update a booking (admin)
+adminBookingRoutes.patch('/:companyId/:bookingId', authenticate, requireCompassAdmin(), controller.adminUpdate);
+
 // ======================
 // Admin Booking Rule Routes (Admin JWT)
 // ======================

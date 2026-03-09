@@ -7,6 +7,7 @@ import {
     createBookingRuleSchema,
     updateBookingRuleSchema,
     adminCreateBookingSchema,
+    adminUpdateBookingSchema,
 } from './types.js';
 import * as service from './service.js';
 import * as repo from './repository.js';
@@ -175,6 +176,29 @@ export const adminCreate = async (req: Request, res: Response, next: NextFunctio
         });
 
         res.status(201).json({ data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const adminUpdate = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const parsed = adminUpdateBookingSchema.safeParse(req.body);
+        if (!parsed.success) {
+            throw badRequest('Invalid request', parsed.error.format());
+        }
+
+        const companyId = req.params.companyId as string;
+        const bookingId = req.params.bookingId as string;
+        const { startTime, endTime, notes } = parsed.data;
+
+        const booking = await service.adminUpdateBooking(bookingId, companyId, {
+            startTime: startTime ? new Date(startTime) : undefined,
+            endTime: endTime !== undefined ? (endTime ? new Date(endTime) : null) : undefined,
+            notes,
+        });
+
+        res.json({ data: booking });
     } catch (error) {
         next(error);
     }

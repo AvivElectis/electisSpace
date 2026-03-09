@@ -54,6 +54,12 @@ export const updateBookingRuleSchema = z.object({
     priority: z.number().int().min(0).max(100).optional(),
 });
 
+export const adminUpdateBookingSchema = z.object({
+    startTime: z.string().datetime().optional(),
+    endTime: z.string().datetime().nullable().optional(),
+    notes: z.string().max(500).nullable().optional(),
+});
+
 // ─── Query Schemas ───────────────────────────────────
 
 export const bookingQuerySchema = z.object({

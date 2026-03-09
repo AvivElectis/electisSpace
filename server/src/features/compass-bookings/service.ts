@@ -560,6 +560,89 @@ export const adminCreateBooking = async (params: {
     return booking;
 };
 
+// ─── Admin Update Booking ───────────────────────────
+
+export const adminUpdateBooking = async (
+    bookingId: string,
+    companyId: string,
+    updates: {
+        startTime?: Date;
+        endTime?: Date | null;
+        notes?: string | null;
+    },
+) => {
+    const booking = await repo.findBookingById(bookingId, companyId);
+    if (!booking) throw notFound('Booking not found');
+
+    if (booking.status !== 'BOOKED') {
+        throw badRequest('INVALID_BOOKING_STATUS', {
+            current: booking.status,
+            expected: 'BOOKED',
+        });
+    }
+
+    const newStart = updates.startTime ?? booking.startTime;
+    const newEnd = updates.endTime !== undefined ? updates.endTime : booking.endTime;
+
+    // If time changed, do conflict check in serializable transaction
+    const timeChanged = updates.startTime || updates.endTime !== undefined;
+
+    if (timeChanged) {
+        return prisma.$transaction(async (tx) => {
+            const conflictWhere: any = {
+                spaceId: booking.spaceId,
+                id: { not: bookingId },
+                status: { in: ['BOOKED', 'CHECKED_IN'] },
+            };
+
+            if (newEnd) {
+                conflictWhere.startTime = { lt: newEnd };
+                conflictWhere.OR = [{ endTime: null }, { endTime: { gt: newStart } }];
+            } else {
+                conflictWhere.OR = [
+                    { endTime: null },
+                    { endTime: { gt: newStart } },
+                ];
+            }
+
+            const conflicts = await tx.booking.findMany({ where: conflictWhere });
+            if (conflicts.length > 0) {
+                throw conflict('SPACE_ALREADY_BOOKED');
+            }
+
+            const updated = await tx.booking.update({
+                where: { id: bookingId },
+                data: {
+                    ...(updates.startTime ? { startTime: updates.startTime } : {}),
+                    ...(updates.endTime !== undefined ? { endTime: updates.endTime } : {}),
+                    ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+                },
+                include: {
+                    space: { select: { id: true, externalId: true, data: true, buildingId: true, floorId: true } },
+                    companyUser: { select: { id: true, displayName: true, email: true } },
+                },
+            });
+
+            appLogger.info('CompassBooking', `Admin updated: ${bookingId}`, { updates: JSON.stringify(updates) });
+
+            emitBookingEvent('booking:updated', booking.branchId, {
+                bookingId,
+                spaceId: booking.spaceId,
+                companyUserId: booking.companyUserId,
+            });
+
+            return updated;
+        }, { isolationLevel: 'Serializable' });
+    }
+
+    // Notes-only update (no conflict check needed)
+    const updated = await repo.updateBooking(bookingId, { notes: updates.notes ?? null });
+
+    appLogger.info('CompassBooking', `Admin updated notes: ${bookingId}`);
+
+    return updated;
+};
+
 // ─── Auto-Release Job Logic ──────────────────────────
 
 export const processAutoRelease = async () => {

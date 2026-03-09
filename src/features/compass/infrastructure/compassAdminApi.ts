@@ -11,6 +11,12 @@ export const compassAdminApi = {
             params: scope ? { scope } : undefined,
         }),
 
+    updateBooking: (companyId: string, bookingId: string, data: {
+        startTime?: string;
+        endTime?: string | null;
+        notes?: string | null;
+    }) => api.patch<{ data: import('../domain/types').Booking }>(`/admin/compass/bookings/${companyId}/${bookingId}`, data),
+
     createBooking: (companyId: string, data: {
         companyUserId: string;
         branchId: string;

@@ -87,7 +87,7 @@ export const initCompassSocket = (httpServer: HttpServer) => {
 // ─── Event Emitters ──────────────────────────────────
 
 export const emitBookingEvent = (
-    event: 'space:booked' | 'space:checkedIn' | 'space:released',
+    event: 'space:booked' | 'space:checkedIn' | 'space:released' | 'booking:updated',
     branchId: string,
     data: Record<string, unknown>,
 ) => {
