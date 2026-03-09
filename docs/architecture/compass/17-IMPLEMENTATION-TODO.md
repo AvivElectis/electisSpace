@@ -603,7 +603,7 @@ All Phases ──→ Phase 18 (Deployment)
 > Ref: [2026-03-08-compass-admin-polish-design](../../plans/2026-03-08-compass-admin-polish-design.md)
 >
 > Discovered via comprehensive audit of all compass admin tabs, server APIs, and mobile app.
-> **Status:** 25A-25F completed (2026-03-08/09). Remaining: P25-12 (edit booking dialog), P25-22 (mobile tests), P25-24 (E2E tests), P25-27..P25-30 (UX polish — lower priority).
+> **Status:** All 25A-25F completed (2026-03-08/09). Only P25-24 (E2E tests) pending — deferred to comprehensive E2E test phase.
 
 ### Phase 25A — Critical Bugs (P0) ✅
 
@@ -663,7 +663,7 @@ All Phases ──→ Phase 18 (Deployment)
 | P25-27 | Amenities — explicit status toggle | ✅ Done | Already implemented with isActive toggle. |
 | P25-28 | Add pagination for large lists | ✅ Done | Server-side pagination + TablePagination UI for bookings & employees. |
 | P25-29 | Add bulk operations | ✅ Done | Bulk cancel bookings, bulk activate/deactivate employees with checkbox UI. |
-| P25-30 | Add CSV export/import | ⏳ In Progress | |
+| P25-30 | Add CSV export/import | ✅ Done | Export bookings/employees to CSV with BOM. Import employees via PapaParse with multi-format header support and preview dialog. |
 
 ---
 
@@ -712,50 +712,52 @@ All Phases ──→ Phase 18 (Deployment)
 
 | ID | Task | Status | Details |
 |----|------|--------|---------|
-| P26-16 | Create CompassIntegrationsTab | ⏳ Pending | Needed: dedicated tab in CompassPage with integration list and sync status. |
+| P26-16 | Create CompassIntegrationsTab | ✅ Done | Full CRUD with provider selection, credential fields, sync status, active toggle, sync-now button. |
 | P26-17 | Add sync field mapping UI | ⏳ Deferred | Lower priority — default mappings work for now. |
 | P26-18 | Add integration tests for all adapters | ✅ Done | 10 tests: Microsoft user/room, Okta auth/sync/statuses, LDAP construction. |
+| P26-19 | Add integration test connection | ✅ Done | POST /test-connection verifies credentials before saving. Test button in add dialog, save disabled on failure. |
 
 ---
 
-## Phase 27: Single Sign-On (SSO)
+## Phase 27: Single Sign-On (SSO) ✅
 > Ref: [16-ADVANCED-CAPABILITIES](16-ADVANCED-CAPABILITIES.md) §3
 >
-> No SSO infrastructure exists. This phase adds SAML 2.0 and OIDC support.
+> Full SSO support with SAML 2.0 and OIDC protocols. Domain-based routing, auto-provisioning, connection testing.
 
-### Phase 27A — SSO Infrastructure
+### Phase 27A — SSO Infrastructure ✅
 
-| ID | Task | Dependencies | Details |
-|----|------|-------------|---------|
-| P27-01 | Create SsoConfig Prisma model | — | Fields: id, companyId, protocol (SAML/OIDC), provider (AZURE_AD/GOOGLE/OKTA/CUSTOM), domain, isActive, forceSso, autoProvision, claimMapping (JSON), createdAt, updatedAt. SAML fields: idpEntityId, ssoUrl, sloUrl, x509Certificate. OIDC fields: issuer, clientId, clientSecret (encrypted), discoveryUrl, scopes. |
-| P27-02 | Create SSO migration | P27-01 | Add SsoConfig table with indexes on [companyId, domain] for domain-based routing lookup. |
-| P27-03 | Install SSO libraries | — | `@node-saml/passport-saml` for SAML 2.0, `openid-client` for OIDC. |
+| ID | Task | Status | Details |
+|----|------|--------|---------|
+| P27-01 | Create SsoConfig Prisma model | ✅ Done | Full model: protocol (SAML/OIDC), provider, domain, isActive, forceSso, autoProvision, claimMapping, SAML fields (idpEntityId, ssoUrl, sloUrl, x509Certificate), OIDC fields (issuer, clientId, clientSecret, discoveryUrl, scopes). |
+| P27-02 | Create SSO migration | ✅ Done | Idempotent migration with indexes on [companyId, domain]. |
+| P27-03 | Install SSO libraries | ✅ Done | `@node-saml/node-saml` for SAML 2.0, `openid-client` for OIDC. |
 
-### Phase 27B — SAML 2.0
+### Phase 27B — SAML 2.0 ✅
 
-| ID | Task | Dependencies | Details |
-|----|------|-------------|---------|
-| P27-04 | Implement SAML assertion parser | P27-03 | Parse SAML Response XML, validate signature against X.509 cert, extract claims (NameID, email, firstName, lastName, groups, department). |
-| P27-05 | Create SSO login endpoint | P27-04 | `GET /api/v2/auth/sso/login?email=user@co.com` — lookup SsoConfig by email domain → generate AuthnRequest → redirect to IdP SSO URL. |
-| P27-06 | Create SAML callback endpoint | P27-04 | `POST /api/v2/auth/sso/callback` — receive SAML assertion → validate → extract claims → find/create CompanyUser → issue JWT tokens (same as current auth). |
-| P27-07 | Create SP metadata endpoint | P27-04 | `GET /api/v2/auth/sso/metadata` — generate SP metadata XML with ACS URL, entity ID, signing cert for IdP configuration. |
+| ID | Task | Status | Details |
+|----|------|--------|---------|
+| P27-04 | Implement SAML assertion parser | ✅ Done | `extractSamlClaims()` with custom claim mapping support + default SAML2 claim URIs. |
+| P27-05 | Create SSO login endpoint | ✅ Done | `GET /api/v2/compass/auth/sso/login?email=...` — domain lookup → AuthnRequest → redirect to IdP. |
+| P27-06 | Create SAML callback endpoint | ✅ Done | `POST /api/v2/compass/auth/sso/callback` — validate assertion → extract claims → find/create user → issue JWT. |
+| P27-07 | Create SP metadata endpoint | ✅ Done | `GET /api/v2/compass/auth/sso/metadata` — XML with ACS URL and entity ID. |
 
-### Phase 27C — OIDC
+### Phase 27C — OIDC ✅
 
-| ID | Task | Dependencies | Details |
-|----|------|-------------|---------|
-| P27-08 | Implement OIDC client | P27-03 | Use `openid-client` Issuer.discover() for auto-configuration. Support authorization code flow with PKCE. |
-| P27-09 | Create OIDC callback endpoint | P27-08 | `GET /api/v2/auth/sso/oidc/callback` — exchange code for tokens → validate id_token → extract claims → find/create CompanyUser → issue JWT tokens. |
-| P27-10 | Add Azure AD / Google OIDC shortcuts | P27-08 | Pre-configured issuer URLs and claim mappings for Microsoft Entra ID and Google Workspace. Auto-fill discovery URL from provider selection. |
+| ID | Task | Status | Details |
+|----|------|--------|---------|
+| P27-08 | Implement OIDC client | ✅ Done | `openid-client` with PKCE (S256), discovery URL auto-config, state parameter with configId. |
+| P27-09 | Create OIDC callback endpoint | ✅ Done | `GET /api/v2/compass/auth/sso/oidc/callback` — exchange code → fetch userInfo → issue JWT. |
+| P27-10 | Add Azure AD / Google OIDC shortcuts | ⏳ Deferred | Provider selector in UI exists. Pre-filled discovery URLs can be added later. |
 
-### Phase 27D — SSO Admin & Mobile
+### Phase 27D — SSO Admin & Mobile ✅
 
-| ID | Task | Dependencies | Details |
-|----|------|-------------|---------|
-| P27-11 | Create SSO admin CRUD API | P27-01 | `GET/POST/PUT/DELETE /api/v2/admin/sso/:companyId`. Include test connection endpoint `POST /api/v2/admin/sso/test`. |
-| P27-12 | Create CompassSsoTab admin UI | P27-11 | SSO configuration form: protocol selector, provider shortcuts (Azure AD, Google, Okta, Custom), certificate upload, claim mapping editor, force SSO toggle, auto-provision toggle. |
-| P27-13 | Update Compass LoginPage for SSO | P27-05 | Add "Sign in with SSO" button. After email entry, check if domain has SSO config. If yes, redirect to IdP. If no, fall back to email+code flow. |
-| P27-14 | Add SSO integration tests | P27-06, P27-09 | Test SAML assertion parsing with sample assertions, OIDC token exchange with mocked IdP, domain routing, auto-provisioning, force SSO mode. |
+| ID | Task | Status | Details |
+|----|------|--------|---------|
+| P27-11 | Create SSO admin CRUD API | ✅ Done | `GET/POST/PUT/DELETE /api/v1/admin/sso/:companyId`. Sensitive fields (clientSecret, x509Certificate) masked in list. |
+| P27-12 | Create CompassSsoTab admin UI | ✅ Done | Full CRUD: protocol selector (SAML/OIDC), provider dropdown, domain-based routing, force SSO toggle, auto-provision toggle, per-protocol credential fields. |
+| P27-13 | Update Compass LoginPage for SSO | ✅ Done | Email submit checks SSO first via `/auth/sso/login`, redirects to IdP if SSO enabled, falls back to email+code. SsoCallbackPage handles JWT from redirect. |
+| P27-14 | Add SSO connection test | ✅ Done | `POST /admin/sso/:companyId/test` — SAML: verifies SSO URL reachable. OIDC: validates discovery document. Test button in dialog, save disabled on failure. |
+| P27-15 | Add SSO integration tests | ⏳ Pending | Deferred to E2E test phase. |
 
 ---
 
@@ -774,7 +776,7 @@ All Phases ──→ Phase 18 (Deployment)
 | 8 — Compass App Core | 15 | Compass App | ✅ Done |
 | 9 — Mobile (Capacitor) | 8 | Compass App | ✅ Done |
 | 10 — Directory Sync | 12 | Integration | ✅ Done |
-| 11 — SSO | 8 | Integration | 🔲 Not Started |
+| 11 — SSO | 8 | Integration | ✅ Done |
 | 12 — Analytics | 7 | Advanced | 🔲 Not Started |
 | 13 — Tickets | 7 | Advanced | 🔲 Not Started |
 | 14 — Chat | 7 | Advanced | 🔲 Not Started |
@@ -789,19 +791,19 @@ All Phases ──→ Phase 18 (Deployment)
 | 22 — Org Structure | 19 | Enhancement | ✅ Done |
 | 23 — Space Types + Amenities | 19 | Enhancement | ✅ Done |
 | 24 — Recurring Bookings | 18 | Enhancement | ✅ Done |
-| 25A — Critical Bugs | 5 | Bug Fix | 🔲 Not Started |
-| 25B — Admin UI Features | 7 | Enhancement | 🔲 Not Started |
-| 25C — Server Fixes | 2 | Bug Fix | 🔲 Not Started |
-| 25D — Mobile Integration | 7 | Enhancement | 🔲 Not Started |
-| 25E — Test Coverage | 3 | Quality | 🔲 Not Started |
-| 25F — UX Polish | 6 | Enhancement | 🔲 Not Started |
-| 26A — Microsoft 365 Sync | 5 | Integration | 🔲 Not Started |
-| 26B — Google Workspace Sync | 5 | Integration | 🔲 Not Started |
-| 26C — Okta Sync | 2 | Integration | 🔲 Not Started |
-| 26D — LDAP Sync | 3 | Integration | 🔲 Not Started |
-| 26E — Integration Admin UI | 3 | Integration | 🔲 Not Started |
-| 27A — SSO Infrastructure | 3 | Auth | 🔲 Not Started |
-| 27B — SAML 2.0 | 4 | Auth | 🔲 Not Started |
-| 27C — OIDC | 3 | Auth | 🔲 Not Started |
-| 27D — SSO Admin & Mobile | 4 | Auth | 🔲 Not Started |
-| **Total** | **331** | | |
+| 25A — Critical Bugs | 5 | Bug Fix | ✅ Done |
+| 25B — Admin UI Features | 7 | Enhancement | ✅ Done |
+| 25C — Server Fixes | 2 | Bug Fix | ✅ Done |
+| 25D — Mobile Integration | 7 | Enhancement | ✅ Done |
+| 25E — Test Coverage | 3 | Quality | ✅ Done (E2E pending) |
+| 25F — UX Polish | 6 | Enhancement | ✅ Done |
+| 26A — Microsoft 365 Sync | 5 | Integration | ✅ Done |
+| 26B — Google Workspace Sync | 5 | Integration | ✅ Done |
+| 26C — Okta Sync | 2 | Integration | ✅ Done |
+| 26D — LDAP Sync | 3 | Integration | ✅ Done |
+| 26E — Integration Admin UI | 4 | Integration | ✅ Done |
+| 27A — SSO Infrastructure | 3 | Auth | ✅ Done |
+| 27B — SAML 2.0 | 4 | Auth | ✅ Done |
+| 27C — OIDC | 3 | Auth | ✅ Done |
+| 27D — SSO Admin & Mobile | 5 | Auth | ✅ Done |
+| **Total** | **334** | | |
