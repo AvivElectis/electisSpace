@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Box, Typography, Tabs, Tab, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import ExploreIcon from '@mui/icons-material/Explore';
 import { CompassBookingsTab } from './CompassBookingsTab';
 import { CompassSpacesTab } from './CompassSpacesTab';
@@ -10,9 +11,23 @@ import { CompassOrganizationTab } from './CompassOrganizationTab';
 import { CompassAmenitiesTab } from './CompassAmenitiesTab';
 import { CompassNeighborhoodsTab } from './CompassNeighborhoodsTab';
 
+const TAB_NAMES = ['bookings', 'spaces', 'employees', 'rules', 'organization', 'amenities', 'neighborhoods'] as const;
+
 export function CompassPage() {
     const { t } = useTranslation();
-    const [tab, setTab] = useState(0);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialTab = useMemo(() => {
+        const tabParam = searchParams.get('tab');
+        if (!tabParam) return 0;
+        const idx = TAB_NAMES.indexOf(tabParam as any);
+        return idx >= 0 ? idx : 0;
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const [tab, setTab] = useState(initialTab);
+
+    const handleTabChange = (_: unknown, value: number) => {
+        setTab(value);
+        setSearchParams({ tab: TAB_NAMES[value] }, { replace: true });
+    };
 
     return (
         <Box>
@@ -23,7 +38,7 @@ export function CompassPage() {
                 </Typography>
             </Stack>
 
-            <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
+            <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
                 <Tab label={t('compass.navigation.bookings')} />
                 <Tab label={t('compass.navigation.spaces')} />
                 <Tab label={t('compass.navigation.employees')} />
@@ -33,13 +48,13 @@ export function CompassPage() {
                 <Tab label={t('compass.navigation.neighborhoods')} />
             </Tabs>
 
-            {tab === 0 && <CompassBookingsTab />}
-            {tab === 1 && <CompassSpacesTab />}
-            {tab === 2 && <CompassEmployeesTab />}
-            {tab === 3 && <CompassRulesTab />}
-            {tab === 4 && <CompassOrganizationTab />}
-            {tab === 5 && <CompassAmenitiesTab />}
-            {tab === 6 && <CompassNeighborhoodsTab />}
+            <Box sx={{ display: tab === 0 ? 'block' : 'none' }}><CompassBookingsTab /></Box>
+            <Box sx={{ display: tab === 1 ? 'block' : 'none' }}><CompassSpacesTab /></Box>
+            <Box sx={{ display: tab === 2 ? 'block' : 'none' }}><CompassEmployeesTab /></Box>
+            <Box sx={{ display: tab === 3 ? 'block' : 'none' }}><CompassRulesTab /></Box>
+            <Box sx={{ display: tab === 4 ? 'block' : 'none' }}><CompassOrganizationTab /></Box>
+            <Box sx={{ display: tab === 5 ? 'block' : 'none' }}><CompassAmenitiesTab /></Box>
+            <Box sx={{ display: tab === 6 ? 'block' : 'none' }}><CompassNeighborhoodsTab /></Box>
         </Box>
     );
 }
