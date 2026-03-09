@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
 import { useBookingStore } from '@features/booking/application/useBookingStore';
 import { useSpacesStore } from '@features/booking/application/useSpacesStore';
+import { useFriendsStore } from '@features/friends/application/useFriendsStore';
 
 let socket: Socket | null = null;
 
@@ -56,8 +57,11 @@ export function connectCompassSocket() {
     });
 
     // ─── Friend Events ──────────────────────────────
+    socket.on('friend:request', () => {
+        useFriendsStore.getState().fetchPendingRequests();
+    });
+
     socket.on('friend:checkedIn', () => {
-        // Trigger a refresh of friend locations if on Find tab
         useSpacesStore.getState().fetchSpaces();
     });
 
