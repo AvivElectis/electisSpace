@@ -1199,7 +1199,11 @@
         "deleted": "Deleted successfully",
         "updated": "Updated successfully",
         "syncComplete": "Synchronization complete",
-        "syncFailed": "Synchronization failed"
+        "syncFailed": "Synchronization failed",
+        "articleFormatFetched": "Article format fetched successfully",
+        "articleFormatSaved": "Article format saved successfully",
+        "schemaUpdateFailed": "Failed to update schema",
+        "validationFailed": "Validation failed"
     },
     "notFound": {
         "title": "404",
