@@ -102,6 +102,35 @@ The integration table shows sync status chip but the full error message is only 
 
 ---
 
+## Additional Findings (Background Audit)
+
+### 17. RRULE validation missing — DoS risk
+**Severity:** HIGH | **File:** `server/src/features/compass-bookings/types.ts:10`
+
+`recurrenceRule: z.string().max(255).optional()` accepts any string. Malformed RRULE passed to `rrulestr()` can cause parser hangs.
+
+### 18. Organization cycle detection logic bug
+**Severity:** MEDIUM | **File:** `server/src/features/compass-organization/service.ts:6-19`
+
+`detectCycle()` reports "cycle" when depth > MAX_DEPTH=5. This is a false positive — it prevents deep org hierarchies, not just cycles.
+
+### 19. ExternalId collision across providers
+**Severity:** MEDIUM | **File:** `server/src/features/integrations/integrations.service.ts:192-194`
+
+`findFirst` by `externalId` doesn't filter by provider. Two different providers could match the same user incorrectly.
+
+### 20. Recurring booking overlap detection is exact-match only
+**Severity:** MEDIUM | **File:** `server/src/features/compass-bookings/recurrenceService.ts:70-89`
+
+Conflict check uses exact startTime match. Overlapping time ranges (10:00-10:30 vs 10:15-10:45) won't be detected.
+
+### 21. Missing rate limiting on sync trigger endpoint
+**Severity:** MEDIUM | **File:** `server/src/features/integrations/integrations.routes.ts`
+
+`POST /:id/sync` has no rate limiting. Could trigger many parallel syncs.
+
+---
+
 ## Code Quality
 
 ### 15. Inconsistent error handling patterns
