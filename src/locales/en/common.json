@@ -1885,7 +1885,8 @@
             "rules": "Rules",
             "organization": "Organization",
             "amenities": "Amenities",
-            "neighborhoods": "Neighborhoods"
+            "neighborhoods": "Neighborhoods",
+            "integrations": "Integrations"
         },
         "managedByCompass": "Managed by Compass",
         "spaceMode": {
@@ -2069,7 +2070,22 @@
         "importCSV": "Import CSV",
         "importPreview": "{{count}} employees found in CSV",
         "importResult": "{{created}} created, {{errors}} errors",
-        "importEmployees": "Import {{count}} Employees"
+        "importEmployees": "Import {{count}} Employees",
+        "integrations": {
+            "title": "Integrations",
+            "add": "Add Integration",
+            "provider": "Provider",
+            "type": "Type",
+            "lastSync": "Last Sync",
+            "syncStatus": "Sync Status",
+            "interval": "Sync Interval (min)",
+            "intervalHelp": "Minutes between syncs (min 15, default 1440 = 24h)",
+            "syncNow": "Sync Now",
+            "syncComplete": "Sync completed",
+            "deactivated": "deactivated",
+            "confirmDelete": "Are you sure you want to delete this integration?",
+            "empty": "No integrations configured yet"
+        }
     },
     "auditLog": {
         "title": "Audit Log",

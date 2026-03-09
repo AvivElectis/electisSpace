@@ -1885,7 +1885,8 @@
             "rules": "כללים",
             "organization": "מבנה ארגוני",
             "amenities": "מתקנים",
-            "neighborhoods": "שכונות"
+            "neighborhoods": "שכונות",
+            "integrations": "אינטגרציות"
         },
         "managedByCompass": "מנוהל על ידי Compass",
         "spaceMode": {
@@ -2069,7 +2070,22 @@
         "importCSV": "ייבוא CSV",
         "importPreview": "נמצאו {{count}} עובדים בקובץ CSV",
         "importResult": "{{created}} נוצרו, {{errors}} שגיאות",
-        "importEmployees": "ייבוא {{count}} עובדים"
+        "importEmployees": "ייבוא {{count}} עובדים",
+        "integrations": {
+            "title": "אינטגרציות",
+            "add": "הוסף אינטגרציה",
+            "provider": "ספק",
+            "type": "סוג",
+            "lastSync": "סנכרון אחרון",
+            "syncStatus": "סטטוס סנכרון",
+            "interval": "מרווח סנכרון (דקות)",
+            "intervalHelp": "דקות בין סנכרונים (מינימום 15, ברירת מחדל 1440 = 24 שעות)",
+            "syncNow": "סנכרן עכשיו",
+            "syncComplete": "הסנכרון הושלם",
+            "deactivated": "הושבתו",
+            "confirmDelete": "האם אתה בטוח שברצונך למחוק אינטגרציה זו?",
+            "empty": "לא הוגדרו אינטגרציות עדיין"
+        }
     },
     "auditLog": {
         "title": "יומן פעילות",

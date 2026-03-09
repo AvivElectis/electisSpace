@@ -10,8 +10,9 @@ import { CompassRulesTab } from './CompassRulesTab';
 import { CompassOrganizationTab } from './CompassOrganizationTab';
 import { CompassAmenitiesTab } from './CompassAmenitiesTab';
 import { CompassNeighborhoodsTab } from './CompassNeighborhoodsTab';
+import { CompassIntegrationsTab } from './CompassIntegrationsTab';
 
-const TAB_NAMES = ['bookings', 'spaces', 'employees', 'rules', 'organization', 'amenities', 'neighborhoods'] as const;
+const TAB_NAMES = ['bookings', 'spaces', 'employees', 'rules', 'organization', 'amenities', 'neighborhoods', 'integrations'] as const;
 
 export function CompassPage() {
     const { t } = useTranslation();
@@ -46,6 +47,7 @@ export function CompassPage() {
                 <Tab label={t('compass.navigation.organization')} />
                 <Tab label={t('compass.navigation.amenities')} />
                 <Tab label={t('compass.navigation.neighborhoods')} />
+                <Tab label={t('compass.navigation.integrations', 'Integrations')} />
             </Tabs>
 
             <Box sx={{ display: tab === 0 ? 'block' : 'none' }}><CompassBookingsTab /></Box>
@@ -55,6 +57,7 @@ export function CompassPage() {
             <Box sx={{ display: tab === 4 ? 'block' : 'none' }}><CompassOrganizationTab /></Box>
             <Box sx={{ display: tab === 5 ? 'block' : 'none' }}><CompassAmenitiesTab /></Box>
             <Box sx={{ display: tab === 6 ? 'block' : 'none' }}><CompassNeighborhoodsTab /></Box>
+            <Box sx={{ display: tab === 7 ? 'block' : 'none' }}><CompassIntegrationsTab /></Box>
         </Box>
     );
 }
