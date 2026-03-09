@@ -8,7 +8,15 @@ let socket: Socket | null = null;
 
 export function connectCompassSocket() {
     const token = useCompassAuthStore.getState().accessToken;
-    if (!token || socket?.connected) return;
+    if (!token) return;
+    if (socket?.connected) return;
+
+    // Clean up stale socket before creating new one
+    if (socket) {
+        socket.removeAllListeners();
+        socket.disconnect();
+        socket = null;
+    }
 
     socket = io('/compass', {
         path: '/compass-ws',
@@ -20,15 +28,15 @@ export function connectCompassSocket() {
     });
 
     socket.on('connect', () => {
-        console.log('[Compass WS] Connected');
+        // Connected to Compass WebSocket
     });
 
-    socket.on('disconnect', (reason) => {
-        console.log('[Compass WS] Disconnected:', reason);
+    socket.on('disconnect', (_reason) => {
+        // Disconnected from Compass WebSocket
     });
 
-    socket.on('connect_error', (err) => {
-        console.warn('[Compass WS] Connection error:', err.message);
+    socket.on('connect_error', (_err) => {
+        // Connection error — Socket.IO will auto-retry
     });
 
     // ─── Space Events ────────────────────────────────

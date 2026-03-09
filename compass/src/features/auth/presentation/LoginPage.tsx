@@ -165,7 +165,8 @@ export function LoginPage() {
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                                     setCode(val);
                                     if (val.length === 6) {
-                                        setTimeout(() => verifyCode(val), 100);
+                                        // Use requestAnimationFrame to ensure state update is flushed before submitting
+                                        requestAnimationFrame(() => verifyCode(val));
                                     }
                                 }}
                                 autoFocus

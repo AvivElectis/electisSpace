@@ -86,9 +86,11 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
     const [branchWorkHours, setBranchWorkHours] = useState<WorkHoursConfig | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
         bookingApi.getWorkHours()
-            .then((res) => setBranchWorkHours(res.data.data))
+            .then((res) => { if (!cancelled) setBranchWorkHours(res.data.data); })
             .catch(() => { /* non-critical — warning just won't show */ });
+        return () => { cancelled = true; };
     }, []);
 
     const isOutsideWorkHours = useMemo(() => {

@@ -126,6 +126,10 @@ export const blockUser = async (userId: string, friendshipId: string, companyId?
         throw forbidden('Not your friendship');
     }
 
+    if (friendship.status === 'BLOCKED') {
+        throw badRequest('User is already blocked');
+    }
+
     await repo.updateFriendshipStatus(friendshipId, 'BLOCKED');
     appLogger.info('CompassFriends', `User blocked`, { friendshipId, userId });
 

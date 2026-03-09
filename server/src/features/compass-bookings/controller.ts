@@ -128,7 +128,13 @@ export const extend = async (req: Request, res: Response, next: NextFunction) =>
 export const cancel = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const user = req.compassUser!;
-        const scope = req.query.scope as 'instance' | 'future' | 'all' | undefined;
+        const rawScope = req.query.scope as string | undefined;
+        const scope = rawScope ? (() => {
+            if (!['instance', 'future', 'all'].includes(rawScope)) {
+                throw badRequest(`Invalid cancel scope: ${rawScope}`);
+            }
+            return rawScope as 'instance' | 'future' | 'all';
+        })() : undefined;
         const result = await service.cancel(
             req.params.id as string,
             user.id,
@@ -148,6 +154,12 @@ export const adminList = async (req: Request, res: Response, next: NextFunction)
     try {
         const companyId = req.params.companyId as string;
         const statusFilter = req.query.status as string | undefined;
+        if (statusFilter) {
+            const VALID = ['BOOKED', 'CHECKED_IN', 'RELEASED', 'AUTO_RELEASED', 'NO_SHOW', 'CANCELLED'];
+            if (!VALID.includes(statusFilter)) {
+                throw badRequest(`Invalid status filter: ${statusFilter}`);
+            }
+        }
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));
         const result = await repo.findByCompany(companyId, statusFilter, page, pageSize);

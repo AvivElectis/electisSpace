@@ -39,7 +39,7 @@ export const createBookingRuleSchema = z.object({
         'MIN_DURATION',
         'BOOKING_GRANULARITY',
     ]),
-    config: z.record(z.unknown()),
+    config: z.object({ value: z.unknown() }).passthrough(),
     applyTo: z.enum(['ALL_BRANCHES', 'SELECTED_BRANCHES']).optional(),
     targetBranchIds: z.array(z.string()).optional(),
     targetSpaceTypes: z.array(z.string()).optional(),
@@ -48,7 +48,7 @@ export const createBookingRuleSchema = z.object({
 
 export const updateBookingRuleSchema = z.object({
     name: z.string().min(1).max(100).optional(),
-    config: z.record(z.unknown()).optional(),
+    config: z.object({ value: z.unknown() }).passthrough().optional(),
     isActive: z.boolean().optional(),
     applyTo: z.enum(['ALL_BRANCHES', 'SELECTED_BRANCHES']).optional(),
     targetBranchIds: z.array(z.string()).optional(),
@@ -68,6 +68,11 @@ export const bulkCancelBookingsSchema = z.object({
 
 // ─── Query Schemas ───────────────────────────────────
 
+const VALID_BOOKING_STATUSES = ['BOOKED', 'CHECKED_IN', 'RELEASED', 'AUTO_RELEASED', 'NO_SHOW', 'CANCELLED'] as const;
+
 export const bookingQuerySchema = z.object({
-    status: z.string().optional(), // comma-separated: BOOKED,CHECKED_IN
+    status: z.string().optional().refine(
+        (val) => !val || val.split(',').every(s => (VALID_BOOKING_STATUSES as readonly string[]).includes(s.trim())),
+        { message: 'Invalid booking status value' },
+    ),
 });

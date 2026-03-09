@@ -43,6 +43,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
         const companyId = req.params.companyId as string;
         const data = createSsoConfigSchema.parse(req.body);
         const config = await service.createSsoConfig(companyId, data);
+        appLogger.info('SSO', `SSO config created`, { companyId, protocol: data.protocol, domain: data.domain });
         res.status(201).json({ data: config });
     } catch (err) { next(err); }
 }
@@ -53,6 +54,7 @@ export async function update(req: Request, res: Response, next: NextFunction) {
         const id = req.params.id as string;
         const data = updateSsoConfigSchema.parse(req.body);
         const config = await service.updateSsoConfig(id, companyId, data);
+        appLogger.info('SSO', `SSO config updated`, { companyId, configId: id });
         res.json({ data: config });
     } catch (err) { next(err); }
 }
@@ -62,6 +64,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
         const companyId = req.params.companyId as string;
         const id = req.params.id as string;
         await service.deleteSsoConfig(id, companyId);
+        appLogger.info('SSO', `SSO config deleted`, { companyId, configId: id });
         res.status(204).end();
     } catch (err) { next(err); }
 }

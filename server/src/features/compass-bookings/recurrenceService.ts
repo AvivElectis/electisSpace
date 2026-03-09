@@ -92,48 +92,55 @@ export async function createRecurringSeries(params: {
         durationMs = ((endH * 60 + endM) - (startH * 60 + startM)) * 60 * 1000;
     }
 
-    // Batch conflict check — find existing bookings at the same times
+    // Per-instance overlap conflict check (matches single-booking path logic)
     const conflicts: Date[] = [];
     const nonConflicting: Date[] = [];
 
-    const existingBookings = await params.prisma.booking.findMany({
-        where: {
+    for (const date of dates) {
+        const endDate = durationMs ? new Date(date.getTime() + durationMs) : null;
+        const conflictWhere: any = {
             spaceId: params.spaceId,
             status: { in: ['BOOKED', 'CHECKED_IN'] },
-            startTime: { in: dates },
-        },
-        select: { startTime: true },
-    });
+        };
 
-    const conflictSet = new Set(
-        existingBookings.map((b: any) => b.startTime.toISOString()),
-    );
+        if (endDate) {
+            conflictWhere.startTime = { lt: endDate };
+            conflictWhere.OR = [{ endTime: null }, { endTime: { gt: date } }];
+        } else {
+            conflictWhere.OR = [{ endTime: null }, { endTime: { gt: date } }];
+        }
 
-    for (const date of dates) {
-        if (conflictSet.has(date.toISOString())) {
+        const existing = await params.prisma.booking.findFirst({
+            where: conflictWhere,
+            select: { id: true },
+        });
+
+        if (existing) {
             conflicts.push(date);
         } else {
             nonConflicting.push(date);
         }
     }
 
-    // Create all non-conflicting booking instances
-    const result = await params.prisma.booking.createMany({
-        data: nonConflicting.map(date => ({
-            companyUserId: params.companyUserId,
-            spaceId: params.spaceId,
-            branchId: params.branchId,
-            companyId: params.companyId,
-            startTime: date,
-            endTime: durationMs ? new Date(date.getTime() + durationMs) : null,
-            status: 'BOOKED',
-            bookingType: 'HOT_DESK',
-            recurrenceRule: params.rrule,
-            recurrenceGroupId: groupId,
-            isRecurrence: true,
-            bookedBy: params.bookedBy,
-            notes: params.notes,
-        })),
+    // Create all non-conflicting booking instances in a transaction
+    const result = await params.prisma.$transaction(async (tx: any) => {
+        return tx.booking.createMany({
+            data: nonConflicting.map((date: Date) => ({
+                companyUserId: params.companyUserId,
+                spaceId: params.spaceId,
+                branchId: params.branchId,
+                companyId: params.companyId,
+                startTime: date,
+                endTime: durationMs ? new Date(date.getTime() + durationMs) : null,
+                status: 'BOOKED',
+                bookingType: 'HOT_DESK',
+                recurrenceRule: params.rrule,
+                recurrenceGroupId: groupId,
+                isRecurrence: true,
+                bookedBy: params.bookedBy,
+                notes: params.notes,
+            })),
+        });
     });
 
     return { groupId, created: result.count, conflicts };

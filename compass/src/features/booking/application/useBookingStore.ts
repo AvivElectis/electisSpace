@@ -63,9 +63,8 @@ export const useBookingStore = create<BookingState & BookingActions>((set, get) 
         set({ isLoading: true, error: null });
         try {
             const { data: result } = await bookingApi.create(data);
-            // Refresh bookings after creation
-            get().fetchActiveBooking();
-            get().fetchBookings();
+            // Refresh bookings after creation (awaited to prevent unmount issues)
+            await Promise.all([get().fetchActiveBooking(), get().fetchBookings()]);
             set({ isLoading: false });
             return result.data;
         } catch (error: any) {

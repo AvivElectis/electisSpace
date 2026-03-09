@@ -38,9 +38,8 @@ export const createBooking = async (params: {
         });
     }
 
-    // L3: Require endTime
     if (!endTime) {
-        throw badRequest('End time is required');
+        throw badRequest('END_TIME_REQUIRED');
     }
 
     // S2: Verify space belongs to the user's branch

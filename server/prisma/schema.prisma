@@ -862,6 +862,7 @@ model Booking {
 
   @@index([spaceId, startTime, endTime])
   @@index([companyUserId, startTime])
+  @@index([companyUserId, status, startTime])
   @@index([companyId, status])
   @@index([status, endTime])
   @@index([recurrenceGroupId])

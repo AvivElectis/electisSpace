@@ -120,6 +120,11 @@ export const addTeamMember = async (companyId: string, teamId: string, companyUs
     const user = await prisma.companyUser.findUnique({ where: { id: companyUserId } });
     if (!user || user.companyId !== companyId) throw notFound('Employee not found');
 
+    const existing = await prisma.teamMember.findUnique({
+        where: { teamId_companyUserId: { teamId, companyUserId } },
+    });
+    if (existing) throw badRequest('User is already a member of this team');
+
     return prisma.teamMember.create({
         data: { teamId, companyUserId, role },
         include: { companyUser: { select: { displayName: true, email: true } } },

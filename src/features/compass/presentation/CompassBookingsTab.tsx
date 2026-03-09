@@ -244,17 +244,20 @@ export function CompassBookingsTab() {
         }
     };
 
+    // Sanitize cell values to prevent formula injection in spreadsheet apps
+    const csvSafe = (val: string): string => /^[=+\-@\t\r]/.test(val) ? `'${val}` : val;
+
     const handleExportCSV = () => {
         const rows = bookings.map(b => ({
-            [t('compass.navigation.employees')]: b.companyUser.displayName,
-            [t('common.email')]: b.companyUser.email,
-            [t('compass.navigation.spaces')]: b.space?.name || '',
+            [t('compass.navigation.employees')]: csvSafe(b.companyUser.displayName),
+            [t('common.email')]: csvSafe(b.companyUser.email),
+            [t('compass.navigation.spaces')]: csvSafe(b.space?.name || ''),
             [t('compass.dashboard.start')]: b.startTime ? new Date(b.startTime).toLocaleString() : '',
             [t('compass.dashboard.end')]: b.endTime ? new Date(b.endTime).toLocaleString() : t('compass.untilCancellation'),
             [t('common.status.title')]: b.status,
             [t('compass.recurrence.title', 'Recurrence')]: b.isRecurrence ? t('common.yes', 'Yes') : t('common.no', 'No'),
             [t('compass.recurrence.groupId', 'Recurrence Group')]: b.recurrenceGroupId || '',
-            [t('common.notes')]: b.notes || '',
+            [t('common.notes')]: csvSafe(b.notes || ''),
         }));
         const csv = Papa.unparse(rows);
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });

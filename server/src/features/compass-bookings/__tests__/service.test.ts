@@ -159,7 +159,7 @@ describe('createBooking', () => {
         };
 
         await expect(service.createBooking(params))
-            .rejects.toThrow('End time is required');
+            .rejects.toThrow('END_TIME_REQUIRED');
     });
 
     it('should throw when space does not belong to branch', async () => {
