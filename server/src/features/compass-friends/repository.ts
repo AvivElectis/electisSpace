@@ -141,27 +141,37 @@ export const findCompanyUserById = async (id: string) => {
     });
 };
 
-export const findCompanyUsers = async (companyId: string) => {
-    return prisma.companyUser.findMany({
-        where: { companyId },
-        select: {
-            id: true,
-            email: true,
-            displayName: true,
-            avatarUrl: true,
-            role: true,
-            branchId: true,
-            buildingId: true,
-            floorId: true,
-            isActive: true,
-            departmentId: true,
-            jobTitle: true,
-            phone: true,
-            employeeNumber: true,
-            isRemote: true,
-        },
-        orderBy: { displayName: 'asc' },
-    });
+export const findCompanyUsers = async (companyId: string, page = 1, pageSize = 50) => {
+    const where = { companyId };
+    const select = {
+        id: true,
+        email: true,
+        displayName: true,
+        avatarUrl: true,
+        role: true,
+        branchId: true,
+        buildingId: true,
+        floorId: true,
+        isActive: true,
+        departmentId: true,
+        jobTitle: true,
+        phone: true,
+        employeeNumber: true,
+        isRemote: true,
+    };
+
+    const [items, total] = await Promise.all([
+        prisma.companyUser.findMany({
+            where,
+            select,
+            orderBy: { displayName: 'asc' },
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+        }),
+        prisma.companyUser.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 };
 
 export const createCompanyUser = async (data: {

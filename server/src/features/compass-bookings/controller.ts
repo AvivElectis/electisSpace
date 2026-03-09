@@ -147,8 +147,10 @@ export const adminList = async (req: Request, res: Response, next: NextFunction)
     try {
         const companyId = req.params.companyId as string;
         const statusFilter = req.query.status as string | undefined;
-        const bookings = await repo.findByCompany(companyId, statusFilter);
-        res.json({ data: bookings });
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));
+        const result = await repo.findByCompany(companyId, statusFilter, page, pageSize);
+        res.json({ data: result.items, pagination: { page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages } });
     } catch (error) {
         next(error);
     }

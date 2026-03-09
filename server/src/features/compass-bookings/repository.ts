@@ -40,19 +40,29 @@ export const findByUser = async (
 export const findByCompany = async (
     companyId: string,
     statusFilter?: string,
+    page = 1,
+    pageSize = 50,
 ) => {
-    return prisma.booking.findMany({
-        where: {
-            companyId,
-            ...(statusFilter ? { status: statusFilter as BookingStatus } : {}),
-        },
-        include: {
-            space: { select: { id: true, externalId: true, data: true } },
-            companyUser: { select: { id: true, displayName: true, email: true } },
-        },
-        orderBy: { startTime: 'desc' },
-        take: 200,
-    });
+    const where = {
+        companyId,
+        ...(statusFilter ? { status: statusFilter as BookingStatus } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+        prisma.booking.findMany({
+            where,
+            include: {
+                space: { select: { id: true, externalId: true, data: true } },
+                companyUser: { select: { id: true, displayName: true, email: true } },
+            },
+            orderBy: { startTime: 'desc' },
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+        }),
+        prisma.booking.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 };
 
 export const createBooking = async (data: {

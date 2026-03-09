@@ -5,7 +5,7 @@ import {
     MenuItem, Stack, CircularProgress, Alert, Dialog, DialogTitle,
     DialogContent, DialogContentText, DialogActions, Button,
     FormControlLabel, Checkbox, Autocomplete, Tooltip,
-    RadioGroup, Radio,
+    RadioGroup, Radio, TablePagination,
 } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
@@ -14,7 +14,7 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
-import type { Booking, CompassSpace, Employee } from '../domain/types';
+import type { Booking, CompassSpace, Employee, PaginationInfo } from '../domain/types';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
     BOOKED: 'info',
@@ -47,6 +47,8 @@ export function CompassBookingsTab() {
     const { t } = useTranslation();
     const { activeCompanyId, activeStoreId } = useAuthStore();
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+    const [page, setPage] = useState(1);
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -110,20 +112,22 @@ export function CompassBookingsTab() {
         }
     };
 
-    const fetchBookings = useCallback(async (showLoading = false) => {
+    const fetchBookings = useCallback(async (showLoading = false, targetPage = page) => {
         if (!activeCompanyId) return;
         if (showLoading) setInitialLoading(true);
         try {
-            const params = statusFilter !== 'all' ? { status: statusFilter } : {};
-            const res = await compassAdminApi.listBookings(activeCompanyId, params);
+            const params: Record<string, string | number> = { page: targetPage, pageSize: 50 };
+            if (statusFilter !== 'all') params.status = statusFilter;
+            const res = await compassAdminApi.listBookings(activeCompanyId, params as any);
             setBookings(res.data.data || []);
+            setPagination(res.data.pagination || null);
             setError(null);
         } catch {
             setError(t('errors.loadFailed'));
         } finally {
             setInitialLoading(false);
         }
-    }, [activeCompanyId, statusFilter]);
+    }, [activeCompanyId, statusFilter, page]);
 
     useEffect(() => { fetchBookings(true); }, [fetchBookings]);
 
@@ -247,7 +251,7 @@ export function CompassBookingsTab() {
                     {t('compass.reserveSpace')}
                 </Button>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                    {bookings.length} {t('compass.navigation.bookings').toLowerCase()}
+                    {pagination ? `${pagination.total} ${t('compass.navigation.bookings').toLowerCase()}` : `${bookings.length} ${t('compass.navigation.bookings').toLowerCase()}`}
                 </Typography>
             </Stack>
 
@@ -316,6 +320,21 @@ export function CompassBookingsTab() {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {pagination && pagination.totalPages > 1 && (
+                <TablePagination
+                    component="div"
+                    count={pagination.total}
+                    page={pagination.page - 1}
+                    onPageChange={(_, newPage) => {
+                        setPage(newPage + 1);
+                        fetchBookings(false, newPage + 1);
+                    }}
+                    rowsPerPage={pagination.pageSize}
+                    rowsPerPageOptions={[50]}
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+                />
+            )}
 
             {/* Confirmation dialog for cancelling a booking */}
             <Dialog open={!!confirmCancel} onClose={handleCloseCancelDialog}>

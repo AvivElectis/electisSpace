@@ -1,3 +1,10 @@
+export interface PaginationInfo {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+}
+
 export type BookingStatus = 'BOOKED' | 'CHECKED_IN' | 'RELEASED' | 'AUTO_RELEASED' | 'CANCELLED' | 'NO_SHOW';
 export type SpaceMode = 'AVAILABLE' | 'PERMANENT' | 'MAINTENANCE' | 'EXCLUDED';
 export type RuleType = 'MAX_DURATION' | 'MAX_ADVANCE_BOOKING' | 'MAX_CONCURRENT' | 'CHECK_IN_WINDOW' | 'AUTO_RELEASE' | 'MIN_DURATION' | 'BOOKING_GRANULARITY';

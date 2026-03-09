@@ -4,7 +4,7 @@ import {
     TableHead, TableRow, Paper, Chip, IconButton, TextField,
     Stack, CircularProgress, Alert, Button, Dialog, DialogTitle,
     DialogContent, DialogActions, MenuItem, FormControlLabel, Checkbox,
-    InputAdornment,
+    InputAdornment, TablePagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -13,7 +13,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
-import type { Employee, Department } from '../domain/types';
+import type { Employee, Department, PaginationInfo } from '../domain/types';
 
 const ROLE_OPTIONS = ['EMPLOYEE', 'MANAGER', 'ADMIN'] as const;
 const CREATE_NEW_DEPT = '__CREATE_NEW__';
@@ -46,6 +46,8 @@ export function CompassEmployeesTab() {
 
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
+    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+    const [page, setPage] = useState(1);
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -64,19 +66,20 @@ export function CompassEmployeesTab() {
     const [creatingDept, setCreatingDept] = useState(false);
     const [newDeptName, setNewDeptName] = useState('');
 
-    const fetchEmployees = useCallback(async (showLoading = false) => {
+    const fetchEmployees = useCallback(async (showLoading = false, targetPage = page) => {
         if (!activeCompanyId) return;
         if (showLoading) setInitialLoading(true);
         try {
-            const res = await compassAdminApi.listEmployees(activeCompanyId);
+            const res = await compassAdminApi.listEmployees(activeCompanyId, { page: targetPage, pageSize: 50 });
             setEmployees(res.data.data || []);
+            setPagination(res.data.pagination || null);
             setError(null);
         } catch {
             setError(t('errors.loadFailed', 'Failed to load data'));
         } finally {
             setInitialLoading(false);
         }
-    }, [activeCompanyId, t]);
+    }, [activeCompanyId, t, page]);
 
     const fetchDepartments = useCallback(async () => {
         if (!activeCompanyId) return;
@@ -415,7 +418,7 @@ export function CompassEmployeesTab() {
                     {t('compass.addEmployee', 'Add Employee')}
                 </Button>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                    {filtered.length} {t('compass.navigation.employees', 'employees').toLowerCase()}
+                    {pagination ? pagination.total : filtered.length} {t('compass.navigation.employees', 'employees').toLowerCase()}
                 </Typography>
             </Stack>
 
@@ -489,6 +492,21 @@ export function CompassEmployeesTab() {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {pagination && pagination.totalPages > 1 && (
+                <TablePagination
+                    component="div"
+                    count={pagination.total}
+                    page={pagination.page - 1}
+                    onPageChange={(_, newPage) => {
+                        setPage(newPage + 1);
+                        fetchEmployees(false, newPage + 1);
+                    }}
+                    rowsPerPage={pagination.pageSize}
+                    rowsPerPageOptions={[50]}
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+                />
+            )}
 
             {/* Deactivate confirmation dialog */}
             <Dialog open={!!confirmDeactivate} onClose={() => setConfirmDeactivate(null)}>

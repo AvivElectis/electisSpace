@@ -1,10 +1,10 @@
 import api from '@shared/infrastructure/services/apiClient';
-import type { Amenity, Booking, BookingRule, CompassSpace, CompassSpaceType, Department, Employee, Neighborhood, SpaceMode, Team } from '../domain/types';
+import type { Amenity, Booking, BookingRule, CompassSpace, CompassSpaceType, Department, Employee, Neighborhood, PaginationInfo, SpaceMode, Team } from '../domain/types';
 
 export const compassAdminApi = {
     // Bookings
-    listBookings: (companyId: string, params?: { status?: string }) =>
-        api.get<{ data: Booking[] }>(`/admin/compass/bookings/${companyId}`, { params }),
+    listBookings: (companyId: string, params?: { status?: string; page?: number; pageSize?: number }) =>
+        api.get<{ data: Booking[]; pagination: PaginationInfo }>(`/admin/compass/bookings/${companyId}`, { params }),
 
     cancelBooking: (companyId: string, bookingId: string, scope?: 'instance' | 'future' | 'all') =>
         api.patch(`/admin/compass/bookings/${companyId}/${bookingId}/cancel`, null, {
@@ -68,8 +68,8 @@ export const compassAdminApi = {
     }) => api.put(`/admin/compass/spaces/${spaceId}/properties`, data),
 
     // Employees
-    listEmployees: (companyId: string) =>
-        api.get<{ data: Employee[] }>(`/admin/compass/employees/${companyId}`),
+    listEmployees: (companyId: string, params?: { page?: number; pageSize?: number }) =>
+        api.get<{ data: Employee[]; pagination: PaginationInfo }>(`/admin/compass/employees/${companyId}`, { params }),
 
     createEmployee: (companyId: string, data: {
         branchId: string;

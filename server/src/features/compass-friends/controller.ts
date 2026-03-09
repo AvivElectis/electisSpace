@@ -110,8 +110,10 @@ export const friendLocations = async (req: Request, res: Response, next: NextFun
 export const listEmployees = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const companyId = req.params.companyId as string;
-        const users = await repo.findCompanyUsers(companyId);
-        res.json({ data: users });
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));
+        const result = await repo.findCompanyUsers(companyId, page, pageSize);
+        res.json({ data: result.items, pagination: { page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages } });
     } catch (error) {
         next(error);
     }
