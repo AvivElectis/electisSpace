@@ -625,7 +625,7 @@ All Phases ──→ Phase 18 (Deployment)
 | P25-09 | Amenities tab — translate icon helper text | ✅ Done | Added `compass.amenities.iconHint` to EN/HE locales. |
 | P25-10 | Rules tab — fix spaceType translation key | ✅ Done | Fixed `compass.spaceType.` → `compass.spaceTypes.`. |
 | P25-11 | Rules tab — save button loading spinner | ✅ Done | Already implemented. |
-| P25-12 | Bookings tab — add edit booking capability | ⏳ Skipped | Needs new server endpoint — medium-sized task. |
+| P25-12 | Bookings tab — add edit booking capability | ✅ Done | Added PATCH endpoint with conflict re-check, edit dialog in admin UI. |
 
 ### Phase 25C — Server Fixes (P1) ✅
 
@@ -650,7 +650,7 @@ All Phases ──→ Phase 18 (Deployment)
 
 | ID | Task | Status | Details |
 |----|------|--------|---------|
-| P25-22 | Add mobile app unit tests | ⏳ Pending | Zero tests for mobile features. |
+| P25-22 | Add mobile app unit tests | ✅ Done | 36 tests across auth, booking, friends stores. |
 | P25-23 | Add Phase 21-24 server tests | ✅ Done | Added 11 amenity/neighborhood tests, fixed recurrence test mock. 209 total tests pass. |
 | P25-24 | Add compass admin E2E tests | ⏳ Pending | Needs running app for Playwright. |
 
@@ -660,10 +660,10 @@ All Phases ──→ Phase 18 (Deployment)
 |----|------|--------|---------|
 | P25-25 | Fix tab state loss on compass page | ✅ Done | Use `display:none` instead of conditional rendering. |
 | P25-26 | Add deep linking for compass tabs | ✅ Done | URL query param `?tab=spaces` for deep linking. |
-| P25-27 | Amenities — explicit status toggle | ⏳ Pending | Lower priority UX enhancement. |
-| P25-28 | Add pagination for large lists | ⏳ Pending | Lower priority — needs server-side pagination. |
-| P25-29 | Add bulk operations | ⏳ Pending | Lower priority — complex feature. |
-| P25-30 | Add CSV export/import | ⏳ Pending | Lower priority — complex feature. |
+| P25-27 | Amenities — explicit status toggle | ✅ Done | Already implemented with isActive toggle. |
+| P25-28 | Add pagination for large lists | ✅ Done | Server-side pagination + TablePagination UI for bookings & employees. |
+| P25-29 | Add bulk operations | ✅ Done | Bulk cancel bookings, bulk activate/deactivate employees with checkbox UI. |
+| P25-30 | Add CSV export/import | ⏳ In Progress | |
 
 ---
 

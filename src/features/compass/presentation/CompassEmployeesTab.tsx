@@ -10,6 +10,9 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
+import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
@@ -273,6 +276,94 @@ export function CompassEmployeesTab() {
         }
     };
 
+    // CSV Export
+    const handleExportCSV = () => {
+        const rows = employees.map(emp => ({
+            [t('common.name')]: emp.displayName,
+            [t('common.email')]: emp.email,
+            [t('common.role')]: emp.role,
+            [t('compass.department')]: getDepartmentName(emp.departmentId),
+            [t('compass.jobTitle')]: emp.jobTitle || '',
+            [t('compass.employeeNumber')]: emp.employeeNumber || '',
+            [t('common.phone')]: emp.phone || '',
+            [t('compass.isRemote')]: emp.isRemote ? 'true' : 'false',
+            [t('common.status.title')]: emp.isActive ? t('common.active') : t('common.inactive'),
+        }));
+        const csv = Papa.unparse(rows);
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `employees-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // CSV Import
+    const [importOpen, setImportOpen] = useState(false);
+    const [importPreview, setImportPreview] = useState<Array<{ email: string; displayName: string; role: string; jobTitle: string; phone: string; employeeNumber: string }>>([]);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<{ created: number; errors: number } | null>(null);
+
+    const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const rows = (results.data as Record<string, string>[])
+                    .filter(row => row['email'] || row['Email'] || row[t('common.email')])
+                    .map(row => ({
+                        email: (row['email'] || row['Email'] || row[t('common.email')] || '').trim(),
+                        displayName: (row['displayName'] || row['Name'] || row['name'] || row[t('common.name')] || '').trim(),
+                        role: (row['role'] || row['Role'] || row[t('common.role')] || 'EMPLOYEE').trim().toUpperCase(),
+                        jobTitle: (row['jobTitle'] || row['Job Title'] || row[t('compass.jobTitle')] || '').trim(),
+                        phone: (row['phone'] || row['Phone'] || row[t('common.phone')] || '').trim(),
+                        employeeNumber: (row['employeeNumber'] || row['Employee Number'] || row[t('compass.employeeNumber')] || '').trim(),
+                    }));
+                setImportPreview(rows);
+                setImportOpen(true);
+                setImportResult(null);
+            },
+        });
+        // Reset the input so same file can be re-selected
+        e.target.value = '';
+    };
+
+    const handleImportConfirm = async () => {
+        if (!activeCompanyId || !activeStoreId || importPreview.length === 0) return;
+        setImporting(true);
+        let created = 0;
+        let errors = 0;
+        for (const row of importPreview) {
+            if (!row.email || !row.displayName) { errors++; continue; }
+            try {
+                await compassAdminApi.createEmployee(activeCompanyId, {
+                    branchId: activeStoreId,
+                    email: row.email.toLowerCase(),
+                    displayName: row.displayName,
+                    role: ['EMPLOYEE', 'MANAGER', 'ADMIN'].includes(row.role) ? row.role : 'EMPLOYEE',
+                    jobTitle: row.jobTitle || null,
+                    phone: row.phone || null,
+                    employeeNumber: row.employeeNumber || null,
+                });
+                created++;
+            } catch {
+                errors++;
+            }
+        }
+        setImportResult({ created, errors });
+        setImporting(false);
+        if (created > 0) fetchEmployees();
+    };
+
+    const handleImportClose = () => {
+        setImportOpen(false);
+        setImportPreview([]);
+        setImportResult(null);
+    };
+
     const getDepartmentName = (departmentId: string | null): string => {
         if (!departmentId) return '-';
         const dept = departments.find(d => d.id === departmentId);
@@ -447,6 +538,25 @@ export function CompassEmployeesTab() {
                     disabled={!activeStoreId}
                 >
                     {t('compass.addEmployee', 'Add Employee')}
+                </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<DownloadIcon />}
+                    onClick={handleExportCSV}
+                    disabled={employees.length === 0}
+                >
+                    {t('compass.exportCSV', 'Export CSV')}
+                </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<UploadIcon />}
+                    component="label"
+                    disabled={!activeStoreId}
+                >
+                    {t('compass.importCSV', 'Import CSV')}
+                    <input type="file" accept=".csv" hidden onChange={handleImportFile} />
                 </Button>
                 {selectedIds.size > 0 && (
                     <>
@@ -627,6 +737,58 @@ export function CompassEmployeesTab() {
                     >
                         {saving ? <CircularProgress size={20} /> : t('common.save', 'Save')}
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* CSV Import Preview dialog */}
+            <Dialog open={importOpen} onClose={handleImportClose} maxWidth="md" fullWidth>
+                <DialogTitle>{t('compass.importCSV', 'Import CSV')}</DialogTitle>
+                <DialogContent>
+                    {importResult ? (
+                        <Alert severity={importResult.errors > 0 ? 'warning' : 'success'} sx={{ mb: 2 }}>
+                            {t('compass.importResult', '{{created}} created, {{errors}} errors', importResult)}
+                        </Alert>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            {t('compass.importPreview', '{{count}} employees found in CSV', { count: importPreview.length })}
+                        </Typography>
+                    )}
+                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
+                        <Table size="small" stickyHeader>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>{t('common.name')}</TableCell>
+                                    <TableCell>{t('common.email')}</TableCell>
+                                    <TableCell>{t('common.role')}</TableCell>
+                                    <TableCell>{t('compass.jobTitle')}</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {importPreview.map((row, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell>{row.displayName || <Chip label={t('common.missing', 'Missing')} size="small" color="error" />}</TableCell>
+                                        <TableCell>{row.email || <Chip label={t('common.missing', 'Missing')} size="small" color="error" />}</TableCell>
+                                        <TableCell>{row.role}</TableCell>
+                                        <TableCell>{row.jobTitle || '-'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleImportClose}>
+                        {importResult ? t('common.close', 'Close') : t('common.cancel')}
+                    </Button>
+                    {!importResult && (
+                        <Button
+                            variant="contained"
+                            onClick={handleImportConfirm}
+                            disabled={importing || importPreview.length === 0}
+                        >
+                            {importing ? <CircularProgress size={20} /> : t('compass.importEmployees', 'Import {{count}} Employees', { count: importPreview.length })}
+                        </Button>
+                    )}
                 </DialogActions>
             </Dialog>
         </Box>

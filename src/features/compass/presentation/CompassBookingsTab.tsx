@@ -11,6 +11,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import DownloadIcon from '@mui/icons-material/Download';
+import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { compassAdminApi } from '../infrastructure/compassAdminApi';
@@ -242,6 +244,26 @@ export function CompassBookingsTab() {
         }
     };
 
+    const handleExportCSV = () => {
+        const rows = bookings.map(b => ({
+            [t('compass.navigation.employees')]: b.companyUser.displayName,
+            [t('common.email')]: b.companyUser.email,
+            [t('compass.navigation.spaces')]: b.space?.name || '',
+            [t('compass.dashboard.start')]: b.startTime ? new Date(b.startTime).toLocaleString() : '',
+            [t('compass.dashboard.end')]: b.endTime ? new Date(b.endTime).toLocaleString() : t('compass.untilCancellation'),
+            [t('common.status.title')]: b.status,
+            [t('common.notes')]: b.notes || '',
+        }));
+        const csv = Papa.unparse(rows);
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const handleOpenCancelDialog = (booking: Booking) => {
         setConfirmCancel(booking);
         setCancelScope('instance');
@@ -283,6 +305,15 @@ export function CompassBookingsTab() {
                     disabled={!activeStoreId}
                 >
                     {t('compass.reserveSpace')}
+                </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<DownloadIcon />}
+                    onClick={handleExportCSV}
+                    disabled={bookings.length === 0}
+                >
+                    {t('compass.exportCSV', 'Export CSV')}
                 </Button>
                 {selectedIds.size > 0 && (
                     <Button

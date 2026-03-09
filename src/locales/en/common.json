@@ -293,6 +293,7 @@
         "saved": "Saved",
         "priority": "Priority",
         "noResults": "No results found",
+        "missing": "Missing",
         "id": "ID",
         "noStoreSelected": "No store selected",
         "notes": "Notes",
@@ -2063,7 +2064,12 @@
         "editBooking": "Edit Booking",
         "bulkCancel": "Cancel Selected",
         "bulkDeactivate": "Deactivate",
-        "bulkActivate": "Activate"
+        "bulkActivate": "Activate",
+        "exportCSV": "Export CSV",
+        "importCSV": "Import CSV",
+        "importPreview": "{{count}} employees found in CSV",
+        "importResult": "{{created}} created, {{errors}} errors",
+        "importEmployees": "Import {{count}} Employees"
     },
     "auditLog": {
         "title": "Audit Log",

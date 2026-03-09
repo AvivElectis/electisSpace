@@ -295,6 +295,7 @@
         "saved": "נשמר",
         "priority": "עדיפות",
         "noResults": "לא נמצאו תוצאות",
+        "missing": "חסר",
         "noStoreSelected": "לא נבחרה חנות",
         "notes": "הערות",
         "unknownError": "אירעה שגיאה לא ידועה"
@@ -2063,7 +2064,12 @@
         "editBooking": "עריכת הזמנה",
         "bulkCancel": "בטל נבחרים",
         "bulkDeactivate": "השבת",
-        "bulkActivate": "הפעל"
+        "bulkActivate": "הפעל",
+        "exportCSV": "ייצוא CSV",
+        "importCSV": "ייבוא CSV",
+        "importPreview": "נמצאו {{count}} עובדים בקובץ CSV",
+        "importResult": "{{created}} נוצרו, {{errors}} שגיאות",
+        "importEmployees": "ייבוא {{count}} עובדים"
     },
     "auditLog": {
         "title": "יומן פעילות",
