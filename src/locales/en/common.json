@@ -292,7 +292,12 @@
         "mode": "Mode",
         "saved": "Saved",
         "priority": "Priority",
-        "noResults": "No results found"
+        "noResults": "No results found",
+        "id": "ID",
+        "noStoreSelected": "No store selected",
+        "notes": "Notes",
+        "syncing": "Syncing...",
+        "unknownError": "An unknown error occurred"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -300,7 +305,11 @@
         "syncing": "Syncing...",
         "online": "Online",
         "chip": "Offline",
-        "syncingChip": "Syncing..."
+        "syncingChip": "Syncing...",
+        "tooltip": "Offline - {{count}} pending",
+        "pending": "{{count}} items pending sync",
+        "chipWithCount": "Offline ({{count}})",
+        "pendingChip": "{{count}} pending"
     },
     "login": {
         "email": "Email Address",
@@ -418,7 +427,10 @@
             "pushResult": "Pushed: {{processed}} processed, {{pending}} still pending",
             "fullResult": "Full sync complete",
             "error": "Sync failed"
-        }
+        },
+        "additionalInfo": "Additional Information",
+        "idCannotChange": "ID cannot be changed after creation",
+        "uniqueIdentifier": "Unique identifier for this space"
     },
     "conference": {
         "title": "Conference Rooms",
@@ -460,7 +472,13 @@
         "flipPageSuccess": "Room status changed successfully",
         "inMeeting": "In a Meeting",
         "loadingPages": "Loading room status...",
-        "labels": "Labels"
+        "labels": "Labels",
+        "hasActiveMeeting": "Has active meeting",
+        "idAutoFormat": "ID will be auto-formatted",
+        "idCannotChange": "ID cannot be changed after creation",
+        "meetingInfo": "Meeting Information",
+        "roomChangedByOther": "{{user}} {{action}} conference room {{roomId}}",
+        "roomNamePlaceholder": "Enter room name"
     },
     "sync": {
         "title": "Synchronization",
@@ -501,7 +519,9 @@
         "queueEmpty": "Sync queue is empty",
         "retry": "Retry",
         "connectionDetails": "Connection Details",
-        "serverConnection": "Server"
+        "serverConnection": "Server",
+        "sftpMode": "SFTP",
+        "showingItems": "Showing {{shown}} of {{total}} items"
     },
     "settings": {
         "title": "Settings",
@@ -533,7 +553,7 @@
         "usingSolumApi": "Using SoluM ESL API integration.",
         "goToSettings": "Go to {mode} Settings",
         "autoSyncSettings": "Auto-Sync Settings",
-        "enableAutoSync": "Enable Auto-Sync",
+        "enableAutoSync": "Enable automatic synchronization",
         "autoSyncInterval": "Auto-Sync Interval (seconds)",
         "syncFrequency": "Frequency of automatic synchronization (10-300 seconds)",
         "seconds": "seconds",
@@ -563,7 +583,6 @@
         "connectionSuccess": "Connection successful!",
         "connectionFailed": "Connection failed",
         "autoSyncConfig": "Auto-Sync Configuration",
-        "enableAutoSync": "Enable automatic synchronization",
         "autoSyncInfo": "When enabled, the app will automatically download the latest data from the server at the specified interval.",
         "apiCluster": "API Cluster",
         "commonCluster": "Common Cluster",
@@ -614,7 +633,6 @@
         "syncSettings": "Sync Settings",
         "schemaFetchedSuccess": "Schema fetched successfully!",
         "schemaFetchedError": "Failed to fetch schema: {{error}}",
-        "connectionSuccess": "Connection successful!",
         "connectionError": "Connection failed: {{error}}",
         "initialSyncComplete": "Initial sync complete - data fetched successfully!",
         "initialSyncError": "Initial sync failed: {{error}}",
@@ -646,6 +664,11 @@
         "noColumnsConfigured": "No columns configured. Click 'Add Column' to get started.",
         "passwordProtection": "Password Protection",
         "setPassword": "Set Password",
+        "changePassword": "Change Password",
+        "fieldMapping": "Field Mapping",
+        "switchMode": "Switch Mode",
+        "switchModeTitle": "Switch Operating Mode",
+        "switchModeWarning": "Switching mode will restart the application. Are you sure?",
         "newPassword": "New Password",
         "confirmPassword": "Confirm Password",
         "unlockSettings": "Unlock Settings",
@@ -703,9 +726,6 @@
         "invalidLogoFormat": "Only PNG and JPEG formats are allowed",
         "logoTooLarge": "File size must be less than {{size}}MB",
         "logoUploadFailed": "Failed to upload logo",
-        "connect": "Connect",
-        "disconnect": "Disconnect",
-        "connecting": "Connecting...",
         "connectedToSolum": "Connected to SoluM API",
         "disconnected": "Disconnected from SoluM API",
         "disconnectedNotification": "Disconnected from SOLUM API. All synced data has been cleared.",
@@ -782,6 +802,7 @@
         },
         "users": {
             "title": "Users",
+            "newUser": "New User",
             "addUser": "Add User",
             "editUser": "Edit User",
             "editProfile": "Edit Profile",
@@ -1399,8 +1420,8 @@
         "bulkAssignConfirm": "Assign {{spaceTypePlural}} to {{count}} selected people?",
         "bulkAssignConfirmAuto": "Automatically assign {{spaceTypePlural}} to {{count}} selected people in numerical order? This will also send to AIMS.",
         "bulkAssignPartial": "You selected {{selected}} people but only {{available}} {{spaceTypePlural}} are available. The first {{available}} people in the list will be assigned. Continue?",
-        "noAvailableSpaces": "No {{spaceTypePlural}} Available",
-        "noAvailableSpacesMessage": "All {{spaceTypePlural}} are already assigned. Unassign some {{spaceTypePlural}} first to assign new people.",
+        "noAvailableSpaces": "No Available {{spaceTypePlural}}",
+        "noAvailableSpacesMessage": "All {{spaceTypePlural}} have been assigned. Increase total {{spaceTypePlural}} or cancel some assignments first.",
         "postToAimsConfirm": "Post {{count}} assignments to AIMS?",
         "spaceAssignment": "{{spaceTypeSingular}} Assignment",
         "spaceIdHelper": "Enter a {{spaceTypeSingular}} number (1 to {{max}})",
@@ -1445,8 +1466,6 @@
         "noAssignments": "No Assignments",
         "noAssignmentsToSend": "There are no assignments to send to AIMS.",
         "noAssignmentsToCancel": "There are no assignments to cancel.",
-        "noAvailableSpaces": "No Available {{spaceTypePlural}}",
-        "noAvailableSpacesMessage": "All {{spaceTypePlural}} have been assigned. Increase total {{spaceTypePlural}} or cancel some assignments first.",
         "exceedsAvailableSpaces": "Exceeds Available {{spaceTypePlural}}",
         "exceedsAvailableSpacesMessage": "You selected {{selected}} people but only {{available}} {{spaceTypePlural}} are available. Please select fewer people or increase total {{spaceTypePlural}}.",
         "selectSpace": "Select {{spaceTypeSingular}}",
@@ -1778,8 +1797,13 @@
             "ariaInputType": "scan input type",
             "ariaExternalScanner": "external scanner",
             "ariaCamera": "camera",
-            "ariaManualInput": "manual input"
-        }
+            "ariaManualInput": "manual input",
+            "noBarcodeDetector": "Barcode detection not supported in this browser. Please use Manual mode.",
+            "scanning": "Scanning..."
+        },
+        "loading": "Loading labels...",
+        "noStore": "No store selected. Please select a store to view labels.",
+        "tryDifferentSearch": "Try a different search term"
     },
     "imageLabels": {
         "title": "Image Labels",
@@ -1884,7 +1908,8 @@
         },
         "scope": {
             "all": "All",
-            "selected": "Selected"
+            "selected": "Selected",
+            "selectedCount": "{{count}} branches"
         },
         "addRule": "Add Rule",
         "editRule": "Edit Rule",
@@ -1913,6 +1938,9 @@
             "granularity": "Booking time slots snap to this interval (minutes)"
         },
         "addSpace": "Add Space",
+        "editSpace": "Edit Space",
+        "spaceType": "Type",
+        "capacity": "Capacity",
         "spaceIdHelper": "Leave empty to auto-generate from name",
         "cancelBooking": "Cancel Booking",
         "reserveSpace": "Reserve Space",
@@ -2028,5 +2056,43 @@
             "cancelSeries": "Cancel entire series",
             "partOfSeries": "Part of a series"
         }
+    },
+    "auditLog": {
+        "title": "Audit Log",
+        "action": "Action",
+        "actionFilter": "Action",
+        "empty": "No audit log entries found",
+        "entityFilter": "Entity Type",
+        "entityId": "Entity ID",
+        "entityType": "Entity",
+        "store": "Store",
+        "time": "Time",
+        "user": "User"
+    },
+    "quickActions": {
+        "auditLog": "Audit Log",
+        "categoryAction": "Actions",
+        "categoryNav": "Navigation",
+        "categoryRecent": "Recent",
+        "categorySearch": "Search",
+        "goToConference": "Conference room management",
+        "goToDashboard": "Go to dashboard overview",
+        "goToLabels": "View and manage ESL labels",
+        "goToPeople": "Manage people assignments",
+        "goToSpaces": "Manage spaces and rooms",
+        "noResults": "No results found",
+        "openSettings": "Open application settings",
+        "placeholder": "Type a command or search...",
+        "viewAuditLog": "View system activity log"
+    },
+    "selector": {
+        "admin": "Admin",
+        "code": "Code",
+        "companies": "Companies",
+        "noContext": "Select Context",
+        "noStores": "No stores available",
+        "platformAdmin": "Platform Administrator",
+        "stores": "Stores",
+        "storesIn": "Stores in {{company}}"
     }
 }

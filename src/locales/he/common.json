@@ -294,7 +294,10 @@
         "mode": "מצב",
         "saved": "נשמר",
         "priority": "עדיפות",
-        "noResults": "לא נמצאו תוצאות"
+        "noResults": "לא נמצאו תוצאות",
+        "noStoreSelected": "לא נבחרה חנות",
+        "notes": "הערות",
+        "unknownError": "אירעה שגיאה לא ידועה"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -302,7 +305,11 @@
         "syncing": "מסנכרן...",
         "online": "מקוון",
         "chip": "לא מקוון",
-        "syncingChip": "מסנכרן..."
+        "syncingChip": "מסנכרן...",
+        "tooltip": "לא מחובר - {{count}} ממתינים",
+        "pending": "{{count}} פריטים ממתינים לסנכרון",
+        "chipWithCount": "לא מחובר ({{count}})",
+        "pendingChip": "{{count}} ממתינים"
     },
     "login": {
         "email": "כתובת דוא״ל",
@@ -404,8 +411,8 @@
         "totalSpaces": "סה\"כ",
         "noSpacesMatching": "לא נמצאו {{spaces}} התואמים",
         "noSpacesYet": "עדיין אין {{spaces}}. לחץ על {{button}} כדי להתחיל.",
-        "idCannotChange": "לא ניתן לשנות את המזהה",
-        "uniqueIdentifier": "מזהה ייחודי",
+        "idCannotChange": "לא ניתן לשנות מזהה לאחר יצירה",
+        "uniqueIdentifier": "מזהה ייחודי לחלל זה",
         "additionalInfo": "מידע נוסף",
         "sync": {
             "title": "סנכרון AIMS",
@@ -453,11 +460,11 @@
         "noRoomsMatching": "לא נמצאו חדרי ישיבות התואמים",
         "noRoomsFound": "לא נמצאו חדרים",
         "clickAddRoom": "לחץ על {{button}} כדי להוסיף את החדר הראשון שלך",
-        "idCannotChange": "לא ניתן לשנות את המזהה",
-        "idAutoFormat": "מזהה חדר ישיבות (קידומת C תתווסף אוטומטית במידת הצורך)",
-        "roomNamePlaceholder": "חדר ישיבות א'",
+        "idCannotChange": "לא ניתן לשנות מזהה לאחר יצירה",
+        "idAutoFormat": "המזהה יעוצב אוטומטית",
+        "roomNamePlaceholder": "הכנס שם חדר",
         "meetingInfo": "פרטי פגישה",
-        "hasActiveMeeting": "יש פגישה פעילה בחדר",
+        "hasActiveMeeting": "יש פגישה פעילה",
         "editRoomButton": "ערוך חדר",
         "active": "פעיל",
         "inactive": "לא פעיל",
@@ -470,7 +477,8 @@
         "flipPageSuccess": "סטטוס החדר שונה בהצלחה",
         "inMeeting": "בפגישה",
         "loadingPages": "טוען סטטוס חדרים...",
-        "labels": "תגיות"
+        "labels": "תגיות",
+        "roomChangedByOther": "{{user}} {{action}} חדר ישיבות {{roomId}}"
     },
     "sync": {
         "title": "סינכרון",
@@ -511,7 +519,9 @@
         "queueEmpty": "תור הסינכרון ריק",
         "retry": "נסה שוב",
         "connectionDetails": "פרטי חיבור",
-        "serverConnection": "שרת"
+        "serverConnection": "שרת",
+        "sftpMode": "SFTP",
+        "showingItems": "מציג {{shown}} מתוך {{total}} פריטים"
     },
     "settings": {
         "title": "הגדרות",
@@ -560,9 +570,11 @@
         "csvConfig": "תצורת CSV",
         "csvColumnsSetup": "הגדר מיפוי עמודות CSV",
         "suggestedDelimiter": "מומלץ: פסיק (,) או נקודה-פסיק (;)",
-        "csvStructureNote": "הערה: סדר העמודות חשוב. ודא שהוא תואם למבנה קובץ ה-CSV שלך.",        "unsavedChangesNotice": "יש לך שינויים שלא נשמרו. לחץ שמור כדי להחיל אותם.",
+        "csvStructureNote": "הערה: סדר העמודות חשוב. ודא שהוא תואם למבנה קובץ ה-CSV שלך.",
+        "unsavedChangesNotice": "יש לך שינויים שלא נשמרו. לחץ שמור כדי להחיל אותם.",
         "unsavedChangesWarning": "יש לך שינויים שלא נשמרו במיפוי השדות. האם ברצונך לבטל אותם?",
-        "discardChanges": "בטל שינויים",        "csvHasHeader": "קובץ ה-CSV מכיל שורת כותרות",
+        "discardChanges": "בטל שינויים",
+        "csvHasHeader": "קובץ ה-CSV מכיל שורת כותרות",
         "csvFileStructure": "מבנה קובץ CSV",
         "testConnection": "בדוק חיבור",
         "connected": "מחובר",
@@ -571,7 +583,6 @@
         "connectionSuccess": "החיבור הצליח!",
         "connectionFailed": "החיבור נכשל",
         "autoSyncConfig": "הגדרות סינכרון אוטומטי",
-        "enableAutoSync": "הפעל סינכרון אוטומטי",
         "syncInterval": "מרווח סינכרון",
         "autoSyncInfo": "כאשר מופעל, האפליקציה תוריד אוטומטית את הנתונים העדכניים מהשרת במרווחי הזמן שהוגדרו.",
         "apiCluster": "אשכול API",
@@ -595,7 +606,6 @@
         "solumApiUsername": "שם משתמש SoluM API",
         "solumApiPassword": "סיסמת SoluM API",
         "synchronization": "סינכרון",
-        "syncInterval": "מרווח סינכרון",
         "syncIntervalHelp": "תדירות הרצת הסינכרון האוטומטי (מינימום 60 שניות)",
         "simpleConferenceMode": "מצב ישיבות פשוט",
         "simpleConferenceModeDesc": "כאשר מופעל, חדרי ישיבות מציגים רק מתג תפוס/פנוי",
@@ -623,7 +633,6 @@
         "syncSettings": "הגדרות סינכרון",
         "schemaFetchedSuccess": "הסכמה נשלפה בהצלחה!",
         "schemaFetchedError": "שליפת הסכמה נכשלה: {{error}}",
-        "connectionSuccess": "החיבור הצליח!",
         "connectionError": "החיבור נכשל: {{error}}",
         "initialSyncComplete": "הסינכרון הראשוני הושלם - הנתונים נטענו בהצלחה!",
         "initialSyncError": "הסינכרון הראשוני נכשל: {{error}}",
@@ -632,10 +641,6 @@
         "articleFormatSchema": "סכמת פורמט מוצר",
         "fetchingSchema": "מביא סכמה...",
         "fetchArticleSchema": "הבא סכמת מוצר מ-SoluM",
-        "testConnection": "בדוק חיבור",
-        "connect": "התחבר",
-        "disconnect": "התנתק",
-        "connecting": "מתחבר...",
         "connectedToSolum": "מחובר ל-SoluM API",
         "disconnected": "מנותק מ-SoluM API",
         "disconnectedNotification": "התנתקת מ-SOLUM API. כל הנתונים המסונכרנים נמחקו.",
@@ -663,6 +668,11 @@
         "disconnectToEditMapping": "התנתק מ-SoluM כדי לערוך תצורת מיפוי נתונים",
         "passwordProtection": "הגנת סיסמה",
         "setPassword": "הגדר סיסמה",
+        "changePassword": "שנה סיסמה",
+        "fieldMapping": "מיפוי שדות",
+        "switchMode": "החלף מצב",
+        "switchModeTitle": "החלפת מצב הפעלה",
+        "switchModeWarning": "החלפת מצב תפעיל מחדש את האפליקציה. האם אתה בטוח?",
         "newPassword": "סיסמה חדשה",
         "confirmPassword": "אשר סיסמה",
         "unlockSettings": "בטל נעילת הגדרות",
@@ -792,6 +802,7 @@
         },
         "users": {
             "title": "משתמשים",
+            "newUser": "משתמש חדש",
             "addUser": "הוסף משתמש",
             "editUser": "ערוך משתמש",
             "editProfile": "ערוך פרופיל",
@@ -1414,7 +1425,7 @@
         "bulkAssignConfirmAuto": "להקצות {{spaceTypePlural}} אוטומטית ל-{{count}} אנשים נבחרים לפי סדר מספרי? פעולה זו גם תשלח ל-AIMS.",
         "bulkAssignPartial": "בחרת {{selected}} אנשים אבל רק {{available}} {{spaceTypePlural}} זמינים. {{available}} האנשים הראשונים ברשימה יקבלו הקצאה. להמשיך?",
         "noAvailableSpaces": "אין {{spaceTypePlural}} זמינים",
-        "noAvailableSpacesMessage": "כל {{spaceTypePluralDef}} כבר מוקצים. יש לבטל הקצאה קודם כדי להקצות אנשים חדשים.",
+        "noAvailableSpacesMessage": "כל ה{{spaceTypePlural}} הוקצו. הגדל את סה\"כ ה{{spaceTypePlural}} או בטל חלק מההקצאות.",
         "postToAimsConfirm": "לשלוח {{count}} הקצאות ל-AIMS?",
         "spaceAssignment": "הקצאת {{spaceTypeSingular}}",
         "spaceIdHelper": "הזן מספר {{spaceTypeSingular}} (1 עד {{max}})",
@@ -1459,8 +1470,6 @@
         "noAssignments": "אין הקצאות",
         "noAssignmentsToSend": "אין הקצאות לשליחה ל-AIMS.",
         "noAssignmentsToCancel": "אין הקצאות לביטול.",
-        "noAvailableSpaces": "אין {{spaceTypePlural}} זמינים",
-        "noAvailableSpacesMessage": "כל ה{{spaceTypePlural}} הוקצו. הגדל את סה\"כ ה{{spaceTypePlural}} או בטל חלק מההקצאות.",
         "exceedsAvailableSpaces": "חורג מה{{spaceTypePlural}} הזמינים",
         "exceedsAvailableSpacesMessage": "בחרת {{selected}} אנשים אבל רק {{available}} {{spaceTypePlural}} זמינים. בחר פחות אנשים או הגדל את סה\"כ ה{{spaceTypePlural}}.",
         "selectSpace": "בחר {{spaceTypeSingular}}",
@@ -1792,8 +1801,13 @@
             "ariaInputType": "סוג קלט סריקה",
             "ariaExternalScanner": "סורק חיצוני",
             "ariaCamera": "מצלמה",
-            "ariaManualInput": "קלט ידני"
-        }
+            "ariaManualInput": "קלט ידני",
+            "noBarcodeDetector": "זיהוי ברקוד אינו נתמך בדפדפן זה. אנא השתמש במצב ידני.",
+            "scanning": "סורק..."
+        },
+        "loading": "טוען תוויות...",
+        "noStore": "לא נבחרה חנות. בחר חנות כדי לצפות בתוויות.",
+        "tryDifferentSearch": "נסה מונח חיפוש אחר"
     },
     "imageLabels": {
         "title": "שיוך תמונה לתגית",
@@ -1898,7 +1912,8 @@
         },
         "scope": {
             "all": "הכל",
-            "selected": "נבחרים"
+            "selected": "נבחרים",
+            "selectedCount": "{{count}} סניפים"
         },
         "addRule": "הוסף כלל",
         "editRule": "ערוך כלל",
@@ -1927,6 +1942,9 @@
             "granularity": "משבצות זמן להזמנה מתחלקות למרווחים אלה (דקות)"
         },
         "addSpace": "הוסף חלל",
+        "editSpace": "ערוך חלל",
+        "spaceType": "סוג",
+        "capacity": "קיבולת",
         "spaceIdHelper": "השאר ריק ליצירה אוטומטית מהשם",
         "cancelBooking": "בטל הזמנה",
         "reserveSpace": "שריין מקום",
@@ -2042,5 +2060,43 @@
             "cancelSeries": "בטל את כל הסדרה",
             "partOfSeries": "חלק מסדרה"
         }
+    },
+    "auditLog": {
+        "title": "יומן פעילות",
+        "action": "פעולה",
+        "actionFilter": "פעולה",
+        "empty": "לא נמצאו רשומות ביומן הפעילות",
+        "entityFilter": "סוג ישות",
+        "entityId": "מזהה ישות",
+        "entityType": "ישות",
+        "store": "חנות",
+        "time": "זמן",
+        "user": "משתמש"
+    },
+    "quickActions": {
+        "auditLog": "יומן פעילות",
+        "categoryAction": "פעולות",
+        "categoryNav": "ניווט",
+        "categoryRecent": "אחרונים",
+        "categorySearch": "חיפוש",
+        "goToConference": "ניהול חדרי ישיבות",
+        "goToDashboard": "מעבר לדשבורד",
+        "goToLabels": "צפייה וניהול תוויות ESL",
+        "goToPeople": "ניהול שיבוץ אנשים",
+        "goToSpaces": "ניהול חללים וחדרים",
+        "noResults": "לא נמצאו תוצאות",
+        "openSettings": "פתיחת הגדרות",
+        "placeholder": "הקלד פקודה או חפש...",
+        "viewAuditLog": "צפייה ביומן פעילות המערכת"
+    },
+    "selector": {
+        "admin": "מנהל",
+        "code": "קוד",
+        "companies": "חברות",
+        "noContext": "בחר הקשר",
+        "noStores": "אין חנויות זמינות",
+        "platformAdmin": "מנהל פלטפורמה",
+        "stores": "חנויות",
+        "storesIn": "חנויות ב-{{company}}"
     }
 }
