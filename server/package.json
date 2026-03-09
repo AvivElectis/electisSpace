@@ -29,6 +29,7 @@
     "license": "PROPRIETARY",
     "dependencies": {
         "@azure/msal-node": "^5.0.6",
+        "@node-saml/node-saml": "^5.1.0",
         "@prisma/adapter-pg": "^7.0.0",
         "@prisma/client": "^7.0.0",
         "axios": "^1.13.2",
@@ -49,6 +50,7 @@
         "ldapjs": "^3.0.7",
         "morgan": "^1.10.0",
         "nodemailer": "^7.0.12",
+        "openid-client": "^6.8.2",
         "pg": "^8.13.0",
         "rrule": "^2.8.1",
         "socket.io": "^4.8.0",

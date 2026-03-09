@@ -73,7 +73,7 @@ describe('MicrosoftUserSyncAdapter', () => {
             const adapter = new MicrosoftUserSyncAdapter({
                 tenantId: 'test-tenant',
                 clientId: 'test-client',
-                clientSecret: 'test-secret',
+                clientSecret: 'test-only-not-real', // pragma: allowlist secret
             });
 
             const result = await adapter.fetchUsers();
@@ -112,7 +112,7 @@ describe('MicrosoftUserSyncAdapter', () => {
             const adapter = new MicrosoftUserSyncAdapter({
                 tenantId: 'test-tenant',
                 clientId: 'test-client',
-                clientSecret: 'test-secret',
+                clientSecret: 'test-only-not-real', // pragma: allowlist secret
             });
 
             await adapter.fetchUsers('https://graph.microsoft.com/delta?token=old');
@@ -194,7 +194,7 @@ describe('MicrosoftRoomSyncAdapter', () => {
             const adapter = new MicrosoftRoomSyncAdapter({
                 tenantId: 'test-tenant',
                 clientId: 'test-client',
-                clientSecret: 'test-secret',
+                clientSecret: 'test-only-not-real', // pragma: allowlist secret
             });
 
             const rooms = await adapter.fetchRooms();
@@ -393,7 +393,7 @@ describe('LdapUserSyncAdapter', () => {
         const adapter = new LdapUserSyncAdapter({
             url: 'ldaps://ldap.company.com:636',
             bindDn: 'cn=admin,dc=company,dc=com',
-            bindPassword: 'secret', // pragma: allowlist secret
+            bindPassword: 'test-only-not-real', // pragma: allowlist secret
             searchBase: 'ou=users,dc=company,dc=com',
             searchFilter: '(objectClass=person)',
             useTls: true,
@@ -408,7 +408,7 @@ describe('LdapUserSyncAdapter', () => {
         const adapter = new LdapUserSyncAdapter({
             url: 'ldap://localhost:389',
             bindDn: 'cn=admin',
-            bindPassword: 'pass', // pragma: allowlist secret
+            bindPassword: 'test-only-not-real', // pragma: allowlist secret
             searchBase: 'dc=test',
             searchFilter: '(objectClass=person)',
             useTls: false,

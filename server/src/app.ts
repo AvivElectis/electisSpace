@@ -195,6 +195,10 @@ apiRouter.use('/admin/compass/neighborhoods', adminNeighborhoodRoutes);
 // Integration routes (admin auth, company-scoped)
 apiRouter.use('/admin/companies/:companyId/integrations', integrationRoutes);
 
+// SSO admin routes (admin auth, company-scoped)
+import { ssoAdminRoutes, ssoAuthRoutes } from './features/sso/routes.js';
+apiRouter.use('/admin/sso', ssoAdminRoutes);
+
 apiRouter.use('/', storeRoutes); // Store routes mounted at root — MUST be after named routes (applies authenticate globally)
 apiRouter.use('/', storeEventsRoutes);  // Mounts /stores/:storeId/events
 
@@ -211,6 +215,7 @@ compassRouter.use('/buildings', compassBuildingRoutes);
 compassRouter.use('/friends', compassFriendRoutes);
 compassRouter.use('/amenities', compassAmenityRoutes);
 compassRouter.use('/neighborhoods', compassNeighborhoodRoutes);
+compassRouter.use('/auth/sso', ssoAuthRoutes);
 app.use('/api/v2/compass', compassRouter);
 
 // ======================

@@ -60,6 +60,7 @@ model Company {
   departments   Department[]
   teams         Team[]
   amenities     Amenity[]
+  ssoConfigs    SsoConfig[]
 
   @@map("companies")
 }
@@ -1184,4 +1185,49 @@ model IntegrationConfig {
   @@unique([companyId, provider, type])
   @@index([companyId])
   @@map("integration_configs")
+}
+
+// ======================
+// SsoConfig — Single Sign-On configuration per company domain
+// ======================
+model SsoConfig {
+  id        String @id @default(uuid())
+  companyId String @map("company_id")
+
+  // SSO Protocol & Provider
+  protocol String @db.VarChar(10) // SAML, OIDC
+  provider String @db.VarChar(50) // AZURE_AD, GOOGLE, OKTA, CUSTOM
+
+  // Domain routing — determines which SSO config to use based on user email domain
+  domain   String @db.VarChar(255) // e.g., "company.com"
+  isActive Boolean @default(false) @map("is_active")
+
+  // Policy
+  forceSso      Boolean @default(false) @map("force_sso") // If true, only SSO login allowed (no email+code)
+  autoProvision Boolean @default(false) @map("auto_provision") // Auto-create CompanyUser on first SSO login
+
+  // Claim mapping — JSON mapping of IdP claims to CompanyUser fields
+  claimMapping Json? @map("claim_mapping")
+
+  // SAML-specific fields
+  idpEntityId    String? @map("idp_entity_id") @db.VarChar(500)
+  ssoUrl         String? @map("sso_url") @db.VarChar(500)
+  sloUrl         String? @map("slo_url") @db.VarChar(500) // Single Logout URL
+  x509Certificate String? @map("x509_certificate") @db.Text
+
+  // OIDC-specific fields
+  issuer       String? @db.VarChar(500)
+  clientId     String? @map("client_id") @db.VarChar(255)
+  clientSecret String? @map("client_secret") @db.Text // encrypted
+  discoveryUrl String? @map("discovery_url") @db.VarChar(500)
+  scopes       String? @db.VarChar(500) // space-separated, e.g., "openid profile email"
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, domain])
+  @@index([domain])
+  @@map("sso_configs")
 }
