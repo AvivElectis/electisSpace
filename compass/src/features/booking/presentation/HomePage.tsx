@@ -12,7 +12,7 @@ import {
     DialogContent,
     DialogActions,
 } from '@mui/material';
-import EventSeatIcon from '@mui/icons-material/EventSeat';
+import BusinessIcon from '@mui/icons-material/Business';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import SearchIcon from '@mui/icons-material/Search';
@@ -20,12 +20,14 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
 import { useBookingStore } from '../application/useBookingStore';
 
 export function HomePage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const muiTheme = useTheme();
     const user = useCompassAuthStore((s) => s.user);
     const { activeBooking, fetchActiveBooking, checkIn, release } = useBookingStore();
 
@@ -54,8 +56,21 @@ export function HomePage() {
     const isBooked = activeBooking?.status === 'BOOKED';
     const isCheckedIn = activeBooking?.status === 'CHECKED_IN';
 
+    const logoSrc = muiTheme.palette.mode === 'dark'
+        ? '/logo_dark_transparent.png'
+        : '/logo_bright_transparent.png';
+
     return (
         <Box sx={{ p: 2, pb: 10 }}>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Box
+                    component="img"
+                    src={logoSrc}
+                    alt="electisCompass"
+                    sx={{ width: '50%', maxWidth: 200, height: 'auto' }}
+                />
+            </Box>
+
             <Typography variant="h5" fontWeight={700} gutterBottom>
                 {t('home.greeting', { name: user?.displayName ?? '' })}
             </Typography>
@@ -115,7 +130,7 @@ export function HomePage() {
                             </Typography>
                         )}
 
-                        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                        <Stack direction="row" gap={1} sx={{ mt: 2 }}>
                             {isBooked && (
                                 <Button
                                     variant="contained"
@@ -143,7 +158,7 @@ export function HomePage() {
             ) : (
                 <Card variant="outlined" sx={{ mb: 2 }}>
                     <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                        <EventSeatIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                        <BusinessIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
                         <Typography variant="body1" color="text.secondary" gutterBottom>
                             {t('home.noActiveBooking')}
                         </Typography>
@@ -162,7 +177,7 @@ export function HomePage() {
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 {t('home.quickActions')}
             </Typography>
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" gap={1}>
                 <Button
                     variant="outlined"
                     size="small"

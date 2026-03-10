@@ -127,7 +127,7 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel,
 
                 {/* Action buttons */}
                 {!isPast && (
-                    <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', gap: 1 }}>
+                    <Stack direction="row" gap={1} sx={{ mt: 1.5, flexWrap: 'wrap' }}>
                         {isBooked && onCheckIn && (
                             <Button
                                 size="medium"

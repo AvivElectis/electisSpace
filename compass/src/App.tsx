@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline, Box, useMediaQuery } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box, IconButton, useMediaQuery } from '@mui/material';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { getActiveTheme } from '@shared/theme/theme';
 import { usePreferencesStore } from '@shared/stores/usePreferencesStore';
 import { useCompassAuthStore } from '@features/auth/application/useCompassAuthStore';
@@ -33,10 +35,22 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AppShell() {
+    const currentTheme = usePreferencesStore((s) => s.themeMode);
+    const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
+    const isDark = useMediaQuery('(prefers-color-scheme: dark)');
+    const effectiveDark = currentTheme === 'dark' || (currentTheme === 'system' && isDark);
+
+    const toggleTheme = () => {
+        setThemeMode(effectiveDark ? 'light' : 'dark');
+    };
+
     return (
         <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-            {/* Top bar with language toggle */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1, pt: 0.5 }}>
+            {/* Top bar with theme toggle and language toggle */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 1, pt: 0.5, gap: 0.5 }}>
+                <IconButton size="small" onClick={toggleTheme} color="inherit">
+                    {effectiveDark ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+                </IconButton>
                 <LanguageToggle />
             </Box>
             <Routes>

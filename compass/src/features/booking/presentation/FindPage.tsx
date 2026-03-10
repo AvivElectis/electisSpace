@@ -147,7 +147,7 @@ export function FindPage() {
                 />
 
                 {/* Filters row */}
-                <Stack direction="row" spacing={1} sx={{ mb: 1.5, overflowX: 'auto' }}>
+                <Stack direction="row" gap={1} sx={{ mb: 1.5, overflowX: 'auto' }}>
                     {/* Building filter */}
                     {buildings.length > 0 && (
                         <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -197,7 +197,7 @@ export function FindPage() {
                 {/* Space type filter chips */}
                 <Stack
                     direction="row"
-                    spacing={0.5}
+                    gap={0.5}
                     sx={{
                         mb: 1.5,
                         overflowX: 'auto',
@@ -274,7 +274,7 @@ export function FindPage() {
                 )}
 
                 {/* Sort chips */}
-                <Stack direction="row" spacing={0.5} sx={{ mb: 2 }}>
+                <Stack direction="row" gap={0.5} sx={{ mb: 2 }}>
                     <SortIcon sx={{ fontSize: 20, color: 'text.secondary', mt: 0.5 }} />
                     <Chip
                         label={t('find.sortName')}

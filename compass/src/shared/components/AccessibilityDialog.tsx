@@ -57,7 +57,7 @@ export function AccessibilityDialog({ open, onClose }: AccessibilityDialogProps)
                 {t('accessibility.title')}
             </DialogTitle>
             <DialogContent dividers>
-                <Stack spacing={3}>
+                <Stack gap={3}>
                     {/* Theme mode */}
                     <Box>
                         <Typography variant="subtitle2" fontWeight={600} gutterBottom>
