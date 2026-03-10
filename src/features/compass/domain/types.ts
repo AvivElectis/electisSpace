@@ -44,6 +44,9 @@ export interface CompassSpace {
     compassMode: SpaceMode | null;
     compassSpaceType: CompassSpaceType | null;
     compassCapacity: number | null;
+    minCapacity: number | null;
+    maxCapacity: number | null;
+    sortOrder: number;
     buildingId: string | null;
     floorId: string | null;
     areaId: string | null;
@@ -53,6 +56,10 @@ export interface CompassSpace {
     area?: { id: string; name: string } | null;
     neighborhood?: { id: string; name: string } | null;
     permanentAssignee?: { id: string; displayName: string } | null;
+    structuredAmenities?: Array<{
+        quantity: number;
+        amenity: { id: string; name: string; nameHe: string | null; icon: string | null; category: string };
+    }>;
 }
 
 export interface Employee {

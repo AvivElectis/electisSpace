@@ -64,10 +64,15 @@ export const compassAdminApi = {
     updateSpaceProperties: (spaceId: string, data: {
         compassSpaceType?: CompassSpaceType | null;
         compassCapacity?: number | null;
+        minCapacity?: number | null;
+        maxCapacity?: number | null;
         buildingId?: string | null;
         floorId?: string | null;
         areaId?: string | null;
         neighborhoodId?: string | null;
+        permanentAssigneeId?: string | null;
+        amenityIds?: string[];
+        sortOrder?: number;
     }) => api.put(`/admin/compass/spaces/${spaceId}/properties`, data),
 
     // Employees
