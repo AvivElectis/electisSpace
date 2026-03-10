@@ -147,7 +147,7 @@ export function FindPage() {
                 />
 
                 {/* Filters row */}
-                <Stack direction="row" gap={1} sx={{ mb: 1.5, overflowX: 'auto' }}>
+                <Stack direction="row" gap={1.5} sx={{ mb: 1.5, overflowX: 'auto' }}>
                     {/* Building filter */}
                     {buildings.length > 0 && (
                         <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -195,14 +195,12 @@ export function FindPage() {
                 </Stack>
 
                 {/* Space type filter chips */}
-                <Stack
-                    direction="row"
-                    gap={0.5}
+                <Box
                     sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+                        gap: 0.75,
                         mb: 1.5,
-                        overflowX: 'auto',
-                        pb: 0.5,
-                        '&::-webkit-scrollbar': { display: 'none' },
                     }}
                 >
                     <Chip
@@ -223,11 +221,10 @@ export function FindPage() {
                                 variant={filters.spaceType === type ? 'filled' : 'outlined'}
                                 color={filters.spaceType === type ? 'primary' : 'default'}
                                 onClick={() => handleSpaceTypeFilter(type)}
-                                sx={{ flexShrink: 0 }}
                             />
                         );
                     })}
-                </Stack>
+                </Box>
 
                 {/* Amenity filter toggle */}
                 {amenities.length > 0 && (
@@ -252,7 +249,7 @@ export function FindPage() {
                                 sx={{
                                     mb: 1.5,
                                     flexWrap: 'wrap',
-                                    gap: 0.5,
+                                    gap: 0.75,
                                 }}
                             >
                                 {amenities.map((amenity) => {
@@ -274,8 +271,8 @@ export function FindPage() {
                 )}
 
                 {/* Sort chips */}
-                <Stack direction="row" gap={0.5} sx={{ mb: 2 }}>
-                    <SortIcon sx={{ fontSize: 20, color: 'text.secondary', mt: 0.5 }} />
+                <Stack direction="row" gap={0.75} sx={{ mb: 2, alignItems: 'center' }}>
+                    <SortIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                     <Chip
                         label={t('find.sortName')}
                         size="small"

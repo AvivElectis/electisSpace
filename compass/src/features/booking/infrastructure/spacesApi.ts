@@ -9,6 +9,9 @@ export const spacesApi = {
             params.amenities = filters.amenityIds.join(',');
             delete params.amenityIds;
         }
+        // sort and search are handled client-side
+        delete params.sort;
+        delete params.search;
         return compassApi.get<{ spaces: SpaceWithAvailability[] }>('/spaces', { params });
     },
 

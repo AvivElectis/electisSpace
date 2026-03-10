@@ -109,7 +109,6 @@ function BiometricEnrollment() {
 export default function App() {
     const themeMode = usePreferencesStore((s) => s.themeMode);
     const { fontSize, highContrast, reducedMotion } = usePreferencesStore((s) => s.accessibility);
-
     // Listen to system dark mode changes
     const systemDark = useMediaQuery('(prefers-color-scheme: dark)');
 

@@ -80,7 +80,7 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel,
                 borderWidth: isActive ? 2 : 1,
             }}
         >
-            <CardContent sx={{ pb: '12px !important' }}>
+            <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Typography variant="subtitle1" fontWeight={600}>
                         {spaceName}

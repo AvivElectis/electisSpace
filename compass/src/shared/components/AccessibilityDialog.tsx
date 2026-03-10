@@ -74,15 +74,15 @@ export function AccessibilityDialog({ open, onClose }: AccessibilityDialogProps)
                             aria-label={t('accessibility.theme')}
                         >
                             <ToggleButton value="light" aria-label={t('accessibility.light')}>
-                                <LightModeIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                <LightModeIcon sx={{ me: 0.5 }} fontSize="small" />
                                 {t('accessibility.light')}
                             </ToggleButton>
                             <ToggleButton value="system" aria-label={t('accessibility.system')}>
-                                <SettingsBrightnessIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                <SettingsBrightnessIcon sx={{ me: 0.5 }} fontSize="small" />
                                 {t('accessibility.system')}
                             </ToggleButton>
                             <ToggleButton value="dark" aria-label={t('accessibility.dark')}>
-                                <DarkModeIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                <DarkModeIcon sx={{ me: 0.5 }} fontSize="small" />
                                 {t('accessibility.dark')}
                             </ToggleButton>
                         </ToggleButtonGroup>

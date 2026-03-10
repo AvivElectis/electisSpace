@@ -131,7 +131,7 @@ export function FriendsPage() {
             {/* Pending requests */}
             {pendingRequests.length > 0 && (
                 <Card variant="outlined" sx={{ mb: 2 }}>
-                    <CardContent sx={{ pb: '8px !important' }}>
+                    <CardContent>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                             {t('friends.pendingRequests')} ({pendingRequests.length})
                         </Typography>
@@ -177,7 +177,7 @@ export function FriendsPage() {
             {/* Checked-in friends */}
             {checkedInFriends.length > 0 && (
                 <Card variant="outlined" sx={{ mb: 2 }}>
-                    <CardContent sx={{ pb: '8px !important' }}>
+                    <CardContent>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                             {t('friends.checkedIn')} ({checkedInFriends.length})
                         </Typography>
@@ -224,7 +224,7 @@ export function FriendsPage() {
             {/* All friends */}
             {otherFriends.length > 0 && (
                 <Card variant="outlined">
-                    <CardContent sx={{ pb: '8px !important' }}>
+                    <CardContent>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                             {t('friends.allFriends')} ({friends.length})
                         </Typography>

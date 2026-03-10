@@ -22,6 +22,7 @@ const sharedComponents: ThemeOptions['components'] = {
                 textTransform: 'none',
                 borderRadius: 8,
                 fontWeight: 600,
+                gap: 6,
             },
         },
     },
@@ -29,6 +30,38 @@ const sharedComponents: ThemeOptions['components'] = {
         styleOverrides: {
             root: {
                 borderRadius: 16,
+            },
+        },
+    },
+    MuiCardContent: {
+        styleOverrides: {
+            root: {
+                '&:last-child': {
+                    paddingBottom: 12,
+                },
+            },
+        },
+    },
+    MuiChip: {
+        styleOverrides: {
+            sizeSmall: {
+                paddingInline: 4,
+            },
+        },
+    },
+    MuiToggleButtonGroup: {
+        styleOverrides: {
+            grouped: {
+                // Use logical properties so border-radius flips correctly in RTL
+                borderRadius: 0,
+                '&:first-of-type': {
+                    borderStartStartRadius: 8,
+                    borderEndStartRadius: 8,
+                },
+                '&:last-of-type': {
+                    borderStartEndRadius: 8,
+                    borderEndEndRadius: 8,
+                },
             },
         },
     },
@@ -86,19 +119,24 @@ export function getActiveTheme(mode: ThemeMode, fontSize: number, highContrast: 
     const systemDark = typeof window !== 'undefined'
         && window.matchMedia('(prefers-color-scheme: dark)').matches;
     const isDark = mode === 'dark' || (mode === 'system' && systemDark);
-    const base = isDark ? darkTheme : lightTheme;
+    const basePalette = isDark ? darkTheme.palette : lightTheme.palette;
 
-    // Apply accessibility overrides if needed
-    if (fontSize === 100 && !highContrast) return base;
-
-    return createTheme(base, {
+    // Build theme from scratch so fontSize properly recalculates all typography variants
+    return createTheme({
+        palette: basePalette,
         typography: {
+            ...sharedTypography,
             fontSize: 14 * (fontSize / 100),
         },
-        ...(highContrast && {
-            components: {
+        shape: { borderRadius: 12 },
+        components: {
+            ...sharedComponents,
+            ...(highContrast && {
                 MuiButton: {
                     styleOverrides: {
+                        root: {
+                            ...sharedComponents!.MuiButton!.styleOverrides!.root as object,
+                        },
                         outlined: {
                             borderWidth: 2,
                             '&:hover': { borderWidth: 2 },
@@ -108,12 +146,20 @@ export function getActiveTheme(mode: ThemeMode, fontSize: number, highContrast: 
                 MuiCard: {
                     styleOverrides: {
                         root: {
-                            borderWidth: 2,
+                            borderRadius: 16,
+                            border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(0,0,0,0.3)',
                         },
                     },
                 },
-            },
-        }),
+                MuiPaper: {
+                    styleOverrides: {
+                        root: {
+                            border: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.15)',
+                        },
+                    },
+                },
+            }),
+        },
     });
 }
 

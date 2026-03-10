@@ -10,6 +10,7 @@ import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProces
 import { aimsPullSyncJob } from './shared/infrastructure/jobs/AimsPullSyncJob.js';
 import { startCompassBookingJobs, stopCompassBookingJobs } from './shared/infrastructure/jobs/CompassBookingJobs.js';
 import { integrationSyncProcessor } from './features/integrations/integrationSyncProcessor.js';
+import { initCompassSocket } from './shared/infrastructure/services/compassSocket.js';
 
 /**
  * Ensure admin user exists and password matches ADMIN_PASSWORD env var.
@@ -72,6 +73,8 @@ const startServer = async () => {
 
         // Start HTTP server
         const server = app.listen(config.port, () => {
+            initCompassSocket(server);
+            console.log('✅ Compass WebSocket initialized');
             console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║

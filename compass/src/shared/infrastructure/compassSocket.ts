@@ -21,10 +21,12 @@ export function connectCompassSocket() {
     socket = io('/compass', {
         path: '/compass-ws',
         auth: { token },
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
+        upgrade: true,
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
+        reconnectionAttempts: 5,
+        timeout: 10000,
     });
 
     socket.on('connect', () => {

@@ -62,7 +62,7 @@ export function SpaceCard({ space, onBook }: SpaceCardProps) {
                 opacity: space.available ? 1 : 0.6,
             }}
         >
-            <CardContent sx={{ pb: '12px !important' }}>
+            <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box sx={{ flex: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -113,7 +113,7 @@ export function SpaceCard({ space, onBook }: SpaceCardProps) {
 
                 {/* Amenities */}
                 {amenityChips.length > 0 && (
-                    <Stack direction="row" gap={0.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                    <Stack direction="row" gap={0.75} sx={{ mt: 1, flexWrap: 'wrap' }}>
                         {amenityChips.map((chip) => (
                             <Chip key={chip.key} label={chip.label} size="small" variant="outlined" />
                         ))}
