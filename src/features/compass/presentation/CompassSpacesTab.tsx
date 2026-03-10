@@ -304,8 +304,14 @@ export function CompassSpacesTab() {
 
             closeDialog();
             fetchSpaces();
-        } catch {
-            setError(t('errors.saveFailed'));
+        } catch (err: any) {
+            const status = err?.response?.status;
+            const serverMsg = err?.response?.data?.error?.message;
+            if (status === 409) {
+                setFormErrors(prev => ({ ...prev, externalId: t('compass.spaceDialog.idExists') }));
+            } else {
+                setError(serverMsg || t('errors.saveFailed'));
+            }
         } finally {
             setSaving(false);
         }
