@@ -80,7 +80,9 @@ export const compassAdminApi = {
     createEmployee: (companyId: string, data: {
         branchId: string;
         email: string;
-        displayName: string;
+        firstName: string;
+        middleName?: string;
+        lastName?: string;
         role?: string;
         departmentId?: string | null;
         jobTitle?: string | null;

@@ -24,7 +24,7 @@ export const createDepartment = async (companyId: string, data: {
     code?: string;
     parentId?: string | null;
     managerId?: string | null;
-    color?: string;
+    color?: string | null;
     sortOrder?: number;
 }) => {
     return prisma.$transaction(async (tx) => {
@@ -86,7 +86,7 @@ export const createTeam = async (companyId: string, data: {
     name: string;
     departmentId?: string | null;
     leadId?: string | null;
-    color?: string;
+    color?: string | null;
 }) => {
     return prisma.team.create({
         data: { companyId, ...data },

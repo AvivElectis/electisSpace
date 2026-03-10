@@ -142,7 +142,7 @@ export function CompassEmployeesTab() {
             employeeNumber: employee.employeeNumber || '',
             phone: employee.phone || '',
             isRemote: employee.isRemote ?? false,
-            isActive: employee.isActive,
+            isActive: employee.isActive ?? true,
         });
         setEmailError('');
         setCreatingDept(false);
