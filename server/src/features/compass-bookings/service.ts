@@ -437,6 +437,46 @@ export const extend = async (
     return updated;
 };
 
+// ─── Get Active Booking ──────────────────────────────
+
+export const getActiveBooking = async (companyUserId: string, companyId: string) => {
+    const booking = await prisma.booking.findFirst({
+        where: {
+            companyUserId,
+            companyId,
+            status: { in: ['BOOKED', 'CHECKED_IN'] },
+            startTime: { lte: new Date() },
+            OR: [{ endTime: null }, { endTime: { gt: new Date() } }],
+        },
+        include: {
+            space: {
+                select: {
+                    id: true, externalId: true, data: true, buildingId: true, floorId: true,
+                    compassAmenities: true, compassMode: true,
+                    building: { select: { name: true } },
+                    floor: { select: { name: true } },
+                },
+            },
+        },
+        orderBy: { startTime: 'asc' },
+    });
+
+    if (!booking) return null;
+
+    const spaceName = (booking.space?.data as Record<string, string> | null)?.['name']
+        || booking.space?.externalId || 'Space';
+
+    return {
+        ...booking,
+        spaceId: booking.space?.id ?? booking.spaceId,
+        space: {
+            displayName: spaceName,
+            buildingName: booking.space?.building?.name ?? null,
+            floorName: booking.space?.floor?.name ?? null,
+        },
+    };
+};
+
 // ─── List User Bookings ──────────────────────────────
 
 const VALID_BOOKING_STATUSES = new Set([

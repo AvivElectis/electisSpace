@@ -38,6 +38,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      '/compass-ws': {
+        target: 'http://localhost:3001',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
   define: {

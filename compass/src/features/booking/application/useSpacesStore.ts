@@ -47,7 +47,7 @@ export const useSpacesStore = create<SpacesState & SpacesActions>((set, get) => 
     fetchBuildings: async () => {
         try {
             const { data } = await spacesApi.getBuildings();
-            set({ buildings: data.buildings });
+            set({ buildings: data.buildings ?? [] });
         } catch {
             // Silently fail for building hierarchy
         }

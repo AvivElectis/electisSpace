@@ -66,6 +66,18 @@ export const list = async (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
+// ─── GET /api/v2/compass/bookings/active ────────────
+
+export const getActive = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.compassUser!;
+        const booking = await service.getActiveBooking(user.id, user.companyId);
+        res.json({ data: booking });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // ─── PATCH /api/v2/compass/bookings/:id/check-in ────
 
 export const checkIn = async (req: Request, res: Response, next: NextFunction) => {

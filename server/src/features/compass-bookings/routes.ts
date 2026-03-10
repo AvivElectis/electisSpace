@@ -19,6 +19,9 @@ compassBookingRoutes.use(compassAuthenticate, requireCompassEnabled);
 // GET    /bookings/work-hours — Get resolved work hours for user's branch
 compassBookingRoutes.get('/work-hours', controller.getWorkHours);
 
+// GET    /bookings/active   — Get current active booking
+compassBookingRoutes.get('/active', controller.getActive);
+
 // POST   /bookings          — Create a booking
 compassBookingRoutes.post('/', controller.create);
 
