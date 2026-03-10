@@ -27,8 +27,13 @@ export const updateSpacePropertiesSchema = z.object({
         'COLLABORATION_ZONE', 'PARKING', 'LOCKER', 'EVENT_SPACE',
     ]).nullable().optional(),
     compassCapacity: z.number().int().min(0).nullable().optional(),
+    minCapacity: z.number().int().min(0).nullable().optional(),
+    maxCapacity: z.number().int().min(0).nullable().optional(),
     buildingId: z.string().uuid().nullable().optional(),
     floorId: z.string().uuid().nullable().optional(),
     areaId: z.string().uuid().nullable().optional(),
     neighborhoodId: z.string().uuid().nullable().optional(),
+    permanentAssigneeId: z.string().uuid().nullable().optional(),
+    amenityIds: z.array(z.string().uuid()).optional(),
+    sortOrder: z.number().int().min(0).optional(),
 });

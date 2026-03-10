@@ -16,6 +16,7 @@ export const listSpaces = async (params: {
     minCapacity?: number;
     startTime?: Date;
     endTime?: Date;
+    includeAllModes?: boolean;
 }) => {
     const spaces = await repo.findCompassSpaces({
         branchId: params.branchId,
@@ -26,6 +27,7 @@ export const listSpaces = async (params: {
         spaceType: params.spaceType,
         amenities: params.amenities,
         minCapacity: params.minCapacity,
+        includeAllModes: params.includeAllModes,
     });
 
     // If time range provided, attach availability info
@@ -115,15 +117,29 @@ export const updateSpaceProperties = async (
     data: {
         compassSpaceType?: string | null;
         compassCapacity?: number | null;
+        minCapacity?: number | null;
+        maxCapacity?: number | null;
         buildingId?: string | null;
         floorId?: string | null;
         areaId?: string | null;
         neighborhoodId?: string | null;
+        permanentAssigneeId?: string | null;
+        amenityIds?: string[];
+        sortOrder?: number;
     },
 ) => {
     const space = await repo.findSpaceById(spaceId);
     if (!space) {
         throw notFound('Space not found');
     }
-    return repo.updateCompassProperties(spaceId, data);
+
+    const { amenityIds, ...spaceData } = data;
+
+    await repo.updateCompassProperties(spaceId, spaceData);
+
+    if (amenityIds !== undefined) {
+        await repo.syncSpaceAmenities(spaceId, amenityIds);
+    }
+
+    return { success: true };
 };

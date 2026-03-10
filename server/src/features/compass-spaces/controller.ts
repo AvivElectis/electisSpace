@@ -53,7 +53,7 @@ export const listBuildings = async (req: Request, res: Response, next: NextFunct
 export const adminList = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const branchId = req.params.branchId as string;
-        const spaces = await service.listSpaces({ branchId });
+        const spaces = await service.listSpaces({ branchId, includeAllModes: true });
         res.json({ data: spaces });
     } catch (error) {
         next(error);

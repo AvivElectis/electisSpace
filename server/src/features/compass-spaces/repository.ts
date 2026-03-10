@@ -13,13 +13,16 @@ export const findCompassSpaces = async (params: {
     amenities?: string[];
     minCapacity?: number;
     compassMode?: CompassSpaceMode;
+    includeAllModes?: boolean;
 }) => {
     const where: Prisma.SpaceWhereInput = {
         storeId: params.branchId,
         deletedAt: null,
-        compassMode: params.compassMode
-            ? params.compassMode
-            : { in: ['AVAILABLE', 'PERMANENT'] },
+        compassMode: params.includeAllModes
+            ? { not: null }
+            : params.compassMode
+                ? params.compassMode
+                : { in: ['AVAILABLE', 'PERMANENT'] },
     };
 
     if (params.buildingId) where.buildingId = params.buildingId;
@@ -156,15 +159,35 @@ export const updateCompassProperties = async (
     data: {
         compassSpaceType?: string | null;
         compassCapacity?: number | null;
+        minCapacity?: number | null;
+        maxCapacity?: number | null;
         buildingId?: string | null;
         floorId?: string | null;
         areaId?: string | null;
         neighborhoodId?: string | null;
+        permanentAssigneeId?: string | null;
+        sortOrder?: number;
     },
 ) => {
     return prisma.space.update({
         where: { id: spaceId },
         data: data as any,
+    });
+};
+
+// ─── Admin: Sync Space Amenities ────────────────────
+
+export const syncSpaceAmenities = async (
+    spaceId: string,
+    amenityIds: string[],
+) => {
+    return prisma.$transaction(async (tx) => {
+        await tx.spaceAmenity.deleteMany({ where: { spaceId } });
+        if (amenityIds.length > 0) {
+            await tx.spaceAmenity.createMany({
+                data: amenityIds.map((amenityId) => ({ spaceId, amenityId })),
+            });
+        }
     });
 };
 
