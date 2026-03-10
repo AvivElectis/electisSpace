@@ -52,7 +52,7 @@ export const spacesRepository = {
     },
 
     async findByExternalId(storeId: string, externalId: string) {
-        return prisma.space.findFirst({ where: { storeId, externalId } });
+        return prisma.space.findFirst({ where: { storeId, externalId, deletedAt: null } });
     },
 
     async findByIdWithAccess(id: string, storeIds: string[] | undefined) {
