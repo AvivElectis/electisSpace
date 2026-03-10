@@ -162,7 +162,6 @@ const createCompassMailOptions = (recipient: string, subject: string, html: stri
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <title>${subject}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
         <style>
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -195,17 +194,17 @@ const createCompassMailOptions = (recipient: string, subject: string, html: stri
           }
           .logo-text {
             font-size: 28px;
-            font-weight: 500;
-            font-family: 'Orbitron', 'Century Gothic', 'Segoe UI', Arial, sans-serif;
+            font-weight: 700;
+            font-family: 'Century Gothic', 'Trebuchet MS', 'Segoe UI', Arial, sans-serif;
             text-decoration: none;
             display: inline-block;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
           }
           .tagline {
-            font-size: 13px;
-            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
             margin-top: 8px;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             text-transform: uppercase;
           }
           .content {
@@ -416,42 +415,31 @@ export class EmailService {
    */
   static async sendCompassLoginCode(email: string, code: string, displayName?: string): Promise<void> {
     const name = displayName || 'User';
-    const codeChars = code.split('');
-    const subject = `Verification Code: ${code} - electisCompass`;
+    const subject = `${code} is your electisCompass sign-in code`;
 
     const html = `
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div style="display: inline-block; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); color: #ffffff; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;">
-          🔐 Verification Code
+      <h2 style="text-align: center; font-size: 22px; color: #0f172a; margin: 0 0 8px;">Hi ${name},</h2>
+      <p style="text-align: center; color: #64748b; font-size: 15px; margin: 0 0 32px;">
+        Use this code to sign in to your <strong>electisCompass</strong> account.
+      </p>
+
+      <p style="text-align: center; font-size: 13px; color: #475569; margin: 0 0 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+        Your verification code
+      </p>
+
+      <div style="text-align: center; margin: 0 0 12px; direction: ltr;">
+        <div style="display: inline-block; background-color: #f0f4ff; border: 2px solid #c7d2fe; border-radius: 12px; padding: 16px 40px;">
+          <span style="font-size: 36px; font-weight: 800; color: #1e3a5f; font-family: 'Courier New', Courier, monospace; letter-spacing: 10px; user-select: all;">${code}</span>
         </div>
       </div>
 
-      <h2 style="text-align: center; font-size: 22px; color: #0f172a; margin: 0 0 8px;">Hi ${name},</h2>
-      <p style="text-align: center; color: #64748b; font-size: 15px; margin: 0 0 32px;">
-        We received a sign-in request for your <strong>electisCompass</strong> account.
+      <p style="text-align: center; font-size: 12px; color: #94a3b8; margin: 0 0 24px;">
+        Copy and paste this code into the app
       </p>
-
-      <p style="text-align: center; font-size: 14px; color: #475569; margin: 0 0 16px; font-weight: 600;">
-        Enter this code to continue:
-      </p>
-
-      <div style="text-align: center; margin: 0 0 16px; direction: ltr;">
-        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-          <tr>
-            ${codeChars.map(digit => `
-              <td style="padding: 0 4px;">
-                <div style="width: 48px; height: 60px; background: linear-gradient(180deg, #f0f4ff 0%, #e8eeff 100%); border: 2px solid #c7d2fe; border-radius: 12px; font-size: 28px; font-weight: 800; color: #1e3a5f; font-family: 'Courier New', monospace; line-height: 60px; text-align: center;">
-                  ${digit}
-                </div>
-              </td>
-            `).join('')}
-          </tr>
-        </table>
-      </div>
 
       <div style="text-align: center; margin: 0 0 32px;">
         <div style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 8px; font-size: 13px;">
-          ⏱️ This code expires in <strong>15 minutes</strong>
+          This code expires in <strong>15 minutes</strong>
         </div>
       </div>
 
