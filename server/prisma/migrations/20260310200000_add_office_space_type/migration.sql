@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "CompassSpaceType" ADD VALUE IF NOT EXISTS 'OFFICE';

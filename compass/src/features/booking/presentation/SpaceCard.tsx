@@ -14,6 +14,7 @@ import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import PhoneIcon from '@mui/icons-material/Phone';
 import GroupsIcon from '@mui/icons-material/Groups';
 import LocalParkingIcon from '@mui/icons-material/LocalParking';
+import BusinessIcon from '@mui/icons-material/Business';
 import LockIcon from '@mui/icons-material/Lock';
 import EventIcon from '@mui/icons-material/Event';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +22,7 @@ import type { SpaceWithAvailability, CompassSpaceType } from '../domain/types';
 
 const SPACE_TYPE_ICONS: Record<CompassSpaceType, React.ElementType> = {
     DESK: LaptopMacIcon,
+    OFFICE: BusinessIcon,
     MEETING_ROOM: MeetingRoomIcon,
     PHONE_BOOTH: PhoneIcon,
     COLLABORATION_ZONE: GroupsIcon,

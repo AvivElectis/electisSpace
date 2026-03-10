@@ -13,7 +13,7 @@ import { compassAdminApi } from '../infrastructure/compassAdminApi';
 import type { CompassSpace, CompassSpaceType, SpaceMode, Amenity, Employee } from '../domain/types';
 
 const SPACE_TYPES: CompassSpaceType[] = [
-    'DESK', 'MEETING_ROOM', 'PHONE_BOOTH',
+    'DESK', 'OFFICE', 'MEETING_ROOM', 'PHONE_BOOTH',
     'COLLABORATION_ZONE', 'PARKING', 'LOCKER', 'EVENT_SPACE',
 ];
 

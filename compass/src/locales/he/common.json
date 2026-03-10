@@ -66,6 +66,7 @@
         "amenitiesFilterActive_other": "{{count}} מתקנים",
         "spaceType": {
             "DESK": "שולחן",
+            "OFFICE": "משרד",
             "MEETING_ROOM": "חדר ישיבות",
             "PHONE_BOOTH": "תא טלפון",
             "COLLABORATION_ZONE": "אזור שיתופי",

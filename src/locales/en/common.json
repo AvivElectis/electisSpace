@@ -2072,6 +2072,7 @@
         },
         "spaceTypes": {
             "DESK": "Desk",
+            "OFFICE": "Office",
             "MEETING_ROOM": "Meeting Room",
             "PHONE_BOOTH": "Phone Booth",
             "COLLABORATION_ZONE": "Collaboration Zone",

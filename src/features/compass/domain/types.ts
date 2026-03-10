@@ -35,7 +35,7 @@ export interface BookingRule {
     targetSpaceTypes?: CompassSpaceType[];
 }
 
-export type CompassSpaceType = 'DESK' | 'MEETING_ROOM' | 'PHONE_BOOTH' | 'COLLABORATION_ZONE' | 'PARKING' | 'LOCKER' | 'EVENT_SPACE';
+export type CompassSpaceType = 'DESK' | 'OFFICE' | 'MEETING_ROOM' | 'PHONE_BOOTH' | 'COLLABORATION_ZONE' | 'PARKING' | 'LOCKER' | 'EVENT_SPACE';
 
 export interface CompassSpace {
     id: string;

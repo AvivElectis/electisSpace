@@ -33,6 +33,7 @@ export type SpaceMode = 'AVAILABLE' | 'EXCLUDED' | 'MAINTENANCE' | 'PERMANENT';
 
 export type CompassSpaceType =
     | 'DESK'
+    | 'OFFICE'
     | 'MEETING_ROOM'
     | 'PHONE_BOOTH'
     | 'COLLABORATION_ZONE'

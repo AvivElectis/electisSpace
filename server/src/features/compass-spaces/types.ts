@@ -6,7 +6,7 @@ export const spacesQuerySchema = z.object({
     areaId: z.string().uuid().optional(),
     neighborhoodId: z.string().uuid().optional(),
     spaceType: z.enum([
-        'DESK', 'MEETING_ROOM', 'PHONE_BOOTH',
+        'DESK', 'OFFICE', 'MEETING_ROOM', 'PHONE_BOOTH',
         'COLLABORATION_ZONE', 'PARKING', 'LOCKER', 'EVENT_SPACE',
     ]).optional(),
     amenities: z.string().optional(), // comma-separated
@@ -23,7 +23,7 @@ export const updateSpaceModeSchema = z.object({
 
 export const updateSpacePropertiesSchema = z.object({
     compassSpaceType: z.enum([
-        'DESK', 'MEETING_ROOM', 'PHONE_BOOTH',
+        'DESK', 'OFFICE', 'MEETING_ROOM', 'PHONE_BOOTH',
         'COLLABORATION_ZONE', 'PARKING', 'LOCKER', 'EVENT_SPACE',
     ]).nullable().optional(),
     compassCapacity: z.number().int().min(0).nullable().optional(),

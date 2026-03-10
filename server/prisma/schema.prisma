@@ -971,6 +971,7 @@ enum CompassSpaceMode {
 // ======================
 enum CompassSpaceType {
   DESK
+  OFFICE
   MEETING_ROOM
   PHONE_BOOTH
   COLLABORATION_ZONE
