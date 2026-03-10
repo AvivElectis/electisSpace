@@ -2002,7 +2002,8 @@
             "searchEmployee": "Search employee...",
             "sortOrder": "Sort Order",
             "sortOrderHelper": "Lower numbers appear first",
-            "required": "Required"
+            "required": "Required",
+            "idExists": "A space with this ID already exists"
         },
         "cancelBooking": "Cancel Booking",
         "reserveSpace": "Reserve Space",

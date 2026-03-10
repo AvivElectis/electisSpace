@@ -2002,7 +2002,8 @@
             "searchEmployee": "חפש עובד...",
             "sortOrder": "סדר מיון",
             "sortOrderHelper": "מספרים נמוכים מופיעים ראשונים",
-            "required": "שדה חובה"
+            "required": "שדה חובה",
+            "idExists": "מקום עם מזהה זה כבר קיים"
         },
         "cancelBooking": "בטל הזמנה",
         "reserveSpace": "שריין מקום",

@@ -221,14 +221,26 @@ export function CompassSpacesTab() {
             }
             return updated;
         });
-        if (formErrors[field as keyof SpaceForm]) {
+        // Live uniqueness check for externalId in add mode
+        if (field === 'externalId' && dialogMode === 'add' && typeof value === 'string') {
+            const trimmed = value.trim();
+            const duplicate = trimmed && spaces.some(s => s.type === trimmed);
+            setFormErrors(prev => ({
+                ...prev,
+                externalId: duplicate ? t('compass.spaceDialog.idExists') : undefined,
+            }));
+        } else if (formErrors[field as keyof SpaceForm]) {
             setFormErrors(prev => ({ ...prev, [field]: undefined }));
         }
     };
 
     const validateForm = (): boolean => {
         const errors: Partial<Record<keyof SpaceForm, string>> = {};
-        if (!form.externalId.trim()) errors.externalId = t('compass.spaceDialog.required');
+        if (!form.externalId.trim()) {
+            errors.externalId = t('compass.spaceDialog.required');
+        } else if (dialogMode === 'add' && spaces.some(s => s.type === form.externalId.trim())) {
+            errors.externalId = t('compass.spaceDialog.idExists');
+        }
         if (!form.compassSpaceType) errors.compassSpaceType = t('compass.spaceDialog.required');
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
