@@ -1980,6 +1980,7 @@
         "cancelBooking": "בטל הזמנה",
         "reserveSpace": "שריין מקום",
         "untilCancellation": "עד ביטול",
+        "timezoneHint": "השעות באזור הזמן המקומי שלך",
         "deleteRule": "מחק כלל",
         "deactivateEmployee": "השבת עובד",
         "confirmDeactivate": "האם אתה בטוח שברצונך להשבית עובד זה?",

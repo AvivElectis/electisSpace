@@ -131,7 +131,10 @@
         "addFriend": "הוסף חבר",
         "emailLabel": "כתובת אימייל של חבר",
         "sendRequest": "שלח בקשה",
-        "requestSent": "בקשת חברות נשלחה!"
+        "requestSent": "בקשת חברות נשלחה!",
+        "removeFriend": "הסר",
+        "removeFriendTitle": "הסר חבר",
+        "removeFriendConfirm": "האם אתה בטוח שברצונך להסיר חבר זה?"
     },
     "profile": {
         "friends": "חברים",
@@ -140,7 +143,9 @@
         "settings": "הגדרות",
         "branchAddress": "כתובת סניף",
         "department": "מחלקה",
-        "logout": "התנתק"
+        "logout": "התנתק",
+        "logoutTitle": "התנתק",
+        "logoutConfirm": "האם אתה בטוח שברצונך להתנתק?"
     },
     "accessibility": {
         "title": "תצוגה ונגישות",

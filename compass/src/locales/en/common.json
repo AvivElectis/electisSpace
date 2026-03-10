@@ -131,7 +131,10 @@
         "addFriend": "Add Friend",
         "emailLabel": "Friend's email address",
         "sendRequest": "Send Request",
-        "requestSent": "Friend request sent!"
+        "requestSent": "Friend request sent!",
+        "removeFriend": "Remove",
+        "removeFriendTitle": "Remove Friend",
+        "removeFriendConfirm": "Are you sure you want to remove this friend?"
     },
     "profile": {
         "friends": "Friends",
@@ -140,7 +143,9 @@
         "settings": "Settings",
         "branchAddress": "Branch Address",
         "department": "Department",
-        "logout": "Sign Out"
+        "logout": "Sign Out",
+        "logoutTitle": "Sign Out",
+        "logoutConfirm": "Are you sure you want to sign out?"
     },
     "accessibility": {
         "title": "Display & Accessibility",

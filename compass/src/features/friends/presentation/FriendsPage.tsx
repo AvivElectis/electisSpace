@@ -52,6 +52,9 @@ export function FriendsPage() {
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [addEmail, setAddEmail] = useState('');
     const [addSuccess, setAddSuccess] = useState(false);
+    const [loadingActionId, setLoadingActionId] = useState<string | null>(null);
+    const [sendingRequest, setSendingRequest] = useState(false);
+    const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
     const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -63,7 +66,9 @@ export function FriendsPage() {
     }, [fetchFriends, fetchPendingRequests]);
 
     const handleSendRequest = async () => {
+        setSendingRequest(true);
         const ok = await sendRequest(addEmail);
+        setSendingRequest(false);
         if (ok) {
             setAddEmail('');
             setAddSuccess(true);
@@ -72,6 +77,26 @@ export function FriendsPage() {
                 setAddSuccess(false);
             }, 1500);
         }
+    };
+
+    const handleAccept = async (id: string) => {
+        setLoadingActionId(id);
+        await acceptRequest(id);
+        setLoadingActionId(null);
+    };
+
+    const handleDecline = async (id: string) => {
+        setLoadingActionId(id);
+        await declineRequest(id);
+        setLoadingActionId(null);
+    };
+
+    const handleRemoveConfirm = async () => {
+        if (!confirmRemoveId) return;
+        setLoadingActionId(confirmRemoveId);
+        await removeFriend(confirmRemoveId);
+        setLoadingActionId(null);
+        setConfirmRemoveId(null);
     };
 
     const checkedInFriends = friends.filter((f) => f.checkedInSpace);
@@ -128,14 +153,16 @@ export function FriendsPage() {
                                         <IconButton
                                             size="small"
                                             color="success"
-                                            onClick={() => acceptRequest(req.id)}
+                                            disabled={loadingActionId === req.id}
+                                            onClick={() => handleAccept(req.id)}
                                         >
-                                            <CheckIcon />
+                                            {loadingActionId === req.id ? <CircularProgress size={18} /> : <CheckIcon />}
                                         </IconButton>
                                         <IconButton
                                             size="small"
                                             color="error"
-                                            onClick={() => declineRequest(req.id)}
+                                            disabled={loadingActionId === req.id}
+                                            onClick={() => handleDecline(req.id)}
                                         >
                                             <CloseIcon />
                                         </IconButton>
@@ -224,9 +251,10 @@ export function FriendsPage() {
                                             <IconButton
                                                 size="small"
                                                 color="error"
-                                                onClick={() => removeFriend(friend.friendshipId)}
+                                                disabled={loadingActionId === friend.friendshipId}
+                                                onClick={() => setConfirmRemoveId(friend.friendshipId)}
                                             >
-                                                <PersonRemoveIcon fontSize="small" />
+                                                {loadingActionId === friend.friendshipId ? <CircularProgress size={18} /> : <PersonRemoveIcon fontSize="small" />}
                                             </IconButton>
                                         </ListItemSecondaryAction>
                                     </ListItem>
@@ -252,6 +280,22 @@ export function FriendsPage() {
                     </Button>
                 </Box>
             )}
+
+            {/* Remove friend confirmation dialog */}
+            <Dialog open={!!confirmRemoveId} onClose={() => setConfirmRemoveId(null)}>
+                <DialogTitle>{t('friends.removeFriendTitle')}</DialogTitle>
+                <DialogContent>
+                    <Typography>{t('friends.removeFriendConfirm')}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmRemoveId(null)} color="inherit">
+                        {t('booking.no')}
+                    </Button>
+                    <Button variant="contained" color="error" onClick={handleRemoveConfirm}>
+                        {t('friends.removeFriend')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* Add friend dialog */}
             <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} fullWidth maxWidth="sm">
@@ -284,7 +328,8 @@ export function FriendsPage() {
                         <Button
                             variant="contained"
                             onClick={handleSendRequest}
-                            disabled={!addEmail.includes('@')}
+                            disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addEmail) || sendingRequest}
+                            startIcon={sendingRequest ? <CircularProgress size={16} /> : undefined}
                         >
                             {t('friends.sendRequest')}
                         </Button>

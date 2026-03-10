@@ -10,6 +10,11 @@ import {
     ListItemIcon,
     ListItemText,
     Divider,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
@@ -28,6 +33,7 @@ export function ProfilePage() {
     const user = useCompassAuthStore((s) => s.user);
     const logout = useCompassAuthStore((s) => s.logout);
     const [a11yOpen, setA11yOpen] = useState(false);
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
     const branchAddress = user?.branchAddress ?? null;
 
@@ -96,7 +102,7 @@ export function ProfilePage() {
                         <ListItemText primary={t('profile.accessibility')} />
                     </ListItemButton>
                     <Divider />
-                    <ListItemButton onClick={logout}>
+                    <ListItemButton onClick={() => setLogoutConfirmOpen(true)}>
                         <ListItemIcon><LogoutIcon color="error" /></ListItemIcon>
                         <ListItemText
                             primary={t('profile.logout')}
@@ -107,6 +113,22 @@ export function ProfilePage() {
             </Card>
 
             <AccessibilityDialog open={a11yOpen} onClose={() => setA11yOpen(false)} />
+
+            {/* Logout confirmation */}
+            <Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)}>
+                <DialogTitle>{t('profile.logoutTitle')}</DialogTitle>
+                <DialogContent>
+                    <Typography>{t('profile.logoutConfirm')}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setLogoutConfirmOpen(false)} color="inherit">
+                        {t('booking.no')}
+                    </Button>
+                    <Button variant="contained" color="error" onClick={logout}>
+                        {t('profile.logout')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

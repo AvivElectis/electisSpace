@@ -258,6 +258,11 @@ export function CompassSpacesTab() {
                                             onChange={(e) => handleModeChange(s.id, e.target.value as SpaceMode)}
                                             disabled={updatingSpaceId === s.id}
                                             sx={{ minWidth: 130 }}
+                                            slotProps={{
+                                                input: {
+                                                    endAdornment: updatingSpaceId === s.id ? <CircularProgress size={16} sx={{ mr: 2 }} /> : undefined,
+                                                },
+                                            }}
                                         >
                                             <MenuItem value="AVAILABLE">{t('compass.spaceMode.AVAILABLE')}</MenuItem>
                                             <MenuItem value="PERMANENT">{t('compass.spaceMode.PERMANENT')}</MenuItem>
@@ -331,6 +336,7 @@ export function CompassSpacesTab() {
                             label={t('compass.capacity', 'Capacity')}
                             value={editForm.compassCapacity}
                             onChange={(e) => setEditForm(prev => ({ ...prev, compassCapacity: e.target.value }))}
+                            slotProps={{ htmlInput: { min: 1, max: 999 } }}
                         />
                         <TextField
                             fullWidth

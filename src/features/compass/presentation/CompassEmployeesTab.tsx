@@ -530,7 +530,7 @@ export function CompassEmployeesTab() {
                     size="small"
                     placeholder={t('common.search', 'Search...')}
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     sx={{ minWidth: 200 }}
                 />
                 <Button

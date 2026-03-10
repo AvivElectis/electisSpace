@@ -6,6 +6,7 @@ import {
     Box,
     Chip,
     Stack,
+    CircularProgress,
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -22,6 +23,7 @@ interface BookingCardProps {
     onRelease?: (id: string) => void;
     onExtend?: (id: string) => void;
     onCancel?: (id: string) => void;
+    isLoading?: boolean;
 }
 
 function formatTime(dateStr: string): string {
@@ -56,7 +58,7 @@ const statusColors: Record<string, 'success' | 'info' | 'warning' | 'error' | 'd
     CANCELLED: 'default',
 };
 
-export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel }: BookingCardProps) {
+export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel, isLoading }: BookingCardProps) {
     const { t } = useTranslation();
     const spaceName = booking.space?.displayName ?? booking.spaceId;
     const locationParts = [
@@ -125,13 +127,14 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel 
 
                 {/* Action buttons */}
                 {!isPast && (
-                    <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', gap: 1 }}>
                         {isBooked && onCheckIn && (
                             <Button
-                                size="small"
+                                size="medium"
                                 variant="contained"
                                 color="success"
-                                startIcon={<CheckCircleIcon />}
+                                disabled={isLoading}
+                                startIcon={isLoading ? <CircularProgress size={16} /> : <CheckCircleIcon />}
                                 onClick={() => onCheckIn(booking.id)}
                             >
                                 {t('booking.checkIn')}
@@ -139,9 +142,10 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel 
                         )}
                         {isActive && onRelease && (
                             <Button
-                                size="small"
+                                size="medium"
                                 variant="outlined"
-                                startIcon={<LockOpenIcon />}
+                                disabled={isLoading}
+                                startIcon={isLoading ? <CircularProgress size={16} /> : <LockOpenIcon />}
                                 onClick={() => onRelease(booking.id)}
                             >
                                 {t('booking.release')}
@@ -149,8 +153,9 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel 
                         )}
                         {(isActive || isBooked) && onExtend && (
                             <Button
-                                size="small"
+                                size="medium"
                                 variant="outlined"
+                                disabled={isLoading}
                                 startIcon={<ScheduleIcon />}
                                 onClick={() => onExtend(booking.id)}
                             >
@@ -159,9 +164,10 @@ export function BookingCard({ booking, onCheckIn, onRelease, onExtend, onCancel 
                         )}
                         {isBooked && onCancel && (
                             <Button
-                                size="small"
+                                size="medium"
                                 variant="outlined"
                                 color="error"
+                                disabled={isLoading}
                                 startIcon={<CancelIcon />}
                                 onClick={() => onCancel(booking.id)}
                             >

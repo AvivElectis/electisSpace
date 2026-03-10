@@ -489,6 +489,7 @@ export function CompassBookingsTab() {
                             value={editStartTime}
                             onChange={(e) => setEditStartTime(e.target.value)}
                             slotProps={{ inputLabel: { shrink: true } }}
+                            helperText={t('compass.timezoneHint')}
                         />
                         <FormControlLabel
                             control={
@@ -540,7 +541,7 @@ export function CompassBookingsTab() {
                             value={selectedEmployee}
                             onChange={(_, v) => setSelectedEmployee(v)}
                             renderInput={(params) => (
-                                <TextField {...params} label={t('compass.navigation.employees')} />
+                                <TextField {...params} label={t('compass.navigation.employees')} placeholder={t('common.search')} />
                             )}
                         />
                         <Autocomplete
@@ -549,7 +550,7 @@ export function CompassBookingsTab() {
                             value={selectedSpace}
                             onChange={(_, v) => setSelectedSpace(v)}
                             renderInput={(params) => (
-                                <TextField {...params} label={t('compass.navigation.spaces')} />
+                                <TextField {...params} label={t('compass.navigation.spaces')} placeholder={t('common.search')} />
                             )}
                         />
                         <TextField
@@ -558,6 +559,7 @@ export function CompassBookingsTab() {
                             value={startTime}
                             onChange={(e) => setStartTime(e.target.value)}
                             slotProps={{ inputLabel: { shrink: true } }}
+                            helperText={t('compass.timezoneHint')}
                         />
                         <FormControlLabel
                             control={

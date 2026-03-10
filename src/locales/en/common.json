@@ -1980,6 +1980,7 @@
         "cancelBooking": "Cancel Booking",
         "reserveSpace": "Reserve Space",
         "untilCancellation": "Until Cancellation",
+        "timezoneHint": "Times in your local timezone",
         "deleteRule": "Delete Rule",
         "deactivateEmployee": "Deactivate Employee",
         "confirmDeactivate": "Are you sure you want to deactivate this employee?",

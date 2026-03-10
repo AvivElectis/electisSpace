@@ -208,6 +208,7 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
             </DialogTitle>
 
             <DialogContent>
+              <Box component="form" onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleConfirm(); }}>
                 {storeError && (
                     <Alert severity="error" sx={{ mb: 2 }}>
                         {storeError}
@@ -294,6 +295,7 @@ export function BookingDialog({ space, onClose }: BookingDialogProps) {
                         }}
                     />
                 )}
+              </Box>
             </DialogContent>
 
             <DialogActions sx={{ px: 3, pb: 3 }}>

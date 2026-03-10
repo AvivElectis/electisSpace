@@ -555,7 +555,7 @@ export function CompassRulesTab() {
                     <Button
                         variant="contained"
                         onClick={handleSave}
-                        disabled={!form.name.trim() || saving}
+                        disabled={!form.name.trim() || !form.value.trim() || saving}
                     >
                         {saving
                             ? <CircularProgress size={20} />

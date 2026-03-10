@@ -67,7 +67,7 @@ export function SpaceCard({ space, onBook }: SpaceCardProps) {
                     <Box sx={{ flex: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             {TypeIcon && (
-                                <TypeIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                                <TypeIcon sx={{ fontSize: 18, color: 'primary.main' }} aria-label={t(`find.spaceType.${space.compassSpaceType}`)} />
                             )}
                             <Typography variant="subtitle1" fontWeight={600}>
                                 {space.displayName}
@@ -102,7 +102,7 @@ export function SpaceCard({ space, onBook }: SpaceCardProps) {
 
                     <Button
                         variant="contained"
-                        size="small"
+                        size="medium"
                         disabled={!space.available}
                         onClick={() => onBook(space)}
                         sx={{ minWidth: 64, ml: 1 }}

@@ -121,6 +121,7 @@ export function LoginPage() {
                                 fullWidth
                                 placeholder={t('auth.emailPlaceholder')}
                                 type="email"
+                                autoComplete="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 autoFocus

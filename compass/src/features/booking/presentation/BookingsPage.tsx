@@ -46,6 +46,7 @@ export function BookingsPage() {
     const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
     const [recurringCancelId, setRecurringCancelId] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    const [loadingBookingId, setLoadingBookingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchActiveBooking();
@@ -53,12 +54,16 @@ export function BookingsPage() {
     }, [fetchActiveBooking, fetchBookings]);
 
     const handleCheckIn = async (id: string) => {
+        setLoadingBookingId(id);
         const ok = await checkIn(id);
+        setLoadingBookingId(null);
         if (ok) setSuccessMsg(t('booking.checkInSuccess'));
     };
 
     const handleRelease = async (id: string) => {
+        setLoadingBookingId(id);
         const ok = await release(id);
+        setLoadingBookingId(null);
         if (ok) setSuccessMsg(t('booking.releaseSuccess'));
     };
 
@@ -69,9 +74,11 @@ export function BookingsPage() {
             : upcomingBookings.find((b) => b.id === extendDialogId);
         if (!booking) return;
 
+        setLoadingBookingId(extendDialogId);
         const date = (booking.endTime ?? booking.startTime).split('T')[0];
         const newEndISO = new Date(`${date}T${extendTime}:00`).toISOString();
         const ok = await extend(extendDialogId, { newEndTime: newEndISO });
+        setLoadingBookingId(null);
         if (ok) {
             setExtendDialogId(null);
             setSuccessMsg(t('booking.extendSuccess'));
@@ -80,7 +87,9 @@ export function BookingsPage() {
 
     const handleCancelConfirm = async () => {
         if (!cancelConfirmId) return;
+        setLoadingBookingId(cancelConfirmId);
         const ok = await cancel(cancelConfirmId);
+        setLoadingBookingId(null);
         if (ok) {
             setCancelConfirmId(null);
             setSuccessMsg(t('booking.cancelSuccess'));
@@ -89,7 +98,9 @@ export function BookingsPage() {
 
     const handleRecurringCancel = async (scope: CancelScope) => {
         if (!recurringCancelId) return;
+        setLoadingBookingId(recurringCancelId);
         const ok = await cancel(recurringCancelId, scope);
+        setLoadingBookingId(null);
         if (ok) {
             setRecurringCancelId(null);
             setSuccessMsg(t('booking.cancelSuccess'));
@@ -150,6 +161,7 @@ export function BookingsPage() {
                                 <BookingCard
                                     key={b.id}
                                     booking={b}
+                                    isLoading={loadingBookingId === b.id}
                                     onRelease={handleRelease}
                                     onExtend={(id) => {
                                         setExtendTime('');
@@ -170,6 +182,7 @@ export function BookingsPage() {
                                 <BookingCard
                                     key={b.id}
                                     booking={b}
+                                    isLoading={loadingBookingId === b.id}
                                     onCheckIn={handleCheckIn}
                                     onCancel={(id) => handleCancelRequest(id)}
                                 />

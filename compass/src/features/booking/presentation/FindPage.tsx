@@ -4,6 +4,7 @@ import {
     Typography,
     TextField,
     InputAdornment,
+    IconButton,
     Chip,
     Stack,
     MenuItem,
@@ -14,6 +15,7 @@ import {
     Alert,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import SortIcon from '@mui/icons-material/Sort';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import LaptopMacIcon from '@mui/icons-material/LaptopMac';
@@ -121,6 +123,7 @@ export function FindPage() {
                 <TextField
                     fullWidth
                     placeholder={t('find.searchPlaceholder')}
+                    type="search"
                     size="small"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
@@ -131,6 +134,13 @@ export function FindPage() {
                                     <SearchIcon />
                                 </InputAdornment>
                             ),
+                            endAdornment: searchText ? (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchText('')} edge="end">
+                                        <ClearIcon fontSize="small" />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : undefined,
                         },
                     }}
                     sx={{ mb: 1.5 }}
