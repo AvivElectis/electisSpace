@@ -230,6 +230,8 @@ async function applyUserSync(companyId: string, users: NormalizedUser[]): Promis
                         companyId,
                         branchId: defaultBranch.id,
                         email: user.email,
+                        firstName: user.displayName.split(' ')[0] || user.email.split('@')[0],
+                        lastName: user.displayName.split(' ').slice(1).join(' ') || null,
                         displayName: user.displayName,
                         externalId: user.externalId,
                         role: 'EMPLOYEE',

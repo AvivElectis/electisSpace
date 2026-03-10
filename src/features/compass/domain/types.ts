@@ -58,6 +58,9 @@ export interface CompassSpace {
 export interface Employee {
     id: string;
     email: string;
+    firstName: string;
+    middleName: string | null;
+    lastName: string | null;
     displayName: string;
     phone: string | null;
     role: string;

@@ -146,6 +146,9 @@ export const findCompanyUsers = async (companyId: string, page = 1, pageSize = 5
     const select = {
         id: true,
         email: true,
+        firstName: true,
+        middleName: true,
+        lastName: true,
         displayName: true,
         avatarUrl: true,
         role: true,
@@ -188,11 +191,19 @@ export const bulkUpdateEmployeeStatus = async (
     });
 };
 
+/** Build displayName from name parts */
+export const buildDisplayName = (firstName: string, middleName?: string | null, lastName?: string | null): string => {
+    return [firstName, middleName, lastName].filter(Boolean).join(' ');
+};
+
 export const createCompanyUser = async (data: {
     companyId: string;
     branchId: string;
     email: string;
-    displayName: string;
+    firstName: string;
+    middleName?: string;
+    lastName?: string;
+    displayName?: string;
     role?: string;
     buildingId?: string;
     floorId?: string;
@@ -204,12 +215,16 @@ export const createCompanyUser = async (data: {
     costCenter?: string;
     isRemote?: boolean;
 }) => {
+    const displayName = data.displayName || buildDisplayName(data.firstName, data.middleName, data.lastName);
     return prisma.companyUser.create({
         data: {
             companyId: data.companyId,
             branchId: data.branchId,
             email: data.email,
-            displayName: data.displayName,
+            firstName: data.firstName,
+            middleName: data.middleName ?? null,
+            lastName: data.lastName ?? null,
+            displayName,
             role: (data.role as any) ?? 'EMPLOYEE',
             buildingId: data.buildingId ?? null,
             floorId: data.floorId ?? null,
@@ -225,6 +240,9 @@ export const createCompanyUser = async (data: {
 };
 
 export const updateCompanyUser = async (id: string, companyId: string, data: Partial<{
+    firstName: string;
+    middleName: string | null;
+    lastName: string | null;
     displayName: string;
     role: string;
     branchId: string;
@@ -242,8 +260,18 @@ export const updateCompanyUser = async (id: string, companyId: string, data: Par
     // Verify the user belongs to the company before updating
     const existing = await prisma.companyUser.findFirst({ where: { id, companyId } });
     if (!existing) throw notFound('Company user not found');
+
+    // Auto-compute displayName if name fields are provided
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.firstName !== undefined || data.middleName !== undefined || data.lastName !== undefined) {
+        const firstName = data.firstName ?? existing.firstName;
+        const middleName = data.middleName !== undefined ? data.middleName : existing.middleName;
+        const lastName = data.lastName !== undefined ? data.lastName : existing.lastName;
+        updateData.displayName = buildDisplayName(firstName, middleName, lastName);
+    }
+
     return prisma.companyUser.update({
         where: { id },
-        data: data as any,
+        data: updateData as any,
     });
 };

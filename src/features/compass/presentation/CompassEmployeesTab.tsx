@@ -3,7 +3,7 @@ import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, Chip, IconButton, TextField,
     Stack, CircularProgress, Alert, Button, Dialog, DialogTitle,
-    DialogContent, DialogActions, MenuItem, FormControlLabel, Checkbox,
+    DialogContent, DialogActions, MenuItem, FormControlLabel, Checkbox, Switch,
     InputAdornment, TablePagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -23,24 +23,30 @@ const CREATE_NEW_DEPT = '__CREATE_NEW__';
 
 interface EmployeeFormState {
     email: string;
-    displayName: string;
+    firstName: string;
+    middleName: string;
+    lastName: string;
     role: string;
     departmentId: string;
     jobTitle: string;
     employeeNumber: string;
     phone: string;
     isRemote: boolean;
+    isActive: boolean;
 }
 
 const emptyForm: EmployeeFormState = {
     email: '',
-    displayName: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
     role: 'EMPLOYEE',
     departmentId: '',
     jobTitle: '',
     employeeNumber: '',
     phone: '',
     isRemote: false,
+    isActive: true,
 };
 
 export function CompassEmployeesTab() {
@@ -127,13 +133,16 @@ export function CompassEmployeesTab() {
     const openEditDialog = (employee: Employee) => {
         setForm({
             email: employee.email,
-            displayName: employee.displayName,
+            firstName: employee.firstName || '',
+            middleName: employee.middleName || '',
+            lastName: employee.lastName || '',
             role: employee.role,
             departmentId: employee.departmentId || '',
             jobTitle: employee.jobTitle || '',
             employeeNumber: employee.employeeNumber || '',
             phone: employee.phone || '',
             isRemote: employee.isRemote ?? false,
+            isActive: employee.isActive,
         });
         setEmailError('');
         setCreatingDept(false);
@@ -181,7 +190,7 @@ export function CompassEmployeesTab() {
     };
 
     const handleAdd = async () => {
-        if (!form.email.trim() || !form.displayName.trim() || !activeCompanyId || !activeStoreId) return;
+        if (!form.email.trim() || !form.firstName.trim() || !activeCompanyId || !activeStoreId) return;
         if (!validateEmail(form.email)) return;
 
         setSaving(true);
@@ -189,7 +198,9 @@ export function CompassEmployeesTab() {
             await compassAdminApi.createEmployee(activeCompanyId, {
                 branchId: activeStoreId,
                 email: form.email.trim().toLowerCase(),
-                displayName: form.displayName.trim(),
+                firstName: form.firstName.trim(),
+                middleName: form.middleName.trim() || undefined,
+                lastName: form.lastName.trim() || undefined,
                 role: form.role,
                 departmentId: form.departmentId || null,
                 jobTitle: form.jobTitle.trim() || null,
@@ -208,20 +219,23 @@ export function CompassEmployeesTab() {
 
     const handleEdit = async () => {
         if (!editEmployee || !activeCompanyId) return;
-        if (!form.displayName.trim()) return;
+        if (!form.firstName.trim()) return;
         if (!validateEmail(form.email)) return;
 
         setSaving(true);
         try {
             await compassAdminApi.updateEmployee(activeCompanyId, editEmployee.id, {
                 email: form.email.trim().toLowerCase(),
-                displayName: form.displayName.trim(),
+                firstName: form.firstName.trim(),
+                middleName: form.middleName.trim() || null,
+                lastName: form.lastName.trim() || null,
                 role: form.role,
                 departmentId: form.departmentId || null,
                 jobTitle: form.jobTitle.trim() || null,
                 phone: form.phone.trim() || null,
                 employeeNumber: form.employeeNumber.trim() || null,
                 isRemote: form.isRemote,
+                isActive: form.isActive,
             });
             closeEditDialog();
             fetchEmployees();
@@ -279,6 +293,9 @@ export function CompassEmployeesTab() {
     // CSV Export
     const handleExportCSV = () => {
         const rows = employees.map(emp => ({
+            [t('compass.firstName')]: emp.firstName || '',
+            [t('compass.middleName')]: emp.middleName || '',
+            [t('compass.lastName')]: emp.lastName || '',
             [t('common.name')]: emp.displayName,
             [t('common.email')]: emp.email,
             [t('common.role')]: emp.role,
@@ -301,7 +318,7 @@ export function CompassEmployeesTab() {
 
     // CSV Import
     const [importOpen, setImportOpen] = useState(false);
-    const [importPreview, setImportPreview] = useState<Array<{ email: string; displayName: string; role: string; jobTitle: string; phone: string; employeeNumber: string }>>([]);
+    const [importPreview, setImportPreview] = useState<Array<{ email: string; firstName: string; middleName: string; lastName: string; role: string; jobTitle: string; phone: string; employeeNumber: string }>>([]);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<{ created: number; errors: number } | null>(null);
 
@@ -314,14 +331,26 @@ export function CompassEmployeesTab() {
             complete: (results) => {
                 const rows = (results.data as Record<string, string>[])
                     .filter(row => row['email'] || row['Email'] || row[t('common.email')])
-                    .map(row => ({
-                        email: (row['email'] || row['Email'] || row[t('common.email')] || '').trim(),
-                        displayName: (row['displayName'] || row['Name'] || row['name'] || row[t('common.name')] || '').trim(),
-                        role: (row['role'] || row['Role'] || row[t('common.role')] || 'EMPLOYEE').trim().toUpperCase(),
-                        jobTitle: (row['jobTitle'] || row['Job Title'] || row[t('compass.jobTitle')] || '').trim(),
-                        phone: (row['phone'] || row['Phone'] || row[t('common.phone')] || '').trim(),
-                        employeeNumber: (row['employeeNumber'] || row['Employee Number'] || row[t('compass.employeeNumber')] || '').trim(),
-                    }));
+                    .map(row => {
+                        // Support both "First Name"/"Last Name" and legacy "Name"/"displayName"
+                        let firstName = (row['firstName'] || row['First Name'] || row[t('compass.firstName')] || '').trim();
+                        const middleName = (row['middleName'] || row['Middle Name'] || row[t('compass.middleName')] || '').trim();
+                        const lastName = (row['lastName'] || row['Last Name'] || row[t('compass.lastName')] || '').trim();
+                        // Fallback: if no firstName but there's a displayName/Name, use it as firstName
+                        if (!firstName) {
+                            firstName = (row['displayName'] || row['Name'] || row['name'] || row[t('common.name')] || '').trim();
+                        }
+                        return {
+                            email: (row['email'] || row['Email'] || row[t('common.email')] || '').trim(),
+                            firstName,
+                            middleName,
+                            lastName,
+                            role: (row['role'] || row['Role'] || row[t('common.role')] || 'EMPLOYEE').trim().toUpperCase(),
+                            jobTitle: (row['jobTitle'] || row['Job Title'] || row[t('compass.jobTitle')] || '').trim(),
+                            phone: (row['phone'] || row['Phone'] || row[t('common.phone')] || '').trim(),
+                            employeeNumber: (row['employeeNumber'] || row['Employee Number'] || row[t('compass.employeeNumber')] || '').trim(),
+                        };
+                    });
                 setImportPreview(rows);
                 setImportOpen(true);
                 setImportResult(null);
@@ -336,7 +365,7 @@ export function CompassEmployeesTab() {
         setImporting(true);
 
         // Validate rows first, separate valid from invalid
-        const validRows = importPreview.filter(row => row.email && row.displayName);
+        const validRows = importPreview.filter(row => row.email && row.firstName);
         const invalidCount = importPreview.length - validRows.length;
 
         // Use Promise.allSettled for concurrent import without race conditions
@@ -345,7 +374,9 @@ export function CompassEmployeesTab() {
                 compassAdminApi.createEmployee(activeCompanyId, {
                     branchId: activeStoreId,
                     email: row.email.toLowerCase(),
-                    displayName: row.displayName,
+                    firstName: row.firstName,
+                    middleName: row.middleName || undefined,
+                    lastName: row.lastName || undefined,
                     role: ['EMPLOYEE', 'MANAGER', 'ADMIN'].includes(row.role) ? row.role : 'EMPLOYEE',
                     jobTitle: row.jobTitle || null,
                     phone: row.phone || null,
@@ -402,9 +433,21 @@ export function CompassEmployeesTab() {
             <TextField
                 fullWidth
                 required
-                label={t('common.name', 'Name')}
-                value={form.displayName}
-                onChange={(e) => updateField('displayName', e.target.value)}
+                label={t('compass.firstName', 'First Name')}
+                value={form.firstName}
+                onChange={(e) => updateField('firstName', e.target.value)}
+            />
+            <TextField
+                fullWidth
+                label={t('compass.middleName', 'Middle Name')}
+                value={form.middleName}
+                onChange={(e) => updateField('middleName', e.target.value)}
+            />
+            <TextField
+                fullWidth
+                label={t('compass.lastName', 'Last Name')}
+                value={form.lastName}
+                onChange={(e) => updateField('lastName', e.target.value)}
             />
             <TextField
                 fullWidth
@@ -716,7 +759,7 @@ export function CompassEmployeesTab() {
                     <Button
                         variant="contained"
                         onClick={handleAdd}
-                        disabled={!form.email.trim() || !form.displayName.trim() || saving}
+                        disabled={!form.email.trim() || !form.firstName.trim() || saving}
                     >
                         {saving ? <CircularProgress size={20} /> : t('common.add', 'Add')}
                     </Button>
@@ -728,6 +771,17 @@ export function CompassEmployeesTab() {
                 <DialogTitle>{t('compass.editEmployee', 'Edit Employee')}</DialogTitle>
                 <DialogContent>
                     {renderFormFields()}
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={form.isActive}
+                                onChange={(e) => updateField('isActive', e.target.checked)}
+                                color="success"
+                            />
+                        }
+                        label={t('compass.compassActive', 'Compass Active')}
+                        sx={{ mt: 1 }}
+                    />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeEditDialog} disabled={saving}>
@@ -736,7 +790,7 @@ export function CompassEmployeesTab() {
                     <Button
                         variant="contained"
                         onClick={handleEdit}
-                        disabled={!form.email.trim() || !form.displayName.trim() || saving}
+                        disabled={!form.email.trim() || !form.firstName.trim() || saving}
                     >
                         {saving ? <CircularProgress size={20} /> : t('common.save', 'Save')}
                     </Button>
@@ -769,7 +823,7 @@ export function CompassEmployeesTab() {
                             <TableBody>
                                 {importPreview.map((row, i) => (
                                     <TableRow key={i}>
-                                        <TableCell>{row.displayName || <Chip label={t('common.missing', 'Missing')} size="small" color="error" />}</TableCell>
+                                        <TableCell>{row.firstName || <Chip label={t('common.missing', 'Missing')} size="small" color="error" />}</TableCell>
                                         <TableCell>{row.email || <Chip label={t('common.missing', 'Missing')} size="small" color="error" />}</TableCell>
                                         <TableCell>{row.role}</TableCell>
                                         <TableCell>{row.jobTitle || '-'}</TableCell>

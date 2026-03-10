@@ -6,7 +6,10 @@ export const sendFriendRequestSchema = z.object({
 
 export const createCompanyUserSchema = z.object({
     email: z.string().email().max(255),
-    displayName: z.string().min(1).max(100),
+    firstName: z.string().min(1).max(100),
+    middleName: z.string().max(100).optional(),
+    lastName: z.string().max(100).optional(),
+    displayName: z.string().min(1).max(200).optional(),
     branchId: z.string().uuid(),
     role: z.enum(['EMPLOYEE', 'MANAGER', 'ADMIN']).optional(),
     buildingId: z.string().uuid().optional(),
@@ -26,7 +29,10 @@ export const bulkUpdateEmployeesSchema = z.object({
 });
 
 export const updateCompanyUserSchema = z.object({
-    displayName: z.string().min(1).max(100).optional(),
+    firstName: z.string().min(1).max(100).optional(),
+    middleName: z.string().max(100).nullable().optional(),
+    lastName: z.string().max(100).nullable().optional(),
+    displayName: z.string().min(1).max(200).optional(),
     role: z.enum(['EMPLOYEE', 'MANAGER', 'ADMIN']).optional(),
     branchId: z.string().uuid().optional(),
     buildingId: z.string().uuid().nullable().optional(),

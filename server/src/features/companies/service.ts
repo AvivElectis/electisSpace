@@ -463,12 +463,16 @@ export const companyService = {
                             });
                             if (existingByEmail) continue;
 
-                            const displayName = [adminUser.firstName, adminUser.lastName].filter(Boolean).join(' ') || adminUser.email.split('@')[0];
+                            const firstName = adminUser.firstName || adminUser.email.split('@')[0];
+                            const lastName = adminUser.lastName || null;
+                            const displayName = [firstName, lastName].filter(Boolean).join(' ');
                             await tx.companyUser.create({
                                 data: {
                                     companyId: created.id,
                                     branchId: store.id,
                                     email: adminUser.email,
+                                    firstName,
+                                    lastName,
                                     displayName,
                                     role: 'ADMIN',
                                     linkedUserId: adminUser.id,

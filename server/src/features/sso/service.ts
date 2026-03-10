@@ -126,9 +126,10 @@ export async function findOrCreateSsoUser(companyId: string, claims: SsoUserClai
         throw badRequest('No branch found for company — cannot provision SSO user');
     }
 
+    const firstName = claims.firstName || claims.displayName || claims.email.split('@')[0];
+    const lastName = claims.lastName || null;
     const displayName = claims.displayName
-        || [claims.firstName, claims.lastName].filter(Boolean).join(' ')
-        || claims.email;
+        || [firstName, lastName].filter(Boolean).join(' ');
 
     appLogger.info('SSO', `Auto-provisioning user: ${claims.email}`);
 
@@ -137,6 +138,8 @@ export async function findOrCreateSsoUser(companyId: string, claims: SsoUserClai
             companyId,
             branchId: defaultBranch.id,
             email: claims.email.toLowerCase(),
+            firstName,
+            lastName,
             displayName,
             role: 'EMPLOYEE',
             isActive: true,
