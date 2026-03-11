@@ -257,6 +257,7 @@ export function CompassSpacesTab() {
                 const createRes = await compassAdminApi.createSpace(activeStoreId!, {
                     externalId,
                     data: { ITEM_NAME: displayName },
+                    compassMode: form.compassMode || 'AVAILABLE',
                 });
                 const newSpaceId = (createRes.data as any).data?.id || (createRes.data as any).id;
                 if (newSpaceId) {

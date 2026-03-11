@@ -57,6 +57,7 @@ export const spacesService = {
             createdById: user.id,
             updatedById: user.id,
             syncStatus: 'PENDING',
+            ...(input.compassMode ? { compassMode: input.compassMode } : {}),
         });
 
         await syncQueueService.queueCreate(input.storeId, 'space', space.id, input.data);

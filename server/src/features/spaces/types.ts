@@ -15,6 +15,7 @@ export const createSpaceSchema = z.object({
     labelCode: z.string().max(50).optional(),
     templateName: z.string().max(100).optional(),
     data: z.record(z.unknown()).default({}),
+    compassMode: z.enum(['AVAILABLE', 'EXCLUDED', 'PERMANENT', 'MAINTENANCE']).optional(),
 });
 
 export const updateSpaceSchema = z.object({
