@@ -218,52 +218,52 @@ export const syncService = {
             unchanged: 0,
         };
 
+        // Batch: fetch all existing spaces for this store in one query
+        const existingSpaces = await syncRepository.findAllSpacesByStore(storeId);
+        const spaceMap = new Map(existingSpaces.map(s => [s.externalId, s]));
+        const now = new Date();
+
+        // Build batch operations
+        const creates: Parameters<typeof syncRepository.createSpaceBatch>[0] = [];
+        const updates: { id: string; data: Prisma.InputJsonValue; labelCode: string | null }[] = [];
+
         for (const article of articles) {
             const articleId = article.articleId || article.article_id;
             if (!articleId) continue;
 
-            const existingSpace = await syncRepository.findSpaceByExternalId(storeId, articleId);
+            const existingSpace = spaceMap.get(articleId);
+            const articleData = {
+                name: article.articleName || article.article_name,
+                data1: article.data1,
+                data2: article.data2,
+                data3: article.data3,
+                data4: article.data4,
+                data5: article.data5,
+                nfc: article.nfc,
+            };
 
             if (existingSpace) {
-                const newData = {
-                    ...(existingSpace.data as object),
-                    name: article.articleName || article.article_name,
-                    data1: article.data1,
-                    data2: article.data2,
-                    data3: article.data3,
-                    data4: article.data4,
-                    data5: article.data5,
-                    nfc: article.nfc,
-                };
-
-                await syncRepository.updateSpace(existingSpace.id, {
-                    data: newData as Prisma.InputJsonValue,
+                updates.push({
+                    id: existingSpace.id,
+                    data: { ...(existingSpace.data as object), ...articleData } as Prisma.InputJsonValue,
                     labelCode: article.labelCode || article.label_code || existingSpace.labelCode,
-                    syncStatus: 'SYNCED',
-                    lastSyncedAt: new Date(),
                 });
-                stats.updated++;
             } else {
-                await syncRepository.createSpace({
+                creates.push({
                     storeId,
                     externalId: articleId,
                     labelCode: article.labelCode || article.label_code || null,
-                    data: {
-                        name: article.articleName || article.article_name,
-                        data1: article.data1,
-                        data2: article.data2,
-                        data3: article.data3,
-                        data4: article.data4,
-                        data5: article.data5,
-                        nfc: article.nfc,
-                    } as Prisma.InputJsonValue,
-                    syncStatus: 'SYNCED',
-                    lastSyncedAt: new Date(),
+                    data: articleData as Prisma.InputJsonValue,
+                    syncStatus: 'SYNCED' as const,
+                    lastSyncedAt: now,
                 });
-                stats.created++;
             }
         }
 
+        // Execute batch operations in a transaction
+        await syncRepository.batchUpsertSpaces(creates, updates, now);
+        stats.created = creates.length;
+        stats.updated = updates.length;
         stats.unchanged = stats.total - stats.created - stats.updated;
 
         await syncRepository.updateStoreLastSync(storeId);

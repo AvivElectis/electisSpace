@@ -516,6 +516,26 @@ export class AIMSGateway {
         return await solumService.fetchStores(config, tokens.accessToken);
     }
 
+    /**
+     * Fetch article format from AIMS using raw credentials (not yet saved to DB).
+     * Used during company creation wizard to show article fields.
+     */
+    async fetchArticleFormatWithCredentials(credentials: AIMSCredentials, companyCode: string): Promise<ArticleFormat> {
+        const config: SolumConfig = {
+            baseUrl: credentials.baseUrl,
+            companyName: companyCode,
+            cluster: credentials.cluster,
+            username: credentials.username,
+            password: credentials.password,
+        };
+
+        // Login to get token
+        const tokens = await solumService.login(config);
+
+        // Fetch article format
+        return await solumService.fetchArticleFormat(config, tokens.accessToken);
+    }
+
     // ============== Label Operations ==============
 
     /**

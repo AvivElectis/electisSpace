@@ -9,17 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.0] — 2026-03-04 — Company Wizard & Feature Gating
+
 ### Added
+- **Company creation wizard** — 6-step stepper: Connection, Store Selection, Article Format, Field Mapping, Features, Review; replaces single-dialog company creation
+- **Multi-store support in wizard** — add/remove multiple stores per company with per-store timezone selection (default Asia/Jerusalem)
+- **Article format viewer** — dual-mode visual/JSON toggle with live editing via vanilla-jsoneditor; auto-fetches on wizard step entry
+- **Field mapping configuration** — map AIMS article fields to space/conference data fields during company setup
+- **Company features management** — all features disabled by default; granular toggle for spaces, conference, people, labels, sync, AIMS management, settings
+- **Dashboard feature gating** — dashboard cards, quick action buttons, and stat sections only appear for enabled company features
 - **Template download** — download XSL and/or JSON files from the template detail dialog; AIMS base64 response decoded server-side
 - **Template upload** — upload new templates with name, size selection (from AIMS template types), XSL + JSON file pickers; validates duplicate names
 - **Template edit (re-upload)** — update existing template files from the detail dialog with new XSL + JSON uploads
+- **Mobile AIMS card section headers** — Gateway Health, Label Health, Update Progress headers above stat tile groups
+- **Label types tabular view** — compact monospace sorted list replaces chips in both dashboard card and AIMS overview tab
 
 ### Fixed
-- **Template detail not loading** — AIMS `/templates/name` query parameter was wrong (`templateName=` instead of `name=`); response list extraction checked `content` instead of `templateList`
-- **Template download double extension** — templateName includes `.xsl` suffix; both server and client now strip existing extensions before appending file type
-- **Template download content corrupt** — AIMS returns JSON `{template: base64}`, not raw binary; server now decodes base64 before sending to client
-- **Template mappings/groups 500 errors** — AIMS instances that don't support these endpoints now return empty arrays instead of crashing
-- **Template detail enrichment null guard** — prevents overwriting good list data when detail API returns null
+- **Label models API empty** — `fetchLabelModels` returned `responseMessage` string ("SUCCESS") instead of extracting `labelTypeSummary[].labelTypes[]` data
+- **Sync pull N+1 queries** — batch fetch all spaces then transaction upsert instead of individual queries per article (~2500 queries → ~2 queries)
+- **Sync 400 on new companies** — wizard-created stores now have `syncEnabled: true` since AIMS connection is validated during setup
+- **RTL step counter flip** — forced LTR direction on "1 / 6" step counter to prevent bidi number reversal
+- **RTL toggle buttons** — forced LTR on article format view toggle to fix border-radius flip in Hebrew
+- **RTL password toggle** — moved visibility icon outside TextField for proper RTL alignment
+- **Hebrew terminology** — replaced all "מאמר" (article) with "מוצר" (product) across entire Hebrew locale
+- **Existing company backward compatibility** — `extractCompanyFeatures()` fallback ensures pre-wizard companies retain all features enabled
+- **Template detail not loading** — AIMS `/templates/name` query parameter was wrong (`templateName=` instead of `name=`)
+- **Template download double extension** — templateName includes `.xsl` suffix; server and client strip existing extensions
+- **Template download content corrupt** — AIMS returns JSON `{template: base64}`, not raw binary; server decodes base64
+- **Template mappings/groups 500 errors** — AIMS instances without these endpoints return empty arrays instead of crashing
+
+### Changed
+- **Default company features** — new companies start with all features disabled instead of all enabled
+- **Mobile company card chips** — increased inline padding for better readability
+- **Default store timezone** — changed from UTC to Asia/Jerusalem
+- **Compact mobile wizard stepper** — progress bar with step label replaces full vertical stepper on mobile
 
 ## [2.9.0] — 2026-03-02 — AIMS Manager Overhaul
 

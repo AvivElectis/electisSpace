@@ -1016,7 +1016,18 @@ export class SolumService {
         const url = this.buildUrl(config, `/common/api/v2/common/labels/model?company=${config.companyName}&store=${config.storeCode}`);
         return this.withRetry('fetchLabelModels', async () => {
             const response = await this.client.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            return response.data?.responseMessage ?? response.data ?? [];
+            // API returns { labelTypeSummary: [{ store, labelTypes: [{ type, linked }] }], responseCode, responseMessage }
+            const summary = response.data?.labelTypeSummary;
+            if (Array.isArray(summary) && summary.length > 0) {
+                // Flatten labelTypes from all stores, map to our AimsLabelModel shape
+                return summary.flatMap((s: any) =>
+                    (s.labelTypes || []).map((lt: any) => ({
+                        labelType: lt.type,
+                        count: lt.linked ?? 0,
+                    }))
+                );
+            }
+            return [];
         });
     }
 

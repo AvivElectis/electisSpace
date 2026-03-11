@@ -2,14 +2,9 @@
  * Company Dialog
  *
  * @description Dialog for creating and editing companies.
- * CREATE mode: Wizard stepper — Step 1: Code + AIMS credentials → Connect → Step 2: Pick stores
- * EDIT mode: Tabs — Basic Info + AIMS Config
+ * CREATE mode: 6-step wizard — Connection → Stores → Article Format → Field Mapping → Features → Review
+ * EDIT mode: Tabs — Basic Info + AIMS Config + Features
  * Only PLATFORM_ADMIN can create companies; COMPANY_ADMIN+ can edit.
- *
- * Split into sub-components for maintainability:
- * - useCompanyDialogState: all state, effects, and handlers
- * - EditCompanyTabs: edit mode tab layout
- * - CreateCompanyWizard: create mode wizard steps
  */
 import { Dialog, useMediaQuery, useTheme } from '@mui/material';
 import { useCompanyDialogState } from './companyDialog/useCompanyDialogState';
@@ -27,20 +22,23 @@ interface CompanyDialogProps {
 export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogProps) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isEdit = !!company;
+
+    // Edit mode still uses the existing hook
     const state = useCompanyDialogState({ open, onSave, company });
 
     return (
         <Dialog
             open={open}
-            onClose={state.submitting || state.connecting ? undefined : onClose}
-            maxWidth="sm"
+            onClose={onClose}
+            maxWidth="md"
             fullWidth
             fullScreen={isMobile}
             PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined } }}
         >
-            {state.isEdit
+            {isEdit
                 ? <EditCompanyTabs state={state} onClose={onClose} />
-                : <CreateCompanyWizard state={state} onClose={onClose} />
+                : <CreateCompanyWizard onClose={onClose} onSave={onSave} />
             }
         </Dialog>
     );

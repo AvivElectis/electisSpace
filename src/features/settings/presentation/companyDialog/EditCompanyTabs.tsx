@@ -1,6 +1,10 @@
 /**
- * EditCompanyTabs - Edit mode with Basic Info and Features tabs
- * AIMS configuration is accessed via the unified AIMSSettingsDialog
+ * EditCompanyTabs - Edit mode with 5 tabs matching wizard sections:
+ * 1. Basic Info (company details + AIMS connection)
+ * 2. Stores (existing store list, link to StoresDialog)
+ * 3. Article Format (display saved format, re-fetch from AIMS)
+ * 4. Field Mapping (editable field mapping with save)
+ * 5. Features (space type + feature toggles)
  */
 import {
     DialogTitle,
@@ -23,15 +27,34 @@ import {
     MenuItem,
     Chip,
     Stack,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Autocomplete,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
+import StoreIcon from '@mui/icons-material/Store';
+import DescriptionIcon from '@mui/icons-material/Description';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import TuneIcon from '@mui/icons-material/Tune';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import { useState, lazy, Suspense } from 'react';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SaveIcon from '@mui/icons-material/Save';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { useCompanyDialogState } from './useCompanyDialogState';
+import { settingsService } from '@shared/infrastructure/services/settingsService';
+import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
+import type { ArticleFormat } from '@features/configuration/domain/types';
+import type { SolumMappingConfig } from '@features/settings/domain/types';
 
 const AIMSSettingsDialog = lazy(() => import('../AIMSSettingsDialog'));
 
@@ -52,7 +75,97 @@ interface Props {
 
 export function EditCompanyTabs({ state, onClose }: Props) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [aimsDialogOpen, setAimsDialogOpen] = useState(false);
+
+    // Stores tab state
+    const [stores, setStores] = useState<CompanyStore[]>([]);
+    const [storesLoading, setStoresLoading] = useState(false);
+
+    // Article format tab state
+    const [articleFormat, setArticleFormat] = useState<ArticleFormat | null>(null);
+    const [articleFormatLoading, setArticleFormatLoading] = useState(false);
+    const [articleFormatError, setArticleFormatError] = useState<string | null>(null);
+
+    // Field mapping tab state
+    const [fieldMapping, setFieldMapping] = useState<SolumMappingConfig | null>(null);
+    const [fieldMappingSaving, setFieldMappingSaving] = useState(false);
+    const [fieldMappingSaved, setFieldMappingSaved] = useState(false);
+
+    // Fetch stores + settings on open
+    useEffect(() => {
+        if (!state.company?.id) return;
+        const companyId = state.company.id;
+
+        // Fetch stores
+        setStoresLoading(true);
+        companyService.getStores(companyId)
+            .then(res => setStores(res.stores))
+            .catch(() => {})
+            .finally(() => setStoresLoading(false));
+
+        // Fetch company settings (article format + field mapping)
+        settingsService.getCompanySettings(companyId)
+            .then(res => {
+                if (res.settings.solumArticleFormat) {
+                    setArticleFormat(res.settings.solumArticleFormat);
+                }
+                if (res.settings.solumMappingConfig) {
+                    setFieldMapping(res.settings.solumMappingConfig);
+                }
+            })
+            .catch(() => {});
+    }, [state.company?.id]);
+
+    // Re-fetch article format from AIMS
+    const handleRefetchArticleFormat = useCallback(async () => {
+        if (!state.company) return;
+        setArticleFormatLoading(true);
+        setArticleFormatError(null);
+        try {
+            const result = await companyService.fetchArticleFormat({
+                baseUrl: state.company.aimsBaseUrl || '',
+                cluster: state.company.aimsCluster || 'c1',
+                username: state.company.aimsUsername || '',
+                password: '', // Server will use stored password
+                companyCode: state.company.code,
+            });
+            if (result.success && result.format) {
+                setArticleFormat(result.format);
+                // Save to company settings
+                await settingsService.updateCompanySettings(state.company.id, {
+                    solumArticleFormat: result.format,
+                });
+            } else {
+                setArticleFormatError(result.error || t('settings.companies.articleFormatError'));
+            }
+        } catch (err: any) {
+            setArticleFormatError(err.response?.data?.message || t('settings.companies.articleFormatError'));
+        } finally {
+            setArticleFormatLoading(false);
+        }
+    }, [state.company, t]);
+
+    // Save field mapping
+    const handleSaveFieldMapping = useCallback(async () => {
+        if (!state.company?.id || !fieldMapping) return;
+        setFieldMappingSaving(true);
+        try {
+            await settingsService.updateCompanySettings(state.company.id, {
+                solumMappingConfig: fieldMapping,
+            });
+            setFieldMappingSaved(true);
+            setTimeout(() => setFieldMappingSaved(false), 2000);
+        } catch {
+            state.setError(t('settings.companies.saveError'));
+        } finally {
+            setFieldMappingSaving(false);
+        }
+    }, [state.company?.id, fieldMapping, state, t]);
+
+    // Field mapping helpers
+    const articleDataFields = articleFormat?.articleData || [];
 
     return (
         <>
@@ -67,13 +180,17 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     value={state.activeTab}
                     onChange={(_, newValue) => state.setActiveTab(newValue)}
                     sx={{ borderBottom: 1, borderColor: 'divider' }}
-                    variant="fullWidth"
+                    variant={isMobile ? 'scrollable' : 'fullWidth'}
+                    scrollButtons={isMobile ? 'auto' : false}
                 >
                     <Tab icon={<BusinessIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.basicInfo')} sx={{ minHeight: 48 }} />
+                    <Tab icon={<StoreIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.reviewStores', 'Stores')} sx={{ minHeight: 48 }} />
+                    <Tab icon={<DescriptionIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.reviewArticleFormat', 'Article Format')} sx={{ minHeight: 48 }} />
+                    <Tab icon={<AccountTreeIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.reviewFieldMapping', 'Field Mapping')} sx={{ minHeight: 48 }} />
                     <Tab icon={<TuneIcon fontSize="small" />} iconPosition="start" label={t('settings.companies.featuresTab', 'Features')} sx={{ minHeight: 48 }} />
                 </Tabs>
 
-                {/* Basic Info Tab */}
+                {/* Tab 0: Basic Info */}
                 <TabPanel value={state.activeTab} index={0}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <TextField
@@ -137,8 +254,289 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     </Box>
                 </TabPanel>
 
-                {/* Features Tab */}
+                {/* Tab 1: Stores */}
                 <TabPanel value={state.activeTab} index={1}>
+                    {storesLoading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                            <CircularProgress size={32} />
+                        </Box>
+                    ) : stores.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                            {t('settings.companies.noStoresYet', 'No stores configured yet.')}
+                        </Typography>
+                    ) : (
+                        <TableContainer component={Paper} variant="outlined">
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>{t('settings.companies.codeLabel')}</TableCell>
+                                        <TableCell>{t('settings.companies.nameLabel')}</TableCell>
+                                        <TableCell>{t('settings.companies.storeTimezone')}</TableCell>
+                                        <TableCell align="center">{t('settings.companies.activeLabel')}</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {stores.map((store) => (
+                                        <TableRow key={store.id}>
+                                            <TableCell>
+                                                <Typography variant="body2" fontFamily="monospace">{store.code}</Typography>
+                                            </TableCell>
+                                            <TableCell>{store.name}</TableCell>
+                                            <TableCell>{store.timezone}</TableCell>
+                                            <TableCell align="center">
+                                                <Chip
+                                                    size="small"
+                                                    label={store.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
+                                                    color={store.isActive ? 'success' : 'default'}
+                                                    variant="outlined"
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        {t('settings.companies.storesManageHint', 'Use the Stores dialog from the settings page to add, edit, or remove stores.')}
+                    </Typography>
+                </TabPanel>
+
+                {/* Tab 2: Article Format */}
+                <TabPanel value={state.activeTab} index={2}>
+                    {articleFormatError && (
+                        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setArticleFormatError(null)}>
+                            {articleFormatError}
+                        </Alert>
+                    )}
+                    {articleFormat ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
+                                    <Typography variant="caption" color="text.secondary">{t('settings.companies.fileExtension')}</Typography>
+                                    <Typography variant="body1" fontWeight={600}>{articleFormat.fileExtension}</Typography>
+                                </Paper>
+                                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
+                                    <Typography variant="caption" color="text.secondary">{t('settings.companies.delimiter')}</Typography>
+                                    <Typography variant="body1" fontWeight={600}>{articleFormat.delimeter || '—'}</Typography>
+                                </Paper>
+                                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
+                                    <Typography variant="caption" color="text.secondary">{t('settings.companies.dataFields')}</Typography>
+                                    <Typography variant="body1" fontWeight={600}>{articleFormat.articleData?.length || 0}</Typography>
+                                </Paper>
+                            </Stack>
+
+                            {articleFormat.articleBasicInfo && articleFormat.articleBasicInfo.length > 0 && (
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('settings.companies.basicInfoFields')}</Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {articleFormat.articleBasicInfo.map((f) => (
+                                            <Chip key={f} label={f} size="small" variant="outlined" />
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
+
+                            {articleFormat.articleData && articleFormat.articleData.length > 0 && (
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('settings.companies.dataFields')}</Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {articleFormat.articleData.map((f) => (
+                                            <Chip key={f} label={f} size="small" />
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                            {t('settings.companies.noArticleFormat', 'No article format stored. Fetch from AIMS to configure.')}
+                        </Typography>
+                    )}
+                    <Box sx={{ mt: 2 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={articleFormatLoading ? <CircularProgress size={16} /> : <RefreshIcon />}
+                            onClick={handleRefetchArticleFormat}
+                            disabled={articleFormatLoading || !state.company?.aimsConfigured}
+                        >
+                            {articleFormatLoading
+                                ? t('settings.companies.fetchingArticleFormat')
+                                : t('settings.companies.refetchArticleFormat', 'Re-fetch from AIMS')}
+                        </Button>
+                    </Box>
+                </TabPanel>
+
+                {/* Tab 3: Field Mapping */}
+                <TabPanel value={state.activeTab} index={3}>
+                    {fieldMapping ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {/* Unique ID field */}
+                            <Autocomplete
+                                size="small"
+                                options={articleDataFields}
+                                value={fieldMapping.uniqueIdField || ''}
+                                onChange={(_, value) => {
+                                    setFieldMapping(prev => prev ? { ...prev, uniqueIdField: value || '' } : prev);
+                                    setFieldMappingSaved(false);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField {...params} label={t('settings.companies.uniqueIdField')} />
+                                )}
+                            />
+
+                            {/* Field table */}
+                            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                                <Table size="small" stickyHeader>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>{t('settings.companies.aimsField')}</TableCell>
+                                            <TableCell>{t('settings.companies.displayName')}</TableCell>
+                                            <TableCell align="center">{t('settings.companies.visible')}</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {Object.entries(fieldMapping.fields).map(([key, field]) => (
+                                            <TableRow key={key}>
+                                                <TableCell>
+                                                    <Typography variant="body2" fontFamily="monospace" fontSize={12}>{key}</Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <TextField
+                                                        size="small"
+                                                        variant="standard"
+                                                        value={field.friendlyNameEn}
+                                                        onChange={(e) => {
+                                                            setFieldMapping(prev => {
+                                                                if (!prev) return prev;
+                                                                return {
+                                                                    ...prev,
+                                                                    fields: {
+                                                                        ...prev.fields,
+                                                                        [key]: { ...field, friendlyNameEn: e.target.value },
+                                                                    },
+                                                                };
+                                                            });
+                                                            setFieldMappingSaved(false);
+                                                        }}
+                                                        fullWidth
+                                                    />
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Switch
+                                                        size="small"
+                                                        checked={field.visible}
+                                                        onChange={(e) => {
+                                                            setFieldMapping(prev => {
+                                                                if (!prev) return prev;
+                                                                return {
+                                                                    ...prev,
+                                                                    fields: {
+                                                                        ...prev.fields,
+                                                                        [key]: { ...field, visible: e.target.checked },
+                                                                    },
+                                                                };
+                                                            });
+                                                            setFieldMappingSaved(false);
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+
+                            {/* Conference mapping */}
+                            {fieldMapping.conferenceMapping && (
+                                <>
+                                    <Typography variant="subtitle2">{t('settings.companies.conferenceMappingTitle')}</Typography>
+                                    <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
+                                        <Autocomplete
+                                            size="small"
+                                            options={articleDataFields}
+                                            value={fieldMapping.conferenceMapping.meetingName || ''}
+                                            onChange={(_, value) => {
+                                                setFieldMapping(prev => {
+                                                    if (!prev) return prev;
+                                                    return {
+                                                        ...prev,
+                                                        conferenceMapping: { ...prev.conferenceMapping!, meetingName: value || '' },
+                                                    };
+                                                });
+                                                setFieldMappingSaved(false);
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField {...params} label={t('settings.companies.meetingNameField')} />
+                                            )}
+                                            sx={{ flex: 1 }}
+                                        />
+                                        <Autocomplete
+                                            size="small"
+                                            options={articleDataFields}
+                                            value={fieldMapping.conferenceMapping.meetingTime || ''}
+                                            onChange={(_, value) => {
+                                                setFieldMapping(prev => {
+                                                    if (!prev) return prev;
+                                                    return {
+                                                        ...prev,
+                                                        conferenceMapping: { ...prev.conferenceMapping!, meetingTime: value || '' },
+                                                    };
+                                                });
+                                                setFieldMappingSaved(false);
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField {...params} label={t('settings.companies.meetingTimeField')} />
+                                            )}
+                                            sx={{ flex: 1 }}
+                                        />
+                                        <Autocomplete
+                                            size="small"
+                                            options={articleDataFields}
+                                            value={fieldMapping.conferenceMapping.participants || ''}
+                                            onChange={(_, value) => {
+                                                setFieldMapping(prev => {
+                                                    if (!prev) return prev;
+                                                    return {
+                                                        ...prev,
+                                                        conferenceMapping: { ...prev.conferenceMapping!, participants: value || '' },
+                                                    };
+                                                });
+                                                setFieldMappingSaved(false);
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField {...params} label={t('settings.companies.participantsField')} />
+                                            )}
+                                            sx={{ flex: 1 }}
+                                        />
+                                    </Stack>
+                                </>
+                            )}
+
+                            {/* Save mapping button */}
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                {fieldMappingSaved && (
+                                    <Chip label={t('common.saved', 'Saved')} color="success" size="small" icon={<CheckCircleIcon />} />
+                                )}
+                                <Button
+                                    variant="outlined"
+                                    startIcon={fieldMappingSaving ? <CircularProgress size={16} /> : <SaveIcon />}
+                                    onClick={handleSaveFieldMapping}
+                                    disabled={fieldMappingSaving}
+                                >
+                                    {t('settings.companies.saveFieldMapping', 'Save Mapping')}
+                                </Button>
+                            </Box>
+                        </Box>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                            {t('settings.companies.noFieldsConfigured')}
+                        </Typography>
+                    )}
+                </TabPanel>
+
+                {/* Tab 4: Features */}
+                <TabPanel value={state.activeTab} index={4}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <FormControl fullWidth>
                             <InputLabel>{t('settings.companies.spaceTypeLabel', 'Space Type')}</InputLabel>

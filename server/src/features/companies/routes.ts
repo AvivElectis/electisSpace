@@ -37,6 +37,12 @@ router.get('/validate-code/:code', companyController.validateCode);
 router.post('/aims/stores', companyController.fetchAimsStores);
 
 /**
+ * POST /companies/aims/article-format
+ * Fetch article format from AIMS using raw credentials (for wizard)
+ */
+router.post('/aims/article-format', companyController.fetchArticleFormat);
+
+/**
  * GET /companies/:id
  * Get company details with stores and users
  */
