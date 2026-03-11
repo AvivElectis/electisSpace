@@ -18,11 +18,11 @@ export const findCompassSpaces = async (params: {
     const where: Prisma.SpaceWhereInput = {
         storeId: params.branchId,
         deletedAt: null,
-        compassMode: params.includeAllModes
-            ? { not: null }
-            : params.compassMode
+        ...(params.includeAllModes
+            ? {}
+            : { compassMode: params.compassMode
                 ? params.compassMode
-                : { in: ['AVAILABLE', 'PERMANENT'] },
+                : { in: ['AVAILABLE', 'PERMANENT'] } }),
     };
 
     if (params.buildingId) where.buildingId = params.buildingId;
