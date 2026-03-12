@@ -295,7 +295,7 @@ export const settingsService = {
      * Get article format for a company.
      * Returns from DB if stored, otherwise fetches from AIMS, saves to DB, then returns.
      */
-    async getArticleFormat(companyId: string, user: SettingsUserContext): Promise<ArticleFormatResponse> {
+    async getArticleFormat(companyId: string, user: SettingsUserContext, force = false): Promise<ArticleFormatResponse> {
         let company;
         if (isPlatformAdmin(user)) {
             company = await settingsRepository.getCompany(companyId);
@@ -310,8 +310,8 @@ export const settingsService = {
 
         const settings = (company.settings as Record<string, any>) || {};
 
-        // Return from DB if already stored
-        if (settings.solumArticleFormat) {
+        // Return from DB if already stored (unless force refresh requested)
+        if (!force && settings.solumArticleFormat) {
             return {
                 companyId: company.id,
                 articleFormat: settings.solumArticleFormat,
@@ -334,7 +334,7 @@ export const settingsService = {
                 throw new Error('NO_STORE_FOR_COMPANY');
             }
 
-            const format = await gateway.fetchArticleFormat(store.id);
+            const format = await gateway.fetchArticleFormat(store.id, force);
 
             // Save to DB for future use
             const updatedSettings = { ...settings, solumArticleFormat: format };

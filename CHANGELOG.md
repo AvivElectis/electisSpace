@@ -9,13 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Global field assignments** — company field mapping now supports global field assignments (constant values applied to all articles), with UI in Edit Company Tabs
+- **Dual display names for mapped fields** — field mapping editor supports both English and Hebrew friendly names per field
+- **Regenerate mapping safety dialog** — "Regenerate from Format" button now requires confirmation before overwriting existing mapping
+- **Dashboard mobile carousel** — swipeable horizontal gallery with dot indicators replaces vertical scroll for dashboard sections on mobile
+- **Auto-submit label linking** — LinkLabelDialog automatically submits when both a valid label code and article are present
+- **Space edit dialog DB ID** — edit dialog shows internal DB ID as small footer text for debugging
+
 ### Changed
 - **AIMS sync: spaces mode redesign** — AIMS is now the source of truth for spaces mode. Extra articles in AIMS are imported into the DB instead of being deleted from AIMS. Deletion from AIMS only occurs via explicit user action (e.g., deleting a space in the app). People mode behavior is unchanged.
 - **AIMS reconciliation performance** — parallel I/O (article format, DB queries, AIMS pull run concurrently), batched label sync via `$transaction`, company settings joined in initial query
+- **Spaces mobile cards redesign** — collapsed cards show ID badge + first mapped field value; expanded cards show 2-column field grid with edit/delete actions; larger text for mobile readability
+- **Mobile layout reorder** — AIMS sync panel and list management panel moved below the table on mobile for better content priority
+- **Dashboard speed dial** — full-width buttons with larger text, elevation shadows, and reversed stagger animation; FAB enlarged to 80px
+- **Pull sync uses correct AIMS endpoint** — switched from `/articles` (summary only) to `/config/article/info` (full data fields)
+- **buildSpaceArticle** — no longer falls back to externalId for articleName in spaces mode, preventing AIMS name field overwrite
 
 ### Fixed
 - **AIMS sync race condition** — prevented re-importing recently deleted spaces by checking for pending DELETE queue items before import
 - **AppHeader logo spacing** — added top padding for logos and increased mobile logo size for better visibility
+- **Stale closure in field mapping refetch** — `handleRefetchArticleFormat` now uses functional setState to avoid capturing stale `fieldMapping`
+- **CSV double-quote unescaping** — AIMS pull sync now correctly unescapes CSV-style `"ד""ר"` → `ד"ר`
+- **Spaces Name column in spaces mode** — dedicated Name column only shows in people mode; in spaces mode, articleName is a regular mapped field
 
 ## [2.10.0] — 2026-03-04 — Company Wizard & Feature Gating
 

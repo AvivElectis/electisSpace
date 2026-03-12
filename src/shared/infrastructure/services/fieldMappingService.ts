@@ -89,9 +89,10 @@ export const fieldMappingService = {
     /**
      * Get article format for a company (from DB, or fetches from AIMS if not stored)
      */
-    async getArticleFormat(companyId: string): Promise<ArticleFormatResponse> {
+    async getArticleFormat(companyId: string, force = false): Promise<ArticleFormatResponse> {
         const response = await api.get<ArticleFormatResponse>(
-            `/settings/company/${companyId}/article-format`
+            `/settings/company/${companyId}/article-format`,
+            force ? { params: { force: 'true' } } : undefined,
         );
         return response.data;
     },

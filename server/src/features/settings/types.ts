@@ -19,6 +19,7 @@ export const solumFieldMappingSchema = z.object({
     friendlyNameEn: z.string(),
     friendlyNameHe: z.string(),
     visible: z.boolean(),
+    order: z.number().optional(),
 });
 
 /** Schema for conference mapping */

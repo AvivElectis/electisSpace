@@ -38,11 +38,13 @@ export const spacesSyncService = {
         const result: SyncResult = { total: 0, created: 0, updated: 0, unchanged: 0, deleted: 0, errors: [] };
 
         try {
-            const articles = await aimsGateway.pullArticles(storeId);
+            // Use /config/article/info endpoint which returns full data fields
+            // (the /articles endpoint only returns summary without data)
+            const articles = await aimsGateway.pullArticleInfo(storeId);
             result.total = articles.length;
 
             for (const article of articles) {
-                const articleId = article.articleId || article.data?.articleId;
+                const articleId = article.articleId;
                 if (!articleId) {
                     result.errors.push(`Article missing articleId`);
                     continue;
@@ -53,7 +55,19 @@ export const spacesSyncService = {
                         where: { storeId, externalId: String(articleId) },
                     });
 
-                    const articleData = (article.data || article) as Record<string, unknown>;
+                    // The /config/article/info endpoint returns data as a nested object
+                    const rawData: Record<string, unknown> = article.data && typeof article.data === 'object'
+                        ? { ...article.data }
+                        : {};
+                    // Unescape CSV-style double-quoting: "ד""ר" → ד"ר
+                    const articleData: Record<string, unknown> = {};
+                    for (const [key, value] of Object.entries(rawData)) {
+                        if (typeof value === 'string' && value.startsWith('"') && value.endsWith('"') && value.includes('""')) {
+                            articleData[key] = value.slice(1, -1).replace(/""/g, '"');
+                        } else {
+                            articleData[key] = value;
+                        }
+                    }
 
                     if (existing) {
                         // Check if data actually changed
