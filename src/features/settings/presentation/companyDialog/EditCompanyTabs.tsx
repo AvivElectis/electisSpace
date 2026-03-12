@@ -208,8 +208,6 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     const [articleFormatLoading, setArticleFormatLoading] = useState(false);
     const [articleFormatError, setArticleFormatError] = useState<string | null>(null);
     const [articleFormatViewMode, setArticleFormatViewMode] = useState<'visual' | 'json'>('visual');
-    const [articleFormatSaving, setArticleFormatSaving] = useState(false);
-
     // Field mapping tab state
     const [fieldMapping, setFieldMapping] = useState<SolumMappingConfig | null>(null);
     const [fieldMappingSaving, setFieldMappingSaving] = useState(false);
