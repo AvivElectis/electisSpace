@@ -338,7 +338,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     // Save article format edits to server + update Zustand store
     const handleSaveArticleFormat = useCallback(async (newFormat: ArticleFormat): Promise<boolean> => {
         if (!state.company?.id) return false;
-        setArticleFormatSaving(true);
+        setArticleFormatLoading(true);
         try {
             await fieldMappingService.updateArticleFormat(state.company.id, newFormat);
             setArticleFormat(newFormat);
@@ -349,7 +349,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             state.setError(t('settings.companies.saveError'));
             return false;
         } finally {
-            setArticleFormatSaving(false);
+            setArticleFormatLoading(false);
         }
     }, [state.company?.id, state, t]);
 
