@@ -20,6 +20,7 @@ export interface SolumFieldMapping {
     friendlyNameEn: string;
     friendlyNameHe: string;
     visible: boolean;
+    order?: number;
 }
 
 export interface SolumMappingConfig {

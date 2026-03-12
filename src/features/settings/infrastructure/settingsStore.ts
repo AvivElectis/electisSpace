@@ -133,6 +133,19 @@ export const useSettingsStore = create<SettingsStore>()(
                 setActiveCompanyId: (companyId) => set({ activeCompanyId: companyId }, false, 'setActiveCompanyId'),
 
                 fetchSettingsFromServer: async (storeId: string, companyId: string) => {
+                    // Clear stale AIMS config from localStorage before fetching fresh data
+                    // This prevents old mapping/format data from contaminating the merge
+                    const prevCompanyId = get().activeCompanyId;
+                    if (prevCompanyId && prevCompanyId !== companyId) {
+                        set((state) => ({
+                            settings: {
+                                ...state.settings,
+                                solumMappingConfig: undefined,
+                                solumArticleFormat: undefined,
+                            }
+                        }), false, 'fetchSettings/clearStaleCompanyData');
+                    }
+
                     set({ isSyncing: true }, false, 'fetchSettings/start');
                     try {
                         // Fetch store settings, company settings, field mappings, and article format in parallel
@@ -245,16 +258,16 @@ export const useSettingsStore = create<SettingsStore>()(
                                     } as SettingsData['solumConfig'];
                                 }
 
-                                // Deep-merge solumMappingConfig to preserve local mappingInfo
-                                // when server version doesn't have it (mappingInfo comes from
-                                // fetchArticleFormat and may not have been saved to server yet)
+                                // Deep-merge solumMappingConfig: server is authoritative.
+                                // Only fall back to local mappingInfo when the server AND
+                                // article format both lack it (rare edge case on first setup).
                                 const localMappingConfig = state.settings.solumMappingConfig;
-                                if (updates.solumMappingConfig && localMappingConfig) {
+                                if (updates.solumMappingConfig) {
                                     mergedSettings.solumMappingConfig = {
-                                        ...localMappingConfig,
                                         ...updates.solumMappingConfig,
-                                        // Preserve local mappingInfo if server doesn't have it
-                                        mappingInfo: updates.solumMappingConfig.mappingInfo || localMappingConfig.mappingInfo,
+                                        // Only use local mappingInfo as last resort
+                                        mappingInfo: updates.solumMappingConfig.mappingInfo
+                                            || localMappingConfig?.mappingInfo,
                                     } as SolumMappingConfig;
                                 }
                                 return {

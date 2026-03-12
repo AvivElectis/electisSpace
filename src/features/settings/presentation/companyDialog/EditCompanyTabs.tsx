@@ -35,6 +35,9 @@ import {
     TableHead,
     TableRow,
     Autocomplete,
+    ToggleButtonGroup,
+    ToggleButton,
+    IconButton,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
@@ -48,15 +51,131 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SaveIcon from '@mui/icons-material/Save';
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import CodeIcon from '@mui/icons-material/Code';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
 import type { useCompanyDialogState } from './useCompanyDialogState';
 import { settingsService } from '@shared/infrastructure/services/settingsService';
 import { companyService, type CompanyStore } from '@shared/infrastructure/services/companyService';
+import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
 import type { ArticleFormat } from '@features/configuration/domain/types';
-import type { SolumMappingConfig } from '@features/settings/domain/types';
+import type { SolumMappingConfig, SolumFieldMapping } from '@features/settings/domain/types';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
 const AIMSSettingsDialog = lazy(() => import('../AIMSSettingsDialog'));
+
+// Lazy load the heavy JSON editor (~1MB vanilla-jsoneditor)
+const ArticleFormatEditor = lazy(() =>
+    import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
+);
+
+/** Generate initial mapping from article format data fields */
+function generateInitialMapping(articleFormat: ArticleFormat): SolumMappingConfig {
+    const fields: Record<string, SolumFieldMapping> = {};
+    (articleFormat.articleData || []).forEach((field, index) => {
+        fields[field] = {
+            friendlyNameEn: field,
+            friendlyNameHe: field,
+            visible: true,
+            order: index,
+        };
+    });
+    return {
+        uniqueIdField: articleFormat.mappingInfo?.articleId || articleFormat.articleData?.[0] || '',
+        fields,
+        conferenceMapping: {
+            meetingName: '',
+            meetingTime: '',
+            participants: '',
+        },
+        mappingInfo: articleFormat.mappingInfo ? { ...articleFormat.mappingInfo } : undefined,
+    };
+}
+
+/** Sortable row for field mapping table */
+function SortableFieldRow({
+    fieldKey,
+    field,
+    onNameEnChange,
+    onNameHeChange,
+    onVisibleChange,
+}: {
+    fieldKey: string;
+    field: SolumFieldMapping;
+    onNameEnChange: (value: string) => void;
+    onNameHeChange: (value: string) => void;
+    onVisibleChange: (value: boolean) => void;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fieldKey });
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <TableRow ref={setNodeRef} style={style}>
+            <TableCell sx={{ width: 32, px: 0.5 }}>
+                <Box {...attributes} {...listeners} sx={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'text.disabled' }}>
+                    <DragIndicatorIcon fontSize="small" />
+                </Box>
+            </TableCell>
+            <TableCell>
+                <Typography variant="body2" fontFamily="monospace" fontSize={12}>{fieldKey}</Typography>
+            </TableCell>
+            <TableCell>
+                <TextField
+                    size="small"
+                    variant="standard"
+                    value={field.friendlyNameEn}
+                    onChange={(e) => onNameEnChange(e.target.value)}
+                    fullWidth
+                    placeholder="EN"
+                />
+            </TableCell>
+            <TableCell>
+                <TextField
+                    size="small"
+                    variant="standard"
+                    value={field.friendlyNameHe}
+                    onChange={(e) => onNameHeChange(e.target.value)}
+                    fullWidth
+                    placeholder="HE"
+                    inputProps={{ dir: 'rtl' }}
+                />
+            </TableCell>
+            <TableCell align="center">
+                <Switch
+                    size="small"
+                    checked={field.visible}
+                    onChange={(e) => onVisibleChange(e.target.checked)}
+                />
+            </TableCell>
+        </TableRow>
+    );
+}
 
 function TabPanel({ children, value, index }: { children?: React.ReactNode; index: number; value: number }) {
     return (
@@ -77,6 +196,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [aimsDialogOpen, setAimsDialogOpen] = useState(false);
 
     // Stores tab state
@@ -87,11 +207,55 @@ export function EditCompanyTabs({ state, onClose }: Props) {
     const [articleFormat, setArticleFormat] = useState<ArticleFormat | null>(null);
     const [articleFormatLoading, setArticleFormatLoading] = useState(false);
     const [articleFormatError, setArticleFormatError] = useState<string | null>(null);
-
+    const [articleFormatViewMode, setArticleFormatViewMode] = useState<'visual' | 'json'>('visual');
     // Field mapping tab state
     const [fieldMapping, setFieldMapping] = useState<SolumMappingConfig | null>(null);
     const [fieldMappingSaving, setFieldMappingSaving] = useState(false);
     const [fieldMappingSaved, setFieldMappingSaved] = useState(false);
+
+    // DnD sensors for field reordering
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+
+    // Sorted field keys (by order), excluding unique ID, name field (people mode only), and global fields
+    const isPeopleMode = state.companyFeatures.peopleEnabled;
+    const sortedFieldKeys = useMemo(() => {
+        if (!fieldMapping?.fields) return [];
+        const idField = fieldMapping.uniqueIdField;
+        // In people mode, articleName has its own dedicated selector — hide from list
+        const nameField = isPeopleMode ? fieldMapping.mappingInfo?.articleName : undefined;
+        const globalKeys = new Set(Object.keys(fieldMapping.globalFieldAssignments || {}));
+        return Object.entries(fieldMapping.fields)
+            .filter(([key]) => key !== idField && key !== nameField && !globalKeys.has(key))
+            .sort(([, a], [, b]) => (a.order ?? Infinity) - (b.order ?? Infinity))
+            .map(([key]) => key);
+    }, [fieldMapping?.fields, fieldMapping?.uniqueIdField, fieldMapping?.mappingInfo?.articleName, fieldMapping?.globalFieldAssignments, isPeopleMode]);
+
+    // Handle drag end — recompute order for all fields
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id || !fieldMapping) return;
+
+        const oldIndex = sortedFieldKeys.indexOf(active.id as string);
+        const newIndex = sortedFieldKeys.indexOf(over.id as string);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        // Reorder keys
+        const reordered = [...sortedFieldKeys];
+        reordered.splice(oldIndex, 1);
+        reordered.splice(newIndex, 0, active.id as string);
+
+        // Update order on all fields
+        const updatedFields = { ...fieldMapping.fields };
+        reordered.forEach((key, idx) => {
+            updatedFields[key] = { ...updatedFields[key], order: idx };
+        });
+
+        setFieldMapping({ ...fieldMapping, fields: updatedFields });
+        setFieldMappingSaved(false);
+    }, [fieldMapping, sortedFieldKeys]);
 
     // Fetch stores + settings on open
     useEffect(() => {
@@ -118,27 +282,51 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             .catch(() => {});
     }, [state.company?.id]);
 
-    // Re-fetch article format from AIMS
+    // Re-fetch article format from AIMS (uses stored credentials via settings endpoint)
     const handleRefetchArticleFormat = useCallback(async () => {
         if (!state.company) return;
         setArticleFormatLoading(true);
         setArticleFormatError(null);
         try {
-            const result = await companyService.fetchArticleFormat({
-                baseUrl: state.company.aimsBaseUrl || '',
-                cluster: state.company.aimsCluster || 'c1',
-                username: state.company.aimsUsername || '',
-                password: '', // Server will use stored password
-                companyCode: state.company.code,
-            });
-            if (result.success && result.format) {
-                setArticleFormat(result.format);
-                // Save to company settings
-                await settingsService.updateCompanySettings(state.company.id, {
-                    solumArticleFormat: result.format,
+            const result = await fieldMappingService.getArticleFormat(state.company.id, true);
+            if (result.articleFormat) {
+                setArticleFormat(result.articleFormat);
+                // Update Zustand store so rest of app sees fresh format
+                useSettingsStore.getState().updateSettings({ solumArticleFormat: result.articleFormat as any });
+                // Merge new article format fields into existing mapping (or generate fresh if empty)
+                const format = result.articleFormat;
+                setFieldMapping(prev => {
+                    if (!prev || Object.keys(prev.fields).length === 0) {
+                        return generateInitialMapping(format);
+                    }
+                    // Merge: add new fields, keep existing customizations, update mappingInfo
+                    const existingFields = { ...prev.fields };
+                    const maxOrder = Math.max(...Object.values(existingFields).map(f => f.order ?? 0), -1);
+                    let nextOrder = maxOrder + 1;
+                    (format.articleData || []).forEach((field) => {
+                        if (!existingFields[field]) {
+                            existingFields[field] = {
+                                friendlyNameEn: field,
+                                friendlyNameHe: field,
+                                visible: true,
+                                order: nextOrder++,
+                            };
+                        }
+                    });
+                    // Always preserve full mappingInfo from AIMS — mode handling is in SpacesManagementView
+                    const freshMappingInfo = format.mappingInfo
+                        ? { ...format.mappingInfo }
+                        : prev.mappingInfo;
+                    return {
+                        ...prev,
+                        fields: existingFields,
+                        uniqueIdField: format.mappingInfo?.articleId || prev.uniqueIdField,
+                        mappingInfo: freshMappingInfo as any,
+                    };
                 });
+                setFieldMappingSaved(false);
             } else {
-                setArticleFormatError(result.error || t('settings.companies.articleFormatError'));
+                setArticleFormatError(t('settings.companies.articleFormatError'));
             }
         } catch (err: any) {
             setArticleFormatError(err.response?.data?.message || t('settings.companies.articleFormatError'));
@@ -147,14 +335,51 @@ export function EditCompanyTabs({ state, onClose }: Props) {
         }
     }, [state.company, t]);
 
-    // Save field mapping
+    // Save article format edits to server + update Zustand store
+    const handleSaveArticleFormat = useCallback(async (newFormat: ArticleFormat): Promise<boolean> => {
+        if (!state.company?.id) return false;
+        setArticleFormatSaving(true);
+        try {
+            await fieldMappingService.updateArticleFormat(state.company.id, newFormat);
+            setArticleFormat(newFormat);
+            // Update the Zustand store so the rest of the app sees the new format
+            useSettingsStore.getState().updateSettings({ solumArticleFormat: newFormat as any });
+            return true;
+        } catch {
+            state.setError(t('settings.companies.saveError'));
+            return false;
+        } finally {
+            setArticleFormatSaving(false);
+        }
+    }, [state.company?.id, state, t]);
+
+    // Auto-generate field mapping from existing article format (with confirmation)
+    const handleGenerateFieldMapping = useCallback(async () => {
+        if (!articleFormat) return;
+        const hasExisting = fieldMapping && Object.keys(fieldMapping.fields).length > 0;
+        if (hasExisting) {
+            const confirmed = await confirm({
+                title: t('settings.companies.regenerateMapping', 'Regenerate from Format'),
+                message: t('settings.companies.regenerateConfirm', 'This will overwrite the current field mapping configuration. Are you sure?'),
+                confirmLabel: t('common.dialog.confirm', 'Confirm'),
+                cancelLabel: t('common.dialog.cancel'),
+                severity: 'warning',
+            });
+            if (!confirmed) return;
+        }
+        const generated = generateInitialMapping(articleFormat);
+        setFieldMapping(generated);
+        setFieldMappingSaved(false);
+    }, [articleFormat, fieldMapping, confirm, t]);
+
+    // Save field mapping via dedicated endpoint + update Zustand store so spaces table refreshes
     const handleSaveFieldMapping = useCallback(async () => {
         if (!state.company?.id || !fieldMapping) return;
         setFieldMappingSaving(true);
         try {
-            await settingsService.updateCompanySettings(state.company.id, {
-                solumMappingConfig: fieldMapping,
-            });
+            await fieldMappingService.updateFieldMappings(state.company.id, fieldMapping);
+            // Update the Zustand settings store so the spaces table columns refresh immediately
+            useSettingsStore.getState().updateFieldMappings(fieldMapping);
             setFieldMappingSaved(true);
             setTimeout(() => setFieldMappingSaved(false), 2000);
         } catch {
@@ -309,67 +534,141 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             {articleFormatError}
                         </Alert>
                     )}
-                    {articleFormat ? (
+
+                    {articleFormatLoading ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 4 }}>
+                            <CircularProgress />
+                            <Typography color="text.secondary">
+                                {t('settings.companies.fetchingArticleFormat')}
+                            </Typography>
+                        </Box>
+                    ) : articleFormat ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
-                                    <Typography variant="caption" color="text.secondary">{t('settings.companies.fileExtension')}</Typography>
-                                    <Typography variant="body1" fontWeight={600}>{articleFormat.fileExtension}</Typography>
-                                </Paper>
-                                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
-                                    <Typography variant="caption" color="text.secondary">{t('settings.companies.delimiter')}</Typography>
-                                    <Typography variant="body1" fontWeight={600}>{articleFormat.delimeter || '—'}</Typography>
-                                </Paper>
-                                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
-                                    <Typography variant="caption" color="text.secondary">{t('settings.companies.dataFields')}</Typography>
-                                    <Typography variant="body1" fontWeight={600}>{articleFormat.articleData?.length || 0}</Typography>
-                                </Paper>
-                            </Stack>
+                            {/* View mode toggle + re-fetch button */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <ToggleButtonGroup
+                                    value={articleFormatViewMode}
+                                    exclusive
+                                    onChange={(_, v) => v && setArticleFormatViewMode(v)}
+                                    size="small"
+                                    sx={{ direction: 'ltr' }}
+                                >
+                                    <ToggleButton value="visual">
+                                        <ViewListIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                        {t('settings.companies.visualView')}
+                                    </ToggleButton>
+                                    <ToggleButton value="json">
+                                        <CodeIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                        {t('settings.companies.jsonView')}
+                                    </ToggleButton>
+                                </ToggleButtonGroup>
 
-                            {articleFormat.articleBasicInfo && articleFormat.articleBasicInfo.length > 0 && (
-                                <Box>
-                                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('settings.companies.basicInfoFields')}</Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                        {articleFormat.articleBasicInfo.map((f) => (
-                                            <Chip key={f} label={f} size="small" variant="outlined" />
-                                        ))}
-                                    </Box>
-                                </Box>
-                            )}
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<RefreshIcon />}
+                                    onClick={handleRefetchArticleFormat}
+                                    disabled={articleFormatLoading || !state.company?.aimsConfigured}
+                                >
+                                    {t('settings.companies.refetchArticleFormat', 'Re-fetch from AIMS')}
+                                </Button>
+                            </Box>
 
-                            {articleFormat.articleData && articleFormat.articleData.length > 0 && (
-                                <Box>
-                                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('settings.companies.dataFields')}</Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                        {articleFormat.articleData.map((f) => (
-                                            <Chip key={f} label={f} size="small" />
-                                        ))}
-                                    </Box>
+                            {articleFormatViewMode === 'visual' ? (
+                                /* ===== Visual View ===== */
+                                <>
+                                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                                        <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
+                                            <Typography variant="caption" color="text.secondary">{t('settings.companies.fileExtension')}</Typography>
+                                            <Typography variant="body1" fontWeight={600}>{articleFormat.fileExtension}</Typography>
+                                        </Paper>
+                                        <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
+                                            <Typography variant="caption" color="text.secondary">{t('settings.companies.delimiter')}</Typography>
+                                            <Typography variant="body1" fontWeight={600}>{articleFormat.delimeter || '—'}</Typography>
+                                        </Paper>
+                                        <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
+                                            <Typography variant="caption" color="text.secondary">{t('settings.companies.dataFields')}</Typography>
+                                            <Typography variant="body1" fontWeight={600}>{articleFormat.articleData?.length || 0}</Typography>
+                                        </Paper>
+                                    </Stack>
+
+                                    {articleFormat.articleBasicInfo && articleFormat.articleBasicInfo.length > 0 && (
+                                        <Paper variant="outlined" sx={{ p: 1.5 }}>
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>{t('settings.companies.basicInfoFields')}</Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {articleFormat.articleBasicInfo.map((f) => (
+                                                    <Chip key={f} label={f} size="small" variant="outlined" color="primary" />
+                                                ))}
+                                            </Box>
+                                        </Paper>
+                                    )}
+
+                                    {articleFormat.articleData && articleFormat.articleData.length > 0 && (
+                                        <Paper variant="outlined" sx={{ p: 1.5 }}>
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
+                                                {t('settings.companies.dataFields')} ({articleFormat.articleData.length})
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {articleFormat.articleData.map((f) => (
+                                                    <Chip key={f} label={f} size="small" variant="outlined" />
+                                                ))}
+                                            </Box>
+                                        </Paper>
+                                    )}
+
+                                    {articleFormat.mappingInfo && (
+                                        <Paper variant="outlined" sx={{ p: 1.5 }}>
+                                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
+                                                {t('settings.companies.mappingInfoTitle')}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {Object.entries(articleFormat.mappingInfo).map(([key, value]) => (
+                                                    <Chip key={key} label={`${key}: ${value}`} size="small" variant="outlined" color="info" />
+                                                ))}
+                                            </Box>
+                                        </Paper>
+                                    )}
+                                </>
+                            ) : (
+                                /* ===== JSON Editor View ===== */
+                                <Box sx={{ mx: { xs: -2, sm: 0 } }}>
+                                    <Suspense fallback={
+                                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                                            <CircularProgress />
+                                        </Box>
+                                    }>
+                                        <Alert severity="info" variant="outlined" sx={{ mb: 1 }}>
+                                            {t('settings.companies.jsonEditHint')}
+                                        </Alert>
+                                        <ArticleFormatEditor
+                                            schema={articleFormat}
+                                            onSave={handleSaveArticleFormat}
+                                            readOnly={false}
+                                        />
+                                    </Suspense>
                                 </Box>
                             )}
                         </Box>
                     ) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                            {t('settings.companies.noArticleFormat', 'No article format stored. Fetch from AIMS to configure.')}
-                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 2 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {t('settings.companies.noArticleFormat', 'No article format stored. Fetch from AIMS to configure.')}
+                            </Typography>
+                            <Button
+                                variant="outlined"
+                                startIcon={<RefreshIcon />}
+                                onClick={handleRefetchArticleFormat}
+                                disabled={articleFormatLoading || !state.company?.aimsConfigured}
+                            >
+                                {t('settings.companies.refetchArticleFormat', 'Re-fetch from AIMS')}
+                            </Button>
+                        </Box>
                     )}
-                    <Box sx={{ mt: 2 }}>
-                        <Button
-                            variant="outlined"
-                            startIcon={articleFormatLoading ? <CircularProgress size={16} /> : <RefreshIcon />}
-                            onClick={handleRefetchArticleFormat}
-                            disabled={articleFormatLoading || !state.company?.aimsConfigured}
-                        >
-                            {articleFormatLoading
-                                ? t('settings.companies.fetchingArticleFormat')
-                                : t('settings.companies.refetchArticleFormat', 'Re-fetch from AIMS')}
-                        </Button>
-                    </Box>
                 </TabPanel>
 
                 {/* Tab 3: Field Mapping */}
                 <TabPanel value={state.activeTab} index={3}>
-                    {fieldMapping ? (
+                    {fieldMapping && Object.keys(fieldMapping.fields).length > 0 ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {/* Unique ID field */}
                             <Autocomplete
@@ -385,70 +684,101 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                 )}
                             />
 
-                            {/* Field table */}
-                            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
-                                <Table size="small" stickyHeader>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>{t('settings.companies.aimsField')}</TableCell>
-                                            <TableCell>{t('settings.companies.displayName')}</TableCell>
-                                            <TableCell align="center">{t('settings.companies.visible')}</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {Object.entries(fieldMapping.fields).map(([key, field]) => (
-                                            <TableRow key={key}>
-                                                <TableCell>
-                                                    <Typography variant="body2" fontFamily="monospace" fontSize={12}>{key}</Typography>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <TextField
-                                                        size="small"
-                                                        variant="standard"
-                                                        value={field.friendlyNameEn}
-                                                        onChange={(e) => {
-                                                            setFieldMapping(prev => {
-                                                                if (!prev) return prev;
-                                                                return {
-                                                                    ...prev,
-                                                                    fields: {
-                                                                        ...prev.fields,
-                                                                        [key]: { ...field, friendlyNameEn: e.target.value },
-                                                                    },
-                                                                };
-                                                            });
-                                                            setFieldMappingSaved(false);
-                                                        }}
-                                                        fullWidth
-                                                    />
-                                                </TableCell>
-                                                <TableCell align="center">
-                                                    <Switch
-                                                        size="small"
-                                                        checked={field.visible}
-                                                        onChange={(e) => {
-                                                            setFieldMapping(prev => {
-                                                                if (!prev) return prev;
-                                                                return {
-                                                                    ...prev,
-                                                                    fields: {
-                                                                        ...prev.fields,
-                                                                        [key]: { ...field, visible: e.target.checked },
-                                                                    },
-                                                                };
-                                                            });
-                                                            setFieldMappingSaved(false);
-                                                        }}
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                            {/* Name field selector — only in people mode */}
+                            {state.companyFeatures.peopleEnabled && (
+                                <Autocomplete
+                                    size="small"
+                                    options={articleDataFields}
+                                    value={fieldMapping.mappingInfo?.articleName || ''}
+                                    onChange={(_, value) => {
+                                        setFieldMapping(prev => {
+                                            if (!prev) return prev;
+                                            return {
+                                                ...prev,
+                                                mappingInfo: { ...prev.mappingInfo, articleName: value || '' } as any,
+                                            };
+                                        });
+                                        setFieldMappingSaved(false);
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label={t('settings.companies.nameField', 'Name Field')} />
+                                    )}
+                                />
+                            )}
 
-                            {/* Conference mapping */}
-                            {fieldMapping.conferenceMapping && (
+                            {/* Field table with drag-and-drop reordering */}
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={sortedFieldKeys} strategy={verticalListSortingStrategy}>
+                                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                                        <Table size="small" stickyHeader>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell sx={{ width: 32, px: 0.5 }} />
+                                                    <TableCell>{t('settings.companies.aimsField')}</TableCell>
+                                                    <TableCell>{t('settings.companies.displayNameEn', 'Display (EN)')}</TableCell>
+                                                    <TableCell>{t('settings.companies.displayNameHe', 'Display (HE)')}</TableCell>
+                                                    <TableCell align="center">{t('settings.companies.visible')}</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {sortedFieldKeys.map((key) => {
+                                                    const field = fieldMapping.fields[key];
+                                                    if (!field) return null;
+                                                    return (
+                                                        <SortableFieldRow
+                                                            key={key}
+                                                            fieldKey={key}
+                                                            field={field}
+                                                            onNameEnChange={(value) => {
+                                                                setFieldMapping(prev => {
+                                                                    if (!prev) return prev;
+                                                                    return {
+                                                                        ...prev,
+                                                                        fields: {
+                                                                            ...prev.fields,
+                                                                            [key]: { ...field, friendlyNameEn: value },
+                                                                        },
+                                                                    };
+                                                                });
+                                                                setFieldMappingSaved(false);
+                                                            }}
+                                                            onNameHeChange={(value) => {
+                                                                setFieldMapping(prev => {
+                                                                    if (!prev) return prev;
+                                                                    return {
+                                                                        ...prev,
+                                                                        fields: {
+                                                                            ...prev.fields,
+                                                                            [key]: { ...field, friendlyNameHe: value },
+                                                                        },
+                                                                    };
+                                                                });
+                                                                setFieldMappingSaved(false);
+                                                            }}
+                                                            onVisibleChange={(value) => {
+                                                                setFieldMapping(prev => {
+                                                                    if (!prev) return prev;
+                                                                    return {
+                                                                        ...prev,
+                                                                        fields: {
+                                                                            ...prev.fields,
+                                                                            [key]: { ...field, visible: value },
+                                                                        },
+                                                                    };
+                                                                });
+                                                                setFieldMappingSaved(false);
+                                                            }}
+                                                        />
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </SortableContext>
+                            </DndContext>
+
+                            {/* Conference mapping — only when conference feature is active */}
+                            {state.companyFeatures.conferenceEnabled && fieldMapping.conferenceMapping && (
                                 <>
                                     <Typography variant="subtitle2">{t('settings.companies.conferenceMappingTitle')}</Typography>
                                     <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
@@ -513,25 +843,137 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                 </>
                             )}
 
-                            {/* Save mapping button */}
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                                {fieldMappingSaved && (
-                                    <Chip label={t('common.saved', 'Saved')} color="success" size="small" icon={<CheckCircleIcon />} />
-                                )}
+                            {/* Global Field Assignments */}
+                            <Divider />
+                            <Typography variant="subtitle2">{t('settings.companies.globalFieldAssignments')}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {t('settings.companies.globalFieldAssignmentsHelp')}
+                            </Typography>
+                            {Object.entries(fieldMapping.globalFieldAssignments || {}).map(([gField, gValue]) => (
+                                <Stack key={gField} direction="row" spacing={1} alignItems="center">
+                                    <Autocomplete
+                                        size="small"
+                                        options={articleDataFields}
+                                        value={gField}
+                                        onChange={(_, newField) => {
+                                            if (!newField || newField === gField) return;
+                                            setFieldMapping(prev => {
+                                                if (!prev) return prev;
+                                                const updated = { ...prev.globalFieldAssignments };
+                                                delete updated[gField];
+                                                updated[newField] = gValue;
+                                                return { ...prev, globalFieldAssignments: updated };
+                                            });
+                                            setFieldMappingSaved(false);
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField {...params} label={t('settings.companies.aimsField')} />
+                                        )}
+                                        sx={{ flex: 1 }}
+                                    />
+                                    <TextField
+                                        size="small"
+                                        value={gValue}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFieldMapping(prev => {
+                                                if (!prev) return prev;
+                                                return {
+                                                    ...prev,
+                                                    globalFieldAssignments: { ...prev.globalFieldAssignments, [gField]: val },
+                                                };
+                                            });
+                                            setFieldMappingSaved(false);
+                                        }}
+                                        label={t('settings.companies.globalFieldValue')}
+                                        sx={{ flex: 1 }}
+                                    />
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => {
+                                            setFieldMapping(prev => {
+                                                if (!prev) return prev;
+                                                const updated = { ...prev.globalFieldAssignments };
+                                                delete updated[gField];
+                                                return { ...prev, globalFieldAssignments: updated };
+                                            });
+                                            setFieldMappingSaved(false);
+                                        }}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </Stack>
+                            ))}
+                            <Button
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={() => {
+                                    // Find first available field not already assigned
+                                    const assigned = new Set(Object.keys(fieldMapping.globalFieldAssignments || {}));
+                                    const available = articleDataFields.find(f => !assigned.has(f));
+                                    if (!available) return;
+                                    setFieldMapping(prev => {
+                                        if (!prev) return prev;
+                                        return {
+                                            ...prev,
+                                            globalFieldAssignments: { ...prev.globalFieldAssignments, [available]: '' },
+                                        };
+                                    });
+                                    setFieldMappingSaved(false);
+                                }}
+                                disabled={
+                                    Object.keys(fieldMapping.globalFieldAssignments || {}).length >= articleDataFields.length
+                                }
+                            >
+                                {t('common.add', 'Add')}
+                            </Button>
+
+                            {/* Action buttons */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Button
-                                    variant="outlined"
-                                    startIcon={fieldMappingSaving ? <CircularProgress size={16} /> : <SaveIcon />}
-                                    onClick={handleSaveFieldMapping}
-                                    disabled={fieldMappingSaving}
+                                    variant="text"
+                                    size="small"
+                                    startIcon={<AutoFixHighIcon />}
+                                    onClick={handleGenerateFieldMapping}
+                                    disabled={!articleFormat}
                                 >
-                                    {t('settings.companies.saveFieldMapping', 'Save Mapping')}
+                                    {t('settings.companies.regenerateMapping', 'Regenerate from Format')}
                                 </Button>
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                    {fieldMappingSaved && (
+                                        <Chip label={t('common.saved', 'Saved')} color="success" size="small" icon={<CheckCircleIcon />} />
+                                    )}
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={fieldMappingSaving ? <CircularProgress size={16} /> : <SaveIcon />}
+                                        onClick={handleSaveFieldMapping}
+                                        disabled={fieldMappingSaving}
+                                    >
+                                        {t('settings.companies.saveFieldMapping', 'Save Mapping')}
+                                    </Button>
+                                </Box>
                             </Box>
                         </Box>
                     ) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                            {t('settings.companies.noFieldsConfigured')}
-                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 2 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {t('settings.companies.noFieldsConfigured')}
+                            </Typography>
+                            {articleFormat ? (
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<AutoFixHighIcon />}
+                                    onClick={handleGenerateFieldMapping}
+                                >
+                                    {t('settings.companies.generateFromFormat', 'Generate from Article Format')}
+                                </Button>
+                            ) : (
+                                <Alert severity="info" variant="outlined">
+                                    {t('settings.companies.fetchFormatFirst', 'Fetch article format from AIMS first (Article Format tab), then generate field mappings.')}
+                                </Alert>
+                            )}
+                        </Box>
                     )}
                 </TabPanel>
 
@@ -660,6 +1102,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     )}
                 </Suspense>
             )}
+            <ConfirmDialog />
         </>
     );
 }

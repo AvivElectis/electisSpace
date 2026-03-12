@@ -92,57 +92,8 @@ export function QuickActionsPanel({
     if (isMobile) {
         return (
             <ClickAwayListener onClickAway={() => open && setOpen(false)}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    {/* Staggered action buttons */}
-                    <Stack direction="column" spacing={1.5} sx={{ mb: 1.5, alignItems: 'stretch' }}>
-                        {actions.map((action, index) => (
-                            <Box
-                                key={action.key}
-                                sx={{
-                                    opacity: open ? 1 : 0,
-                                    transform: open ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
-                                    transition: open
-                                        ? `opacity 0.2s ease ${index * 60}ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) ${index * 60}ms`
-                                        : `opacity 0.15s ease ${(actions.length - 1 - index) * 40}ms, transform 0.15s ease ${(actions.length - 1 - index) * 40}ms`,
-                                    pointerEvents: open ? 'auto' : 'none',
-                                }}
-                            >
-                                <Button
-                                    variant={action.variant}
-                                    startIcon={action.icon}
-                                    onClick={() => handleAction(action.onClick)}
-                                    fullWidth
-                                    sx={{
-                                        borderRadius: 3,
-                                        textTransform: 'none',
-                                        fontWeight: 700,
-                                        px: 4,
-                                        py: 2.5,
-                                        fontSize: '1.3rem',
-                                        minHeight: 72,
-                                        ...(action.variant === 'contained'
-                                            ? {
-                                                  boxShadow: (theme: any) =>
-                                                      `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
-                                              }
-                                            : {
-                                                  borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
-                                                  bgcolor: (theme: any) => alpha(theme.palette.background.paper, 0.85),
-                                                  backdropFilter: 'blur(12px)',
-                                                  '&:hover': {
-                                                      bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
-                                                      borderColor: 'primary.main',
-                                                  },
-                                              }),
-                                    }}
-                                >
-                                    {action.label}
-                                </Button>
-                            </Box>
-                        ))}
-                    </Stack>
-
-                    {/* FAB trigger */}
+                <Box sx={{ display: 'flex', flexDirection: 'column-reverse', alignItems: 'flex-start' }}>
+                    {/* FAB trigger — always at the bottom */}
                     <Fab
                         color="primary"
                         size="large"
@@ -150,13 +101,70 @@ export function QuickActionsPanel({
                         sx={{
                             transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             transform: open ? 'rotate(45deg)' : 'none',
-                            width: 72,
-                            height: 72,
-                            '& .MuiSvgIcon-root': { fontSize: '2rem' },
+                            width: 80,
+                            height: 80,
+                            boxShadow: (theme: any) => `0 8px 28px ${alpha(theme.palette.primary.main, 0.4)}, 0 4px 10px ${alpha(theme.palette.common.black, 0.1)}`,
+                            '& .MuiSvgIcon-root': { fontSize: '2.5rem' },
                         }}
                     >
                         {open ? <CloseIcon /> : <AddIcon />}
                     </Fab>
+
+                    {/* Action buttons — fly upward from FAB, full width */}
+                    <Stack direction="column" spacing={1.25} sx={{
+                        mb: 1.5,
+                        width: 'calc(100vw - 32px)',
+                    }}>
+                        {actions.map((action, index) => {
+                            const reverseIndex = actions.length - 1 - index;
+                            return (
+                                <Box
+                                    key={action.key}
+                                    sx={{
+                                        opacity: open ? 1 : 0,
+                                        transform: open ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.9)',
+                                        transition: open
+                                            ? `opacity 0.2s ease ${reverseIndex * 50}ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) ${reverseIndex * 50}ms`
+                                            : `opacity 0.12s ease ${index * 30}ms, transform 0.12s ease ${index * 30}ms`,
+                                        pointerEvents: open ? 'auto' : 'none',
+                                    }}
+                                >
+                                    <Button
+                                        variant={action.variant}
+                                        startIcon={action.icon}
+                                        onClick={() => handleAction(action.onClick)}
+                                        fullWidth
+                                        sx={{
+                                            borderRadius: 3,
+                                            textTransform: 'none',
+                                            fontWeight: 700,
+                                            px: 2,
+                                            py: 1.75,
+                                            fontSize: '1.1rem !important',
+                                            minHeight: 64,
+                                            '& .MuiButton-startIcon': { '& > *:nth-of-type(1)': { fontSize: '1.5rem' } },
+                                            justifyContent: 'center',
+                                            boxShadow: (theme: any) => `0 4px 16px ${alpha(theme.palette.common.black, 0.15)}, 0 2px 6px ${alpha(theme.palette.common.black, 0.1)}`,
+                                            ...(action.variant === 'contained' && {
+                                                background: `linear-gradient(135deg, #0D47A1 0%, #1565C0 50%, #0D47A1 100%)`,
+                                                backgroundSize: '200% auto',
+                                                boxShadow: (theme: any) => `0 4px 16px ${alpha(theme.palette.primary.main, 0.35)}, 0 2px 6px ${alpha(theme.palette.common.black, 0.15)}`,
+                                            }),
+                                            ...(action.variant !== 'contained' && {
+                                                borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.25),
+                                                bgcolor: (theme: any) => theme.palette.mode === 'dark' ? theme.palette.background.paper : '#fff',
+                                                '&:active': {
+                                                    bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
+                                                },
+                                            }),
+                                        }}
+                                    >
+                                        {action.label}
+                                    </Button>
+                                </Box>
+                            );
+                        })}
+                    </Stack>
                 </Box>
             </ClickAwayListener>
         );

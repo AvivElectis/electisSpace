@@ -93,10 +93,10 @@ export function LoginPage() {
         await resendCode();
     };
 
-    const handleLanguageChange = (_: React.MouseEvent<HTMLElement>, newLang: string | null) => {
-        if (newLang) {
-            i18n.changeLanguage(newLang);
-            document.dir = newLang === 'he' ? 'rtl' : 'ltr';
+    const handleLanguageChange = async (_: React.MouseEvent<HTMLElement>, newLang: string | null) => {
+        if (newLang && newLang !== i18n.language) {
+            await i18n.changeLanguage(newLang);
+            window.location.reload();
         }
     };
 
