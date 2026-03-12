@@ -55,9 +55,10 @@ export function SpaceDialog({
     useEffect(() => {
         if (open) {
             if (space) {
-                // Edit mode
+                // Edit mode — use externalId as the space identifier
                 setFormData({
                     id: space.id,
+                    externalId: space.externalId,
                     data: space.data || {},
                 });
             } else {
@@ -196,11 +197,11 @@ export function SpaceDialog({
             </DialogTitle>
             <DialogContent>
                 <Stack gap={2} sx={{ mt: 1 }}>
-                    {/* ID - only editable in add mode */}
+                    {/* AIMS ID - only editable in add mode */}
                     <TextField
                         fullWidth
                         label={t('spaces.id')}
-                        value={formData.id || ''}
+                        value={space ? (formData.externalId || '') : (formData.id || '')}
                         onChange={(e) => handleChange('id', e.target.value)}
                         disabled={!!space}
                         required
@@ -235,17 +236,24 @@ export function SpaceDialog({
                     )}
                 </Stack>
             </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button onClick={onClose} disabled={saving}>
-                    {t('common.cancel')}
-                </Button>
-                <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={saving}
-                >
-                    {saving ? t('common.saving') : t('common.save')}
-                </Button>
+            <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
+                {space ? (
+                    <Typography variant="caption" color="text.disabled" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                        db_id: {space.id}
+                    </Typography>
+                ) : <span />}
+                <Stack direction="row" gap={1}>
+                    <Button onClick={onClose} disabled={saving}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? t('common.saving') : t('common.save')}
+                    </Button>
+                </Stack>
             </DialogActions>
             <ConfirmDialog />
         </Dialog>

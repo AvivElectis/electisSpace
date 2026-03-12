@@ -10,14 +10,14 @@ import {
     InputAdornment,
     Tooltip,
     Skeleton,
-    Card,
-    CardContent,
     Collapse,
     useMediaQuery,
     useTheme,
     Fab,
     Badge,
+    alpha,
 } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AddIcon from '@mui/icons-material/Add';
@@ -254,7 +254,7 @@ function SpacesDesktopTable({
  * This component handles the original space management functionality
  */
 export function SpacesManagementView() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isAppReady = useAuthStore((state) => state.isAppReady);
@@ -339,8 +339,11 @@ export function SpacesManagementView() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAppReady, activeStoreId]);
 
-    // The articleName mapped field key (shown as dedicated "Name" column)
-    const nameFieldKey = settingsController.settings.solumMappingConfig?.mappingInfo?.articleName;
+    // The articleName mapped field key (shown as dedicated "Name" column) — people mode only
+    const isPeopleMode = settingsController.settings.peopleManagerEnabled === true;
+    const nameFieldKey = isPeopleMode
+        ? settingsController.settings.solumMappingConfig?.mappingInfo?.articleName
+        : undefined;
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
@@ -358,6 +361,7 @@ export function SpacesManagementView() {
                 if (globalFieldKeys.includes(fieldKey)) return false; // Exclude global fields
                 return config.visible !== false; // undefined = visible by default
             })
+            .sort(([, a], [, b]) => (a.order ?? Infinity) - (b.order ?? Infinity))
             .map(([fieldKey, config]) => {
                 // Use friendly names if they exist and are not just the field key itself
                 // (default config sets friendly names to field key, which is not user-friendly)
@@ -513,68 +517,70 @@ export function SpacesManagementView() {
                 </Button>
             </Stack>
 
-            {/* AIMS Sync Panel */}
-            <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
+            {/* AIMS Sync Panel — desktop: above table, mobile: below table */}
+            {!isMobile && <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />}
 
-            {/* List Management Panel — beneath header */}
-            <Paper sx={{ mb: 2, overflow: 'hidden' }}>
-                <Stack
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    sx={{ px: 2, py: 1, bgcolor: 'action.hover', cursor: 'pointer' }}
-                    onClick={() => setListsPanelExpanded(!listsPanelExpanded)}
-                >
-                    <Stack direction="row" alignItems="center" gap={1}>
-                        <ListAltIcon fontSize="small" color="action" />
-                        <Typography variant="subtitle2">{t('lists.manage')}</Typography>
-                    </Stack>
-                    <IconButton size="small">
-                        {listsPanelExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                    </IconButton>
-                </Stack>
-                <Collapse in={listsPanelExpanded}>
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        p: 2,
-                    }}>
-                        <Stack direction="row" gap={1} flexWrap="wrap">
-                            <Button
-                                variant="outlined"
-                                startIcon={<FolderIcon />}
-                                onClick={() => setListsManagerOpen(true)}
-                            >
-                                {t('lists.manage')}
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                startIcon={<SaveIcon />}
-                                onClick={() => setSaveListOpen(true)}
-                            >
-                                {t('lists.saveAsNew')}
-                            </Button>
+            {/* List Management Panel — desktop: above table, mobile: below table */}
+            {!isMobile && (
+                <Paper sx={{ mb: 2, overflow: 'hidden' }}>
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ px: 2, py: 1, bgcolor: 'action.hover', cursor: 'pointer' }}
+                        onClick={() => setListsPanelExpanded(!listsPanelExpanded)}
+                    >
+                        <Stack direction="row" alignItems="center" gap={1}>
+                            <ListAltIcon fontSize="small" color="action" />
+                            <Typography variant="subtitle2">{t('lists.manage')}</Typography>
                         </Stack>
+                        <IconButton size="small">
+                            {listsPanelExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                    </Stack>
+                    <Collapse in={listsPanelExpanded}>
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            p: 2,
+                        }}>
+                            <Stack direction="row" gap={1} flexWrap="wrap">
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<FolderIcon />}
+                                    onClick={() => setListsManagerOpen(true)}
+                                >
+                                    {t('lists.manage')}
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<SaveIcon />}
+                                    onClick={() => setSaveListOpen(true)}
+                                >
+                                    {t('lists.saveAsNew')}
+                                </Button>
+                            </Stack>
 
-                        {activeListId && (
-                            <Button
-                                variant="outlined"
-                                color="success"
-                                startIcon={<SaveIcon />}
-                                disabled={!pendingChanges}
-                                onClick={() => {
-                                    if (activeListId) {
-                                        saveListChanges(activeListId);
-                                    }
-                                }}
-                            >
-                                {t('lists.saveChanges')}
-                            </Button>
-                        )}
-                    </Box>
-                </Collapse>
-            </Paper>
+                            {activeListId && (
+                                <Button
+                                    variant="outlined"
+                                    color="success"
+                                    startIcon={<SaveIcon />}
+                                    disabled={!pendingChanges}
+                                    onClick={() => {
+                                        if (activeListId) {
+                                            saveListChanges(activeListId);
+                                        }
+                                    }}
+                                >
+                                    {t('lists.saveChanges')}
+                                </Button>
+                            )}
+                        </Box>
+                    </Collapse>
+                </Paper>
+            )}
             {/* Search — filter icon on mobile, inline on desktop */}
             {isMobile ? (
                 <Box sx={{ mb: 2 }}>
@@ -635,83 +641,141 @@ export function SpacesManagementView() {
                     {spaceController.isFetching ? (
                         <Stack gap={1}>
                             {Array.from({ length: 5 }).map((_, index) => (
-                                <Card key={`skeleton-${index}`} variant="outlined">
-                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                                        <Skeleton variant="text" width="60%" height={20} />
-                                    </CardContent>
-                                </Card>
+                                <Box key={`skeleton-${index}`} sx={{
+                                    borderRadius: 3,
+                                    bgcolor: 'background.paper',
+                                    p: 2,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1.5,
+                                }}>
+                                    <Skeleton variant="rounded" width={52} height={32} sx={{ borderRadius: 2 }} />
+                                    <Skeleton variant="text" width="50%" height={24} />
+                                </Box>
                             ))}
                         </Stack>
                     ) : filteredAndSortedSpaces.length === 0 ? (
-                        <Paper sx={{ p: 4, textAlign: 'center' }}>
-                            <Typography variant="body2" color="text.secondary">
+                        <Paper elevation={0} sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'background.paper' }}>
+                            <Typography variant="body1" color="text.secondary">
                                 {searchQuery
                                     ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
                                     : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
                             </Typography>
                         </Paper>
                     ) : (
-                        <Stack gap={0.5}>
+                        <Stack gap={1}>
                             {filteredAndSortedSpaces.map((space, index) => {
                                 const isExpanded = expandedCardId === space.id;
-                                return (
-                                    <Card
-                                        key={`${space.id}-${index}`}
-                                        variant="outlined"
-                                        sx={{ transition: 'background-color 0.15s' }}
-                                    >
-                                        <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                                            {/* Compact row — always visible */}
-                                            <Stack
-                                                direction="row"
-                                                alignItems="center"
-                                                justifyContent="space-between"
-                                                onClick={() => setExpandedCardId(prev => prev === space.id ? null : space.id)}
-                                                sx={{ cursor: 'pointer' }}
-                                            >
-                                                <Stack direction="row" alignItems="center" gap={1}>
-                                                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
-                                                        {space.externalId || space.id}
-                                                    </Typography>
-                                                    {nameFieldKey && space.data[nameFieldKey] && (
-                                                        <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: '0.8rem' }}>
-                                                            {space.data[nameFieldKey]}
-                                                        </Typography>
-                                                    )}
-                                                </Stack>
-                                            </Stack>
+                                const firstField = visibleFields[0];
+                                const previewValue = firstField ? space.data[firstField.key] : undefined;
 
-                                            {/* Expanded details */}
-                                            {isExpanded && (
-                                                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                                                    <Typography variant="body2" color="text.secondary" noWrap sx={{ mb: 1, fontSize: '0.8rem' }}>
-                                                        {visibleFields.slice(0, 3).map((field, i) => (
-                                                            <span key={field.key}>
-                                                                {i > 0 && ' • '}
-                                                                {space.data[field.key] || '-'}
-                                                            </span>
+                                return (
+                                    <Box
+                                        key={`${space.id}-${index}`}
+                                        sx={{
+                                            borderRadius: 3,
+                                            bgcolor: 'background.paper',
+                                            overflow: 'hidden',
+                                            transition: 'box-shadow 0.25s ease',
+                                            boxShadow: isExpanded
+                                                ? (theme) => `0 2px 12px ${alpha(theme.palette.common.black, 0.06)}`
+                                                : 'none',
+                                        }}
+                                    >
+                                        {/* Card header — always visible */}
+                                        <Box
+                                            onClick={() => setExpandedCardId(prev => prev === space.id ? null : space.id)}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                px: 2,
+                                                py: 1.75,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1.5,
+                                                '&:active': { opacity: 0.7 },
+                                            }}
+                                        >
+                                            {/* ID badge — start-aligned, rounded pill */}
+                                            <Box sx={{
+                                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                                color: 'primary.main',
+                                                px: 1.5,
+                                                py: 0.6,
+                                                borderRadius: 2.5,
+                                                fontWeight: 700,
+                                                fontSize: '1rem',
+                                                lineHeight: 1.3,
+                                                whiteSpace: 'nowrap',
+                                                flexShrink: 0,
+                                            }}>
+                                                {space.externalId || space.id}
+                                            </Box>
+                                            {/* First field value — fills the middle */}
+                                            <Typography
+                                                noWrap
+                                                sx={{
+                                                    flex: 1,
+                                                    fontSize: '1.1rem',
+                                                    fontWeight: 500,
+                                                    color: previewValue ? 'text.primary' : 'text.disabled',
+                                                }}
+                                            >
+                                                {previewValue || '–'}
+                                            </Typography>
+                                            {/* Chevron */}
+                                            <KeyboardArrowDownIcon sx={{
+                                                color: 'text.disabled',
+                                                fontSize: '1.4rem',
+                                                transition: 'transform 0.25s ease',
+                                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                flexShrink: 0,
+                                            }} />
+                                        </Box>
+
+                                        {/* Expanded details */}
+                                        {isExpanded && (
+                                            <Box sx={{ px: 2, pb: 1.5 }}>
+                                                {/* Fields grid */}
+                                                {visibleFields.length > 0 && (
+                                                    <Box sx={{
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                                        gap: 1.5,
+                                                        pt: 0.5,
+                                                        pb: 1.25,
+                                                    }}>
+                                                        {visibleFields.map((field) => (
+                                                            <Box key={field.key}>
+                                                                <Typography
+                                                                    component="div"
+                                                                    color="text.secondary"
+                                                                    sx={{
+                                                                        fontSize: '0.78rem',
+                                                                        fontWeight: 500,
+                                                                        mb: 0.25,
+                                                                    }}
+                                                                >
+                                                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                                                </Typography>
+                                                                <Typography noWrap sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                                                                    {space.data[field.key] || '–'}
+                                                                </Typography>
+                                                            </Box>
                                                         ))}
-                                                    </Typography>
-                                                    <Stack direction="row" gap={1} justifyContent="flex-end">
-                                                        <Tooltip title={t('common.edit')}>
-                                                            <span>
-                                                            <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => handleEdit(space)}>
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                        <Tooltip title={t('common.delete')}>
-                                                            <span>
-                                                            <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => handleDelete(space.id)}>
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    </Stack>
-                                                </Box>
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                                                    </Box>
+                                                )}
+                                                {/* Actions row */}
+                                                <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => handleEdit(space)}>
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => handleDelete(space.id)}>
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </Stack>
+                                            </Box>
+                                        )}
+                                    </Box>
                                 );
                             })}
                         </Stack>
@@ -731,6 +795,64 @@ export function SpacesManagementView() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                 />)
+            )}
+            {/* Mobile: panels below table */}
+            {isMobile && (
+                <>
+                    <Paper sx={{ mb: 2, mt: 2, overflow: 'hidden' }}>
+                        <Stack
+                            direction="row"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            sx={{ px: 2, py: 1, bgcolor: 'action.hover', cursor: 'pointer' }}
+                            onClick={() => setListsPanelExpanded(!listsPanelExpanded)}
+                        >
+                            <Stack direction="row" alignItems="center" gap={1}>
+                                <ListAltIcon fontSize="small" color="action" />
+                                <Typography variant="subtitle2">{t('lists.manage')}</Typography>
+                            </Stack>
+                            <IconButton size="small">
+                                {listsPanelExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            </IconButton>
+                        </Stack>
+                        <Collapse in={listsPanelExpanded}>
+                            <Box sx={{ p: 2 }}>
+                                <Stack direction="row" gap={1} flexWrap="wrap">
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<FolderIcon />}
+                                        onClick={() => setListsManagerOpen(true)}
+                                    >
+                                        {t('lists.manage')}
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<SaveIcon />}
+                                        onClick={() => setSaveListOpen(true)}
+                                    >
+                                        {t('lists.saveAsNew')}
+                                    </Button>
+                                    {activeListId && (
+                                        <Button
+                                            variant="outlined"
+                                            color="success"
+                                            startIcon={<SaveIcon />}
+                                            disabled={!pendingChanges}
+                                            onClick={() => {
+                                                if (activeListId) {
+                                                    saveListChanges(activeListId);
+                                                }
+                                            }}
+                                        >
+                                            {t('lists.saveChanges')}
+                                        </Button>
+                                    )}
+                                </Stack>
+                            </Box>
+                        </Collapse>
+                    </Paper>
+                    <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
+                </>
             )}
             {/* Mobile FAB — Add Space */}
             {isMobile && (

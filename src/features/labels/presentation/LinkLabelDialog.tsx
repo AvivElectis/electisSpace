@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -126,7 +126,7 @@ export function LinkLabelDialog({
         setScannerOpen(false);
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         setError(null);
 
         // Validation
@@ -148,7 +148,28 @@ export function LinkLabelDialog({
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [labelCode, articleId, templateName, onLink, onClose, t]);
+
+    // Auto-submit: when both label code and a valid article are present, submit immediately
+    const autoSubmittedRef = useRef(false);
+    useEffect(() => {
+        if (!open) {
+            autoSubmittedRef.current = false;
+            return;
+        }
+        if (autoSubmittedRef.current || isSubmitting || !articles.length) return;
+
+        const trimmedLabel = labelCode.trim();
+        const trimmedArticle = articleId.trim();
+        if (!trimmedLabel || !trimmedArticle) return;
+
+        // Check the article exists in the loaded articles list
+        const validArticle = articles.some(a => a.id === trimmedArticle);
+        if (validArticle) {
+            autoSubmittedRef.current = true;
+            handleSubmit();
+        }
+    }, [open, labelCode, articleId, articles, isSubmitting, handleSubmit]);
 
     return (
         <>

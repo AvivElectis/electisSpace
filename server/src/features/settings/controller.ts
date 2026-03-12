@@ -174,8 +174,9 @@ export const settingsController = {
         try {
             const companyId = req.params.companyId as string;
             const user = getUserContext(req);
+            const force = req.query.force === 'true';
 
-            const result = await settingsService.getArticleFormat(companyId, user);
+            const result = await settingsService.getArticleFormat(companyId, user, force);
             res.json(result);
         } catch (error: any) {
             if (error.message === 'COMPANY_NOT_FOUND_OR_DENIED') return next(notFound('Company not found or access denied'));

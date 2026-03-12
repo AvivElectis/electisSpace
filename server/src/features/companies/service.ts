@@ -370,6 +370,15 @@ export const companyService = {
             const newSettings = { ...existingSettings };
 
             if (data.companyFeatures) {
+                // Detect mode change (people↔spaces) and clear stale field mappings
+                const wasPeopleMode = existingSettings.peopleManagerEnabled === true;
+                const isPeopleMode = data.companyFeatures.peopleEnabled === true;
+                if (wasPeopleMode !== isPeopleMode) {
+                    // Mode changed — old field mapping columns are invalid
+                    delete newSettings.solumMappingConfig;
+                    appLogger.info('CompanyService', `Mode changed from ${wasPeopleMode ? 'people' : 'spaces'} to ${isPeopleMode ? 'people' : 'spaces'} — cleared stale solumMappingConfig`, { companyId: id });
+                }
+
                 newSettings.companyFeatures = data.companyFeatures;
                 // Sync legacy peopleManagerEnabled flag
                 newSettings.peopleManagerEnabled = data.companyFeatures.peopleEnabled;
@@ -385,6 +394,7 @@ export const companyService = {
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
         const company = await companyRepository.update(id, updateData);
+        const updatedSettings = (company.settings as Record<string, unknown>) || {};
 
         return {
             id: company.id,
@@ -393,6 +403,8 @@ export const companyService = {
             location: company.location,
             description: company.description,
             isActive: company.isActive,
+            companyFeatures: extractCompanyFeatures(updatedSettings),
+            spaceType: extractSpaceType(updatedSettings),
             updatedAt: company.updatedAt,
         };
     },

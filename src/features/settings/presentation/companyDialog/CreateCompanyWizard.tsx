@@ -297,6 +297,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                         articleFormat={formData.articleFormat}
                         fieldMapping={formData.fieldMapping}
                         onUpdate={(mapping) => updateFormData({ fieldMapping: mapping })}
+                        isPeopleMode={formData.features.peopleEnabled}
+                        isConferenceEnabled={formData.features.conferenceEnabled}
                     />
                 );
             case 4:

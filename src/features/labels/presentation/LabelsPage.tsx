@@ -907,17 +907,35 @@ export function LabelsPage() {
             {/* Mobile FAB — Link Label + Assign Image (dashboard-style stacked buttons) */}
             {isMobile && (
                 <ClickAwayListener onClickAway={() => speedDialOpen && setSpeedDialOpen(false)}>
-                    <Box sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, insetInlineStart: { xs: 16, sm: 24 }, zIndex: 1050, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        {/* Staggered action buttons */}
-                        <Stack direction="column" spacing={1.5} sx={{ mb: 1.5, alignItems: 'stretch' }}>
-                            {/* Link Label — primary, top button */}
+                    <Box sx={{ position: 'fixed', bottom: 16, insetInlineStart: 16, zIndex: (theme) => theme.zIndex.fab, display: 'flex', flexDirection: 'column-reverse', alignItems: 'flex-start' }}>
+                        {/* FAB trigger */}
+                        <Fab
+                            color="primary"
+                            size="large"
+                            disabled={!canEdit}
+                            onClick={() => setSpeedDialOpen((prev) => !prev)}
+                            sx={{
+                                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transform: speedDialOpen ? 'rotate(45deg)' : 'none',
+                                width: 80,
+                                height: 80,
+                                boxShadow: (theme: any) => `0 8px 28px ${alpha(theme.palette.primary.main, 0.4)}, 0 4px 10px ${alpha(theme.palette.common.black, 0.1)}`,
+                                '& .MuiSvgIcon-root': { fontSize: '2.5rem' },
+                            }}
+                        >
+                            {speedDialOpen ? <CloseIcon /> : <AddIcon />}
+                        </Fab>
+
+                        {/* Action buttons */}
+                        <Stack direction="column" spacing={1.25} sx={{ mb: 1.5, width: 'calc(100vw - 32px)' }}>
+                            {/* Link Label — primary */}
                             <Box
                                 sx={{
                                     opacity: speedDialOpen ? 1 : 0,
-                                    transform: speedDialOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
+                                    transform: speedDialOpen ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.9)',
                                     transition: speedDialOpen
-                                        ? 'opacity 0.2s ease 0ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) 0ms'
-                                        : 'opacity 0.15s ease 40ms, transform 0.15s ease 40ms',
+                                        ? 'opacity 0.2s ease 50ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) 50ms'
+                                        : 'opacity 0.12s ease 0ms, transform 0.12s ease 0ms',
                                     pointerEvents: speedDialOpen ? 'auto' : 'none',
                                 }}
                             >
@@ -933,26 +951,29 @@ export function LabelsPage() {
                                         borderRadius: 3,
                                         textTransform: 'none',
                                         fontWeight: 700,
-                                        px: 4,
-                                        py: 2.5,
-                                        fontSize: '1.3rem',
-                                        minHeight: 72,
-                                        boxShadow: (theme: any) =>
-                                            `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                                        px: 2,
+                                        py: 1.75,
+                                        fontSize: '1.1rem !important',
+                                        minHeight: 64,
+                                        '& .MuiButton-startIcon': { '& > *:nth-of-type(1)': { fontSize: '1.5rem' } },
+                                        justifyContent: 'center',
+                                        background: 'linear-gradient(135deg, #0D47A1 0%, #1565C0 50%, #0D47A1 100%)',
+                                        backgroundSize: '200% auto',
+                                        boxShadow: (theme: any) => `0 4px 16px ${alpha(theme.palette.primary.main, 0.35)}, 0 2px 6px ${alpha(theme.palette.common.black, 0.15)}`,
                                     }}
                                 >
                                     {t('labels.linkNew', 'Link Label')}
                                 </Button>
                             </Box>
 
-                            {/* Assign Image — secondary, closer to FAB */}
+                            {/* Assign Image — outlined */}
                             <Box
                                 sx={{
                                     opacity: speedDialOpen ? 1 : 0,
-                                    transform: speedDialOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.85)',
+                                    transform: speedDialOpen ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.9)',
                                     transition: speedDialOpen
-                                        ? 'opacity 0.2s ease 60ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) 60ms'
-                                        : 'opacity 0.15s ease 0ms, transform 0.15s ease 0ms',
+                                        ? 'opacity 0.2s ease 0ms, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) 0ms'
+                                        : 'opacity 0.12s ease 30ms, transform 0.12s ease 30ms',
                                     pointerEvents: speedDialOpen ? 'auto' : 'none',
                                 }}
                             >
@@ -968,16 +989,17 @@ export function LabelsPage() {
                                         borderRadius: 3,
                                         textTransform: 'none',
                                         fontWeight: 700,
-                                        px: 4,
-                                        py: 2.5,
-                                        fontSize: '1.3rem',
-                                        minHeight: 72,
-                                        borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.3),
-                                        bgcolor: (theme: any) => alpha(theme.palette.background.paper, 0.85),
-                                        backdropFilter: 'blur(12px)',
-                                        '&:hover': {
+                                        px: 2,
+                                        py: 1.75,
+                                        fontSize: '1.1rem !important',
+                                        minHeight: 64,
+                                        '& .MuiButton-startIcon': { '& > *:nth-of-type(1)': { fontSize: '1.5rem' } },
+                                        justifyContent: 'center',
+                                        boxShadow: (theme: any) => `0 4px 16px ${alpha(theme.palette.common.black, 0.15)}, 0 2px 6px ${alpha(theme.palette.common.black, 0.1)}`,
+                                        borderColor: (theme: any) => alpha(theme.palette.primary.main, 0.25),
+                                        bgcolor: (theme: any) => theme.palette.mode === 'dark' ? theme.palette.background.paper : '#fff',
+                                        '&:active': {
                                             bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.08),
-                                            borderColor: 'primary.main',
                                         },
                                     }}
                                 >
@@ -985,23 +1007,6 @@ export function LabelsPage() {
                                 </Button>
                             </Box>
                         </Stack>
-
-                        {/* FAB trigger */}
-                        <Fab
-                            color="primary"
-                            size="large"
-                            disabled={!canEdit}
-                            onClick={() => setSpeedDialOpen((prev) => !prev)}
-                            sx={{
-                                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                transform: speedDialOpen ? 'rotate(45deg)' : 'none',
-                                width: 72,
-                                height: 72,
-                                '& .MuiSvgIcon-root': { fontSize: '2rem' },
-                            }}
-                        >
-                            {speedDialOpen ? <CloseIcon /> : <AddIcon />}
-                        </Fab>
                     </Box>
                 </ClickAwayListener>
             )}

@@ -501,6 +501,8 @@ export const useAuthStore = create<AuthState>()(
                             usePeopleStore.getState().clearAllData();
                             useConferenceStore.getState().clearAllData();
                             useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
+                            // Clear stale AIMS field mappings from previous company
+                            settingsStore.clearFieldMappings();
                         } catch (e) {
                             logger.warn('AuthStore', 'Failed to clear data stores on company switch', { error: e instanceof Error ? e.message : String(e) });
                         }
