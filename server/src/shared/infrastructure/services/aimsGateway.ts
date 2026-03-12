@@ -391,7 +391,7 @@ export class AIMSGateway {
      * Priority: in-memory cache → DB (Company.settings.solumArticleFormat) → AIMS live fetch.
      * On AIMS live fetch, saves to DB for future use.
      */
-    async fetchArticleFormat(storeId: string): Promise<ArticleFormat> {
+    async fetchArticleFormat(storeId: string, force = false): Promise<ArticleFormat> {
         const storeConfig = await this.getStoreConfig(storeId);
         if (!storeConfig) {
             throw new Error(`No AIMS configuration for store ${storeId}`);
@@ -399,26 +399,32 @@ export class AIMSGateway {
 
         const { companyId } = storeConfig;
 
-        // 1. Check in-memory cache
-        const cached = formatCache.get(companyId);
-        if (cached && (Date.now() - cached.fetchedAt) < FORMAT_CACHE_TTL) {
-            return cached.format;
-        }
-
-        // 2. Check DB (Company.settings.solumArticleFormat)
-        try {
-            const company = await prisma.company.findUnique({
-                where: { id: companyId },
-                select: { settings: true },
-            });
-            const settings = (company?.settings as Record<string, any>) || {};
-            if (settings.solumArticleFormat) {
-                const format = settings.solumArticleFormat as ArticleFormat;
-                formatCache.set(companyId, { format, fetchedAt: Date.now() });
-                return format;
+        if (!force) {
+            // 1. Check in-memory cache
+            const cached = formatCache.get(companyId);
+            if (cached && (Date.now() - cached.fetchedAt) < FORMAT_CACHE_TTL) {
+                return cached.format;
             }
-        } catch (error) {
-            appLogger.error('AimsGateway', `Failed to read article format from DB for company ${companyId}`, { error });
+
+            // 2. Check DB (Company.settings.solumArticleFormat)
+            try {
+                const company = await prisma.company.findUnique({
+                    where: { id: companyId },
+                    select: { settings: true },
+                });
+                const settings = (company?.settings as Record<string, any>) || {};
+                if (settings.solumArticleFormat) {
+                    const format = settings.solumArticleFormat as ArticleFormat;
+                    formatCache.set(companyId, { format, fetchedAt: Date.now() });
+                    return format;
+                }
+            } catch (error) {
+                appLogger.error('AimsGateway', `Failed to read article format from DB for company ${companyId}`, { error });
+            }
+        } else {
+            // Force refresh — clear in-memory cache
+            formatCache.delete(companyId);
+            appLogger.info('AimsGateway', `Force-refreshing article format from AIMS for company ${companyId}`);
         }
 
         // 3. Fetch from AIMS live

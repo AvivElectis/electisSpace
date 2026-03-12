@@ -1,6 +1,6 @@
-import { Box, Typography, Grid, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, Grid, Stack, useMediaQuery, useTheme, alpha } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react';
 
 // Features
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -31,6 +31,104 @@ import {
 } from './components';
 
 import type { Space, ConferenceRoom } from '@shared/domain/types';
+
+// ======================
+// Mobile Carousel — horizontal swipe with dot indicators
+// ======================
+
+function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | false)[] }) {
+    const theme = useTheme();
+    const [activeIndex, setActiveIndex] = useState(0);
+    const touchStartX = useRef(0);
+
+    // Filter out false/null sections
+    const validSections = sections.filter(Boolean) as React.ReactNode[];
+    const isRtl = theme.direction === 'rtl';
+
+    const goTo = (index: number) => {
+        setActiveIndex(Math.max(0, Math.min(index, validSections.length - 1)));
+    };
+
+    // Swipe detection via touch events
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        const delta = e.changedTouches[0].clientX - touchStartX.current;
+        const threshold = 50; // minimum swipe distance
+        if (Math.abs(delta) < threshold) return;
+
+        // In RTL, swipe directions are reversed
+        const swipedLeft = isRtl ? delta > 0 : delta < 0;
+        if (swipedLeft) {
+            goTo(activeIndex + 1);
+        } else {
+            goTo(activeIndex - 1);
+        }
+    };
+
+    if (validSections.length === 0) return null;
+    if (validSections.length === 1) return <Box>{validSections[0]}</Box>;
+
+    return (
+        <Box>
+            {/* Dot indicators with counter */}
+            <Stack direction="row" justifyContent="center" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
+                <Typography variant="caption" color="text.secondary" dir="ltr" sx={{ minWidth: 32, textAlign: 'end' }}>
+                    {activeIndex + 1}/{validSections.length}
+                </Typography>
+                {validSections.map((_, i) => (
+                    <Box
+                        key={i}
+                        onClick={() => goTo(i)}
+                        sx={{
+                            width: activeIndex === i ? 20 : 8,
+                            height: 8,
+                            borderRadius: 4,
+                            bgcolor: activeIndex === i
+                                ? 'primary.main'
+                                : (t) => alpha(t.palette.text.primary, 0.2),
+                            transition: 'all 0.3s ease',
+                            cursor: 'pointer',
+                        }}
+                    />
+                ))}
+            </Stack>
+
+            {/* Slide container — state-driven, no scroll needed */}
+            <Box
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                sx={{ overflow: 'hidden' }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        width: `${validSections.length * 100}%`,
+                        transition: 'transform 0.3s ease',
+                        // In RTL the track starts on the right, so translate positively to move left
+                        // In LTR the track starts on the left, so translate negatively to move left
+                        transform: `translateX(${isRtl ? '' : '-'}${activeIndex * (100 / validSections.length)}%)`,
+                    }}
+                >
+                    {validSections.map((section, i) => (
+                        <Box
+                            key={i}
+                            sx={{
+                                width: `${100 / validSections.length}%`,
+                                flexShrink: 0,
+                                boxSizing: 'border-box',
+                            }}
+                        >
+                            {section}
+                        </Box>
+                    ))}
+                </Box>
+            </Box>
+        </Box>
+    );
+}
 
 /**
  * Dashboard Page - Refactored to use extracted sub-components
@@ -183,68 +281,116 @@ export function DashboardPage() {
                 </Box>
             )}
 
-            <Grid container spacing={{ xs: 1.5, md: 3 }}>
-                {/* Spaces Area - Only show when feature enabled and People Manager mode is OFF */}
-                {can('spaces') && !isPeopleManagerMode && (
-                    <Grid size={{ xs: 12, md: 6 }}>
-                        <DashboardSpacesCard
-                            spaceTypeIcon={spaceTypeIcon}
-                            spaceTypeLabel={getLabel('plural')}
-                            totalSpaces={totalSpaces}
-                            spacesWithLabels={spacesWithLabels}
-                            spacesWithoutLabels={spacesWithoutLabels}
-                            assignedLabelsCount={spacesAssignedLabelsCount}
-                            onAddSpace={() => setSpaceDialogOpen(true)}
-                            hideAddButton={isMobile}
-                            isMobile={isMobile}
-                        />
-                    </Grid>
-                )}
-
-                {/* People Manager Area - Only show when feature enabled and People Manager mode is ON */}
-                {can('people') && isPeopleManagerMode && (
-                    <Grid size={{ xs: 12, md: 6 }}>
-                        <DashboardPeopleCard
-                            totalPeople={totalPeople}
-                            assignedPeople={assignedPeople}
-                            unassignedPeople={unassignedPeople}
-                            assignedLabelsCount={peopleAssignedLabelsCount}
-                            savedLists={savedLists}
-                            activeListName={peopleStore.activeListName}
-                            isMobile={isMobile}
-                        />
-                    </Grid>
-                )}
-
-                {/* Conference Area - Only show when feature is enabled */}
-                {can('conference') && (
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <DashboardConferenceCard
-                        totalRooms={totalRooms}
-                        roomsWithLabels={roomsWithLabels}
-                        roomsWithoutLabels={roomsWithoutLabels}
-                        assignedLabelsCount={conferenceAssignedLabelsCount}
-                        availableRooms={availableRooms}
-                        occupiedRooms={occupiedRooms}
-                        onAddRoom={() => setConferenceDialogOpen(true)}
-                        hideAddButton={isMobile}
-                        isMobile={isMobile}
-                    />
+            {/* Dashboard Sections */}
+            {isMobile ? (
+                <DashboardMobileCarousel
+                    sections={[
+                        can('spaces') && !isPeopleManagerMode && (
+                            <DashboardSpacesCard
+                                key="spaces"
+                                spaceTypeIcon={spaceTypeIcon}
+                                spaceTypeLabel={getLabel('plural')}
+                                totalSpaces={totalSpaces}
+                                spacesWithLabels={spacesWithLabels}
+                                spacesWithoutLabels={spacesWithoutLabels}
+                                assignedLabelsCount={spacesAssignedLabelsCount}
+                                onAddSpace={() => setSpaceDialogOpen(true)}
+                                hideAddButton={isMobile}
+                                isMobile={isMobile}
+                            />
+                        ),
+                        can('people') && isPeopleManagerMode && (
+                            <DashboardPeopleCard
+                                key="people"
+                                totalPeople={totalPeople}
+                                assignedPeople={assignedPeople}
+                                unassignedPeople={unassignedPeople}
+                                assignedLabelsCount={peopleAssignedLabelsCount}
+                                savedLists={savedLists}
+                                activeListName={peopleStore.activeListName}
+                                isMobile={isMobile}
+                            />
+                        ),
+                        can('conference') && (
+                            <DashboardConferenceCard
+                                key="conference"
+                                totalRooms={totalRooms}
+                                roomsWithLabels={roomsWithLabels}
+                                roomsWithoutLabels={roomsWithoutLabels}
+                                assignedLabelsCount={conferenceAssignedLabelsCount}
+                                availableRooms={availableRooms}
+                                occupiedRooms={occupiedRooms}
+                                onAddRoom={() => setConferenceDialogOpen(true)}
+                                hideAddButton={isMobile}
+                                isMobile={isMobile}
+                            />
+                        ),
+                        can('aims-management') && (
+                            <DashboardAimsCard
+                                key="aims"
+                                storeSummary={aimsStoreSummary}
+                                labelModels={aimsLabelModels}
+                                isMobile={isMobile}
+                            />
+                        ),
+                    ]}
+                />
+            ) : (
+                <Grid container spacing={3}>
+                    {can('spaces') && !isPeopleManagerMode && (
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <DashboardSpacesCard
+                                spaceTypeIcon={spaceTypeIcon}
+                                spaceTypeLabel={getLabel('plural')}
+                                totalSpaces={totalSpaces}
+                                spacesWithLabels={spacesWithLabels}
+                                spacesWithoutLabels={spacesWithoutLabels}
+                                assignedLabelsCount={spacesAssignedLabelsCount}
+                                onAddSpace={() => setSpaceDialogOpen(true)}
+                                hideAddButton={isMobile}
+                                isMobile={isMobile}
+                            />
+                        </Grid>
+                    )}
+                    {can('people') && isPeopleManagerMode && (
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <DashboardPeopleCard
+                                totalPeople={totalPeople}
+                                assignedPeople={assignedPeople}
+                                unassignedPeople={unassignedPeople}
+                                assignedLabelsCount={peopleAssignedLabelsCount}
+                                savedLists={savedLists}
+                                activeListName={peopleStore.activeListName}
+                                isMobile={isMobile}
+                            />
+                        </Grid>
+                    )}
+                    {can('conference') && (
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <DashboardConferenceCard
+                                totalRooms={totalRooms}
+                                roomsWithLabels={roomsWithLabels}
+                                roomsWithoutLabels={roomsWithoutLabels}
+                                assignedLabelsCount={conferenceAssignedLabelsCount}
+                                availableRooms={availableRooms}
+                                occupiedRooms={occupiedRooms}
+                                onAddRoom={() => setConferenceDialogOpen(true)}
+                                hideAddButton={isMobile}
+                                isMobile={isMobile}
+                            />
+                        </Grid>
+                    )}
+                    {can('aims-management') && (
+                        <Grid size={{ xs: 12 }}>
+                            <DashboardAimsCard
+                                storeSummary={aimsStoreSummary}
+                                labelModels={aimsLabelModels}
+                                isMobile={isMobile}
+                            />
+                        </Grid>
+                    )}
                 </Grid>
-                )}
-
-                {/* AIMS Area - Only show when feature is enabled */}
-                {can('aims-management') && (
-                    <Grid size={{ xs: 12 }}>
-                        <DashboardAimsCard
-                            storeSummary={aimsStoreSummary}
-                            labelModels={aimsLabelModels}
-                            isMobile={isMobile}
-                        />
-                    </Grid>
-                )}
-
-            </Grid>
+            )}
 
             {/* Bottom spacer so content isn't hidden behind the fixed FAB on mobile */}
             {isMobile && <Box sx={{ height: 104 }} />}

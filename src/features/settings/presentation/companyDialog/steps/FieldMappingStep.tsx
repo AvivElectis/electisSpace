@@ -25,18 +25,23 @@ interface FieldMappingStepProps {
     articleFormat: ArticleFormat | null;
     fieldMapping: SolumMappingConfig | null;
     onUpdate: (mapping: SolumMappingConfig) => void;
+    /** Show people-mode name field selector */
+    isPeopleMode?: boolean;
+    /** Show conference room name field selector */
+    isConferenceEnabled?: boolean;
 }
 
 /** Generate initial mapping from article format data fields */
 function generateInitialMapping(articleFormat: ArticleFormat): SolumMappingConfig {
     const fields: Record<string, SolumFieldMapping> = {};
-    for (const field of articleFormat.articleData || []) {
+    (articleFormat.articleData || []).forEach((field, index) => {
         fields[field] = {
             friendlyNameEn: field,
             friendlyNameHe: field,
             visible: true,
+            order: index,
         };
-    }
+    });
     return {
         uniqueIdField: articleFormat.mappingInfo?.articleId || articleFormat.articleData?.[0] || '',
         fields,
@@ -53,6 +58,8 @@ export function FieldMappingStep({
     articleFormat,
     fieldMapping,
     onUpdate,
+    isPeopleMode = false,
+    isConferenceEnabled = false,
 }: FieldMappingStepProps) {
     const { t } = useTranslation();
     const theme = useTheme();
@@ -103,6 +110,27 @@ export function FieldMappingStep({
                     ))}
                 </Select>
             </FormControl>
+
+            {/* Name Field — people mode only */}
+            {isPeopleMode && (
+                <FormControl fullWidth size="small">
+                    <InputLabel>{t('settings.companies.nameField', 'Name Field')}</InputLabel>
+                    <Select
+                        value={mapping.mappingInfo?.articleName || ''}
+                        label={t('settings.companies.nameField', 'Name Field')}
+                        onChange={(e) => {
+                            onUpdate({
+                                ...mapping,
+                                mappingInfo: { ...mapping.mappingInfo, articleName: e.target.value } as any,
+                            });
+                        }}
+                    >
+                        {allFieldOptions.map((f) => (
+                            <MenuItem key={f} value={f}>{f}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            )}
 
             {/* Field mapping table */}
             <Paper variant="outlined" sx={{ p: 1 }}>
@@ -188,54 +216,58 @@ export function FieldMappingStep({
                 </Box>
             </Paper>
 
-            <Divider>
-                <Chip label={t('settings.companies.conferenceMappingTitle')} size="small" />
-            </Divider>
+            {/* Conference mapping — only when conference feature is active */}
+            {isConferenceEnabled && (
+                <>
+                    <Divider>
+                        <Chip label={t('settings.companies.conferenceMappingTitle')} size="small" />
+                    </Divider>
 
-            {/* Conference mapping */}
-            <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 1.5 }}>
-                <FormControl size="small" sx={{ flex: 1 }}>
-                    <InputLabel>{t('settings.companies.meetingNameField')}</InputLabel>
-                    <Select
-                        value={mapping.conferenceMapping.meetingName}
-                        label={t('settings.companies.meetingNameField')}
-                        onChange={(e) => handleConferenceMappingChange('meetingName', e.target.value)}
-                    >
-                        <MenuItem value="">—</MenuItem>
-                        {allFieldOptions.map((f) => (
-                            <MenuItem key={f} value={f}>{f}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                    <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 1.5 }}>
+                        <FormControl size="small" sx={{ flex: 1 }}>
+                            <InputLabel>{t('settings.companies.meetingNameField')}</InputLabel>
+                            <Select
+                                value={mapping.conferenceMapping.meetingName}
+                                label={t('settings.companies.meetingNameField')}
+                                onChange={(e) => handleConferenceMappingChange('meetingName', e.target.value)}
+                            >
+                                <MenuItem value="">—</MenuItem>
+                                {allFieldOptions.map((f) => (
+                                    <MenuItem key={f} value={f}>{f}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
-                <FormControl size="small" sx={{ flex: 1 }}>
-                    <InputLabel>{t('settings.companies.meetingTimeField')}</InputLabel>
-                    <Select
-                        value={mapping.conferenceMapping.meetingTime}
-                        label={t('settings.companies.meetingTimeField')}
-                        onChange={(e) => handleConferenceMappingChange('meetingTime', e.target.value)}
-                    >
-                        <MenuItem value="">—</MenuItem>
-                        {allFieldOptions.map((f) => (
-                            <MenuItem key={f} value={f}>{f}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                        <FormControl size="small" sx={{ flex: 1 }}>
+                            <InputLabel>{t('settings.companies.meetingTimeField')}</InputLabel>
+                            <Select
+                                value={mapping.conferenceMapping.meetingTime}
+                                label={t('settings.companies.meetingTimeField')}
+                                onChange={(e) => handleConferenceMappingChange('meetingTime', e.target.value)}
+                            >
+                                <MenuItem value="">—</MenuItem>
+                                {allFieldOptions.map((f) => (
+                                    <MenuItem key={f} value={f}>{f}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
-                <FormControl size="small" sx={{ flex: 1 }}>
-                    <InputLabel>{t('settings.companies.participantsField')}</InputLabel>
-                    <Select
-                        value={mapping.conferenceMapping.participants}
-                        label={t('settings.companies.participantsField')}
-                        onChange={(e) => handleConferenceMappingChange('participants', e.target.value)}
-                    >
-                        <MenuItem value="">—</MenuItem>
-                        {allFieldOptions.map((f) => (
-                            <MenuItem key={f} value={f}>{f}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Box>
+                        <FormControl size="small" sx={{ flex: 1 }}>
+                            <InputLabel>{t('settings.companies.participantsField')}</InputLabel>
+                            <Select
+                                value={mapping.conferenceMapping.participants}
+                                label={t('settings.companies.participantsField')}
+                                onChange={(e) => handleConferenceMappingChange('participants', e.target.value)}
+                            >
+                                <MenuItem value="">—</MenuItem>
+                                {allFieldOptions.map((f) => (
+                                    <MenuItem key={f} value={f}>{f}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                </>
+            )}
         </Box>
     );
 }

@@ -76,7 +76,7 @@ export function SpacesSyncPanel({ onSyncComplete }: SpacesSyncPanelProps) {
         setLastResult(null);
         try {
             const result = await spacesApi.syncPull(activeStoreId);
-            setLastResult(t('spaces.sync.pullResult', `Pulled: ${result.created} new, ${result.updated} updated, ${result.unchanged} unchanged`));
+            setLastResult(t('spaces.sync.pullResult', { created: result.created, updated: result.updated, unchanged: result.unchanged }));
             await fetchStatus();
             onSyncComplete?.();
         } catch (err) {
@@ -93,7 +93,7 @@ export function SpacesSyncPanel({ onSyncComplete }: SpacesSyncPanelProps) {
         setLastResult(null);
         try {
             const result = await spacesApi.syncPush(activeStoreId);
-            setLastResult(t('spaces.sync.pushResult', `Pushed: ${result.processed} processed, ${result.pending} still pending`));
+            setLastResult(t('spaces.sync.pushResult', { processed: result.processed, pending: result.pending }));
             await fetchStatus();
         } catch (err) {
             setLastResult(t('spaces.sync.error', 'Sync failed'));

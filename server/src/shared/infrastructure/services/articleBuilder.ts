@@ -29,7 +29,9 @@ import type { AimsArticle } from './aims.types.js';
 /**
  * Build an AIMS article for a Space entity.
  * articleId = space.externalId
- * articleName = looked up from space.data using mappingInfo.articleName key
+ * articleName = looked up from space.data using mappingInfo.articleName key.
+ * In spaces mode (no dedicated name field), preserves whatever is in the data
+ * and does NOT fall back to externalId to avoid overwriting the name field with the ID.
  */
 export function buildSpaceArticle(
     space: { externalId: string; data: any },
@@ -39,8 +41,10 @@ export function buildSpaceArticle(
     const mapping = format?.mappingInfo;
 
     // Determine articleName: use the key from mappingInfo (e.g., ITEM_NAME)
+    // Only use the mapped name if the data actually has a value for it.
+    // Never fall back to externalId — that overwrites the AIMS name field with the ID.
     const nameKey = mapping?.articleName; // e.g., "ITEM_NAME"
-    const articleName = (nameKey && data[nameKey]) ? String(data[nameKey]) : space.externalId;
+    const articleName = (nameKey && data[nameKey]) ? String(data[nameKey]) : '';
 
     // Determine nfcUrl key
     const nfcKey = mapping?.nfcUrl; // e.g., "NFC_URL"
@@ -174,7 +178,7 @@ function buildArticle(
     if (mapping?.articleId) {
         dataObj[mapping.articleId] = articleId;       // e.g., ARTICLE_ID: "101"
     }
-    if (mapping?.articleName) {
+    if (mapping?.articleName && articleName) {
         dataObj[mapping.articleName] = articleName;   // e.g., ITEM_NAME: "John Doe"
     }
     if (mapping?.nfcUrl && nfcUrl) {

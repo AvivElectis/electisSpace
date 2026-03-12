@@ -232,14 +232,14 @@ export const syncService = {
             if (!articleId) continue;
 
             const existingSpace = spaceMap.get(articleId);
-            const articleData = {
-                name: article.articleName || article.article_name,
-                data1: article.data1,
-                data2: article.data2,
-                data3: article.data3,
-                data4: article.data4,
-                data5: article.data5,
-                nfc: article.nfc,
+            // Store the actual AIMS data fields (e.g., ARTICLE_ID, ITEM_NAME, PRICE...)
+            // The `data` object from AIMS contains the real field keys matching the article format.
+            // Also preserve top-level articleName/nfcUrl for backwards compatibility.
+            const aimsData = (article.data && typeof article.data === 'object') ? { ...article.data } : {};
+            const articleData: Record<string, any> = {
+                ...aimsData,
+                name: article.articleName || article.article_name || aimsData.name || '',
+                nfc: article.nfcUrl || article.nfc || aimsData.nfc || '',
             };
 
             if (existingSpace) {
