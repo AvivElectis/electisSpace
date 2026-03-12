@@ -88,6 +88,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                 justifyContent: 'space-between',
                 minHeight: { xs: 48, sm: 64 },
                 px: { xs: .5, sm: 3 },
+                pt: { xs: 0.5, sm: 1 },
             }}>
                 {/* Mobile Menu Button (left side on mobile) */}
                 {onMenuClick && (
@@ -108,8 +109,8 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                     src={leftLogo}
                     alt="Left Logo"
                     sx={{
-                        height: { xs: 40, sm: 60, md: 80 },
-                        maxWidth: { xs: 100, sm: 180, md: 250 },
+                        height: { xs: 48, sm: 60, md: 80 },
+                        maxWidth: { xs: 140, sm: 180, md: 250 },
                         objectFit: 'contain',
                     }}
                 />

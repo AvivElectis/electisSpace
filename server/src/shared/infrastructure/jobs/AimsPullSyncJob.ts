@@ -1,19 +1,23 @@
 /**
  * AIMS Reconciliation Sync Job
- * 
+ *
  * Periodically reconciles articles in AIMS with the server database.
- * The SERVER DB is the single source of truth — AIMS is kept in sync.
- * 
+ *
  * Working-mode logic:
  *  - People mode  (settings.peopleManagerEnabled === true):
- *      Expected articles = assigned people (articleId = assignedSpaceId) + conference rooms
+ *      DB is source of truth. Expected articles = assigned people + conference rooms.
+ *      Extras in AIMS that aren't in DB → deleted from AIMS.
  *  - Spaces mode  (default):
- *      Expected articles = spaces (articleId = externalId) + conference rooms
- * 
+ *      AIMS is source of truth. DB spaces → pushed to AIMS if missing/changed.
+ *      Extras in AIMS that aren't in DB → IMPORTED into DB (never deleted from AIMS).
+ *      Deletion from AIMS only happens via explicit user action (SyncQueueProcessor DELETE).
+ *
  * On each cycle (60s):
  *  1. Build the set of expected articles from DB (based on working mode)
  *  2. Fetch current articles from AIMS
- *  3. Diff → push missing, update changed, DELETE extras
+ *  3. Diff → push missing, update changed
+ *  4. Spaces mode: import unknown AIMS articles into DB
+ *  5. People mode: delete extras from AIMS
  */
 
 import { prisma } from '../../../config/index.js';
@@ -46,7 +50,8 @@ export interface ReconcileStoreResult {
     mode: 'people' | 'spaces';
     success: boolean;
     pushed: number;    // articles created/updated in AIMS
-    deleted: number;   // stale articles removed from AIMS
+    deleted: number;   // stale articles removed from AIMS (people mode only)
+    imported: number;  // AIMS articles imported into DB (spaces mode only)
     unchanged: number; // articles already in sync
     repaired: number;  // articles re-pushed after post-sync validation found them missing
     totalExpected: number;
@@ -92,8 +97,8 @@ export class AimsSyncReconciliationJob {
             for (const r of results) {
                 if (!r.success) {
                     appLogger.warn('AimsReconcile', `${r.storeName}: ERROR – ${r.error}`);
-                } else if (r.pushed > 0 || r.deleted > 0 || r.repaired > 0) {
-                    appLogger.info('AimsReconcile', `${r.storeName} (${r.mode}): pushed ${r.pushed}, deleted ${r.deleted}, unchanged ${r.unchanged}${r.repaired > 0 ? `, repaired ${r.repaired}` : ''} (expected ${r.totalExpected}, aims had ${r.totalInAims})`);
+                } else if (r.pushed > 0 || r.deleted > 0 || r.imported > 0 || r.repaired > 0) {
+                    appLogger.info('AimsReconcile', `${r.storeName} (${r.mode}): pushed ${r.pushed}, deleted ${r.deleted}, imported ${r.imported}, unchanged ${r.unchanged}${r.repaired > 0 ? `, repaired ${r.repaired}` : ''} (expected ${r.totalExpected}, aims had ${r.totalInAims})`);
                 }
             }
         } catch (error) {
@@ -123,6 +128,7 @@ export class AimsSyncReconciliationJob {
                 name: true,
                 settings: true,
                 companyId: true,
+                company: { select: { settings: true } },
             },
         });
 
@@ -139,7 +145,7 @@ export class AimsSyncReconciliationJob {
                     storeName: store.name || store.code,
                     mode: 'spaces',
                     success: false,
-                    pushed: 0, deleted: 0, unchanged: 0, repaired: 0,
+                    pushed: 0, deleted: 0, imported: 0, unchanged: 0, repaired: 0,
                     totalExpected: 0, totalInAims: 0,
                     error: error.message,
                 });
@@ -157,27 +163,33 @@ export class AimsSyncReconciliationJob {
         name: string;
         settings: any;
         companyId: string;
+        company?: { settings: any } | null;
     }): Promise<ReconcileStoreResult> {
         const storeId = store.id;
         const storeName = store.name || store.code;
 
-        // 0. Fetch company settings ONCE with Redis caching (eliminates N+1 queries)
-        const cacheKey = `company-settings:${store.companyId}`;
-        let companySettings: Record<string, any> = {};
-        try {
-            const cached = await cacheGet<Record<string, any>>(cacheKey);
-            if (cached) {
-                companySettings = cached;
-            } else {
-                const company = await prisma.company.findUnique({
-                    where: { id: store.companyId },
-                    select: { settings: true },
-                });
-                companySettings = (company?.settings as Record<string, any>) || {};
-                await cacheSet(cacheKey, companySettings, COMPANY_SETTINGS_TTL);
+        // Company settings: prefer joined data, fall back to Redis cache, then DB query.
+        let companySettings: Record<string, any> =
+            (store.company?.settings as Record<string, any>) || {};
+
+        if (Object.keys(companySettings).length === 0) {
+            // Fallback for manual triggers (reconcileStoreNow) that don't join company
+            const cacheKey = `company-settings:${store.companyId}`;
+            try {
+                const cached = await cacheGet<Record<string, any>>(cacheKey);
+                if (cached) {
+                    companySettings = cached;
+                } else {
+                    const company = await prisma.company.findUnique({
+                        where: { id: store.companyId },
+                        select: { settings: true },
+                    });
+                    companySettings = (company?.settings as Record<string, any>) || {};
+                    await cacheSet(cacheKey, companySettings, COMPANY_SETTINGS_TTL);
+                }
+            } catch (error: any) {
+                appLogger.warn('AimsReconcile', `Could not fetch company settings for ${storeName}: ${error.message}`);
             }
-        } catch (error: any) {
-            appLogger.warn('AimsReconcile', `Could not fetch company settings for ${storeName}: ${error.message}`);
         }
 
         // peopleManagerEnabled is a company-level setting (saved via /settings/company endpoint),
@@ -190,7 +202,7 @@ export class AimsSyncReconciliationJob {
         const result: ReconcileStoreResult = {
             storeId, storeName, mode,
             success: true,
-            pushed: 0, deleted: 0, unchanged: 0, repaired: 0,
+            pushed: 0, deleted: 0, imported: 0, unchanged: 0, repaired: 0,
             totalExpected: 0, totalInAims: 0,
         };
 
@@ -204,21 +216,66 @@ export class AimsSyncReconciliationJob {
         const globalFields: Record<string, string> | undefined = mappingConfig.globalFieldAssignments;
         const totalSpaces: number = companySettings.peopleManagerConfig?.totalSpaces ?? 0;
 
-        // Fetch the company's article format from AIMS (cached per company)
-        let format: ArticleFormat | null = null;
-        try {
-            format = await aimsGateway.fetchArticleFormat(storeId);
-        } catch (error: any) {
-            appLogger.warn('AimsReconcile', `Could not fetch article format for ${storeName}: ${error.message}. Articles will be sent without format mapping.`);
+        // 1. Parallel fetch: article format, DB entities, and AIMS articles are all independent.
+        //    Run them concurrently to minimize total I/O wait time.
+        const [formatResult, rooms, modeEntities, aimsResult] = await Promise.all([
+            aimsGateway.fetchArticleFormat(storeId).catch((error: any) => {
+                appLogger.warn('AimsReconcile', `Could not fetch article format for ${storeName}: ${error.message}. Articles will be sent without format mapping.`);
+                return null as ArticleFormat | null;
+            }),
+            prisma.conferenceRoom.findMany({ where: { storeId } }),
+            isPeopleMode
+                ? prisma.person.findMany({ where: { storeId, assignedSpaceId: { not: null } } })
+                : prisma.space.findMany({ where: { storeId } }),
+            aimsGateway.pullArticleInfo(storeId).then(
+                (infos) => ({ infos, articles: null as AimsArticle[] | null, error: null as string | null }),
+                (error: any) => ({ infos: [] as AimsArticleInfo[], articles: null as AimsArticle[] | null, error: error.message as string }),
+            ),
+        ]);
+
+        const format = formatResult;
+
+        // If AIMS fetch failed entirely, bail out
+        if (aimsResult.error && aimsResult.infos.length === 0) {
+            // Try fallback to basic articles endpoint before giving up
+            try {
+                const fallbackArticles = await aimsGateway.pullArticles(storeId);
+                aimsResult.articles = fallbackArticles;
+                aimsResult.error = null;
+            } catch (fallbackError: any) {
+                result.success = false;
+                result.error = `Failed to fetch AIMS articles: ${aimsResult.error}`;
+                return result;
+            }
         }
 
-        // 1. Build expected article map  { articleId → articlePayload }
-        const expectedMap = new Map<string, AimsArticle>();
+        let aimsArticleInfos: AimsArticleInfo[] = aimsResult.infos;
+        let aimsArticles: AimsArticle[];
 
-        // Always include conference rooms
-        const rooms = await prisma.conferenceRoom.findMany({
-            where: { storeId },
-        });
+        if (aimsResult.articles) {
+            // Used fallback endpoint
+            aimsArticles = aimsResult.articles;
+            if (aimsArticles.length > 0) {
+                appLogger.info('AimsReconcile', `${storeName}: articleInfo failed/empty, /articles returned ${aimsArticles.length} — using basic endpoint`);
+            }
+        } else if (aimsArticleInfos.length > 0) {
+            aimsArticles = aimsArticleInfos as unknown as AimsArticle[];
+        } else {
+            // Article info returned empty — fall back to basic articles endpoint
+            try {
+                aimsArticles = await aimsGateway.pullArticles(storeId);
+                if (aimsArticles.length > 0) {
+                    appLogger.info('AimsReconcile', `${storeName}: articleInfo returned 0 but /articles returned ${aimsArticles.length} — using basic endpoint`);
+                }
+            } catch (error: any) {
+                result.success = false;
+                result.error = `Failed to fetch AIMS articles: ${error.message}`;
+                return result;
+            }
+        }
+
+        // 2. Build expected article map from DB entities
+        const expectedMap = new Map<string, AimsArticle>();
 
         for (const room of rooms) {
             const article = buildConferenceArticle(room, format, conferenceMapping);
@@ -226,10 +283,7 @@ export class AimsSyncReconciliationJob {
         }
 
         if (isPeopleMode) {
-            // People mode → push assigned people (articleId = assignedSpaceId)
-            const people = await prisma.person.findMany({
-                where: { storeId, assignedSpaceId: { not: null } },
-            });
+            const people = modeEntities as Awaited<ReturnType<typeof prisma.person.findMany>>;
             const occupiedSlots = new Set<string>();
             for (const person of people) {
                 if (!person.assignedSpaceId) continue;
@@ -240,8 +294,6 @@ export class AimsSyncReconciliationJob {
                 }
             }
 
-            // Also include empty slot articles for unoccupied spaces (1..totalSpaces)
-            // so AIMS always has all slots present
             for (let i = 1; i <= totalSpaces; i++) {
                 const slotId = String(i);
                 if (!occupiedSlots.has(slotId)) {
@@ -250,10 +302,7 @@ export class AimsSyncReconciliationJob {
                 }
             }
         } else {
-            // Spaces mode → push all spaces (articleId = externalId)
-            const spaces = await prisma.space.findMany({
-                where: { storeId },
-            });
+            const spaces = modeEntities as Awaited<ReturnType<typeof prisma.space.findMany>>;
             for (const space of spaces) {
                 const article = buildSpaceArticle(space, format);
                 expectedMap.set(space.externalId, article);
@@ -261,29 +310,6 @@ export class AimsSyncReconciliationJob {
         }
 
         result.totalExpected = expectedMap.size;
-
-        // 2. Fetch current AIMS articles
-        //    Try article info endpoint first (has `data` sub-object for comparison).
-        //    If it returns 0 articles, fall back to the basic /articles endpoint
-        //    which is more reliable but lacks nested `data`.
-        let aimsArticleInfos: AimsArticleInfo[] = [];
-        let aimsArticles: AimsArticle[];
-        try {
-            aimsArticleInfos = await aimsGateway.pullArticleInfo(storeId);
-            if (aimsArticleInfos.length > 0) {
-                aimsArticles = aimsArticleInfos as unknown as AimsArticle[];
-            } else {
-                // Article info returned empty — fall back to basic articles endpoint
-                aimsArticles = await aimsGateway.pullArticles(storeId);
-                if (aimsArticles.length > 0) {
-                    appLogger.info('AimsReconcile', `${storeName}: articleInfo returned 0 but /articles returned ${aimsArticles.length} — using basic endpoint`);
-                }
-            }
-        } catch (error: any) {
-            result.success = false;
-            result.error = `Failed to fetch AIMS articles: ${error.message}`;
-            return result;
-        }
 
         const aimsMap = new Map<string, AimsArticle>();
         for (const a of aimsArticles) {
@@ -294,7 +320,6 @@ export class AimsSyncReconciliationJob {
 
         // 3. Diff
         const toPush: AimsArticle[] = [];   // create or update in AIMS
-        const toDelete: string[] = []; // remove from AIMS
         const pushReasons: string[] = [];   // diagnostic: why each article is pushed
 
         // Articles that should exist
@@ -313,18 +338,23 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // Articles that should NOT exist
+        // Articles in AIMS that are NOT in the expected map
+        const extraInAims: string[] = [];
         for (const aimsId of aimsMap.keys()) {
             if (!expectedMap.has(aimsId)) {
-                toDelete.push(aimsId);
+                extraInAims.push(aimsId);
             }
         }
 
         // Diagnostic logging when changes are detected
-        if (toPush.length > 0 || toDelete.length > 0) {
-            const expectedIds = [...expectedMap.keys()].slice(0, 5).join(', ');
-            const aimsIds = [...aimsMap.keys()].slice(0, 5).join(', ');
-            appLogger.info('AimsReconcile', `${storeName} diff: push ${toPush.length}, delete ${toDelete.length}, unchanged ${result.unchanged}. Expected IDs (sample): [${expectedIds}], AIMS IDs (sample): [${aimsIds}]. Reasons: ${pushReasons.join('; ') || 'none'}`);
+        if (toPush.length > 0 || extraInAims.length > 0) {
+            const sampleKeys = (map: Map<string, unknown>, n: number) => {
+                const keys: string[] = [];
+                for (const k of map.keys()) { keys.push(k); if (keys.length >= n) break; }
+                return keys.join(', ');
+            };
+            const extraAction = isPeopleMode ? `delete ${extraInAims.length}` : `import ${extraInAims.length}`;
+            appLogger.info('AimsReconcile', `${storeName} diff: push ${toPush.length}, ${extraAction}, unchanged ${result.unchanged}. Expected (sample): [${sampleKeys(expectedMap, 5)}], AIMS (sample): [${sampleKeys(aimsMap, 5)}]. Reasons: ${pushReasons.join('; ') || 'none'}`);
         }
 
         // 4. Execute (pushArticles already handles batching in groups of 500)
@@ -340,32 +370,93 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // Mass-deletion safeguard: if we're about to delete a large portion of AIMS
-        // articles while expected is very small, something is likely wrong (e.g., people
-        // mode flag lost, DB query returned empty). Refuse to delete and log an error.
-        const MIN_DELETION_THRESHOLD = 5;
-        if (
-            toDelete.length >= MIN_DELETION_THRESHOLD &&
-            aimsMap.size > 0 &&
-            toDelete.length > aimsMap.size * 0.5
-        ) {
-            appLogger.error('AimsReconcile', `SAFETY: Refusing to delete ${toDelete.length} of ${aimsMap.size} AIMS articles for ${storeName} (${mode}). Expected map has ${expectedMap.size} articles. This looks like a data issue — skipping deletion to protect existing articles.`, { ids: toDelete.slice(0, 20) });
-            result.error = `Safety: refused mass deletion of ${toDelete.length}/${aimsMap.size} articles`;
-        } else if (toDelete.length > 0) {
-            try {
-                await aimsGateway.deleteArticles(storeId, toDelete);
-                result.deleted = toDelete.length;
-            } catch (error: any) {
-                appLogger.error('AimsReconcile', `Delete failed for ${storeName}: ${error.message}`);
-                // Non-fatal — we still pushed successfully
-                result.error = `Delete failed (${toDelete.length} stale articles): ${error.message}`;
+        // 4a. Spaces mode: batch-import AIMS articles that don't exist in DB
+        if (!isPeopleMode && extraInAims.length > 0) {
+            // Exclude articles with a pending DELETE in the sync queue (user deleted the space,
+            // but SyncQueueProcessor hasn't removed it from AIMS yet — don't re-import).
+            const pendingDeletes = await prisma.syncQueueItem.findMany({
+                where: {
+                    storeId,
+                    entityType: 'space',
+                    action: 'DELETE',
+                    status: { in: ['PENDING', 'PROCESSING'] },
+                },
+                select: { payload: true },
+            });
+            const pendingDeleteIds = new Set(
+                pendingDeletes.map(d => (d.payload as any)?.externalId).filter(Boolean)
+            );
+
+            const toImport = extraInAims
+                .filter(id => !id.startsWith('C'))          // Skip conference room articles
+                .filter(id => !pendingDeleteIds.has(id))     // Skip articles pending deletion
+                .map(aimsId => {
+                    const aimsArticle = aimsMap.get(aimsId)!;
+                    const articleData = (aimsArticle.data || aimsArticle) as Record<string, unknown>;
+                    return {
+                        storeId,
+                        externalId: aimsId,
+                        data: articleData as any,
+                        syncStatus: 'SYNCED' as const,
+                    };
+                });
+
+            if (toImport.length > 0) {
+                try {
+                    const { count } = await prisma.space.createMany({
+                        data: toImport,
+                        skipDuplicates: true,
+                    });
+                    result.imported = count;
+                } catch (error: any) {
+                    appLogger.warn('AimsReconcile', `Batch import failed for ${storeName}, falling back to individual inserts: ${error.message}`);
+                    // Fallback: insert one-by-one
+                    for (const row of toImport) {
+                        try {
+                            await prisma.space.create({ data: row });
+                            result.imported++;
+                        } catch (err: any) {
+                            if (err.code !== 'P2002') {
+                                appLogger.warn('AimsReconcile', `Failed to import AIMS article ${row.externalId} into DB for ${storeName}: ${err.message}`);
+                            }
+                        }
+                    }
+                }
+                if (result.imported > 0) {
+                    appLogger.info('AimsReconcile', `Imported ${result.imported} AIMS article(s) into DB for ${storeName}: ${extraInAims.slice(0, 10).join(', ')}${extraInAims.length > 10 ? '...' : ''}`);
+                }
+            }
+        }
+
+        // 4b. People mode: delete extras from AIMS (with safety check)
+        if (isPeopleMode && extraInAims.length > 0) {
+            // Mass-deletion safeguard: if we're about to delete a large portion of AIMS
+            // articles while expected is very small, something is likely wrong (e.g., people
+            // mode flag lost, DB query returned empty). Refuse to delete and log an error.
+            const MIN_DELETION_THRESHOLD = 5;
+            if (
+                extraInAims.length >= MIN_DELETION_THRESHOLD &&
+                aimsMap.size > 0 &&
+                extraInAims.length > aimsMap.size * 0.5
+            ) {
+                appLogger.error('AimsReconcile', `SAFETY: Refusing to delete ${extraInAims.length} of ${aimsMap.size} AIMS articles for ${storeName} (${mode}). Expected map has ${expectedMap.size} articles. This looks like a data issue — skipping deletion to protect existing articles.`, { ids: extraInAims.slice(0, 20) });
+                result.error = `Safety: refused mass deletion of ${extraInAims.length}/${aimsMap.size} articles`;
+            } else {
+                try {
+                    await aimsGateway.deleteArticles(storeId, extraInAims);
+                    result.deleted = extraInAims.length;
+                } catch (error: any) {
+                    appLogger.error('AimsReconcile', `Delete failed for ${storeName}: ${error.message}`);
+                    // Non-fatal — we still pushed successfully
+                    result.error = `Delete failed (${extraInAims.length} stale articles): ${error.message}`;
+                }
             }
         }
 
         // 5. Sync assignedLabels using the already-fetched article info + post-sync validation
-        //    If validation finds articles missing from AIMS (push didn't land), re-push them.
-        //    Re-fetch article info after push to get updated assignedLabel data.
-        const postPushInfos = toPush.length > 0
+        //    Re-fetch from AIMS only when we pushed/deleted — otherwise reuse prefetched data.
+        const aimsChanged = result.pushed > 0 || result.deleted > 0;
+        const postPushInfos = aimsChanged
             ? await aimsGateway.pullArticleInfo(storeId).catch(() => aimsArticleInfos)
             : aimsArticleInfos;
         const { missingIds } = await this.syncAssignedLabels(storeId, expectedMap, isPeopleMode, postPushInfos);
@@ -414,66 +505,67 @@ export class AimsSyncReconciliationJob {
         try {
             const articleInfoList = prefetchedInfos ?? await aimsGateway.pullArticleInfo(storeId);
 
-            const withLabels = articleInfoList.filter(a => Array.isArray(a.assignedLabel) && a.assignedLabel.length > 0);
-            appLogger.info('AimsReconcile', `Article info: fetched ${articleInfoList.length} articles, ${withLabels.length} have assignedLabel(s)`);
+            // --- Batch sync assignedLabels to DB (single transaction instead of N queries) ---
+            const labelUpdates: ReturnType<typeof prisma.conferenceRoom.updateMany>[] = [];
+            let labelCount = 0;
 
-            // --- Sync assignedLabels to DB ---
             for (const info of articleInfoList) {
                 const artId = info.articleId != null ? String(info.articleId) : null;
                 if (!artId) continue;
 
                 // Only sync when AIMS actually returned label data (array).
-                // If the field is missing/undefined, skip — don't overwrite DB with empty.
                 if (!Array.isArray(info.assignedLabel)) continue;
                 const labels: string[] = info.assignedLabel;
+                labelCount++;
 
                 if (artId.startsWith('C')) {
-                    // Conference room (articleId = "C" + externalId)
                     const externalId = artId.slice(1);
-                    await prisma.conferenceRoom.updateMany({
+                    labelUpdates.push(prisma.conferenceRoom.updateMany({
                         where: { storeId, externalId },
                         data: { assignedLabels: labels },
-                    });
+                    }));
                 } else if (isPeopleMode) {
-                    // People mode: article IDs are slot numbers (= person.assignedSpaceId)
-                    await prisma.person.updateMany({
+                    labelUpdates.push(prisma.person.updateMany({
                         where: { storeId, assignedSpaceId: artId },
                         data: { assignedLabels: labels },
-                    });
+                    }));
                 } else {
-                    // Spaces mode: article IDs are space externalIds → sync to Space records
-                    await prisma.space.updateMany({
+                    labelUpdates.push(prisma.space.updateMany({
                         where: { storeId, externalId: artId },
                         data: { assignedLabels: labels },
-                    });
+                    }));
                 }
             }
 
-            // --- Post-sync validation (informational only) ---
-            const aimsInfoMap = new Map<string, typeof articleInfoList[number]>();
+            if (labelUpdates.length > 0) {
+                await prisma.$transaction(labelUpdates);
+            }
+            appLogger.info('AimsReconcile', `Article info: ${articleInfoList.length} articles, ${labelCount} label(s) synced`);
+
+            // --- Post-sync validation: find articles missing from AIMS ---
+            const aimsInfoIds = new Set<string>();
             for (const info of articleInfoList) {
-                if (info.articleId) aimsInfoMap.set(String(info.articleId), info);
+                if (info.articleId) aimsInfoIds.add(String(info.articleId));
             }
 
             const missingInAims: string[] = [];
             for (const artId of expectedMap.keys()) {
-                if (!aimsInfoMap.has(artId)) {
+                if (!aimsInfoIds.has(artId)) {
                     missingInAims.push(artId);
-                }
-            }
-
-            const extraInAims: string[] = [];
-            for (const artId of aimsInfoMap.keys()) {
-                if (!expectedMap.has(artId)) {
-                    extraInAims.push(artId);
                 }
             }
 
             if (missingInAims.length > 0) {
                 appLogger.warn('AimsReconcile', `Validation: ${missingInAims.length} expected article(s) missing from AIMS (will attempt repair): ${missingInAims.slice(0, 10).join(', ')}${missingInAims.length > 10 ? '...' : ''}`);
             }
-            if (extraInAims.length > 0) {
-                appLogger.warn('AimsReconcile', `Validation: ${extraInAims.length} unexpected article(s) found in AIMS article info (should have been deleted): ${extraInAims.slice(0, 10).join(', ')}${extraInAims.length > 10 ? '...' : ''}`);
+
+            // Log extras count without allocating an intermediate array
+            let extraCount = 0;
+            for (const i of articleInfoList) {
+                if (i.articleId && !expectedMap.has(String(i.articleId))) extraCount++;
+            }
+            if (extraCount > 0) {
+                appLogger.info('AimsReconcile', `Validation: ${extraCount} article(s) in AIMS not in expected map`);
             }
 
             return { missingIds: missingInAims };

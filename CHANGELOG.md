@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **AIMS sync: spaces mode redesign** — AIMS is now the source of truth for spaces mode. Extra articles in AIMS are imported into the DB instead of being deleted from AIMS. Deletion from AIMS only occurs via explicit user action (e.g., deleting a space in the app). People mode behavior is unchanged.
+- **AIMS reconciliation performance** — parallel I/O (article format, DB queries, AIMS pull run concurrently), batched label sync via `$transaction`, company settings joined in initial query
+
+### Fixed
+- **AIMS sync race condition** — prevented re-importing recently deleted spaces by checking for pending DELETE queue items before import
+- **AppHeader logo spacing** — added top padding for logos and increased mobile logo size for better visibility
+
 ## [2.10.0] — 2026-03-04 — Company Wizard & Feature Gating
 
 ### Added

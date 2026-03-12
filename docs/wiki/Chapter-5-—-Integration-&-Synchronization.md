@@ -79,42 +79,39 @@ sequenceDiagram
 
     Note over Job: Every 60 seconds...
 
-    Job->>DB: Find active stores with AIMS credentials
+    Job->>DB: Find active stores with AIMS credentials + company settings
 
     loop For each store
         Job->>DB: Determine working mode (spaces vs. people)
 
-        alt Spaces Mode
-            Job->>DB: Fetch all spaces + conference rooms
-        else People Mode
-            Job->>DB: Fetch assigned people + empty slots + conference rooms
+        par Parallel fetch
+            Job->>AIMS: fetchArticleFormat(storeId)
+            Job->>DB: Fetch conference rooms + mode-specific entities
+            Job->>AIMS: pullArticleInfo(storeId)
         end
 
         Job->>Builder: Build expected article map
-        Job->>AIMS: pullArticles(storeId)
-        AIMS-->>Job: Current AIMS articles
-
         Job->>Job: Diff expected vs. actual
 
         alt Missing or changed articles
             Job->>AIMS: pushArticles(storeId, toPush)
         end
 
-        alt Extra articles in AIMS
+        alt Spaces Mode — extra articles in AIMS
+            Job->>DB: Import as new spaces (createMany, skipDuplicates)
+        else People Mode — extra articles in AIMS
             Job->>AIMS: deleteArticles(storeId, toDelete)
         end
 
-        Job->>AIMS: pullArticleInfo(storeId)
-        AIMS-->>Job: Article info with assignedLabels
-        Job->>DB: Sync assignedLabels back to DB
+        Job->>DB: Batch sync assignedLabels ($transaction)
         Job->>DB: Update store.lastAimsSyncAt
     end
 ```
 
 The reconciliation job ensures eventual consistency even if individual push sync items fail. It is mode-aware:
 
-- **Spaces mode**: Expected articles = all spaces + conference rooms.
-- **People mode**: Expected articles = assigned people (keyed by `assignedSpaceId`) + empty slot articles for unoccupied spaces + conference rooms.
+- **Spaces mode** (AIMS = source of truth): Expected articles = all spaces + conference rooms. Extra articles in AIMS that are not in the DB are **imported into the DB** as new spaces. Articles are **never deleted from AIMS** during reconciliation — deletion only happens via explicit user action through the SyncQueueProcessor. A race condition guard checks for pending DELETE queue items to avoid re-importing recently deleted spaces.
+- **People mode** (DB = source of truth): Expected articles = assigned people (keyed by `assignedSpaceId`) + empty slot articles for unoccupied spaces + conference rooms. Extra articles in AIMS are deleted, with a mass-deletion safety check (refuses if deleting ≥5 articles AND >50% of AIMS total).
 
 ### 5.4 Article Building Pipeline
 
