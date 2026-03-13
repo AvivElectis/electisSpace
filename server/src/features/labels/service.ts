@@ -1,5 +1,6 @@
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
 import type { AimsLabel } from '../../shared/infrastructure/services/aims.types.js';
+import { forbidden, badRequest } from '../../shared/middleware/index.js';
 import type {
     LabelsUserContext,
     LinkLabelDTO,
@@ -15,14 +16,14 @@ import type {
 function validateStoreAccess(storeId: string, ctx: LabelsUserContext): void {
     if (ctx.globalRole === 'PLATFORM_ADMIN') return;
     if (!ctx.storeIds.includes(storeId)) {
-        throw 'FORBIDDEN';
+        throw 'STORE_ACCESS_DENIED';
     }
 }
 
 async function ensureAimsConfigured(storeId: string): Promise<void> {
     const storeConfig = await aimsGateway.getStoreConfig(storeId);
     if (!storeConfig) {
-        throw 'AIMS_NOT_CONFIGURED';
+        throw badRequest('AIMS not configured for this store');
     }
 }
 

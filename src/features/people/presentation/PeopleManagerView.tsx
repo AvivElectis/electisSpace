@@ -309,7 +309,11 @@ export function PeopleManagerView() {
         });
 
         if (confirmed) {
-            peopleController.deletePerson(id);
+            try {
+                await peopleController.deletePerson(id);
+            } catch (error: any) {
+                logger.error('PeopleManagerView', 'Failed to delete person', { error: error?.message });
+            }
         }
     }, [confirm, t, peopleController]);
 
@@ -340,9 +344,12 @@ export function PeopleManagerView() {
 
     const handleSpaceSelected = useCallback(async (spaceId: string) => {
         if (!spaceSelectPerson) return;
-        await peopleController.assignSpaceToPerson(spaceSelectPerson.id, spaceId);
-        setSpaceSelectDialogOpen(false);
-        setSpaceSelectPerson(null);
+        try {
+            await peopleController.assignSpaceToPerson(spaceSelectPerson.id, spaceId);
+        } finally {
+            setSpaceSelectDialogOpen(false);
+            setSpaceSelectPerson(null);
+        }
     }, [spaceSelectPerson, peopleController]);
 
     const handleUnassignSpace = useCallback(async (person: Person) => {
@@ -429,7 +436,11 @@ export function PeopleManagerView() {
 
         if (confirmed) {
             for (const id of selectedIds) {
-                await peopleController.deletePerson(id);
+                try {
+                    await peopleController.deletePerson(id);
+                } catch {
+                    // Continue deleting remaining people even if one fails
+                }
             }
             setSelectedIds(new Set());
         }

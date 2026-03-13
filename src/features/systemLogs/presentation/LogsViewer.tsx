@@ -409,13 +409,16 @@ export const LogsViewer: React.FC = () => {
         const daysArray = Array.from(selectedDays).sort();
         const blob = await exportMultipleDays(daysArray);
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `logs-${daysArray[0]}-to-${daysArray[daysArray.length - 1]}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `logs-${daysArray[0]}-to-${daysArray[daysArray.length - 1]}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } finally {
+            URL.revokeObjectURL(url);
+        }
     };
 
     const handleClearSelected = async () => {

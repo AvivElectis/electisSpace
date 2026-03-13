@@ -18,7 +18,7 @@ router.use(restrictAppViewer());
 // ======================
 
 // Get store settings
-router.get('/store/:storeId', settingsController.getStoreSettings);
+router.get('/store/:storeId', requirePermission('settings', 'read'), settingsController.getStoreSettings);
 
 // Update store settings
 router.put('/store/:storeId', requirePermission('settings', 'update'), settingsController.updateStoreSettings);
@@ -28,7 +28,7 @@ router.put('/store/:storeId', requirePermission('settings', 'update'), settingsC
 // ======================
 
 // Get company settings
-router.get('/company/:companyId', settingsController.getCompanySettings);
+router.get('/company/:companyId', requirePermission('settings', 'read'), settingsController.getCompanySettings);
 
 // Update company settings
 router.put('/company/:companyId', requirePermission('settings', 'update'), settingsController.updateCompanySettings);

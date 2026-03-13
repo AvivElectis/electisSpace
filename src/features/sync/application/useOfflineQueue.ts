@@ -149,41 +149,43 @@ export function useOfflineQueue({
         let succeeded = 0;
         let failed = 0;
 
-        // Process items in order (oldest first)
-        const sortedItems = [...pendingItems].sort((a, b) => a.timestamp - b.timestamp);
+        try {
+            // Process items in order (oldest first)
+            const sortedItems = [...pendingItems].sort((a, b) => a.timestamp - b.timestamp);
 
-        for (const item of sortedItems) {
-            if (item.retryCount >= maxRetries) {
-                logger.warn('OfflineQueue', `Item ${item.id} exceeded max retries, skipping`);
-                failed++;
-                continue;
+            for (const item of sortedItems) {
+                if (item.retryCount >= maxRetries) {
+                    logger.warn('OfflineQueue', `Item ${item.id} exceeded max retries, skipping`);
+                    failed++;
+                    continue;
+                }
+
+                const success = await processItem(item);
+
+                if (success) {
+                    removeItem(item.id);
+                    succeeded++;
+                    onItemSynced?.(item);
+                    logger.info('OfflineQueue', `Successfully synced item ${item.id}`);
+                } else {
+                    incrementRetry(item.id);
+                    markError(item.id, 'Sync failed');
+                    failed++;
+                    onItemFailed?.(item, new Error('Sync failed'));
+                }
+
+                // Small delay between items to avoid overwhelming the server
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
 
-            const success = await processItem(item);
+            logger.info('OfflineQueue', `Sync complete: ${succeeded} succeeded, ${failed} failed`);
+            onSyncComplete?.(succeeded, failed);
 
-            if (success) {
-                removeItem(item.id);
-                succeeded++;
-                onItemSynced?.(item);
-                logger.info('OfflineQueue', `Successfully synced item ${item.id}`);
-            } else {
-                incrementRetry(item.id);
-                markError(item.id, 'Sync failed');
-                failed++;
-                onItemFailed?.(item, new Error('Sync failed'));
-            }
-
-            // Small delay between items to avoid overwhelming the server
-            await new Promise(resolve => setTimeout(resolve, 100));
+            return { succeeded, failed };
+        } finally {
+            syncingRef.current = false;
+            setSyncing(false);
         }
-
-        syncingRef.current = false;
-        setSyncing(false);
-
-        logger.info('OfflineQueue', `Sync complete: ${succeeded} succeeded, ${failed} failed`);
-        onSyncComplete?.(succeeded, failed);
-
-        return { succeeded, failed };
     }, [
         storeId,
         getItemsByStore,

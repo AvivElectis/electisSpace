@@ -191,7 +191,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }
 
     // Sidebar width for desktop/tablet
-    const sidebarWidth = isTablet ? 180 : 220;
+    const sidebarWidth = isTablet ? 200 : 240;
 
     return (
         <Dialog

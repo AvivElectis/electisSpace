@@ -29,7 +29,7 @@ const cardsSetting = {
     boxShadow: 'none',
     bgcolor: 'transparent',
     border: 'none',
-    '&:hover': { boxShadow: '0px 0px 1px 1px #6666663b' },
+    '&:hover': { boxShadow: (theme: any) => `0px 0px 1px 1px ${theme.palette.action.focus}` },
 };
 
 function DistributionBar({ items }: { items: { label: string; value: number; color: string }[] }) {

@@ -14,6 +14,8 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAimsOverview } from '@features/aims-management/application/useAimsOverview';
 import { labelsApi } from '@shared/infrastructure/services/labelsApi';
+import { syncApi } from '@shared/infrastructure/services/syncApi';
+import { logger } from '@shared/infrastructure/services/logger';
 
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('@features/space/presentation/SpaceDialog').then(m => ({ default: m.SpaceDialog })));
@@ -143,13 +145,25 @@ export function DashboardPage() {
     const { syncState } = useSyncContext();
     const { activeStoreId, isAppReady } = useAuthStore();
 
+    // Sync push callback for CRUD operations
+    const handleSync = useCallback(async () => {
+        if (!activeStoreId) return;
+        try {
+            await syncApi.push(activeStoreId);
+        } catch (error: any) {
+            logger.warn('DashboardPage', 'Sync push failed', { error: error?.message });
+        }
+    }, [activeStoreId]);
+
     // Controllers
     const spaceController = useSpaceController({
+        onSync: handleSync,
         csvConfig: settingsController.settings.csvConfig,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
 
     const conferenceController = useConferenceController({
+        onSync: handleSync,
         solumConfig: settingsController.settings.solumConfig,
         solumToken: settingsController.settings.solumConfig?.tokens?.accessToken,
         solumMappingConfig: settingsController.settings.solumMappingConfig,
@@ -160,6 +174,7 @@ export function DashboardPage() {
 
     // Feature access — dashboard only shows enabled sections
     const { canAccessFeature: can } = useAuthContext();
+    const canAccessAims = can('aims-management');
     const { storeSummary: aimsStoreSummary, labelModels: aimsLabelModels, fetchOverview: fetchAimsOverview } = useAimsOverview(activeStoreId);
 
     // Fetch all data from server on mount / store switch so dashboard shows real counts
@@ -168,12 +183,12 @@ export function DashboardPage() {
             spaceController.fetchSpaces();
             conferenceController.fetchRooms();
             peopleStore.fetchPeople();
-            if (can('aims-management')) {
+            if (canAccessAims) {
                 fetchAimsOverview();
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAppReady, activeStoreId, can('aims-management')]);
+    }, [isAppReady, activeStoreId, canAccessAims]);
 
     // Stats - Spaces
     const totalSpaces = spaceController.spaces.length;
@@ -254,8 +269,8 @@ export function DashboardPage() {
 
     return (
         <Box>
-            {/* Header */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: isMobile ? 2 : 1.5 }}>
+            {/* Header + Quick Actions inline */}
+            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, md: 2 } }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
                         {t('dashboard.title')}
@@ -264,11 +279,7 @@ export function DashboardPage() {
                         {t('dashboard.overview', 'Welcome to your space management dashboard')}
                     </Typography>
                 </Box>
-            </Stack>
-
-            {/* Quick Actions — inline row on desktop/tablet */}
-            {!isMobile && (
-                <Box sx={{ mb: 3 }}>
+                {!isMobile && (
                     <QuickActionsPanel
                         isPeopleManagerMode={isPeopleManagerMode}
                         onLinkLabel={() => setLinkLabelDialogOpen(true)}
@@ -278,8 +289,8 @@ export function DashboardPage() {
                         showSpaces={can('spaces') || can('people')}
                         showConference={can('conference')}
                     />
-                </Box>
-            )}
+                )}
+            </Stack>
 
             {/* Dashboard Sections */}
             {isMobile ? (
@@ -381,7 +392,7 @@ export function DashboardPage() {
                         </Grid>
                     )}
                     {can('aims-management') && (
-                        <Grid size={{ xs: 12 }}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <DashboardAimsCard
                                 storeSummary={aimsStoreSummary}
                                 labelModels={aimsLabelModels}

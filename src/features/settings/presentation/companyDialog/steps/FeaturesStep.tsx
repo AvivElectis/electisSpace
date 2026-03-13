@@ -128,16 +128,18 @@ export function FeaturesStep({
                                         </Typography>
                                     }
                                 />
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ms: 5.5 }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 5.5 }}>
                                     {card.desc}
                                 </Typography>
 
                                 {/* Conference mode selector */}
                                 {card.key === 'conferenceEnabled' && card.enabled && (
-                                    <Box sx={{ ms: 5.5, mt: 1 }}>
+                                    <Box sx={{ ml: 5.5, mt: 1 }}>
                                         <FormControl size="small" sx={{ minWidth: 200 }}>
+                                            <InputLabel>{t('settings.companies.conferenceMode', 'Conference Mode')}</InputLabel>
                                             <Select
                                                 value={features.simpleConferenceMode ? 'simple' : 'full'}
+                                                label={t('settings.companies.conferenceMode', 'Conference Mode')}
                                                 onChange={(e) => handleToggle('simpleConferenceMode', e.target.value === 'simple')}
                                             >
                                                 <MenuItem value="full">{t('settings.companies.conferenceModeFull')}</MenuItem>

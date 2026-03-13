@@ -17,6 +17,7 @@ interface NotificationStore {
 }
 
 let notificationIdCounter = 0;
+const timerIds = new Map<string, ReturnType<typeof setTimeout>>();
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
     notifications: [],
@@ -35,25 +36,37 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
 
         // Auto-dismiss after duration
         if (newNotification.duration && newNotification.duration > 0) {
-            setTimeout(() => {
+            const timerId = setTimeout(() => {
+                timerIds.delete(id);
                 set((state) => ({
                     notifications: state.notifications.filter((n) => n.id !== id),
                 }));
             }, newNotification.duration);
+            timerIds.set(id, timerId);
         }
     },
 
-    removeNotification: (id) =>
+    removeNotification: (id) => {
+        const timerId = timerIds.get(id);
+        if (timerId !== undefined) {
+            clearTimeout(timerId);
+            timerIds.delete(id);
+        }
         set((state) => ({
             notifications: state.notifications.filter((n) => n.id !== id),
-        })),
+        }));
+    },
 
-    clearAll: () => set({ notifications: [] }),
+    clearAll: () => {
+        timerIds.forEach(clearTimeout);
+        timerIds.clear();
+        set({ notifications: [] });
+    },
 }));
 
 /**
  * Convenience hook for showing notifications
- * 
+ *
  * @example
  * const { showSuccess, showError } = useNotifications();
  * showSuccess('Settings saved successfully!');

@@ -15,7 +15,7 @@ function MobileCardSkeleton() {
                 </Stack>
 
                 {/* Hero number */}
-                <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, mb: 2 }}>
+                <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
                     <Skeleton variant="text" width={80} height={56} />
                     <Skeleton variant="text" width={100} height={20} />
                 </Box>

@@ -75,15 +75,14 @@ export function SpaceDialog({
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
-        if (!formData.id?.trim()) {
-            newErrors.id = t('errors.required');
-        } else if (existingIds.includes(formData.id.trim()) && (!space || space.id !== formData.id)) {
-            newErrors.id = t('errors.idExists');
+        // Only validate ID in add mode — in edit mode, the ID field is disabled
+        if (!space) {
+            if (!formData.id?.trim()) {
+                newErrors.id = t('errors.required');
+            } else if (existingIds.includes(formData.id.trim())) {
+                newErrors.id = t('errors.idExists');
+            }
         }
-
-        // Room Name is optional in some contexts, but let's check if it was required before.
-        // It was not strictly required in the previous code's types, but let's keep it safe.
-        // If it was required, add: if (!formData.roomName?.trim()) newErrors.roomName = t('errors.required');
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -112,10 +111,10 @@ export function SpaceDialog({
     const handleChange = (field: 'id', value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
 
-        // Live Validation
-        if (field === 'id') {
+        // Live validation only in add mode — edit mode has ID disabled
+        if (field === 'id' && !space) {
             const trimmedId = (value as string).trim();
-            if (existingIds.includes(trimmedId) && (!space || space.id !== trimmedId)) {
+            if (existingIds.includes(trimmedId)) {
                 setErrors(prev => ({ ...prev, id: t('errors.idExists') }));
             } else if (!trimmedId) {
                 setErrors(prev => ({ ...prev, id: t('errors.required') }));
@@ -154,6 +153,8 @@ export function SpaceDialog({
             // Filter out uniqueIdField (shown as ID) and any field mapped to Name
             const uniqueIdField = solumMappingConfig.uniqueIdField;
 
+            const globalFieldKeys = Object.keys(solumMappingConfig.globalFieldAssignments || {});
+
             return Object.entries(solumMappingConfig.fields)
                 .filter(([fieldKey, fieldConfig]) => {
                     // Exclude if not visible
@@ -162,6 +163,8 @@ export function SpaceDialog({
                     if (fieldKey === uniqueIdField) return false;
                     // Exclude field used as Name (already shown as Name)
                     if (fieldKey === nameFieldKey) return false;
+                    // Exclude globally assigned fields (they apply to all entities automatically)
+                    if (globalFieldKeys.includes(fieldKey)) return false;
                     return true;
                 })
                 .map(([fieldKey, fieldConfig]) => {

@@ -3,7 +3,7 @@
  * Main orchestration for import/export operations
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { validateSettings } from '@features/settings/domain/validation';
 import { exportSettings, importSettings, generateImportPreview } from '../domain/businessRules';
@@ -14,7 +14,11 @@ import { logger } from '@shared/infrastructure/services/logger';
 
 export function useImportExportController() {
     const { settings, setSettings } = useSettingsStore();
-    const fileAdapter = new ImportExportFileAdapter();
+    const fileAdapterRef = useRef<ImportExportFileAdapter | null>(null);
+    if (!fileAdapterRef.current) {
+        fileAdapterRef.current = new ImportExportFileAdapter();
+    }
+    const fileAdapter = fileAdapterRef.current;
 
     /**
      * Export settings to file

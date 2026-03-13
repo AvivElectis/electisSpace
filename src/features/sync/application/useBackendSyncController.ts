@@ -87,6 +87,7 @@ export function useBackendSyncController({
     const [serverConnected, setServerConnected] = useState<boolean>(false);
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastStoreIdRef = useRef<string | null>(null);
+    const syncInFlightRef = useRef<boolean>(false);
 
     // Sync settings to store
     useEffect(() => {
@@ -242,17 +243,22 @@ export function useBackendSyncController({
         if (!storeId) {
             throw new Error('No store selected');
         }
+        if (syncInFlightRef.current) {
+            logger.warn('BackendSyncController', 'Sync already in progress, skipping pull');
+            return null;
+        }
 
+        syncInFlightRef.current = true;
         logger.info('BackendSyncController', 'Starting pull sync', { storeId });
         logger.startTimer('backend-sync-pull');
         setSyncState({ status: 'syncing', progress: 0, syncStartedAt: new Date() });
 
         try {
             const result = await syncApi.pull(storeId);
-            
+
             // Fetch updated spaces if callback provided
             if (onSpaceUpdate) {
-                const spacesResponse = await spacesApi.list({ storeId, limit: 1000 });
+                const spacesResponse = await spacesApi.list({ storeId, limit: 10000 });
                 onSpaceUpdate(spacesResponse.data);
             }
 
@@ -272,8 +278,7 @@ export function useBackendSyncController({
             logger.error('BackendSyncController', 'Pull sync failed', { error });
 
             if (isAuthError(error)) {
-                // Auth error: don't show as sync error, show as disconnected
-                setServerConnected(true); // server responded, just auth issue
+                setServerConnected(true);
                 setSyncState({
                     status: 'disconnected',
                     isConnected: false,
@@ -288,6 +293,8 @@ export function useBackendSyncController({
             }
             onError?.(error instanceof Error ? error : new Error(errorMessage));
             throw error;
+        } finally {
+            syncInFlightRef.current = false;
         }
     }, [storeId, setSyncState, onSpaceUpdate, onSyncComplete, onError, refreshStatus]);
 
@@ -298,7 +305,12 @@ export function useBackendSyncController({
         if (!storeId) {
             throw new Error('No store selected');
         }
+        if (syncInFlightRef.current) {
+            logger.warn('BackendSyncController', 'Sync already in progress, skipping push');
+            return null;
+        }
 
+        syncInFlightRef.current = true;
         logger.info('BackendSyncController', 'Starting push sync', { storeId });
         logger.startTimer('backend-sync-push');
         setSyncState({ status: 'syncing', progress: 0, syncStartedAt: new Date() });
@@ -332,6 +344,8 @@ export function useBackendSyncController({
             }
             onError?.(error instanceof Error ? error : new Error(errorMessage));
             throw error;
+        } finally {
+            syncInFlightRef.current = false;
         }
     }, [storeId, setSyncState, onSyncComplete, onError, refreshStatus]);
 
@@ -342,7 +356,12 @@ export function useBackendSyncController({
         if (!storeId) {
             throw new Error('No store selected');
         }
+        if (syncInFlightRef.current) {
+            logger.warn('BackendSyncController', 'Sync already in progress, skipping fullSync');
+            return;
+        }
 
+        syncInFlightRef.current = true;
         logger.info('BackendSyncController', 'Starting full sync', { storeId });
         logger.startTimer('backend-sync-full');
         setSyncState({ status: 'syncing', progress: 0, syncStartedAt: new Date() });
@@ -352,7 +371,7 @@ export function useBackendSyncController({
 
             // Fetch updated spaces if callback provided
             if (onSpaceUpdate) {
-                const spacesResponse = await spacesApi.list({ storeId, limit: 1000 });
+                const spacesResponse = await spacesApi.list({ storeId, limit: 10000 });
                 onSpaceUpdate(spacesResponse.data);
             }
 
@@ -386,6 +405,8 @@ export function useBackendSyncController({
             }
             onError?.(error instanceof Error ? error : new Error(errorMessage));
             throw error;
+        } finally {
+            syncInFlightRef.current = false;
         }
     }, [storeId, setSyncState, onSpaceUpdate, onSyncComplete, onError, refreshStatus]);
 
@@ -429,11 +450,7 @@ export function useBackendSyncController({
             syncRef.current().catch((error: any) => {
                 logger.error('BackendSyncController', 'Auto-sync failed', { error });
                 // Stop auto-sync on auth errors to prevent 401 retry loops
-                const isAuthError = error?.response?.status === 401 || 
-                    error?.response?.status === 403 ||
-                    error?.message?.includes('401') ||
-                    error?.message?.includes('Unauthorized');
-                if (isAuthError && autoSyncTimerRef.current) {
+                if (isAuthError(error) && autoSyncTimerRef.current) {
                     logger.warn('BackendSyncController', 'Auth error detected, stopping auto-sync timer');
                     clearInterval(autoSyncTimerRef.current);
                     autoSyncTimerRef.current = null;

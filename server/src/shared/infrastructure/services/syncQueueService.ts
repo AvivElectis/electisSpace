@@ -37,44 +37,45 @@ export class SyncQueueService {
     ): Promise<string> {
         const { delayMs = 0, maxAttempts = 5, payload = {} } = options;
 
-        // Check if there's already a pending item for this entity
-        const existing = await prisma.syncQueueItem.findFirst({
-            where: {
-                storeId,
-                entityType,
-                entityId,
-                status: { in: [QueueStatus.PENDING, QueueStatus.PROCESSING] },
-            },
-        });
+        // Atomic check-then-create inside a transaction to prevent duplicate queue items
+        const itemId = await prisma.$transaction(async (tx) => {
+            const existing = await tx.syncQueueItem.findFirst({
+                where: {
+                    storeId,
+                    entityType,
+                    entityId,
+                    status: { in: [QueueStatus.PENDING, QueueStatus.PROCESSING] },
+                },
+            });
 
-        if (existing) {
-            // Update existing item with new action/payload
-            await prisma.syncQueueItem.update({
-                where: { id: existing.id },
+            if (existing) {
+                await tx.syncQueueItem.update({
+                    where: { id: existing.id },
+                    data: {
+                        action,
+                        payload: payload as Prisma.InputJsonValue,
+                        scheduledAt: new Date(Date.now() + delayMs),
+                    },
+                });
+                return existing.id;
+            }
+
+            const item = await tx.syncQueueItem.create({
                 data: {
+                    storeId,
+                    entityType,
+                    entityId,
                     action,
                     payload: payload as Prisma.InputJsonValue,
+                    status: QueueStatus.PENDING,
+                    maxAttempts,
                     scheduledAt: new Date(Date.now() + delayMs),
                 },
             });
-            return existing.id;
-        }
-
-        // Create new queue item
-        const item = await prisma.syncQueueItem.create({
-            data: {
-                storeId,
-                entityType,
-                entityId,
-                action,
-                payload: payload as Prisma.InputJsonValue,
-                status: QueueStatus.PENDING,
-                maxAttempts,
-                scheduledAt: new Date(Date.now() + delayMs),
-            },
+            return item.id;
         });
 
-        return item.id;
+        return itemId;
     }
 
     /**
@@ -253,7 +254,7 @@ export class SyncQueueService {
             },
         });
 
-        // Find orphaned items (entity no longer exists)
+        // Find orphaned items (entity no longer exists) — batched to avoid N+1
         let orphanedRemoved = 0;
         const pendingItems = await prisma.syncQueueItem.findMany({
             where: {
@@ -264,39 +265,62 @@ export class SyncQueueService {
                 entityType: true,
                 entityId: true,
             },
-            take: 1000, // Limit batch size
+            take: 1000,
         });
 
+        // Group by entity type for batched existence checks
+        const byType = new Map<string, { id: string; entityId: string }[]>();
         for (const item of pendingItems) {
-            let entityExists = false;
-            
-            try {
-                // entityType is lowercase in the service
-                switch (item.entityType.toLowerCase()) {
-                    case 'space':
-                        entityExists = !!(await prisma.space.findUnique({ where: { id: item.entityId } }));
+            const type = item.entityType.toLowerCase();
+            if (!byType.has(type)) byType.set(type, []);
+            byType.get(type)!.push({ id: item.id, entityId: item.entityId });
+        }
+
+        const orphanIds: string[] = [];
+
+        try {
+            for (const [type, items] of byType) {
+                const entityIds = [...new Set(items.map(i => i.entityId))];
+                let existingIds: Set<string>;
+
+                switch (type) {
+                    case 'space': {
+                        const existing = await prisma.space.findMany({ where: { id: { in: entityIds } }, select: { id: true } });
+                        existingIds = new Set(existing.map(e => e.id));
                         break;
-                    case 'person':
-                        entityExists = !!(await prisma.person.findUnique({ where: { id: item.entityId } }));
+                    }
+                    case 'person': {
+                        const existing = await prisma.person.findMany({ where: { id: { in: entityIds } }, select: { id: true } });
+                        existingIds = new Set(existing.map(e => e.id));
                         break;
-                    case 'conference':
-                        entityExists = !!(await prisma.conferenceRoom.findUnique({ where: { id: item.entityId } }));
+                    }
+                    case 'conference': {
+                        const existing = await prisma.conferenceRoom.findMany({ where: { id: { in: entityIds } }, select: { id: true } });
+                        existingIds = new Set(existing.map(e => e.id));
                         break;
-                    case 'list':
-                        entityExists = !!(await prisma.peopleList.findUnique({ where: { id: item.entityId } }));
+                    }
+                    case 'list': {
+                        const existing = await prisma.peopleList.findMany({ where: { id: { in: entityIds } }, select: { id: true } });
+                        existingIds = new Set(existing.map(e => e.id));
                         break;
+                    }
                     default:
-                        entityExists = true; // Unknown type, keep it
+                        continue; // Unknown type, keep all items
                 }
-            } catch {
-                // On error, assume entity might exist
-                entityExists = true;
+
+                for (const item of items) {
+                    if (!existingIds.has(item.entityId)) {
+                        orphanIds.push(item.id);
+                    }
+                }
             }
 
-            if (!entityExists) {
-                await prisma.syncQueueItem.delete({ where: { id: item.id } });
-                orphanedRemoved++;
+            if (orphanIds.length > 0) {
+                const result = await prisma.syncQueueItem.deleteMany({ where: { id: { in: orphanIds } } });
+                orphanedRemoved = result.count;
             }
+        } catch {
+            // On error, skip orphan cleanup this cycle
         }
 
         return {

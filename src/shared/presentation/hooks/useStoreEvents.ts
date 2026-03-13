@@ -27,6 +27,7 @@ interface UseStoreEventsOptions {
 
 export function useStoreEvents(options: UseStoreEventsOptions = {}) {
     const activeStoreId = useAuthStore(state => state.activeStoreId);
+    const tokenVersion = useAuthStore(state => state.tokenVersion);
     const fetchPeople = usePeopleStore(state => state.fetchPeople);
     const disconnectRef = useRef<(() => void) | null>(null);
     const getClientIdRef = useRef<(() => string | null) | null>(null);
@@ -62,9 +63,11 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
                 });
                 // Update local list tracking
                 if (event.listId) {
-                    usePeopleStore.getState().setActiveListId(event.listId);
-                    usePeopleStore.getState().setActiveListName(event.listName);
-                    usePeopleStore.getState().clearPendingChanges();
+                    usePeopleStore.setState({
+                        activeListId: event.listId,
+                        activeListName: event.listName,
+                        pendingChanges: false,
+                    });
                 }
                 optionsRef.current.onListLoaded?.(event);
                 break;
@@ -73,10 +76,12 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
                 logger.info('StoreEvents', 'List freed by another user', {
                     freedBy: event.freedByName,
                 });
-                // Clear local list tracking
-                usePeopleStore.getState().setActiveListId(undefined);
-                usePeopleStore.getState().setActiveListName(undefined);
-                usePeopleStore.getState().clearPendingChanges();
+                // Clear local list tracking (batched to single re-render)
+                usePeopleStore.setState({
+                    activeListId: undefined,
+                    activeListName: undefined,
+                    pendingChanges: false,
+                });
                 optionsRef.current.onListFreed?.(event);
                 break;
 
@@ -105,8 +110,8 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
     }, [fetchPeople]);
 
     useEffect(() => {
-        if (!activeStoreId) {
-            // Clean up any existing connection
+        if (!activeStoreId || tokenVersion === 0) {
+            // Clean up any existing connection; wait for token validation before connecting
             if (disconnectRef.current) {
                 disconnectRef.current();
                 disconnectRef.current = null;
@@ -137,9 +142,9 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
             setSseClientId(null);
         };
         // handleEvent is memoized with useCallback and uses stable Zustand actions
-        // Only reconnect when activeStoreId changes
+        // Reconnect when activeStoreId or tokenVersion changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeStoreId]);
+    }, [activeStoreId, tokenVersion]);
 
     return {
         getClientId: () => getClientIdRef.current?.() || null,

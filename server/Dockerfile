@@ -6,7 +6,9 @@
 # ============================================
 
 # Stage 1: Build server (TypeScript)
-FROM node:20-alpine AS server-builder
+FROM node:22-alpine AS server-builder
+
+RUN npm install -g npm@latest
 
 WORKDIR /app
 
@@ -23,7 +25,9 @@ COPY server/src ./src/
 RUN npm run build
 
 # Stage 2: Production runtime
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
+
+RUN npm install -g npm@latest
 
 WORKDIR /app
 

@@ -278,58 +278,68 @@ export const companyService = {
             initialSettings.solumMappingConfig = fullData.fieldMapping;
         }
 
-        const company = await companyRepository.create({
-            code: upperCode,
-            name: data.name,
-            location: data.location,
-            description: data.description,
-            aimsBaseUrl: data.aimsConfig?.baseUrl,
-            aimsCluster: data.aimsConfig?.cluster,
-            aimsUsername: data.aimsConfig?.username,
-            aimsPasswordEnc: encryptedPassword,
-            settings: initialSettings as unknown as Prisma.InputJsonValue,
-        });
+        // Wrap company + stores + admin assignment in a transaction
+        // to prevent orphaned records on partial failure
+        const company = await prisma.$transaction(async (tx) => {
+            const newCompany = await tx.company.create({
+                data: {
+                    code: upperCode,
+                    name: data.name,
+                    location: data.location,
+                    description: data.description,
+                    aimsBaseUrl: data.aimsConfig?.baseUrl,
+                    aimsCluster: data.aimsConfig?.cluster,
+                    aimsUsername: data.aimsConfig?.username,
+                    aimsPasswordEnc: encryptedPassword,
+                    settings: initialSettings as unknown as Prisma.InputJsonValue,
+                },
+            });
 
-        // Create stores from wizard multi-store selection
-        if (fullData.stores && fullData.stores.length > 0) {
-            for (const storeData of fullData.stores) {
-                await prisma.store.create({
-                    data: {
-                        companyId: company.id,
-                        code: storeData.code,
-                        name: storeData.name || storeData.code,
-                        timezone: storeData.timezone || 'UTC',
-                        syncEnabled: true, // Wizard validates AIMS connection, safe to enable
-                        isActive: true,
+            // Create stores from wizard multi-store selection
+            if (fullData.stores && fullData.stores.length > 0) {
+                for (const storeData of fullData.stores) {
+                    await tx.store.create({
+                        data: {
+                            companyId: newCompany.id,
+                            code: storeData.code,
+                            name: storeData.name || storeData.code,
+                            timezone: storeData.timezone || 'UTC',
+                            syncEnabled: true, // Wizard validates AIMS connection, safe to enable
+                            isActive: true,
+                        },
+                    });
+                }
+            }
+
+            // Auto-assign all PLATFORM_ADMIN users to the new company with SUPER_USER + allStoresAccess
+            const platformAdmins = await tx.user.findMany({
+                where: { globalRole: GlobalRole.PLATFORM_ADMIN },
+                select: { id: true },
+            });
+            for (const admin of platformAdmins) {
+                await tx.userCompany.upsert({
+                    where: { userId_companyId: { userId: admin.id, companyId: newCompany.id } },
+                    create: {
+                        userId: admin.id,
+                        companyId: newCompany.id,
+                        roleId: 'role-admin',
+                        allStoresAccess: true,
+                    },
+                    update: {
+                        roleId: 'role-admin',
+                        allStoresAccess: true,
                     },
                 });
             }
-        }
 
-        // Auto-assign all PLATFORM_ADMIN users to the new company with SUPER_USER + allStoresAccess
-        const platformAdmins = await prisma.user.findMany({
-            where: { globalRole: GlobalRole.PLATFORM_ADMIN },
-            select: { id: true },
+            return newCompany;
         });
-        for (const admin of platformAdmins) {
-            await prisma.userCompany.upsert({
-                where: { userId_companyId: { userId: admin.id, companyId: company.id } },
-                create: {
-                    userId: admin.id,
-                    companyId: company.id,
-                    roleId: 'role-admin',
-                    allStoresAccess: true,
-                },
-                update: {
-                    roleId: 'role-admin',
-                    allStoresAccess: true,
-                },
-            });
-        }
 
         // Re-fetch to get accurate store count after creation
-        const updatedCompany = await companyRepository.findWithCounts(company.id);
-        const finalCompany = updatedCompany || company;
+        const finalCompany = await companyRepository.findWithCounts(company.id);
+        if (!finalCompany) {
+            throw new Error(`Company ${company.id} not found after creation`);
+        }
 
         return {
             id: finalCompany.id,

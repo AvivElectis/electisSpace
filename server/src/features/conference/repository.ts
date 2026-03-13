@@ -12,7 +12,12 @@ export const conferenceRepository = {
     async list(storeIds: string[] | undefined, filterStoreId?: string) {
         const where: any = {};
         if (filterStoreId) {
-            where.storeId = filterStoreId;
+            // Apply both filters: store must be in user's accessible stores AND match the filter
+            if (storeIds) {
+                where.storeId = storeIds.includes(filterStoreId) ? filterStoreId : '__none__';
+            } else {
+                where.storeId = filterStoreId;
+            }
         } else if (storeIds) {
             where.storeId = { in: storeIds };
         }

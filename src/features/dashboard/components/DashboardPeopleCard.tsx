@@ -56,7 +56,7 @@ export function DashboardPeopleCard({
                     </Stack>
 
                     {/* Hero number */}
-                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, mb: 2 }}>
+                    <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
                         <Typography variant="h2" fontWeight={700} color="primary.main">
                             {totalPeople}
                         </Typography>
@@ -136,7 +136,7 @@ export function DashboardPeopleCard({
                 </Stack>
 
                 <Stack gap={3}>
-                    <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                             {t('people.total')}
                         </Typography>

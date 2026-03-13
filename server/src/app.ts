@@ -112,7 +112,9 @@ app.use(morgan(
         const status = parseInt(tokens.status(req, res) || '0', 10);
         const responseTime = parseFloat(tokens['response-time'](req, res) || '0');
         const method = tokens.method(req, res) || '';
-        const url = tokens.url(req, res) || '';
+        const rawUrl = tokens.url(req, res) || '';
+        // Strip token query param from SSE URLs to avoid logging JWTs
+        const url = rawUrl.replace(/([?&])token=[^&]+/g, '$1token=***');
         const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
         appLogger[level]('HTTP', `${method} ${url} ${status}`, {
             method,
