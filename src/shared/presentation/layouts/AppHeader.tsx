@@ -99,7 +99,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         onClick={onMenuClick}
                         sx={{ display: { xs: 'flex', md: 'none' }, mx: .5 }}
                     >
-                        <MenuIcon sx={{ fontSize: { xs: 32, sm: 40 }, padding: 0, borderRadius: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }} />
+                        <MenuIcon sx={{ fontSize: { xs: 32, sm: 40 }, padding: 0, borderRadius: .5, boxShadow: 1 }} />
                     </IconButton>
                 )}
 
@@ -123,7 +123,6 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
-                        textAlign: 'center',
                         px: 2,
                     }}
                 >
@@ -166,7 +165,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         }}
                     />
 
-                    {/* Company/Store Context Selector - hidden on xs, compact on sm */}
+                    {/* Company/Store Selector — hidden on xs (shown in mobile second row below), visible on sm+ */}
                     {user && (
                         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                             <CompanyStoreSelector compact />
@@ -177,7 +176,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         <IconButton
                             color="default"
                             onClick={onManualClick}
-                            sx={{ mx: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }}
+                            sx={{ mx: .5, boxShadow: 1 }}
                         >
                             <HelpOutlineIcon />
                         </IconButton>
@@ -191,7 +190,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                             color={iconColor}
                             onClick={onSettingsClick}
                             aria-label="Settings"
-                            sx={{ mx: .5, boxShadow: '0 0 3px rgba(0, 0, 0, 0.51)' }}
+                            sx={{ mx: .5, boxShadow: 1 }}
                         >
                             <SettingsIcon />
                         </IconButton>

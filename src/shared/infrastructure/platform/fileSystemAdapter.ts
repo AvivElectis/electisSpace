@@ -223,7 +223,7 @@ export function getFileSystemAdapter(): FileSystemAdapter {
  */
 let fileSystemInstance: FileSystemAdapter | null = null;
 
-export function useFileSystem(): FileSystemAdapter {
+export function getFileSystem(): FileSystemAdapter {
     if (!fileSystemInstance) {
         fileSystemInstance = getFileSystemAdapter();
     }

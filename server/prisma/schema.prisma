@@ -430,7 +430,7 @@ model PeopleList {
   
   // Relations
   store       Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdBy   User?                    @relation(fields: [createdById], references: [id])
+  createdBy   User?                    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   memberships PeopleListMembership[]
   
   @@unique([storeId, storageName])
@@ -454,7 +454,7 @@ model PeopleListMembership {
   // Relations
   person Person     @relation(fields: [personId], references: [id], onDelete: Cascade)
   list   PeopleList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  space  Space?     @relation(fields: [spaceId], references: [id])
+  space  Space?     @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   
   @@unique([personId, listId])
   @@index([personId])
@@ -478,7 +478,7 @@ model SpacesList {
   
   // Relations
   store       Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdBy   User?  @relation("SpacesListCreatedBy", fields: [createdById], references: [id])
+  createdBy   User?  @relation("SpacesListCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   
   @@unique([storeId, name])
   @@index([storeId])

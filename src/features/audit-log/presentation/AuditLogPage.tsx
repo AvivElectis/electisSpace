@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -192,7 +192,7 @@ export function AuditLogPage() {
               </TableRow>
             )}
             {entries.map(entry => (
-              <Box component="tbody" key={entry.id}>
+              <React.Fragment key={entry.id}>
                 <TableRow
                   hover
                   sx={{ cursor: 'pointer', '& > *': { borderBottom: expandedRow === entry.id ? 0 : undefined } }}
@@ -226,7 +226,7 @@ export function AuditLogPage() {
                     </Collapse>
                   </TableCell>
                 </TableRow>
-              </Box>
+              </React.Fragment>
             ))}
           </TableBody>
         </Table>

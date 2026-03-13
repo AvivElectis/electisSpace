@@ -214,15 +214,14 @@ export const conferenceController = {
             const { page } = flipPageSchema.parse(req.body);
             const result = await conferenceService.flipPage(userContext, req.params.id as string, page);
 
-            // Broadcast page flip to all clients in this store
-            const room = await conferenceService.getById(userContext, req.params.id as string);
+            // Broadcast page flip to all clients in this store (no extra DB query)
             const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
-            sseManager.broadcastToStore(room.storeId, {
+            sseManager.broadcastToStore(result.storeId, {
                 type: 'conference:page-flip',
                 payload: {
                     action: 'page-flip',
-                    roomId: room.externalId,
-                    serverId: room.id,
+                    roomId: result.externalId,
+                    serverId: result.roomId,
                     page,
                     labelCodes: result.labelCodes,
                     userName: req.user?.email || 'Unknown',

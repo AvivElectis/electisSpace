@@ -23,13 +23,10 @@ function getUserContext(req: Request): SyncUserContext {
     };
 }
 
-/** Check if user has access to a store via stores array or allStoresAccess */
+/** Check if user has access to a store via stores array (allStoresAccess users have stores expanded in auth middleware) */
 function hasStoreAccess(req: Request, storeId: string): boolean {
     if (req.user?.globalRole === 'PLATFORM_ADMIN') return true;
     if (req.user?.stores?.some(s => s.id === storeId)) return true;
-    // allStoresAccess users have stores expanded in auth middleware,
-    // but check companies as a safety net
-    if (req.user?.companies?.some(c => c.allStoresAccess)) return true;
     return false;
 }
 

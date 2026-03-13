@@ -39,6 +39,7 @@ export interface VerificationResult {
 export class AimsVerificationJob {
     private isRunning = false;
     private intervalId: ReturnType<typeof setInterval> | null = null;
+    private initialTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
     /**
      * Start the verification job with the specified interval
@@ -53,13 +54,20 @@ export class AimsVerificationJob {
         this.intervalId = setInterval(() => this.tick(), intervalMs);
         
         // Run initial verification after a short delay
-        setTimeout(() => this.tick(), 10000);
+        this.initialTimeoutId = setTimeout(() => {
+            this.initialTimeoutId = null;
+            this.tick();
+        }, 10000);
     }
 
     /**
      * Stop the verification job
      */
     stop(): void {
+        if (this.initialTimeoutId) {
+            clearTimeout(this.initialTimeoutId);
+            this.initialTimeoutId = null;
+        }
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
@@ -101,14 +109,23 @@ export class AimsVerificationJob {
     async verifyAllStores(): Promise<VerificationResult[]> {
         const results: VerificationResult[] = [];
 
-        // Get all stores with sync enabled
+        // Get all active stores with sync enabled and AIMS credentials
         const stores = await prisma.store.findMany({
-            where: { syncEnabled: true },
-            select: { 
-                id: true, 
-                code: true, 
+            where: {
+                syncEnabled: true,
+                isActive: true,
+                company: {
+                    aimsBaseUrl: { not: null },
+                    aimsUsername: { not: null },
+                    aimsPasswordEnc: { not: null },
+                    isActive: true,
+                },
+            },
+            select: {
+                id: true,
+                code: true,
                 name: true,
-                companyId: true 
+                companyId: true
             },
         });
 
@@ -236,7 +253,16 @@ export class AimsVerificationJob {
      * Manual verification trigger - returns results without starting the job
      */
     async verifyNow(): Promise<VerificationResult[]> {
-        return this.verifyAllStores();
+        if (this.isRunning) {
+            appLogger.info('AimsVerify', 'Verification already running, skipping verifyNow');
+            return [];
+        }
+        this.isRunning = true;
+        try {
+            return await this.verifyAllStores();
+        } finally {
+            this.isRunning = false;
+        }
     }
 }
 

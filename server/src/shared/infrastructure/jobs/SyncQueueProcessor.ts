@@ -57,6 +57,7 @@ interface StoreCompanySettings {
 export class SyncQueueProcessor {
     private isRunning = false;
     private intervalId: ReturnType<typeof setInterval> | null = null;
+    private processingItemIds = new Set<string>();
 
     /**
      * Start the processor with interval
@@ -89,12 +90,7 @@ export class SyncQueueProcessor {
      * Single tick - process pending items
      */
     private async tick(): Promise<void> {
-        if (this.isRunning) {
-            appLogger.debug('SyncQueue', 'Previous tick still running, skipping');
-            return;
-        }
-
-        this.isRunning = true;
+        // processPendingItems already has isRunning guard, so concurrent ticks are safe
         try {
             const result = await this.processPendingItems();
             if (result.processed > 0) {
@@ -102,8 +98,6 @@ export class SyncQueueProcessor {
             }
         } catch (error) {
             appLogger.error('SyncQueue', 'Tick error', { error });
-        } finally {
-            this.isRunning = false;
         }
     }
 
@@ -111,6 +105,19 @@ export class SyncQueueProcessor {
      * Process pending queue items, optionally scoped to a specific store
      */
     async processPendingItems(storeId?: string): Promise<ProcessResult> {
+        // Guard against concurrent calls (e.g. manual trigger while tick() is running)
+        if (this.isRunning) {
+            return { processed: 0, succeeded: 0, failed: 0, errors: [] };
+        }
+        this.isRunning = true;
+        try {
+            return await this._processPendingItemsInternal(storeId);
+        } finally {
+            this.isRunning = false;
+        }
+    }
+
+    private async _processPendingItemsInternal(storeId?: string): Promise<ProcessResult> {
         const result: ProcessResult = {
             processed: 0,
             succeeded: 0,
@@ -199,6 +206,9 @@ export class SyncQueueProcessor {
             // Pre-fetch store company settings once for the entire batch (avoids N+1 queries)
             const storeSettings = await this.getStoreCompanySettings(storeId);
 
+            // Track per-store success count
+            let storeSucceeded = 0;
+
             // Process items for this store
             for (const item of storeItems) {
                 result.processed++;
@@ -207,7 +217,7 @@ export class SyncQueueProcessor {
                     // Item is already marked as PROCESSING in the transaction above
 
                     await this.processItem(item, storeSettings);
-                    
+
                     // Mark as completed
                     await prisma.syncQueueItem.update({
                         where: { id: item.id },
@@ -218,6 +228,7 @@ export class SyncQueueProcessor {
                     });
 
                     result.succeeded++;
+                    storeSucceeded++;
                 } catch (error: any) {
                     const errorMsg = error.message || 'Unknown error';
                     result.failed++;
@@ -227,11 +238,13 @@ export class SyncQueueProcessor {
                 }
             }
 
-            // Update store's lastAimsSyncAt
-            await prisma.store.update({
-                where: { id: storeId },
-                data: { lastAimsSyncAt: new Date() },
-            });
+            // Update store's lastAimsSyncAt only if at least one item succeeded for THIS store
+            if (storeSucceeded > 0) {
+                await prisma.store.update({
+                    where: { id: storeId },
+                    data: { lastAimsSyncAt: new Date() },
+                });
+            }
 
             // Notify frontend clients that person sync statuses have changed
             const hasPersonItems = storeItems.some(item => item.entityType === 'person');
@@ -270,9 +283,9 @@ export class SyncQueueProcessor {
                 break;
 
             case 'SYNC_FULL':
-                // Full sync is handled separately by sync routes
+                // Full sync is handled separately by sync routes — nothing to do here
                 appLogger.info('SyncQueue', `Full sync requested for store ${storeId}`);
-                break;
+                return;
 
             default:
                 throw new Error(`Unknown action: ${action}`);
@@ -573,6 +586,19 @@ export class SyncQueueProcessor {
      * Manually process a single item (for retry endpoint)
      */
     async processItemById(itemId: string): Promise<void> {
+        // Per-item lock to prevent concurrent processing of the same item
+        if (this.processingItemIds.has(itemId)) {
+            throw new Error('Item is already being processed');
+        }
+        this.processingItemIds.add(itemId);
+        try {
+            await this._processItemByIdInternal(itemId);
+        } finally {
+            this.processingItemIds.delete(itemId);
+        }
+    }
+
+    private async _processItemByIdInternal(itemId: string): Promise<void> {
         const item = await prisma.syncQueueItem.findUnique({
             where: { id: itemId },
             include: {

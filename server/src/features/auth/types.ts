@@ -167,6 +167,7 @@ export interface SolumConnectResponse {
 
 export interface DeviceTokenResponse {
     accessToken: string;
+    refreshToken: string;
     expiresIn: number;
     user: UserInfo;
 }

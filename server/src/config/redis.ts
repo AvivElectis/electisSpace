@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { config } from './env.js';
+import { appLogger } from '../shared/infrastructure/services/appLogger.js';
 
 // Redis client singleton
 let redis: Redis | null = null;
@@ -10,7 +11,7 @@ export const getRedisClient = (): Redis => {
             maxRetriesPerRequest: 3,
             retryStrategy: (times) => {
                 if (times > 3) {
-                    console.error('Redis connection failed after 3 retries');
+                    appLogger.error('Redis', 'Connection failed after 3 retries');
                     return null;
                 }
                 return Math.min(times * 200, 2000);
@@ -18,11 +19,11 @@ export const getRedisClient = (): Redis => {
         });
 
         redis.on('connect', () => {
-            console.log('✅ Redis connected');
+            appLogger.info('Redis', 'Connected');
         });
 
         redis.on('error', (err) => {
-            console.error('❌ Redis error:', err.message);
+            appLogger.error('Redis', `Error: ${err.message}`);
         });
     }
 

@@ -44,19 +44,11 @@ export const authController = {
 
             res.json(result);
         } catch (error: any) {
-            if (error.message === 'INVALID_CREDENTIALS') {
+            if (error.message === 'INVALID_CREDENTIALS' || error.message === 'USER_NOT_FOUND') {
                 return res.status(401).json({
                     error: {
                         code: 'INVALID_CREDENTIALS',
                         message: 'Invalid email or password'
-                    }
-                });
-            }
-            if (error.message === 'USER_NOT_FOUND') {
-                return res.status(401).json({
-                    error: {
-                        code: 'USER_NOT_FOUND',
-                        message: 'User not found'
                     }
                 });
             }
@@ -210,7 +202,8 @@ export const authController = {
                 path: '/',
             });
 
-            res.json(result);
+            const { refreshToken: _rtk, ...safeRefreshResult } = result;
+            res.json(safeRefreshResult);
         } catch (error: any) {
             if (error.message === 'INVALID_TOKEN' || error.message === 'TOKEN_NOT_FOUND') {
                 return next(unauthorized('Invalid refresh token'));
@@ -372,10 +365,7 @@ export const authController = {
 
             const result = await authService.authenticateWithDeviceToken(deviceToken, deviceId, ip);
 
-            // Set a refresh token cookie for normal session flow
-            const tokenPair = await authService.generateTokens(result.user.id);
-
-            res.cookie('refreshToken', tokenPair.refreshToken, {
+            res.cookie('refreshToken', result.refreshToken, {
                 httpOnly: true,
                 secure: config.isProd,
                 sameSite: 'lax',
@@ -383,7 +373,8 @@ export const authController = {
                 path: '/',
             });
 
-            res.json(result);
+            const { refreshToken: _rt, ...safeResult } = result;
+            res.json(safeResult);
         } catch (error: any) {
             if (error.message === 'INVALID_DEVICE_TOKEN') {
                 return res.status(401).json({

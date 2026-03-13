@@ -16,11 +16,12 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { logger } from '../../../shared/infrastructure/services/logger';
 
 export const useSessionRestore = () => {
-    const { setUser, isInitialized, setInitialized, setAppReady } = useAuthStore();
+    const { setUser, setInitialized, setAppReady } = useAuthStore();
+    const isInitialized = useAuthStore((s) => s.isInitialized);
 
     const restoreSession = useCallback(async () => {
-        // Skip if already initialized
-        if (isInitialized) {
+        // Skip if already initialized (read from store snapshot to avoid stale closure)
+        if (useAuthStore.getState().isInitialized) {
             return;
         }
 
@@ -138,7 +139,8 @@ export const useSessionRestore = () => {
         }
 
         setInitialized(true);
-    }, [setUser, isInitialized, setInitialized, setAppReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [setUser, setInitialized, setAppReady]);
 
     useEffect(() => {
         restoreSession();

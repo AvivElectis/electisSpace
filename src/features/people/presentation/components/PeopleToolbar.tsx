@@ -23,9 +23,8 @@ export function PeopleToolbar({
     const { t } = useTranslation();
 
     return (
-        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-            {/* Title row */}
-            <Box sx={{ mb: 1 }}>
+        <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 } }}>
+            <Box>
                 <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                     {t('people.title')}
                 </Typography>
@@ -34,7 +33,6 @@ export function PeopleToolbar({
                 </Typography>
             </Box>
 
-            {/* Action buttons row — under the header */}
             <Stack direction="row" gap={1.5} flexWrap="wrap">
                 <Button
                     variant="contained"
@@ -57,13 +55,13 @@ export function PeopleToolbar({
                     disabled={!canEdit}
                     sx={{
                         whiteSpace: 'nowrap',
-                        minHeight: { xs: 44, md: 44 },
+                        minHeight: 44,
                         px: { xs: 2, sm: 3 },
                     }}
                 >
                     {t('people.uploadCSV')}
                 </Button>
             </Stack>
-        </Box>
+        </Stack>
     );
 }

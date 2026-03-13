@@ -38,6 +38,20 @@ class SseManager {
     private clients: Map<string, SseClient> = new Map();
 
     /**
+     * Check if a new client can be accepted (under connection limits).
+     * Call this BEFORE flushing SSE headers to avoid sending 503 after headers are sent.
+     */
+    canAcceptClient(storeId: string): boolean {
+        if (this.clients.size >= MAX_TOTAL_CONNECTIONS) return false;
+        if (this.getStoreClientCount(storeId) >= MAX_CONNECTIONS_PER_STORE) return false;
+        return true;
+    }
+
+    get maxClients(): number {
+        return MAX_TOTAL_CONNECTIONS;
+    }
+
+    /**
      * Register a new SSE client connection.
      * Returns false if connection limits are exceeded.
      */
@@ -77,22 +91,25 @@ class SseManager {
     }
 
     /**
-     * Broadcast an event to all clients connected to a specific store
+     * Broadcast an event to all clients connected to a specific store.
+     * Uses a snapshot of client IDs to avoid issues when removeClient mutates the map during iteration.
      */
     broadcastToStore(storeId: string, event: StoreEvent): void {
         let sent = 0;
-        for (const [id, client] of this.clients) {
-            if (client.storeId === storeId) {
-                if (event.excludeClientId && id === event.excludeClientId) {
-                    continue; // Skip the originator
-                }
-                this.sendToClient(client, {
-                    type: event.type,
-                    ...event.payload,
-                    timestamp: new Date().toISOString(),
-                });
-                sent++;
+        // Snapshot client IDs to avoid mutation during iteration
+        const clientIds = [...this.clients.keys()];
+        for (const id of clientIds) {
+            const client = this.clients.get(id);
+            if (!client || client.storeId !== storeId) continue;
+            if (event.excludeClientId && id === event.excludeClientId) {
+                continue; // Skip the originator
             }
+            const success = this.sendToClient(client, {
+                type: event.type,
+                ...event.payload,
+                timestamp: new Date().toISOString(),
+            });
+            if (success) sent++;
         }
         appLogger.info('SSE', `Broadcast ${event.type} to store ${storeId}: ${sent} clients`);
     }
@@ -108,13 +125,17 @@ class SseManager {
         return count;
     }
 
-    private sendToClient(client: SseClient, data: Record<string, unknown>): void {
+    private sendToClient(client: SseClient, data: Record<string, unknown>): boolean {
         try {
             client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+            return true;
         } catch (err) {
-            // Connection broken — clean up
+            // Connection broken — clean up and end the response to trigger
+            // the req.on('close') handler which clears the keep-alive interval
             appLogger.warn('SSE', `Failed to send to client ${client.id}, removing`);
             this.removeClient(client.id);
+            try { client.res.end(); } catch { /* already closed */ }
+            return false;
         }
     }
 }

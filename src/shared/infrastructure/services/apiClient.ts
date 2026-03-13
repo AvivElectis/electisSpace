@@ -95,8 +95,6 @@ function isTokenNearExpiry(token: string, bufferMs = 60_000): boolean {
     }
 }
 
-// Proactive refresh state — shared with the response interceptor
-let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
 /**
@@ -113,6 +111,10 @@ function doRefresh(): Promise<string | null> {
     ).then((response) => {
         const { accessToken } = response.data;
         tokenManager.setAccessToken(accessToken);
+        // Notify SSE hook to reconnect with fresh token
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('auth:token-refreshed'));
+        }
         return accessToken as string;
     }).catch(() => {
         return null;
@@ -154,22 +156,6 @@ api.interceptors.request.use(
     },
     (error) => Promise.reject(error)
 );
-let failedQueue: Array<{
-    resolve: (value: unknown) => void;
-    reject: (error: unknown) => void;
-}> = [];
-
-const processQueue = (error: unknown, token: string | null = null) => {
-    failedQueue.forEach((promise) => {
-        if (error) {
-            promise.reject(error);
-        } else {
-            promise.resolve(token);
-        }
-    });
-    failedQueue = [];
-};
-
 // Response interceptor - fallback 401 handler for cases where proactive refresh missed
 // (e.g., token revoked server-side, clock skew, etc.)
 api.interceptors.response.use(
@@ -179,76 +165,25 @@ api.interceptors.response.use(
 
         const isAuthEndpoint = AUTH_FLOW_PATHS.some(p => originalRequest.url?.includes(p));
 
-        // Handle 401 Unauthorized - only for non-auth endpoints
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
-            if (isRefreshing) {
-                // If already refreshing, queue this request
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                }).then((token) => {
-                    if (originalRequest.headers) {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
-                    }
-                    return api(originalRequest);
-                });
-            }
-
             originalRequest._retry = true;
-            isRefreshing = true;
-
             try {
-                // Call refresh endpoint - refresh token is in httpOnly cookie
-                const response = await axios.post(
-                    `${API_BASE_URL}/auth/refresh`,
-                    {},
-                    { withCredentials: true }
-                );
-
-                const { accessToken } = response.data;
-                tokenManager.setAccessToken(accessToken);
-
-                processQueue(null, accessToken);
-
-                if (originalRequest.headers) {
-                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                const newToken = await doRefresh();
+                if (newToken) {
+                    originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                    return api(originalRequest);
                 }
-                return api(originalRequest);
-            } catch (refreshError) {
-                // Cookie refresh failed — try device token as last resort
-                try {
-                    const { deviceTokenStorage } = await import('./deviceTokenStorage');
-                    const deviceToken = await deviceTokenStorage.getDeviceToken();
-                    const deviceId = await deviceTokenStorage.getDeviceId();
-
-                    if (deviceToken && deviceId) {
-                        const deviceResponse = await axios.post(
-                            `${API_BASE_URL}/auth/device-auth`,
-                            { deviceToken, deviceId },
-                            { withCredentials: true }
-                        );
-
-                        const { accessToken } = deviceResponse.data;
-                        tokenManager.setAccessToken(accessToken);
-                        processQueue(null, accessToken);
-
-                        if (originalRequest.headers) {
-                            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                        }
-                        return api(originalRequest);
-                    }
-                } catch {
-                    // Device token also failed
-                }
-
-                processQueue(refreshError, null);
+                // Refresh returned null — session is gone
                 tokenManager.clearTokens();
-
-                // Dispatch event for auth store to handle
-                window.dispatchEvent(new CustomEvent('auth:logout'));
-
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('auth:logout'));
+                }
+            } catch (refreshError) {
+                tokenManager.clearTokens();
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('auth:logout'));
+                }
                 return Promise.reject(refreshError);
-            } finally {
-                isRefreshing = false;
             }
         }
 

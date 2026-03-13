@@ -3,6 +3,7 @@
  * 
  * @description Business logic for people management.
  */
+import { randomUUID } from 'crypto';
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
 import { buildPersonArticle, buildEmptySlotArticle } from '../../shared/infrastructure/services/articleBuilder.js';
@@ -15,6 +16,7 @@ import type {
     ListPeopleFilters,
 } from './types.js';
 import type { Prisma } from '@prisma/client';
+import { prisma } from '../../config/index.js';
 
 // ======================
 // Helpers
@@ -94,9 +96,8 @@ export const peopleService = {
     async create(input: CreatePersonInput, user: PeopleUserContext) {
         validateStoreAccess(input.storeId, user);
 
-        // Generate virtual space ID (POOL-XXXX)
-        const count = await peopleRepository.countInStore(input.storeId);
-        const virtualSpaceId = `POOL-${String(count + 1).padStart(4, '0')}`;
+        // Generate unique virtual space ID using UUID suffix to avoid TOCTOU race
+        const virtualSpaceId = `POOL-${randomUUID().slice(0, 8).toUpperCase()}`;
 
         const person = await peopleRepository.create({
             externalId: input.externalId,
@@ -173,31 +174,45 @@ export const peopleService = {
             throw new Error('PERSON_NOT_FOUND');
         }
 
-        // Check if this slot is already assigned to a different person in the same store
-        const alreadyAssigned = await peopleRepository.isSpaceAssigned(spaceId, personId, person.storeId);
-        if (alreadyAssigned) {
-            throw new Error('SPACE_ALREADY_ASSIGNED');
-        }
-
-        // If person had a previous space, push an empty slot article for the old space
-        // (keeps the slot visible in AIMS with empty fields instead of deleting it)
+        // Atomic check-then-update to prevent double-assigning the same space
         appLogger.info('PeopleService', `assignToSpace: personId=${personId}, newSpaceId=${spaceId}, oldSpaceId=${person.assignedSpaceId ?? 'null'}`);
-        if (person.assignedSpaceId && person.assignedSpaceId !== spaceId) {
-            appLogger.info('PeopleService', `Queuing empty slot for old space ${person.assignedSpaceId} before assigning to ${spaceId}`);
+
+        const oldSpaceId = person.assignedSpaceId;
+
+        const updated = await prisma.$transaction(async (tx) => {
+            // Check inside transaction to prevent race condition
+            const alreadyAssigned = await tx.person.findFirst({
+                where: {
+                    assignedSpaceId: spaceId,
+                    id: { not: personId },
+                    storeId: person.storeId,
+                },
+            });
+            if (alreadyAssigned) {
+                throw new Error('SPACE_ALREADY_ASSIGNED');
+            }
+
+            return tx.person.update({
+                where: { id: personId },
+                data: {
+                    assignedSpaceId: spaceId,
+                    syncStatus: 'PENDING',
+                },
+            });
+        });
+
+        // Queue side-effect sync jobs AFTER transaction commits successfully
+        if (oldSpaceId && oldSpaceId !== spaceId) {
+            appLogger.info('PeopleService', `Queuing empty slot for old space ${oldSpaceId} after assigning to ${spaceId}`);
             await syncQueueService.queueUpdate(
                 person.storeId,
                 'empty_slot',
-                person.assignedSpaceId,  // entityId = slotId for empty_slot type
-                { slotId: person.assignedSpaceId }
+                oldSpaceId,
+                { slotId: oldSpaceId }
             );
-        } else if (!person.assignedSpaceId) {
+        } else if (!oldSpaceId) {
             appLogger.debug('PeopleService', 'No previous space (person was unassigned)');
         }
-
-        const updated = await peopleRepository.update(personId, {
-            assignedSpaceId: spaceId,
-            syncStatus: 'PENDING',
-        });
 
         // Queue sync job to push assignment to AIMS
         await syncQueueService.queueUpdate(
@@ -221,24 +236,26 @@ export const peopleService = {
             throw new Error('NOT_FOUND');
         }
 
-        // Push an empty slot article instead of deleting (keeps the slot in AIMS with empty fields)
         appLogger.info('PeopleService', `unassignFromSpace: personId=${personId}, currentSpaceId=${person.assignedSpaceId ?? 'null'}`);
-        if (person.assignedSpaceId) {
-            appLogger.info('PeopleService', `Queuing empty slot for space ${person.assignedSpaceId} (unassign)`);
-            await syncQueueService.queueUpdate(
-                person.storeId,
-                'empty_slot',
-                person.assignedSpaceId,  // entityId = slotId for empty_slot type
-                { slotId: person.assignedSpaceId }
-            );
-        } else {
-            appLogger.debug('PeopleService', 'Person already has no space, skipping');
-        }
+        const oldSpaceId = person.assignedSpaceId;
 
         const updated = await peopleRepository.update(personId, {
             assignedSpaceId: null,
             syncStatus: 'PENDING',
         });
+
+        // Queue side-effect sync jobs AFTER DB update succeeds
+        if (oldSpaceId) {
+            appLogger.info('PeopleService', `Queuing empty slot for space ${oldSpaceId} (unassign)`);
+            await syncQueueService.queueUpdate(
+                person.storeId,
+                'empty_slot',
+                oldSpaceId,
+                { slotId: oldSpaceId }
+            );
+        } else {
+            appLogger.debug('PeopleService', 'Person already had no space, skipping');
+        }
 
         return updated;
     },

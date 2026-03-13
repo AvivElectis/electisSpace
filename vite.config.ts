@@ -44,7 +44,7 @@ export default defineConfig({
     proxy: {
       // Backend API proxy - SSE requires special handling
       '/api': {
-        target: 'http://localhost:3030',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false, // Allow HTTP target
         ws: true, // Enable WebSocket proxy

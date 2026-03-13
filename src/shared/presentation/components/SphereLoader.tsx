@@ -154,12 +154,12 @@ export const SphereLoader = memo(function SphereLoader({
                 // RTL: first letter on the right, last on the left
                 const posIndex = isRtl ? letters.length - 1 - i : i;
 
-                ctx!.fillStyle = 'rgba(0,200,255,' + alpha.toFixed(3) + ')';
+                ctx!.fillStyle = 'rgba(0,100,200,' + alpha.toFixed(3) + ')';
                 ctx!.font = '800 ' + fontSize + 'px "Assistant", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
                 ctx!.shadowColor = 'rgba(0,0,0,0.3)';
                 ctx!.shadowBlur = 4 * scale;
                 ctx!.shadowOffsetX = 0;
-                ctx!.shadowOffsetY = 1 * scale;
+                ctx!.shadowOffsetY = .3 * scale;
                 ctx!.textAlign = 'center';
                 ctx!.textBaseline = 'middle';
                 ctx!.fillText(letters[i], startX + posIndex * spacing, textY + yOff);

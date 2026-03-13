@@ -47,6 +47,13 @@ export function StoreRequiredGuard({ children }: StoreRequiredGuardProps) {
     const [credDialogOpen, setCredDialogOpen] = useState(false);
     const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
     const autoSelectTriggered = useRef(false);
+    const prevUserIdRef = useRef<string | null>(null);
+
+    // Reset auto-select when user identity changes (login/logout/switch user)
+    if (user?.id !== prevUserIdRef.current) {
+        prevUserIdRef.current = user?.id ?? null;
+        autoSelectTriggered.current = false;
+    }
 
     // Check AIMS connection status for a store
     const checkStoreConnection = useCallback(async (storeId: string) => {

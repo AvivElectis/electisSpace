@@ -67,9 +67,6 @@ interface NavTab {
  */
 import { SyncProvider } from '@features/sync/application/SyncContext';
 
-// ... imports remain the same in file content, just adding provider import logic if needed or assuming file has imports. 
-// Wait, I need to add import.
-
 export function MainLayout({ children }: MainLayoutProps) {
     const navigate = useNavigate();
     const location = useLocation();
@@ -84,10 +81,14 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { syncState, setWorkingMode } = useSyncStore();
     const { canAccessFeature, isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
+    const isSwitchingStore = useAuthStore(state => state.isSwitchingStore);
     const currentUser = useAuthStore(state => state.user);
     
-    // Determine drawer direction based on current language (more reliable than theme.direction)
-    const settings = useSettingsStore(state => state.settings);
+    // Select individual primitives to avoid re-renders on unrelated settings changes
+    const workingMode = useSettingsStore(state => state.settings.workingMode);
+    const peopleManagerEnabled = useSettingsStore(state => state.settings.peopleManagerEnabled);
+    const autoSyncEnabled = useSettingsStore(state => state.settings.autoSyncEnabled);
+    const autoSyncInterval = useSettingsStore(state => state.settings.autoSyncInterval);
     const activeStoreId = useSettingsStore(state => state.activeStoreId);
     
     // Only allow sync when auth session is fully restored and valid
@@ -97,12 +98,12 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     // Sync settings.workingMode to syncStore.workingMode
     useEffect(() => {
-        setWorkingMode(settings.workingMode);
-    }, [settings.workingMode, setWorkingMode]);
+        setWorkingMode(workingMode);
+    }, [workingMode, setWorkingMode]);
 
     // Determine if People Manager mode is enabled
     // Use effective features from auth context (company/store level) with fallback to legacy settings
-    const isPeopleManagerMode = (activeStoreEffectiveFeatures?.peopleEnabled ?? settings.peopleManagerEnabled) && settings.workingMode === 'SOLUM_API';
+    const isPeopleManagerMode = (activeStoreEffectiveFeatures?.peopleEnabled ?? peopleManagerEnabled) && workingMode === 'SOLUM_API';
 
     /**
      * Combined space update handler
@@ -111,7 +112,7 @@ export function MainLayout({ children }: MainLayoutProps) {
      * Only populate the spaces store when NOT in People Manager mode.
      */
     const handleSpaceUpdate = useCallback((spaces: any[]) => {
-        if ((activeStoreEffectiveFeatures?.peopleEnabled ?? settings.peopleManagerEnabled) && settings.workingMode === 'SOLUM_API') {
+        if ((activeStoreEffectiveFeatures?.peopleEnabled ?? peopleManagerEnabled) && workingMode === 'SOLUM_API') {
             logger.info('MainLayout', 'Skipping spaces update (people managed by server)', {
                 articlesCount: spaces.length
             });
@@ -119,7 +120,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         }
 
         setSpaces(spaces);
-    }, [setSpaces, settings.peopleManagerEnabled, settings.workingMode, activeStoreEffectiveFeatures]);
+    }, [setSpaces, peopleManagerEnabled, workingMode, activeStoreEffectiveFeatures]);
 
     // Build navigation tabs dynamically
     const allNavTabs: NavTab[] = [
@@ -144,8 +145,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     // Initialize backend sync controller (all AIMS communication goes through server)
     const syncController = useBackendSyncController({
         storeId: effectiveStoreId,
-        autoSyncEnabled: settings.autoSyncEnabled,
-        autoSyncInterval: settings.autoSyncInterval,
+        autoSyncEnabled: autoSyncEnabled,
+        autoSyncInterval: autoSyncInterval,
         onSpaceUpdate: handleSpaceUpdate,
         onError: (error) => {
             logger.error('MainLayout', 'Backend sync error', { error: error.message });
@@ -170,7 +171,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     // Tracks which store was last synced so switching stores triggers a new sync
     const lastSyncedStoreId = useRef<string | null>(null);
     useEffect(() => {
-        if (activeStoreId && authReady && sync && lastSyncedStoreId.current !== activeStoreId) {
+        // Gate on isSwitchingStore to avoid syncing before settings/SOLUM are loaded
+        if (activeStoreId && authReady && sync && !isSwitchingStore && lastSyncedStoreId.current !== activeStoreId) {
             lastSyncedStoreId.current = activeStoreId;
             logger.info('MainLayout', 'Auto-syncing on app load / store switch', { storeId: activeStoreId });
             const syncTimeout = setTimeout(() => {
@@ -180,7 +182,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             }, 500);
             return () => clearTimeout(syncTimeout);
         }
-    }, [activeStoreId, authReady, sync]);
+    }, [activeStoreId, authReady, sync, isSwitchingStore]);
 
     const currentTab = navTabs.find(tab => tab.value === location.pathname)?.value || false;
 
@@ -267,11 +269,12 @@ export function MainLayout({ children }: MainLayoutProps) {
                             </Box>
                             <List>
                                 {navTabs.map(tab => (
-                                    <ListItem key={tab.value} disablePadding sx={{py: 2}}>
+                                    <ListItem key={tab.value} disablePadding>
                                         <ListItemButton
                                             selected={currentTab === tab.value}
                                             onClick={() => handleMobileNavClick(tab.value)}
                                             onMouseEnter={() => prefetchRoute(tab.value)}
+                                            sx={{ py: 1.5 }}
                                         >
                                             <ListItemIcon>
                                                 {tab.icon}
@@ -293,7 +296,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                         bgcolor: 'transparent',
                         borderColor: 'divider',
                         px: { xs: 2, sm: 3, md: 4 },
-                        py: 1,
+                        pt: 0,
+                        pb: 0.5,
                     }}>
                         <Tabs
                             value={currentTab}
@@ -301,11 +305,12 @@ export function MainLayout({ children }: MainLayoutProps) {
                             variant="scrollable"
                             scrollButtons="auto"
                             sx={{
+                                minHeight: 'auto',
                                 borderBottom: 0,
                                 '& .MuiTab-root': {
                                     border: '1px solid transparent',
                                     borderRadius: 2,
-                                    my: 2,
+                                    my: 0.5,
                                     '&.Mui-selected': {
                                         boxShadow: 2,
                                         borderColor: 'divider',
@@ -348,7 +353,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         transition: 'opacity 0.15s ease-in-out',
                     }}
                 >
-                    <Container maxWidth={false} sx={{ flex: 1, py: 3 }}>
+                    <Container maxWidth="xl" sx={{ flex: 1, pt: { xs: 2, md: 1 }, pb: 3 }}>
                         <StoreRequiredGuard>
                             {children}
                         </StoreRequiredGuard>
@@ -374,8 +379,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                         serverConnected={syncController.serverConnected}
                         aimsConnected={syncState.isConnected}
                         syncStartedAt={syncState.syncStartedAt}
-                        autoSyncEnabled={settings.autoSyncEnabled}
-                        autoSyncInterval={settings.autoSyncInterval}
+                        autoSyncEnabled={autoSyncEnabled}
+                        autoSyncInterval={autoSyncInterval}
                     />
                 </Box>
 

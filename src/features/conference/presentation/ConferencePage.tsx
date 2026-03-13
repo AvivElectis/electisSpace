@@ -49,6 +49,8 @@ import type { ConferenceRoom } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { conferenceApi } from '../infrastructure/conferenceApi';
+import { logger } from '@shared/infrastructure/services/logger';
+import { EmptyState } from '@shared/presentation/components/EmptyState';
 
 // Lazy load dialog - not needed on initial render
 const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
@@ -115,10 +117,10 @@ export function ConferencePage() {
             .finally(() => setLabelPagesLoading(false));
     }, [isSimpleMode, isAppReady, activeStoreId]);
 
-    // Reset label pages fetch ref when store changes
+    // Reset label pages fetch ref when store or mode changes
     useEffect(() => {
         labelPagesFetchedRef.current = false;
-    }, [activeStoreId]);
+    }, [activeStoreId, isSimpleMode]);
 
     // Get room page status: check all labels for this room, return the dominant page
     const getRoomPage = useCallback((room: ConferenceRoom): number => {
@@ -164,7 +166,7 @@ export function ConferencePage() {
     // SSE real-time sync — alert when other users modify conference rooms
     useStoreEvents({
         onConferenceChanged: (event) => {
-            console.log('[ConferencePage] SSE event received:', event);
+            logger.debug('ConferencePage', 'SSE event received', { type: event?.type });
 
             // Handle page-flip events from other users
             if (event.action === 'page-flip') {
@@ -304,27 +306,37 @@ export function ConferencePage() {
         boxShadow: 'none',
         bgcolor: 'transparent',
         border: 'none',
-        '&:hover': { boxShadow: '0px 0px 1px 1px #6666663b' }
+        '&:hover': { boxShadow: (theme: any) => `0px 0px 1px 1px ${theme.palette.action.focus}` },
     }), []);
 
     // ─── Simple Conference Mode Rendering ─────────────────────────────────
     if (isSimpleMode) {
         return (
             <Box>
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-                        {t('conference.title')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        {t('conference.manage')}
-                    </Typography>
-                </Box>
-
-                {/* Stats */}
-                <Stack direction="row" gap={2} sx={{ mb: 3 }}>
-                    <Typography variant="body2" fontWeight={600}>
-                        {conferenceController.conferenceRooms.length} {t('conference.totalRooms')}
-                    </Typography>
+                {/* Header — reuses same pattern as full mode */}
+                <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={2}
+                    sx={{ mb: 2 }}
+                >
+                    <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
+                            {t('conference.title')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {t('conference.manage')} - {conferenceController.conferenceRooms.length} {t('conference.totalRooms')}
+                        </Typography>
+                    </Box>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAdd}
+                        disabled={!canEdit}
+                        sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
+                    >
+                        {t('conference.addRoom')}
+                    </Button>
                 </Stack>
 
                 {conferenceController.isFetching ? (
@@ -341,12 +353,12 @@ export function ConferencePage() {
                         </Typography>
                     </Stack>
                 ) : conferenceController.conferenceRooms.length === 0 ? (
-                    <Card>
-                        <CardContent sx={{ py: 8, textAlign: 'center' }}>
-                            <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                            <Typography variant="h6">{t('conference.noRoomsYet')}</Typography>
-                        </CardContent>
-                    </Card>
+                    <EmptyState
+                        icon={<ConferenceIcon sx={{ fontSize: 80 }} />}
+                        title={t('conference.noRoomsYet')}
+                        actionLabel={canEdit ? t('conference.addRoom') : undefined}
+                        onAction={canEdit ? handleAdd : undefined}
+                    />
                 ) : (
                     <Stack gap={1}>
                         {filteredRooms.map((room) => {
@@ -486,11 +498,10 @@ export function ConferencePage() {
         <Box>
             {/* Header Section */}
             <Stack
-                direction="column"
-                justifyContent="flex-start"
-                alignItems="flex-start"
+                direction="row"
+                alignItems="center"
                 gap={2}
-                sx={{ mb: 3 }}
+                sx={{ mb: 2 }}
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
@@ -505,7 +516,7 @@ export function ConferencePage() {
                     startIcon={<AddIcon />}
                     onClick={handleAdd}
                     disabled={!canEdit}
-                    sx={{ minWidth: { xs: '100%', sm: '140px' }, display: { xs: 'none', md: 'inline-flex' } }}
+                    sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
                 >
                     {t('conference.addRoom')}
                 </Button>
@@ -658,19 +669,15 @@ export function ConferencePage() {
                     ))}
                 </Grid>
             ) : filteredRooms.length === 0 ? (
-                <Card>
-                    <CardContent sx={{ py: 8, textAlign: 'center' }}>
-                        <ConferenceIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="h6" gutterBottom>
-                            {searchQuery ? t('conference.noRoomsFound') : t('conference.noRoomsYet')}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {searchQuery
-                                ? t('conference.noRoomsMatching') + ` "${searchQuery}"`
-                                : t('conference.clickAddRoom', { button: `"${t('conference.addRoom')}"` })}
-                        </Typography>
-                    </CardContent>
-                </Card>
+                <EmptyState
+                    icon={<ConferenceIcon sx={{ fontSize: 80 }} />}
+                    title={searchQuery ? t('conference.noRoomsFound') : t('conference.noRoomsYet')}
+                    description={searchQuery
+                        ? t('conference.noRoomsMatching') + ` "${searchQuery}"`
+                        : t('conference.clickAddRoom', { button: `"${t('conference.addRoom')}"` })}
+                    actionLabel={!searchQuery && canEdit ? t('conference.addRoom') : undefined}
+                    onAction={!searchQuery && canEdit ? handleAdd : undefined}
+                />
             ) : (
                 <Box sx={{ maxHeight: '70vh', overflowY: 'auto', p: 1 }}>
                     <Grid container spacing={3}>

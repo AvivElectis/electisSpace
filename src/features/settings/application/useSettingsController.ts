@@ -18,12 +18,9 @@ import { useConferenceStore } from '@features/conference/infrastructure/conferen
 import { useNotificationStore } from '@shared/infrastructure/store/notificationStore';
 import i18n from '../../../i18n/config';
 
-/**
- * Admin password for emergency access to settings
- * This password always works to unlock settings, even if user forgets their password
- * Loaded from environment variable for security
- */
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
+// Admin bypass removed — VITE_* vars are compiled into the client bundle and
+// readable by anyone inspecting the JS. The settings lock is a UI convenience;
+// if a user forgets their password, they can clear localStorage.
 
 /**
  * Helper function to clear all data stores
@@ -200,13 +197,6 @@ export function useSettingsController() {
         (password: string): boolean => {
             logger.info('SettingsController', 'Attempting to unlock settings');
 
-            // Check admin password first (emergency access)
-            if (password === ADMIN_PASSWORD) {
-                setLocked(false);
-                logger.info('SettingsController', 'Settings unlocked with admin password (emergency access)');
-                return true;
-            }
-
             // If no user password is set, unlock by default
             if (!passwordHash) {
                 logger.warn('SettingsController', 'No password set, unlocking by default');
@@ -270,7 +260,7 @@ export function useSettingsController() {
             
             logger.info('SettingsController', 'Settings updated successfully');
         },
-        [settings, updateInStore, activeStoreId, activeCompanyId, debouncedSaveToServer, debouncedSaveFieldMappingsToServer, debouncedSaveArticleFormatToServer]
+        [updateInStore, activeStoreId, activeCompanyId, debouncedSaveToServer, debouncedSaveFieldMappingsToServer, debouncedSaveArticleFormatToServer]
     );
 
     /**

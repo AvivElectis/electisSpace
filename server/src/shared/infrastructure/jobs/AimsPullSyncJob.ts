@@ -65,6 +65,7 @@ export interface ReconcileStoreResult {
 export class AimsSyncReconciliationJob {
     private isRunning = false;
     private intervalId: ReturnType<typeof setInterval> | null = null;
+    private initialTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
     // ───── lifecycle ─────
 
@@ -75,10 +76,17 @@ export class AimsSyncReconciliationJob {
         }
         appLogger.info('AimsPullSync', `Starting pull sync job with ${intervalMs / 1000}s interval`);
         this.intervalId = setInterval(() => this.tick(), intervalMs);
-        setTimeout(() => this.tick(), INITIAL_DELAY_MS);
+        this.initialTimeoutId = setTimeout(() => {
+            this.initialTimeoutId = null;
+            this.tick();
+        }, INITIAL_DELAY_MS);
     }
 
     stop(): void {
+        if (this.initialTimeoutId) {
+            clearTimeout(this.initialTimeoutId);
+            this.initialTimeoutId = null;
+        }
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;

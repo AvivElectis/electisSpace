@@ -20,7 +20,17 @@ interface LabelImagePreviewProps {
 }
 
 /** Module-level cache: labelCode → { content, fetchedAt } */
+const IMAGE_CACHE_MAX = 200;
 const imageCache = new Map<string, { content: string; fetchedAt: number }>();
+
+function setImageCacheEntry(key: string, content: string) {
+    // Evict oldest entry if at capacity
+    if (imageCache.size >= IMAGE_CACHE_MAX) {
+        const oldest = imageCache.keys().next().value;
+        if (oldest) imageCache.delete(oldest);
+    }
+    imageCache.set(key, { content, fetchedAt: Date.now() });
+}
 
 /**
  * Lazy-loaded label image preview component
@@ -69,7 +79,7 @@ export function LabelImagePreview({
     }, []);
 
     // Fetch image directly from AIMS with caching
-    const fetchImage = useCallback(async () => {
+    const fetchImage = useCallback(async (signal?: AbortSignal) => {
         const solumConfig = useSettingsStore.getState().settings.solumConfig;
         if (!solumConfig?.isConnected) return;
 
@@ -81,32 +91,33 @@ export function LabelImagePreview({
                 return getLabelImages(solumConfig, solumConfig.storeNumber, token, labelCode);
             });
 
+            if (signal?.aborted) return;
+
             if (data?.currentImage && data.currentImage.length > 0) {
                 const content = data.currentImage[0]?.content;
                 if (content) {
                     const cached = imageCache.get(labelCode);
-                    // Only update state if content actually changed
                     if (!cached || cached.content !== content) {
-                        imageCache.set(labelCode, { content, fetchedAt: Date.now() });
-                        setImageUrl(content);
-                    } else if (!imageUrl) {
-                        // First render with cached content
-                        setImageUrl(content);
+                        setImageCacheEntry(labelCode, content);
                     }
+                    setImageUrl(content);
                 }
             }
         } catch (error: any) {
+            if (signal?.aborted) return;
             logger.debug('LabelImagePreview', 'Failed to load image', { labelCode, error: error.message });
-            if (!imageUrl) setHasError(true);
+            setHasError(true);
         } finally {
-            setIsLoading(false);
+            if (!signal?.aborted) setIsLoading(false);
         }
-    }, [labelCode, imageUrl]);
+    }, [labelCode]);
 
     // Trigger fetch when visible
     useEffect(() => {
         if (isVisible && !imageUrl && !isLoading && !hasError) {
-            fetchImage();
+            const controller = new AbortController();
+            fetchImage(controller.signal);
+            return () => controller.abort();
         }
     }, [isVisible, imageUrl, isLoading, hasError, fetchImage]);
 

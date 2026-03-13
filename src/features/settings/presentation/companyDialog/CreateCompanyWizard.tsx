@@ -98,6 +98,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
             setCodeError(t('settings.companies.codeInvalidFormat'));
             return;
         }
+        // Reset indicator immediately so stale green check doesn't linger during debounce
+        setCodeAvailable(null);
         codeTimerRef.current && clearTimeout(codeTimerRef.current);
         codeTimerRef.current = setTimeout(async () => {
             setCodeChecking(true);
@@ -122,6 +124,9 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
     const handleConnectionTest = useCallback(async () => {
         setConnectionStatus('testing');
         setConnectionError(null);
+        // Clear stale stores from a previous connection test to prevent using old data
+        setAimsStores([]);
+        updateFormData({ stores: [], connectionTested: false });
         try {
             const result = await companyService.fetchAimsStores({
                 baseUrl: formData.aimsBaseUrl.trim(),
@@ -186,7 +191,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     connectionStatus === 'connected'
                 );
             case 1:
-                return formData.stores.length > 0;
+                return formData.stores.length > 0 &&
+                    formData.stores.every(s => s.name.trim().length > 0 && s.timezone.trim().length > 0);
             case 2:
                 return !!formData.articleFormat; // Must be fetched
             case 3:
@@ -244,8 +250,8 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 })),
                 companyFeatures: formData.features,
                 spaceType: formData.spaceType,
-                articleFormat: formData.articleFormat as unknown as Record<string, unknown> | undefined,
-                fieldMapping: formData.fieldMapping as unknown as Record<string, unknown> | undefined,
+                articleFormat: formData.articleFormat ? (formData.articleFormat as unknown as Record<string, unknown>) : undefined,
+                fieldMapping: formData.fieldMapping ? (formData.fieldMapping as unknown as Record<string, unknown>) : undefined,
             };
 
             await companyService.create(createData);

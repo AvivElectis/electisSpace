@@ -38,18 +38,20 @@ export const settingsRepository = {
      * Update store settings (deep-merge with existing, same as company settings)
      */
     async updateStoreSettings(storeId: string, settings: Record<string, any>) {
-        const store = await prisma.store.findUnique({
-            where: { id: storeId },
-            select: { settings: true },
-        });
-        const existingSettings = (store?.settings as Record<string, any>) || {};
-        const mergedSettings = { ...existingSettings, ...settings };
-        return prisma.store.update({
-            where: { id: storeId },
-            data: {
-                settings: mergedSettings,
-                updatedAt: new Date(),
-            },
+        return prisma.$transaction(async (tx) => {
+            const store = await tx.store.findUnique({
+                where: { id: storeId },
+                select: { settings: true },
+            });
+            const existingSettings = (store?.settings as Record<string, any>) || {};
+            const mergedSettings = { ...existingSettings, ...settings };
+            return tx.store.update({
+                where: { id: storeId },
+                data: {
+                    settings: mergedSettings,
+                    updatedAt: new Date(),
+                },
+            });
         });
     },
 
@@ -90,20 +92,22 @@ export const settingsRepository = {
      * Update company settings (deep-merge with existing)
      */
     async updateCompanySettings(companyId: string, settings: Record<string, any>) {
-        const company = await prisma.company.findUnique({
-            where: { id: companyId },
-            select: { settings: true },
+        const result = await prisma.$transaction(async (tx) => {
+            const company = await tx.company.findUnique({
+                where: { id: companyId },
+                select: { settings: true },
+            });
+            const existingSettings = (company?.settings as Record<string, any>) || {};
+            const mergedSettings = { ...existingSettings, ...settings };
+            return tx.company.update({
+                where: { id: companyId },
+                data: {
+                    settings: mergedSettings,
+                    updatedAt: new Date(),
+                },
+            });
         });
-        const existingSettings = (company?.settings as Record<string, any>) || {};
-        const mergedSettings = { ...existingSettings, ...settings };
-        const result = await prisma.company.update({
-            where: { id: companyId },
-            data: {
-                settings: mergedSettings,
-                updatedAt: new Date(),
-            },
-        });
-        // Invalidate cached company settings
+        // Invalidate cached company settings (after transaction commits)
         await cacheInvalidate(`company-settings:${companyId}`);
         return result;
     },
@@ -132,6 +136,6 @@ export const settingsRepository = {
         const uc = await prisma.userCompany.findFirst({
             where: { userId, companyId: store.companyId, allStoresAccess: true },
         });
-        return uc ? store : null;
+        return uc ? { ...store, userCompanyRoleId: uc.roleId } : null;
     },
 };

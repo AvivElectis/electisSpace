@@ -4,13 +4,11 @@ import {
     Typography,
     Box,
     Stack,
-    Card,
-    CardContent,
     Chip,
     IconButton,
-    Tooltip,
     useMediaQuery,
     useTheme,
+    alpha,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,6 +16,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -170,12 +169,12 @@ export function PeopleTable({
         setExpandedCardId(prev => prev === personId ? null : personId);
     }, []);
 
-    // Mobile Card View — compact by default, tap to expand
+    // Mobile Card View — matches Spaces card design with ID badge pill, chevron, expandable grid
     if (isMobile) {
         return (
             <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
                 {/* Select All Header */}
-                <Paper sx={{ p: 1, mb: 0.5, display: 'flex', alignItems: 'center', gap: 1, position: 'sticky', top: 0, zIndex: 1 }}>
+                <Paper sx={{ p: 1, mb: 1, display: 'flex', alignItems: 'center', gap: 1, position: 'sticky', top: 0, zIndex: 1 }}>
                     <Checkbox
                         indeterminate={someSelected}
                         checked={allSelected}
@@ -190,138 +189,167 @@ export function PeopleTable({
                 </Paper>
 
                 {people.length === 0 ? (
-                    <Paper sx={{ p: 4, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
+                    <Paper elevation={0} sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'background.paper' }}>
+                        <Typography variant="body1" color="text.secondary">
                             {searchQuery || assignmentFilter !== 'all'
                                 ? t('people.noResults')
                                 : t('people.noPeopleYet')}
                         </Typography>
                     </Paper>
                 ) : (
-                    <Stack gap={0.5}>
-                        {people.map((person, index) => {
+                    <Stack gap={1}>
+                        {people.map((person) => {
                             const isExpanded = expandedCardId === person.id;
+                            const displayName = nameFieldKey ? person.data[nameFieldKey] : undefined;
+
                             return (
-                                <Card
+                                <Box
                                     key={person.id}
-                                    variant="outlined"
                                     sx={{
+                                        borderRadius: 3,
                                         bgcolor: selectedIds.has(person.id) ? 'action.selected' : 'background.paper',
-                                        transition: 'background-color 0.15s',
+                                        overflow: 'hidden',
+                                        transition: 'box-shadow 0.25s ease',
+                                        boxShadow: isExpanded
+                                            ? (theme) => `0 2px 12px ${alpha(theme.palette.common.black, 0.06)}`
+                                            : 'none',
                                     }}
                                 >
-                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                                        {/* Compact row — always visible */}
-                                        <Stack
-                                            direction="row"
-                                            alignItems="center"
-                                            gap={0.5}
-                                            onClick={() => handleCardTap(person.id)}
-                                            sx={{ cursor: 'pointer' }}
+                                    {/* Card header — always visible */}
+                                    <Box
+                                        onClick={() => handleCardTap(person.id)}
+                                        sx={{
+                                            cursor: 'pointer',
+                                            px: 2,
+                                            py: 1.75,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1.5,
+                                            '&:active': { opacity: 0.7 },
+                                        }}
+                                    >
+                                        {/* Checkbox */}
+                                        <Checkbox
+                                            checked={selectedIds.has(person.id)}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                onSelectOne(person.id, e.target.checked);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            size="small"
+                                            sx={{ p: 0 }}
+                                        />
+                                        {/* ID badge — rounded pill */}
+                                        <Box sx={{
+                                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                            color: 'primary.main',
+                                            px: 1.5,
+                                            py: 0.6,
+                                            borderRadius: 2.5,
+                                            fontWeight: 700,
+                                            fontSize: '1rem',
+                                            lineHeight: 1.3,
+                                            whiteSpace: 'nowrap',
+                                            flexShrink: 0,
+                                        }}>
+                                            {person.virtualSpaceId || person.id.slice(0, 8)}
+                                        </Box>
+                                        {/* Name — fills the middle */}
+                                        <Typography
+                                            noWrap
+                                            sx={{
+                                                flex: 1,
+                                                fontSize: '1.1rem',
+                                                fontWeight: 500,
+                                                color: displayName ? 'text.primary' : 'text.disabled',
+                                            }}
                                         >
-                                            <Checkbox
-                                                checked={selectedIds.has(person.id)}
-                                                onChange={(e) => {
-                                                    e.stopPropagation();
-                                                    onSelectOne(person.id, e.target.checked);
-                                                }}
-                                                onClick={(e) => e.stopPropagation()}
-                                                size="small"
-                                            />
-                                            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 18, fontSize: '0.7rem' }}>
-                                                {index + 1}
-                                            </Typography>
-                                            {nameFieldKey && person.data[nameFieldKey] && (
-                                                <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, fontSize: '0.85rem' }}>
-                                                    {person.data[nameFieldKey]}
-                                                </Typography>
-                                            )}
-                                            {!nameFieldKey && (
-                                                <Box sx={{ flex: 1 }} />
-                                            )}
-                                            {person.assignedSpaceId ? (
-                                                <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ height: 22, fontSize: '0.7rem' }} />
-                                            ) : (
-                                                <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                                            )}
-                                        </Stack>
-
-                                        {/* Expanded details — shown on tap */}
-                                        {isExpanded && (
-                                            <Box sx={{ mt: 1, pl: 4.5 }}>
-                                                {/* Visible Fields (2 columns) */}
-                                                {visibleFields.length > 0 && (
-                                                    <Box sx={{
-                                                        display: 'grid',
-                                                        gridTemplateColumns: 'repeat(2, 1fr)',
-                                                        gap: 0.25,
-                                                        mb: 1,
-                                                    }}>
-                                                        {visibleFields.map((field) => (
-                                                            <Box key={field.key}>
-                                                                <Typography variant="caption" color="text.secondary" component="div" sx={{ fontSize: '0.65rem' }}>
-                                                                    {i18n.language === 'he' ? field.labelHe : field.labelEn}
-                                                                </Typography>
-                                                                <Typography variant="body2" noWrap sx={{ fontSize: '0.8rem' }}>
-                                                                    {field.globalValue || person.data[field.key] || '-'}
-                                                                </Typography>
-                                                            </Box>
-                                                        ))}
-                                                    </Box>
-                                                )}
-
-                                                {/* Lists + Actions */}
-                                                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-                                                    <Stack direction="row" gap={0.5} alignItems="center">
-                                                        {person.listMemberships && person.listMemberships.length > 0 && (
-                                                            <Chip
-                                                                label={t('people.inLists', { count: person.listMemberships.length })}
-                                                                size="small"
-                                                                variant="outlined"
-                                                                color="info"
-                                                                sx={{ height: 22, fontSize: '0.7rem' }}
-                                                            />
-                                                        )}
-                                                    </Stack>
-                                                    <Stack direction="row" gap={1}>
-                                                        {!person.assignedSpaceId && (
-                                                            <Tooltip title={tWithSpaceType('people.assignSpace')}>
-                                                                <span>
-                                                                <IconButton size="medium" color="success" disabled={!canEdit} onClick={() => onAssignSpace(person)}>
-                                                                    <AssignmentIcon />
-                                                                </IconButton>
-                                                                </span>
-                                                            </Tooltip>
-                                                        )}
-                                                        {person.assignedSpaceId && (
-                                                            <Tooltip title={tWithSpaceType('people.unassignSpace')}>
-                                                                <span>
-                                                                <IconButton size="medium" color="warning" disabled={!canEdit} onClick={() => onUnassignSpace(person)}>
-                                                                    <PersonRemoveIcon />
-                                                                </IconButton>
-                                                                </span>
-                                                            </Tooltip>
-                                                        )}
-                                                        <Tooltip title={t('common.edit')}>
-                                                            <span>
-                                                            <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => onEdit(person)}>
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                        <Tooltip title={t('common.delete')}>
-                                                            <span>
-                                                            <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => onDelete(person.id)}>
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    </Stack>
-                                                </Stack>
-                                            </Box>
+                                            {displayName || '–'}
+                                        </Typography>
+                                        {/* Assignment chip */}
+                                        {person.assignedSpaceId ? (
+                                            <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ height: 24, fontSize: '0.75rem' }} />
+                                        ) : (
+                                            <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ height: 24, fontSize: '0.75rem' }} />
                                         )}
-                                    </CardContent>
-                                </Card>
+                                        {/* Chevron */}
+                                        <KeyboardArrowDownIcon sx={{
+                                            color: 'text.disabled',
+                                            fontSize: '1.4rem',
+                                            transition: 'transform 0.25s ease',
+                                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                            flexShrink: 0,
+                                        }} />
+                                    </Box>
+
+                                    {/* Expanded details */}
+                                    {isExpanded && (
+                                        <Box sx={{ px: 2, pb: 1.5 }}>
+                                            {/* Fields grid */}
+                                            {visibleFields.length > 0 && (
+                                                <Box sx={{
+                                                    display: 'grid',
+                                                    gridTemplateColumns: 'repeat(2, 1fr)',
+                                                    gap: 1.5,
+                                                    pt: 0.5,
+                                                    pb: 1.25,
+                                                }}>
+                                                    {visibleFields.map((field) => (
+                                                        <Box key={field.key}>
+                                                            <Typography
+                                                                component="div"
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    fontSize: '0.78rem',
+                                                                    fontWeight: 500,
+                                                                    mb: 0.25,
+                                                                }}
+                                                            >
+                                                                {i18n.language === 'he' ? field.labelHe : field.labelEn}
+                                                            </Typography>
+                                                            <Typography noWrap sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                                                                {field.globalValue || person.data[field.key] || '–'}
+                                                            </Typography>
+                                                        </Box>
+                                                    ))}
+                                                </Box>
+                                            )}
+
+                                            {/* Lists badges + Actions row */}
+                                            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                                                <Stack direction="row" gap={0.5} alignItems="center">
+                                                    {person.listMemberships && person.listMemberships.length > 0 && (
+                                                        <Chip
+                                                            label={t('people.inLists', { count: person.listMemberships.length })}
+                                                            size="small"
+                                                            variant="outlined"
+                                                            color="info"
+                                                            sx={{ height: 24, fontSize: '0.75rem' }}
+                                                        />
+                                                    )}
+                                                </Stack>
+                                                <Stack direction="row" gap={0.5} justifyContent="flex-end">
+                                                    {!person.assignedSpaceId && (
+                                                        <IconButton size="medium" color="success" disabled={!canEdit} onClick={() => onAssignSpace(person)}>
+                                                            <AssignmentIcon />
+                                                        </IconButton>
+                                                    )}
+                                                    {person.assignedSpaceId && (
+                                                        <IconButton size="medium" color="warning" disabled={!canEdit} onClick={() => onUnassignSpace(person)}>
+                                                            <PersonRemoveIcon />
+                                                        </IconButton>
+                                                    )}
+                                                    <IconButton size="medium" color="primary" disabled={!canEdit} onClick={() => onEdit(person)}>
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton size="medium" color="error" disabled={!canEdit} onClick={() => onDelete(person.id)}>
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </Stack>
+                                            </Stack>
+                                        </Box>
+                                    )}
+                                </Box>
                             );
                         })}
                     </Stack>

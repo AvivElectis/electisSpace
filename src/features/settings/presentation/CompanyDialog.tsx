@@ -37,7 +37,7 @@ export function CompanyDialog({ open, onClose, onSave, company }: CompanyDialogP
             PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined } }}
         >
             {isEdit
-                ? <EditCompanyTabs state={state} onClose={onClose} />
+                ? <EditCompanyTabs state={state} onClose={onClose} open={open} />
                 : <CreateCompanyWizard onClose={onClose} onSave={onSave} />
             }
         </Dialog>

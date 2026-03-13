@@ -45,7 +45,6 @@ import type {
  * Generate random 6-digit code
  */
 function generateCode(): string {
-    const crypto = require('crypto');
     return String(crypto.randomInt(100000, 1000000));
 }
 
@@ -53,7 +52,6 @@ function generateCode(): string {
  * Generate random password
  */
 function generatePassword(): string {
-    const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
     let password = '';
     for (let i = 0; i < 12; i++) {
@@ -245,21 +243,14 @@ export const authService = {
             throw new Error('INVALID_CREDENTIALS');
         }
 
-        // Generate tokens
+        // Generate tokens before the atomic transaction
         const { accessToken, refreshToken } = await this.generateTokens(user.id);
-
-        // Hash refresh token for storage
         const tokenHash = await bcrypt.hash(refreshToken, 10);
         const tokenExpiresAt = new Date(Date.now() + config.jwt.refreshExpiresInMs);
 
-        // Execute transaction
+        // Atomic: verify code + store refresh token + update last login
         try {
-            await authRepository.executeVerify2FATransaction(
-                user.id,
-                code,
-                tokenHash,
-                tokenExpiresAt
-            );
+            await authRepository.executeVerify2FATransaction(user.id, code, tokenHash, tokenExpiresAt);
         } catch (error: any) {
             if (error.message === 'INVALID_CODE') {
                 throw new Error('INVALID_CODE');
@@ -409,12 +400,9 @@ export const authService = {
             throw new Error('INVALID_CODE');
         }
 
-        // Mark code as used
-        await authRepository.markCodeAsUsed(verificationCode.id);
-
-        // Hash and update password
+        // Mark code as used + reset password atomically in one transaction
         const passwordHash = await bcrypt.hash(newPassword, 12);
-        await authRepository.executePasswordResetTransaction(user.id, passwordHash);
+        await authRepository.executePasswordResetTransaction(user.id, passwordHash, verificationCode.id);
 
         try {
             await EmailService.sendPasswordChangedConfirmation(email, user.firstName || undefined);
@@ -579,10 +567,11 @@ export const authService = {
 
         await authRepository.updateDeviceTokenLastUsed(matchingToken.id, ip);
 
-        const { accessToken } = await this.generateTokens(user.id);
+        const { accessToken, refreshToken } = await this.generateTokens(user.id);
 
         return {
             accessToken,
+            refreshToken,
             expiresIn: 900,
             user: await mapUserToInfo(user),
         };

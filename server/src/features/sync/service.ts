@@ -62,9 +62,13 @@ export const syncService = {
 
         const lastSync = await syncRepository.getLastSync(targetStoreIds);
 
-        // Check actual AIMS connection (use first store if multiple)
+        // Check actual AIMS connection
+        // When a specific store is queried, check that store directly;
+        // otherwise fall back to the first store in the user's list
         let aimsConnected = false;
-        if (targetStoreIds.length > 0) {
+        if (queryStoreId) {
+            aimsConnected = await aimsGateway.checkHealth(queryStoreId);
+        } else if (targetStoreIds.length > 0) {
             aimsConnected = await aimsGateway.checkHealth(targetStoreIds[0]);
         }
 
@@ -108,7 +112,7 @@ export const syncService = {
             }
 
             if (input.type === 'push' || input.type === 'full') {
-                const result = await syncQueueProcessor.processPendingItems();
+                const result = await syncQueueProcessor.processPendingItems(input.storeId);
                 resultSummary.articlesPushed = result.succeeded;
             }
 

@@ -482,14 +482,13 @@ export function LabelsPage() {
     };
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, width: '100%' }}>
+        <Box sx={{ width: '100%' }}>
             {/* Header */}
             <Stack
-                direction={isMobile ? 'row' : 'column'}
-                justifyContent={isMobile ? 'space-between' : 'flex-start'}
-                alignItems={isMobile ? 'center' : 'flex-start'}
-                sx={{ mb: { xs: 2, md: 3 } }}
-                gap={1}
+                direction="row"
+                alignItems="center"
+                sx={{ mb: { xs: 2, md: 2 } }}
+                gap={2}
             >
                 <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.25rem', md: '2rem' }, fontWeight: 500 }}>
                     {t('labels.title', 'Labels Management')}
