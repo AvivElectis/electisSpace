@@ -33,6 +33,11 @@ router.get(
             return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'No access to this store' } });
         }
 
+        // Check connection limits BEFORE flushing headers (cannot send 503 after flush)
+        if (!sseManager.canAcceptClient(storeId)) {
+            return res.status(503).json({ error: { code: 'TOO_MANY_CONNECTIONS', message: 'Connection limit reached' } });
+        }
+
         // Set SSE headers
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
@@ -49,6 +54,8 @@ router.get(
 
         const clientId = randomUUID();
 
+        // addClient should always succeed here since we checked canAcceptClient above,
+        // but handle the edge case of a race between the check and add
         const accepted = sseManager.addClient({
             id: clientId,
             res,
@@ -58,7 +65,8 @@ router.get(
         });
 
         if (!accepted) {
-            return res.status(503).json({ error: { code: 'TOO_MANY_CONNECTIONS', message: 'Connection limit reached' } });
+            res.end();
+            return;
         }
 
         // Keep-alive ping every 30 seconds

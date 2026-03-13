@@ -217,6 +217,8 @@ export const conferenceService = {
         return {
             message: 'Page flip successful',
             roomId: existing.id,
+            storeId: existing.storeId,
+            externalId: existing.externalId,
             labelCodes,
             page,
             aimsResponse: result,

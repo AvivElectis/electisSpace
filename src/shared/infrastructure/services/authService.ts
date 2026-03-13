@@ -246,7 +246,7 @@ export const authService = {
      * Called after login to auto-connect to AIMS
      */
     solumConnect: async (storeId: string): Promise<SolumConnectResponse> => {
-        const response = await api.post<SolumConnectResponse>('/auth/solum-connect', { storeId });
+        const response = await api.post<SolumConnectResponse>('/auth/solum-connect', { storeId }, { timeout: 15000 });
         return response.data;
     },
 

@@ -2,6 +2,10 @@ import nodemailer from 'nodemailer';
 import juice from 'juice';
 import { appLogger } from '../infrastructure/services/appLogger.js';
 
+/** Escape HTML special characters to prevent injection in email templates */
+const escapeHtml = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 // Email transporter configuration
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -158,7 +162,7 @@ export class EmailService {
    * Send 2FA verification code email
    */
   static async send2FACode(email: string, code: string, firstName?: string): Promise<void> {
-    const name = firstName || 'משתמש/ת';
+    const name = escapeHtml(firstName || 'משתמש/ת');
     const subject = `קוד אימות: ${code} - electisSpace`;
     
     // Fallback to "User" if name contains non-Hebrew characters and looks like a system name, 
@@ -201,7 +205,7 @@ export class EmailService {
    * Send password reset code email
    */
   static async sendPasswordResetCode(email: string, code: string, firstName?: string): Promise<void> {
-    const name = firstName || 'משתמש/ת';
+    const name = escapeHtml(firstName || 'משתמש/ת');
     const html = `
       <h2>שלום ${name},</h2>
       
@@ -233,8 +237,8 @@ export class EmailService {
     firstName?: string,
     resetByAdmin?: string
   ): Promise<void> {
-    const name = firstName || 'משתמש/ת';
-    const adminInfo = resetByAdmin ? ` על ידי ${resetByAdmin}` : '';
+    const name = escapeHtml(firstName || 'משתמש/ת');
+    const adminInfo = resetByAdmin ? ` על ידי ${escapeHtml(resetByAdmin)}` : '';
     
     const html = `
       <h2>שלום ${name},</h2>
@@ -264,7 +268,7 @@ export class EmailService {
    * Send password changed confirmation email
    */
   static async sendPasswordChangedConfirmation(email: string, firstName?: string): Promise<void> {
-    const name = firstName || 'משתמש/ת';
+    const name = escapeHtml(firstName || 'משתמש/ת');
     const html = `
       <h2>שלום ${name},</h2>
       

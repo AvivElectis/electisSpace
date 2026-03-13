@@ -10,6 +10,7 @@ interface ListsStore {
     saveList: (list: SavedList) => void;
     updateList: (id: string, updates: Partial<SavedList>) => void;
     deleteList: (id: string) => void;
+    clearAllData: () => void;
 
     // Helpers
     getListByName: (name: string) => SavedList | undefined;
@@ -37,6 +38,8 @@ export const useListsStore = create<ListsStore>()(
                     set((state) => ({
                         lists: state.lists.filter((list) => list.id !== id),
                     }), false, 'deleteList'),
+
+                clearAllData: () => set({ lists: [] }, false, 'clearAllData'),
 
                 getListByName: (name) =>
                     get().lists.find(l => l.name.toLowerCase() === name.toLowerCase()),

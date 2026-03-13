@@ -83,7 +83,19 @@ router.post('/verify-2fa', twoFALimiter, authController.verify2FA);
 router.post('/resend-code', twoFALimiter, authController.resendCode);
 
 // POST /auth/refresh - Refresh access token
-router.post('/refresh', authController.refresh);
+const refreshLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 60,
+    message: {
+        error: {
+            code: 'REFRESH_RATE_LIMITED',
+            message: 'Too many token refresh attempts. Please try again later.',
+        },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+router.post('/refresh', refreshLimiter, authController.refresh);
 
 // POST /auth/forgot-password - Request password reset
 router.post('/forgot-password', passwordResetLimiter, authController.forgotPassword);

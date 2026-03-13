@@ -210,16 +210,10 @@ export const authRepository = {
     // ======================
 
     /**
-     * Execute verify 2FA transaction - atomically verify code and update login
+     * Verify 2FA code - atomically find and mark code as used
      */
-    async executeVerify2FATransaction(
-        userId: string,
-        code: string,
-        tokenHash: string,
-        tokenExpiresAt: Date
-    ) {
+    async verify2FACode(userId: string, code: string) {
         return prisma.$transaction(async (tx) => {
-            // Find and validate code
             const verificationCode = await tx.verificationCode.findFirst({
                 where: {
                     userId,
@@ -234,13 +228,45 @@ export const authRepository = {
                 throw new Error('INVALID_CODE');
             }
 
-            // Mark code as used
             await tx.verificationCode.update({
                 where: { id: verificationCode.id },
                 data: { used: true },
             });
 
-            // Store refresh token
+            return true;
+        });
+    },
+
+    /**
+     * Execute verify 2FA transaction - atomically verify code and update login
+     * @deprecated Use verify2FACode + createRefreshToken + updateLastLogin separately
+     */
+    async executeVerify2FATransaction(
+        userId: string,
+        code: string,
+        tokenHash: string,
+        tokenExpiresAt: Date
+    ) {
+        return prisma.$transaction(async (tx) => {
+            const verificationCode = await tx.verificationCode.findFirst({
+                where: {
+                    userId,
+                    code,
+                    type: CodeType.LOGIN_2FA,
+                    used: false,
+                    expiresAt: { gt: new Date() },
+                },
+            });
+
+            if (!verificationCode) {
+                throw new Error('INVALID_CODE');
+            }
+
+            await tx.verificationCode.update({
+                where: { id: verificationCode.id },
+                data: { used: true },
+            });
+
             await tx.refreshToken.create({
                 data: {
                     userId,
@@ -249,7 +275,6 @@ export const authRepository = {
                 },
             });
 
-            // Update last login
             await tx.user.update({
                 where: { id: userId },
                 data: { lastLogin: new Date() },
@@ -262,8 +287,8 @@ export const authRepository = {
     /**
      * Execute password reset transaction
      */
-    async executePasswordResetTransaction(userId: string, passwordHash: string) {
-        return prisma.$transaction([
+    async executePasswordResetTransaction(userId: string, passwordHash: string, verificationCodeId?: string) {
+        const ops: any[] = [
             prisma.user.update({
                 where: { id: userId },
                 data: { passwordHash },
@@ -272,7 +297,14 @@ export const authRepository = {
                 where: { userId },
                 data: { revoked: true },
             }),
-        ]);
+        ];
+        if (verificationCodeId) {
+            ops.push(prisma.verificationCode.update({
+                where: { id: verificationCodeId },
+                data: { used: true },
+            }));
+        }
+        return prisma.$transaction(ops);
     },
 
     // ======================

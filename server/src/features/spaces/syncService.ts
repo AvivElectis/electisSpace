@@ -43,6 +43,15 @@ export const spacesSyncService = {
             const articles = await aimsGateway.pullArticleInfo(storeId);
             result.total = articles.length;
 
+            // Pre-fetch all existing spaces for this store to avoid N+1 queries
+            const existingSpaces = await prisma.space.findMany({
+                where: { storeId },
+                select: { id: true, externalId: true, data: true },
+            });
+            const spacesByExternalId = new Map(
+                existingSpaces.map(s => [s.externalId, s])
+            );
+
             for (const article of articles) {
                 const articleId = article.articleId;
                 if (!articleId) {
@@ -51,9 +60,7 @@ export const spacesSyncService = {
                 }
 
                 try {
-                    const existing = await prisma.space.findFirst({
-                        where: { storeId, externalId: String(articleId) },
-                    });
+                    const existing = spacesByExternalId.get(String(articleId));
 
                     // The /config/article/info endpoint returns data as a nested object
                     const rawData: Record<string, unknown> = article.data && typeof article.data === 'object'

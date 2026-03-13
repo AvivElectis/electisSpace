@@ -3,11 +3,11 @@
  * Handles file system operations for import/export
  */
 
-import { useFileSystem } from '@shared/infrastructure/platform/fileSystemAdapter';
+import { getFileSystem } from '@shared/infrastructure/platform/fileSystemAdapter';
 import type { ExportedData } from '../domain/types';
 
 export class ImportExportFileAdapter {
-    private fs = useFileSystem();
+    private fs = getFileSystem();
 
     /**
      * Save exported data to file

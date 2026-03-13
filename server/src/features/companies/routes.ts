@@ -5,7 +5,7 @@
  * All business logic lives in service.ts, all data access in repository.ts.
  */
 import { Router } from 'express';
-import { authenticate, restrictAppViewer, requireGlobalRole } from '../../shared/middleware/index.js';
+import { authenticate, restrictAppViewer, requireGlobalRole, requirePermission } from '../../shared/middleware/index.js';
 import { companyController } from './controller.js';
 
 const router = Router();
@@ -56,15 +56,15 @@ router.post('/', requireGlobalRole('PLATFORM_ADMIN'), companyController.create);
 
 /**
  * PATCH /companies/:id
- * Update company basic info
+ * Update company basic info (requires settings:write — controller also checks canManageCompany)
  */
-router.patch('/:id', companyController.update);
+router.patch('/:id', requirePermission('settings', 'edit'), companyController.update);
 
 /**
  * PATCH /companies/:id/aims
- * Update AIMS configuration
+ * Update AIMS configuration (requires settings:write — controller also checks canManageCompany)
  */
-router.patch('/:id/aims', companyController.updateAimsConfig);
+router.patch('/:id/aims', requirePermission('settings', 'edit'), companyController.updateAimsConfig);
 
 /**
  * POST /companies/:id/aims/test

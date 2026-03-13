@@ -288,7 +288,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await fetchAllPages(config, newToken);
+                    return await fetchAllPages(storeConfig.config, newToken);
                 }
             }
             throw error;
@@ -324,11 +324,12 @@ export class AIMSGateway {
                     if (storeConfig) {
                         this.invalidateToken(storeConfig.companyId);
                         const newToken = await this.getToken(storeConfig.companyId);
+                        const freshConfig = storeConfig.config;
                         // Retry current batch
-                        await solumService.pushArticles(config, newToken, batch);
+                        await solumService.pushArticles(freshConfig, newToken, batch);
                         // Continue remaining batches with new token
                         for (let j = idx + 1; j < batches.length; j++) {
-                            await solumService.pushArticles(config, newToken, batches[j]);
+                            await solumService.pushArticles(freshConfig, newToken, batches[j]);
                         }
                         return;
                     }
@@ -353,7 +354,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    await solumService.deleteArticles(config, newToken, articleIds);
+                    await solumService.deleteArticles(storeConfig.config, newToken, articleIds);
                     return;
                 }
             }
@@ -379,7 +380,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchAllArticleInfo(config, newToken);
+                    return await solumService.fetchAllArticleInfo(storeConfig.config, newToken);
                 }
             }
             throw error;
@@ -559,7 +560,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchAllLabels(config, newToken);
+                    return await solumService.fetchAllLabels(storeConfig.config, newToken);
                 }
             }
             throw error;
@@ -580,7 +581,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchUnassignedLabels(config, newToken);
+                    return await solumService.fetchUnassignedLabels(storeConfig.config, newToken);
                 }
             }
             throw error;
@@ -601,7 +602,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchLabelImages(config, newToken, labelCode);
+                    return await solumService.fetchLabelImages(storeConfig.config, newToken, labelCode);
                 }
             }
             throw error;
@@ -700,7 +701,7 @@ export class AIMSGateway {
                     if (storeConfig) {
                         this.invalidateToken(storeConfig.companyId);
                         const newToken = await this.getToken(storeConfig.companyId);
-                        return await solumService.linkLabel(config, newToken, labelCode, articleId, templateName);
+                        return await solumService.linkLabel(storeConfig.config, newToken, labelCode, articleId, templateName);
                     }
                 }
 
@@ -732,7 +733,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.unlinkLabel(config, newToken, labelCode);
+                    return await solumService.unlinkLabel(storeConfig.config, newToken, labelCode);
                 }
             }
             throw error;
@@ -753,7 +754,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchLabelTypeInfo(config, newToken, labelCode);
+                    return await solumService.fetchLabelTypeInfo(storeConfig.config, newToken, labelCode);
                 }
             }
             throw error;
@@ -774,7 +775,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.pushLabelImage(config, newToken, request);
+                    return await solumService.pushLabelImage(storeConfig.config, newToken, request);
                 }
             }
             throw error;
@@ -795,7 +796,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.fetchDitherPreview(config, newToken, labelCode, request);
+                    return await solumService.fetchDitherPreview(storeConfig.config, newToken, labelCode, request);
                 }
             }
             throw error;
@@ -816,7 +817,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.blinkLabel(config, newToken, labelCode);
+                    return await solumService.blinkLabel(storeConfig.config, newToken, labelCode);
                 }
             }
             throw error;
@@ -834,7 +835,7 @@ export class AIMSGateway {
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
                     const newToken = await this.getToken(storeConfig.companyId);
-                    return await fn(newToken, config);
+                    return await fn(newToken, storeConfig.config);
                 }
             }
             throw error;

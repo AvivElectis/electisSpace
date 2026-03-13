@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import app from './app.js';
 import { config, prisma, closeRedis } from './config/index.js';
+import { appLogger } from './shared/infrastructure/services/appLogger.js';
 import { syncQueueProcessor } from './shared/infrastructure/jobs/SyncQueueProcessor.js';
 // NOTE: AimsVerificationJob disabled — the AimsSyncReconciliationJob (below)
 // already handles full DB→AIMS reconciliation every 60s, making verification
@@ -30,7 +31,7 @@ async function ensureAdminUser() {
                 isActive: true,
             },
         });
-        console.log(`✅ Admin user created: ${email}`);
+        appLogger.info('Server', `Admin user created: ${email}`);
         return;
     }
 
@@ -42,7 +43,7 @@ async function ensureAdminUser() {
             where: { id: existing.id },
             data: { passwordHash },
         });
-        console.log(`✅ Admin password updated for: ${email}`);
+        appLogger.info('Server', `Admin password updated for: ${email}`);
     }
 }
 
@@ -50,62 +51,49 @@ const startServer = async () => {
     try {
         // Test database connection
         await prisma.$connect();
-        console.log('✅ Database connected');
+        appLogger.info('Server', 'Database connected');
 
         // Ensure admin user exists with correct password
         await ensureAdminUser();
 
         // Start background jobs
         syncQueueProcessor.start(10000); // Process sync queue every 10 seconds
-        console.log('✅ Sync Queue Processor started');
+        appLogger.info('Server', 'Sync Queue Processor started');
 
         aimsPullSyncJob.start(60 * 1000); // Reconcile DB→AIMS every 60 seconds
-        console.log('✅ AIMS Reconciliation Job started');
+        appLogger.info('Server', 'AIMS Reconciliation Job started');
 
         // Start HTTP server
         const server = app.listen(config.port, () => {
-            console.log(`
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║   🚀 electisSpace Server                                   ║
-║                                                            ║
-║   Environment: ${config.isDev ? 'Development' : 'Production'}                              ║
-║   Port:        ${config.port}                                        ║
-║   API Version: ${config.apiVersion}                                          ║
-║                                                            ║
-║   Health:      http://localhost:${config.port}/health                  ║
-║   API:         http://localhost:${config.port}/api/${config.apiVersion}                   ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-      `);
+            appLogger.info('Server', `electisSpace Server started — env=${config.isDev ? 'Development' : 'Production'} port=${config.port} api=${config.apiVersion}`);
         });
 
         // Graceful shutdown
         const shutdown = async (signal: string) => {
-            console.log(`\n${signal} received. Shutting down gracefully...`);
+            appLogger.info('Server', `${signal} received. Shutting down gracefully...`);
 
             // Stop background jobs first
             syncQueueProcessor.stop();
-            console.log('Sync Queue Processor stopped');
+            appLogger.info('Server', 'Sync Queue Processor stopped');
 
             aimsPullSyncJob.stop();
-            console.log('AIMS Reconciliation Job stopped');
+            appLogger.info('Server', 'AIMS Reconciliation Job stopped');
 
             server.close(async () => {
-                console.log('HTTP server closed');
+                appLogger.info('Server', 'HTTP server closed');
 
                 await prisma.$disconnect();
-                console.log('Database disconnected');
+                appLogger.info('Server', 'Database disconnected');
 
                 await closeRedis();
-                console.log('Redis disconnected');
+                appLogger.info('Server', 'Redis disconnected');
 
                 process.exit(0);
             });
 
             // Force exit after 10 seconds
             setTimeout(() => {
-                console.error('Forced shutdown after timeout');
+                appLogger.error('Server', 'Forced shutdown after timeout');
                 process.exit(1);
             }, 10000);
         };
@@ -114,7 +102,7 @@ const startServer = async () => {
         process.on('SIGINT', () => shutdown('SIGINT'));
 
     } catch (error) {
-        console.error('❌ Failed to start server:', error);
+        appLogger.error('Server', 'Failed to start server', { error });
         process.exit(1);
     }
 };

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dashboard mobile carousel** — swipeable horizontal gallery with dot indicators replaces vertical scroll for dashboard sections on mobile
 - **Auto-submit label linking** — LinkLabelDialog automatically submits when both a valid label code and article are present
 - **Space edit dialog DB ID** — edit dialog shows internal DB ID as small footer text for debugging
+- **Improvement plan document** — `docs/gui-improvement-plan.md` tracks deferred GUI and security improvements
 
 ### Changed
 - **AIMS sync: spaces mode redesign** — AIMS is now the source of truth for spaces mode. Extra articles in AIMS are imported into the DB instead of being deleted from AIMS. Deletion from AIMS only occurs via explicit user action (e.g., deleting a space in the app). People mode behavior is unchanged.
@@ -32,6 +33,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Stale closure in field mapping refetch** — `handleRefetchArticleFormat` now uses functional setState to avoid capturing stale `fieldMapping`
 - **CSV double-quote unescaping** — AIMS pull sync now correctly unescapes CSV-style `"ד""ר"` → `ד"ר`
 - **Spaces Name column in spaces mode** — dedicated Name column only shows in people mode; in spaces mode, articleName is a regular mapped field
+
+## [2.11.0] — 2026-03-13 — GUI & Security Optimization
+
+### Changed
+- **Feature page headers** — action buttons now appear inline alongside page headers instead of below them on all pages (Dashboard, People, Spaces, Conference, Labels, AIMS Management)
+- **Content max-width** — main content area capped at `xl` (1536px) to prevent extreme line lengths on wide monitors
+- **Desktop tab spacing** — reduced vertical gap between navigation tabs and page content by ~48px
+- **Mobile nav drawer** — removed double padding on drawer items for standard touch target sizing
+- **Labels page padding** — removed duplicate outer padding that was doubling the Container spacing
+- **Dashboard grid** — AIMS card now uses `md: 6` (half width) instead of full width for balanced 2×2 grid
+- **Hero stat boxes** — `background.default` replaced with `action.hover` for correct theme semantics inside Card surfaces
+- **Settings sidebar** — widened from 180/220px to 200/240px to accommodate translated labels
+- **Card hover shadows** — hardcoded `#6666663b` replaced with `theme.palette.action.focus` (dark mode safe) across 4 files
+- **Header icon shadows** — hardcoded `rgba(0,0,0,0.51)` replaced with MUI `boxShadow: 1` (theme-aware)
+- **People search field** — `borderRadius: 4` normalized to `2` to match all other search fields
+- **Empty states** — Spaces and Conference pages now use the shared `EmptyState` component with icons and action buttons
+- **Conference simple mode** — header now matches full mode pattern (inline row with add button)
+- **SSE list events** — batched 3 separate Zustand `setState` calls into 1 to reduce re-renders
+
+### Fixed
+- **Refresh token leak** — `/auth/refresh` endpoint now strips `refreshToken` from response body (was only stripped on `verify2FA` and `deviceAuth`)
+- **Atomic password reset** — verification code invalidation and password update now execute in a single `$transaction` to prevent lockout on partial failure
+- **Company PATCH authorization** — added `requirePermission('settings', 'edit')` middleware to `PATCH /companies/:id` and `PATCH /companies/:id/aims` routes
+- **virtualSpaceId race condition** — replaced count-based TOCTOU-vulnerable ID generation with UUID-based approach
+- **Sync access control** — removed overly-permissive `allStoresAccess` fallback that could grant cross-company sync access
+- **JWT token logging** — SSE query parameter tokens now masked (`token=***`) in HTTP access logs
+- **People delete SSE** — `getById` error no longer silently swallowed, preventing missed SSE broadcast notifications
+- **EditCompanyTabs setTimeout leak** — field mapping saved timer now cleared on unmount via `useRef`
+- **LabelImagePreview stale fetch** — added `AbortController` to cancel in-flight fetches when label changes
+- **Image cache unbounded growth** — module-level label image cache now capped at 200 entries with FIFO eviction
+- **SSE stale token** — proactive token refresh now dispatches `auth:token-refreshed` event to trigger SSE reconnection
+- **Company settings fetch race** — added `cancelled` guard to catch handler
+- **AppHeader title alignment** — removed contradictory `textAlign: 'center'` that conflicted with `alignItems: 'flex-start'`
+
+### Security
+- **Rate limiting** — added rate limiter to `POST /auth/refresh` (60 req/15min)
+- **Settings read permission** — added `requirePermission('settings', 'read')` to GET settings endpoints
+- **Email template injection** — HTML-escaped all user-provided values in email templates
 
 ## [2.10.0] — 2026-03-04 — Company Wizard & Feature Gating
 

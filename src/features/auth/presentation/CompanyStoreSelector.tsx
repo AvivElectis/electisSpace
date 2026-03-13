@@ -58,12 +58,13 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
 
     const handleCompanySelect = async (companyId: string) => {
         if (companyId === activeCompany?.id) return;
-        
+
         setSwitching(true);
         try {
             await setActiveCompany(companyId);
         } finally {
             setSwitching(false);
+            handleClose();
         }
     };
 

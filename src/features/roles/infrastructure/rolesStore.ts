@@ -13,6 +13,7 @@ interface RolesState {
     createRole: (data: { name: string; description?: string; companyId?: string | null; permissions: Record<string, string[]> }) => Promise<Role>;
     updateRole: (id: string, data: { name?: string; description?: string | null; permissions?: Record<string, string[]> }) => Promise<Role>;
     deleteRole: (id: string) => Promise<void>;
+    clearAllData: () => void;
 }
 
 export const useRolesStore = create<RolesState>((set, get) => ({
@@ -56,4 +57,6 @@ export const useRolesStore = create<RolesState>((set, get) => ({
         await rolesApi.remove(id);
         set({ roles: get().roles.filter(r => r.id !== id) });
     },
+
+    clearAllData: () => set({ roles: [], permissionsMatrix: null, error: null }),
 }));

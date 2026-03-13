@@ -67,6 +67,11 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
     // Initialize form when dialog opens
     useEffect(() => {
         if (open) {
+            // Clear any lingering health-check interval from a previous open
+            if (healthCheckIntervalRef.current) {
+                clearInterval(healthCheckIntervalRef.current);
+                healthCheckIntervalRef.current = null;
+            }
             setConnectionTestResult(null);
             setIsConnected(false);
             setError(null);
@@ -130,15 +135,21 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         };
     }, []);
 
+    // Track whether dialog is open to prevent async callbacks after close
+    const dialogOpenRef = useRef(false);
+    dialogOpenRef.current = open;
+
     // Edit Mode Helpers
     const checkConnectionStatus = async (companyId: string) => {
         try {
             const result = await fieldMappingService.testAimsConnection(companyId);
+            if (!dialogOpenRef.current) return;
             setIsConnected(result.success);
             if (result.success) {
                 startHealthCheck(companyId);
             }
         } catch {
+            if (!dialogOpenRef.current) return;
             setIsConnected(false);
         }
     };
@@ -226,6 +237,7 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         setTestingConnection(true);
         setConnectionTestResult(null);
         try {
+            // If AIMS fields changed, save creds first then test; only persist if test succeeds
             if (aimsChanged && aimsBaseUrl && aimsCluster && aimsUsername) {
                 const aimsData: UpdateAimsConfigDto = {
                     baseUrl: aimsBaseUrl.trim(),
@@ -233,13 +245,14 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                     username: aimsUsername.trim()
                 };
                 if (aimsPassword) aimsData.password = aimsPassword;
+                // Save creds so the server-side test uses the new values
                 await companyService.updateAimsConfig(company.id, aimsData);
-                setAimsChanged(false);
             }
             const result = await fieldMappingService.testAimsConnection(company.id);
             setConnectionTestResult({ success: result.success, message: result.message });
             if (result.success) {
                 setIsConnected(true);
+                setAimsChanged(false);
                 startHealthCheck(company.id);
             } else {
                 setIsConnected(false);
@@ -327,6 +340,6 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         activeTab, setActiveTab,
         testingConnection, connectionTestResult, setConnectionTestResult,
         isConnected, handleTestConnection, handleDisconnect,
-        isEditValid, handleEditSubmit,
+        isEditValid, handleEditSubmit, checkConnectionStatus,
     };
 }

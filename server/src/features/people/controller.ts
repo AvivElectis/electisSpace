@@ -129,7 +129,12 @@ export const peopleController = {
             const user = getUserContext(req);
             
             // Get person's storeId before deleting (for SSE broadcast)
-            const personForStore = await peopleService.getById(id, user).catch(() => null);
+            let personForStore: any = null;
+            try {
+                personForStore = await peopleService.getById(id, user);
+            } catch {
+                // Person lookup failed — delete will also fail if not found
+            }
             await peopleService.delete(id, user);
             res.status(204).send();
 

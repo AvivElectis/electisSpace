@@ -98,7 +98,7 @@ export function AimsManagementPage() {
         boxShadow: 'none',
         bgcolor: 'transparent',
         border: 'none',
-        '&:hover': { boxShadow: '0px 0px 1px 1px #6666663b' },
+        '&:hover': { boxShadow: (theme: any) => `0px 0px 1px 1px ${theme.palette.action.focus}` },
     }), []);
 
     if (!isAppReady || !activeStoreId) {
@@ -126,11 +126,10 @@ export function AimsManagementPage() {
         <Box dir={isRtl ? 'rtl' : 'ltr'} sx={{ '& .MuiTableCell-root': { textAlign: 'start' } }}>
             {/* Header Section */}
             <Stack
-                direction="column"
-                justifyContent="flex-start"
-                alignItems="flex-start"
+                direction="row"
+                alignItems="center"
                 gap={2}
-                sx={{ mb: 3 }}
+                sx={{ mb: 2 }}
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
@@ -145,7 +144,7 @@ export function AimsManagementPage() {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => setRegisterDialogOpen(true)}
-                        sx={{ minWidth: { xs: '100%', sm: '140px' }, display: { xs: 'none', md: 'inline-flex' } }}
+                        sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
                     >
                         {t('aims.registerGateway')}
                     </Button>

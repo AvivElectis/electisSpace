@@ -71,10 +71,21 @@ function getCachedUser(userId: string): UserContext | null {
 }
 
 function setCachedUser(userId: string, context: UserContext): void {
-    // Evict oldest entries if cache is full
+    // Evict expired or oldest entries if cache is full
     if (userCache.size >= USER_CACHE_MAX_SIZE) {
-        const firstKey = userCache.keys().next().value;
-        if (firstKey) userCache.delete(firstKey);
+        const now = Date.now();
+        let evicted = false;
+        for (const [key, entry] of userCache) {
+            if (entry.expiresAt <= now) {
+                userCache.delete(key);
+                evicted = true;
+                break;
+            }
+        }
+        if (!evicted) {
+            const firstKey = userCache.keys().next().value;
+            if (firstKey) userCache.delete(firstKey);
+        }
     }
     userCache.set(userId, {
         context,
@@ -89,6 +100,7 @@ export function invalidateUserCache(userId: string): void {
 
 // ---- Role permissions cache ----
 const ROLE_CACHE_TTL_MS = 60_000;
+const ROLE_CACHE_MAX_SIZE = 200;
 const rolePermissionsCache = new Map<string, { permissions: PermissionsMap; expiresAt: number }>();
 
 async function getRolePermissions(roleId: string): Promise<PermissionsMap> {
@@ -101,6 +113,22 @@ async function getRolePermissions(roleId: string): Promise<PermissionsMap> {
         select: { permissions: true },
     });
     const permissions = (role?.permissions || {}) as PermissionsMap;
+    if (rolePermissionsCache.size >= ROLE_CACHE_MAX_SIZE) {
+        // Evict expired entries first, then oldest
+        const now = Date.now();
+        let evicted = false;
+        for (const [key, entry] of rolePermissionsCache) {
+            if (now >= entry.expiresAt) {
+                rolePermissionsCache.delete(key);
+                evicted = true;
+                break;
+            }
+        }
+        if (!evicted) {
+            const firstKey = rolePermissionsCache.keys().next().value;
+            if (firstKey) rolePermissionsCache.delete(firstKey);
+        }
+    }
     rolePermissionsCache.set(roleId, { permissions, expiresAt: Date.now() + ROLE_CACHE_TTL_MS });
     return permissions;
 }
@@ -265,7 +293,8 @@ export const restrictAppViewer = () => {
         if (req.user.globalRole === GlobalRole.APP_VIEWER && req.method !== 'GET') {
             // Use originalUrl for correct matching across sub-routers
             const url = req.originalUrl || req.url;
-            const isSelfService = APP_VIEWER_SELF_SERVICE_PATTERNS.some(p => url.includes(p));
+            const normalizedUrl = url.split('?')[0]; // strip query params before matching
+            const isSelfService = APP_VIEWER_SELF_SERVICE_PATTERNS.some(p => normalizedUrl.endsWith(p));
 
             if (!isSelfService) {
                 next(forbidden('App Viewer accounts have read-only access'));

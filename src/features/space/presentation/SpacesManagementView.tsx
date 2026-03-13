@@ -45,6 +45,7 @@ import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGu
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { EmptyState } from '@shared/presentation/components/EmptyState';
 
 import { SpacesSyncPanel } from './SpacesSyncPanel';
 
@@ -229,13 +230,14 @@ function SpacesDesktopTable({
                     ))}
                 </Box>
             ) : spaces.length === 0 ? (
-                <Box sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                        {searchQuery
-                            ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
-                            : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
-                    </Typography>
-                </Box>
+                <EmptyState
+                    icon={<FolderIcon sx={{ fontSize: 80 }} />}
+                    title={searchQuery
+                        ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
+                        : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
+                    actionLabel={!searchQuery && canEdit ? getLabel('add') : undefined}
+                    onAction={!searchQuery && canEdit ? handleAdd : undefined}
+                />
             ) : (
                 <TypedVirtualList
                     rowCount={spaces.length}
@@ -328,6 +330,11 @@ export function SpacesManagementView() {
     const [searchOpen, setSearchOpen] = useState(false);
     const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
+    // Sync lists panel expanded state when viewport changes (e.g., tablet rotation)
+    useEffect(() => {
+        setListsPanelExpanded(!isMobile);
+    }, [isMobile]);
+
     // Fetch spaces from Server DB when app is ready or store changes
     useEffect(() => {
         if (isAppReady && activeStoreId) {
@@ -400,7 +407,7 @@ export function SpacesManagementView() {
                 return (
                     (space.externalId || space.id).toLowerCase().includes(query) ||
                     Object.values(space.data).some((value) =>
-                        value.toLowerCase().includes(query)
+                        String(value).toLowerCase().includes(query)
                     )
                 );
             });
@@ -490,14 +497,8 @@ export function SpacesManagementView() {
     return (
         <Box>
             {/* Header Section */}
-            <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                gap={1}
-                sx={{ mb: { xs: 2, sm: 3 } }}
-            >
-                <Box sx={{ minWidth: 0 }}>
+            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 } }}>
+                <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                         {getLabel('plural')}
                     </Typography>
@@ -505,20 +506,17 @@ export function SpacesManagementView() {
                         {t('spaces.total')} {getLabel('plural')} - {spaceController.spaces.length}
                     </Typography>
                 </Box>
+
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleAdd}
                     disabled={!canEdit}
-                    size="small"
-                    sx={{ flexShrink: 0, whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
+                    sx={{ whiteSpace: 'nowrap', minHeight: 44, px: 3, display: { xs: 'none', md: 'inline-flex' } }}
                 >
                     {getLabel('add')}
                 </Button>
             </Stack>
-
-            {/* AIMS Sync Panel — desktop: above table, mobile: below table */}
-            {!isMobile && <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />}
 
             {/* List Management Panel — desktop: above table, mobile: below table */}
             {!isMobile && (
@@ -671,7 +669,7 @@ export function SpacesManagementView() {
 
                                 return (
                                     <Box
-                                        key={`${space.id}-${index}`}
+                                        key={space.id}
                                         sx={{
                                             borderRadius: 3,
                                             bgcolor: 'background.paper',
@@ -796,64 +794,63 @@ export function SpacesManagementView() {
                     onDelete={handleDelete}
                 />)
             )}
-            {/* Mobile: panels below table */}
+            {/* Panels below table — both desktop and mobile */}
             {isMobile && (
-                <>
-                    <Paper sx={{ mb: 2, mt: 2, overflow: 'hidden' }}>
-                        <Stack
-                            direction="row"
-                            alignItems="center"
-                            justifyContent="space-between"
-                            sx={{ px: 2, py: 1, bgcolor: 'action.hover', cursor: 'pointer' }}
-                            onClick={() => setListsPanelExpanded(!listsPanelExpanded)}
-                        >
-                            <Stack direction="row" alignItems="center" gap={1}>
-                                <ListAltIcon fontSize="small" color="action" />
-                                <Typography variant="subtitle2">{t('lists.manage')}</Typography>
-                            </Stack>
-                            <IconButton size="small">
-                                {listsPanelExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                            </IconButton>
+                <Paper sx={{ mb: 2, mt: 2, overflow: 'hidden' }}>
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ px: 2, py: 1, bgcolor: 'action.hover', cursor: 'pointer' }}
+                        onClick={() => setListsPanelExpanded(!listsPanelExpanded)}
+                    >
+                        <Stack direction="row" alignItems="center" gap={1}>
+                            <ListAltIcon fontSize="small" color="action" />
+                            <Typography variant="subtitle2">{t('lists.manage')}</Typography>
                         </Stack>
-                        <Collapse in={listsPanelExpanded}>
-                            <Box sx={{ p: 2 }}>
-                                <Stack direction="row" gap={1} flexWrap="wrap">
+                        <IconButton size="small">
+                            {listsPanelExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                    </Stack>
+                    <Collapse in={listsPanelExpanded}>
+                        <Box sx={{ p: 2 }}>
+                            <Stack direction="row" gap={1} flexWrap="wrap">
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<FolderIcon />}
+                                    onClick={() => setListsManagerOpen(true)}
+                                >
+                                    {t('lists.manage')}
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<SaveIcon />}
+                                    onClick={() => setSaveListOpen(true)}
+                                >
+                                    {t('lists.saveAsNew')}
+                                </Button>
+                                {activeListId && (
                                     <Button
                                         variant="outlined"
-                                        startIcon={<FolderIcon />}
-                                        onClick={() => setListsManagerOpen(true)}
-                                    >
-                                        {t('lists.manage')}
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
+                                        color="success"
                                         startIcon={<SaveIcon />}
-                                        onClick={() => setSaveListOpen(true)}
+                                        disabled={!pendingChanges}
+                                        onClick={() => {
+                                            if (activeListId) {
+                                                saveListChanges(activeListId);
+                                            }
+                                        }}
                                     >
-                                        {t('lists.saveAsNew')}
+                                        {t('lists.saveChanges')}
                                     </Button>
-                                    {activeListId && (
-                                        <Button
-                                            variant="outlined"
-                                            color="success"
-                                            startIcon={<SaveIcon />}
-                                            disabled={!pendingChanges}
-                                            onClick={() => {
-                                                if (activeListId) {
-                                                    saveListChanges(activeListId);
-                                                }
-                                            }}
-                                        >
-                                            {t('lists.saveChanges')}
-                                        </Button>
-                                    )}
-                                </Stack>
-                            </Box>
-                        </Collapse>
-                    </Paper>
-                    <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
-                </>
+                                )}
+                            </Stack>
+                        </Box>
+                    </Collapse>
+                </Paper>
             )}
+            {/* AIMS Sync Panel — always at page bottom */}
+            <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
             {/* Mobile FAB — Add Space */}
             {isMobile && (
                 <Fab

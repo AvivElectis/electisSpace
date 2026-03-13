@@ -57,7 +57,7 @@ export function DashboardConferenceCard({
                     </Stack>
 
                     {/* Hero number */}
-                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, mb: 2 }}>
+                    <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
                         <Typography variant="h2" fontWeight={700} color="primary.main">
                             {totalRooms}
                         </Typography>
@@ -147,7 +147,7 @@ export function DashboardConferenceCard({
                 </Stack>
 
                 <Stack gap={2}>
-                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2 }}>
+                    <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                             {t('dashboard.totalRooms', 'Total Rooms')}
                         </Typography>
