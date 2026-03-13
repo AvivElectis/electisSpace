@@ -99,7 +99,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                     </Stack>
 
                     {/* Hero — gateway health */}
-                    <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, mb: 2 }}>
+                    <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
                         <Typography variant="h2" fontWeight={700} color="primary.main" dir="ltr">
                             {gwTotal}
                         </Typography>
@@ -242,7 +242,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                 <Grid container spacing={1.5}>
                     {/* Gateway Health */}
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, height: '100%' }}>
                             <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
                                 <SectionIcon icon={<RouterIcon sx={{ color: 'white', fontSize: 16 }} />} bgcolor="primary.main" />
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.gatewayHealth')}</Typography>
@@ -257,7 +257,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
 
                     {/* Label Health */}
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, height: '100%' }}>
                             <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
                                 <SectionIcon icon={<LabelIcon sx={{ color: 'white', fontSize: 16 }} />} bgcolor="info.main" />
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelHealth')}</Typography>
@@ -272,7 +272,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
 
                     {/* Update Progress */}
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, height: '100%' }}>
                             <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
                                 <SectionIcon icon={<UpdateOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="success.main" />
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.productUpdates')}</Typography>
@@ -289,7 +289,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
 
                     {/* Battery Health */}
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, height: '100%' }}>
                             <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
                                 <SectionIcon icon={<BatteryChargingFullOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="warning.main" />
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.batteryHealth')}</Typography>
@@ -307,7 +307,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
 
                     {/* Signal Quality */}
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, height: '100%' }}>
                             <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
                                 <SectionIcon icon={<SignalCellularAltOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="info.main" />
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.signalDistribution')}</Typography>
@@ -326,7 +326,7 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
 
                     {/* Label Models */}
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
+                        <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, height: '100%' }}>
                             <Stack direction="row" alignItems="center" gap={0.75} sx={{ mb: 1 }}>
                                 <SectionIcon icon={<CategoryOutlined sx={{ color: 'white', fontSize: 16 }} />} bgcolor="secondary.main" />
                                 <Typography variant="subtitle2" fontWeight={600}>{t('aims.labelTypes')}</Typography>

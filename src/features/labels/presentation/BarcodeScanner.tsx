@@ -136,6 +136,7 @@ export function BarcodeScanner({ open, onClose, onScan, title, placeholder }: Ba
                 if (barcodes.length > 0) {
                     const code = barcodes[0].rawValue;
                     logger.info('BarcodeScanner', 'Barcode detected', { value: code });
+                    stopCamera(); // Stop camera tracks immediately before unmount
                     onScan(code);
                     onClose();
                     return; // Stop the loop

@@ -20,6 +20,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig, SolumFieldMapping } from '@features/settings/domain/types';
+import { generateInitialMapping } from '@features/settings/domain/generateInitialMapping';
 
 interface FieldMappingStepProps {
     articleFormat: ArticleFormat | null;
@@ -29,29 +30,6 @@ interface FieldMappingStepProps {
     isPeopleMode?: boolean;
     /** Show conference room name field selector */
     isConferenceEnabled?: boolean;
-}
-
-/** Generate initial mapping from article format data fields */
-function generateInitialMapping(articleFormat: ArticleFormat): SolumMappingConfig {
-    const fields: Record<string, SolumFieldMapping> = {};
-    (articleFormat.articleData || []).forEach((field, index) => {
-        fields[field] = {
-            friendlyNameEn: field,
-            friendlyNameHe: field,
-            visible: true,
-            order: index,
-        };
-    });
-    return {
-        uniqueIdField: articleFormat.mappingInfo?.articleId || articleFormat.articleData?.[0] || '',
-        fields,
-        conferenceMapping: {
-            meetingName: '',
-            meetingTime: '',
-            participants: '',
-        },
-        mappingInfo: articleFormat.mappingInfo,
-    };
 }
 
 export function FieldMappingStep({

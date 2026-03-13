@@ -11,8 +11,33 @@ import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
 import { useConferenceStore } from '@features/conference/infrastructure/conferenceStore';
 import { useLabelsStore } from '@features/labels/infrastructure/labelsStore';
+import { useRolesStore } from '@features/roles/infrastructure/rolesStore';
+import { useAimsManagementStore } from '@features/aims-management/infrastructure/aimsManagementStore';
+import { useOfflineQueueStore } from '@features/sync/infrastructure/offlineQueueStore';
+import { useListsStore } from '@features/lists/infrastructure/listsStore';
+import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import { AxiosError } from 'axios';
+
+/**
+ * Clear all feature data stores to prevent cross-store/company data leaks.
+ * Called on every company, store, or context switch.
+ */
+const clearAllFeatureStores = () => {
+    try {
+        useSpacesStore.getState().clearAllData();
+        usePeopleStore.getState().clearAllData();
+        useConferenceStore.getState().clearAllData();
+        useLabelsStore.getState().clearAllData();
+        useRolesStore.getState().clearAllData();
+        useAimsManagementStore.getState().reset();
+        useOfflineQueueStore.getState().clearItems();
+        useListsStore.getState().clearAllData();
+        useSyncStore.getState().setWorkingMode('SOLUM_API');
+    } catch (e) {
+        logger.warn('AuthStore', 'Failed to clear feature stores', { error: e instanceof Error ? e.message : String(e) });
+    }
+};
 
 // Result type for session validation
 export interface ValidationResult {
@@ -178,8 +203,6 @@ const autoConnectToSolum = async (storeId: string): Promise<void> => {
         // Log but don't throw - this is a background operation
         const message = error instanceof Error ? error.message : 'Unknown error';
         logger.warn('AuthStore', 'Auto SOLUM connect failed', { error: message });
-        // User can still manually connect via Settings if server-side credentials aren't configured
-        throw error;
     }
 };
 
@@ -194,6 +217,7 @@ interface AuthState {
     isInitialized: boolean; // Whether session restore has been attempted
     isAppReady: boolean; // Whether app is fully initialized (auth + settings loaded)
     isSwitchingStore: boolean; // True while store/company switch is in progress
+    tokenVersion: number; // Incremented on each token refresh, used for SSE reconnect
 
     // Derived context (from user)
     activeCompanyId: string | null;
@@ -237,6 +261,7 @@ export const useAuthStore = create<AuthState>()(
                 isInitialized: false,
                 isAppReady: false,
                 isSwitchingStore: false,
+                tokenVersion: 0,
 
                 // Actions
                 login: async (credentials: AuthCredentials): Promise<boolean> => {
@@ -449,6 +474,7 @@ export const useAuthStore = create<AuthState>()(
                             lastValidation: Date.now(),
                             activeCompanyId,
                             activeStoreId,
+                            tokenVersion: get().tokenVersion + 1,
                         }, false, 'validateSession/success');
                         return { valid: true, networkError: false };
                     } catch (error) {
@@ -496,15 +522,23 @@ export const useAuthStore = create<AuthState>()(
                         settingsStore.setActiveStoreId(null);
 
                         // Clear all data stores — company changed, old store data is stale
-                        try {
-                            useSpacesStore.getState().clearAllData();
-                            usePeopleStore.getState().clearAllData();
-                            useConferenceStore.getState().clearAllData();
-                            useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
-                            // Clear stale AIMS field mappings from previous company
-                            settingsStore.clearFieldMappings();
-                        } catch (e) {
-                            logger.warn('AuthStore', 'Failed to clear data stores on company switch', { error: e instanceof Error ? e.message : String(e) });
+                        clearAllFeatureStores();
+                        settingsStore.clearFieldMappings();
+                        // Also clear stale article format from previous company
+                        settingsStore.updateSettings({ solumArticleFormat: undefined });
+
+                        // Fetch company-level settings (logos, features, branding)
+                        // so UI updates immediately without waiting for a store selection
+                        if (companyId) {
+                            try {
+                                const { settingsService } = await import('@shared/infrastructure/services/settingsService');
+                                const res = await settingsService.getCompanySettings(companyId);
+                                if (res.settings && Object.keys(res.settings).length > 0) {
+                                    settingsStore.updateSettings(res.settings as Record<string, unknown>);
+                                }
+                            } catch (e) {
+                                logger.warn('AuthStore', 'Company settings fetch on switch failed', { error: e instanceof Error ? e.message : String(e) });
+                            }
                         }
                     } catch (error) {
                         const message = getErrorMessage(error, 'Failed to switch company');
@@ -531,14 +565,7 @@ export const useAuthStore = create<AuthState>()(
                         if (currentCompanyId) settingsStore.setActiveCompanyId(currentCompanyId);
 
                         // Clear all data stores to prevent cross-store data leaks
-                        try {
-                            useSpacesStore.getState().clearAllData();
-                            usePeopleStore.getState().clearAllData();
-                            useConferenceStore.getState().clearAllData();
-                            useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
-                        } catch (e) {
-                            logger.warn('AuthStore', 'Failed to clear data stores on store switch', { error: e instanceof Error ? e.message : String(e) });
-                        }
+                        clearAllFeatureStores();
 
                         // AWAIT settings + SOLUM connect (was fire-and-forget before)
                         if (storeId && currentCompanyId) {
@@ -580,14 +607,7 @@ export const useAuthStore = create<AuthState>()(
                         if (companyId) settingsStore.setActiveCompanyId(companyId);
 
                         // Clear all data stores
-                        try {
-                            useSpacesStore.getState().clearAllData();
-                            usePeopleStore.getState().clearAllData();
-                            useConferenceStore.getState().clearAllData();
-                            useLabelsStore.setState({ labels: [], error: null, searchQuery: '', filterLinkedOnly: false, selectedLabelImages: null });
-                        } catch (e) {
-                            logger.warn('AuthStore', 'Failed to clear data stores on context switch', { error: e instanceof Error ? e.message : String(e) });
-                        }
+                        clearAllFeatureStores();
 
                         // AWAIT settings + SOLUM connect
                         if (storeId && companyId) {
@@ -636,10 +656,18 @@ export const useAuthStore = create<AuthState>()(
     )
 );
 
-// Listen for auth:logout events from the API client
-if (typeof window !== 'undefined') {
+// Listen for auth:logout events from the API client (guarded against HMR re-registration)
+if (typeof window !== 'undefined' && !(window as any).__authLogoutListenerRegistered) {
+    (window as any).__authLogoutListenerRegistered = true;
     window.addEventListener('auth:logout', () => {
         useAuthStore.getState().logout();
+    });
+    // Bump tokenVersion on proactive token refresh so SSE reconnects with fresh token
+    window.addEventListener('auth:token-refreshed', () => {
+        const state = useAuthStore.getState();
+        if (state.tokenVersion !== undefined) {
+            useAuthStore.setState({ tokenVersion: state.tokenVersion + 1 });
+        }
     });
 }
 

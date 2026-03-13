@@ -57,7 +57,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -81,6 +81,7 @@ import { companyService, type CompanyStore } from '@shared/infrastructure/servic
 import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig, SolumFieldMapping } from '@features/settings/domain/types';
+import { generateInitialMapping } from '@features/settings/domain/generateInitialMapping';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 
@@ -90,29 +91,6 @@ const AIMSSettingsDialog = lazy(() => import('../AIMSSettingsDialog'));
 const ArticleFormatEditor = lazy(() =>
     import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
 );
-
-/** Generate initial mapping from article format data fields */
-function generateInitialMapping(articleFormat: ArticleFormat): SolumMappingConfig {
-    const fields: Record<string, SolumFieldMapping> = {};
-    (articleFormat.articleData || []).forEach((field, index) => {
-        fields[field] = {
-            friendlyNameEn: field,
-            friendlyNameHe: field,
-            visible: true,
-            order: index,
-        };
-    });
-    return {
-        uniqueIdField: articleFormat.mappingInfo?.articleId || articleFormat.articleData?.[0] || '',
-        fields,
-        conferenceMapping: {
-            meetingName: '',
-            meetingTime: '',
-            participants: '',
-        },
-        mappingInfo: articleFormat.mappingInfo ? { ...articleFormat.mappingInfo } : undefined,
-    };
-}
 
 /** Sortable row for field mapping table */
 function SortableFieldRow({
@@ -190,9 +168,10 @@ type State = ReturnType<typeof useCompanyDialogState>;
 interface Props {
     state: State;
     onClose: () => void;
+    open: boolean;
 }
 
-export function EditCompanyTabs({ state, onClose }: Props) {
+export function EditCompanyTabs({ state, onClose, open }: Props) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -205,13 +184,22 @@ export function EditCompanyTabs({ state, onClose }: Props) {
 
     // Article format tab state
     const [articleFormat, setArticleFormat] = useState<ArticleFormat | null>(null);
-    const [articleFormatLoading, setArticleFormatLoading] = useState(false);
+    const [articleFormatFetching, setArticleFormatFetching] = useState(false);
+    const [articleFormatSaving, setArticleFormatSaving] = useState(false);
     const [articleFormatError, setArticleFormatError] = useState<string | null>(null);
     const [articleFormatViewMode, setArticleFormatViewMode] = useState<'visual' | 'json'>('visual');
     // Field mapping tab state
     const [fieldMapping, setFieldMapping] = useState<SolumMappingConfig | null>(null);
     const [fieldMappingSaving, setFieldMappingSaving] = useState(false);
     const [fieldMappingSaved, setFieldMappingSaved] = useState(false);
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup saved timer on unmount
+    useEffect(() => {
+        return () => {
+            if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        };
+    }, []);
 
     // DnD sensors for field reordering
     const sensors = useSensors(
@@ -259,19 +247,24 @@ export function EditCompanyTabs({ state, onClose }: Props) {
 
     // Fetch stores + settings on open
     useEffect(() => {
+        if (!open) return;
         if (!state.company?.id) return;
         const companyId = state.company.id;
+        let cancelled = false;
 
         // Fetch stores
         setStoresLoading(true);
         companyService.getStores(companyId)
-            .then(res => setStores(res.stores))
-            .catch(() => {})
-            .finally(() => setStoresLoading(false));
+            .then(res => { if (!cancelled) setStores(res.stores); })
+            .catch((err) => {
+                console.error('Failed to fetch stores:', err);
+            })
+            .finally(() => { if (!cancelled) setStoresLoading(false); });
 
         // Fetch company settings (article format + field mapping)
         settingsService.getCompanySettings(companyId)
             .then(res => {
+                if (cancelled) return;
                 if (res.settings.solumArticleFormat) {
                     setArticleFormat(res.settings.solumArticleFormat);
                 }
@@ -279,13 +272,18 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     setFieldMapping(res.settings.solumMappingConfig);
                 }
             })
-            .catch(() => {});
-    }, [state.company?.id]);
+            .catch((err) => {
+                if (cancelled) return;
+                console.error('Failed to fetch company settings:', err);
+            });
+
+        return () => { cancelled = true; };
+    }, [state.company?.id, open]);
 
     // Re-fetch article format from AIMS (uses stored credentials via settings endpoint)
     const handleRefetchArticleFormat = useCallback(async () => {
         if (!state.company) return;
-        setArticleFormatLoading(true);
+        setArticleFormatFetching(true);
         setArticleFormatError(null);
         try {
             const result = await fieldMappingService.getArticleFormat(state.company.id, true);
@@ -301,7 +299,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                     }
                     // Merge: add new fields, keep existing customizations, update mappingInfo
                     const existingFields = { ...prev.fields };
-                    const maxOrder = Math.max(...Object.values(existingFields).map(f => f.order ?? 0), -1);
+                    const maxOrder = Object.values(existingFields).reduce((max, f) => Math.max(max, f.order ?? 0), -1);
                     let nextOrder = maxOrder + 1;
                     (format.articleData || []).forEach((field) => {
                         if (!existingFields[field]) {
@@ -331,14 +329,14 @@ export function EditCompanyTabs({ state, onClose }: Props) {
         } catch (err: any) {
             setArticleFormatError(err.response?.data?.message || t('settings.companies.articleFormatError'));
         } finally {
-            setArticleFormatLoading(false);
+            setArticleFormatFetching(false);
         }
     }, [state.company, t]);
 
     // Save article format edits to server + update Zustand store
     const handleSaveArticleFormat = useCallback(async (newFormat: ArticleFormat): Promise<boolean> => {
         if (!state.company?.id) return false;
-        setArticleFormatLoading(true);
+        setArticleFormatSaving(true);
         try {
             await fieldMappingService.updateArticleFormat(state.company.id, newFormat);
             setArticleFormat(newFormat);
@@ -349,7 +347,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             state.setError(t('settings.companies.saveError'));
             return false;
         } finally {
-            setArticleFormatLoading(false);
+            setArticleFormatSaving(false);
         }
     }, [state.company?.id, state, t]);
 
@@ -381,7 +379,8 @@ export function EditCompanyTabs({ state, onClose }: Props) {
             // Update the Zustand settings store so the spaces table columns refresh immediately
             useSettingsStore.getState().updateFieldMappings(fieldMapping);
             setFieldMappingSaved(true);
-            setTimeout(() => setFieldMappingSaved(false), 2000);
+            if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+            savedTimerRef.current = setTimeout(() => setFieldMappingSaved(false), 2000);
         } catch {
             state.setError(t('settings.companies.saveError'));
         } finally {
@@ -535,11 +534,11 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                         </Alert>
                     )}
 
-                    {articleFormatLoading ? (
+                    {(articleFormatFetching || articleFormatSaving) ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 4 }}>
                             <CircularProgress />
                             <Typography color="text.secondary">
-                                {t('settings.companies.fetchingArticleFormat')}
+                                {articleFormatSaving ? t('common.saving') : t('settings.companies.fetchingArticleFormat')}
                             </Typography>
                         </Box>
                     ) : articleFormat ? (
@@ -568,7 +567,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                     size="small"
                                     startIcon={<RefreshIcon />}
                                     onClick={handleRefetchArticleFormat}
-                                    disabled={articleFormatLoading || !state.company?.aimsConfigured}
+                                    disabled={(articleFormatFetching || articleFormatSaving) || !state.company?.aimsConfigured}
                                 >
                                     {t('settings.companies.refetchArticleFormat', 'Re-fetch from AIMS')}
                                 </Button>
@@ -658,7 +657,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                 variant="outlined"
                                 startIcon={<RefreshIcon />}
                                 onClick={handleRefetchArticleFormat}
-                                disabled={articleFormatLoading || !state.company?.aimsConfigured}
+                                disabled={(articleFormatFetching || articleFormatSaving) || !state.company?.aimsConfigured}
                             >
                                 {t('settings.companies.refetchArticleFormat', 'Re-fetch from AIMS')}
                             </Button>
@@ -736,7 +735,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                                         ...prev,
                                                                         fields: {
                                                                             ...prev.fields,
-                                                                            [key]: { ...field, friendlyNameEn: value },
+                                                                            [key]: { ...prev.fields[key], friendlyNameEn: value },
                                                                         },
                                                                     };
                                                                 });
@@ -749,7 +748,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                                         ...prev,
                                                                         fields: {
                                                                             ...prev.fields,
-                                                                            [key]: { ...field, friendlyNameHe: value },
+                                                                            [key]: { ...prev.fields[key], friendlyNameHe: value },
                                                                         },
                                                                     };
                                                                 });
@@ -762,7 +761,7 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                                                                         ...prev,
                                                                         fields: {
                                                                             ...prev.fields,
-                                                                            [key]: { ...field, visible: value },
+                                                                            [key]: { ...prev.fields[key], visible: value },
                                                                         },
                                                                     };
                                                                 });
@@ -1098,6 +1097,11 @@ export function EditCompanyTabs({ state, onClose }: Props) {
                             open={true}
                             onClose={() => setAimsDialogOpen(false)}
                             company={state.company}
+                            onSave={() => {
+                                if (state.company?.id) {
+                                    state.checkConnectionStatus(state.company.id);
+                                }
+                            }}
                         />
                     )}
                 </Suspense>

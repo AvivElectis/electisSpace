@@ -24,6 +24,8 @@ export interface AIMSLabel {
     model?: string;
     width?: number;
     height?: number;
+    type?: string;
+    labelType?: string;
 }
 
 export interface LabelsResponse {

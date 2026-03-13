@@ -113,10 +113,15 @@ export const settingsService = {
                 throw new Error('FORBIDDEN');
             }
         } else {
-            // Fallback: check allStoresAccess via company (implies STORE_ADMIN)
+            // Fallback: check allStoresAccess via company
             const store = await settingsRepository.checkAllStoresAccess(user.id, storeId);
             if (!store) {
                 throw new Error('STORE_NOT_FOUND_OR_DENIED');
+            }
+            // Verify user has admin/manager role on the company
+            const allowedRoleIds = ['role-admin', 'role-manager'];
+            if (!allowedRoleIds.includes(store.userCompanyRoleId)) {
+                throw new Error('FORBIDDEN');
             }
         }
 

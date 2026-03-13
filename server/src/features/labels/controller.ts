@@ -26,11 +26,12 @@ function getUserContext(req: Request): LabelsUserContext {
 }
 
 function mapServiceError(error: unknown): Error {
-    if (error === 'FORBIDDEN') {
-        return forbidden('Access denied to this store');
+    // AppError instances (from forbidden(), badRequest(), etc.) pass through directly
+    if (error instanceof AppError) {
+        return error;
     }
-    if (error === 'AIMS_NOT_CONFIGURED') {
-        return badRequest('AIMS not configured for this store');
+    if (error === 'STORE_ACCESS_DENIED') {
+        return forbidden('Access denied to this store');
     }
     if (error instanceof AimsOperationError) {
         return new AppError(error.statusCode, error.responseCode, error.message);

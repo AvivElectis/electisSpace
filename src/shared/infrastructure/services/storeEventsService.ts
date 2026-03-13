@@ -64,7 +64,10 @@ export function connectToStoreEvents(
 
     eventSource = new EventSource(url, { withCredentials: true });
 
+    let consecutiveErrors = 0;
+
     eventSource.onmessage = (e) => {
+        consecutiveErrors = 0; // Reset on successful message
         try {
             const data: StoreEvent = JSON.parse(e.data);
             if (data.type === 'connected') {
@@ -78,7 +81,15 @@ export function connectToStoreEvents(
     };
 
     eventSource.onerror = (e) => {
-        console.error('[StoreEventsService] SSE error:', e, 'readyState:', eventSource?.readyState);
+        consecutiveErrors++;
+        console.error('[StoreEventsService] SSE error:', e, 'readyState:', eventSource?.readyState, 'consecutiveErrors:', consecutiveErrors);
+        if (consecutiveErrors >= 5) {
+            // Circuit breaker: stop reconnecting after 5 consecutive failures (likely auth expired)
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        }
         if (onError) onError(e);
     };
 

@@ -340,7 +340,7 @@ export const usePeopleStore = create<PeopleStore>()(
                     for (const storageName of listNamesFromPeople) {
                         const displayName = storageName.replace(/_/g, ' ');
                         newLists.push({
-                            id: `list_${storageName}_${Date.now()}`,
+                            id: `list_${storageName}`,
                             name: displayName,
                             storageName: storageName,
                             createdAt: new Date().toISOString(),

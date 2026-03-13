@@ -118,7 +118,10 @@ export const storeService = {
     /**
      * Validate if a store code is available
      */
-    async validateCode(companyId: string, code: string): Promise<CodeValidationResponse> {
+    async validateCode(companyId: string, code: string, user?: StoreUserContext): Promise<CodeValidationResponse> {
+        if (user && !hasCompanyAccess(user, companyId)) {
+            throw new Error('FORBIDDEN_COMPANY');
+        }
         const validation = storeCodeSchema.safeParse(code);
         if (!validation.success) {
             return {
@@ -316,14 +319,13 @@ export const storeService = {
             throw new Error('FORBIDDEN');
         }
 
-        const isActive = status === 'ACTIVE';
         const updated = await prisma.store.update({
             where: { id },
             data: {
-                status: status as any,
+                status: status as 'ACTIVE' | 'MAINTENANCE' | 'OFFLINE' | 'ARCHIVED',
                 statusChangedAt: new Date(),
                 statusNote: note || null,
-                isActive: status !== 'ARCHIVED' ? undefined : false,
+                isActive: status === 'ACTIVE' ? true : status === 'ARCHIVED' ? false : undefined,
             },
             select: { id: true, code: true, name: true, status: true, statusChangedAt: true, statusNote: true, isActive: true },
         });
@@ -351,15 +353,21 @@ export const storeService = {
                 select: { userId: true },
             });
 
-            for (const su of storeUsers) {
-                const inTargetCompany = await tx.userCompany.findUnique({
-                    where: { userId_companyId: { userId: su.userId, companyId: targetCompanyId } },
+            const userIds = storeUsers.map(su => su.userId);
+
+            // Batch: find which of these users ARE in the target company
+            const usersInTarget = await tx.userCompany.findMany({
+                where: { userId: { in: userIds }, companyId: targetCompanyId },
+                select: { userId: true },
+            });
+            const inTargetSet = new Set(usersInTarget.map(u => u.userId));
+
+            // Remove store assignments for users NOT in target company
+            const toRemove = userIds.filter(uid => !inTargetSet.has(uid));
+            if (toRemove.length > 0) {
+                await tx.userStore.deleteMany({
+                    where: { storeId: id, userId: { in: toRemove } },
                 });
-                if (!inTargetCompany) {
-                    await tx.userStore.delete({
-                        where: { userId_storeId: { userId: su.userId, storeId: id } },
-                    });
-                }
             }
 
             return tx.store.update({

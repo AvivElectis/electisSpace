@@ -57,9 +57,13 @@ export const storeController = {
         try {
             const companyId = req.params.companyId as string;
             const code = req.params.code as string;
-            const result = await storeService.validateCode(companyId, code);
+            const user = getUserContext(req);
+            const result = await storeService.validateCode(companyId, code, user);
             res.json(result);
-        } catch (error) {
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN_COMPANY') {
+                return next(forbidden('You do not have access to this company'));
+            }
             next(error);
         }
     },

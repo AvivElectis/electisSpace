@@ -26,6 +26,7 @@ export function ImportExportSection() {
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [exportedFileData, setExportedFileData] = useState<any>(null);
+    const [importPreview, setImportPreview] = useState<import('../domain/types').ImportPreview | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -53,8 +54,18 @@ export function ImportExportSection() {
                 return; // User canceled file selection
             }
 
-            // Store the file data and open dialog
+            // Store the file data and generate preview if not encrypted
             setExportedFileData(exported);
+            if (!exported.encrypted) {
+                try {
+                    const { generateImportPreview } = await import('../domain/businessRules');
+                    setImportPreview(generateImportPreview(exported));
+                } catch {
+                    setImportPreview(null);
+                }
+            } else {
+                setImportPreview(null);
+            }
             setImportDialogOpen(true);
         } catch (err: any) {
             setError(err.message || t('importExport.importFailed'));
@@ -159,9 +170,10 @@ export function ImportExportSection() {
                 onClose={() => {
                     setImportDialogOpen(false);
                     setExportedFileData(null);
+                    setImportPreview(null);
                 }}
                 onImport={handleImport}
-                preview={null}
+                preview={importPreview}
                 isEncrypted={exportedFileData?.encrypted || false}
             />
             <ConfirmDialog />

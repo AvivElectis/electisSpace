@@ -7,11 +7,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import { aimsManagementService } from './service.js';
 import { registerGatewaySchema, deregisterGatewaysSchema, batchHistoryQuerySchema, labelHistoryQuerySchema, articleHistoryQuerySchema, articleListQuerySchema, ledControlSchema, nfcConfigSchema, gatewayConfigUpdateSchema, templateListQuerySchema, templateDownloadQuerySchema, templateUploadSchema, whitelistQuerySchema, whitelistModifySchema, whitelistBoxSchema, whitelistSyncStorageSchema, whitelistSyncGatewaySchema } from './types.js';
-import { badRequest } from '../../shared/middleware/errorHandler.js';
+import { badRequest, forbidden } from '../../shared/middleware/errorHandler.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 
 /**
- * Extract active store ID from request.
+ * Extract active store ID from request and verify the user has access to it.
  * Looks at query param, header, or user's active store.
  */
 function getStoreId(req: Request): string {
@@ -20,6 +20,18 @@ function getStoreId(req: Request): string {
     if (!storeId) {
         throw badRequest('Store ID is required (pass as ?storeId= or X-Store-Id header)');
     }
+
+    // Verify the authenticated user has access to this store
+    const user = req.user;
+    if (!user) {
+        throw forbidden('Authentication required');
+    }
+    const hasAccess = user.globalRole === 'PLATFORM_ADMIN' ||
+        user.stores?.some((s: any) => s.id === storeId);
+    if (!hasAccess) {
+        throw forbidden('You do not have access to this store');
+    }
+
     return storeId;
 }
 

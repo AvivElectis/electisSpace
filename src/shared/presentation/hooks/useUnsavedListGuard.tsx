@@ -25,7 +25,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useTranslation } from 'react-i18next';
-import { registerNavigationGuard, unregisterNavigationGuard } from '../navigationGuard';
+import { registerNavigationGuard } from '../navigationGuard';
 
 interface UnsavedListGuardOptions {
     /** Whether a list is currently active */
@@ -72,10 +72,7 @@ export function useUnsavedListGuard({
 
     // ── 2. Global navigation guard (checked by MainLayout) ─────────
     useEffect(() => {
-        if (!shouldBlock) {
-            unregisterNavigationGuard();
-            return;
-        }
+        if (!shouldBlock) return;
 
         const unregister = registerNavigationGuard(async () => {
             setDialogOpen(true);

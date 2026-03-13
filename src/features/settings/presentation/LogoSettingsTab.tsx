@@ -46,6 +46,9 @@ export function LogoSettingsTab({ settings, onUpdate }: LogoSettingsTabProps) {
 
         try {
             const reader = new FileReader();
+            reader.onerror = () => {
+                setError(t('settings.logoUploadFailed'));
+            };
             reader.onload = (e) => {
                 const base64 = e.target?.result as string;
                 onUpdate({

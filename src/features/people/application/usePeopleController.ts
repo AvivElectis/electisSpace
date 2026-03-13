@@ -46,13 +46,15 @@ export function usePeopleController() {
     /**
      * Trigger server push to process pending sync queue items → AIMS
      */
-    const triggerPush = useCallback(async () => {
+    const triggerPush = useCallback(async (): Promise<boolean> => {
         try {
             const activeStoreId = useAuthStore.getState().activeStoreId;
-            if (!activeStoreId) return;
+            if (!activeStoreId) return false;
             await syncApi.push(activeStoreId);
+            return true;
         } catch (error: any) {
             logger.warn('PeopleController', 'Push after operation failed', { error: error.message });
+            return false;
         }
     }, []);
 
@@ -222,7 +224,7 @@ export function usePeopleController() {
             logger.error('PeopleController', 'Failed to load CSV content', { error: error.message });
             throw error;
         }
-    }, [settings.solumArticleFormat, settings.solumMappingConfig, settings.solumConfig, addPersonWithSync]);
+    }, [settings.solumArticleFormat, settings.solumMappingConfig, addPersonWithSync]);
 
     /**
      * Assign space to person via server API
@@ -253,9 +255,9 @@ export function usePeopleController() {
             getStoreState().updateSyncStatusLocal([personId], 'pending');
 
             // Trigger push to process sync queue → AIMS
-            await triggerPush();
+            const pushed = await triggerPush();
 
-            getStoreState().updateSyncStatusLocal([personId], 'synced');
+            getStoreState().updateSyncStatusLocal([personId], pushed ? 'synced' : 'error');
             logger.info('PeopleController', 'Assignment synced via server', { personId, spaceId });
             return true;
         } catch (error: any) {
@@ -287,9 +289,9 @@ export function usePeopleController() {
             }
 
             // Trigger push to process all queued sync items
-            await triggerPush();
+            const pushed = await triggerPush();
 
-            getStoreState().updateSyncStatusLocal(personIds, 'synced');
+            getStoreState().updateSyncStatusLocal(personIds, pushed ? 'synced' : 'error');
             logger.info('PeopleController', 'Bulk assignments synced via server', { count: successCount });
             return { success: true, syncedCount: successCount };
         } catch (error: any) {
@@ -400,10 +402,13 @@ export function usePeopleController() {
 
             const storageName = listToDelete.storageName || listId.replace('aims-list-', '');
 
-            // Find people who are members of this list (before removing membership)
+            // Delete list on server first (cascades membership records in DB)
+            await peopleApi.lists.delete(listId);
+
+            // Find people who are members of this list (before removing membership locally)
             const affectedPeople = getStoreState().people.filter(p => isPersonInList(p, storageName));
 
-            // Remove list membership from all people in this list
+            // Update local state to match server
             const updatedPeople = getStoreState().people.map(p => {
                 if (isPersonInList(p, storageName)) {
                     return removePersonFromList(p, storageName);
@@ -414,7 +419,7 @@ export function usePeopleController() {
             getStoreState().setPeople(updatedPeople);
             getStoreState().deletePeopleList(listId);
 
-            // Trigger push to sync updated membership data via server
+            // Trigger push to sync updated membership data to AIMS
             const assignedAffected = updatedPeople.filter(p =>
                 affectedPeople.some(ap => ap.id === p.id) && p.assignedSpaceId
             );
@@ -478,9 +483,9 @@ export function usePeopleController() {
             logger.info('PeopleController', 'Pushing selected people via server', { count: personIds.length });
             getStoreState().updateSyncStatusLocal(personIds, 'pending');
 
-            await triggerPush();
+            const pushed = await triggerPush();
 
-            getStoreState().updateSyncStatusLocal(personIds, 'synced');
+            getStoreState().updateSyncStatusLocal(personIds, pushed ? 'synced' : 'error');
             logger.info('PeopleController', 'Selected people pushed via server', { count: personIds.length });
             return { success: true, syncedCount: personIds.length };
         } catch (error: any) {
@@ -507,9 +512,9 @@ export function usePeopleController() {
             const personIds = assignedPeople.map(p => p.id);
             getStoreState().updateSyncStatusLocal(personIds, 'pending');
 
-            await triggerPush();
+            const pushed = await triggerPush();
 
-            getStoreState().updateSyncStatusLocal(personIds, 'synced');
+            getStoreState().updateSyncStatusLocal(personIds, pushed ? 'synced' : 'error');
             logger.info('PeopleController', 'All assignments pushed via server', { count: assignedPeople.length });
             return { success: true, syncedCount: assignedPeople.length };
         } catch (error: any) {
@@ -643,8 +648,8 @@ export function usePeopleController() {
             // Trigger push if person is assigned (server queued the update)
             if (updatedPerson.assignedSpaceId) {
                 getStoreState().updateSyncStatusLocal([personId], 'pending');
-                await triggerPush();
-                getStoreState().updateSyncStatusLocal([personId], 'synced');
+                const pushed = await triggerPush();
+                getStoreState().updateSyncStatusLocal([personId], pushed ? 'synced' : 'error');
             }
         } catch (error: any) {
             logger.error('PeopleController', 'Failed to update person', { error: error.message });

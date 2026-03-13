@@ -63,8 +63,11 @@ export const deviceTokenStorage = {
                 return;
             }
             await initIdb();
-            if (idbSet) await idbSet(DEVICE_TOKEN_KEY, token);
-            localStorage.setItem(DEVICE_TOKEN_KEY, token);
+            if (idbSet) {
+                await idbSet(DEVICE_TOKEN_KEY, token);
+            } else {
+                localStorage.setItem(DEVICE_TOKEN_KEY, token);
+            }
         } catch (err) {
             logger.warn('DeviceTokenStorage', 'Failed to set device token', { error: String(err) });
             localStorage.setItem(DEVICE_TOKEN_KEY, token);

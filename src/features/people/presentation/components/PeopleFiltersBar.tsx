@@ -114,7 +114,7 @@ export function PeopleFiltersBar({
                 sx={{
                     flex: 1,
                     '& .MuiOutlinedInput-root': {
-                        borderRadius: 4,
+                        borderRadius: 2,
                     },
                 }}
                 slotProps={{

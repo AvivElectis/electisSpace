@@ -28,7 +28,7 @@ export async function fetchAllArticlesFromAims(
         const chunk = await fetchArticles(solumConfig, storeNumber, token, page, pageSize);
 
         if (chunk.length > 0) {
-            allArticles = [...allArticles, ...chunk];
+            allArticles.push(...chunk);
             hasMore = chunk.length >= pageSize;
             page++;
         } else {

@@ -137,11 +137,9 @@ export async function withAimsTokenRefresh<T>(
         return await apiCall(token);
     } catch (error: any) {
         // Check for authentication errors (401/403)
-        const isAuthError = 
+        const isAuthError =
             error.response?.status === 401 ||
             error.response?.status === 403 ||
-            error.message?.includes('401') ||
-            error.message?.includes('403') ||
             error.message?.includes('INVALID_USERNAME_AND_PASSWORD') ||
             error.message?.includes('Unauthorized');
 

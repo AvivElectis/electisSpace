@@ -2,7 +2,7 @@
  * Wizard Step 3: Article Format — Fetch & Confirm
  * Two view modes: Visual summary or JSON editor with edit support.
  */
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import {
     Box,
     Typography,
@@ -44,12 +44,19 @@ export function ArticleFormatStep({
     const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual');
 
-    // Auto-fetch on mount if not yet loaded
+    // Auto-fetch on mount if not yet loaded, or after error recovery
+    const hasFetchedRef = useRef(false);
     useEffect(() => {
         if (!articleFormat && !loading && !error) {
-            onFetch();
+            if (!hasFetchedRef.current) {
+                hasFetchedRef.current = true;
+                onFetch();
+            }
+        } else if (error) {
+            // Reset so auto-fetch can re-trigger after error is cleared
+            hasFetchedRef.current = false;
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [articleFormat, loading, error, onFetch]);
 
     if (loading) {
         return (

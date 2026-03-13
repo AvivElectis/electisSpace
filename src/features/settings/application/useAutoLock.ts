@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSettingsStore } from '../infrastructure/settingsStore';
 
 const AUTO_LOCK_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
@@ -10,38 +10,37 @@ const AUTO_LOCK_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
  */
 export function useAutoLock() {
     const { settings, isLocked, passwordHash, setLocked, updateSettings } = useSettingsStore();
+    const hasInitialized = useRef(false);
 
+    // Initialize lastSettingsAccess once if not set (separate from interval)
     useEffect(() => {
-        // Only run if auto-lock is enabled, password is set, and not already locked
+        if (!settings.autoLockEnabled || !passwordHash || isLocked) return;
+        if (!settings.lastSettingsAccess && !hasInitialized.current) {
+            hasInitialized.current = true;
+            updateSettings({ lastSettingsAccess: Date.now() });
+        }
+    }, [settings.autoLockEnabled, settings.lastSettingsAccess, passwordHash, isLocked, updateSettings]);
+
+    // Check for auto-lock every minute — reads lastSettingsAccess from store snapshot
+    // to avoid the interval restarting when lastSettingsAccess changes
+    useEffect(() => {
         if (!settings.autoLockEnabled || !passwordHash || isLocked) {
             return;
         }
 
-        // Check if we should auto-lock based on last access time
         const checkAutoLock = () => {
-            const lastAccess = settings.lastSettingsAccess;
-
-            if (!lastAccess) {
-                // No last access recorded, set it to now
-                updateSettings({ lastSettingsAccess: Date.now() });
-                return;
-            }
+            const lastAccess = useSettingsStore.getState().settings.lastSettingsAccess;
+            if (!lastAccess) return;
 
             const timeSinceLastAccess = Date.now() - lastAccess;
-
             if (timeSinceLastAccess >= AUTO_LOCK_TIMEOUT) {
-                // Auto-lock triggered
                 setLocked(true);
-                // console.log('[AutoLock] Settings locked after 30 minutes of inactivity');
             }
         };
 
-        // Check immediately on mount
         checkAutoLock();
-
-        // Then check every minute
         const interval = setInterval(checkAutoLock, 60 * 1000);
 
         return () => clearInterval(interval);
-    }, [settings.autoLockEnabled, settings.lastSettingsAccess, passwordHash, isLocked, setLocked, updateSettings]);
+    }, [settings.autoLockEnabled, passwordHash, isLocked, setLocked]);
 }
