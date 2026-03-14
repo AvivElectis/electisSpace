@@ -494,6 +494,13 @@
         "connectionDetails": "Connection Details",
         "serverConnection": "Server"
     },
+    "selector": {
+        "selectStore": "Select Store",
+        "switchingStore": "Switching...",
+        "platformAdmin": "Platform Administrator",
+        "code": "Code",
+        "noStores": "No stores available"
+    },
     "settings": {
         "title": "Settings",
         "appSettings": "App Settings",

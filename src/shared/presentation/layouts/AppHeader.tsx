@@ -324,7 +324,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         </Typography>
                     )}
                 </Box>
-                {user && <CompanyStoreSelector compact />}
+                {user && <CompanyStoreSelector />}
             </Box>
         </AppBar>
     );

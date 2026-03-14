@@ -502,6 +502,13 @@
         "connectionDetails": "פרטי חיבור",
         "serverConnection": "שרת"
     },
+    "selector": {
+        "selectStore": "בחר חנות",
+        "switchingStore": "מעביר...",
+        "platformAdmin": "מנהל פלטפורמה",
+        "code": "קוד",
+        "noStores": "אין חנויות זמינות"
+    },
     "settings": {
         "title": "הגדרות",
         "appSettings": "הגדרות אפליקציה",
