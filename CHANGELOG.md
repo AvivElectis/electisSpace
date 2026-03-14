@@ -9,16 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.0] — 2026-03-14 — Store Isolation Safety
+
 ### Added
+- **Grouped store selector** — redesigned CompanyStoreSelector with company-grouped dropdown menu, responsive button (mobile icon / tablet store name / desktop company+store pill), and atomic `setActiveContext` switching
+- **Store switch transition guard** — full-screen SphereLoader overlay during store switching covers all stale UI (tabs, logos, content) while new data loads
+- **Store override divergence warnings** — StoreDialog shows inline alert when store feature overrides differ from parent company defaults
 - **Global field assignments** — company field mapping now supports global field assignments (constant values applied to all articles), with UI in Edit Company Tabs
 - **Dual display names for mapped fields** — field mapping editor supports both English and Hebrew friendly names per field
 - **Regenerate mapping safety dialog** — "Regenerate from Format" button now requires confirmation before overwriting existing mapping
 - **Dashboard mobile carousel** — swipeable horizontal gallery with dot indicators replaces vertical scroll for dashboard sections on mobile
 - **Auto-submit label linking** — LinkLabelDialog automatically submits when both a valid label code and article are present
 - **Space edit dialog DB ID** — edit dialog shows internal DB ID as small footer text for debugging
-- **Improvement plan document** — `docs/gui-improvement-plan.md` tracks deferred GUI and security improvements
+- **Release notes history** — app info now shows latest version prominently with older versions in a collapsible section
 
 ### Changed
+- **Settings store cleared on switch** — `clearAllFeatureStores()` now resets the settings store (logos, appName, fieldMappings, articleFormat) to safe defaults, preventing cross-store data leaks
+- **Desktop feature tabs alignment** — tabs now wrapped in `Container maxWidth="xl"` to match main content width
 - **AIMS sync: spaces mode redesign** — AIMS is now the source of truth for spaces mode. Extra articles in AIMS are imported into the DB instead of being deleted from AIMS. Deletion from AIMS only occurs via explicit user action (e.g., deleting a space in the app). People mode behavior is unchanged.
 - **AIMS reconciliation performance** — parallel I/O (article format, DB queries, AIMS pull run concurrently), batched label sync via `$transaction`, company settings joined in initial query
 - **Spaces mobile cards redesign** — collapsed cards show ID badge + first mapped field value; expanded cards show 2-column field grid with edit/delete actions; larger text for mobile readability
@@ -28,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **buildSpaceArticle** — no longer falls back to externalId for articleName in spaces mode, preventing AIMS name field overwrite
 
 ### Fixed
+- **Cross-store data leaks** — logos, app name, field mappings, and article format no longer persist from previous store when switching contexts
+- **Null-store intermediate state** — atomic `setActiveContext(companyId, storeId)` eliminates the two-step switch that temporarily enabled ALL features via backward-compat fallback
 - **AIMS sync race condition** — prevented re-importing recently deleted spaces by checking for pending DELETE queue items before import
 - **AppHeader logo spacing** — added top padding for logos and increased mobile logo size for better visibility
 - **Stale closure in field mapping refetch** — `handleRefetchArticleFormat` now uses functional setState to avoid capturing stale `fieldMapping`
