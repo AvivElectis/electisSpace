@@ -1077,7 +1077,8 @@
             "inheritingFromCompany": "Inheriting features from company defaults",
             "overrideLogos": "Override Company Logos",
             "storeLogosInfo": "Upload logos specific to this store. These override company-level logos.",
-            "logo": "Logo"
+            "logo": "Logo",
+            "storeFeatureDivergence": "This store's features differ from the company defaults. Store overrides take priority."
         },
         "roles": {
             "title": "Roles",
