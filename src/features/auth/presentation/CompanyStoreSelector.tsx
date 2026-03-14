@@ -138,11 +138,12 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                     textTransform: 'none',
                     px: 1.5,
                     py: 0.75,
-                    borderRadius: '14px',
+                    borderRadius: 2,
                     border: '1px solid',
                     borderColor: open ? 'primary.main' : 'divider',
                     background: 'linear-gradient(135deg, rgba(13,71,161,0.04) 0%, rgba(13,71,161,0.10) 100%)',
                     boxShadow: open ? 2 : 1,
+                    '&::after': { display: 'none' },
                     '&:hover': {
                         borderColor: 'primary.main',
                         background: 'linear-gradient(135deg, rgba(13,71,161,0.08) 0%, rgba(13,71,161,0.14) 100%)',
@@ -168,7 +169,7 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                     textTransform: 'none',
                     px: 2,
                     py: 0.75,
-                    borderRadius: '14px',
+                    borderRadius: 2,
                     border: '1px solid',
                     borderColor: open ? 'primary.main' : 'divider',
                     background: 'linear-gradient(135deg, rgba(13,71,161,0.04) 0%, rgba(13,71,161,0.10) 100%)',
@@ -176,6 +177,7 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                     minWidth: 180,
                     maxWidth: 300,
                     justifyContent: 'space-between',
+                    '&::after': { display: 'none' },
                     '&:hover': {
                         borderColor: 'primary.main',
                         background: 'linear-gradient(135deg, rgba(13,71,161,0.08) 0%, rgba(13,71,161,0.14) 100%)',
@@ -215,8 +217,8 @@ export function CompanyStoreSelector({ compact = false }: CompanyStoreSelectorPr
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'start' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'start' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
                 slotProps={{
                     paper: {
                         sx: {
