@@ -18,6 +18,7 @@ import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useBackendSyncController } from '@features/sync/application/useBackendSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { SphereLoader } from '../components/SphereLoader';
 import { logger } from '@shared/infrastructure/services/logger';
 import { prefetchRoute, prefetchAllRoutes } from '../utils/routePrefetch';
 import { StoreRequiredGuard } from '@features/auth/presentation/StoreRequiredGuard';
@@ -226,6 +227,21 @@ export function MainLayout({ children }: MainLayoutProps) {
                 display: 'flex',
                 flexDirection: 'column',
             }}>
+                {/* Store switching overlay — covers all stale UI during context transition */}
+                {isSwitchingStore && (
+                    <Box sx={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: (theme) => theme.zIndex.modal + 1,
+                        bgcolor: 'background.default',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}>
+                        <SphereLoader />
+                    </Box>
+                )}
+
                 {/* Header with mobile menu support */}
                 <AppHeader
                     onMenuClick={isMobile ? handleMenuClick : undefined}
@@ -292,54 +308,55 @@ export function MainLayout({ children }: MainLayoutProps) {
                             </List>
                     </Drawer>
                 ) : (
-                    <Box sx={{
-                        bgcolor: 'transparent',
-                        borderColor: 'divider',
-                        px: { xs: 2, sm: 3, md: 4 },
-                        pt: 0,
-                        pb: 0.5,
-                    }}>
-                        <Tabs
-                            value={currentTab}
-                            onChange={handleTabChange}
-                            variant="scrollable"
-                            scrollButtons="auto"
-                            sx={{
-                                minHeight: 'auto',
-                                borderBottom: 0,
-                                '& .MuiTab-root': {
-                                    border: '1px solid transparent',
-                                    borderRadius: 2,
-                                    my: 0.5,
-                                    '&.Mui-selected': {
-                                        boxShadow: 2,
-                                        borderColor: 'divider',
-                                        bgcolor: 'background.paper',
+                    <Container maxWidth="xl" disableGutters>
+                        <Box sx={{
+                            bgcolor: 'transparent',
+                            borderColor: 'divider',
+                            px: { xs: 2, sm: 3, md: 4 },
+                            pt: 0,
+                            pb: 0.5,
+                        }}>
+                            <Tabs
+                                value={currentTab}
+                                onChange={handleTabChange}
+                                variant="scrollable"
+                                scrollButtons="auto"
+                                sx={{
+                                    minHeight: 'auto',
+                                    borderBottom: 0,
+                                    '& .MuiTab-root': {
+                                        border: '1px solid transparent',
+                                        borderRadius: 2,
+                                        my: 0.5,
+                                        '&.Mui-selected': {
+                                            boxShadow: 2,
+                                            borderColor: 'divider',
+                                            bgcolor: 'background.paper',
+                                        }
                                     }
-                                }
-                            }}
-                            slotProps={{
-                                indicator: { sx: { display: 'none' } }
-                            }}
-
-                        >
-                            {navTabs.map(tab => (
-                                <Tab
-                                    key={tab.value}
-                                    label={
-                                        tab.dynamicLabel && !isPeopleManagerMode
-                                            ? getLabel('plural')
-                                            : t(tab.labelKey)
-                                    }
-                                    value={tab.value}
-                                    icon={tab.icon}
-                                    iconPosition="start"
-                                    sx={{ p: 1, paddingInlineEnd: 2 }}
-                                    onMouseEnter={() => prefetchRoute(tab.value)}
-                                />
-                            ))}
-                        </Tabs>
-                    </Box>
+                                }}
+                                slotProps={{
+                                    indicator: { sx: { display: 'none' } }
+                                }}
+                            >
+                                {navTabs.map(tab => (
+                                    <Tab
+                                        key={tab.value}
+                                        label={
+                                            tab.dynamicLabel && !isPeopleManagerMode
+                                                ? getLabel('plural')
+                                                : t(tab.labelKey)
+                                        }
+                                        value={tab.value}
+                                        icon={tab.icon}
+                                        iconPosition="start"
+                                        sx={{ p: 1, paddingInlineEnd: 2 }}
+                                        onMouseEnter={() => prefetchRoute(tab.value)}
+                                    />
+                                ))}
+                            </Tabs>
+                        </Box>
+                    </Container>
                 )}
 
                 {/* Main Content */}
