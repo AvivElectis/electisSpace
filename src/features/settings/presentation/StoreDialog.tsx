@@ -35,7 +35,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     companyService,
@@ -77,10 +77,11 @@ interface StoreDialogProps {
     onClose: () => void;
     onSave: () => void;
     companyId: string;
+    companyFeatures?: CompanyFeatures;
     store?: CompanyStore | null; // If provided, edit mode
 }
 
-export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDialogProps) {
+export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures, store }: StoreDialogProps) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -106,6 +107,14 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
     const [overrideEnabled, setOverrideEnabled] = useState(false);
     const [storeFeatures, setStoreFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
     const [storeSpaceType, setStoreSpaceType] = useState<SpaceType>('office');
+
+    // Divergence detection: keys where store override differs from company default
+    const featureDivergences = useMemo(() => {
+        if (!overrideEnabled || !storeFeatures || !companyFeatures) return [];
+        return Object.keys(companyFeatures).filter(
+            key => key in storeFeatures && storeFeatures[key as keyof typeof storeFeatures] !== companyFeatures[key as keyof typeof companyFeatures]
+        );
+    }, [overrideEnabled, storeFeatures, companyFeatures]);
 
     // Store logo overrides
     const [logoOverrideEnabled, setLogoOverrideEnabled] = useState(false);
@@ -515,6 +524,11 @@ export function StoreDialog({ open, onClose, onSave, companyId, store }: StoreDi
                                         label={t('labels.title')}
                                     />
                                 </Box>
+                            )}
+                            {featureDivergences.length > 0 && (
+                                <Alert severity="warning" sx={{ mt: 1 }}>
+                                    {t('settings.stores.storeFeatureDivergence')}
+                                </Alert>
                             )}
                         </>
                     )}
