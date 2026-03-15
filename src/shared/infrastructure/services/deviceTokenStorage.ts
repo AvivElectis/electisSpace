@@ -7,6 +7,7 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { logger } from './logger';
 
 const DEVICE_TOKEN_KEY = 'electis_device_token';
@@ -31,17 +32,11 @@ async function initIdb() {
     }
 }
 
-async function getNativePreferences() {
-    const { Preferences } = await import('@capacitor/preferences');
-    return Preferences;
-}
-
 export const deviceTokenStorage = {
     async getDeviceToken(): Promise<string | null> {
         try {
             if (isNative) {
-                const prefs = await getNativePreferences();
-                const { value } = await prefs.get({ key: DEVICE_TOKEN_KEY });
+                const { value } = await Preferences.get({ key: DEVICE_TOKEN_KEY });
                 return value;
             }
             await initIdb();
@@ -58,8 +53,7 @@ export const deviceTokenStorage = {
     async setDeviceToken(token: string): Promise<void> {
         try {
             if (isNative) {
-                const prefs = await getNativePreferences();
-                await prefs.set({ key: DEVICE_TOKEN_KEY, value: token });
+                await Preferences.set({ key: DEVICE_TOKEN_KEY, value: token });
                 return;
             }
             await initIdb();
@@ -77,8 +71,7 @@ export const deviceTokenStorage = {
     async removeDeviceToken(): Promise<void> {
         try {
             if (isNative) {
-                const prefs = await getNativePreferences();
-                await prefs.remove({ key: DEVICE_TOKEN_KEY });
+                await Preferences.remove({ key: DEVICE_TOKEN_KEY });
                 return;
             }
             await initIdb();
@@ -94,8 +87,7 @@ export const deviceTokenStorage = {
         try {
             let deviceId: string | null = null;
             if (isNative) {
-                const prefs = await getNativePreferences();
-                const { value } = await prefs.get({ key: DEVICE_ID_KEY });
+                const { value } = await Preferences.get({ key: DEVICE_ID_KEY });
                 deviceId = value;
             } else {
                 await initIdb();
@@ -110,8 +102,7 @@ export const deviceTokenStorage = {
             if (!deviceId) {
                 deviceId = crypto.randomUUID();
                 if (isNative) {
-                    const prefs = await getNativePreferences();
-                    await prefs.set({ key: DEVICE_ID_KEY, value: deviceId });
+                    await Preferences.set({ key: DEVICE_ID_KEY, value: deviceId });
                 } else {
                     // Store in both IDB and localStorage for reliability
                     if (idbSet) await idbSet(DEVICE_ID_KEY, deviceId);
