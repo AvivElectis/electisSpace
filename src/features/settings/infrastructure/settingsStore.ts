@@ -186,13 +186,12 @@ export const useSettingsStore = create<SettingsStore>()(
 
                         if (serverSettings && Object.keys(serverSettings).length > 0) {
                             Object.assign(updates, serverSettings);
-                            // Remove logos from store-level settings — logos come from company settings only
-                            // (store can override via storeLogoOverride, handled below)
-                            delete updates.logos;
                         }
 
                         if (companySettings && Object.keys(companySettings).length > 0) {
-                            if (companySettings.logos) {
+                            // Prefer company logos over store logos (company is authoritative)
+                            // Only fall back to store logos if company has none
+                            if (companySettings.logos && Object.keys(companySettings.logos).length > 0) {
                                 updates.logos = companySettings.logos;
                             }
                             if (serverSettings.storeLogoOverride) {

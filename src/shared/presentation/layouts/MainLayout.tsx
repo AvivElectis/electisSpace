@@ -273,9 +273,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                             <Box sx={{ display: 'flex', justifyContent: 'flex-start', p: 2, pb: 0 }}>
                                 <IconButton
                                     onClick={() => setMobileMenuOpen(false)}
-                                    sx={{ 
+                                    sx={{
                                         boxShadow: 1,
-                                        scale: 1.5,
                                         bgcolor: 'background.paper',
                                         '&:hover': { bgcolor: 'action.hover' }
                                     }}

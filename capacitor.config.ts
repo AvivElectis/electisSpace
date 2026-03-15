@@ -1,16 +1,26 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const isDev = process.env.CAPACITOR_ENV === 'dev';
+
 const config: CapacitorConfig = {
     appId: 'com.electisspace.app',
     appName: 'electisSpace',
     webDir: 'dist',
     server: {
         androidScheme: 'https',
-        // For development, you can enable live reload:
-        // url: 'http://YOUR_LOCAL_IP:5173',
-        // cleartext: true
+        // Allow cleartext HTTP for dev server access from emulator
+        allowNavigation: isDev ? ['10.0.2.2:*'] : undefined,
     },
     plugins: {
+        CapacitorHttp: {
+            // Route all HTTP requests through native layer
+            // This bypasses WebView CORS restrictions and enables httpOnly cookies
+            enabled: true,
+        },
+        CapacitorCookies: {
+            // Enable native cookie handling for httpOnly cookies (refresh tokens)
+            enabled: true,
+        },
         Filesystem: {
             // File system plugin configuration
         },
