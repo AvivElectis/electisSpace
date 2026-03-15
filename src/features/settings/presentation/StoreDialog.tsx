@@ -280,9 +280,11 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                 await companyService.updateStore(store.id, updateData);
 
                 // Save logo override to store settings
-                const logoOverride: LogoConfig | undefined = logoOverrideEnabled
+                // Use null (not undefined) when disabling — undefined is stripped by JSON.stringify
+                // and the server's shallow merge would preserve the old override
+                const logoOverride: LogoConfig | null = logoOverrideEnabled
                     ? { ...(storeLogo1 ? { logo1: storeLogo1 } : {}), ...(storeLogo2 ? { logo2: storeLogo2 } : {}) }
-                    : undefined;
+                    : null;
                 // Fetch current store settings, then merge storeLogoOverride
                 const current = await settingsService.getStoreSettings(store.id);
                 const currentSettings = (current.settings || {}) as Record<string, unknown>;
