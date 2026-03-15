@@ -186,13 +186,12 @@ export const useSettingsStore = create<SettingsStore>()(
 
                         if (serverSettings && Object.keys(serverSettings).length > 0) {
                             Object.assign(updates, serverSettings);
-                            // Remove logos from store-level settings — logos come from company settings only
-                            // (store can override via storeLogoOverride, handled below)
-                            delete updates.logos;
                         }
 
                         if (companySettings && Object.keys(companySettings).length > 0) {
-                            if (companySettings.logos) {
+                            // Prefer company logos over store logos (company is authoritative)
+                            // Only fall back to store logos if company has none
+                            if (companySettings.logos && Object.keys(companySettings.logos).length > 0) {
                                 updates.logos = companySettings.logos;
                             }
                             if (serverSettings.storeLogoOverride) {
@@ -289,7 +288,7 @@ export const useSettingsStore = create<SettingsStore>()(
                     }
 
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { solumConfig, solumMappingConfig, solumArticleFormat, logos, storeLogoOverride, ...otherSettings } = settings;
+                    const { solumConfig, solumMappingConfig, solumArticleFormat, ...otherSettings } = settings;
 
                     let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
                     if (solumConfig) {
@@ -301,15 +300,13 @@ export const useSettingsStore = create<SettingsStore>()(
                     const settingsForServer = {
                         ...otherSettings,
                         solumConfig: sanitizedSolumConfig,
-                        // Preserve storeLogoOverride at store level (logos live at company level only)
-                        ...(storeLogoOverride ? { storeLogoOverride } : {}),
                     } as unknown as Partial<SettingsData>;
 
                     set(s => ({ syncCount: s.syncCount + 1 }), false, 'saveSettings/start');
                     try {
                         const { activeCompanyId } = get();
                         const companyWideSettings: Partial<SettingsData> = {};
-                        if (logos) companyWideSettings.logos = logos;
+                        if (otherSettings.logos) companyWideSettings.logos = otherSettings.logos;
                         if (otherSettings.csvConfig) companyWideSettings.csvConfig = otherSettings.csvConfig;
                         if (otherSettings.peopleManagerEnabled !== undefined) companyWideSettings.peopleManagerEnabled = otherSettings.peopleManagerEnabled;
                         if (otherSettings.autoSyncEnabled !== undefined) companyWideSettings.autoSyncEnabled = otherSettings.autoSyncEnabled;
