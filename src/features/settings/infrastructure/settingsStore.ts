@@ -289,7 +289,7 @@ export const useSettingsStore = create<SettingsStore>()(
                     }
 
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { solumConfig, solumMappingConfig, solumArticleFormat, logos, storeLogoOverride, ...otherSettings } = settings;
+                    const { solumConfig, solumMappingConfig, solumArticleFormat, ...otherSettings } = settings;
 
                     let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
                     if (solumConfig) {
@@ -301,15 +301,13 @@ export const useSettingsStore = create<SettingsStore>()(
                     const settingsForServer = {
                         ...otherSettings,
                         solumConfig: sanitizedSolumConfig,
-                        // Preserve storeLogoOverride at store level (logos live at company level only)
-                        ...(storeLogoOverride ? { storeLogoOverride } : {}),
                     } as unknown as Partial<SettingsData>;
 
                     set(s => ({ syncCount: s.syncCount + 1 }), false, 'saveSettings/start');
                     try {
                         const { activeCompanyId } = get();
                         const companyWideSettings: Partial<SettingsData> = {};
-                        if (logos) companyWideSettings.logos = logos;
+                        if (otherSettings.logos) companyWideSettings.logos = otherSettings.logos;
                         if (otherSettings.csvConfig) companyWideSettings.csvConfig = otherSettings.csvConfig;
                         if (otherSettings.peopleManagerEnabled !== undefined) companyWideSettings.peopleManagerEnabled = otherSettings.peopleManagerEnabled;
                         if (otherSettings.autoSyncEnabled !== undefined) companyWideSettings.autoSyncEnabled = otherSettings.autoSyncEnabled;
