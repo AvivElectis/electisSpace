@@ -112,6 +112,8 @@ export const useSettingsStore = create<SettingsStore>()(
                         settings: createDefaultSettings(),
                         passwordHash: null,
                         isLocked: false,
+                        activeStoreId: null,
+                        activeCompanyId: null,
                     }, false, 'resetSettings'),
 
                 // Cleanup actions
@@ -184,6 +186,9 @@ export const useSettingsStore = create<SettingsStore>()(
 
                         if (serverSettings && Object.keys(serverSettings).length > 0) {
                             Object.assign(updates, serverSettings);
+                            // Remove logos from store-level settings — logos come from company settings only
+                            // (store can override via storeLogoOverride, handled below)
+                            delete updates.logos;
                         }
 
                         if (companySettings && Object.keys(companySettings).length > 0) {
@@ -284,7 +289,7 @@ export const useSettingsStore = create<SettingsStore>()(
                     }
 
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { solumConfig, solumMappingConfig, solumArticleFormat, ...otherSettings } = settings;
+                    const { solumConfig, solumMappingConfig, solumArticleFormat, logos, storeLogoOverride, ...otherSettings } = settings;
 
                     let sanitizedSolumConfig: Record<string, unknown> | undefined = undefined;
                     if (solumConfig) {
@@ -296,13 +301,15 @@ export const useSettingsStore = create<SettingsStore>()(
                     const settingsForServer = {
                         ...otherSettings,
                         solumConfig: sanitizedSolumConfig,
+                        // Preserve storeLogoOverride at store level (logos live at company level only)
+                        ...(storeLogoOverride ? { storeLogoOverride } : {}),
                     } as unknown as Partial<SettingsData>;
 
                     set(s => ({ syncCount: s.syncCount + 1 }), false, 'saveSettings/start');
                     try {
                         const { activeCompanyId } = get();
                         const companyWideSettings: Partial<SettingsData> = {};
-                        if (otherSettings.logos) companyWideSettings.logos = otherSettings.logos;
+                        if (logos) companyWideSettings.logos = logos;
                         if (otherSettings.csvConfig) companyWideSettings.csvConfig = otherSettings.csvConfig;
                         if (otherSettings.peopleManagerEnabled !== undefined) companyWideSettings.peopleManagerEnabled = otherSettings.peopleManagerEnabled;
                         if (otherSettings.autoSyncEnabled !== undefined) companyWideSettings.autoSyncEnabled = otherSettings.autoSyncEnabled;
@@ -456,7 +463,8 @@ export const useSettingsStore = create<SettingsStore>()(
             {
                 name: 'settings-store',
                 partialize: (state) => {
-                    const { solumConfig, ...otherSettings } = state.settings;
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { solumConfig, logos, storeLogoOverride, ...otherSettings } = state.settings;
                     let cleanSolumConfig = solumConfig;
                     if (solumConfig) {
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -464,7 +472,8 @@ export const useSettingsStore = create<SettingsStore>()(
                         cleanSolumConfig = persistableConfig as typeof solumConfig;
                     }
                     return {
-                        settings: { ...otherSettings, solumConfig: cleanSolumConfig },
+                        // Don't persist logos — always fetch fresh from server to prevent cross-company leaks
+                        settings: { ...otherSettings, solumConfig: cleanSolumConfig, logos: {} },
                         passwordHash: state.passwordHash,
                         activeStoreId: state.activeStoreId,
                         activeCompanyId: state.activeCompanyId,

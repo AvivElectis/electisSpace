@@ -1,6 +1,7 @@
 import { logger } from '@shared/infrastructure/services/logger';
-import { Box, Snackbar, Alert, Fab, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Snackbar, Alert, Fab, Button, useMediaQuery, useTheme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useState, useMemo, useCallback, useEffect, useDeferredValue, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
@@ -505,9 +506,6 @@ export function PeopleManagerView() {
                 onSearchChange={setSearchQuery}
                 assignmentFilter={assignmentFilter}
                 onAssignmentFilterChange={setAssignmentFilter}
-                canEdit={canEdit}
-                onCancelAllAssignments={handleCancelAllAssignments}
-                assignedCount={assignedCount}
             />
 
             {/* Bulk Actions */}
@@ -540,6 +538,20 @@ export function PeopleManagerView() {
                 onUnassignSpace={handleUnassignSpace}
             />
 
+
+            {/* Mobile: Unassign All button at the bottom of the page */}
+            {isMobile && canEdit && assignedCount > 0 && (
+                <Box sx={{ mt: 2, mb: 10, display: 'flex', justifyContent: 'flex-start' }}>
+                    <Button
+                        variant="text"
+                        color="error"
+                        startIcon={<CancelIcon />}
+                        onClick={handleCancelAllAssignments}
+                    >
+                        {t('people.cancelAllAssignments')}
+                    </Button>
+                </Box>
+            )}
 
             {/* Mobile FAB — Add Person */}
             {isMobile && (
