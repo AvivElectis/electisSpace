@@ -198,7 +198,7 @@ export function PeopleTable({
                     </Paper>
                 ) : (
                     <Stack gap={1}>
-                        {people.map((person) => {
+                        {people.map((person, idx) => {
                             const isExpanded = expandedCardId === person.id;
                             const displayName = nameFieldKey ? person.data[nameFieldKey] : undefined;
 
@@ -239,21 +239,24 @@ export function PeopleTable({
                                             size="small"
                                             sx={{ p: 0 }}
                                         />
-                                        {/* ID badge — rounded pill */}
-                                        <Box sx={{
-                                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                                            color: 'primary.main',
-                                            px: 1.5,
-                                            py: 0.6,
-                                            borderRadius: 2.5,
-                                            fontWeight: 700,
-                                            fontSize: '1rem',
-                                            lineHeight: 1.3,
-                                            whiteSpace: 'nowrap',
-                                            flexShrink: 0,
-                                        }}>
-                                            {person.virtualSpaceId || person.id.slice(0, 8)}
-                                        </Box>
+                                        {/* Index badge */}
+                                        <Typography
+                                            sx={{
+                                                color: 'text.secondary',
+                                                fontSize: '0.8rem',
+                                                fontWeight: 600,
+                                                minWidth: 20,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {idx + 1}
+                                        </Typography>
+                                        {/* Assignment badge — at flex start */}
+                                        {person.assignedSpaceId ? (
+                                            <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ height: 24, fontSize: '0.75rem', flexShrink: 0 }} />
+                                        ) : (
+                                            <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ height: 24, fontSize: '0.75rem', flexShrink: 0 }} />
+                                        )}
                                         {/* Name — fills the middle */}
                                         <Typography
                                             noWrap
@@ -261,17 +264,12 @@ export function PeopleTable({
                                                 flex: 1,
                                                 fontSize: '1.1rem',
                                                 fontWeight: 500,
+                                                textAlign: 'center',
                                                 color: displayName ? 'text.primary' : 'text.disabled',
                                             }}
                                         >
                                             {displayName || '–'}
                                         </Typography>
-                                        {/* Assignment chip */}
-                                        {person.assignedSpaceId ? (
-                                            <Chip label={person.assignedSpaceId} size="small" color="success" sx={{ height: 24, fontSize: '0.75rem' }} />
-                                        ) : (
-                                            <Chip label={t('people.unassigned')} size="small" variant="outlined" sx={{ height: 24, fontSize: '0.75rem' }} />
-                                        )}
                                         {/* Chevron */}
                                         <KeyboardArrowDownIcon sx={{
                                             color: 'text.disabled',
