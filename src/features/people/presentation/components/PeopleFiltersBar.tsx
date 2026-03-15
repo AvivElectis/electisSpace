@@ -1,7 +1,6 @@
-import { Stack, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, IconButton, Badge, Collapse, Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
+import { Stack, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, IconButton, Badge, Collapse, Box, useMediaQuery, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import CancelIcon from '@mui/icons-material/Cancel';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,9 +9,6 @@ interface PeopleFiltersBarProps {
     onSearchChange: (value: string) => void;
     assignmentFilter: 'all' | 'assigned' | 'unassigned';
     onAssignmentFilterChange: (value: 'all' | 'assigned' | 'unassigned') => void;
-    canEdit?: boolean;
-    onCancelAllAssignments?: () => void;
-    assignedCount?: number;
 }
 
 /**
@@ -25,9 +21,6 @@ export function PeopleFiltersBar({
     onSearchChange,
     assignmentFilter,
     onAssignmentFilterChange,
-    canEdit = true,
-    onCancelAllAssignments,
-    assignedCount = 0,
 }: PeopleFiltersBarProps) {
     const { t } = useTranslation();
     const theme = useTheme();
@@ -41,7 +34,7 @@ export function PeopleFiltersBar({
     if (isMobile) {
         return (
             <Box sx={{ mb: 2 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack direction="row" alignItems="center">
                     <IconButton
                         onClick={() => setFiltersOpen(!filtersOpen)}
                         color={activeFilterCount > 0 ? 'primary' : 'default'}
@@ -50,20 +43,6 @@ export function PeopleFiltersBar({
                             <FilterListIcon />
                         </Badge>
                     </IconButton>
-
-                    {onCancelAllAssignments && (
-                        <Tooltip title={t('people.cancelAllAssignments')}>
-                            <span>
-                                <IconButton
-                                    color="error"
-                                    onClick={onCancelAllAssignments}
-                                    disabled={!canEdit || assignedCount === 0}
-                                >
-                                    <CancelIcon />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    )}
                 </Stack>
 
                 <Collapse in={filtersOpen}>
