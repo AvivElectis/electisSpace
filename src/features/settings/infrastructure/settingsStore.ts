@@ -460,8 +460,7 @@ export const useSettingsStore = create<SettingsStore>()(
             {
                 name: 'settings-store',
                 partialize: (state) => {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { solumConfig, logos, storeLogoOverride, ...otherSettings } = state.settings;
+                    const { solumConfig, ...otherSettings } = state.settings;
                     let cleanSolumConfig = solumConfig;
                     if (solumConfig) {
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -469,8 +468,9 @@ export const useSettingsStore = create<SettingsStore>()(
                         cleanSolumConfig = persistableConfig as typeof solumConfig;
                     }
                     return {
-                        // Don't persist logos — always fetch fresh from server to prevent cross-company leaks
-                        settings: { ...otherSettings, solumConfig: cleanSolumConfig, logos: {} },
+                        // Logos persist to localStorage for instant display on reload.
+                        // Cross-company leaks are prevented by resetSettings() during context switches.
+                        settings: { ...otherSettings, solumConfig: cleanSolumConfig },
                         passwordHash: state.passwordHash,
                         activeStoreId: state.activeStoreId,
                         activeCompanyId: state.activeCompanyId,
