@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Selector Button — Design Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif; background: #F5F5F7; color: #3C3C3E; padding: 24px; }
+
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1a1a2e; }
+  h2 { font-size: 15px; font-weight: 500; color: #666; margin-bottom: 20px; }
+  h3 { font-size: 14px; font-weight: 600; color: #444; margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .section { margin-bottom: 48px; }
+
+  /* Simulated App Header */
+  .app-header {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.04), 0px 2px 4px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.04);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .app-header .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 600; font-size: 14px; flex-shrink: 0;
+  }
+  .app-header .tabs {
+    display: flex; gap: 4px; flex: 1; margin-left: 8px;
+  }
+  .app-header .tab {
+    padding: 8px 14px; font-size: 13px; color: #86868B; border-radius: 10px;
+    cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+  }
+  .app-header .tab.active { background: rgba(13, 71, 161, 0.08); color: #0D47A1; font-weight: 600; }
+  .app-header .tab:hover:not(.active) { background: rgba(0,0,0,0.03); }
+  .app-header .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #86868B; flex-shrink: 0;
+  }
+
+  /* === THE STORE SELECTOR BUTTON === */
+  .store-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 10px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(0,0,0,0.1);
+    background: linear-gradient(135deg, #ffffff 0%, #F5F5F7 100%);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    flex-shrink: 0;
+    max-width: 280px;
+    user-select: none;
+  }
+  .store-selector:hover {
+    border-color: rgba(13, 71, 161, 0.3);
+    background: linear-gradient(135deg, #f8faff 0%, #e8eef8 100%);
+    box-shadow: 0 2px 8px rgba(13, 71, 161, 0.1);
+    transform: translateY(-1px);
+  }
+  .store-selector:active {
+    transform: scale(0.97);
+    box-shadow: 0 1px 4px rgba(13, 71, 161, 0.12);
+  }
+  .store-selector.open {
+    border-color: #0D47A1;
+    background: linear-gradient(135deg, #f5f8ff 0%, #e3eaf6 100%);
+    box-shadow: 0 2px 12px rgba(13, 71, 161, 0.15);
+  }
+
+  .store-selector .icon-wrapper {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(13, 71, 161, 0.08), rgba(21, 101, 192, 0.15));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .store-selector .icon-wrapper svg {
+    width: 18px; height: 18px; fill: #0D47A1;
+  }
+
+  .store-selector .text-block {
+    display: flex; flex-direction: column; gap: 1px;
+    overflow: hidden; min-width: 0;
+  }
+  .store-selector .company-name {
+    font-size: 10px; font-weight: 600; color: #86868B;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .store-selector .store-name {
+    font-size: 13px; font-weight: 700; color: #3C3C3E;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .store-selector .chevron {
+    flex-shrink: 0; margin-left: auto;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .store-selector .chevron svg {
+    width: 18px; height: 18px; fill: #86868B;
+  }
+  .store-selector.open .chevron { transform: rotate(180deg); }
+  .store-selector:hover .chevron svg { fill: #0D47A1; }
+
+  /* Switching state */
+  .store-selector.switching {
+    pointer-events: none; opacity: 0.7;
+    border-color: rgba(0,0,0,0.08);
+  }
+  .store-selector.switching .spinner {
+    display: block;
+  }
+  .store-selector .spinner {
+    display: none; width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,0.08); border-top-color: #0D47A1;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* === COMPACT (TABLET) === */
+  .store-selector.compact {
+    padding: 5px 10px 5px 8px;
+    gap: 8px;
+    max-width: 200px;
+    border-radius: 12px;
+  }
+  .store-selector.compact .icon-wrapper {
+    width: 28px; height: 28px; border-radius: 8px;
+  }
+  .store-selector.compact .icon-wrapper svg { width: 15px; height: 15px; }
+  .store-selector.compact .company-name { display: none; }
+  .store-selector.compact .store-name { font-size: 12px; }
+
+  /* === MOBILE (ICON ONLY) === */
+  .store-selector.mobile {
+    padding: 7px;
+    gap: 0;
+    max-width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+    justify-content: center;
+  }
+  .store-selector.mobile .text-block { display: none; }
+  .store-selector.mobile .chevron { display: none; }
+  .store-selector.mobile .icon-wrapper {
+    width: 28px; height: 28px; border-radius: 8px;
+  }
+
+  /* === DROPDOWN MENU === */
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0px 12px 40px rgba(0,0,0,0.12), 0px 12px 24px rgba(0,0,0,0.08);
+    min-width: 280px;
+    max-height: 380px;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 6px 0;
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+  .dropdown-menu .group-header {
+    padding: 10px 16px 4px;
+    font-size: 11px; font-weight: 600;
+    color: #888; text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dropdown-menu .group-header svg {
+    width: 14px; height: 14px; fill: #aaa;
+  }
+  .dropdown-menu .store-item {
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 13px; color: #3C3C3E;
+    border-radius: 10px;
+    margin: 1px 6px;
+  }
+  .dropdown-menu .store-item:hover { background: rgba(13, 71, 161, 0.04); }
+  .dropdown-menu .store-item.active {
+    background: rgba(13, 71, 161, 0.08); color: #0D47A1; font-weight: 600;
+  }
+  .dropdown-menu .store-item .check {
+    width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dropdown-menu .store-item .check svg { width: 16px; height: 16px; fill: #0D47A1; }
+  .dropdown-menu .store-item .store-icon {
+    width: 24px; height: 24px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .dropdown-menu .store-item .store-icon svg { width: 14px; height: 14px; }
+  .dropdown-menu .store-item .item-text { flex: 1; min-width: 0; }
+  .dropdown-menu .store-item .item-name {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dropdown-menu .store-item .item-code {
+    font-size: 11px; color: #999; margin-top: 1px;
+  }
+  .dropdown-menu .divider {
+    height: 1px; background: #f0f0f0; margin: 4px 12px;
+  }
+  .dropdown-menu .admin-badge {
+    padding: 8px 16px; display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #0D47A1; font-weight: 600;
+  }
+  .dropdown-menu .admin-badge svg { width: 16px; height: 16px; fill: #0D47A1; }
+
+  /* Responsive containers */
+  .viewport-label {
+    display: inline-block;
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .viewport-label.desktop { background: #e8f5e9; color: #2e7d32; }
+  .viewport-label.tablet { background: #fff3e0; color: #e65100; }
+  .viewport-label.mobile { background: #fce4ec; color: #c62828; }
+
+  .state-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 16px; }
+  .state-card {
+    background: #fff; border-radius: 16px; padding: 14px 18px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.04), 0px 2px 4px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.04);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .state-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  .note {
+    font-size: 12px; color: #888; margin-top: 6px; line-height: 1.5;
+    padding-left: 12px; border-left: 2px solid #e0e0e0;
+  }
+</style>
+</head>
+<body>
+
+<h1>CompanyStoreSelector — Button Design</h1>
+<h2>Stand-out contextual button with responsive breakpoints</h2>
+
+<!-- ==================== DESKTOP ==================== -->
+<div class="section">
+  <span class="viewport-label desktop">Desktop (600px+)</span>
+
+  <h3>In App Header Context</h3>
+  <div class="app-header">
+    <div class="logo">eS</div>
+
+    <div style="position: relative;">
+      <div class="store-selector" id="demo-btn" onclick="toggleDemo()">
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="text-block">
+          <span class="company-name">חברת טסטים</span>
+          <span class="store-name">HQ</span>
+        </div>
+        <div class="chevron">
+          <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+        </div>
+        <div class="spinner"></div>
+      </div>
+
+      <!-- Dropdown (shown statically for demo) -->
+      <div class="dropdown-menu" id="demo-menu" style="display: none;">
+        <div class="admin-badge">
+          <svg viewBox="0 0 24 24"><path d="M17 11c.34 0 .67.04 1 .09V6.27L10.5 3 3 6.27v4.91c0 4.54 3.2 8.79 7.5 9.82.55-.13 1.08-.32 1.6-.55A5.973 5.973 0 0 1 11 17c0-3.31 2.69-6 6-6z"/></svg>
+          Platform Administrator
+        </div>
+        <div class="divider"></div>
+
+        <div class="group-header">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+          חברת טסטים (TST)
+        </div>
+        <div class="store-item active">
+          <div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+          <div class="store-icon" style="background: #e8f5e9;"><svg viewBox="0 0 24 24" style="fill: #4caf50;"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>
+          <div class="item-text">
+            <div class="item-name">HQ</div>
+            <div class="item-code">Code: 01</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="group-header">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+          משטרת ישראל (PLC)
+        </div>
+        <div class="store-item">
+          <div class="check" style="width:18px;"></div>
+          <div class="store-icon" style="background: #e3f2fd;"><svg viewBox="0 0 24 24" style="fill: #0D47A1;"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>
+          <div class="item-text">
+            <div class="item-name">מטה המשטרה</div>
+            <div class="item-code">Code: 01</div>
+          </div>
+        </div>
+        <div class="store-item">
+          <div class="check" style="width:18px;"></div>
+          <div class="store-icon" style="background: #e3f2fd;"><svg viewBox="0 0 24 24" style="fill: #0D47A1;"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>
+          <div class="item-text">
+            <div class="item-name">מטה מג״ב</div>
+            <div class="item-code">Code: 02</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="group-header">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+          שב״ס (SBS)
+        </div>
+        <div class="store-item">
+          <div class="check" style="width:18px;"></div>
+          <div class="store-icon" style="background: #fff3e0;"><svg viewBox="0 0 24 24" style="fill: #ef6c00;"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>
+          <div class="item-text">
+            <div class="item-name">אולם ייטב לב</div>
+            <div class="item-code">Code: 01</div>
+          </div>
+        </div>
+        <div class="store-item">
+          <div class="check" style="width:18px;"></div>
+          <div class="store-icon" style="background: #fff3e0;"><svg viewBox="0 0 24 24" style="fill: #ef6c00;"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>
+          <div class="item-text">
+            <div class="item-name">אולם ארגמן</div>
+            <div class="item-code">Code: 02</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active">Dashboard</div>
+      <div class="tab">Spaces</div>
+      <div class="tab">Labels</div>
+      <div class="tab">AIMS</div>
+    </div>
+    <div class="avatar">AV</div>
+  </div>
+  <p class="note">Subtle gradient background + elevated border differentiates it from flat nav tabs. Company name as small uppercase label, store name as bold primary text. Chevron rotates on open.</p>
+
+  <h3>Button States</h3>
+  <div class="state-row">
+    <div class="state-card">
+      <span class="state-label">Default</span>
+      <div class="store-selector">
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="text-block">
+          <span class="company-name">חברת טסטים</span>
+          <span class="store-name">HQ</span>
+        </div>
+        <div class="chevron"><svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></div>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <span class="state-label">Hover</span>
+      <div class="store-selector" style="border-color: rgba(13, 71, 161, 0.3); background: linear-gradient(135deg, #f8faff 0%, #e8eef8 100%); box-shadow: 0 2px 8px rgba(13, 71, 161, 0.1); transform: translateY(-1px);">
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="text-block">
+          <span class="company-name">חברת טסטים</span>
+          <span class="store-name">HQ</span>
+        </div>
+        <div class="chevron"><svg viewBox="0 0 24 24" style="fill: #0D47A1;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></div>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <span class="state-label">Open / Active</span>
+      <div class="store-selector open">
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="text-block">
+          <span class="company-name">חברת טסטים</span>
+          <span class="store-name">HQ</span>
+        </div>
+        <div class="chevron" style="transform: rotate(180deg);"><svg viewBox="0 0 24 24" style="fill: #0D47A1;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></div>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <span class="state-label">Switching</span>
+      <div class="store-selector switching">
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="text-block">
+          <span class="company-name">חברת טסטים</span>
+          <span class="store-name">HQ</span>
+        </div>
+        <div class="spinner" style="display: block;"></div>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <span class="state-label">No Context</span>
+      <div class="store-selector" style="border-style: dashed; border-color: #bbb;">
+        <div class="icon-wrapper" style="background: linear-gradient(135deg, #f5f5f5, #eee);">
+          <svg viewBox="0 0 24 24" style="fill: #999;"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="text-block">
+          <span class="store-name" style="color: #999;">Select Store</span>
+        </div>
+        <div class="chevron"><svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TABLET ==================== -->
+<div class="section">
+  <span class="viewport-label tablet">Tablet (600px - 900px)</span>
+  <h3>Compact — Store name only, no company label</h3>
+  <div class="app-header">
+    <div class="logo">eS</div>
+    <div class="store-selector compact">
+      <div class="icon-wrapper">
+        <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+      </div>
+      <div class="text-block">
+        <span class="store-name" style="font-size: 12px;">HQ</span>
+      </div>
+      <div class="chevron"><svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active">Dashboard</div>
+      <div class="tab">Spaces</div>
+      <div class="tab">Labels</div>
+    </div>
+    <div class="avatar">AV</div>
+  </div>
+  <p class="note">Company name hidden to save space. Store name + icon sufficient for context. Same dropdown menu when clicked.</p>
+</div>
+
+<!-- ==================== MOBILE ==================== -->
+<div class="section">
+  <span class="viewport-label mobile">Mobile (&lt;600px)</span>
+  <h3>Icon-only button — tappable, 42px touch target</h3>
+  <div class="app-header" style="padding: 6px 12px;">
+    <div class="logo" style="width: 30px; height: 30px; font-size: 12px;">eS</div>
+    <div class="store-selector mobile">
+      <div class="icon-wrapper">
+        <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+      </div>
+    </div>
+    <div style="flex:1; text-align: center; font-size: 14px; font-weight: 600; color: #1a1a2e;">electis Space</div>
+    <div style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#666"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </div>
+  </div>
+  <p class="note">Icon-only with gradient background stands out from flat hamburger. Same full dropdown opens on tap. Company/store name shown inside dropdown header instead.</p>
+</div>
+
+<script>
+function toggleDemo() {
+  const menu = document.getElementById('demo-menu');
+  const btn = document.getElementById('demo-btn');
+  if (menu.style.display === 'none') {
+    menu.style.display = 'block';
+    btn.classList.add('open');
+  } else {
+    menu.style.display = 'none';
+    btn.classList.remove('open');
+  }
+}
+</script>
+</body>
+</html>

@@ -104,11 +104,12 @@ interface SpacesDesktopTableProps {
     onSort: (key: string) => void;
     onEdit: (space: Space) => void;
     onDelete: (id: string) => void;
+    onAdd?: () => void;
 }
 
 function SpacesDesktopTable({
     spaces, isFetching, visibleFields, nameFieldKey,
-    sortConfig, searchQuery, canEdit, onSort, onEdit, onDelete,
+    sortConfig, searchQuery, canEdit, onSort, onEdit, onDelete, onAdd,
 }: SpacesDesktopTableProps) {
     const { t, i18n } = useTranslation();
     const { getLabel } = useSpaceTypeLabels();
@@ -236,7 +237,7 @@ function SpacesDesktopTable({
                         ? t('spaces.noSpacesMatching', { spaces: getLabel('plural').toLowerCase() }) + ` "${searchQuery}"`
                         : t('spaces.noSpacesYet', { spaces: getLabel('plural').toLowerCase(), button: `"${getLabel('add')}"` })}
                     actionLabel={!searchQuery && canEdit ? getLabel('add') : undefined}
-                    onAction={!searchQuery && canEdit ? handleAdd : undefined}
+                    onAction={!searchQuery && canEdit ? onAdd : undefined}
                 />
             ) : (
                 <TypedVirtualList
@@ -662,7 +663,7 @@ export function SpacesManagementView() {
                         </Paper>
                     ) : (
                         <Stack gap={1}>
-                            {filteredAndSortedSpaces.map((space, index) => {
+                            {filteredAndSortedSpaces.map((space) => {
                                 const isExpanded = expandedCardId === space.id;
                                 const firstField = visibleFields[0];
                                 const previewValue = firstField ? space.data[firstField.key] : undefined;
@@ -792,6 +793,7 @@ export function SpacesManagementView() {
                     onSort={handleSort}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onAdd={handleAdd}
                 />)
             )}
             {/* Panels below table — both desktop and mobile */}

@@ -10,6 +10,9 @@ import {
     Divider,
     Paper,
     Link,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
@@ -19,6 +22,8 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import BusinessIcon from '@mui/icons-material/Business';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HistoryIcon from '@mui/icons-material/History';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -222,6 +227,32 @@ export function ManualDialog({ open, onClose }: ManualDialogProps) {
                         {t('manual.contactInfo.releaseNotesContent')}
                     </Typography>
                 </Box>
+                {/* Version History (collapsed by default) */}
+                <Accordion
+                    disableGutters
+                    elevation={0}
+                    sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: '8px !important',
+                        '&::before': { display: 'none' },
+                        bgcolor: 'background.paper',
+                    }}
+                >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <HistoryIcon fontSize="small" color="action" />
+                            <Typography variant="body2" fontWeight={600}>
+                                {t('manual.contactInfo.versionHistory')}
+                            </Typography>
+                        </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                            {t('manual.contactInfo.releaseNotesHistory')}
+                        </Typography>
+                    </AccordionDetails>
+                </Accordion>
             </Paper>
         </Box>
     );

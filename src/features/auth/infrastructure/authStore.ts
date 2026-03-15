@@ -34,6 +34,8 @@ const clearAllFeatureStores = () => {
         useOfflineQueueStore.getState().clearItems();
         useListsStore.getState().clearAllData();
         useSyncStore.getState().setWorkingMode('SOLUM_API');
+        // Reset settings (logos, appName, fieldMappings, articleFormat) to prevent cross-store leaks
+        useSettingsStore.getState().resetSettings();
     } catch (e) {
         logger.warn('AuthStore', 'Failed to clear feature stores', { error: e instanceof Error ? e.message : String(e) });
     }
@@ -522,10 +524,8 @@ export const useAuthStore = create<AuthState>()(
                         settingsStore.setActiveStoreId(null);
 
                         // Clear all data stores — company changed, old store data is stale
+                        // resetSettings() inside clearAllFeatureStores handles fieldMappings + articleFormat
                         clearAllFeatureStores();
-                        settingsStore.clearFieldMappings();
-                        // Also clear stale article format from previous company
-                        settingsStore.updateSettings({ solumArticleFormat: undefined });
 
                         // Fetch company-level settings (logos, features, branding)
                         // so UI updates immediately without waiting for a store selection

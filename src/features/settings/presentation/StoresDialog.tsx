@@ -415,6 +415,7 @@ export function StoresDialog({ open, onClose, company }: StoresDialogProps) {
                         onClose={handleStoreDialogClose}
                         onSave={handleStoreSave}
                         companyId={company.id}
+                        companyFeatures={company.companyFeatures}
                         store={selectedStore}
                     />
                 )}
