@@ -1806,6 +1806,7 @@
     "nativeSettings": {
         "profile": "פרופיל",
         "help": "עזרה ומדריך",
+        "about": "אודות",
         "logout": "התנתקות"
     }
 }

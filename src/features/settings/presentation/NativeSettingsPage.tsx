@@ -24,6 +24,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonIcon from '@mui/icons-material/Person';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloudIcon from '@mui/icons-material/Cloud';
@@ -210,6 +211,13 @@ export function NativeSettingsPage() {
                         <HelpOutlineIcon color="primary" />
                     </ListItemIcon>
                     <ListItemText primary={t('nativeSettings.help')} />
+                </ListItemButton>
+
+                <ListItemButton onClick={() => navigate('/about')} sx={{ py: 1.5 }}>
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                        <InfoOutlinedIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary={t('nativeSettings.about')} />
                 </ListItemButton>
 
                 <ListItemButton onClick={handleLogout} sx={{ py: 1.5 }}>

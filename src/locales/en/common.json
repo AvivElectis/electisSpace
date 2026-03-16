@@ -1794,6 +1794,7 @@
     "nativeSettings": {
         "profile": "Profile",
         "help": "Help & Manual",
+        "about": "About",
         "logout": "Logout"
     }
 }
