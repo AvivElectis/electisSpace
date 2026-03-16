@@ -508,7 +508,7 @@ export function ConferencePage() {
                 direction="row"
                 alignItems="center"
                 gap={2}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, display: 'var(--native-page-header-display, flex)' }}
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>

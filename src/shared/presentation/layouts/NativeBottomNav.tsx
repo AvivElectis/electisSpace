@@ -11,7 +11,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNavTabs } from '../hooks/useNavTabs';
 import { useTheme } from '@mui/material/styles';
 
-export const NATIVE_BOTTOM_NAV_HEIGHT = 56;
+export const NATIVE_BOTTOM_NAV_HEIGHT = 64;
 
 export function NativeBottomNav() {
     const navigate = useNavigate();
@@ -63,8 +63,15 @@ export function NativeBottomNav() {
                         value={tab.value}
                         icon={tab.icon}
                         sx={{
-                            minWidth: 56,
-                            maxWidth: 80,
+                            minWidth: 64,
+                            maxWidth: 96,
+                            '& .MuiBottomNavigationAction-label': {
+                                fontSize: '0.8rem',
+                                '&.Mui-selected': { fontSize: '0.85rem' },
+                            },
+                            '& .MuiSvgIcon-root': {
+                                fontSize: '1.6rem',
+                            },
                         }}
                     />
                 ))}

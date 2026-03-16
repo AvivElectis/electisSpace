@@ -248,13 +248,15 @@ export function MainLayout({ children }: MainLayoutProps) {
                     {/* Native slim header */}
                     <NativeAppHeader />
 
-                    {/* Main Content — padded at bottom for bottom nav + safe area */}
+                    {/* Main Content — padded for bottom nav + inline padding */}
                     <Box
                         component="main"
                         sx={{
                             flex: 1,
                             display: 'flex',
                             flexDirection: 'column',
+                            px: 1.5,
+                            pt: 1,
                             pb: `calc(${NATIVE_BOTTOM_NAV_HEIGHT + 32}px + env(safe-area-inset-bottom))`,
                         }}
                     >

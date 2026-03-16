@@ -131,12 +131,12 @@ export function AimsManagementPage() {
     return (
         <PullToRefresh onRefresh={handleRefresh}>
         <Box dir={isRtl ? 'rtl' : 'ltr'} sx={{ '& .MuiTableCell-root': { textAlign: 'start' } }}>
-            {/* Header Section */}
+            {/* Header Section — hidden on native */}
             <Stack
                 direction="row"
                 alignItems="center"
                 gap={2}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, display: 'var(--native-page-header-display, flex)' }}
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>

@@ -281,8 +281,8 @@ export function DashboardPage() {
     return (
         <PullToRefresh onRefresh={handleRefresh}>
         <Box>
-            {/* Header + Quick Actions inline */}
-            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, md: 2 } }}>
+            {/* Header + Quick Actions inline — hidden on native */}
+            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, md: 2 }, display: 'var(--native-page-header-display, flex)' }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
                         {t('dashboard.title')}

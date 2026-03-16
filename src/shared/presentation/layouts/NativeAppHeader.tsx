@@ -36,9 +36,9 @@ export function NativeAppHeader() {
         >
             <Toolbar
                 sx={{
-                    minHeight: '48px !important',
-                    height: 48,
-                    px: 1,
+                    minHeight: '56px !important',
+                    height: 56,
+                    px: 2,
                     display: 'flex',
                     alignItems: 'center',
                 }}
@@ -46,10 +46,11 @@ export function NativeAppHeader() {
                 {/* Start side: page title */}
                 <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                     <Typography
-                        variant="subtitle1"
-                        fontWeight={600}
+                        variant="h6"
+                        fontWeight={700}
                         color="primary.contrastText"
                         noWrap
+                        sx={{ fontSize: '1.2rem' }}
                     >
                         {pageTitle}
                     </Typography>
@@ -60,17 +61,17 @@ export function NativeAppHeader() {
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 0.5,
+                        gap: 1,
                     }}
                 >
                     <CompanyStoreSelector compact />
                     <IconButton
-                        size="small"
+                        size="medium"
                         onClick={handleSettingsClick}
                         sx={{ color: 'primary.contrastText' }}
                         aria-label="settings"
                     >
-                        <SettingsIcon fontSize="small" />
+                        <SettingsIcon />
                     </IconButton>
                 </Box>
             </Toolbar>

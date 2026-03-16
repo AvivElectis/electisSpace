@@ -504,8 +504,8 @@ export function SpacesManagementView() {
     return (
         <PullToRefresh onRefresh={handleRefresh}>
         <Box>
-            {/* Header Section */}
-            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 } }}>
+            {/* Header Section — hidden on native (shown in NativeAppHeader) */}
+            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 }, display: 'var(--native-page-header-display, flex)' }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                         {getLabel('plural')}

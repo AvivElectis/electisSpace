@@ -7,8 +7,9 @@ export function useNativeInit() {
     useEffect(() => {
         if (!isNative) return;
 
-        // Set CSS custom property for bottom nav offset — used by FABs across all pages
+        // Set CSS custom properties for native layout adjustments
         document.documentElement.style.setProperty('--native-bottom-nav-offset', '88px'); // 56px nav + 32px spacing
+        document.documentElement.style.setProperty('--native-page-header-display', 'none'); // hide page headers (shown in app header)
 
         (async () => {
             try {
