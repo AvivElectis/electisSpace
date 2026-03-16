@@ -21,6 +21,7 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useCommandPalette } from '@features/quick-actions/application/useCommandPalette';
 import { useNavTabs } from '../hooks/useNavTabs';
 import { useNativePlatform } from '../hooks/useNativePlatform';
+import { useNativeInit } from '../hooks/useNativeInit';
 import { useAndroidBackButton } from '../hooks/useAndroidBackButton';
 import { NativeAppHeader } from './NativeAppHeader';
 import { NativeBottomNav, NATIVE_BOTTOM_NAV_HEIGHT } from './NativeBottomNav';
@@ -71,6 +72,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [profileOpen, setProfileOpen] = useState(false);
     const commandPalette = useCommandPalette();
     const { isNative } = useNativePlatform();
+    useNativeInit();
     const { syncState, setWorkingMode } = useSyncStore();
     const { isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
