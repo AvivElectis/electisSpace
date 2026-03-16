@@ -1215,7 +1215,280 @@ git add -A && git commit -m "fix: address testing feedback"
 
 ---
 
-## Task 16: iOS Scaffolding
+## Task 16: Native Manual Page
+
+**Files:**
+- Create: `src/features/manual/presentation/NativeManualPage.tsx`
+- Modify: `src/App.tsx` (add route)
+
+On native, the manual/help is a full page (`/manual`) instead of a dialog. Reuses the same content from `ManualDialog` but in a page layout with a back-button header.
+
+- [ ] **Step 1: Create NativeManualPage**
+
+Same structure as NativeSettingsPage: blue header bar with back arrow + title, then the manual content below. Extract the tab content from `ManualDialog.tsx` — the "Contact & Info" tab and "Manual" sub-tabs.
+
+Key elements:
+- Back button header with `paddingTop: env(safe-area-inset-top)`
+- Two main tabs: Contact & Info, Manual (with sub-tabs)
+- `tel:` and `mailto:` links (work natively on Android/iOS)
+- App version display (`v{__APP_VERSION__}`)
+- Release notes with collapsible history
+
+- [ ] **Step 2: Add route in App.tsx**
+
+```typescript
+<Route path="/manual" element={<NativeManualPage />} />
+```
+
+- [ ] **Step 3: Update NativeSettingsPage**
+
+In the settings page quick actions list, change the Help item to navigate to `/manual` instead of opening ManualDialog:
+
+```typescript
+<ListItemButton onClick={() => navigate('/manual')}>
+```
+
+- [ ] **Step 4: Verify build**
+
+```bash
+npx tsc --noEmit
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/features/manual/presentation/NativeManualPage.tsx src/App.tsx
+git commit -m "feat: native manual/help as full page with back navigation"
+```
+
+---
+
+## Task 17: Native About Page
+
+**Files:**
+- Create: `src/features/settings/presentation/NativeAboutPage.tsx`
+- Modify: `src/App.tsx` (add route)
+
+A dedicated about page showing app version, platform info, and release notes — accessed from the settings page.
+
+- [ ] **Step 1: Create NativeAboutPage**
+
+```typescript
+// Key content:
+// - App icon (from public/logos/AppIcon.png)
+// - App name: "electisSpace"
+// - Version: v{__APP_VERSION__}
+// - Platform: Android / iOS / Web (from useNativePlatform)
+// - Build info: Capacitor version, SDK version
+// - Release notes (current + collapsible history)
+// - Back button header
+```
+
+- [ ] **Step 2: Add route**
+
+```typescript
+<Route path="/about" element={<NativeAboutPage />} />
+```
+
+- [ ] **Step 3: Add "About" item to NativeSettingsPage quick actions**
+
+```typescript
+<ListItemButton onClick={() => navigate('/about')}>
+    <ListItemIcon><InfoIcon /></ListItemIcon>
+    <ListItemText primary={t('manual.contactInfo.title')} />
+</ListItemButton>
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/features/settings/presentation/NativeAboutPage.tsx src/App.tsx
+git commit -m "feat: native about page with version, platform, release notes"
+```
+
+---
+
+## Task 18: Biometric Login for Trusted Devices
+
+**Files:**
+- Install: `@aparajita/capacitor-biometric-auth` (or `@capacitor-community/biometric-auth`)
+- Create: `src/shared/infrastructure/services/biometricService.ts`
+- Modify: `src/features/auth/presentation/LoginPage.tsx`
+- Modify: `src/features/auth/infrastructure/authStore.ts`
+
+On native, if the device is trusted (has a stored device token) AND biometric hardware is available, the 2FA code step is replaced with a biometric prompt. Flow:
+
+1. User enters email + password → server validates credentials
+2. Server returns `requiresVerification: true` (same as current)
+3. **Instead of showing the 6-digit code input**, the app shows a biometric prompt
+4. If biometric passes → send the stored device token to server to complete auth
+5. If biometric fails or not available → fall back to email code (current flow)
+
+- [ ] **Step 1: Install biometric plugin**
+
+```bash
+npm install @aparajita/capacitor-biometric-auth
+npx cap sync android
+```
+
+Note: The `compass/` app in the repo already uses this plugin, so it's proven compatible.
+
+- [ ] **Step 2: Create biometricService**
+
+```typescript
+// src/shared/infrastructure/services/biometricService.ts
+
+import { Capacitor } from '@capacitor/core';
+
+export const biometricService = {
+    /** Check if biometric hardware is available */
+    async isAvailable(): Promise<boolean> {
+        if (!Capacitor.isNativePlatform()) return false;
+        try {
+            const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+            const result = await BiometricAuth.checkBiometry();
+            return result.isAvailable;
+        } catch {
+            return false;
+        }
+    },
+
+    /** Prompt for biometric verification */
+    async authenticate(reason: string): Promise<boolean> {
+        try {
+            const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+            await BiometricAuth.authenticate({
+                reason,
+                cancelTitle: 'Cancel',
+                allowDeviceCredential: true, // PIN/pattern fallback
+            });
+            return true;
+        } catch {
+            return false;
+        }
+    },
+};
+```
+
+- [ ] **Step 3: Modify LoginPage 2FA step**
+
+In `LoginPage.tsx`, after the server returns `requiresVerification: true`:
+
+```typescript
+// After login step 1 succeeds:
+if (isNative && pendingEmail) {
+    // Check if device is trusted AND biometric available
+    const deviceToken = await deviceTokenStorage.getDeviceToken();
+    const biometricAvailable = await biometricService.isAvailable();
+
+    if (deviceToken && biometricAvailable) {
+        // Show biometric prompt instead of code input
+        const biometricPassed = await biometricService.authenticate(
+            t('auth.biometric.reason', 'Verify your identity')
+        );
+        if (biometricPassed) {
+            // Use device token to complete auth (skip 2FA code)
+            const deviceId = await deviceTokenStorage.getDeviceId();
+            const result = await authService.deviceAuth(deviceToken, deviceId);
+            if (result.accessToken) {
+                // Logged in — same as successful 2FA
+                return;
+            }
+        }
+        // Biometric failed or device token expired — fall back to code input
+    }
+}
+// Show normal 2FA code input (existing flow)
+```
+
+- [ ] **Step 4: Add translation keys**
+
+EN:
+```json
+"auth": {
+    "biometric": {
+        "reason": "Verify your identity",
+        "loginWithBiometric": "Login with biometrics",
+        "notAvailable": "Biometric authentication not available"
+    }
+}
+```
+
+HE:
+```json
+"auth": {
+    "biometric": {
+        "reason": "אמת את זהותך",
+        "loginWithBiometric": "התחברות עם זיהוי ביומטרי",
+        "notAvailable": "אימות ביומטרי לא זמין"
+    }
+}
+```
+
+- [ ] **Step 5: Add safe-area + keyboard handling to LoginPage**
+
+```typescript
+// Wrap login form with safe-area-aware padding on native:
+<Box sx={{
+    paddingTop: isNative ? 'env(safe-area-inset-top)' : 0,
+    paddingBottom: isNative ? 'env(safe-area-inset-bottom)' : 0,
+}}>
+```
+
+- [ ] **Step 6: Verify build**
+
+```bash
+npx tsc --noEmit
+npm run build
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/shared/infrastructure/services/biometricService.ts src/features/auth/presentation/LoginPage.tsx src/locales/*/common.json package.json
+git commit -m "feat: biometric login replaces 2FA on trusted native devices"
+```
+
+---
+
+## Task 19: Error Boundary Native Fix
+
+**Files:**
+- Modify: `src/shared/presentation/components/ErrorBoundary.tsx`
+
+- [ ] **Step 1: Replace "Reload Page" with platform-aware action**
+
+On native, `window.location.reload()` should be replaced with app restart:
+
+```typescript
+import { useNativePlatform } from '../hooks/useNativePlatform';
+
+// In the error UI:
+const { isNative } = useNativePlatform(); // or detect at class component level
+
+// "Reload" button:
+onClick={() => {
+    if (isNative) {
+        // Capacitor: reload the WebView
+        window.location.href = '/';
+    } else {
+        window.location.reload();
+    }
+}}
+```
+
+Change button label to `t('common.restart')` on native vs `t('common.reload')` on web.
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/shared/presentation/components/ErrorBoundary.tsx
+git commit -m "fix: error boundary uses platform-aware reload on native"
+```
+
+---
+
+## Task 20: iOS Scaffolding
 
 - [ ] **Step 1: Add iOS platform**
 
@@ -1240,7 +1513,7 @@ git commit -m "chore: add iOS Capacitor platform (scaffolding only)"
 
 ---
 
-## Task 17: Version Bump & Documentation
+## Task 21: Version Bump & Documentation
 
 **Files:**
 - Modify: `package.json` — version bump to 2.14.0
