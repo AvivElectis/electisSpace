@@ -1,0 +1,11 @@
+{
+	"appId": "com.electiscompass.app",
+	"appName": "electisCompass",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"Preferences": {}
+	}
+}

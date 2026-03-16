@@ -422,7 +422,7 @@ export function DashboardPage() {
             {isMobile && (
                 <Box sx={{
                     position: 'fixed',
-                    bottom: 16,
+                    bottom: 'calc(16px + var(--native-bottom-nav-offset, 0px))',
                     insetInlineStart: 16,
                     zIndex: (theme) => theme.zIndex.fab,
                 }}>

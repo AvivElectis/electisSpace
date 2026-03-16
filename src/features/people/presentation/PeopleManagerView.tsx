@@ -568,7 +568,7 @@ export function PeopleManagerView() {
                     disabled={!canEdit}
                     sx={{
                         position: 'fixed',
-                        bottom: 24,
+                        bottom: 'calc(24px + var(--native-bottom-nav-offset, 0px))',
                         right: 24,
                         zIndex: 1050,
                         height: 64,

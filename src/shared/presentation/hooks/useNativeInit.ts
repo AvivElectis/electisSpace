@@ -7,6 +7,9 @@ export function useNativeInit() {
     useEffect(() => {
         if (!isNative) return;
 
+        // Set CSS custom property for bottom nav offset — used by FABs across all pages
+        document.documentElement.style.setProperty('--native-bottom-nav-offset', '88px'); // 56px nav + 32px spacing
+
         (async () => {
             try {
                 const { StatusBar, Style } = await import('@capacitor/status-bar');
