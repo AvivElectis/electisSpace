@@ -44,6 +44,7 @@ import {
     Close as CloseIcon,
 } from '@mui/icons-material';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
 import { useTranslation } from 'react-i18next';
 import { useLabelsStore } from '../infrastructure/labelsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -493,13 +494,12 @@ export function LabelsPage() {
                 <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.25rem', md: '2rem' }, fontWeight: 500 }}>
                     {t('labels.title', 'Labels Management')}
                 </Typography>
-                <Stack direction="row" gap={1}>
+                <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         disabled={!canEdit}
                         onClick={() => handleOpenLinkDialog()}
-                        sx={{ display: { xs: 'none', md: 'inline-flex' } }}
                     >
                         {t('labels.linkNew', 'Link Label')}
                     </Button>
@@ -508,31 +508,30 @@ export function LabelsPage() {
                         startIcon={<ImageIcon />}
                         disabled={!canEdit}
                         onClick={() => handleOpenAssignImageDialog()}
-                        sx={{ display: { xs: 'none', md: 'inline-flex' } }}
                     >
                         {t('imageLabels.assignImage', 'Assign Image')}
                     </Button>
-                    <Tooltip title={t('common.refresh', 'Refresh')}>
-                        <span style={{ display: 'inline-flex' }}>
-                            <IconButton
-                                onClick={handleRefresh}
-                                disabled={isLoading}
-                                sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
-                            >
-                                <RefreshIcon />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
                     <Button
                         variant="text"
                         startIcon={<RefreshIcon />}
                         onClick={handleRefresh}
                         disabled={isLoading}
-                        sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                     >
                         {t('common.refresh', 'Refresh')}
                     </Button>
-                </Stack>
+                </Box>
+                {/* Mobile: icon-only refresh */}
+                <Tooltip title={t('common.refresh', 'Refresh')}>
+                    <span style={{ display: 'inline-flex' }}>
+                        <IconButton
+                            onClick={handleRefresh}
+                            disabled={isLoading}
+                            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+                        >
+                            <RefreshIcon />
+                        </IconButton>
+                    </span>
+                </Tooltip>
             </Stack>
 
             {/* Error Alert */}
