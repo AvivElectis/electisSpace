@@ -4,7 +4,8 @@
         "subtitle": "מערכת ניהול ESL",
         "loadingApplication": "טוען את האפליקציה...",
         "restoringSession": "משחזר את ההפעלה...",
-        "switchingStore": "מחליף חנות..."
+        "switchingStore": "מחליף חנות...",
+        "pressAgainToExit": "לחץ שוב כדי לצאת"
     },
     "aims": {
         "actions": "פעולות",
@@ -1598,6 +1599,11 @@
             "connectionFailed": "בדיקת החיבור נכשלה. אנא אמת את פרטי ההתחברות.",
             "saveFailed": "שמירת פרטי ההתחברות ל-AIMS נכשלה.",
             "connectAndSave": "התחבר ושמור"
+        },
+        "biometric": {
+            "reason": "אמת את זהותך",
+            "loginWithBiometric": "התחברות עם זיהוי ביומטרי",
+            "notAvailable": "אימות ביומטרי לא זמין"
         }
     },
     "roles": {

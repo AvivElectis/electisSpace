@@ -4,7 +4,8 @@
         "subtitle": "ESL Management System",
         "loadingApplication": "Loading application...",
         "restoringSession": "Restoring session...",
-        "switchingStore": "Switching store..."
+        "switchingStore": "Switching store...",
+        "pressAgainToExit": "Press again to exit"
     },
     "aims": {
         "actions": "Actions",
@@ -1586,6 +1587,11 @@
             "connectionFailed": "Connection test failed. Please verify your credentials.",
             "saveFailed": "Failed to save AIMS credentials.",
             "connectAndSave": "Connect & Save"
+        },
+        "biometric": {
+            "reason": "Verify your identity",
+            "loginWithBiometric": "Login with biometrics",
+            "notAvailable": "Biometric authentication not available"
         }
     },
     "roles": {
