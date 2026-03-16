@@ -137,19 +137,19 @@ function SortableFieldRow({
                     <TextField
                         size="small"
                         variant="outlined"
+                        label="EN"
                         value={field.friendlyNameEn}
                         onChange={(e) => onNameEnChange(e.target.value)}
                         fullWidth
-                        placeholder="Display Name (EN)"
                         inputProps={{ style: { fontSize: '0.85rem' } }}
                     />
                     <TextField
                         size="small"
                         variant="outlined"
+                        label="HE"
                         value={field.friendlyNameHe}
                         onChange={(e) => onNameHeChange(e.target.value)}
                         fullWidth
-                        placeholder="שם תצוגה (HE)"
                         inputProps={{ dir: 'rtl', style: { fontSize: '0.85rem' } }}
                     />
                 </Stack>
