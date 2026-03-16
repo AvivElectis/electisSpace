@@ -15,6 +15,7 @@ import { useSessionRestore } from './features/auth/application/useSessionRestore
 import { useAuthStore } from './features/auth/infrastructure/authStore';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { logger } from './shared/infrastructure/services/logger';
 
 
@@ -49,8 +50,11 @@ function App() {
   // Determine text direction based on language
   const direction = i18n.language === 'he' ? 'rtl' : 'ltr';
 
-  // Create theme based on direction
-  const theme = useMemo(() => createAppTheme(direction), [direction]);
+  // Detect native platform (Capacitor Android/iOS)
+  const isNative = Capacitor.isNativePlatform();
+
+  // Create theme based on direction and platform
+  const theme = useMemo(() => createAppTheme(direction, isNative), [direction, isNative]);
 
   // Update document direction
   useEffect(() => {

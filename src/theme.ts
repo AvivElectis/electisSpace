@@ -6,7 +6,7 @@ import rtlPlugin from 'stylis-plugin-rtl';
 /**
  * Create theme with RTL support based on language direction
  */
-export function createAppTheme(direction: 'ltr' | 'rtl') {
+export function createAppTheme(direction: 'ltr' | 'rtl', isNative = false) {
     const themeOptions: ThemeOptions = {
         direction,
 
@@ -57,15 +57,17 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
         },
 
         typography: {
-            fontFamily: [
-                '"Assistant"',  // Hebrew font (quoted for proper CSS handling)
-                '-apple-system',
-                'BlinkMacSystemFont',
-                '"SF Pro Display"',
-                '"SF Pro Text"',
-                '"Helvetica Neue"',
-                'Arial',
-            ].join(','),
+            fontFamily: isNative
+                ? '"Roboto", sans-serif'
+                : [
+                    '"Assistant"',  // Hebrew font (quoted for proper CSS handling)
+                    '-apple-system',
+                    'BlinkMacSystemFont',
+                    '"SF Pro Display"',
+                    '"SF Pro Text"',
+                    '"Helvetica Neue"',
+                    'Arial',
+                ].join(','),
 
             h1: {
                 fontSize: '2.5rem',
