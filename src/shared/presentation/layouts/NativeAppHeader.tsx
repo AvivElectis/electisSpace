@@ -31,7 +31,8 @@ export function NativeAppHeader() {
             elevation={0}
             sx={{
                 bgcolor: 'primary.main',
-                paddingTop: 'env(safe-area-inset-top)',
+                // Safe area for status bar — env() for notch devices, fallback 28px for standard Android status bar
+                paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)',
             }}
         >
             <Toolbar

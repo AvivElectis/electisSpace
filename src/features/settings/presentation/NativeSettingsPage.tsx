@@ -175,12 +175,12 @@ export function NativeSettingsPage() {
                 sx={{
                     bgcolor: 'primary.main',
                     color: 'primary.contrastText',
-                    paddingTop: 'env(safe-area-inset-top)',
+                    paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)',
                     display: 'flex',
                     alignItems: 'center',
-                    px: 1,
+                    px: 1.5,
                     py: 0.5,
-                    minHeight: 48,
+                    minHeight: 56,
                 }}
             >
                 <IconButton

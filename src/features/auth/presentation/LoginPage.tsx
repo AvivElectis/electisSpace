@@ -158,8 +158,8 @@ export function LoginPage() {
                 position: 'relative',
                 overflow: 'hidden',
                 bgcolor: 'background.default',
-                paddingTop: 'env(safe-area-inset-top)',
-                paddingBottom: 'env(safe-area-inset-bottom)',
+                paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)',
+                paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
                 '&::before': {
                     content: '""',
                     position: 'absolute',
