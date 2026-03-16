@@ -4,13 +4,7 @@ import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTr
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { checkNavigationGuard } from '../navigationGuard';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import BusinessIcon from '@mui/icons-material/Business';
-import PeopleIcon from '@mui/icons-material/People';
-import LabelIcon from '@mui/icons-material/Label';
-import RouterIcon from '@mui/icons-material/Router';
 import { AppHeader } from './AppHeader';
-import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
@@ -25,6 +19,7 @@ import { StoreRequiredGuard } from '@features/auth/presentation/StoreRequiredGua
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useCommandPalette } from '@features/quick-actions/application/useCommandPalette';
+import { useNavTabs } from '../hooks/useNavTabs';
 
 // Lazy load CommandPalette
 const CommandPalette = lazy(() =>
@@ -50,14 +45,6 @@ interface MainLayoutProps {
     children: ReactNode;
 }
 
-interface NavTab {
-    labelKey: string;
-    value: string;
-    icon: React.ReactElement;
-    dynamicLabel?: boolean;
-    feature?: string;  // Feature key for permission filtering
-}
-
 /**
  * Main Layout Component
  * 
@@ -80,7 +67,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [profileOpen, setProfileOpen] = useState(false);
     const commandPalette = useCommandPalette();
     const { syncState, setWorkingMode } = useSyncStore();
-    const { canAccessFeature, isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
+    const { isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
     const isSwitchingStore = useAuthStore(state => state.isSwitchingStore);
     const currentUser = useAuthStore(state => state.user);
@@ -123,25 +110,8 @@ export function MainLayout({ children }: MainLayoutProps) {
         setSpaces(spaces);
     }, [setSpaces, peopleManagerEnabled, workingMode, activeStoreEffectiveFeatures]);
 
-    // Build navigation tabs dynamically
-    const allNavTabs: NavTab[] = [
-        { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" />, feature: 'dashboard' },
-        { 
-            labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces', 
-            value: isPeopleManagerMode ? '/people' : '/spaces', 
-            icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
-            dynamicLabel: true,
-            feature: isPeopleManagerMode ? 'people' : 'spaces',
-        },
-        { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
-        { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
-        { labelKey: 'navigation.aimsManagement', value: '/aims-management', icon: <RouterIcon fontSize="small" />, feature: 'aims-management' },
-    ];
-
-    // Filter tabs by user permissions
-    const navTabs = allNavTabs.filter(tab => 
-        !tab.feature || canAccessFeature(tab.feature as any)
-    );
+    // Build navigation tabs (permission-filtered, reactive to store/mode changes)
+    const navTabs = useNavTabs();
 
     // Initialize backend sync controller (all AIMS communication goes through server)
     const syncController = useBackendSyncController({
