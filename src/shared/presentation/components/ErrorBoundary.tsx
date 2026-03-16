@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Box, Button, Typography, Paper, Alert, AlertTitle } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import { Capacitor } from '@capacitor/core';
 import { logger } from '@shared/infrastructure/services/logger';
 
 interface Props {
@@ -82,7 +83,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
     handleReload = (): void => {
         logger.info('App', 'User triggered page reload after error');
-        window.location.reload();
+        if (Capacitor.isNativePlatform()) {
+            // On native, navigate to root to restart the app shell
+            window.location.href = '/';
+        } else {
+            window.location.reload();
+        }
     };
 
     handleReset = (): void => {
