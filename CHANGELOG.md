@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.13.0] — 2026-03-16 — UI Polish, Mobile Adaptation & Android Support
+
+### Added
+- **Pill buttons** — global `borderRadius: 24px` on all buttons for a modern rounded appearance
+- **Glass toolbar** — frosted glass container (backdrop-filter blur, gradient, inset light) for feature page action buttons on Spaces, Conference, and People pages (desktop/tablet), matching Dashboard QuickActionsPanel
+- **Android Capacitor support** — CapacitorHttp + CapacitorCookies enabled for native HTTP handling, cleartext traffic for dev, `.gz`/`.br` excluded from Android assets, npm scripts for `android:dev`/`android:prod`/`android:install`
+- **Mobile card-based permission matrix** — RoleDialog renders permissions as draggable cards on mobile instead of an overflowing table
+- **Mobile field mapping cards** — EditCompanyTabs field mapping renders as draggable cards with EN/HE labels on mobile
+
+### Changed
+- **AppHeader tablet portrait** — app title, right logo, and store selector drop to second row at sm (600-900px) to prevent cramped layout
+- **People mobile cards** — replaced DB ID badge with row index + assignment chip; assignment at flex-start, name centered
+- **Unassign All button** — moved from top filters bar to page bottom on mobile as tertiary text button
+- **Drawer close button** — removed oversized `scale: 1.5`
+- **Dialog responsive padding** — StoreDialog, AIMSSettingsDialog accordion content, and RoleDialog use `px: { xs: 2, sm: 3 }` for consistent mobile spacing
+- **StoreDialog feature toggles** — Spaces/People and Conference toggle rows stack vertically on mobile
+
+### Fixed
+- **Logo persistence** — logos now persist to localStorage for instant display on reload; company logos are authoritative with store-level fallback
+- **Store logo override disable** — use `null` instead of `undefined` when disabling, so JSON.stringify preserves the key and server shallow merge clears the override
+- **Android Preferences crash** — static import of `@capacitor/preferences` avoids Capacitor plugin proxy thenable trap (`Preferences.then()` not implemented)
+- **AimsCredentialsDialog** — added `fullScreen` on mobile with responsive PaperProps
+
 ## [2.12.0] — 2026-03-14 — Store Isolation Safety
 
 ### Added
