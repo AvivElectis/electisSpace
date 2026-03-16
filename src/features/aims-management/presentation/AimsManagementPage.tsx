@@ -21,6 +21,7 @@ import {
 import RouterIcon from '@mui/icons-material/Router';
 import LabelIcon from '@mui/icons-material/Label';
 import AddIcon from '@mui/icons-material/Add';
+import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
 import UploadIcon from '@mui/icons-material/Upload';
 import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
@@ -140,14 +141,16 @@ export function AimsManagementPage() {
                     </Typography>
                 </Box>
                 {canManage && activeTab === 1 && (
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => setRegisterDialogOpen(true)}
-                        sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
-                    >
-                        {t('aims.registerGateway')}
-                    </Button>
+                    <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => setRegisterDialogOpen(true)}
+                            sx={{ whiteSpace: 'nowrap' }}
+                        >
+                            {t('aims.registerGateway')}
+                        </Button>
+                    </Box>
                 )}
             </Stack>
 
