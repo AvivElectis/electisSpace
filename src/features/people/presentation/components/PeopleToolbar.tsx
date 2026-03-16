@@ -2,6 +2,7 @@ import { Box, Typography, Button, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useTranslation } from 'react-i18next';
+import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
 
 interface PeopleToolbarProps {
     totalPeople: number;
@@ -33,18 +34,13 @@ export function PeopleToolbar({
                 </Typography>
             </Box>
 
-            <Stack direction="row" gap={1.5} flexWrap="wrap">
+            <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={onAddPerson}
                     disabled={!canEdit}
-                    sx={{
-                        whiteSpace: 'nowrap',
-                        display: { xs: 'none', md: 'inline-flex' },
-                        minHeight: 44,
-                        px: 3,
-                    }}
+                    sx={{ whiteSpace: 'nowrap' }}
                 >
                     {t('people.addPerson')}
                 </Button>
@@ -53,15 +49,26 @@ export function PeopleToolbar({
                     startIcon={<UploadFileIcon />}
                     onClick={onUploadCSV}
                     disabled={!canEdit}
-                    sx={{
-                        whiteSpace: 'nowrap',
-                        minHeight: 44,
-                        px: { xs: 2, sm: 3 },
-                    }}
+                    sx={{ whiteSpace: 'nowrap' }}
                 >
                     {t('people.uploadCSV')}
                 </Button>
-            </Stack>
+            </Box>
+
+            {/* Mobile: only show CSV upload (Add is via FAB) */}
+            <Button
+                variant="outlined"
+                startIcon={<UploadFileIcon />}
+                onClick={onUploadCSV}
+                disabled={!canEdit}
+                sx={{
+                    whiteSpace: 'nowrap',
+                    display: { xs: 'inline-flex', md: 'none' },
+                    px: { xs: 2, sm: 3 },
+                }}
+            >
+                {t('people.uploadCSV')}
+            </Button>
         </Stack>
     );
 }

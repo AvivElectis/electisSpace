@@ -132,7 +132,7 @@ export function createAppTheme(direction: 'ltr' | 'rtl') {
             MuiButton: {
                 styleOverrides: {
                     root: {
-                        borderRadius: '10px',
+                        borderRadius: '24px',
                         padding: '10px 20px',
                         minHeight: '44px',
                         minWidth: '88px',

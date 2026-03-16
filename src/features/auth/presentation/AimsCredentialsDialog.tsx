@@ -18,6 +18,8 @@ import {
     Alert,
     CircularProgress,
     MenuItem,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +50,8 @@ export function AimsCredentialsDialog({
     onCancel,
 }: AimsCredentialsDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [baseUrl, setBaseUrl] = useState('https://eu.common.solumesl.com');
     const [cluster, setCluster] = useState('common');
     const [username, setUsername] = useState('');
@@ -89,7 +93,8 @@ export function AimsCredentialsDialog({
     };
 
     return (
-        <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth fullScreen={isMobile}
+            PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '90vh', borderRadius: isMobile ? 0 : undefined } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <SettingsIcon color="primary" />
                 {t('auth.aimsCredentials.title', 'Configure AIMS Connection')}
