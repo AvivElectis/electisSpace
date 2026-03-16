@@ -329,7 +329,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                     : t('settings.stores.createTitle')}
             </DialogTitle>
 
-            <DialogContent dividers>
+            <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
                 {error && (
                     <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
                         {error}
@@ -457,7 +457,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                                     </Typography>
 
                                     {/* Spaces / People — single toggle with mode selector */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1, sm: 2 } }}>
                                         <FormControlLabel
                                             control={
                                                 <Switch
@@ -496,7 +496,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                                     </Box>
 
                                     {/* Conference — single toggle with mode selector */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1, sm: 2 } }}>
                                         <FormControlLabel
                                             control={
                                                 <Switch

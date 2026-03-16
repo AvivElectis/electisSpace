@@ -115,11 +115,11 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                     }}
                 />
 
-                {/* Centered App Title - DESKTOP ONLY */}
+                {/* Centered App Title - hidden on mobile and tablet portrait, shown on md+ */}
                 <Box
                     sx={{
                         flex: 1,
-                        display: { xs: 'none', sm: 'flex' },
+                        display: { xs: 'none', md: 'flex' },
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
@@ -131,7 +131,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         sx={{
                             fontWeight: 700,
                             color: 'text.primary',
-                            fontSize: { sm: '1.75rem', md: '2.25rem' },
+                            fontSize: { md: '2rem', lg: '2.25rem' },
                         }}
                     >
                         {settings.appName}
@@ -142,13 +142,16 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                             sx={{
                                 fontWeight: 700,
                                 color: 'text.secondary',
-                                fontSize: { sm: '0.875rem' },
+                                fontSize: '0.875rem',
                             }}
                         >
                             {settings.appSubtitle}
                         </Typography>
                     )}
                 </Box>
+
+                {/* Spacer for tablet portrait (sm) when title is hidden */}
+                <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block', md: 'none' } }} />
 
                 {/* Right Logo + Language Switcher + Manual + Settings + User Menu */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
@@ -158,16 +161,16 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         src={rightLogo}
                         alt="Right Logo"
                         sx={{
-                            height: { xs: 40, sm: 60, md: 80 },
-                            maxWidth: { xs: 100, sm: 180, md: 250 },
+                            height: { md: 80, lg: 80 },
+                            maxWidth: { md: 200, lg: 250 },
                             objectFit: 'contain',
-                            display: { xs: 'none', sm: 'block' },
+                            display: { xs: 'none', md: 'block' },
                         }}
                     />
 
-                    {/* Company/Store Selector — hidden on xs (shown in mobile second row below), visible on sm+ */}
+                    {/* Company/Store Selector — hidden on xs+sm (shown in second row below), visible on md+ */}
                     {user && (
-                        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                             <CompanyStoreSelector compact />
                         </Box>
                     )}
@@ -286,10 +289,10 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                 </Box>
             </Toolbar>
 
-            {/* Mobile App Title + Store Selector - Second row on small screens */}
+            {/* App Title + Store Selector - Second row on mobile and tablet portrait */}
             <Box
                 sx={{
-                    display: { xs: 'flex', sm: 'none' },
+                    display: { xs: 'flex', md: 'none' },
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     pb: 1,

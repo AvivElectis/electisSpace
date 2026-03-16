@@ -259,3 +259,29 @@ sequenceDiagram
 ```
 
 The SSE connection is per-store and authenticated via query parameter (since `EventSource` does not support custom headers). In development, the SSE client connects directly to the backend (port 3001) to bypass Vite's proxy, which buffers streaming responses.
+
+### 4.10 Responsive Design Patterns
+
+The app uses three breakpoint tiers: **mobile** (`xs`, <600px), **tablet** (`sm`, 600-899px), and **desktop** (`md+`, 900px+).
+
+| Pattern | Where Used | Description |
+|---------|-----------|-------------|
+| `fullScreen={isMobile}` | All dialogs | Dialogs go full-screen on mobile, modal on desktop |
+| Dual layout (table/cards) | CompaniesTab, RolesTab, UsersTab, StoresDialog, People, Spaces | Table on desktop, card stack on mobile |
+| Glass toolbar | Spaces, Conference, People pages | Frosted glass container (`backdrop-filter: blur(40px)`) for action buttons, desktop/tablet only |
+| FAB for primary action | People, Spaces, Conference | Floating action button on mobile replaces toolbar button |
+| Stacked form controls | StoreDialog, AIMSSettingsDialog | Toggle + selector rows stack vertically on mobile |
+| Second-row header | AppHeader at sm | App title, right logo, store selector drop to second row on tablet portrait |
+| Responsive padding | All DialogContent, Accordion | `px: { xs: 2, sm: 3 }` for consistent mobile spacing |
+
+**Shared styles:** `src/shared/presentation/styles/glassToolbar.ts` exports `glassToolbarSx` used by all feature page action toolbars.
+
+### 4.11 Android (Capacitor)
+
+The app runs on Android via Capacitor 7 with these adaptations:
+
+- **CapacitorHttp** + **CapacitorCookies** enabled in `capacitor.config.ts` — routes HTTP through native layer, bypassing WebView CORS and cookie restrictions
+- **API URL** set via `VITE_API_BASE_URL` env var at build time (`10.0.2.2:3001` for emulator dev, production domain for release)
+- **Cleartext traffic** allowed in `AndroidManifest.xml` for dev builds
+- **Compressed assets** (`.gz`/`.br`) excluded from Android assets via `ignoreAssetsPattern` in `build.gradle`
+- **`@capacitor/preferences`** imported statically (not dynamically) to avoid Capacitor plugin proxy thenable crash

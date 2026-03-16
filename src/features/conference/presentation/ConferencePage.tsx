@@ -29,6 +29,7 @@ import {
     useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -511,15 +512,17 @@ export function ConferencePage() {
                         {t('conference.manage')}
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAdd}
-                    disabled={!canEdit}
-                    sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'inline-flex' } }}
-                >
-                    {t('conference.addRoom')}
-                </Button>
+                <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAdd}
+                        disabled={!canEdit}
+                        sx={{ whiteSpace: 'nowrap' }}
+                    >
+                        {t('conference.addRoom')}
+                    </Button>
+                </Box>
             </Stack>
             {/* Stats */}
             {isMobile ? (

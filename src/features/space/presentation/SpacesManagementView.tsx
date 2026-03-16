@@ -21,6 +21,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AddIcon from '@mui/icons-material/Add';
+import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
@@ -508,15 +509,17 @@ export function SpacesManagementView() {
                     </Typography>
                 </Box>
 
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAdd}
-                    disabled={!canEdit}
-                    sx={{ whiteSpace: 'nowrap', minHeight: 44, px: 3, display: { xs: 'none', md: 'inline-flex' } }}
-                >
-                    {getLabel('add')}
-                </Button>
+                <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAdd}
+                        disabled={!canEdit}
+                        sx={{ whiteSpace: 'nowrap' }}
+                    >
+                        {getLabel('add')}
+                    </Button>
+                </Box>
             </Stack>
 
             {/* List Management Panel — desktop: above table, mobile: below table */}

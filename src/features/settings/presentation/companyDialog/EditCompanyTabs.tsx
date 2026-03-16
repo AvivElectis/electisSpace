@@ -92,19 +92,21 @@ const ArticleFormatEditor = lazy(() =>
     import('@features/configuration/presentation/ArticleFormatEditor').then(m => ({ default: m.ArticleFormatEditor }))
 );
 
-/** Sortable row for field mapping table */
+/** Sortable row for field mapping table (desktop) / card (mobile) */
 function SortableFieldRow({
     fieldKey,
     field,
     onNameEnChange,
     onNameHeChange,
     onVisibleChange,
+    isMobile,
 }: {
     fieldKey: string;
     field: SolumFieldMapping;
     onNameEnChange: (value: string) => void;
     onNameHeChange: (value: string) => void;
     onVisibleChange: (value: boolean) => void;
+    isMobile?: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fieldKey });
     const style = {
@@ -112,6 +114,48 @@ function SortableFieldRow({
         transition,
         opacity: isDragging ? 0.5 : 1,
     };
+
+    if (isMobile) {
+        return (
+            <Paper ref={setNodeRef} style={style} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box {...attributes} {...listeners} sx={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'text.disabled', touchAction: 'none' }}>
+                            <DragIndicatorIcon fontSize="small" />
+                        </Box>
+                        <Typography variant="body2" fontFamily="monospace" fontSize={12} fontWeight={600}>
+                            {fieldKey}
+                        </Typography>
+                    </Box>
+                    <Switch
+                        size="small"
+                        checked={field.visible}
+                        onChange={(e) => onVisibleChange(e.target.checked)}
+                    />
+                </Box>
+                <Stack gap={1}>
+                    <TextField
+                        size="small"
+                        variant="outlined"
+                        label="EN"
+                        value={field.friendlyNameEn}
+                        onChange={(e) => onNameEnChange(e.target.value)}
+                        fullWidth
+                        inputProps={{ style: { fontSize: '0.85rem' } }}
+                    />
+                    <TextField
+                        size="small"
+                        variant="outlined"
+                        label="HE"
+                        value={field.friendlyNameHe}
+                        onChange={(e) => onNameHeChange(e.target.value)}
+                        fullWidth
+                        inputProps={{ dir: 'rtl', style: { fontSize: '0.85rem' } }}
+                    />
+                </Stack>
+            </Paper>
+        );
+    }
 
     return (
         <TableRow ref={setNodeRef} style={style}>
@@ -705,74 +749,96 @@ export function EditCompanyTabs({ state, onClose, open }: Props) {
                                 />
                             )}
 
-                            {/* Field table with drag-and-drop reordering */}
+                            {/* Field mapping with drag-and-drop reordering */}
                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                 <SortableContext items={sortedFieldKeys} strategy={verticalListSortingStrategy}>
-                                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
-                                        <Table size="small" stickyHeader>
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell sx={{ width: 32, px: 0.5 }} />
-                                                    <TableCell>{t('settings.companies.aimsField')}</TableCell>
-                                                    <TableCell>{t('settings.companies.displayNameEn', 'Display (EN)')}</TableCell>
-                                                    <TableCell>{t('settings.companies.displayNameHe', 'Display (HE)')}</TableCell>
-                                                    <TableCell align="center">{t('settings.companies.visible')}</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {sortedFieldKeys.map((key) => {
-                                                    const field = fieldMapping.fields[key];
-                                                    if (!field) return null;
-                                                    return (
-                                                        <SortableFieldRow
-                                                            key={key}
-                                                            fieldKey={key}
-                                                            field={field}
-                                                            onNameEnChange={(value) => {
-                                                                setFieldMapping(prev => {
-                                                                    if (!prev) return prev;
-                                                                    return {
-                                                                        ...prev,
-                                                                        fields: {
-                                                                            ...prev.fields,
-                                                                            [key]: { ...prev.fields[key], friendlyNameEn: value },
-                                                                        },
-                                                                    };
-                                                                });
-                                                                setFieldMappingSaved(false);
-                                                            }}
-                                                            onNameHeChange={(value) => {
-                                                                setFieldMapping(prev => {
-                                                                    if (!prev) return prev;
-                                                                    return {
-                                                                        ...prev,
-                                                                        fields: {
-                                                                            ...prev.fields,
-                                                                            [key]: { ...prev.fields[key], friendlyNameHe: value },
-                                                                        },
-                                                                    };
-                                                                });
-                                                                setFieldMappingSaved(false);
-                                                            }}
-                                                            onVisibleChange={(value) => {
-                                                                setFieldMapping(prev => {
-                                                                    if (!prev) return prev;
-                                                                    return {
-                                                                        ...prev,
-                                                                        fields: {
-                                                                            ...prev.fields,
-                                                                            [key]: { ...prev.fields[key], visible: value },
-                                                                        },
-                                                                    };
-                                                                });
-                                                                setFieldMappingSaved(false);
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
+                                    {isMobile ? (
+                                        /* Mobile: card-based field mapping */
+                                        <Stack gap={1} sx={{ maxHeight: 350, overflowY: 'auto' }}>
+                                            {sortedFieldKeys.map((key) => {
+                                                const field = fieldMapping.fields[key];
+                                                if (!field) return null;
+                                                return (
+                                                    <SortableFieldRow
+                                                        key={key}
+                                                        fieldKey={key}
+                                                        field={field}
+                                                        isMobile
+                                                        onNameEnChange={(value) => {
+                                                            setFieldMapping(prev => {
+                                                                if (!prev) return prev;
+                                                                return { ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], friendlyNameEn: value } } };
+                                                            });
+                                                            setFieldMappingSaved(false);
+                                                        }}
+                                                        onNameHeChange={(value) => {
+                                                            setFieldMapping(prev => {
+                                                                if (!prev) return prev;
+                                                                return { ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], friendlyNameHe: value } } };
+                                                            });
+                                                            setFieldMappingSaved(false);
+                                                        }}
+                                                        onVisibleChange={(value) => {
+                                                            setFieldMapping(prev => {
+                                                                if (!prev) return prev;
+                                                                return { ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], visible: value } } };
+                                                            });
+                                                            setFieldMappingSaved(false);
+                                                        }}
+                                                    />
+                                                );
+                                            })}
+                                        </Stack>
+                                    ) : (
+                                        /* Desktop: table-based field mapping */
+                                        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                                            <Table size="small" stickyHeader>
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell sx={{ width: 32, px: 0.5 }} />
+                                                        <TableCell>{t('settings.companies.aimsField')}</TableCell>
+                                                        <TableCell>{t('settings.companies.displayNameEn', 'Display (EN)')}</TableCell>
+                                                        <TableCell>{t('settings.companies.displayNameHe', 'Display (HE)')}</TableCell>
+                                                        <TableCell align="center">{t('settings.companies.visible')}</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {sortedFieldKeys.map((key) => {
+                                                        const field = fieldMapping.fields[key];
+                                                        if (!field) return null;
+                                                        return (
+                                                            <SortableFieldRow
+                                                                key={key}
+                                                                fieldKey={key}
+                                                                field={field}
+                                                                onNameEnChange={(value) => {
+                                                                    setFieldMapping(prev => {
+                                                                        if (!prev) return prev;
+                                                                        return { ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], friendlyNameEn: value } } };
+                                                                    });
+                                                                    setFieldMappingSaved(false);
+                                                                }}
+                                                                onNameHeChange={(value) => {
+                                                                    setFieldMapping(prev => {
+                                                                        if (!prev) return prev;
+                                                                        return { ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], friendlyNameHe: value } } };
+                                                                    });
+                                                                    setFieldMappingSaved(false);
+                                                                }}
+                                                                onVisibleChange={(value) => {
+                                                                    setFieldMapping(prev => {
+                                                                        if (!prev) return prev;
+                                                                        return { ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], visible: value } } };
+                                                                    });
+                                                                    setFieldMappingSaved(false);
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    )}
                                 </SortableContext>
                             </DndContext>
 
