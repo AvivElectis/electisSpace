@@ -30,6 +30,10 @@ const config: CapacitorConfig = {
         Network: {
             // Network plugin configuration
         },
+        StatusBar: {
+            style: 'LIGHT',
+            backgroundColor: '#0D47A1',
+        },
     },
 };
 
