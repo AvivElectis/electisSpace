@@ -679,7 +679,208 @@ git commit -m "feat: native theme override with Roboto font on Android"
 
 ---
 
-## Task 10: MainLayout Integration (the single branching point)
+## Task 10: Native Settings Page
+
+**Files:**
+- Create: `src/features/settings/presentation/NativeSettingsPage.tsx`
+- Modify: `src/App.tsx` (add route)
+
+On native, settings is a full page (not a dialog). It includes:
+- All existing settings tabs (App, SoluM, Logo, Security, Users, Companies, Roles, Logs)
+- **Plus** items that moved out of the native header: Language switcher, Help/Manual, User Profile, Logout
+
+- [ ] **Step 1: Create NativeSettingsPage**
+
+This wraps the existing settings tab content in a full-page layout with a back button header. It reuses the same `useSettingsController`, lazy-loaded tabs, and tab config from `SettingsDialog.tsx` — but renders as a page instead of a dialog.
+
+```typescript
+import {
+    Box, IconButton, Typography, List, ListItemButton, ListItemIcon, ListItemText,
+    Divider, Tabs, Tab, useMediaQuery, useTheme, alpha,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SettingsIcon from '@mui/icons-material/Settings';
+import CloudIcon from '@mui/icons-material/Cloud';
+import ImageIcon from '@mui/icons-material/Image';
+import SecurityIcon from '@mui/icons-material/Security';
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessIcon from '@mui/icons-material/Business';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import TranslateIcon from '@mui/icons-material/Translate';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useState, lazy, Suspense, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useSettingsController } from '../application/useSettingsController';
+import { useSettingsStore } from '../infrastructure/settingsStore';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { SphereLoader } from '@shared/presentation/components/SphereLoader';
+import { LanguageSwitcher } from '@shared/presentation/components/LanguageSwitcher';
+
+// Lazy load tabs (same as SettingsDialog)
+const AppSettingsTab = lazy(() => import('./AppSettingsTab').then(m => ({ default: m.AppSettingsTab })));
+const SolumSettingsTab = lazy(() => import('./SolumSettingsTab').then(m => ({ default: m.SolumSettingsTab })));
+const LogoSettingsTab = lazy(() => import('./LogoSettingsTab').then(m => ({ default: m.LogoSettingsTab })));
+const SecuritySettingsTab = lazy(() => import('./SecuritySettingsTab').then(m => ({ default: m.SecuritySettingsTab })));
+const UsersSettingsTab = lazy(() => import('./UsersSettingsTab').then(m => ({ default: m.UsersSettingsTab })));
+const CompaniesTab = lazy(() => import('./CompaniesTab').then(m => ({ default: m.CompaniesTab })));
+const RolesTab = lazy(() => import('./RolesTab').then(m => ({ default: m.RolesTab })));
+const LogsViewerTab = lazy(() => import('./LogsViewerTab').then(m => ({ default: m.LogsViewerTab })));
+const ManualDialog = lazy(() => import('@features/manual/presentation/ManualDialog').then(m => ({ default: m.ManualDialog })));
+const EnhancedUserDialog = lazy(() => import('./EnhancedUserDialog').then(m => ({ default: m.EnhancedUserDialog })));
+
+export function NativeSettingsPage() {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+    const settingsController = useSettingsController();
+    const { user, logout } = useAuthStore();
+    const [currentTab, setCurrentTab] = useState(0);
+    const [manualOpen, setManualOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
+
+    const isPlatformAdmin = user?.globalRole === 'PLATFORM_ADMIN';
+    const isCompanyAdmin = user?.companies?.some(c => c.roleId === 'role-admin');
+    const isAdmin = isPlatformAdmin || isCompanyAdmin ||
+        user?.stores?.some(s => s.roleId === 'role-admin' || s.roleId === 'role-manager');
+
+    // Same tab structure as SettingsDialog
+    const tabs = [
+        { label: t('settings.appSettings'), icon: <SettingsIcon />, panel: <AppSettingsTab settings={settingsController.settings} onUpdate={(u) => settingsController.updateSettings(u)} /> },
+        { label: t('settings.solumSettings'), icon: <CloudIcon />, panel: <SolumSettingsTab settings={settingsController.settings} onUpdate={(u) => settingsController.updateSettings(u)} /> },
+        { label: t('settings.logoSettings'), icon: <ImageIcon />, panel: <LogoSettingsTab settings={settingsController.settings} onUpdate={(u) => settingsController.updateSettings(u)} /> },
+        { label: t('settings.securitySettings'), icon: <SecurityIcon />, panel: <SecuritySettingsTab /* ...props */ /> },
+        ...(isAdmin ? [{ label: t('settings.users.title'), icon: <PeopleIcon />, panel: <UsersSettingsTab /> }] : []),
+        ...(isPlatformAdmin || isCompanyAdmin ? [
+            { label: t('settings.companies.title'), icon: <BusinessIcon />, panel: <CompaniesTab /> },
+            { label: t('settings.roles.title'), icon: <AdminPanelSettingsIcon />, panel: <RolesTab /> },
+        ] : []),
+        { label: t('settings.logViewer'), icon: <TerminalIcon />, panel: <LogsViewerTab /> },
+    ];
+
+    const handleLogout = useCallback(async () => {
+        await logout();
+        navigate('/login');
+    }, [logout, navigate]);
+
+    return (
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+            {/* Header with back button */}
+            <Box sx={{
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                display: 'flex',
+                alignItems: 'center',
+                px: 1,
+                py: 1,
+                paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
+            }}>
+                <IconButton color="inherit" onClick={() => navigate(-1)}>
+                    <ArrowBackIcon />
+                </IconButton>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem', flex: 1 }}>
+                    {t('app.settings')}
+                </Typography>
+                <LanguageSwitcher />
+            </Box>
+
+            {/* Quick actions: Profile, Help, Logout */}
+            <Box sx={{ px: 2, py: 1 }}>
+                <List disablePadding>
+                    <ListItemButton onClick={() => setProfileOpen(true)}>
+                        <ListItemIcon><PersonIcon /></ListItemIcon>
+                        <ListItemText primary={user?.firstName ? `${user.firstName} ${user.lastName}` : user?.email} secondary={t('settings.users.editProfile')} />
+                    </ListItemButton>
+                    <ListItemButton onClick={() => setManualOpen(true)}>
+                        <ListItemIcon><HelpOutlineIcon /></ListItemIcon>
+                        <ListItemText primary={t('manual.title')} />
+                    </ListItemButton>
+                    <ListItemButton onClick={handleLogout}>
+                        <ListItemIcon><LogoutIcon color="error" /></ListItemIcon>
+                        <ListItemText primary={t('auth.logout')} sx={{ color: 'error.main' }} />
+                    </ListItemButton>
+                </List>
+            </Box>
+
+            <Divider />
+
+            {/* Settings tabs (horizontal scrollable) */}
+            <Tabs
+                value={currentTab}
+                onChange={(_, v) => setCurrentTab(v)}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{ borderBottom: 1, borderColor: 'divider', px: 1 }}
+            >
+                {tabs.map((tab, i) => (
+                    <Tab key={i} label={tab.label} icon={tab.icon} iconPosition="start" sx={{ fontSize: '0.8rem', minHeight: 48 }} />
+                ))}
+            </Tabs>
+
+            {/* Tab content */}
+            <Box sx={{ p: 2 }}>
+                <Suspense fallback={<SphereLoader width={180} height={140} />}>
+                    {tabs[currentTab]?.panel}
+                </Suspense>
+            </Box>
+
+            {/* Dialogs */}
+            <Suspense fallback={null}>
+                {manualOpen && <ManualDialog open={manualOpen} onClose={() => setManualOpen(false)} />}
+                {profileOpen && user && <EnhancedUserDialog open={profileOpen} onClose={() => setProfileOpen(false)} mode="profile" user={user} />}
+            </Suspense>
+        </Box>
+    );
+}
+```
+
+- [ ] **Step 2: Add route in App.tsx**
+
+In `src/App.tsx`, add a route for native settings inside the `MainLayout`:
+
+```typescript
+import { NativeSettingsPage } from '@features/settings/presentation/NativeSettingsPage';
+
+// Inside the Routes:
+<Route path="/settings" element={<NativeSettingsPage />} />
+```
+
+This route is only navigated to from the native header's gear icon — web users never see it.
+
+- [ ] **Step 3: Update NativeAppHeader to navigate to /settings**
+
+In `NativeAppHeader.tsx`, change the settings button from `onSettingsClick` callback to navigation:
+
+```typescript
+import { useNavigate } from 'react-router-dom';
+
+// Replace onSettingsClick prop with:
+const navigate = useNavigate();
+
+// Settings button onClick:
+onClick={() => navigate('/settings')}
+```
+
+Remove the `onSettingsClick` prop from `NativeAppHeaderProps`.
+
+- [ ] **Step 4: Verify build**
+
+```bash
+npx tsc --noEmit
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/features/settings/presentation/NativeSettingsPage.tsx src/App.tsx src/shared/presentation/layouts/NativeAppHeader.tsx
+git commit -m "feat: native settings as full page with profile, language, help, logout"
+```
+
+---
+
+## Task 11: MainLayout Integration (the single branching point)
 
 **Files:**
 - Modify: `src/shared/presentation/layouts/MainLayout.tsx`
@@ -725,7 +926,7 @@ if (isNative) {
         <SyncProvider controller={syncController}>
             <StoreRequiredGuard>
                 <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                    <NativeAppHeader onSettingsClick={() => setSettingsOpen(true)} />
+                    <NativeAppHeader />
 
                     {/* Store switching overlay */}
                     {isSwitchingStore && (
@@ -754,12 +955,7 @@ if (isNative) {
                         }}
                     />
 
-                    {/* Dialogs (shared between native and web) */}
-                    <Suspense fallback={null}>
-                        {settingsOpen && <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
-                        {manualOpen && <ManualDialog open={manualOpen} onClose={() => setManualOpen(false)} />}
-                        {profileOpen && <EnhancedUserDialog open={profileOpen} onClose={() => setProfileOpen(false)} mode="profile" user={currentUser!} />}
-                    </Suspense>
+                    {/* Native: no settings/manual/profile dialogs here — they're on /settings page */}
 
                     {commandPalette.isOpen && (
                         <Suspense fallback={null}>
@@ -800,7 +996,7 @@ git commit -m "feat: MainLayout native/web branching with bottom nav and slim he
 
 ---
 
-## Task 11: Status Bar & Splash Screen (Android native)
+## Task 12: Status Bar & Splash Screen (Android native)
 
 **Files:**
 - Modify: `android/app/src/main/res/values/styles.xml`
@@ -876,7 +1072,7 @@ git commit -m "feat: Android status bar blue + splash screen with app icon"
 
 ---
 
-## Task 12: App Icon Generation
+## Task 13: App Icon Generation
 
 **Files:**
 - Modify: `android/app/src/main/res/mipmap-*/`
@@ -921,7 +1117,7 @@ git commit -m "feat: replace default Capacitor icons with AppIcon"
 
 ---
 
-## Task 13: Wrap Feature Pages with PullToRefresh
+## Task 14: Wrap Feature Pages with PullToRefresh
 
 **Files:**
 - Modify: `src/features/dashboard/DashboardPage.tsx`
@@ -974,7 +1170,7 @@ git commit -m "feat: add pull-to-refresh on all data pages (native only)"
 
 ---
 
-## Task 14: Android Build, Test & Deploy
+## Task 15: Android Build, Test & Deploy
 
 - [ ] **Step 1: Sync and build**
 
@@ -1019,7 +1215,7 @@ git add -A && git commit -m "fix: address testing feedback"
 
 ---
 
-## Task 15: iOS Scaffolding
+## Task 16: iOS Scaffolding
 
 - [ ] **Step 1: Add iOS platform**
 
@@ -1044,7 +1240,7 @@ git commit -m "chore: add iOS Capacitor platform (scaffolding only)"
 
 ---
 
-## Task 16: Version Bump & Documentation
+## Task 17: Version Bump & Documentation
 
 **Files:**
 - Modify: `package.json` — version bump to 2.14.0
