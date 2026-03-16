@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.14.0] — 2026-03-16 — Native App Adaptations
+
+### Added
+- **Bottom navigation bar** — native Android bottom tab bar (centered fixed-width) replaces hamburger menu, with dynamic tabs based on enabled features and haptic feedback
+- **Native app header** — slim 48px header with page title, store selector, and settings gear (no logos)
+- **Native settings page** — full `/settings` route with profile, language switcher, help, logout, and all settings tabs
+- **Native manual page** — full `/manual` route with contact info and manual content
+- **Native about page** — full `/about` route with app icon, version, platform info, and release notes
+- **Biometric login** — fingerprint/face/pattern replaces 2FA email code on trusted native devices via `@aparajita/capacitor-biometric-auth`
+- **Android back button handler** — smart priority: close dialogs → navigate back → double-tap exit with toast
+- **Pull-to-refresh** — all data pages (Dashboard, Spaces, People, Conference, Labels, AIMS) support pull-down refresh on native
+- **Status bar styling** — primary blue (#0D47A1) with white icons on Android
+- **Splash screen** — centered AppIcon on white background using Android 12+ SplashScreen API
+- **App icons** — generated all mipmap sizes from AppIcon.png with adaptive icon support
+- **Safe area handling** — `viewport-fit=cover` + `env(safe-area-inset-*)` for notch and gesture bar
+- **Platform detection hook** — `useNativePlatform()` distinguishes web/android/ios/electron
+- **Shared navigation hook** — `useNavTabs()` ensures tab filtering parity between web and native
+
+### Changed
+- **MainLayout** — single branching point: native path renders bottom nav + slim header, web path is completely unchanged
+- **Theme** — Roboto font family on Android native (system default), web fonts unchanged
+- **Error boundary** — platform-aware reload (restart on native, refresh on web)
+
+### Fixed
+- **Web isolation** — all native UI gated behind `isNative` checks, web app completely unaffected
+
 ## [2.13.0] — 2026-03-16 — UI Polish, Mobile Adaptation & Android Support
 
 ### Added
