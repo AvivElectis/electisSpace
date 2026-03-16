@@ -33,6 +33,12 @@ const AimsManagementPage = lazy(() =>
 const NativeSettingsPage = lazy(() =>
     import('@features/settings/presentation/NativeSettingsPage').then(m => ({ default: m.NativeSettingsPage }))
 );
+const NativeManualPage = lazy(() =>
+    import('@features/manual/presentation/NativeManualPage').then(m => ({ default: m.NativeManualPage }))
+);
+const NativeAboutPage = lazy(() =>
+    import('@features/settings/presentation/NativeAboutPage').then(m => ({ default: m.NativeAboutPage }))
+);
 const NotFoundPage = lazy(() =>
     import('@shared/presentation/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
 );
@@ -82,6 +88,8 @@ export function AppRoutes() {
             <Route path="/audit-log" element={<ProtectedRoute><SuspenseRoute><AuditLogPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/aims-management" element={<ProtectedRoute><ProtectedFeature feature="aims-management" minimumStoreRole="STORE_MANAGER" requireAll fallback={<Navigate to="/" replace />}><SuspenseRoute><AimsManagementPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SuspenseRoute><NativeSettingsPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/manual" element={<ProtectedRoute><SuspenseRoute><NativeManualPage /></SuspenseRoute></ProtectedRoute>} />
+            <Route path="/about" element={<ProtectedRoute><SuspenseRoute><NativeAboutPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );
