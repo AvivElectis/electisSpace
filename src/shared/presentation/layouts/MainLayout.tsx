@@ -20,6 +20,10 @@ import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useCommandPalette } from '@features/quick-actions/application/useCommandPalette';
 import { useNavTabs } from '../hooks/useNavTabs';
+import { useNativePlatform } from '../hooks/useNativePlatform';
+import { useAndroidBackButton } from '../hooks/useAndroidBackButton';
+import { NativeAppHeader } from './NativeAppHeader';
+import { NativeBottomNav, NATIVE_BOTTOM_NAV_HEIGHT } from './NativeBottomNav';
 
 // Lazy load CommandPalette
 const CommandPalette = lazy(() =>
@@ -66,6 +70,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [manualOpen, setManualOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const commandPalette = useCommandPalette();
+    const { isNative } = useNativePlatform();
     const { syncState, setWorkingMode } = useSyncStore();
     const { isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
@@ -83,6 +88,17 @@ export function MainLayout({ children }: MainLayoutProps) {
     const authReady = isAuthenticated && isInitialized;
     const effectiveStoreId = authReady ? activeStoreId : null;
     const setSpaces = useSpacesStore(state => state.setSpaces);
+
+    // Android hardware back button: close open overlays first, then navigate back
+    useAndroidBackButton({
+        onCloseDialog: useCallback(() => {
+            if (settingsOpen) { setSettingsOpen(false); return true; }
+            if (manualOpen) { setManualOpen(false); return true; }
+            if (profileOpen) { setProfileOpen(false); return true; }
+            if (mobileMenuOpen) { setMobileMenuOpen(false); return true; }
+            return false;
+        }, [settingsOpen, manualOpen, profileOpen, mobileMenuOpen]),
+    });
 
     // Sync settings.workingMode to syncStore.workingMode
     useEffect(() => {
@@ -189,6 +205,105 @@ export function MainLayout({ children }: MainLayoutProps) {
         return <>{children}</>;
     }
 
+    // For native settings page, render children directly (NativeSettingsPage has its own header)
+    const isNativeSettingsPage = isNative && location.pathname === '/settings';
+    if (isNativeSettingsPage) {
+        return (
+            <SyncProvider value={syncController}>
+                <StoreRequiredGuard>
+                    {children}
+                </StoreRequiredGuard>
+            </SyncProvider>
+        );
+    }
+
+    // ── Native layout branch ──
+    // On Capacitor (Android/iOS): slim header, bottom nav, no dialogs (they're pages)
+    if (isNative) {
+        return (
+            <SyncProvider value={syncController}>
+                <Box sx={{
+                    minHeight: '100vh',
+                    bgcolor: 'background.default',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    {/* Store switching overlay */}
+                    {isSwitchingStore && (
+                        <Box sx={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: (theme) => theme.zIndex.modal + 1,
+                            bgcolor: 'background.default',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}>
+                            <SphereLoader />
+                        </Box>
+                    )}
+
+                    {/* Native slim header */}
+                    <NativeAppHeader />
+
+                    {/* Main Content — padded at bottom for bottom nav */}
+                    <Box
+                        component="main"
+                        sx={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            pb: `${NATIVE_BOTTOM_NAV_HEIGHT + 8}px`,
+                        }}
+                    >
+                        <StoreRequiredGuard>
+                            {children}
+                        </StoreRequiredGuard>
+                    </Box>
+
+                    {/* Sync Status Indicator — repositioned above bottom nav */}
+                    <Box sx={{
+                        position: 'fixed',
+                        bottom: `${NATIVE_BOTTOM_NAV_HEIGHT + 24}px`,
+                        insetInlineEnd: 16,
+                        zIndex: (theme) => theme.zIndex.fab,
+                    }}>
+                        <SyncStatusIndicator
+                            status={
+                                syncState.status === 'syncing' ? 'syncing' :
+                                    syncState.status === 'error' ? 'error' :
+                                        syncState.isConnected ? 'connected' : 'disconnected'
+                            }
+                            lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
+                            errorMessage={syncState.lastError}
+                            onSyncClick={() => sync().catch(() => {/* handled in controller */})}
+                            serverConnected={syncController.serverConnected}
+                            aimsConnected={syncState.isConnected}
+                            syncStartedAt={syncState.syncStartedAt}
+                            autoSyncEnabled={autoSyncEnabled}
+                            autoSyncInterval={autoSyncInterval}
+                        />
+                    </Box>
+
+                    {/* Bottom navigation */}
+                    <NativeBottomNav />
+
+                    {/* Command Palette - Ctrl+K quick actions (keyboard overlay, keep for external keyboards) */}
+                    {commandPalette.isOpen && (
+                        <Suspense fallback={null}>
+                            <CommandPalette
+                                open={commandPalette.isOpen}
+                                onClose={commandPalette.close}
+                                onSettingsClick={() => { commandPalette.close(); navigate('/settings'); }}
+                            />
+                        </Suspense>
+                    )}
+                </Box>
+            </SyncProvider>
+        );
+    }
+
+    // ── Web layout (completely unchanged) ──
     return (
         <SyncProvider value={syncController}>
             <Box sx={{
@@ -331,9 +446,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                 {/* Main Content */}
                 <Box
                     component="main"
-                    sx={{ 
-                        flex: 1, 
-                        display: 'flex', 
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
                         flexDirection: 'column',
                         opacity: isPending ? 0.7 : 1,
                         transition: 'opacity 0.15s ease-in-out',
