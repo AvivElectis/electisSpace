@@ -164,9 +164,9 @@ export function LabelsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAppReady, activeStoreId, solumConnected]);
 
-    const handleRefresh = () => {
+    const handlePullRefresh = async () => {
         if (activeStoreId) {
-            fetchLabels(activeStoreId);
+            await fetchLabels(activeStoreId);
         }
     };
 
@@ -490,7 +490,7 @@ export function LabelsPage() {
     }, [activeStoreId, fetchLabels]);
 
     return (
-        <PullToRefresh onRefresh={handleRefresh}>
+        <PullToRefresh onRefresh={handlePullRefresh}>
         <Box sx={{ width: '100%' }}>
             {/* Header */}
             <Stack
