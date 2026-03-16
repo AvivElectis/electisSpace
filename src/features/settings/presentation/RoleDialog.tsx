@@ -27,6 +27,11 @@ import {
     FormLabel,
     CircularProgress,
     Alert,
+    useMediaQuery,
+    useTheme,
+    Stack,
+    Switch,
+    Paper,
 } from '@mui/material';
 import { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -54,6 +59,8 @@ interface RoleDialogProps {
 
 export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { isPlatformAdmin, activeCompanyId } = useAuthContext();
     const { createRole, updateRole, fetchPermissionsMatrix, permissionsMatrix } = useRolesStore();
 
@@ -173,13 +180,14 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
             onClose={onClose}
             maxWidth="md"
             fullWidth
-            PaperProps={{ sx: { maxHeight: '85vh' } }}
+            fullScreen={isMobile}
+            PaperProps={{ sx: { maxHeight: isMobile ? '100%' : '85vh', borderRadius: isMobile ? 0 : undefined } }}
         >
             <form onSubmit={handleSubmit(onSubmit)}>
                 <DialogTitle>
                     {isEditing ? t('settings.roles.edit') : t('settings.roles.add')}
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                         {saveError && (
                             <Alert severity="error">{saveError}</Alert>
@@ -278,6 +286,57 @@ export function RoleDialog({ open, role, onClose, onSaved }: RoleDialogProps) {
                                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
                                     <CircularProgress size={24} />
                                 </Box>
+                            ) : isMobile ? (
+                                /* Mobile: card-based permission layout */
+                                <Stack gap={1.5} sx={{ maxHeight: '50vh', overflow: 'auto' }}>
+                                    {resources.map(resource => {
+                                        const validActions = permissionsMatrix[resource] || [];
+                                        const currentPerms = permissions[resource as keyof PermissionsMap] || [];
+                                        const allSelected = validActions.length > 0 &&
+                                            validActions.every(a => currentPerms.includes(a as any));
+
+                                        return (
+                                            <Paper key={resource} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                                    <Typography variant="subtitle2" fontWeight={600}>
+                                                        {t(`permissions.resources.${resource}`, resource)}
+                                                    </Typography>
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Switch
+                                                                size="small"
+                                                                checked={allSelected}
+                                                                onChange={() => handleSelectAllResource(resource, validActions)}
+                                                            />
+                                                        }
+                                                        label={<Typography variant="caption">{t('settings.roles.selectAll')}</Typography>}
+                                                        labelPlacement="start"
+                                                        sx={{ mr: 0 }}
+                                                    />
+                                                </Box>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                    {validActions.map(action => {
+                                                        const isChecked = currentPerms.includes(action as any);
+                                                        return (
+                                                            <FormControlLabel
+                                                                key={action}
+                                                                control={
+                                                                    <Checkbox
+                                                                        size="small"
+                                                                        checked={isChecked}
+                                                                        onChange={() => handlePermissionToggle(resource, action)}
+                                                                    />
+                                                                }
+                                                                label={<Typography variant="caption">{t(`permissions.actions.${action}`, action)}</Typography>}
+                                                                sx={{ mr: 1.5 }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </Box>
+                                            </Paper>
+                                        );
+                                    })}
+                                </Stack>
                             ) : (
                                 <TableContainer sx={{ maxHeight: 400 }}>
                                     <Table size="small" stickyHeader>

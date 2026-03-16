@@ -323,7 +323,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                     disableGutters
                     sx={{ '&:before': { display: 'none' } }}
                 >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 3, bgcolor: 'action.hover' }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: { xs: 2, sm: 3 }, bgcolor: 'action.hover' }}>
                         <Stack direction="row" alignItems="center" gap={1.5}>
                             <CloudIcon fontSize="small" color={isConnected ? 'success' : 'action'} />
                             <Typography fontWeight={600}>
@@ -332,7 +332,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                             {isConnected && <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />}
                         </Stack>
                     </AccordionSummary>
-                    <AccordionDetails sx={{ px: 3, py: 2 }}>
+                    <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
                         <Stack gap={2}>
                             {isConnected ? (
                                 <Alert severity="success">{t('settings.companies.connectedToAims')}</Alert>
@@ -455,7 +455,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                     disableGutters
                     sx={{ '&:before': { display: 'none' } }}
                 >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 3, bgcolor: 'action.hover' }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: { xs: 2, sm: 3 }, bgcolor: 'action.hover' }}>
                         <Stack direction="row" alignItems="center" gap={1.5}>
                             <SyncIcon fontSize="small" color={isConnected ? 'primary' : 'disabled'} />
                             <Typography fontWeight={600}>
@@ -463,7 +463,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                             </Typography>
                         </Stack>
                     </AccordionSummary>
-                    <AccordionDetails sx={{ px: 3, py: 2 }}>
+                    <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
                         <Stack gap={2}>
                             {/* Auto Sync */}
                             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
@@ -522,7 +522,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                     disableGutters
                     sx={{ '&:before': { display: 'none' } }}
                 >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 3, bgcolor: 'action.hover' }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: { xs: 2, sm: 3 }, bgcolor: 'action.hover' }}>
                         <Stack direction="row" alignItems="center" gap={1.5}>
                             <SchemaIcon fontSize="small" color={isConnected ? 'primary' : 'disabled'} />
                             <Typography fontWeight={600}>
@@ -530,7 +530,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                             </Typography>
                         </Stack>
                     </AccordionSummary>
-                    <AccordionDetails sx={{ px: 3, py: 2 }}>
+                    <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
                         <SolumSchemaEditorSection
                             articleFormat={articleFormat}
                             isConnected={isConnected}
@@ -546,7 +546,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                     disableGutters
                     sx={{ '&:before': { display: 'none' } }}
                 >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 3, bgcolor: 'action.hover' }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: { xs: 2, sm: 3 }, bgcolor: 'action.hover' }}>
                         <Stack direction="row" alignItems="center" gap={1.5}>
                             <MapIcon fontSize="small" color={isConnected && articleFormatFields.length > 0 ? 'primary' : 'disabled'} />
                             <Typography fontWeight={600}>
@@ -554,7 +554,7 @@ export function AIMSSettingsDialog({ open, onClose, company, onSave }: AIMSSetti
                             </Typography>
                         </Stack>
                     </AccordionSummary>
-                    <AccordionDetails sx={{ px: 3, py: 2 }}>
+                    <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
                         <Stack gap={2}>
                             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
