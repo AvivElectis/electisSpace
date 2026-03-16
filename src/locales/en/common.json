@@ -1790,5 +1790,10 @@
                 "previewFailed": "AIMS preview unavailable — showing local approximation"
             }
         }
+    },
+    "nativeSettings": {
+        "profile": "Profile",
+        "help": "Help & Manual",
+        "logout": "Logout"
     }
 }
