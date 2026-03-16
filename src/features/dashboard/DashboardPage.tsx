@@ -1,5 +1,6 @@
 import { Box, Typography, Grid, Stack, useMediaQuery, useTheme, alpha } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react';
 
 // Features
@@ -267,7 +268,18 @@ export function DashboardPage() {
         return <DashboardSkeleton isMobile={isMobile} />;
     }
 
+    const handleRefresh = async () => {
+        if (!isAppReady || !activeStoreId) return;
+        spaceController.fetchSpaces();
+        conferenceController.fetchRooms();
+        peopleStore.fetchPeople();
+        if (canAccessAims) {
+            await fetchAimsOverview();
+        }
+    };
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box>
             {/* Header + Quick Actions inline */}
             <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, md: 2 } }}>
@@ -460,5 +472,6 @@ export function DashboardPage() {
                 )}
             </Suspense>
         </Box>
+        </PullToRefresh>
     );
 }

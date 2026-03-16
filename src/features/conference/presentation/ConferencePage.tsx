@@ -1,3 +1,4 @@
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box,
     Card,
@@ -495,7 +496,12 @@ export function ConferencePage() {
     }
 
     // ─── Full Conference Mode Rendering ────────────────────────────────────
+    const handleRefresh = async () => {
+        await conferenceController.fetchRooms();
+    };
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box>
             {/* Header Section */}
             <Stack
@@ -969,5 +975,6 @@ export function ConferencePage() {
             </Snackbar>
             <ConfirmDialog />
         </Box>
+        </PullToRefresh>
     );
 }

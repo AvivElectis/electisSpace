@@ -13,7 +13,8 @@
  * Follows the same layout pattern as ConferencePage and other feature pages.
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box, Typography, Tabs, Tab, Button, Alert, Stack, Card, CardContent,
     Fab, useMediaQuery, useTheme,
@@ -123,7 +124,12 @@ export function AimsManagementPage() {
         );
     }
 
+    const handleRefresh = useCallback(async () => {
+        await Promise.all([fetchGateways(), fetchLabels()]);
+    }, [fetchGateways, fetchLabels]);
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box dir={isRtl ? 'rtl' : 'ltr'} sx={{ '& .MuiTableCell-root': { textAlign: 'start' } }}>
             {/* Header Section */}
             <Stack
@@ -358,5 +364,6 @@ export function AimsManagementPage() {
                 />
             )}
         </Box>
+        </PullToRefresh>
     );
 }

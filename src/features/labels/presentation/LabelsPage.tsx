@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box,
     Paper,
@@ -482,7 +483,14 @@ export function LabelsPage() {
         );
     };
 
+    const handleRefresh = useCallback(async () => {
+        if (activeStoreId) {
+            await fetchLabels(activeStoreId);
+        }
+    }, [activeStoreId, fetchLabels]);
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box sx={{ width: '100%' }}>
             {/* Header */}
             <Stack
@@ -1037,5 +1045,6 @@ export function LabelsPage() {
             {/* Confirm Dialog */}
             <ConfirmDialog />
         </Box>
+        </PullToRefresh>
     );
 }
