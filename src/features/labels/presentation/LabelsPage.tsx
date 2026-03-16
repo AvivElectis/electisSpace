@@ -511,27 +511,27 @@ export function LabelsPage() {
                     >
                         {t('imageLabels.assignImage', 'Assign Image')}
                     </Button>
+                    <Button
+                        variant="text"
+                        startIcon={<RefreshIcon />}
+                        onClick={handleRefresh}
+                        disabled={isLoading}
+                    >
+                        {t('common.refresh', 'Refresh')}
+                    </Button>
                 </Box>
+                {/* Mobile: icon-only refresh */}
                 <Tooltip title={t('common.refresh', 'Refresh')}>
                     <span style={{ display: 'inline-flex' }}>
                         <IconButton
                             onClick={handleRefresh}
                             disabled={isLoading}
-                            sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+                            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
                         >
                             <RefreshIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
-                <Button
-                    variant="text"
-                    startIcon={<RefreshIcon />}
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                >
-                    {t('common.refresh', 'Refresh')}
-                </Button>
             </Stack>
 
             {/* Error Alert */}
