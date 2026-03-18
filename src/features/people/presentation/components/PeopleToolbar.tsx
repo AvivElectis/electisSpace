@@ -24,7 +24,7 @@ export function PeopleToolbar({
     const { t } = useTranslation();
 
     return (
-        <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 } }}>
+        <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 }, display: 'var(--native-page-header-display, flex)' }}>
             <Box>
                 <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                     {t('people.title')}

@@ -1,5 +1,6 @@
 import { Box, Typography, Grid, Stack, useMediaQuery, useTheme, alpha } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react';
 
 // Features
@@ -267,10 +268,21 @@ export function DashboardPage() {
         return <DashboardSkeleton isMobile={isMobile} />;
     }
 
+    const handleRefresh = async () => {
+        if (!isAppReady || !activeStoreId) return;
+        spaceController.fetchSpaces();
+        conferenceController.fetchRooms();
+        peopleStore.fetchPeople();
+        if (canAccessAims) {
+            await fetchAimsOverview();
+        }
+    };
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box>
-            {/* Header + Quick Actions inline */}
-            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, md: 2 } }}>
+            {/* Header + Quick Actions inline — hidden on native */}
+            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, md: 2 }, display: 'var(--native-page-header-display, flex)' }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
                         {t('dashboard.title')}
@@ -410,7 +422,7 @@ export function DashboardPage() {
             {isMobile && (
                 <Box sx={{
                     position: 'fixed',
-                    bottom: 16,
+                    bottom: 'calc(16px + var(--native-bottom-nav-offset, 0px))',
                     insetInlineStart: 16,
                     zIndex: (theme) => theme.zIndex.fab,
                 }}>
@@ -460,5 +472,6 @@ export function DashboardPage() {
                 )}
             </Suspense>
         </Box>
+        </PullToRefresh>
     );
 }

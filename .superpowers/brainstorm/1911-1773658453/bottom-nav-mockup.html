@@ -1,0 +1,176 @@
+<h2>Bottom Navigation — Dynamic Tabs</h2>
+<p class="subtitle">How should the bottom nav adapt when there are few enabled features?</p>
+
+<div class="cards">
+  <!-- Option A: Always show all enabled, stretch to fill -->
+  <div class="card" data-choice="stretch" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #1a1a2e;">
+      <!-- Phone mockup -->
+      <div style="background: #fff; border-radius: 24px; overflow: hidden; max-width: 320px; margin: 0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background: #0D47A1; padding: 12px 16px; color: white; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600;">electisSpace</span>
+          <span style="font-size: 11px; opacity: 0.7;">SBS → Store 01</span>
+        </div>
+        <div style="height: 180px; background: #f5f5f7; display: flex; align-items: center; justify-content: center; color: #86868b; font-size: 13px;">
+          Page Content
+        </div>
+        <!-- Bottom Nav: 5 tabs stretched -->
+        <div style="display: flex; border-top: 1px solid #e0e0e0; background: #fff; padding: 6px 0 12px;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏠</div>
+            <div style="font-size: 9px; color: #0D47A1; font-weight: 600; margin-top: 2px;">Dashboard</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">👥</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">People</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏢</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Conference</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏷️</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Labels</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">📡</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">AIMS</div>
+          </div>
+        </div>
+      </div>
+      <!-- Minimal config: 2 tabs -->
+      <div style="margin-top: 16px; background: #fff; border-radius: 24px; overflow: hidden; max-width: 320px; margin: 16px auto 0; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background: #0D47A1; padding: 8px 16px; color: white; font-size: 11px;">Minimal config (2 features)</div>
+        <div style="display: flex; border-top: 1px solid #e0e0e0; background: #fff; padding: 6px 0 12px;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏠</div>
+            <div style="font-size: 9px; color: #0D47A1; font-weight: 600; margin-top: 2px;">Dashboard</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">👥</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">People</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Stretch to Fill</h3>
+      <p>Tabs evenly spaced regardless of count. Works well for 3-5 tabs. With only 2 tabs, the spacing feels awkward and wasteful.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Centered with fixed width -->
+  <div class="card" data-choice="centered" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #1a1a2e;">
+      <div style="background: #fff; border-radius: 24px; overflow: hidden; max-width: 320px; margin: 0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background: #0D47A1; padding: 12px 16px; color: white; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600;">electisSpace</span>
+          <span style="font-size: 11px; opacity: 0.7;">SBS → Store 01</span>
+        </div>
+        <div style="height: 180px; background: #f5f5f7; display: flex; align-items: center; justify-content: center; color: #86868b; font-size: 13px;">
+          Page Content
+        </div>
+        <div style="display: flex; justify-content: center; border-top: 1px solid #e0e0e0; background: #fff; padding: 6px 0 12px; gap: 24px;">
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">🏠</div>
+            <div style="font-size: 9px; color: #0D47A1; font-weight: 600; margin-top: 2px;">Dashboard</div>
+          </div>
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">👥</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">People</div>
+          </div>
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">🏢</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Conference</div>
+          </div>
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">🏷️</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Labels</div>
+          </div>
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">📡</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">AIMS</div>
+          </div>
+        </div>
+      </div>
+      <!-- Minimal config -->
+      <div style="margin-top: 16px; background: #fff; border-radius: 24px; overflow: hidden; max-width: 320px; margin: 16px auto 0; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background: #0D47A1; padding: 8px 16px; color: white; font-size: 11px;">Minimal config (2 features)</div>
+        <div style="display: flex; justify-content: center; border-top: 1px solid #e0e0e0; background: #fff; padding: 6px 0 12px; gap: 24px;">
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">🏠</div>
+            <div style="font-size: 9px; color: #0D47A1; font-weight: 600; margin-top: 2px;">Dashboard</div>
+          </div>
+          <div style="text-align: center; width: 52px;">
+            <div style="font-size: 20px;">👥</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">People</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Centered Fixed-Width</h3>
+      <p>Tabs centered with consistent spacing. Looks balanced even with 2-3 tabs. Material Design 3 approach.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Stretch + "More" overflow at 5+ -->
+  <div class="card" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #1a1a2e;">
+      <div style="background: #fff; border-radius: 24px; overflow: hidden; max-width: 320px; margin: 0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background: #0D47A1; padding: 12px 16px; color: white; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600;">electisSpace</span>
+          <span style="font-size: 11px; opacity: 0.7;">SBS → Store 01</span>
+        </div>
+        <div style="height: 180px; background: #f5f5f7; display: flex; align-items: center; justify-content: center; color: #86868b; font-size: 13px;">
+          Page Content
+        </div>
+        <!-- 4 visible + More -->
+        <div style="display: flex; border-top: 1px solid #e0e0e0; background: #fff; padding: 6px 0 12px;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏠</div>
+            <div style="font-size: 9px; color: #0D47A1; font-weight: 600; margin-top: 2px;">Dashboard</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">👥</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">People</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏢</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Conference</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏷️</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Labels</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">⋯</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">More</div>
+          </div>
+        </div>
+      </div>
+      <!-- Minimal config: no More needed -->
+      <div style="margin-top: 16px; background: #fff; border-radius: 24px; overflow: hidden; max-width: 320px; margin: 16px auto 0; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background: #0D47A1; padding: 8px 16px; color: white; font-size: 11px;">3 features — no "More" needed</div>
+        <div style="display: flex; border-top: 1px solid #e0e0e0; background: #fff; padding: 6px 0 12px;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏠</div>
+            <div style="font-size: 9px; color: #0D47A1; font-weight: 600; margin-top: 2px;">Dashboard</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">👥</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">People</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 20px;">🏷️</div>
+            <div style="font-size: 9px; color: #86868b; margin-top: 2px;">Labels</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Hybrid — Stretch + "More" overflow</h3>
+      <p>Show up to 4 tabs directly. If 5+ features enabled, the 5th slot becomes "More" (opens a bottom sheet with AIMS + Settings). Under 5 tabs, no "More" needed — all fit directly.</p>
+    </div>
+  </div>
+</div>

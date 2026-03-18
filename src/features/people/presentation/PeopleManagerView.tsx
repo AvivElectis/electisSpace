@@ -1,5 +1,6 @@
 import { logger } from '@shared/infrastructure/services/logger';
 import { Box, Snackbar, Alert, Fab, Button, useMediaQuery, useTheme } from '@mui/material';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import AddIcon from '@mui/icons-material/Add';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useState, useMemo, useCallback, useEffect, useDeferredValue, lazy, Suspense } from 'react';
@@ -473,7 +474,12 @@ export function PeopleManagerView() {
         }
     }, [people, confirm, t, peopleController]);
 
+    const handleRefresh = async () => {
+        await fetchPeople();
+    };
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box>
             {/* Header Section */}
             <PeopleToolbar
@@ -562,7 +568,7 @@ export function PeopleManagerView() {
                     disabled={!canEdit}
                     sx={{
                         position: 'fixed',
-                        bottom: 24,
+                        bottom: 'calc(24px + var(--native-bottom-nav-offset, 0px))',
                         right: 24,
                         zIndex: 1050,
                         height: 64,
@@ -641,5 +647,6 @@ export function PeopleManagerView() {
                 </Alert>
             </Snackbar>
         </Box>
+        </PullToRefresh>
     );
 }

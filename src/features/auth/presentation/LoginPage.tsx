@@ -20,17 +20,22 @@ import {
     useTheme,
     alpha,
 } from '@mui/material';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import { Visibility, VisibilityOff, Login as LoginIcon } from '@mui/icons-material';
+import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '../infrastructure/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { biometricService } from '@shared/infrastructure/services/biometricService';
+import { deviceTokenStorage } from '@shared/infrastructure/services/deviceTokenStorage';
+import { authService } from '@shared/infrastructure/services/authService';
 
 export function LoginPage() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const theme = useTheme();
     const isRtl = theme.direction === 'rtl';
-    const { login, verify2FA, resendCode, isLoading, error, clearError, pendingEmail, isAuthenticated, isInitialized } = useAuthStore();
+    const { login, verify2FA, resendCode, isLoading, error, clearError, pendingEmail, isAuthenticated, isInitialized, setUser } = useAuthStore();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -38,6 +43,8 @@ export function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
     const [trustDevice, setTrustDevice] = useState(false);
+    const [showBiometric, setShowBiometric] = useState(false);
+    const [biometricLoading, setBiometricLoading] = useState(false);
     const autoSubmitRef = useRef(false);
 
     // Redirect to dashboard if already authenticated
@@ -74,7 +81,47 @@ export function LoginPage() {
 
         const success = await login({ email, password });
         if (success) {
+            // On native: check if we can use biometric + device token auth
+            if (Capacitor.isNativePlatform()) {
+                const [deviceToken, biometricAvailable] = await Promise.all([
+                    deviceTokenStorage.getDeviceToken(),
+                    biometricService.isAvailable(),
+                ]);
+                if (deviceToken && biometricAvailable) {
+                    setShowBiometric(true);
+                    return;
+                }
+            }
             setShowVerification(true);
+        }
+    };
+
+    const handleBiometricAuth = async () => {
+        setBiometricLoading(true);
+        clearError();
+        try {
+            const passed = await biometricService.authenticate(t('auth.biometric.reason'));
+            if (passed) {
+                const deviceToken = await deviceTokenStorage.getDeviceToken();
+                const deviceId = await deviceTokenStorage.getDeviceId();
+                if (deviceToken && deviceId) {
+                    try {
+                        await authService.deviceAuth(deviceToken, deviceId);
+                        // Access token is now set by deviceAuth; fetch user info
+                        const { user: freshUser } = await authService.me();
+                        setUser(freshUser);
+                        navigate('/');
+                        return;
+                    } catch {
+                        // Device token expired or invalid — fall back to code input
+                    }
+                }
+            }
+            // Biometric failed or device token invalid — show normal 2FA input
+            setShowBiometric(false);
+            setShowVerification(true);
+        } finally {
+            setBiometricLoading(false);
         }
     };
 
@@ -111,6 +158,8 @@ export function LoginPage() {
                 position: 'relative',
                 overflow: 'hidden',
                 bgcolor: 'background.default',
+                paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)',
+                paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
                 '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -219,8 +268,35 @@ export function LoginPage() {
                         </Alert>
                     )}
 
-                    {/* Login Form */}
-                    {!showVerification ? (
+                    {/* Biometric Prompt */}
+                    {showBiometric ? (
+                        <Box sx={{ textAlign: 'center' }}>
+                            <FingerprintIcon sx={{ fontSize: 72, color: 'primary.main', mb: 2 }} />
+                            <Typography variant="h6" gutterBottom>
+                                {t('auth.biometric.loginWithBiometric')}
+                            </Typography>
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                size="large"
+                                onClick={handleBiometricAuth}
+                                disabled={biometricLoading}
+                                startIcon={biometricLoading ? <CircularProgress size={20} color="inherit" /> : <FingerprintIcon />}
+                                sx={{ py: 1.75, borderRadius: 3, textTransform: 'none', fontSize: '1rem', fontWeight: 700, mb: 2 }}
+                            >
+                                {biometricLoading ? t('login.verifying', 'Verifying...') : t('auth.biometric.loginWithBiometric')}
+                            </Button>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => { setShowBiometric(false); setShowVerification(true); }}
+                                disabled={biometricLoading}
+                                sx={{ borderRadius: 2 }}
+                            >
+                                {t('login.useCode', 'Use verification code instead')}
+                            </Button>
+                        </Box>
+                    ) : !showVerification ? (
                         <form onSubmit={handleSubmit}>
                             <TextField
                                 fullWidth
