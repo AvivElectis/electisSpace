@@ -148,6 +148,10 @@ export function usePeopleController() {
                     });
                     await triggerPush();
                     return assigned;
+                } else {
+                    // Space assignment failed (e.g. space already taken) — surface error
+                    const storeError = getStoreState().error;
+                    throw new Error(storeError || 'Failed to assign space');
                 }
             }
 
@@ -645,8 +649,29 @@ export function usePeopleController() {
 
             logger.info('PeopleController', 'Person updated on server', { personId });
 
+            // Handle space assignment changes
+            const currentSpaceId = updatedPerson.assignedSpaceId;
+            const newSpaceId = updates.assignedSpaceId;
+            const spaceChanged = 'assignedSpaceId' in updates && currentSpaceId !== newSpaceId;
+
+            if (spaceChanged) {
+                if (newSpaceId) {
+                    // Assign or reassign to a new space
+                    const assigned = await getStoreState().assignSpace(personId, newSpaceId);
+                    if (assigned) {
+                        logger.info('PeopleController', 'Space reassigned during edit', { personId, spaceId: newSpaceId });
+                    }
+                } else {
+                    // Unassign from current space
+                    const unassigned = await getStoreState().unassignSpace(personId);
+                    if (unassigned) {
+                        logger.info('PeopleController', 'Space unassigned during edit', { personId });
+                    }
+                }
+            }
+
             // Trigger push if person is assigned (server queued the update)
-            if (updatedPerson.assignedSpaceId) {
+            if (updatedPerson.assignedSpaceId || spaceChanged) {
                 getStoreState().updateSyncStatusLocal([personId], 'pending');
                 const pushed = await triggerPush();
                 getStoreState().updateSyncStatusLocal([personId], pushed ? 'synced' : 'error');
