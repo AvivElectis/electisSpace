@@ -15,6 +15,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>electisSpace</title>
+    <!-- View Transitions API animations for native page navigation -->
+    <style>
+      ::view-transition-old(root) { animation: vt-slide-out 250ms ease-out; }
+      ::view-transition-new(root) { animation: vt-slide-in 250ms ease-out; }
+      @keyframes vt-slide-in { from { transform: translateX(30%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes vt-slide-out { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-30%); opacity: 0; } }
+      [dir="rtl"] ::view-transition-old(root) { animation: vt-slide-out-rtl 250ms ease-out; }
+      [dir="rtl"] ::view-transition-new(root) { animation: vt-slide-in-rtl 250ms ease-out; }
+      @keyframes vt-slide-in-rtl { from { transform: translateX(-30%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes vt-slide-out-rtl { from { transform: translateX(0); opacity: 1; } to { transform: translateX(30%); opacity: 0; } }
+    </style>
   </head>
   <body>
     <div id="root"></div>
