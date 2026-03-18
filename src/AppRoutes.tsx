@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, type ReactNode, useEffect } from 'react';
 import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
 import { PageTransition } from '@shared/presentation/components/PageTransition';
-import { NativeRoutes } from '@shared/presentation/components/NativeRoutes';
+import { getNativeRoutes } from '@shared/presentation/components/NativeRoutes';
 import { useNativePlatform } from '@shared/presentation/hooks/useNativePlatform';
 import { logger } from '@shared/infrastructure/services/logger';
 import { ProtectedRoute } from '@features/auth/presentation/ProtectedRoute';
@@ -96,7 +96,7 @@ export function AppRoutes() {
             <Route path="/about" element={<ProtectedRoute><SuspenseRoute><NativeAboutPage /></SuspenseRoute></ProtectedRoute>} />
 
             {/* Native-only routes (gated by isNative) */}
-            {isNative && <NativeRoutes />}
+            {isNative && getNativeRoutes()}
 
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
