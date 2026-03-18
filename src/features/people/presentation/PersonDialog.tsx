@@ -154,14 +154,13 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
-        // No need to validate ID for add mode - it will be auto-generated
-
-        // Check if assigned space ID is within range
+        // Validate space assignment only for NEW selections (not existing assignments)
+        // SpaceSelector already constrains options to 1..totalSpaces
         if (formData.assignedSpaceId) {
             const spaceNum = parseInt(formData.assignedSpaceId, 10);
             if (isNaN(spaceNum) || spaceNum < 1) {
                 newErrors.assignedSpaceId = t('validation.invalidSpaceId');
-            } else if (spaceNum > totalSpaces) {
+            } else if (totalSpaces > 0 && spaceNum > totalSpaces) {
                 newErrors.assignedSpaceId = tWithSpaceType('people.spaceExceedsTotal');
             }
         }
