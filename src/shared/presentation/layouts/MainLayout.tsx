@@ -4,13 +4,7 @@ import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTr
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { checkNavigationGuard } from '../navigationGuard';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import BusinessIcon from '@mui/icons-material/Business';
-import PeopleIcon from '@mui/icons-material/People';
-import LabelIcon from '@mui/icons-material/Label';
-import RouterIcon from '@mui/icons-material/Router';
 import { AppHeader } from './AppHeader';
-import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
@@ -25,6 +19,12 @@ import { StoreRequiredGuard } from '@features/auth/presentation/StoreRequiredGua
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useCommandPalette } from '@features/quick-actions/application/useCommandPalette';
+import { useNavTabs } from '../hooks/useNavTabs';
+import { useNativePlatform } from '../hooks/useNativePlatform';
+import { useNativeInit } from '../hooks/useNativeInit';
+import { useAndroidBackButton } from '../hooks/useAndroidBackButton';
+import { NativeAppHeader } from './NativeAppHeader';
+import { NativeBottomNav, NATIVE_BOTTOM_NAV_HEIGHT } from './NativeBottomNav';
 
 // Lazy load CommandPalette
 const CommandPalette = lazy(() =>
@@ -50,14 +50,6 @@ interface MainLayoutProps {
     children: ReactNode;
 }
 
-interface NavTab {
-    labelKey: string;
-    value: string;
-    icon: React.ReactElement;
-    dynamicLabel?: boolean;
-    feature?: string;  // Feature key for permission filtering
-}
-
 /**
  * Main Layout Component
  * 
@@ -79,8 +71,10 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [manualOpen, setManualOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const commandPalette = useCommandPalette();
+    const { isNative } = useNativePlatform();
+    useNativeInit();
     const { syncState, setWorkingMode } = useSyncStore();
-    const { canAccessFeature, isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
+    const { isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
     const isSwitchingStore = useAuthStore(state => state.isSwitchingStore);
     const currentUser = useAuthStore(state => state.user);
@@ -96,6 +90,17 @@ export function MainLayout({ children }: MainLayoutProps) {
     const authReady = isAuthenticated && isInitialized;
     const effectiveStoreId = authReady ? activeStoreId : null;
     const setSpaces = useSpacesStore(state => state.setSpaces);
+
+    // Android hardware back button: close open overlays first, then navigate back
+    useAndroidBackButton({
+        onCloseDialog: useCallback(() => {
+            if (settingsOpen) { setSettingsOpen(false); return true; }
+            if (manualOpen) { setManualOpen(false); return true; }
+            if (profileOpen) { setProfileOpen(false); return true; }
+            if (mobileMenuOpen) { setMobileMenuOpen(false); return true; }
+            return false;
+        }, [settingsOpen, manualOpen, profileOpen, mobileMenuOpen]),
+    });
 
     // Sync settings.workingMode to syncStore.workingMode
     useEffect(() => {
@@ -123,25 +128,8 @@ export function MainLayout({ children }: MainLayoutProps) {
         setSpaces(spaces);
     }, [setSpaces, peopleManagerEnabled, workingMode, activeStoreEffectiveFeatures]);
 
-    // Build navigation tabs dynamically
-    const allNavTabs: NavTab[] = [
-        { labelKey: 'navigation.dashboard', value: '/', icon: <DashboardIcon fontSize="small" />, feature: 'dashboard' },
-        { 
-            labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces', 
-            value: isPeopleManagerMode ? '/people' : '/spaces', 
-            icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
-            dynamicLabel: true,
-            feature: isPeopleManagerMode ? 'people' : 'spaces',
-        },
-        { labelKey: 'navigation.conference', value: '/conference', icon: <ConferenceIcon fontSize="small" />, feature: 'conference' },
-        { labelKey: 'navigation.labels', value: '/labels', icon: <LabelIcon fontSize="small" />, feature: 'labels' },
-        { labelKey: 'navigation.aimsManagement', value: '/aims-management', icon: <RouterIcon fontSize="small" />, feature: 'aims-management' },
-    ];
-
-    // Filter tabs by user permissions
-    const navTabs = allNavTabs.filter(tab => 
-        !tab.feature || canAccessFeature(tab.feature as any)
-    );
+    // Build navigation tabs (permission-filtered, reactive to store/mode changes)
+    const navTabs = useNavTabs();
 
     // Initialize backend sync controller (all AIMS communication goes through server)
     const syncController = useBackendSyncController({
@@ -219,6 +207,107 @@ export function MainLayout({ children }: MainLayoutProps) {
         return <>{children}</>;
     }
 
+    // For native settings page, render children directly (NativeSettingsPage has its own header)
+    const isNativeSettingsPage = isNative && location.pathname === '/settings';
+    if (isNativeSettingsPage) {
+        return (
+            <SyncProvider value={syncController}>
+                <StoreRequiredGuard>
+                    {children}
+                </StoreRequiredGuard>
+            </SyncProvider>
+        );
+    }
+
+    // ── Native layout branch ──
+    // On Capacitor (Android/iOS): slim header, bottom nav, no dialogs (they're pages)
+    if (isNative) {
+        return (
+            <SyncProvider value={syncController}>
+                <Box sx={{
+                    minHeight: '100vh',
+                    bgcolor: 'background.default',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    {/* Store switching overlay */}
+                    {isSwitchingStore && (
+                        <Box sx={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: (theme) => theme.zIndex.modal + 1,
+                            bgcolor: 'background.default',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}>
+                            <SphereLoader />
+                        </Box>
+                    )}
+
+                    {/* Native slim header */}
+                    <NativeAppHeader />
+
+                    {/* Main Content — padded for bottom nav + inline padding */}
+                    <Box
+                        component="main"
+                        sx={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            px: 1.5,
+                            pt: 1,
+                            pb: `calc(${NATIVE_BOTTOM_NAV_HEIGHT + 32}px + env(safe-area-inset-bottom))`,
+                        }}
+                    >
+                        <StoreRequiredGuard>
+                            {children}
+                        </StoreRequiredGuard>
+                    </Box>
+
+                    {/* Sync Status Indicator — repositioned above bottom nav */}
+                    <Box sx={{
+                        position: 'fixed',
+                        bottom: `${NATIVE_BOTTOM_NAV_HEIGHT + 24}px`,
+                        insetInlineEnd: 16,
+                        zIndex: (theme) => theme.zIndex.fab,
+                    }}>
+                        <SyncStatusIndicator
+                            status={
+                                syncState.status === 'syncing' ? 'syncing' :
+                                    syncState.status === 'error' ? 'error' :
+                                        syncState.isConnected ? 'connected' : 'disconnected'
+                            }
+                            lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
+                            errorMessage={syncState.lastError}
+                            onSyncClick={() => sync().catch(() => {/* handled in controller */})}
+                            serverConnected={syncController.serverConnected}
+                            aimsConnected={syncState.isConnected}
+                            syncStartedAt={syncState.syncStartedAt}
+                            autoSyncEnabled={autoSyncEnabled}
+                            autoSyncInterval={autoSyncInterval}
+                        />
+                    </Box>
+
+                    {/* Bottom navigation */}
+                    <NativeBottomNav />
+
+                    {/* Command Palette - Ctrl+K quick actions (keyboard overlay, keep for external keyboards) */}
+                    {commandPalette.isOpen && (
+                        <Suspense fallback={null}>
+                            <CommandPalette
+                                open={commandPalette.isOpen}
+                                onClose={commandPalette.close}
+                                onSettingsClick={() => { commandPalette.close(); navigate('/settings'); }}
+                            />
+                        </Suspense>
+                    )}
+                </Box>
+            </SyncProvider>
+        );
+    }
+
+    // ── Web layout (completely unchanged) ──
     return (
         <SyncProvider value={syncController}>
             <Box sx={{
@@ -361,9 +450,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                 {/* Main Content */}
                 <Box
                     component="main"
-                    sx={{ 
-                        flex: 1, 
-                        display: 'flex', 
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
                         flexDirection: 'column',
                         opacity: isPending ? 0.7 : 1,
                         transition: 'opacity 0.15s ease-in-out',

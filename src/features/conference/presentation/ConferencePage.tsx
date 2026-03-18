@@ -1,3 +1,4 @@
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box,
     Card,
@@ -495,14 +496,19 @@ export function ConferencePage() {
     }
 
     // ─── Full Conference Mode Rendering ────────────────────────────────────
+    const handleRefresh = async () => {
+        await conferenceController.fetchRooms();
+    };
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box>
             {/* Header Section */}
             <Stack
                 direction="row"
                 alignItems="center"
                 gap={2}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, display: 'var(--native-page-header-display, flex)' }}
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
@@ -845,7 +851,7 @@ export function ConferencePage() {
                     disabled={!canEdit}
                     sx={{
                         position: 'fixed',
-                        bottom: 24,
+                        bottom: 'calc(24px + var(--native-bottom-nav-offset, 0px))',
                         right: 24,
                         zIndex: 1050,
                         height: 64,
@@ -969,5 +975,6 @@ export function ConferencePage() {
             </Snackbar>
             <ConfirmDialog />
         </Box>
+        </PullToRefresh>
     );
 }

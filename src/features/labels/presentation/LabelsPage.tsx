@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box,
     Paper,
@@ -163,9 +164,9 @@ export function LabelsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAppReady, activeStoreId, solumConnected]);
 
-    const handleRefresh = () => {
+    const handlePullRefresh = async () => {
         if (activeStoreId) {
-            fetchLabels(activeStoreId);
+            await fetchLabels(activeStoreId);
         }
     };
 
@@ -482,13 +483,20 @@ export function LabelsPage() {
         );
     };
 
+    const handleRefresh = useCallback(async () => {
+        if (activeStoreId) {
+            await fetchLabels(activeStoreId);
+        }
+    }, [activeStoreId, fetchLabels]);
+
     return (
+        <PullToRefresh onRefresh={handlePullRefresh}>
         <Box sx={{ width: '100%' }}>
-            {/* Header */}
+            {/* Header — hidden on native (shown in NativeAppHeader) */}
             <Stack
                 direction="row"
                 alignItems="center"
-                sx={{ mb: { xs: 2, md: 2 } }}
+                sx={{ mb: { xs: 2, md: 2 }, display: 'var(--native-page-header-display, flex)' }}
                 gap={2}
             >
                 <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.25rem', md: '2rem' }, fontWeight: 500 }}>
@@ -1037,5 +1045,6 @@ export function LabelsPage() {
             {/* Confirm Dialog */}
             <ConfirmDialog />
         </Box>
+        </PullToRefresh>
     );
 }

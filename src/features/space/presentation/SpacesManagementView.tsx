@@ -1,4 +1,5 @@
 import { logger } from '@shared/infrastructure/services/logger';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box,
     Typography,
@@ -496,10 +497,15 @@ export function SpacesManagementView() {
         }
     }, [editingSpace, spaceController]);
 
+    const handleRefresh = async () => {
+        await spaceController.fetchSpaces?.();
+    };
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box>
-            {/* Header Section */}
-            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 } }}>
+            {/* Header Section — hidden on native (shown in NativeAppHeader) */}
+            <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 }, display: 'var(--native-page-header-display, flex)' }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                         {getLabel('plural')}
@@ -865,7 +871,7 @@ export function SpacesManagementView() {
                     disabled={!canEdit}
                     sx={{
                         position: 'fixed',
-                        bottom: 24,
+                        bottom: 'calc(24px + var(--native-bottom-nav-offset, 0px))',
                         right: 24,
                         zIndex: 1050,
                         height: 64,
@@ -912,5 +918,6 @@ export function SpacesManagementView() {
                 )}
             </Suspense>
         </Box>
+        </PullToRefresh>
     );
 }

@@ -13,7 +13,8 @@
  * Follows the same layout pattern as ConferencePage and other feature pages.
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import {
     Box, Typography, Tabs, Tab, Button, Alert, Stack, Card, CardContent,
     Fab, useMediaQuery, useTheme,
@@ -123,14 +124,19 @@ export function AimsManagementPage() {
         );
     }
 
+    const handleRefresh = useCallback(async () => {
+        await Promise.all([fetchGateways(), fetchLabels()]);
+    }, [fetchGateways, fetchLabels]);
+
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Box dir={isRtl ? 'rtl' : 'ltr'} sx={{ '& .MuiTableCell-root': { textAlign: 'start' } }}>
-            {/* Header Section */}
+            {/* Header Section — hidden on native */}
             <Stack
                 direction="row"
                 alignItems="center"
                 gap={2}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, display: 'var(--native-page-header-display, flex)' }}
             >
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 500, mb: 0.5, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
@@ -310,7 +316,7 @@ export function AimsManagementPage() {
                     onClick={() => setRegisterDialogOpen(true)}
                     sx={{
                         position: 'fixed',
-                        bottom: 24,
+                        bottom: 'calc(24px + var(--native-bottom-nav-offset, 0px))',
                         right: 24,
                         zIndex: 1050,
                         height: 64,
@@ -332,7 +338,7 @@ export function AimsManagementPage() {
                     onClick={() => setUploadTemplateOpen(true)}
                     sx={{
                         position: 'fixed',
-                        bottom: 24,
+                        bottom: 'calc(24px + var(--native-bottom-nav-offset, 0px))',
                         right: 24,
                         zIndex: 1050,
                         height: 64,
@@ -358,5 +364,6 @@ export function AimsManagementPage() {
                 />
             )}
         </Box>
+        </PullToRefresh>
     );
 }
