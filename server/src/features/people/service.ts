@@ -222,6 +222,36 @@ export const peopleService = {
             { assignedSpaceId: spaceId }
         );
 
+        // Safety net: ensure the store has peopleManagerConfig with totalSpaces
+        // so the client SpaceSelector/validation works correctly
+        try {
+            const store = await prisma.store.findUnique({ where: { id: person.storeId } });
+            const storeSettings = (store?.settings as Record<string, any>) || {};
+            if (!storeSettings.peopleManagerConfig?.totalSpaces) {
+                // Count current max assigned space to set a sensible default
+                const maxSpace = await prisma.person.aggregate({
+                    where: { storeId: person.storeId, assignedSpaceId: { not: null } },
+                    _max: { assignedSpaceId: true },
+                });
+                const maxNum = parseInt(maxSpace._max.assignedSpaceId || '0', 10) || 0;
+                const totalSpaces = Math.max(maxNum, parseInt(spaceId, 10), 1);
+
+                await prisma.store.update({
+                    where: { id: person.storeId },
+                    data: {
+                        settings: {
+                            ...storeSettings,
+                            peopleManagerConfig: { totalSpaces },
+                        },
+                    },
+                });
+                appLogger.info('PeopleService', `Auto-initialized peopleManagerConfig for store ${person.storeId}`, { totalSpaces });
+            }
+        } catch (err: any) {
+            // Non-critical — log and continue
+            appLogger.warn('PeopleService', `Failed to auto-initialize peopleManagerConfig: ${err.message}`);
+        }
+
         return updated;
     },
 
