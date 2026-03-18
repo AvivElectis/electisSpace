@@ -5,7 +5,9 @@ import AddIcon from '@mui/icons-material/Add';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useState, useMemo, useCallback, useEffect, useDeferredValue, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@shared/presentation/hooks/useDebounce';
+import { useNativePlatform } from '@shared/presentation/hooks/useNativePlatform';
 import { usePeopleController } from '../application/usePeopleController';
 import { usePeopleFilters } from '../application/usePeopleFilters';
 import { usePeopleStore } from '../infrastructure/peopleStore';
@@ -24,6 +26,7 @@ const CSVUploadDialog = lazy(() => import('./CSVUploadDialog').then(m => ({ defa
 const PeopleSaveListDialog = lazy(() => import('./PeopleSaveListDialog').then(m => ({ default: m.PeopleSaveListDialog })));
 const PeopleListsManagerDialog = lazy(() => import('./PeopleListsManagerDialog').then(m => ({ default: m.PeopleListsManagerDialog })));
 const SpaceSelectionDialog = lazy(() => import('./SpaceSelectionDialog').then(m => ({ default: m.SpaceSelectionDialog })));
+const NativePeopleList = lazy(() => import('./NativePeopleList').then(m => ({ default: m.NativePeopleList })));
 
 // Extracted components
 import {
@@ -46,6 +49,8 @@ export function PeopleManagerView() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { confirm, ConfirmDialog } = useConfirmDialog();
+    const { isNative } = useNativePlatform();
+    const navigate = useNavigate();
     const isAppReady = useAuthStore((state) => state.isAppReady);
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const settings = useSettingsStore((state) => state.settings);
@@ -320,14 +325,22 @@ export function PeopleManagerView() {
     }, [confirm, t, peopleController]);
 
     const handleEdit = useCallback((person: Person) => {
-        setEditingPerson(person);
-        setPersonDialogOpen(true);
-    }, []);
+        if (isNative) {
+            navigate(`/people/${person.id}/edit`);
+        } else {
+            setEditingPerson(person);
+            setPersonDialogOpen(true);
+        }
+    }, [isNative, navigate]);
 
     const handleAdd = useCallback(() => {
-        setEditingPerson(undefined);
-        setPersonDialogOpen(true);
-    }, []);
+        if (isNative) {
+            navigate('/people/new');
+        } else {
+            setEditingPerson(undefined);
+            setPersonDialogOpen(true);
+        }
+    }, [isNative, navigate]);
 
     const handleAssignSpace = useCallback(async (person: Person) => {
         if (availableSpaces <= 0) {
@@ -524,25 +537,31 @@ export function PeopleManagerView() {
                 assignedCount={assignedCount}
             />
 
-            {/* People Table */}
-            <PeopleTable
-                people={sortedPeople}
-                visibleFields={visibleFields}
-                nameFieldKey={nameFieldKey}
-                nameFieldLabel={nameFieldLabel}
-                selectedIds={selectedIds}
-                sortConfig={sortConfig}
-                searchQuery={searchQuery}
-                assignmentFilter={assignmentFilter}
-                canEdit={canEdit}
-                onSelectAll={handleSelectAll}
-                onSelectOne={handleSelectOne}
-                onSort={handleSort}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onAssignSpace={handleAssignSpace}
-                onUnassignSpace={handleUnassignSpace}
-            />
+            {/* People Table (web) or Grouped List (native) */}
+            {isNative ? (
+                <Suspense fallback={null}>
+                    <NativePeopleList people={filteredPeople} canEdit={canEdit} />
+                </Suspense>
+            ) : (
+                <PeopleTable
+                    people={sortedPeople}
+                    visibleFields={visibleFields}
+                    nameFieldKey={nameFieldKey}
+                    nameFieldLabel={nameFieldLabel}
+                    selectedIds={selectedIds}
+                    sortConfig={sortConfig}
+                    searchQuery={searchQuery}
+                    assignmentFilter={assignmentFilter}
+                    canEdit={canEdit}
+                    onSelectAll={handleSelectAll}
+                    onSelectOne={handleSelectOne}
+                    onSort={handleSort}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onAssignSpace={handleAssignSpace}
+                    onUnassignSpace={handleUnassignSpace}
+                />
+            )}
 
 
             {/* Mobile: Unassign All button at the bottom of the page */}
@@ -559,8 +578,8 @@ export function PeopleManagerView() {
                 </Box>
             )}
 
-            {/* Mobile FAB — Add Person */}
-            {isMobile && (
+            {/* Mobile FAB — Add Person (web only; native has FAB in NativePeopleList) */}
+            {isMobile && !isNative && (
                 <Fab
                     color="primary"
                     variant="extended"
@@ -582,9 +601,9 @@ export function PeopleManagerView() {
                 </Fab>
             )}
 
-            {/* Dialogs - Lazy loaded */}
+            {/* Dialogs - Lazy loaded (web only for PersonDialog — native uses routed pages) */}
             <Suspense fallback={null}>
-                {personDialogOpen && (
+                {!isNative && personDialogOpen && (
                     <PersonDialog
                         open={personDialogOpen}
                         onClose={() => setPersonDialogOpen(false)}
