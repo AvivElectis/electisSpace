@@ -131,6 +131,17 @@ The Article Builder maps entity data to the AIMS article format:
 3. **Global field assignments** (from company settings) inject static values across all articles.
 4. **Conference mapping** maps `meetingName`, `meetingTime`, and `participants` to configurable AIMS fields.
 
+#### Mode-Specific Field Display
+
+The UI renders mapped fields differently depending on the operating mode:
+
+| Aspect | Spaces Mode | People Mode |
+|--------|-------------|-------------|
+| **Dedicated Name column** | No — all mapped fields are equal | Yes — `articleName` mapping shown as dedicated "Name" column/field |
+| **Table column order** | Sorted by `order` property (article format order) | Same |
+| **Edit dialog** | ID at top, then all mapped fields by article format order | ID at top, dedicated Name field, then remaining fields |
+| **Unique identifier** | `uniqueIdField` from mapping config | Same, plus `articleName` as the display name |
+
 ### 5.5 Label Operations
 
 Labels are the physical e-ink devices managed through AIMS:

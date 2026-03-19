@@ -353,7 +353,7 @@ export function SpacesManagementView() {
     const isPeopleMode = settingsController.settings.peopleManagerEnabled === true;
     const nameFieldKey = isPeopleMode
         ? settingsController.settings.solumMappingConfig?.mappingInfo?.articleName
-        : undefined;
+        : undefined; // In spaces mode, name field is NOT special — it appears as a regular mapped field
 
     // Get visible fields from mapping config for dynamic table columns
     const visibleFields = useMemo(() => {
