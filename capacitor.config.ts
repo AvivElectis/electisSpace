@@ -10,16 +10,20 @@ const config: CapacitorConfig = {
         androidScheme: 'https',
         // Allow cleartext HTTP for dev server access from emulator
         allowNavigation: isDev ? ['10.0.2.2:*'] : undefined,
+        // For dev on emulator: point API to host machine's Docker backend
+        ...(isDev ? { cleartext: true } : {}),
     },
     plugins: {
         CapacitorHttp: {
             // Route all HTTP requests through native layer
             // This bypasses WebView CORS restrictions and enables httpOnly cookies
-            enabled: true,
+            // Disabled in dev mode — interferes with Vite dev server live reload
+            enabled: !isDev,
         },
         CapacitorCookies: {
             // Enable native cookie handling for httpOnly cookies (refresh tokens)
-            enabled: true,
+            // Disabled in dev mode — cookies work via Vite proxy
+            enabled: !isDev,
         },
         Filesystem: {
             // File system plugin configuration
