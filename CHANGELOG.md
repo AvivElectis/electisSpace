@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Spaces mode field mapping** — removed dedicated "Name" column/field from spaces table and edit dialog; all mapped fields now appear equally, sorted by article format order
+- **Space edit dialog field order** — dynamic fields now sorted by `order` property (article format order) instead of arbitrary config iteration order
+- **Vite proxy IPv6 resolution** — use `127.0.0.1` instead of `localhost` to avoid stale IPv6 processes intercepting API proxy traffic on Windows
+
 ## [2.14.0] — 2026-03-16 — Native App Adaptations
 
 ### Added

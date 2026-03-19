@@ -138,13 +138,15 @@ export function SpaceDialog({
         }));
     };
 
-    // Identify the field key used for the "Name"
+    // In SOLUM API spaces mode, there is NO dedicated name field — all mapped fields
+    // appear equally, sorted by their article format order.
+    // In SFTP mode, roomName is still used as the dedicated name field.
     const nameFieldKey = useMemo(() => {
-        if (workingMode === 'SOLUM_API' && solumMappingConfig) {
-            return solumMappingConfig.mappingInfo?.articleName || 'roomName';
+        if (workingMode === 'SOLUM_API') {
+            return undefined; // No dedicated name — all fields shown by article format order
         }
-        return 'roomName';
-    }, [workingMode, solumMappingConfig]);
+        return 'roomName'; // SFTP mode
+    }, [workingMode]);
 
     // Get dynamic fields based on working mode
     const dynamicFields = useMemo(() => {
@@ -161,12 +163,13 @@ export function SpaceDialog({
                     if (!fieldConfig.visible) return false;
                     // Exclude uniqueIdField (already shown as ID)
                     if (fieldKey === uniqueIdField) return false;
-                    // Exclude field used as Name (already shown as Name)
-                    if (fieldKey === nameFieldKey) return false;
+                    // Exclude field used as Name (already shown as dedicated Name field — people mode only)
+                    if (nameFieldKey && fieldKey === nameFieldKey) return false;
                     // Exclude globally assigned fields (they apply to all entities automatically)
                     if (globalFieldKeys.includes(fieldKey)) return false;
                     return true;
                 })
+                .sort(([, a], [, b]) => (a.order ?? Infinity) - (b.order ?? Infinity))
                 .map(([fieldKey, fieldConfig]) => {
                     // Use friendly names if they exist and are not just the field key itself
                     // (default config sets friendly names to field key, which is not user-friendly)
@@ -212,13 +215,15 @@ export function SpaceDialog({
                         helperText={errors.id || (space ? t('spaces.idCannotChange') : t('spaces.uniqueIdentifier'))}
                     />
 
-                    {/* Name - Dynamically Resolved Field */}
-                    <TextField
-                        fullWidth
-                        label={t('spaces.name')}
-                        value={formData.data?.[nameFieldKey] || ''}
-                        onChange={(e) => handleDynamicDataChange(nameFieldKey, e.target.value)}
-                    />
+                    {/* Name - Dedicated field only in people mode or SFTP mode */}
+                    {nameFieldKey && (
+                        <TextField
+                            fullWidth
+                            label={t('spaces.name')}
+                            value={formData.data?.[nameFieldKey] || ''}
+                            onChange={(e) => handleDynamicDataChange(nameFieldKey, e.target.value)}
+                        />
+                    )}
 
                     {/* Dynamic Fields */}
                     {dynamicFields.length > 0 && (
