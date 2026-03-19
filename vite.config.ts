@@ -41,6 +41,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    allowedHosts: true, // Allow Android emulator (10.0.2.2) and other hosts
     proxy: {
       // Backend API proxy - SSE requires special handling
       '/api': {
