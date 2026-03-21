@@ -41,10 +41,11 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    allowedHosts: true, // Allow Android emulator (10.0.2.2) and other hosts
     proxy: {
       // Backend API proxy - SSE requires special handling
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
         secure: false, // Allow HTTP target
         ws: true, // Enable WebSocket proxy
