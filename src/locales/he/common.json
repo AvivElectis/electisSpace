@@ -429,6 +429,7 @@
         "book": "הזמן",
         "available": "פנוי",
         "occupied": "תפוס",
+        "upcoming": "עתידי",
         "noRooms": "לא נמצאו חדרים",
         "confirmDelete": "האם אתה בטוח שברצונך למחוק חדר ישיבות זה?",
         "searchPlaceholder": "חיפוש חדרי ישיבות...",
@@ -1676,6 +1677,9 @@
         "totalCountShort": "תגיות",
         "noLabels": "לא נמצאו תגיות",
         "notLinked": "לא מקושר",
+        "linked": "מקושר",
+        "unlinked": "לא מקושר",
+        "viewImages": "הצג תמונות",
         "table": {
             "image": "תמונה",
             "images": "תמונות",
