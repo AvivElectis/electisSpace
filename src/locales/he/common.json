@@ -307,7 +307,10 @@
         "back": "חזור",
         "trustDevice": "סמוך על מכשיר זה (דלג על אימות בפעם הבאה)",
         "trustDeviceLabel": "סמוך על מכשיר זה",
-        "trustDeviceHint": "דלג על אימות בפעם הבאה"
+        "trustDeviceHint": "דלג על אימות בפעם הבאה",
+        "forgotPassword": "שכחת סיסמה?",
+        "useCode": "השתמש בקוד אימות במקום",
+        "biometricLogin": "כניסה ביומטרית"
     },
     "error": {
         "invalid_credentials": "דוא״ל או סיסמה שגויים",

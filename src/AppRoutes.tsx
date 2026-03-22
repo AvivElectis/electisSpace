@@ -12,6 +12,9 @@ import { useNativePlatform } from '@shared/presentation/hooks/useNativePlatform'
 const LoginPage = lazy(() =>
     import('@features/auth/presentation/LoginPage').then(m => ({ default: m.LoginPage }))
 );
+const NativeLoginPage = lazy(() =>
+    import('@features/auth/presentation/native/NativeLoginPage').then(m => ({ default: m.NativeLoginPage }))
+);
 const DashboardPage = lazy(() =>
     import('@features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))
 );
@@ -82,7 +85,7 @@ export function AppRoutes() {
     const routes = (
         <Routes>
             {/* Public Routes */}
-            <Route path="/login" element={<SuspenseRoute><LoginPage /></SuspenseRoute>} />
+            <Route path="/login" element={<SuspenseRoute>{isNative ? <NativeLoginPage /> : <LoginPage />}</SuspenseRoute>} />
 
             {/* Native Routes — wrapped in NativeShell, rendered only on native platform */}
             {isNative && getNativeRoutes()}

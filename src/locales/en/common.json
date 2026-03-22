@@ -304,7 +304,10 @@
         "back": "Back",
         "trustDevice": "Trust this device (skip verification next time)",
         "trustDeviceLabel": "Trust this device",
-        "trustDeviceHint": "Skip verification next time"
+        "trustDeviceHint": "Skip verification next time",
+        "forgotPassword": "Forgot password?",
+        "useCode": "Use verification code instead",
+        "biometricLogin": "Biometric Login"
     },
     "error": {
         "invalid_credentials": "Invalid email or password",
