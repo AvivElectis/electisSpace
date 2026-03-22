@@ -27,6 +27,12 @@ services:
     restart: unless-stopped
     networks:
       - global-network
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 16M
 
 volumes:
   redis_data:
