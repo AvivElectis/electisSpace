@@ -94,7 +94,6 @@ Routes (native-only, inside NativeShell):
   /settings/roles         → NativeRolesListPage
   /settings/roles/new     → NativeRoleFormPage
   /settings/roles/:id     → NativeRoleFormPage
-  /settings/logs          → NativeLogsPage
   /settings/about         → NativeAboutPage
 
 Standalone (no NativeShell):
@@ -209,12 +208,12 @@ All in `src/shared/presentation/native/`.
 ### Shell Components
 
 **NativeShell.tsx** — app shell wrapping all authenticated routes:
-- Wraps content with `SyncProvider` (required for SSE event stream)
+- Calls `useBackendSyncController()` and wraps content with `<SyncProvider value={syncController}>` (required for SSE event stream, mirrors MainLayout pattern)
 - NativeAppBar at top
 - `<Outlet />` for page content (scrollable), wrapped in `StoreRequiredGuard`
 - NativeBottomNav at bottom
 - `SyncStatusIndicator` floating widget positioned above bottom nav
-- Store-switching overlay (`isSwitchingStore` from `useCompanyStore`) — full-screen loader during store switch
+- Store-switching overlay (`isSwitchingStore` from `useAuthStore`) — full-screen loader during store switch
 - Calls `useNativeInit()` for Capacitor-specific initialization
 - Calls `useAndroidBackButton()` for hardware back button handling
 
@@ -408,7 +407,7 @@ Reference: `docs/stitch-designs/dashboard.png`.
 - Recent notifications list (last 5)
 - NativeFAB expandable: Add Person, Add Room, Sync Labels
 
-**Stores:** `useSpaceStore`, `useConferenceStore`, `usePeopleStore`, `useSyncStore`
+**Stores:** `useSpacesStore`, `useConferenceStore`, `usePeopleStore`, `useSyncStore`
 
 ### 4c. People — NativePeopleListPage + NativePersonFormPage
 
@@ -450,7 +449,7 @@ Reference: `docs/stitch-designs/spaces-management.png`, `docs/stitch-designs/spa
 - NativeFormSection "Label Info": linked label with preview thumbnail, battery %, signal
 - NativeDeleteButton (edit mode)
 
-**Store:** `useSpaceStore`, `useSettingsStore (peopleManagerConfig selector)` for dynamic fields
+**Store:** `useSpacesStore`, `useSettingsStore (peopleManagerConfig selector)` for dynamic fields
 
 ### 4e. Conference — NativeConferencePage + NativeConferenceFormPage
 
@@ -874,7 +873,7 @@ src/shared/presentation/native/NativeDeleteButton.tsx
 
 **Chunk 7 (dashboard):**
 ```
-src/shared/presentation/native/NativeSwipeCarousel.tsx
+src/features/dashboard/presentation/native/NativeSwipeCarousel.tsx
 src/features/dashboard/presentation/native/NativeDashboardPage.tsx
 ```
 
@@ -925,7 +924,6 @@ src/features/settings/presentation/native/NativeStoreFormPage.tsx
 src/features/settings/presentation/native/NativeStoreFeaturesPage.tsx
 src/features/settings/presentation/native/NativeRolesListPage.tsx
 src/features/settings/presentation/native/NativeRoleFormPage.tsx
-src/features/settings/presentation/native/NativeLogsPage.tsx
 src/features/settings/presentation/native/NativeAboutPage.tsx
 ```
 
