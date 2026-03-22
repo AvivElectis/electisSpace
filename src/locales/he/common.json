@@ -1331,6 +1331,7 @@
     "people": {
         "title": "מנהל אנשים",
         "total": "סה\"כ אנשים",
+        "personalInfo": "מידע אישי",
         "uploadCSV": "העלה CSV",
         "addPerson": "הוסף אדם",
         "editPerson": "ערוך אדם",

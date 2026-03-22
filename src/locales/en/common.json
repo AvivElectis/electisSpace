@@ -1319,6 +1319,7 @@
     "people": {
         "title": "People Manager",
         "total": "Total People",
+        "personalInfo": "Personal Information",
         "uploadCSV": "Upload CSV",
         "addPerson": "Add Person",
         "editPerson": "Edit Person",

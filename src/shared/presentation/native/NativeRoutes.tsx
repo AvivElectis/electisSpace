@@ -9,6 +9,18 @@ const NativeDashboardPage = lazy(() =>
     }))
 );
 
+const NativePeopleListPage = lazy(() =>
+    import('@features/people/presentation/native/NativePeopleListPage').then((m) => ({
+        default: m.NativePeopleListPage,
+    }))
+);
+
+const NativePersonFormPage = lazy(() =>
+    import('@features/people/presentation/native/NativePersonFormPage').then((m) => ({
+        default: m.NativePersonFormPage,
+    }))
+);
+
 function NativePlaceholder({ name }: { name: string }) {
     return (
         <Box sx={{ p: 2, textAlign: 'center', mt: 4 }}>
@@ -22,9 +34,9 @@ export function getNativeRoutes() {
     return (
         <Route element={<NativeShell />}>
             <Route index element={<Suspense fallback={null}><NativeDashboardPage /></Suspense>} />
-            <Route path="people" element={<NativePlaceholder name="People" />} />
-            <Route path="people/new" element={<NativePlaceholder name="Add Person" />} />
-            <Route path="people/:id/edit" element={<NativePlaceholder name="Edit Person" />} />
+            <Route path="people" element={<Suspense fallback={null}><NativePeopleListPage /></Suspense>} />
+            <Route path="people/new" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
+            <Route path="people/:id/edit" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
             <Route path="spaces" element={<NativePlaceholder name="Spaces" />} />
             <Route path="spaces/new" element={<NativePlaceholder name="Add Space" />} />
             <Route path="spaces/:id/edit" element={<NativePlaceholder name="Edit Space" />} />
