@@ -1,4 +1,4 @@
-import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, Typography } from '@mui/material';
+import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -205,26 +205,11 @@ export function MainLayout({ children }: MainLayoutProps) {
         return <>{children}</>;
     }
 
-    // For native settings page, render children directly (NativeSettingsPage has its own header)
-    const isNativeSettingsPage = isNative && location.pathname === '/settings';
-    if (isNativeSettingsPage) {
-        return (
-            <SyncProvider value={syncController}>
-                <StoreRequiredGuard>
-                    {children}
-                </StoreRequiredGuard>
-            </SyncProvider>
-        );
-    }
-
     // ── Native layout branch ──
-    // Placeholder: full native shell will be built in Task 2.x (Stitch redesign)
+    // NativeShell is now injected at the route level via NativeRoutes.tsx.
+    // MainLayout simply passes children through without adding any chrome.
     if (isNative) {
-        return (
-            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography>Native shell loading...</Typography>
-            </Box>
-        );
+        return <>{children}</>;
     }
 
     // ── Web layout (completely unchanged) ──

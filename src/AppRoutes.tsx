@@ -4,6 +4,9 @@ import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadi
 import { logger } from '@shared/infrastructure/services/logger';
 import { ProtectedRoute } from '@features/auth/presentation/ProtectedRoute';
 import { ProtectedFeature } from '@features/auth/presentation/ProtectedFeature';
+import { getNativeRoutes } from '@shared/presentation/native/NativeRoutes';
+import { PageTransition } from '@shared/presentation/native/PageTransition';
+import { useNativePlatform } from '@shared/presentation/hooks/useNativePlatform';
 
 // Lazy load all page components for code splitting
 const LoginPage = lazy(() =>
@@ -74,10 +77,15 @@ export function AppRoutes() {
     // Log navigation events
     useNavigationLogger();
 
+    const { isNative } = useNativePlatform();
+
     const routes = (
         <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<SuspenseRoute><LoginPage /></SuspenseRoute>} />
+
+            {/* Native Routes — wrapped in NativeShell, rendered only on native platform */}
+            {isNative && getNativeRoutes()}
 
             {/* Protected Routes */}
             <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
@@ -95,6 +103,6 @@ export function AppRoutes() {
         </Routes>
     );
 
-    return routes;
+    return isNative ? <PageTransition>{routes}</PageTransition> : routes;
 }
 
