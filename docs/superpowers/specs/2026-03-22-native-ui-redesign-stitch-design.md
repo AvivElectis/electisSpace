@@ -73,12 +73,12 @@ Routes (native-only, inside NativeShell):
   /conference/:id/edit    → NativeConferenceFormPage
   /labels                 → NativeLabelsPage
   /labels/link            → NativeLinkLabelPage
-  /aims                   → NativeAimsPage
-  /settings               → NativeSettingsPage
+  /aims-management        → NativeAimsPage
+  /people/import          → NativeCSVUploadPage
+  /labels/assign-image    → NativeAssignImagePage
+  /labels/:code/images    → NativeLabelImagesPage
+  /settings               → NativeSettingsPage (hub with inline tabs: App, SoluM, Logo, Security, Logs)
   /settings/profile       → NativeProfilePage
-  /settings/security      → NativeSecurityPage
-  /settings/solum         → NativeSolumSettingsPage
-  /settings/logo          → NativeLogoSettingsPage
   /settings/users         → NativeUsersListPage
   /settings/users/new     → NativeUserFormPage
   /settings/users/:id     → NativeUserFormPage
@@ -209,26 +209,35 @@ All in `src/shared/presentation/native/`.
 ### Shell Components
 
 **NativeShell.tsx** — app shell wrapping all authenticated routes:
+- Wraps content with `SyncProvider` (required for SSE event stream)
 - NativeAppBar at top
-- `<Outlet />` for page content (scrollable)
+- `<Outlet />` for page content (scrollable), wrapped in `StoreRequiredGuard`
 - NativeBottomNav at bottom
-- Manages route-to-title mapping
-- Company/store selector in app bar
+- `SyncStatusIndicator` floating widget positioned above bottom nav
+- Store-switching overlay (`isSwitchingStore` from `useCompanyStore`) — full-screen loader during store switch
+- Calls `useNativeInit()` for Capacitor-specific initialization
+- Calls `useAndroidBackButton()` for hardware back button handling
+
+**Title mechanism:** Each native page sets its title via `NativePageTitleContext` (React context). NativeShell provides the context, NativeAppBar reads it. Main nav pages (Dashboard, People, etc.) set their title on mount. Sub-pages (edit forms, settings sub-pages) set their title + `showBackArrow: true`. This replaces the Phase 1 approach of each NativePage owning its own app bar.
 
 **NativeAppBar.tsx** — top bar:
 - Blue gradient background (135deg, primary → primary.dark)
 - Glass effect variant for sub-pages
 - Safe-area-inset-top padding
-- Left: hamburger (main pages) or back arrow (sub-pages)
-- Center: page title
-- Right: action icons (search, filter, settings, save)
+- Left: hamburger or back arrow (controlled by `NativePageTitleContext.showBackArrow`)
+- Center: page title (from `NativePageTitleContext`)
+- Right: action icons slot (search, filter, settings, save — set per-page via context)
 - Height: 56px + safe area
+- Company/store selector (on main pages only)
 
 **NativeBottomNav.tsx** — bottom navigation:
-- 5 tabs: Dashboard, People, Conference, Labels, AIMS
+- **Permission-aware:** reads tabs from `useNavTabs()` hook, NOT a hardcoded 5-tab list
+- `useNavTabs()` dynamically includes/excludes tabs based on `isPeopleManagerMode`, `canAccessFeature()`, and user role
+- Second tab swaps between People (`/people`) and Spaces (`/spaces`) based on `isPeopleManagerMode`
 - Glass effect background
 - Haptic feedback on tab change (ImpactStyle.Light)
 - Active tab: filled icon + label. Inactive: outlined icon only
+- Syncs active state with `location.pathname`
 - Height: 64px + safe-area-inset-bottom
 
 **NativePage.tsx** — scroll container:
@@ -246,7 +255,7 @@ All in `src/shared/presentation/native/`.
 - Section headers: uppercase, 11px, colored accent
 - Dividers: tonal shift only (no 1px lines)
 - Chevron on each item
-- Optional `virtualized` prop for 500+ item lists (react-window)
+- For lists exceeding 500 items (Spaces, Labels), use a separate `NativeVirtualizedList` component (flat, no grouped sections) that renders all items in a single `react-window` `FixedSizeList`. The grouped section design does not work with react-window due to dynamic container heights. Pages with large lists offer a toggle: "Group by status" (native scroll, grouped) vs "Show all" (virtualized, flat).
 - FAB slot positioned above bottom nav
 - Empty state slot
 
@@ -372,15 +381,15 @@ All in `src/shared/presentation/native/`.
 Standalone (no NativeShell). Reference: `docs/stitch-designs/login.png`.
 
 - Full-screen gradient background (surface → primary at 5%)
-- Centered card with shadow:
-  - Logo: "electisSpace" with icon + Hebrew tagline
-  - EN/HE segmented toggle (top-right of card)
-  - Email field (envelope icon prefix)
+- No card — fields render directly on the gradient (matching Stitch login.png):
+  - Logo: "electisSpace" with icon + Hebrew tagline (centered, top third)
+  - EN/HE segmented toggle (top-right of screen)
+  - Email field (envelope icon prefix) — filled style on transparent/surface background
   - Password field (lock icon prefix, visibility toggle suffix)
   - "Trust this device" checkbox + "Skip verification next time" subtitle
   - Blue "Sign In" button (full width, 48px height, 12px radius)
   - "Forgot password?" link
-- Biometric section below card: fingerprint icon + "Biometric Login" text
+- Biometric section below form: fingerprint icon + "Biometric Login" text
 - OTP flow: fields swap to 6-digit code input with countdown timer + resend
 
 **Store:** `useAuthStore`
@@ -441,7 +450,7 @@ Reference: `docs/stitch-designs/spaces-management.png`, `docs/stitch-designs/spa
 - NativeFormSection "Label Info": linked label with preview thumbnail, battery %, signal
 - NativeDeleteButton (edit mode)
 
-**Store:** `useSpaceStore`, `usePeopleManagerConfig` for dynamic fields
+**Store:** `useSpaceStore`, `useSettingsStore (peopleManagerConfig selector)` for dynamic fields
 
 ### 4e. Conference — NativeConferencePage + NativeConferenceFormPage
 
@@ -486,7 +495,7 @@ Reference: `docs/stitch-designs/labels-management.png`.
 - Each section: NativeGroupedList with relevant items
 - Detail view: tap item → info display (inline expandable, not separate route)
 
-**Store:** `useSyncStore`, `useAimsStore`
+**Store:** `useSyncStore`, `useAimsManagementStore`
 
 ---
 
@@ -694,7 +703,7 @@ After chunks 4, 7, 9, 15, 17, 22, 23 — take screenshots and compare against co
 - **EMULATOR CHECKPOINT 1**
 
 ### Chunk 5: Shared List Components
-- NativeGroupedList, NativeCard, NativeChipBar
+- NativeGroupedList, NativeVirtualizedList (flat, react-window), NativeCard, NativeChipBar
 - NativeStatBar, NativeSearchBar, NativeStatusBadge
 - NativeFAB, NativeEmptyState
 - NativePersonItem, NativeSpaceItem, NativeRoomCard, NativeLabelCard
@@ -733,11 +742,14 @@ After chunks 4, 7, 9, 15, 17, 22, 23 — take screenshots and compare against co
 ### Chunk 13: NativeConferenceFormPage
 - Room details, meeting info, time pickers
 
-### Chunk 14: NativeLabelsPage
+### Chunk 14: NativeLabelsPage + NativeLabelImagesPage + NativeAssignImagePage
 - Label cards with thumbnails, pagination, toggle
+- Label images viewer page
+- Assign image to label page
 
-### Chunk 15: NativeLinkLabelPage
+### Chunk 15: NativeLinkLabelPage + NativeCSVUploadPage
 - Label linking form
+- CSV upload page (people import)
 - **EMULATOR CHECKPOINT 4**
 
 ### Chunk 16: NativeAimsPage
@@ -824,6 +836,7 @@ src/shared/presentation/native/NativeShell.tsx
 src/shared/presentation/native/NativeAppBar.tsx
 src/shared/presentation/native/NativeBottomNav.tsx
 src/shared/presentation/native/NativePage.tsx
+src/shared/presentation/native/NativePageTitleContext.tsx
 src/shared/presentation/native/PageTransition.tsx
 src/shared/presentation/native/NativeRoutes.tsx
 ```
@@ -836,6 +849,7 @@ src/features/auth/presentation/native/NativeLoginPage.tsx
 **Chunk 5 (list components):**
 ```
 src/shared/presentation/native/NativeGroupedList.tsx
+src/shared/presentation/native/NativeVirtualizedList.tsx
 src/shared/presentation/native/NativeCard.tsx
 src/shared/presentation/native/NativeChipBar.tsx
 src/shared/presentation/native/NativeStatBar.tsx
@@ -882,10 +896,13 @@ src/features/conference/presentation/native/NativeConferencePage.tsx
 src/features/conference/presentation/native/NativeConferenceFormPage.tsx
 ```
 
-**Chunks 14-15 (labels):**
+**Chunks 14-15 (labels + import):**
 ```
 src/features/labels/presentation/native/NativeLabelsPage.tsx
 src/features/labels/presentation/native/NativeLinkLabelPage.tsx
+src/features/labels/presentation/native/NativeLabelImagesPage.tsx
+src/features/labels/presentation/native/NativeAssignImagePage.tsx
+src/features/import-export/presentation/native/NativeCSVUploadPage.tsx
 ```
 
 **Chunk 16 (AIMS):**
@@ -895,11 +912,8 @@ src/features/sync/presentation/native/NativeAimsPage.tsx
 
 **Chunks 17-22 (settings):**
 ```
-src/features/settings/presentation/native/NativeSettingsPage.tsx
+src/features/settings/presentation/native/NativeSettingsPage.tsx    (hub + inline tabs: App, SoluM, Logo, Security, Logs)
 src/features/settings/presentation/native/NativeProfilePage.tsx
-src/features/settings/presentation/native/NativeSecurityPage.tsx
-src/features/settings/presentation/native/NativeSolumSettingsPage.tsx
-src/features/settings/presentation/native/NativeLogoSettingsPage.tsx
 src/features/settings/presentation/native/NativeUsersListPage.tsx
 src/features/settings/presentation/native/NativeUserFormPage.tsx
 src/features/settings/presentation/native/NativeElevateUserPage.tsx
@@ -927,6 +941,8 @@ index.html                                 — font imports (Manrope, Inter)
 ### Deleted Files (Phase 1 cleanup)
 ```
 src/shared/presentation/layouts/NativePage.tsx
+src/shared/presentation/layouts/NativeAppHeader.tsx
+src/shared/presentation/layouts/NativeBottomNav.tsx
 src/shared/presentation/components/NativeGroupedList.tsx
 src/shared/presentation/components/NativeFormSection.tsx
 src/shared/presentation/components/NativeRoutes.tsx
