@@ -57,6 +57,18 @@ const NativeLinkLabelPage = lazy(() =>
     }))
 );
 
+const NativeAimsPage = lazy(() =>
+    import('@features/aims-management/presentation/native/NativeAimsPage').then((m) => ({
+        default: m.NativeAimsPage,
+    }))
+);
+
+const NativeSettingsPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeSettingsPage').then((m) => ({
+        default: m.NativeSettingsPage,
+    }))
+);
+
 function NativePlaceholder({ name }: { name: string }) {
     return (
         <Box sx={{ p: 2, textAlign: 'center', mt: 4 }}>
@@ -81,8 +93,8 @@ export function getNativeRoutes() {
             <Route path="conference/:id/edit" element={<Suspense fallback={null}><NativeConferenceFormPage /></Suspense>} />
             <Route path="labels" element={<Suspense fallback={null}><NativeLabelsPage /></Suspense>} />
             <Route path="labels/link" element={<Suspense fallback={null}><NativeLinkLabelPage /></Suspense>} />
-            <Route path="aims-management" element={<NativePlaceholder name="AIMS" />} />
-            <Route path="settings" element={<NativePlaceholder name="Settings" />} />
+            <Route path="aims-management" element={<Suspense fallback={null}><NativeAimsPage /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={null}><NativeSettingsPage /></Suspense>} />
             <Route path="settings/profile" element={<NativePlaceholder name="Profile" />} />
             <Route path="settings/users" element={<NativePlaceholder name="Users" />} />
             <Route path="settings/users/new" element={<NativePlaceholder name="Add User" />} />
