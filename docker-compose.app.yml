@@ -33,6 +33,12 @@ services:
     restart: unless-stopped
     networks:
       - global-network
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 16M
 
   # ======================
   # Server — Node.js API
@@ -61,6 +67,12 @@ services:
     restart: unless-stopped
     networks:
       - global-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
 
 networks:
   global-network:
