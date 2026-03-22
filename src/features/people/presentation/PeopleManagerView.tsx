@@ -26,7 +26,6 @@ const CSVUploadDialog = lazy(() => import('./CSVUploadDialog').then(m => ({ defa
 const PeopleSaveListDialog = lazy(() => import('./PeopleSaveListDialog').then(m => ({ default: m.PeopleSaveListDialog })));
 const PeopleListsManagerDialog = lazy(() => import('./PeopleListsManagerDialog').then(m => ({ default: m.PeopleListsManagerDialog })));
 const SpaceSelectionDialog = lazy(() => import('./SpaceSelectionDialog').then(m => ({ default: m.SpaceSelectionDialog })));
-const NativePeopleList = lazy(() => import('./NativePeopleList').then(m => ({ default: m.NativePeopleList })));
 
 // Extracted components
 import {
@@ -537,12 +536,8 @@ export function PeopleManagerView() {
                 assignedCount={assignedCount}
             />
 
-            {/* People Table (web) or Grouped List (native) */}
-            {isNative ? (
-                <Suspense fallback={null}>
-                    <NativePeopleList people={filteredPeople} canEdit={canEdit} />
-                </Suspense>
-            ) : (
+            {/* People Table (web) or Grouped List (native — placeholder until Task 8-9) */}
+            {isNative ? null : (
                 <PeopleTable
                     people={sortedPeople}
                     visibleFields={visibleFields}

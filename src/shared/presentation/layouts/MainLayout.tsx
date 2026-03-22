@@ -1,4 +1,4 @@
-import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton } from '@mui/material';
+import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -23,8 +23,6 @@ import { useNavTabs } from '../hooks/useNavTabs';
 import { useNativePlatform } from '../hooks/useNativePlatform';
 import { useNativeInit } from '../hooks/useNativeInit';
 import { useAndroidBackButton } from '../hooks/useAndroidBackButton';
-import { NativeAppHeader } from './NativeAppHeader';
-import { NativeBottomNav, NATIVE_BOTTOM_NAV_HEIGHT } from './NativeBottomNav';
 
 // Lazy load CommandPalette
 const CommandPalette = lazy(() =>
@@ -220,90 +218,12 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
 
     // ── Native layout branch ──
-    // On Capacitor (Android/iOS): slim header, bottom nav, no dialogs (they're pages)
+    // Placeholder: full native shell will be built in Task 2.x (Stitch redesign)
     if (isNative) {
         return (
-            <SyncProvider value={syncController}>
-                <Box sx={{
-                    minHeight: '100vh',
-                    bgcolor: 'background.default',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}>
-                    {/* Store switching overlay */}
-                    {isSwitchingStore && (
-                        <Box sx={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: (theme) => theme.zIndex.modal + 1,
-                            bgcolor: 'background.default',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}>
-                            <SphereLoader />
-                        </Box>
-                    )}
-
-                    {/* Native slim header */}
-                    <NativeAppHeader />
-
-                    {/* Main Content — padded for bottom nav + inline padding */}
-                    <Box
-                        component="main"
-                        sx={{
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            px: 1.5,
-                            pt: 1,
-                            pb: `calc(${NATIVE_BOTTOM_NAV_HEIGHT + 32}px + env(safe-area-inset-bottom))`,
-                        }}
-                    >
-                        <StoreRequiredGuard>
-                            {children}
-                        </StoreRequiredGuard>
-                    </Box>
-
-                    {/* Sync Status Indicator — repositioned above bottom nav */}
-                    <Box sx={{
-                        position: 'fixed',
-                        bottom: `${NATIVE_BOTTOM_NAV_HEIGHT + 24}px`,
-                        insetInlineEnd: 16,
-                        zIndex: (theme) => theme.zIndex.fab,
-                    }}>
-                        <SyncStatusIndicator
-                            status={
-                                syncState.status === 'syncing' ? 'syncing' :
-                                    syncState.status === 'error' ? 'error' :
-                                        syncState.isConnected ? 'connected' : 'disconnected'
-                            }
-                            lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
-                            errorMessage={syncState.lastError}
-                            onSyncClick={() => sync().catch(() => {/* handled in controller */})}
-                            serverConnected={syncController.serverConnected}
-                            aimsConnected={syncState.isConnected}
-                            syncStartedAt={syncState.syncStartedAt}
-                            autoSyncEnabled={autoSyncEnabled}
-                            autoSyncInterval={autoSyncInterval}
-                        />
-                    </Box>
-
-                    {/* Bottom navigation */}
-                    <NativeBottomNav />
-
-                    {/* Command Palette - Ctrl+K quick actions (keyboard overlay, keep for external keyboards) */}
-                    {commandPalette.isOpen && (
-                        <Suspense fallback={null}>
-                            <CommandPalette
-                                open={commandPalette.isOpen}
-                                onClose={commandPalette.close}
-                                onSettingsClick={() => { commandPalette.close(); navigate('/settings'); }}
-                            />
-                        </Suspense>
-                    )}
-                </Box>
-            </SyncProvider>
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography>Native shell loading...</Typography>
+            </Box>
         );
     }
 

@@ -1,9 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, type ReactNode, useEffect } from 'react';
 import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadingFallback';
-import { PageTransition } from '@shared/presentation/components/PageTransition';
-import { getNativeRoutes } from '@shared/presentation/components/NativeRoutes';
-import { useNativePlatform } from '@shared/presentation/hooks/useNativePlatform';
 import { logger } from '@shared/infrastructure/services/logger';
 import { ProtectedRoute } from '@features/auth/presentation/ProtectedRoute';
 import { ProtectedFeature } from '@features/auth/presentation/ProtectedFeature';
@@ -76,7 +73,6 @@ function useNavigationLogger() {
 export function AppRoutes() {
     // Log navigation events
     useNavigationLogger();
-    const { isNative } = useNativePlatform();
 
     const routes = (
         <Routes>
@@ -95,14 +91,10 @@ export function AppRoutes() {
             <Route path="/manual" element={<ProtectedRoute><SuspenseRoute><NativeManualPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/about" element={<ProtectedRoute><SuspenseRoute><NativeAboutPage /></SuspenseRoute></ProtectedRoute>} />
 
-            {/* Native-only routes (gated by isNative) */}
-            {isNative && getNativeRoutes()}
-
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>
     );
 
-    // Wrap with PageTransition on native for slide animations
-    return isNative ? <PageTransition>{routes}</PageTransition> : routes;
+    return routes;
 }
 
