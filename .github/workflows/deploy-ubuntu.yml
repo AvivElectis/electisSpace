@@ -22,6 +22,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: GH_PAT
+          command_timeout: 20m
           script: |
             set -e
             cd /opt/electisSpace
