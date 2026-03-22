@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>electisSpace - Spaces</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#ffb870",
+              "secondary-fixed-dim": "#78dc77",
+              "on-secondary-fixed": "#002204",
+              "primary": "#005dac",
+              "secondary-container": "#91f78e",
+              "surface-variant": "#e1e3e4",
+              "surface-dim": "#d9dadb",
+              "outline": "#717783",
+              "error": "#ba1a1a",
+              "secondary-fixed": "#94f990",
+              "inverse-surface": "#2e3132",
+              "tertiary": "#884f00",
+              "surface-bright": "#f8f9fa",
+              "on-surface": "#191c1d",
+              "on-tertiary-fixed-variant": "#693c00",
+              "on-primary-fixed": "#001c3a",
+              "on-tertiary-fixed": "#2c1600",
+              "surface-tint": "#005faf",
+              "primary-container": "#1976d2",
+              "on-secondary-container": "#00731e",
+              "error-container": "#ffdad6",
+              "on-tertiary": "#ffffff",
+              "outline-variant": "#c1c6d4",
+              "on-primary": "#ffffff",
+              "inverse-on-surface": "#f0f1f2",
+              "on-primary-container": "#fffdff",
+              "primary-fixed": "#d4e3ff",
+              "on-error-container": "#93000a",
+              "on-secondary-fixed-variant": "#005313",
+              "surface-container-lowest": "#ffffff",
+              "on-background": "#191c1d",
+              "secondary": "#006e1c",
+              "tertiary-container": "#ab6400",
+              "tertiary-fixed": "#ffdcbe",
+              "background": "#f8f9fa",
+              "surface-container-high": "#e7e8e9",
+              "on-secondary": "#ffffff",
+              "on-primary-fixed-variant": "#004786",
+              "inverse-primary": "#a5c8ff",
+              "surface-container-highest": "#e1e3e4",
+              "surface": "#f8f9fa",
+              "on-surface-variant": "#414752",
+              "on-tertiary-container": "#fffdff",
+              "surface-container-low": "#f3f4f5",
+              "primary-fixed-dim": "#a5c8ff",
+              "surface-container": "#edeeef",
+              "on-error": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter", "sans-serif"],
+              "body": ["Inter", "sans-serif"],
+              "label": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-50 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-xl flex items-center justify-between px-4 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface scale-95 active:scale-90 transition-transform p-2 rounded-full hover:bg-surface-container-highest transition-colors" data-icon="menu">menu</button>
+<h1 class="text-xl font-bold text-on-surface tracking-tight font-inter">Spaces</h1>
+</div>
+<div class="flex items-center gap-1">
+<button class="material-symbols-outlined text-on-surface p-2 rounded-full hover:bg-surface-container-highest transition-colors scale-95 active:scale-90" data-icon="search">search</button>
+<button class="material-symbols-outlined text-on-surface p-2 rounded-full hover:bg-surface-container-highest transition-colors scale-95 active:scale-90" data-icon="filter_list">filter_list</button>
+<button class="material-symbols-outlined text-on-surface p-2 rounded-full hover:bg-surface-container-highest transition-colors scale-95 active:scale-90" data-icon="grid_view">grid_view</button>
+</div>
+</header>
+<main class="px-4 space-y-6 max-w-5xl mx-auto">
+<!-- Stats Bar -->
+<section class="mt-2">
+<div class="bg-surface-container-low rounded-xl px-4 py-3 flex items-center justify-between shadow-sm border border-outline-variant/10">
+<div class="flex items-center gap-2">
+<span class="text-primary font-bold text-lg">142</span>
+<span class="text-on-surface-variant text-sm font-medium">Spaces</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<span class="text-on-surface font-semibold text-sm">3 Types</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<span class="text-secondary font-bold text-sm">78% Assigned</span>
+</div>
+</div>
+</section>
+<!-- Filter Chips -->
+<section class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-semibold whitespace-nowrap shadow-sm transition-transform active:scale-95">All</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-sm font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors">Offices</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-sm font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors">Rooms</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-sm font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors">Chairs</button>
+</section>
+<!-- Spaces Grid/List (Mixed Bento Style for Premium Feel) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Card 1: Assigned Office -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="desk">desk</span>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="link" data-weight="fill" style="font-variation-settings: 'FILL' 1;">link</span>
+                            LINKED
+                        </div>
+</div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-1">Office 12-A</h3>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-[10px] text-on-primary-container font-bold">AC</div>
+<span class="text-on-surface-variant text-sm font-medium">Amit Cohen</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center">
+<span class="text-[10px] font-mono text-outline uppercase tracking-widest">ID: 442-99-X1</span>
+<div class="flex gap-1">
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Card 2: Unassigned Room -->
+<div class="bg-surface-container-low/40 rounded-xl p-4 border border-outline-variant/10 shadow-sm group cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 right-0 w-24 h-24 bg-tertiary-container/5 -mr-8 -mt-8 rounded-full"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 rounded-lg bg-surface-container-highest text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="meeting_room">meeting_room</span>
+</div>
+<div class="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="link_off">link_off</span>
+                        UNLINKED
+                    </div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-1">Conference Room B</h3>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 rounded-full bg-outline-variant/30 flex items-center justify-center text-[10px] text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="person_off">person_off</span>
+</div>
+<span class="text-on-surface-variant text-sm italic">Unassigned</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center">
+<span class="text-[10px] font-mono text-outline uppercase tracking-widest">ID: 882-12-Z0</span>
+<div class="flex gap-1">
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Card 3: Assigned Chair -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="chair">chair</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="link" data-weight="fill" style="font-variation-settings: 'FILL' 1;">link</span>
+                        LINKED
+                    </div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-1">Hotdesk 04</h3>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 rounded-full bg-secondary-fixed-dim flex items-center justify-center text-[10px] text-on-secondary-fixed font-bold">ML</div>
+<span class="text-on-surface-variant text-sm font-medium">Maya Levi</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center">
+<span class="text-[10px] font-mono text-outline uppercase tracking-widest">ID: 102-CH-A2</span>
+<div class="flex gap-1">
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Card 4: Assigned Room -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="door_front">door_front</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="link" data-weight="fill" style="font-variation-settings: 'FILL' 1;">link</span>
+                        LINKED
+                    </div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-1">Office 09-C</h3>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-[10px] text-on-tertiary-fixed font-bold">DB</div>
+<span class="text-on-surface-variant text-sm font-medium">Dan Biton</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center">
+<span class="text-[10px] font-mono text-outline uppercase tracking-widest">ID: 442-09-C3</span>
+<div class="flex gap-1">
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+<div class="w-1 h-3 bg-outline-variant rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Premium "Empty/Zero State" Style Section -->
+<section class="mt-8 mb-12 flex flex-col items-center justify-center py-12 px-6 bg-surface-container-low rounded-3xl border border-dashed border-outline-variant text-center">
+<div class="w-16 h-16 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-4 transform rotate-3">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="add_business">add_business</span>
+</div>
+<h2 class="text-2xl font-extrabold tracking-tight text-on-surface mb-2">Expanding your floor?</h2>
+<p class="text-on-surface-variant text-sm max-w-xs leading-relaxed">Assign new hardware to your physical spaces to start monitoring occupancy in real-time.</p>
+</section>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center transition-transform active:scale-90 z-50">
+<span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-6 pt-3 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-lg rounded-t-3xl border-t border-outline-variant/10 shadow-[0_-4px_24px_rgba(25,28,29,0.04)]">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="text-[11px] font-medium tracking-wide Inter">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="group">group</span>
+<span class="text-[11px] font-medium tracking-wide Inter">People</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 rounded-2xl px-5 py-1.5 transition-all active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="meeting_room">meeting_room</span>
+<span class="text-[11px] font-medium tracking-wide Inter">Conference</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="label">label</span>
+<span class="text-[11px] font-medium tracking-wide Inter">Labels</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings_input_component">settings_input_component</span>
+<span class="text-[11px] font-medium tracking-wide Inter">AIMS</span>
+</a>
+</nav>
+</body></html>

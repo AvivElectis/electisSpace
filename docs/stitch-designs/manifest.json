@@ -1,0 +1,60 @@
+{
+  "projectId": "7489934128320754964",
+  "generatedAt": "2026-03-22T07:35:24.341Z",
+  "screens": [
+    {
+      "name": "login",
+      "screenId": "968bb918439045e8a1aa32bd36ce27ee",
+      "title": "Login Screen",
+      "status": "success"
+    },
+    {
+      "name": "dashboard",
+      "screenId": "93988ab26606490998829d1d5e7ecb2a",
+      "title": "Dashboard",
+      "status": "success"
+    },
+    {
+      "name": "people-list",
+      "screenId": "ebcdb7b95c77465e811354e292200d0c",
+      "title": "People List",
+      "status": "success"
+    },
+    {
+      "name": "person-edit",
+      "screenId": "d4176f53b07b4eb18537c041295ccd90",
+      "title": "Edit Person",
+      "status": "success"
+    },
+    {
+      "name": "conference-rooms",
+      "screenId": "9a0c64c82ae6416f84a4494fee0ab87f",
+      "title": "Conference Rooms",
+      "status": "success"
+    },
+    {
+      "name": "labels-management",
+      "screenId": "f3609a2daf984d19a2d77d9f5173b8a8",
+      "title": "Labels Management",
+      "status": "success"
+    },
+    {
+      "name": "spaces-management",
+      "screenId": "3ca207224484493d8da8935a1d3408e2",
+      "title": "Spaces Management",
+      "status": "success"
+    },
+    {
+      "name": "settings",
+      "screenId": "d71345e8f80f4430800e564cd0be573c",
+      "title": "Settings",
+      "status": "success"
+    },
+    {
+      "name": "space-edit",
+      "screenId": "686a0e34496d47589878c149625dca23",
+      "title": "Edit Space",
+      "status": "success"
+    }
+  ]
+}

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>electisSpace Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-high": "#e5e8eb",
+              "secondary-fixed-dim": "#78dc77",
+              "surface-tint": "#005faf",
+              "surface-container-low": "#f1f4f7",
+              "primary": "#005dac",
+              "on-secondary-fixed-variant": "#005313",
+              "on-surface": "#181c1e",
+              "on-background": "#181c1e",
+              "on-tertiary-fixed-variant": "#693c00",
+              "error-container": "#ffdad6",
+              "surface-bright": "#f7fafd",
+              "surface-variant": "#e0e3e6",
+              "surface-container-lowest": "#ffffff",
+              "surface-container": "#ebeef1",
+              "on-tertiary": "#ffffff",
+              "surface": "#f7fafd",
+              "on-error-container": "#93000a",
+              "inverse-on-surface": "#eef1f4",
+              "primary-fixed-dim": "#a5c8ff",
+              "on-tertiary-fixed": "#2c1600",
+              "tertiary": "#884f00",
+              "secondary-container": "#91f78e",
+              "error": "#ba1a1a",
+              "tertiary-container": "#ab6400",
+              "primary-container": "#1976d2",
+              "surface-dim": "#d7dadd",
+              "secondary": "#006e1c",
+              "outline-variant": "#c1c6d4",
+              "on-secondary-container": "#00731e",
+              "on-primary-fixed": "#001c3a",
+              "surface-container-highest": "#e0e3e6",
+              "tertiary-fixed-dim": "#ffb870",
+              "on-primary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "on-tertiary-container": "#fffdff",
+              "inverse-primary": "#a5c8ff",
+              "primary-fixed": "#d4e3ff",
+              "inverse-surface": "#2d3133",
+              "on-primary-container": "#fffdff",
+              "tertiary-fixed": "#ffdcbe",
+              "outline": "#717783",
+              "background": "#f7fafd",
+              "on-secondary-fixed": "#002204",
+              "on-surface-variant": "#414752",
+              "secondary-fixed": "#94f990",
+              "on-primary-fixed-variant": "#004786",
+              "on-error": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .activity-ribbon {
+            width: 4px;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: linear-gradient(to bottom, #005dac, #1976d2);
+            border-radius: 4px 0 0 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body select-none">
+<!-- TopAppBar -->
+<header class="bg-[#f7fafd]/80 backdrop-blur-xl fixed top-0 w-full z-50 shadow-[0_4px_30px_rgba(24,28,30,0.04)]">
+<div class="flex items-center justify-between px-6 h-16 w-full max-w-none">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#005dac] active:scale-95 transition-transform cursor-pointer">menu</span>
+<h1 class="font-['Inter'] font-bold tracking-tight text-2xl text-[#005dac]">Dashboard</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/20 cursor-pointer active:scale-95 transition-all">
+<span class="text-sm font-medium text-on-surface-variant mr-2">Flagship Store</span>
+<span class="material-symbols-outlined text-sm text-on-surface-variant">expand_more</span>
+</div>
+<span class="material-symbols-outlined text-[#44474e] hover:bg-[#e5e8eb] p-2 rounded-full transition-colors duration-200 cursor-pointer active:scale-95">settings</span>
+</div>
+</div>
+</header>
+<main class="pt-20 pb-28 px-4 space-y-6">
+<!-- Swipeable Carousel Section -->
+<section class="relative">
+<div class="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-4">
+<!-- Card 1: Spaces -->
+<div class="min-w-[90%] snap-center relative bg-surface-container-lowest rounded-3xl p-6 shadow-sm overflow-hidden border border-outline-variant/10">
+<div class="activity-ribbon"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-on-surface-variant text-sm font-medium">Total Spaces</p>
+<h2 class="text-5xl font-extrabold tracking-tighter text-on-surface mt-1">142</h2>
+</div>
+<span class="bg-primary-container/10 text-primary-container px-2 py-1 rounded text-xs font-bold">1/4</span>
+</div>
+<div class="space-y-4">
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 78%"></div>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-secondary-container/30 p-3 rounded-2xl flex flex-col items-center text-center">
+<span class="text-secondary font-bold text-lg">110</span>
+<span class="text-[10px] uppercase tracking-wider font-semibold text-secondary">Assigned</span>
+</div>
+<div class="bg-tertiary-container/20 p-3 rounded-2xl flex flex-col items-center text-center">
+<span class="text-tertiary font-bold text-lg">32</span>
+<span class="text-[10px] uppercase tracking-wider font-semibold text-tertiary">Unassigned</span>
+</div>
+<div class="bg-primary/5 p-3 rounded-2xl flex flex-col items-center text-center border border-primary/10">
+<span class="text-primary font-bold text-lg">78%</span>
+<span class="text-[10px] uppercase tracking-wider font-semibold text-primary">Coverage</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Conference -->
+<div class="min-w-[90%] snap-center relative bg-surface-container-lowest rounded-3xl p-6 shadow-sm overflow-hidden border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">video_chat</span>
+<p class="text-on-surface-variant text-sm font-medium">Conference Rooms</p>
+</div>
+<span class="bg-surface-container text-on-surface-variant px-2 py-1 rounded text-xs font-bold">2/4</span>
+</div>
+<div class="flex items-center gap-4 mb-6">
+<span class="text-4xl font-bold">8</span>
+<div class="flex items-center gap-1.5 bg-secondary-container px-3 py-1 rounded-full">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-xs font-bold text-on-secondary-container">6 Active Now</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-2xl border-l-4 border-primary">
+<p class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Next Meeting</p>
+<p class="text-sm font-semibold mt-1">Design Sync - Room 302</p>
+<p class="text-xs text-on-surface-variant mt-0.5">14:00 - 15:30</p>
+</div>
+</div>
+<!-- Card 3: People -->
+<div class="min-w-[90%] snap-center relative bg-surface-container-lowest rounded-3xl p-6 shadow-sm overflow-hidden border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">group</span>
+<p class="text-on-surface-variant text-sm font-medium">Staff Management</p>
+</div>
+<span class="bg-surface-container text-on-surface-variant px-2 py-1 rounded text-xs font-bold">3/4</span>
+</div>
+<h3 class="text-4xl font-bold mb-4">428</h3>
+<p class="text-xs font-medium text-on-surface-variant mb-2">Role Allocation</p>
+<div class="flex h-6 w-full rounded-full overflow-hidden mb-4">
+<div class="bg-primary h-full flex items-center justify-center" style="width: 65%"><span class="text-[10px] text-white font-bold">65%</span></div>
+<div class="bg-tertiary-container h-full flex items-center justify-center" style="width: 35%"><span class="text-[10px] text-white font-bold">35%</span></div>
+</div>
+<div class="flex justify-between text-[10px] font-bold text-on-surface-variant">
+<span>ASSIGNED (278)</span>
+<span>WAITING (150)</span>
+</div>
+</div>
+<!-- Card 4: AIMS -->
+<div class="min-w-[90%] snap-center relative bg-surface-container-lowest rounded-3xl p-6 shadow-sm overflow-hidden border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<p class="text-on-surface-variant text-sm font-medium">AIMS Core</p>
+</div>
+<span class="bg-surface-container text-on-surface-variant px-2 py-1 rounded text-xs font-bold">4/4</span>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<div class="w-3 h-3 rounded-full bg-secondary shadow-[0_0_8px_#4caf50]"></div>
+<span class="text-lg font-bold">System Online</span>
+</div>
+<p class="text-xs text-on-surface-variant">Last successful sync: Today, 10:42 AM</p>
+<button class="mt-8 w-full bg-primary-container text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">sync</span>
+                        Sync Now
+                    </button>
+</div>
+</div>
+<!-- Indicators -->
+<div class="flex justify-center gap-1.5 mt-2">
+<div class="w-6 h-1.5 rounded-full bg-primary"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant"></div>
+</div>
+</section>
+<!-- Quick Access Bento Section -->
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-3xl space-y-3">
+<div class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary">barcode_scanner</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Scan ESL</h4>
+<p class="text-[10px] text-on-surface-variant">Assign labels to bins</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-3xl space-y-3">
+<div class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary">map</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Floor Map</h4>
+<p class="text-[10px] text-on-surface-variant">Visual zone control</p>
+</div>
+</div>
+</section>
+<!-- Activity Feed (Simulated) -->
+<section class="space-y-4">
+<h3 class="font-bold text-lg px-2">Recent Notifications</h3>
+<div class="space-y-3">
+<div class="bg-surface-container-lowest p-4 rounded-3xl border border-outline-variant/10 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">Sync Completed</p>
+<p class="text-[11px] text-on-surface-variant">42 labels successfully updated in Zone B</p>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">2m ago</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-3xl border border-outline-variant/10 flex items-center gap-4 opacity-75">
+<div class="w-12 h-12 rounded-full bg-tertiary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">battery_low</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">Low Battery Alert</p>
+<p class="text-[11px] text-on-surface-variant">ESL #9204 in Produce Section at 5%</p>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">1h ago</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Expandable FAB -->
+<div class="fixed bottom-24 right-6 flex flex-col items-end gap-3 z-40">
+<!-- Expanded Options (Hidden by default or shown on tap logic) -->
+<div class="flex flex-col items-end gap-3 mb-2">
+<div class="flex items-center gap-3">
+<span class="bg-surface shadow-md px-3 py-1 rounded-lg text-xs font-bold text-on-surface border border-outline-variant/20">Add Person</span>
+<div class="w-10 h-10 bg-surface-container-lowest rounded-full shadow-lg flex items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary text-sm">person_add</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-surface shadow-md px-3 py-1 rounded-lg text-xs font-bold text-on-surface border border-outline-variant/20">Add Room</span>
+<div class="w-10 h-10 bg-surface-container-lowest rounded-full shadow-lg flex items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary text-sm">meeting_room</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-surface shadow-md px-3 py-1 rounded-lg text-xs font-bold text-on-surface border border-outline-variant/20">Sync Labels</span>
+<div class="w-10 h-10 bg-surface-container-lowest rounded-full shadow-lg flex items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary text-sm">sync_alt</span>
+</div>
+</div>
+</div>
+<!-- Main FAB -->
+<button class="w-14 h-14 bg-primary text-white rounded-[20px] shadow-[0_8px_24px_rgba(0,93,172,0.3)] flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 right-0 w-full flex justify-around items-center px-4 pb-safe pt-2 h-20 bg-[#f7fafd]/80 backdrop-blur-xl z-50 shadow-[0_-8px_40px_rgba(24,28,30,0.06)] border-t border-[#e5e8eb]/20">
+<div class="flex flex-col items-center justify-center bg-[#005dac] text-white rounded-[16px] px-5 py-1.5 transition-all duration-300 active:scale-90">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#44474e] px-4 py-2 opacity-70 hover:opacity-100 hover:bg-[#f1f4f7] rounded-full transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">People</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#44474e] px-4 py-2 opacity-70 hover:opacity-100 hover:bg-[#f1f4f7] rounded-full transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="video_chat">video_chat</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">Conference</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#44474e] px-4 py-2 opacity-70 hover:opacity-100 hover:bg-[#f1f4f7] rounded-full transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="label">label</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">Labels</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#44474e] px-4 py-2 opacity-70 hover:opacity-100 hover:bg-[#f1f4f7] rounded-full transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">AIMS</span>
+</div>
+</nav>
+</body></html>

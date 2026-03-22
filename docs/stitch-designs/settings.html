@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings | electisSpace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#884f00",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#2d3133",
+                        "surface-tint": "#005faf",
+                        "secondary-fixed": "#94f990",
+                        "on-primary-container": "#fffdff",
+                        "surface-dim": "#d7dadd",
+                        "surface-container": "#ebeef1",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#181c1e",
+                        "on-secondary-container": "#00731e",
+                        "surface-bright": "#f7fafd",
+                        "background": "#f7fafd",
+                        "surface-container-low": "#f1f4f7",
+                        "secondary-container": "#91f78e",
+                        "primary-fixed": "#d4e3ff",
+                        "inverse-on-surface": "#eef1f4",
+                        "surface-container-high": "#e5e8eb",
+                        "surface": "#f7fafd",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e0e3e6",
+                        "outline": "#717783",
+                        "on-surface-variant": "#414752",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-background": "#181c1e",
+                        "tertiary-fixed": "#ffdcbe",
+                        "surface-variant": "#e0e3e6",
+                        "on-tertiary-container": "#fffdff",
+                        "on-primary-fixed": "#001c3a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#2c1600",
+                        "tertiary-fixed-dim": "#ffb870",
+                        "primary": "#005dac",
+                        "tertiary-container": "#ab6400",
+                        "on-primary-fixed-variant": "#004786",
+                        "secondary-fixed-dim": "#78dc77",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#a5c8ff",
+                        "primary-fixed-dim": "#a5c8ff",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#006e1c",
+                        "primary-container": "#1976d2",
+                        "on-secondary-fixed": "#002204",
+                        "outline-variant": "#c1c6d4"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-12">
+<header class="fixed top-0 w-full z-50 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(24,28,30,0.04)] dark:shadow-none">
+<div class="flex items-center justify-between px-4 h-16 w-full max-w-screen-xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="text-[#005dac] dark:text-[#d1e4ff] active:scale-95 duration-100 ease-in-out p-2 hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-[#005dac] dark:text-[#d1e4ff] font-['Inter'] font-bold text-lg leading-tight">Settings</h1>
+</div>
+<button class="text-[#005dac] dark:text-[#d1e4ff] font-['Inter'] font-bold text-sm hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] px-3 py-2 rounded-full transition-colors active:scale-95">
+                EN | HE
+            </button>
+</div>
+</header>
+<main class="pt-20 px-4 max-w-screen-xl mx-auto space-y-6">
+<section class="grid grid-cols-4 gap-3 py-2">
+<button class="flex flex-col items-center gap-2 group">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary group-active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl">person</span>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant">Edit Profile</span>
+</button>
+<button class="flex flex-col items-center gap-2 group">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary group-active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl">help</span>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant">Help</span>
+</button>
+<button class="flex flex-col items-center gap-2 group">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary group-active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl">info</span>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant">About</span>
+</button>
+<button class="flex flex-col items-center gap-2 group">
+<div class="w-14 h-14 rounded-2xl bg-error-container/30 flex items-center justify-center text-error group-active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl">logout</span>
+</div>
+<span class="text-[11px] font-medium text-error">Logout</span>
+</button>
+</section>
+<nav class="sticky top-16 bg-background/95 backdrop-blur-sm z-40 -mx-4 px-4 py-2 overflow-x-auto no-scrollbar border-b border-outline-variant/10">
+<div class="flex items-center gap-2 min-w-max">
+<button class="bg-[#005dac] text-white dark:bg-[#d1e4ff] dark:text-[#002e5c] rounded-full px-5 py-2.5 text-sm font-semibold transition-all">App Settings</button>
+<button class="text-[#44474e] dark:text-[#c4c7cf] hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full px-5 py-2.5 text-sm font-medium transition-all">SoluM Settings</button>
+<button class="text-[#44474e] dark:text-[#c4c7cf] hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full px-5 py-2.5 text-sm font-medium transition-all">Logo</button>
+<button class="text-[#44474e] dark:text-[#c4c7cf] hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full px-5 py-2.5 text-sm font-medium transition-all">Security</button>
+<button class="text-[#44474e] dark:text-[#c4c7cf] hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full px-5 py-2.5 text-sm font-medium transition-all">Users</button>
+<button class="text-[#44474e] dark:text-[#c4c7cf] hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full px-5 py-2.5 text-sm font-medium transition-all">Roles</button>
+<button class="text-[#44474e] dark:text-[#c4c7cf] hover:bg-[#e5e8eb] dark:hover:bg-[#44474e] rounded-full px-5 py-2.5 text-sm font-medium transition-all">Logs</button>
+</div>
+</nav>
+<section class="space-y-2">
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-2xl shadow-sm">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">palette</span>
+<div>
+<h3 class="font-semibold text-on-surface">Theme</h3>
+<p class="text-xs text-on-surface-variant">System default</p>
+</div>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-full">
+<button class="px-3 py-1 text-xs font-bold bg-white rounded-full shadow-sm text-primary">Auto</button>
+<button class="px-3 py-1 text-xs font-medium text-on-surface-variant">Light</button>
+<button class="px-3 py-1 text-xs font-medium text-on-surface-variant">Dark</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-2xl shadow-sm">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">notifications</span>
+<div>
+<h3 class="font-semibold text-on-surface">Notifications</h3>
+<p class="text-xs text-on-surface-variant">Push notifications and alerts</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-2xl shadow-sm">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">cloud_off</span>
+<div>
+<h3 class="font-semibold text-on-surface">Offline mode</h3>
+<p class="text-xs text-on-surface-variant">Sync data for disconnected use</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</section>
+<section class="mt-8">
+<h2 class="px-2 mb-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/70">Security &amp; Privacy</h2>
+<div class="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-sm">
+<button class="w-full flex items-center justify-between p-5 border-b border-surface-container-low hover:bg-surface-bright transition-colors text-start">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">lock_reset</span>
+</div>
+<div>
+<h3 class="font-semibold text-on-surface">Change password</h3>
+<p class="text-xs text-on-surface-variant">Last updated 3 months ago</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<div class="w-full flex items-center justify-between p-5 border-b border-surface-container-low">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div>
+<h3 class="font-semibold text-on-surface">Two-factor authentication</h3>
+<p class="text-xs text-on-surface-variant">Secured via SMS/Email</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="p-5">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">devices</span>
+</div>
+<h3 class="font-semibold text-on-surface">Trusted devices</h3>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">phone_android</span>
+<div>
+<p class="text-sm font-medium">Samsung S23 Ultra</p>
+<p class="text-[10px] text-on-surface-variant">Tel Aviv, IL • Active now</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-secondary uppercase">Current</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">desktop_windows</span>
+<div>
+<p class="text-sm font-medium">Workstation-XP40</p>
+<p class="text-[10px] text-on-surface-variant">Haifa, IL • 2 hours ago</p>
+</div>
+</div>
+<button class="text-error">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<footer class="pt-8 pb-4 text-center">
+<p class="text-xs font-medium text-outline-variant">electisSpace Enterprise Suite</p>
+<p class="text-[10px] text-outline mt-1">Build v2.14.0 • Stable Release</p>
+</footer>
+</main>
+<div class="fixed bottom-6 right-6 z-50 md:hidden">
+<button class="w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-all">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">chat</span>
+</button>
+</div>
+</body></html>

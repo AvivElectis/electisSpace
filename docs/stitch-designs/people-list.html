@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>electisSpace - People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#e0e3e6",
+                        "surface": "#f7fafd",
+                        "primary": "#005dac",
+                        "on-secondary-fixed-variant": "#005313",
+                        "tertiary-fixed": "#ffdcbe",
+                        "secondary": "#006e1c",
+                        "on-surface": "#181c1e",
+                        "on-secondary-fixed": "#002204",
+                        "primary-fixed-dim": "#a5c8ff",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#78dc77",
+                        "surface-container-highest": "#e0e3e6",
+                        "secondary-fixed": "#94f990",
+                        "outline": "#717783",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#884f00",
+                        "surface-bright": "#f7fafd",
+                        "on-primary-fixed": "#001c3a",
+                        "on-tertiary-fixed": "#2c1600",
+                        "background": "#f7fafd",
+                        "tertiary-fixed-dim": "#ffb870",
+                        "surface-tint": "#005faf",
+                        "surface-dim": "#d7dadd",
+                        "on-primary-container": "#fffdff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e5e8eb",
+                        "surface-container": "#ebeef1",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#fffdff",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed": "#d4e3ff",
+                        "on-background": "#181c1e",
+                        "primary-container": "#1976d2",
+                        "on-primary-fixed-variant": "#004786",
+                        "inverse-on-surface": "#eef1f4",
+                        "outline-variant": "#c1c6d4",
+                        "secondary-container": "#91f78e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#414752",
+                        "tertiary-container": "#ab6400",
+                        "surface-container-low": "#f1f4f7",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-secondary-container": "#00731e",
+                        "inverse-primary": "#a5c8ff"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl bg-gradient-to-b from-[#f1f4f7] to-transparent">
+<div class="flex items-center justify-between px-4 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#e5e8eb]/50 dark:hover:bg-[#ffffff]/10 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#181c1e] dark:text-[#e5e8eb]">menu</span>
+</button>
+<h1 class="font-headline font-bold text-xl tracking-tight text-[#005dac] dark:text-[#1976d2]">People</h1>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 hover:bg-[#e5e8eb]/50 dark:hover:bg-[#ffffff]/10 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#181c1e] dark:text-[#e5e8eb]">search</span>
+</button>
+<button class="p-2 hover:bg-[#e5e8eb]/50 dark:hover:bg-[#ffffff]/10 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#181c1e] dark:text-[#e5e8eb]">filter_list</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 mt-16 mb-24 overflow-y-auto px-4">
+<!-- Stats Bar -->
+<section class="mt-4 mb-6 py-3 px-4 bg-surface-container-low rounded-xl flex items-center justify-center gap-4 shadow-sm border border-white/20">
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium text-on-surface-variant">112 Total</span>
+</div>
+<div class="w-px h-3 bg-outline-variant/30"></div>
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-sm font-medium text-on-surface-variant">85 Assigned</span>
+</div>
+<div class="w-px h-3 bg-outline-variant/30"></div>
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-tertiary-container"></div>
+<span class="text-sm font-medium text-on-surface-variant">27 Unassigned</span>
+</div>
+</section>
+<!-- Section 1: Assigned -->
+<div class="mb-8">
+<div class="flex items-center justify-between mb-3 px-1">
+<h2 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant/70">Assigned (85)</h2>
+<button class="text-xs font-semibold text-primary">View All</button>
+</div>
+<div class="space-y-3">
+<!-- Person Card 1 -->
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-4 flex items-center shadow-sm border-l-4 border-secondary transition-all hover:bg-surface-bright active:scale-[0.98]">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-semibold text-on-surface truncate">Amit Cohen</h3>
+<p class="text-xs text-on-surface-variant truncate">Product Management</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Office 12-A</span>
+<span class="material-symbols-outlined text-outline/50 text-xl">chevron_right</span>
+</div>
+</div>
+<!-- Person Card 2 -->
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-4 flex items-center shadow-sm border-l-4 border-secondary transition-all hover:bg-surface-bright active:scale-[0.98]">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-semibold text-on-surface truncate">Sarah Levi</h3>
+<p class="text-xs text-on-surface-variant truncate">Engineering</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Office 04-B</span>
+<span class="material-symbols-outlined text-outline/50 text-xl">chevron_right</span>
+</div>
+</div>
+<!-- Person Card 3 -->
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-4 flex items-center shadow-sm border-l-4 border-secondary transition-all hover:bg-surface-bright active:scale-[0.98]">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-semibold text-on-surface truncate">Daniel Mizrahi</h3>
+<p class="text-xs text-on-surface-variant truncate">Legal Department</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">HQ-South</span>
+<span class="material-symbols-outlined text-outline/50 text-xl">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Unassigned -->
+<div class="mb-12">
+<div class="flex items-center justify-between mb-3 px-1">
+<h2 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant/70">Unassigned (27)</h2>
+</div>
+<div class="space-y-3">
+<!-- Unassigned Person Card 1 -->
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-4 flex items-center shadow-sm border-l-4 border-tertiary-container transition-all hover:bg-surface-bright active:scale-[0.98]">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant/50">no_accounts</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-semibold text-on-surface truncate">Yael Barak</h3>
+<p class="text-xs text-tertiary font-medium">No ESL Tag assigned</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-container text-xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+<!-- Unassigned Person Card 2 -->
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-4 flex items-center shadow-sm border-l-4 border-tertiary-container transition-all hover:bg-surface-bright active:scale-[0.98]">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant/50">no_accounts</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-semibold text-on-surface truncate">Omri Ben-Ari</h3>
+<p class="text-xs text-tertiary font-medium">Pending Registration</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-container text-xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-2xl shadow-xl flex items-center justify-center transition-transform active:scale-90 z-[60]">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl bg-gradient-to-t from-[#f1f4f7] to-transparent shadow-[0_-4px_40px_rgba(24,28,30,0.05)] h-20 px-2 pb-safe flex justify-around items-center">
+<!-- Dashboard Tab -->
+<a class="flex flex-col items-center justify-center text-[#181c1e]/60 dark:text-[#e5e8eb]/60 hover:text-[#005dac] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">Dashboard</span>
+</a>
+<!-- People Tab (Active) -->
+<a class="flex flex-col items-center justify-center text-[#005dac] dark:text-[#1976d2] bg-[#ffffff] dark:bg-[#181c1e] rounded-2xl px-4 py-1 shadow-sm transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">People</span>
+</a>
+<!-- Conference Tab -->
+<a class="flex flex-col items-center justify-center text-[#181c1e]/60 dark:text-[#e5e8eb]/60 hover:text-[#005dac] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="video_chat">video_chat</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">Conference</span>
+</a>
+<!-- Labels Tab -->
+<a class="flex flex-col items-center justify-center text-[#181c1e]/60 dark:text-[#e5e8eb]/60 hover:text-[#005dac] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="label">label</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">Labels</span>
+</a>
+<!-- AIMS Tab -->
+<a class="flex flex-col items-center justify-center text-[#181c1e]/60 dark:text-[#e5e8eb]/60 hover:text-[#005dac] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[12px] font-medium leading-tight">AIMS</span>
+</a>
+</nav>
+</body></html>

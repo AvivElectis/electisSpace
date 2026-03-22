@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Conference Rooms - electisSpace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed": "#d4e3ff",
+                        "on-primary-container": "#fffdff",
+                        "inverse-on-surface": "#eef1f4",
+                        "outline-variant": "#c1c6d4",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#00731e",
+                        "surface-container-high": "#e5e8eb",
+                        "tertiary-fixed": "#ffdcbe",
+                        "background": "#f7fafd",
+                        "tertiary-container": "#ab6400",
+                        "secondary": "#006e1c",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#181c1e",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-error-container": "#93000a",
+                        "surface": "#f7fafd",
+                        "surface-container-highest": "#e0e3e6",
+                        "inverse-primary": "#a5c8ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#004786",
+                        "surface-container": "#ebeef1",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f1f4f7",
+                        "primary-fixed-dim": "#a5c8ff",
+                        "on-tertiary-container": "#fffdff",
+                        "on-surface-variant": "#414752",
+                        "secondary-container": "#91f78e",
+                        "primary": "#005dac",
+                        "on-secondary-fixed": "#002204",
+                        "tertiary-fixed-dim": "#ffb870",
+                        "secondary-fixed-dim": "#78dc77",
+                        "surface-dim": "#d7dadd",
+                        "surface-variant": "#e0e3e6",
+                        "surface-bright": "#f7fafd",
+                        "tertiary": "#884f00",
+                        "inverse-surface": "#2d3133",
+                        "secondary-fixed": "#94f990",
+                        "error": "#ba1a1a",
+                        "outline": "#717783",
+                        "primary-container": "#1976d2",
+                        "surface-tint": "#005faf",
+                        "on-tertiary-fixed": "#2c1600",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-primary-fixed": "#001c3a",
+                        "on-surface": "#181c1e"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body text-on-background selection:bg-primary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl">
+<div class="flex items-center justify-between px-4 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#005dac] dark:text-[#1976d2] hover:bg-[#e5e8eb] dark:hover:bg-[#3f4448] transition-colors p-2 rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-[#005dac] font-bold text-xl dark:text-[#1976d2] font-headline tracking-tight">Conference Rooms</h1>
+</div>
+<button class="text-[#005dac] dark:text-[#1976d2] hover:bg-[#e5e8eb] dark:hover:bg-[#3f4448] transition-colors p-2 rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</div>
+<div class="bg-[#f1f4f7] dark:bg-[#2a2d2f] h-[1px] w-full self-end"></div>
+</header>
+<main class="pt-20 pb-28 px-4 max-w-2xl mx-auto">
+<!-- Summary Header Section -->
+<section class="mb-6 px-1">
+<h2 class="text-on-surface-variant font-medium text-base tracking-normal">
+                3 of 8 rooms occupied
+            </h2>
+<div class="mt-1 h-1 w-24 bg-gradient-to-r from-primary to-transparent rounded-full opacity-40"></div>
+</section>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 -mx-4 px-4">
+<button class="flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold shadow-sm active:scale-95 transition-all">
+<span>All</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-low text-on-surface-variant border border-outline-variant/30 px-5 py-2 rounded-full text-sm font-medium hover:bg-surface-container-high active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle">check_circle</span>
+<span>Available</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-low text-on-surface-variant border border-outline-variant/30 px-5 py-2 rounded-full text-sm font-medium hover:bg-surface-container-high active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="block">block</span>
+<span>Occupied</span>
+</button>
+</div>
+<!-- Room List Section -->
+<div class="flex flex-col gap-4">
+<!-- Room Card 1: Occupied -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-none border-l-[6px] border-error flex flex-col p-5 hover:bg-surface-bright transition-colors relative">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-extrabold text-on-surface tracking-tight">Boardroom Alpha</h3>
+<p class="text-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="groups">groups</span>
+                            Team Standup • 10:00 - 10:30
+                        </p>
+</div>
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Occupied</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<div class="flex -space-x-3 overflow-hidden">
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-lowest" data-alt="Portrait of a female team member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRsbt1TyP42tpsOgZdstA7PuH3NCKnyFvWpp0P9Y5h8BtlI5aE5BAsP9pG_30sAwp4KG7O7VuNKCpmjIvt66lU1N_uLAV3voPuy-8sXZplaMSs_aPhxwOMIQNMhNhtXWKhguLkxpQcFA_TQAkvkbVwCpyT3E9f6ULW4FAygo2XBBce7KkzyWVTyuciBmBJmcjt310ZV7RCT2M6O3k50YiO5S9SPJh_TGxKo7vNcO9TwbnrjrQw--pJtdV1-8xIwJFbFGNA-LJmr8Y"/>
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-lowest" data-alt="Portrait of a male team member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCd2LT2xUPLlmmGo0cRgGFLuag8pKzlVt8__FcHvm8h1nbsWiBSwNY-JTGNr-zFS6ZykMZwbzgH-dO2570agY42-2R_vxti-o0Av4R-TMmvJuE7o76yb0wztVK9X_m53poBDPnw7g1eqvoT0CQm84jK-Z3NJbEQnkWo1DDXsiuVecQ-nrqb2CxIVERPHjpl3EiIKI1L4xME14visSYlV12SVQ5ykZDagOHuU-TsxGkEGYAz66MUWEzYT1WR6qWAvbBckj9Cox8IdT4"/>
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-lowest" data-alt="Portrait of a male executive" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhEuuxFNChhy77qGJ0KYXPO5w8Wpmkt9LxxzXspfxx0F3bJVQm8qAo1Af8a0_NDL1j6phnoT1qtk0Rqpu7RP_OiPUNz30NrUDOIxuxx43opCRdJ96cDpV2Dho_cayy94ak4UCV2421ANp7MR54q72FlblmwZvjophE-nw84CQs3Sr7nbu8Saldpn9ITxGJ82lw7JweP3nxw0w6_e-Ycm7vaftGo-GZfP67MDbIysOqK3ygQ4gZOBGDVfBIb8QJG_v2JvTA1jVQijk"/>
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container text-[11px] font-bold text-on-surface-variant ring-2 ring-surface-container-lowest">+5</div>
+</div>
+<button class="text-primary text-sm font-bold active:scale-95 transition-transform">Details</button>
+</div>
+</article>
+<!-- Room Card 2: Available -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-none border-l-[6px] border-secondary flex flex-col p-5 hover:bg-surface-bright transition-colors">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-extrabold text-on-surface tracking-tight">Zen Garden</h3>
+<p class="text-sm text-secondary font-medium flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="event_available">event_available</span>
+                            Free for next 2 hours
+                        </p>
+</div>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Available</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<div class="text-xs text-on-surface-variant/60 font-medium">No active participants</div>
+<button class="bg-primary-container text-on-primary-container px-6 py-2 rounded-full text-sm font-bold shadow-sm active:scale-95 transition-all">Book Now</button>
+</div>
+</article>
+<!-- Room Card 3: Upcoming -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-none border-l-[6px] border-tertiary-container flex flex-col p-5 hover:bg-surface-bright transition-colors">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-extrabold text-on-surface tracking-tight">Strategy Suite</h3>
+<p class="text-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+                            Upcoming: Board Review • 11:30
+                        </p>
+</div>
+<span class="bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Upcoming</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<div class="flex -space-x-3 overflow-hidden">
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-lowest" data-alt="Portrait of a manager" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2GOnr5Hd0j2H_zCJFdhH9SC8k76CExTh11KQr0Yp4gyLzPdcryrzHZAd36PsVZ_ru0adUJjNLXJ_mQ3BId59InG5IWL6GR1WqG22FNquir_kYexaIrdJAS9CBl7Ta_U-o8ZWxJpWM9q8uaInnY4MkrPqlM-isNo8asUaClUS00xIfRhTUFGOXWzjlf68lgw-FuWFx9zjKM_B4tBwM_2U1QnxgsGo6JNV0Op4ZF4BTs8RDpzyHPWyMBwUs4MNEZndrsINyraXb4lo"/>
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-lowest" data-alt="Portrait of an analyst" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6nsMNAzTAbKUKbFxyiRw90KUt1WxwWCDbmdWAXfPzeRxgVer9k1UHEqp_366sBh0Q_enpJMGIUqvARcAd_RMYZxk8oQlakuWdyKrrpRIVz76RTp-UjkuJdywmpuxzDtjgUZn0FE140YUV6fVXsdzsAVJqYLPJSzu4fq1u1RFmSpjKdXLkCNDQQJEImQ2d9Qu1XAUJNjGgzX6ChjsXDSoHSJrlroF9Jhv0QvnN7VMuJlX77C1L4C9yAXW1P9nZDkkh_NWezRnUSyw"/>
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container text-[11px] font-bold text-on-surface-variant ring-2 ring-surface-container-lowest">+2</div>
+</div>
+<button class="text-primary text-sm font-bold active:scale-95 transition-transform">Pre-check</button>
+</div>
+</article>
+<!-- Room Card 4: Occupied -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-none border-l-[6px] border-error flex flex-col p-5 hover:bg-surface-bright transition-colors">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-extrabold text-on-surface tracking-tight">Nexus Pod</h3>
+<p class="text-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="videocam">videocam</span>
+                            Sprint Planning • 10:00 - 11:00
+                        </p>
+</div>
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Occupied</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<div class="flex -space-x-3 overflow-hidden">
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-surface-container-lowest" data-alt="Portrait of a software engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGiHKdn41y5QWzoLyEBFOEPQJbo5llk0ubzEVHja8qXOwBdi3ySwOnqg88JwXVPFnfDLPHxDsApOUQIQI5ncPdS0SZZayxt9s7e0pqCZFVY1IJZS5WMHVVMWiXaqACiMPo7c56Aey73OWsQCrjq1jxiPUPrMtfkpniz4u7qUPD1V2xKiDOnAIiBqzWWJCBIXo5b7LIkDigOzhb1w1NlY0VRWzzLLqWc1t3cu58EZbFUDX2nBECY_eF0VlO1JGJtp1bkC6XDGSlUq0"/>
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container text-[11px] font-bold text-on-surface-variant ring-2 ring-surface-container-lowest">+3</div>
+</div>
+<button class="text-primary text-sm font-bold active:scale-95 transition-transform">Details</button>
+</div>
+</article>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all active:scale-90 z-50">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe h-20 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl z-50 shadow-[0_-4px_24px_rgba(24,28,30,0.04)]">
+<div class="flex flex-col items-center justify-center text-[#181c1e] dark:text-[#e1e2e5] opacity-60 hover:bg-[#f1f4f7] dark:hover:bg-[#2a2d2f] transition-all px-4 py-1 rounded-full active:scale-90">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#181c1e] dark:text-[#e1e2e5] opacity-60 hover:bg-[#f1f4f7] dark:hover:bg-[#2a2d2f] transition-all px-4 py-1 rounded-full active:scale-90">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide">People</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#005dac] text-white rounded-full px-5 py-1.5 active:scale-90 transition-all duration-150 shadow-md">
+<span class="material-symbols-outlined" data-icon="meeting_room" style="font-variation-settings: 'FILL' 1;">meeting_room</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide">Conference</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#181c1e] dark:text-[#e1e2e5] opacity-60 hover:bg-[#f1f4f7] dark:hover:bg-[#2a2d2f] transition-all px-4 py-1 rounded-full active:scale-90">
+<span class="material-symbols-outlined" data-icon="label">label</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide">Labels</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#181c1e] dark:text-[#e1e2e5] opacity-60 hover:bg-[#f1f4f7] dark:hover:bg-[#2a2d2f] transition-all px-4 py-1 rounded-full active:scale-90">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[11px] font-medium tracking-wide">AIMS</span>
+</div>
+</nav>
+</body></html>

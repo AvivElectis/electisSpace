@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Labels Management - electisSpace</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-container": "#fffdff",
+              "on-primary": "#ffffff",
+              "secondary-container": "#91f78e",
+              "on-tertiary-fixed-variant": "#693c00",
+              "primary": "#005dac",
+              "inverse-on-surface": "#eef1f4",
+              "surface-dim": "#d7dadd",
+              "inverse-surface": "#2d3133",
+              "secondary": "#006e1c",
+              "on-surface": "#181c1e",
+              "surface-container": "#ebeef1",
+              "primary-fixed-dim": "#a5c8ff",
+              "tertiary-fixed": "#ffdcbe",
+              "secondary-fixed": "#94f990",
+              "error-container": "#ffdad6",
+              "surface-tint": "#005faf",
+              "surface": "#f7fafd",
+              "on-secondary-fixed": "#002204",
+              "on-secondary-fixed-variant": "#005313",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-fixed-variant": "#004786",
+              "inverse-primary": "#a5c8ff",
+              "outline-variant": "#c1c6d4",
+              "on-error-container": "#93000a",
+              "primary-fixed": "#d4e3ff",
+              "tertiary": "#884f00",
+              "on-tertiary-fixed": "#2c1600",
+              "on-tertiary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "tertiary-container": "#ab6400",
+              "on-primary-container": "#fffdff",
+              "on-primary-fixed": "#001c3a",
+              "primary-container": "#1976d2",
+              "error": "#ba1a1a",
+              "surface-container-high": "#e5e8eb",
+              "on-background": "#181c1e",
+              "surface-container-low": "#f1f4f7",
+              "on-surface-variant": "#414752",
+              "on-secondary-container": "#00731e",
+              "surface-variant": "#e0e3e6",
+              "background": "#f7fafd",
+              "tertiary-fixed-dim": "#ffb870",
+              "secondary-fixed-dim": "#78dc77",
+              "outline": "#717783",
+              "surface-bright": "#f7fafd",
+              "surface-container-highest": "#e0e3e6",
+              "on-error": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"],
+              "mono": ["JetBrains Mono"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl bg-gradient-to-b from-[#f7fafd] to-[#ffffff] dark:from-[#181c1e] dark:to-[#121416] shadow-none flex items-center justify-between px-4 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#005dac] dark:text-[#1976d2] hover:bg-[#e5e8eb] dark:hover:bg-[#41484d] transition-colors active:scale-95 duration-200 ease-in-out rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline font-bold text-2xl tracking-tight text-[#005dac] dark:text-[#d1e4ff]">Labels</h1>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-[#005dac] dark:text-[#1976d2] hover:bg-[#e5e8eb] dark:hover:bg-[#41484d] transition-colors active:scale-95 duration-200 ease-in-out rounded-full">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-2 text-[#005dac] dark:text-[#1976d2] hover:bg-[#e5e8eb] dark:hover:bg-[#41484d] transition-colors active:scale-95 duration-200 ease-in-out rounded-full">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-16 pb-32 px-4 max-w-3xl mx-auto min-h-screen">
+<!-- Summary Bar & Filters -->
+<section class="mt-6 mb-8">
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border-l-4 border-primary">
+<div class="flex justify-between items-center mb-4">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-primary tracking-widest uppercase mb-1">System Audit</span>
+<p class="text-on-surface font-medium flex items-center gap-2">
+<span class="text-lg">248 Labels</span>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary">210 Linked</span>
+<span class="text-outline-variant">•</span>
+<span class="text-error">38 Unlinked</span>
+</p>
+</div>
+<div class="bg-primary-fixed p-3 rounded-lg">
+<span class="material-symbols-outlined text-primary">analytics</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-surface-container">
+<label class="flex items-center cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-6 bg-surface-container-highest rounded-full peer peer-checked:bg-primary transition-colors"></div>
+<div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4 shadow-sm"></div>
+</div>
+<span class="ml-3 text-sm font-medium text-on-surface-variant group-hover:text-primary transition-colors">Show linked only</span>
+</label>
+<div class="flex items-center gap-2 text-xs font-bold text-outline uppercase tracking-wider">
+<span>Sort by</span>
+<span class="text-primary cursor-pointer flex items-center gap-1">Latest <span class="material-symbols-outlined text-[14px]">expand_more</span></span>
+</div>
+</div>
+</div>
+</section>
+<!-- Label Cards Grid -->
+<div class="space-y-4">
+<!-- Card 1: Linked -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm relative group">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
+<div class="p-4 flex gap-4">
+<div class="flex-1">
+<div class="flex items-center justify-between mb-2">
+<code class="font-mono text-primary font-bold tracking-tight text-sm">ESL-001</code>
+<div class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">link</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Linked</span>
+</div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-0.5">Premium Ergonomic Desk</h3>
+<p class="text-on-surface-variant text-sm mb-4">Article ID: <span class="font-mono">ART-98210-XC</span></p>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-surface-container-low hover:bg-surface-container-high text-primary font-bold text-xs rounded-full transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">link_off</span> Unlink
+                            </button>
+<button class="px-4 py-2 bg-primary-fixed hover:bg-primary-fixed-dim text-on-primary-fixed-variant font-bold text-xs rounded-full transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">image</span> View Images
+                            </button>
+</div>
+</div>
+<div class="w-24 h-24 rounded-lg overflow-hidden bg-surface-container flex-shrink-0">
+<img alt="Product thumbnail" class="w-full h-full object-cover" data-alt="Modern ergonomic wooden desk setup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA--aBXo7clfhE1J718qTzQ36VmBKWOTmWHKXbOwPSpW3CHaLlMXdwf-ZoF_I6_ZZ3oRWQoD3olYNvz4CWG3AwBpAzgFkQ5DsHY15iy8ysNLmoFb9Lbbv8Zw5CIxfwShcdi1bX9Gk-p6BHtgFDDXdJuGBPG9kKfWTK-YRCgK_mUdEj2NiXJRGYVMHTWruW2dcHSt8EapFiQLeBsHk-hHxLUKQdQg4YEfpMO2W5azDRt9TZS_kzUXA7RI7S1j6-USF_TYmoq9YBYYLs"/>
+</div>
+</div>
+</div>
+<!-- Card 2: Unlinked -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm relative group">
+<div class="absolute top-0 left-0 w-1 h-full bg-error"></div>
+<div class="p-4 flex gap-4">
+<div class="flex-1">
+<div class="flex items-center justify-between mb-2">
+<code class="font-mono text-primary font-bold tracking-tight text-sm">ESL-042</code>
+<div class="flex items-center gap-1 text-outline">
+<span class="material-symbols-outlined text-[18px]">link_off</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Unlinked</span>
+</div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-0.5">Industrial Floor Lamp</h3>
+<p class="text-on-surface-variant text-sm mb-4">Article ID: <span class="font-mono">ART-12055-LA</span></p>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-primary text-white font-bold text-xs rounded-full transition-colors flex items-center gap-1 shadow-md active:scale-95">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">link</span> Link Label
+                            </button>
+<button class="px-4 py-2 bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant font-bold text-xs rounded-full transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">image</span> View Images
+                            </button>
+</div>
+</div>
+<div class="w-24 h-24 rounded-lg overflow-hidden bg-surface-container flex-shrink-0">
+<img alt="Product thumbnail" class="w-full h-full object-cover" data-alt="Black industrial style floor lamp" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwtRsJqOEVbcuHEC5EDUgR9lh1YgLijtffEMD5nz6DxL86dx6MKkdRK-geaJw6iI7WMqFOHV2jHF7I94Gn4meFZ6zU9NgiEUN2au8HychYexhAp-hKfG_v9AVB7nUR4bxlGKohkZdNLv2c7ZqVOQITRBaA-mA3jwXymezJ50R_KbBXvDOaX9_DVts8vVPLB5SyXSpzuQ5S4xL2t_dM9ZKY5poCvVC8pABDimOC98TkbPM3wPHitnx7hY13wnaQdFSaWZ1-7cRj1XM"/>
+</div>
+</div>
+</div>
+<!-- Card 3: Linked -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm relative group">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
+<div class="p-4 flex gap-4">
+<div class="flex-1">
+<div class="flex items-center justify-between mb-2">
+<code class="font-mono text-primary font-bold tracking-tight text-sm">ESL-089</code>
+<div class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">link</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Linked</span>
+</div>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-0.5">Acoustic Panel Set (6)</h3>
+<p class="text-on-surface-variant text-sm mb-4">Article ID: <span class="font-mono">ART-77102-AP</span></p>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-surface-container-low hover:bg-surface-container-high text-primary font-bold text-xs rounded-full transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">link_off</span> Unlink
+                            </button>
+<button class="px-4 py-2 bg-primary-fixed hover:bg-primary-fixed-dim text-on-primary-fixed-variant font-bold text-xs rounded-full transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">image</span> View Images
+                            </button>
+</div>
+</div>
+<div class="w-24 h-24 rounded-lg overflow-hidden bg-surface-container flex-shrink-0">
+<img alt="Product thumbnail" class="w-full h-full object-cover" data-alt="Textured acoustic wall panels" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCL-PaMrcWKKlTIZHxd-ieTPwvcbvKygNhCT_4m1OUHN0EROyLJKQwI2cdA5SsHevcDXXut9Y5H01fzaNIbZDCxraQg5NBt0LsvfB2BRv6Kwe7OmibRzmNZYSmsG3fcqsSap82XEk6NkC5M5Q3KFbuOqYTOO7FPbZJQYKUPaXwLDOrja7EUCXJpligFCPaha2oVgrwTNFK6JEzMa3xqm6pPRCeFoH_NqjUJOcr5bnshNXl7h6xY6AW4pAur8-EpbnkX_yUjwLYhFsQ"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="mt-8 flex flex-col items-center gap-4">
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant opacity-50"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface font-bold text-sm hover:bg-surface-container-low">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface font-bold text-sm hover:bg-surface-container-low">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface-variant"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+<div class="bg-surface-container-low px-4 py-2 rounded-full flex items-center gap-3">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Rows per page</span>
+<select class="bg-transparent border-none text-sm font-bold text-primary focus:ring-0 cursor-pointer">
+<option>25 per page</option>
+<option>50 per page</option>
+<option>100 per page</option>
+</select>
+</div>
+</div>
+</main>
+<!-- Speed Dial FAB -->
+<div class="fixed bottom-24 right-6 flex flex-col items-end gap-3 z-50">
+<!-- Sub-options (normally hidden but visible for layout demo) -->
+<div class="flex flex-col items-end gap-3 mb-2">
+<div class="flex items-center gap-3">
+<span class="bg-inverse-surface text-inverse-on-surface text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">Refresh All</span>
+<button class="w-10 h-10 bg-surface-container-lowest text-on-surface-variant rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-inverse-surface text-inverse-on-surface text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">Bulk Assign</span>
+<button class="w-10 h-10 bg-surface-container-lowest text-on-surface-variant rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-inverse-surface text-inverse-on-surface text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">Link Label</span>
+<button class="w-10 h-10 bg-surface-container-lowest text-on-surface-variant rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined">add_link</span>
+</button>
+</div>
+</div>
+<!-- Main FAB -->
+<button class="w-14 h-14 bg-primary text-white rounded-2xl shadow-[0_8px_30px_rgb(0,93,172,0.3)] flex items-center justify-center active:scale-90 transition-transform hover:bg-primary-container">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#f7fafd]/80 dark:bg-[#181c1e]/80 backdrop-blur-xl border-t border-[#e5e8eb]/20 dark:border-[#41484d]/20 shadow-[0_-4px_40px_rgba(24,28,30,0.05)] flex justify-around items-center pt-3 pb-6 px-2">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-[#41484d] dark:text-[#c1c7ce] px-5 py-1.5 hover:text-[#005dac] dark:hover:text-[#1976d2] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-['Inter'] text-[12px] font-medium tracking-wide">Dashboard</span>
+</a>
+<!-- People -->
+<a class="flex flex-col items-center justify-center text-[#41484d] dark:text-[#c1c7ce] px-5 py-1.5 hover:text-[#005dac] dark:hover:text-[#1976d2] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1">group</span>
+<span class="font-['Inter'] text-[12px] font-medium tracking-wide">People</span>
+</a>
+<!-- Conference -->
+<a class="flex flex-col items-center justify-center text-[#41484d] dark:text-[#c1c7ce] px-5 py-1.5 hover:text-[#005dac] dark:hover:text-[#1976d2] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1">meeting_room</span>
+<span class="font-['Inter'] text-[12px] font-medium tracking-wide">Conference</span>
+</a>
+<!-- Labels (ACTIVE) -->
+<a class="flex flex-col items-center justify-center bg-[#005dac] text-white rounded-full px-5 py-1.5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-0.5" style="font-variation-settings: 'FILL' 1;">label</span>
+<span class="font-['Inter'] text-[10px] font-bold tracking-wide uppercase">Labels</span>
+</a>
+<!-- AIMS -->
+<a class="flex flex-col items-center justify-center text-[#41484d] dark:text-[#c1c7ce] px-5 py-1.5 hover:text-[#005dac] dark:hover:text-[#1976d2] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1">settings_remote</span>
+<span class="font-['Inter'] text-[12px] font-medium tracking-wide">AIMS</span>
+</a>
+</nav>
+</body></html>

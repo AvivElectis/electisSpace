@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Edit Space - electisSpace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-lowest": "#ffffff",
+              "surface-container": "#ebeef1",
+              "on-tertiary": "#ffffff",
+              "secondary-container": "#91f78e",
+              "tertiary": "#884f00",
+              "primary-fixed-dim": "#a5c8ff",
+              "on-tertiary-fixed": "#2c1600",
+              "surface": "#f7fafd",
+              "on-error-container": "#93000a",
+              "inverse-on-surface": "#eef1f4",
+              "tertiary-container": "#ab6400",
+              "error": "#ba1a1a",
+              "surface-dim": "#d7dadd",
+              "primary-container": "#1976d2",
+              "surface-tint": "#005faf",
+              "secondary-fixed-dim": "#78dc77",
+              "surface-container-high": "#e5e8eb",
+              "surface-container-low": "#f1f4f7",
+              "primary": "#005dac",
+              "on-surface": "#181c1e",
+              "on-background": "#181c1e",
+              "on-secondary-fixed-variant": "#005313",
+              "surface-variant": "#e0e3e6",
+              "surface-bright": "#f7fafd",
+              "error-container": "#ffdad6",
+              "on-tertiary-fixed-variant": "#693c00",
+              "on-primary-container": "#fffdff",
+              "primary-fixed": "#d4e3ff",
+              "inverse-surface": "#2d3133",
+              "inverse-primary": "#a5c8ff",
+              "outline": "#717783",
+              "tertiary-fixed": "#ffdcbe",
+              "on-surface-variant": "#414752",
+              "on-secondary-fixed": "#002204",
+              "background": "#f7fafd",
+              "on-error": "#ffffff",
+              "on-primary-fixed-variant": "#004786",
+              "secondary-fixed": "#94f990",
+              "secondary": "#006e1c",
+              "outline-variant": "#c1c6d4",
+              "on-primary-fixed": "#001c3a",
+              "on-secondary-container": "#00731e",
+              "surface-container-highest": "#e0e3e6",
+              "on-tertiary-container": "#fffdff",
+              "on-secondary": "#ffffff",
+              "tertiary-fixed-dim": "#ffb870",
+              "on-primary": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 shadow-[0_4px_20px_rgba(24,28,30,0.04)] bg-gradient-to-b from-[#f7fafd] to-[#ffffff] dark:from-slate-900 dark:to-slate-950 backdrop-blur-xl h-16 flex items-center justify-between px-4">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full active:scale-95 transition-transform duration-150 hover:bg-[#e5e8eb] dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-[#005dac] dark:text-[#1976d2]" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold text-lg tracking-tight text-[#005dac] dark:text-[#1976d2]">Edit Space</h1>
+</div>
+<button class="px-4 py-2 font-['Inter'] font-semibold text-sm rounded-full active:scale-95 transition-transform duration-150 bg-primary text-on-primary shadow-sm">
+            Save
+        </button>
+</header>
+<main class="pt-20 px-4 max-w-2xl mx-auto space-y-8">
+<!-- Space Details Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-label-md font-bold tracking-wider text-on-surface-variant uppercase text-xs">Space Details</h2>
+<div class="h-px flex-1 ml-4 bg-surface-variant"></div>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<!-- Space ID (Read Only) -->
+<div class="relative group">
+<label class="absolute left-4 top-2 text-xs font-medium text-primary">Space ID</label>
+<input class="w-full pt-6 pb-2 px-4 bg-surface-container-low border-b-2 border-outline-variant focus:border-primary text-on-surface outline-none rounded-t-lg font-medium cursor-not-allowed" readonly="" type="text" value="ESL-99283-B"/>
+</div>
+<!-- Space Type Dropdown -->
+<div class="relative group">
+<label class="absolute left-4 top-2 text-xs font-medium text-on-surface-variant">Space Type</label>
+<select class="w-full pt-6 pb-2 px-4 bg-surface-container border-b-2 border-outline-variant focus:border-primary text-on-surface outline-none rounded-t-lg appearance-none font-medium">
+<option value="office">Office</option>
+<option selected="" value="conference">Conference Room</option>
+<option value="hotdesk">Hotdesk</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 bottom-3 text-on-surface-variant pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+<!-- Custom Fields -->
+<div class="relative group">
+<label class="absolute left-4 top-2 text-xs font-medium text-on-surface-variant">Internal Code</label>
+<input class="w-full pt-6 pb-2 px-4 bg-surface-container border-b-2 border-outline-variant focus:border-primary text-on-surface outline-none rounded-t-lg" type="text" value="CR-402-DELTA"/>
+</div>
+</div>
+</section>
+<!-- Person Assignment Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-label-md font-bold tracking-wider text-on-surface-variant uppercase text-xs">Person Assignment</h2>
+<div class="h-px flex-1 ml-4 bg-surface-variant"></div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-bold shrink-0">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of Amit Cohen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFwBTkgdTibvXLwOxKkAtHmoc6iN-bKwNhKSXXjfSW-AVJ6Fm4Mm02Jb1LStrRyCh6UYXcwahdUCPrB4uW8085bPZ3lKWmgCIQjUdYlOgZWV0-IFTpiY8GzHiqrxHuBk0_oTNKxlcmPhHWh144MpBwHo3RzvnPxrihxHccSFe8RHS9I2jrqIXA3mkKwQQpCWQAEQfeB8M7STruJXbISvnSpzKwKB_F22DPBckTXvKBJ-M7_nCBkrSfljhSlLxMC8CBiTRLzle8b-c"/>
+</div>
+<div class="flex-1">
+<h3 class="font-semibold text-on-surface">Amit Cohen</h3>
+<p class="text-xs text-on-surface-variant">Assigned since Oct 12, 2023</p>
+</div>
+<div class="inline-flex h-6 px-2 items-center rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase">
+                    Assigned
+                </div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-2.5 px-4 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-surface-variant active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="swap_horiz">swap_horiz</span>
+                    Change
+                </button>
+<button class="flex-1 py-2.5 px-4 rounded-full border border-outline-variant text-error font-medium text-sm hover:bg-error-container/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="person_off">person_off</span>
+                    Unassign
+                </button>
+</div>
+</section>
+<!-- Label Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-label-md font-bold tracking-wider text-on-surface-variant uppercase text-xs">Label Info</h2>
+<div class="h-px flex-1 ml-4 bg-surface-variant"></div>
+</div>
+<div class="flex gap-4 items-start bg-surface-container-low p-4 rounded-xl border-l-4 border-primary">
+<div class="w-20 h-20 bg-surface-container rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover opacity-80" data-alt="Electronic shelf label digital screen preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAlh81fVZ9wyr5_XPw6Gdp9dIiameX4tSzYAQF8leIZtfj8hL_XeMre-bFcR8wUzuIBg6IFTuOKCBKsln-su_S4JgpL4V7eLZF3OnUM1eavAh1tE4_pT8xtpJPsAYX79D0VrFi57HpYbVus0p8czm6uQLNjjRtctSINBeIKbeANhEECxlMI_5lb0DmO0aQVIzn66Z3kT6eXiqDjl-sBi0dmIGy1QcGvezF56u7q2P1j9xPT0nEVi04HyC4lTmCnMEIuXR4MhLnBQE"/>
+</div>
+<div class="space-y-1">
+<div class="text-primary font-bold text-lg">ESL-001</div>
+<div class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="battery_full">battery_full</span>
+                        94% Battery
+                    </div>
+<div class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="wifi">wifi</span>
+                        Signal: Excellent
+                    </div>
+</div>
+</div>
+</section>
+<!-- Footer Actions -->
+<footer class="pt-12 pb-8">
+<button class="w-full py-4 px-6 rounded-full bg-error text-on-error font-bold flex items-center justify-center gap-3 shadow-lg shadow-error/20 active:scale-[0.97] transition-all">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+                Delete Space
+            </button>
+<p class="text-center text-xs text-on-surface-variant mt-6 px-8 leading-relaxed">
+                Deleting this space will permanently remove all historical occupancy data and unassign current members.
+            </p>
+</footer>
+</main>
+<!-- FAB (Suppressed based on context: Details/Edit screen) -->
+</body></html>

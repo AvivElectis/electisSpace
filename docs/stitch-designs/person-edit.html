@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Edit Person - electisSpace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-error": "#ffffff",
+                        "primary-container": "#1976d2",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#91f78e",
+                        "on-surface": "#181c1e",
+                        "on-tertiary-container": "#fffdff",
+                        "tertiary-container": "#ab6400",
+                        "surface-tint": "#005faf",
+                        "inverse-on-surface": "#eef1f4",
+                        "tertiary-fixed": "#ffdcbe",
+                        "primary": "#005dac",
+                        "primary-fixed": "#d4e3ff",
+                        "on-tertiary-fixed": "#2c1600",
+                        "on-primary": "#ffffff",
+                        "outline": "#717783",
+                        "background": "#f7fafd",
+                        "surface-dim": "#d7dadd",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-surface-variant": "#414752",
+                        "primary-fixed-dim": "#a5c8ff",
+                        "on-secondary-container": "#00731e",
+                        "surface-variant": "#e0e3e6",
+                        "surface-container-high": "#e5e8eb",
+                        "surface-bright": "#f7fafd",
+                        "surface": "#f7fafd",
+                        "secondary-fixed-dim": "#78dc77",
+                        "on-primary-fixed-variant": "#004786",
+                        "secondary": "#006e1c",
+                        "on-primary-fixed": "#001c3a",
+                        "tertiary": "#884f00",
+                        "inverse-surface": "#2d3133",
+                        "inverse-primary": "#a5c8ff",
+                        "on-primary-container": "#fffdff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#ebeef1",
+                        "on-secondary-fixed": "#002204",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f1f4f7",
+                        "tertiary-fixed-dim": "#ffb870",
+                        "secondary-fixed": "#94f990",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-background": "#181c1e",
+                        "outline-variant": "#c1c6d4"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar from Shared Components JSON -->
+<header class="fixed top-0 w-full z-50 bg-[#f7fafd] dark:bg-slate-900/80 backdrop-blur-xl shadow-none">
+<div class="flex items-center justify-between px-4 h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#e5e8eb] dark:hover:bg-slate-800 transition-colors active:scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-[#181c1e] dark:text-slate-100" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold text-lg tracking-tight text-[#181c1e] dark:text-slate-100">Edit Person</h1>
+</div>
+<button class="px-6 py-2 rounded-full text-[#005dac] dark:text-[#1976d2] font-bold hover:bg-[#e5e8eb] dark:hover:bg-slate-800 transition-colors active:scale-95 duration-200 ease-in-out">
+                Save
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 mt-16 pb-12 overflow-y-auto max-w-2xl mx-auto w-full px-4">
+<!-- Introduction / Hero Area -->
+<div class="py-8 text-center">
+<div class="w-24 h-24 bg-primary-container/10 rounded-full mx-auto flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="person">person</span>
+</div>
+<h2 class="text-2xl font-bold tracking-tight text-on-surface">Amit Cohen</h2>
+<p class="text-on-surface-variant text-sm">Employee ID: 77234</p>
+</div>
+<div class="space-y-6">
+<!-- Section 1: Personal Information Card -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="badge">badge</span>
+<h3 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Personal Information</h3>
+</div>
+<div class="space-y-5">
+<!-- Full Name -->
+<div class="relative">
+<label class="block text-xs font-medium text-primary mb-1 ml-1">Full Name</label>
+<div class="flex items-center border-b border-outline-variant focus-within:border-primary transition-colors py-2 px-1 group">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary mr-3" data-icon="person_outline">person_outline</span>
+<input class="bg-transparent border-none focus:ring-0 w-full p-0 text-on-surface placeholder-on-surface-variant/50" placeholder="Enter full name" type="text" value="Amit Cohen"/>
+</div>
+</div>
+<!-- Employee ID -->
+<div class="relative">
+<label class="block text-xs font-medium text-on-surface-variant mb-1 ml-1">Employee ID</label>
+<div class="flex items-center border-b border-outline-variant focus-within:border-primary transition-colors py-2 px-1 group">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary mr-3" data-icon="fingerprint">fingerprint</span>
+<input class="bg-transparent border-none focus:ring-0 w-full p-0 text-on-surface placeholder-on-surface-variant/50" placeholder="ID Number" type="text" value="77234"/>
+</div>
+</div>
+<!-- Department (Dropdown simulation) -->
+<div class="relative">
+<label class="block text-xs font-medium text-on-surface-variant mb-1 ml-1">Department</label>
+<div class="flex items-center border-b border-outline-variant focus-within:border-primary transition-colors py-2 px-1 group cursor-pointer">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary mr-3" data-icon="corporate_fare">corporate_fare</span>
+<select class="bg-transparent border-none focus:ring-0 w-full p-0 text-on-surface appearance-none">
+<option selected="">Product Management</option>
+<option>Engineering</option>
+<option>Design</option>
+<option>Human Resources</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<!-- Email -->
+<div class="relative">
+<label class="block text-xs font-medium text-on-surface-variant mb-1 ml-1">Email</label>
+<div class="flex items-center border-b border-outline-variant focus-within:border-primary transition-colors py-2 px-1 group">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary mr-3" data-icon="mail">mail</span>
+<input class="bg-transparent border-none focus:ring-0 w-full p-0 text-on-surface placeholder-on-surface-variant/50" placeholder="email@example.com" type="email" value="amit@electis.co"/>
+</div>
+</div>
+<!-- Phone -->
+<div class="relative">
+<label class="block text-xs font-medium text-on-surface-variant mb-1 ml-1">Phone</label>
+<div class="flex items-center border-b border-outline-variant focus-within:border-primary transition-colors py-2 px-1 group">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary mr-3" data-icon="call">call</span>
+<input class="bg-transparent border-none focus:ring-0 w-full p-0 text-on-surface placeholder-on-surface-variant/50" placeholder="+000 00-000-0000" type="tel" value="+972 50-123-4567"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Space Assignment Card -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="location_on">location_on</span>
+<h3 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Space Assignment</h3>
+</div>
+<button class="text-primary text-xs font-bold px-3 py-1 rounded-full border border-outline-variant hover:bg-surface-container-high transition-colors">Change</button>
+</div>
+<div class="bg-surface-container-low rounded-lg p-4 flex items-center mb-6">
+<div class="w-12 h-12 bg-surface-container-lowest rounded-lg flex items-center justify-center mr-4">
+<span class="material-symbols-outlined text-primary" data-icon="meeting_room">meeting_room</span>
+</div>
+<div>
+<p class="text-on-surface font-semibold">Office 12-A</p>
+<p class="text-on-surface-variant text-xs">Primary Workspace</p>
+</div>
+</div>
+<div class="space-y-3">
+<p class="text-xs font-medium text-on-surface-variant ml-1">Space Type Selector</p>
+<div class="flex p-1 bg-surface-container-low rounded-full">
+<button class="flex-1 py-2 text-xs font-bold rounded-full bg-primary text-on-primary shadow-sm transition-all">Dedicated</button>
+<button class="flex-1 py-2 text-xs font-bold rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all">Hot Desk</button>
+<button class="flex-1 py-2 text-xs font-bold rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all">Remote</button>
+</div>
+</div>
+</section>
+<!-- Section 3: Label Information Card (Read-only) -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border-l-4 border-primary">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="label">label</span>
+<h3 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Linked Device</h3>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative w-24 h-16 bg-white border border-outline-variant rounded shadow-inner overflow-hidden flex items-center justify-center">
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 4px 4px;"></div>
+<div class="text-[10px] font-bold text-center leading-tight">
+                            AMIT COHEN<br/>
+<span class="font-normal text-[8px]">PROD MGMT</span>
+</div>
+<div class="absolute bottom-1 right-1">
+<span class="material-symbols-outlined text-[8px]" data-icon="qr_code_2">qr_code_2</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<p class="text-on-surface font-mono font-bold text-sm">ESL-99283-B</p>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<div class="flex items-center text-on-surface-variant text-xs gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="sync">sync</span>
+<span>Last sync: 2m ago</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer: Delete Action -->
+<div class="pt-8 px-2">
+<button class="w-full flex items-center justify-center gap-2 py-4 rounded-full border border-error text-error font-bold hover:bg-error-container/20 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="delete_outline">delete_outline</span>
+                    Delete Person
+                </button>
+<p class="text-center text-[10px] text-on-surface-variant mt-4 uppercase tracking-widest">electisSpace Administrative Console</p>
+</div>
+</div>
+</main>
+<!-- Visual Polish: Activity Ribbon (As defined in Design System) -->
+<div class="fixed right-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-primary to-primary-container rounded-l-full opacity-50"></div>
+</body></html>

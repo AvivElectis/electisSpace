@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#ebeef1",
+                        "primary-container": "#1976d2",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdcbe",
+                        "primary-fixed-dim": "#a5c8ff",
+                        "tertiary-container": "#ab6400",
+                        "on-surface-variant": "#414752",
+                        "error-container": "#ffdad6",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#2c1600",
+                        "on-background": "#181c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#884f00",
+                        "surface": "#f7fafd",
+                        "on-primary-container": "#fffdff",
+                        "on-surface": "#181c1e",
+                        "on-primary-fixed-variant": "#004786",
+                        "on-primary-fixed": "#001c3a",
+                        "inverse-surface": "#2d3133",
+                        "outline": "#717783",
+                        "on-secondary-container": "#00731e",
+                        "secondary": "#006e1c",
+                        "surface-dim": "#d7dadd",
+                        "surface-container-highest": "#e0e3e6",
+                        "surface-container-high": "#e5e8eb",
+                        "inverse-on-surface": "#eef1f4",
+                        "on-secondary-fixed-variant": "#005313",
+                        "secondary-container": "#91f78e",
+                        "primary": "#005dac",
+                        "tertiary-fixed-dim": "#ffb870",
+                        "background": "#f7fafd",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-tertiary-container": "#fffdff",
+                        "outline-variant": "#c1c6d4",
+                        "surface-container-low": "#f1f4f7",
+                        "primary-fixed": "#d4e3ff",
+                        "on-secondary-fixed": "#002204",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#78dc77",
+                        "secondary-fixed": "#94f990",
+                        "surface-tint": "#005faf",
+                        "inverse-primary": "#a5c8ff",
+                        "surface-bright": "#f7fafd",
+                        "surface-variant": "#e0e3e6"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-login-gradient {
+            background: linear-gradient(135deg, #f7fafd 0%, #ffffff 100%);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #005dac 0%, #1976d2 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-login-gradient min-h-screen flex flex-col font-body text-on-surface">
+<!-- Top App Bar Replacement (Language Toggle) -->
+<header class="w-full flex justify-end items-center px-6 pt-8 pb-4">
+<div class="inline-flex rounded-full border border-outline-variant p-1 bg-surface-container-low">
+<button class="px-4 py-1 rounded-full text-xs font-bold bg-primary text-on-primary">EN</button>
+<button class="px-4 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors">HE</button>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center px-6 max-w-md mx-auto w-full">
+<!-- Logo & Branding -->
+<div class="text-center mb-10">
+<div class="flex items-center justify-center mb-4">
+<div class="w-16 h-16 rounded-2xl primary-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-on-primary text-4xl" data-icon="grid_view">grid_view</span>
+</div>
+</div>
+<h1 class="text-3xl font-extrabold tracking-tight text-primary">electisSpace</h1>
+<p class="text-on-surface-variant mt-2 font-medium leading-relaxed" dir="rtl">מערכת ניהול תוויות אלקטרוניות</p>
+</div>
+<!-- Login Form Card -->
+<section class="w-full bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_40px_rgba(24,28,30,0.04)] border border-surface-container-low">
+<form class="space-y-6">
+<!-- Email Field -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface px-1">Email Address</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]" data-icon="mail">mail</span>
+</div>
+<input class="block w-full pl-12 pr-4 py-3.5 bg-surface-container-low border border-outline-variant rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white outline-none transition-all placeholder:text-outline/60 text-on-surface" placeholder="name@company.com" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface px-1">Password</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]" data-icon="lock">lock</span>
+</div>
+<input class="block w-full pl-12 pr-12 py-3.5 bg-surface-container-low border border-outline-variant rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white outline-none transition-all placeholder:text-outline/60 text-on-surface" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-4 flex items-center text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[22px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Trust this device -->
+<div class="flex items-start gap-3 py-1">
+<div class="flex items-center h-5">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20 transition-all cursor-pointer bg-surface-container-low" id="trust-device" type="checkbox"/>
+</div>
+<div class="flex flex-col">
+<label class="text-sm font-semibold text-on-surface cursor-pointer" for="trust-device">Trust this device</label>
+<span class="text-xs text-on-surface-variant">Skip verification next time</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full primary-gradient text-on-primary font-bold py-4 rounded-full shadow-lg shadow-primary/25 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2" type="submit">
+<span>Sign In</span>
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<div class="text-center pt-2">
+<a class="text-sm font-semibold text-primary hover:underline" href="#">Forgot password?</a>
+</div>
+</form>
+</section>
+<!-- Biometric Section -->
+<div class="mt-12 text-center pb-12">
+<button class="flex flex-col items-center gap-3 group transition-transform active:scale-95">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-3xl" data-icon="fingerprint">fingerprint</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant tracking-wider uppercase">Biometric Login</span>
+</button>
+</div>
+</main>
+<!-- Bottom Spacing for Navigation Bar if needed, but suppressed here for Login flow -->
+<div class="h-8"></div>
+</body></html>
