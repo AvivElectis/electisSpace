@@ -1,6 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { Route } from 'react-router-dom';
 import { NativeShell } from './NativeShell';
 import { Box, Typography } from '@mui/material';
+
+const NativeDashboardPage = lazy(() =>
+    import('@features/dashboard/presentation/native/NativeDashboardPage').then((m) => ({
+        default: m.NativeDashboardPage,
+    }))
+);
 
 function NativePlaceholder({ name }: { name: string }) {
     return (
@@ -14,7 +21,7 @@ function NativePlaceholder({ name }: { name: string }) {
 export function getNativeRoutes() {
     return (
         <Route element={<NativeShell />}>
-            <Route index element={<NativePlaceholder name="Dashboard" />} />
+            <Route index element={<Suspense fallback={null}><NativeDashboardPage /></Suspense>} />
             <Route path="people" element={<NativePlaceholder name="People" />} />
             <Route path="people/new" element={<NativePlaceholder name="Add Person" />} />
             <Route path="people/:id/edit" element={<NativePlaceholder name="Edit Person" />} />
