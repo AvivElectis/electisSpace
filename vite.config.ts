@@ -40,6 +40,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 3000,
     allowedHosts: true, // Allow Android emulator (10.0.2.2) and other hosts
     proxy: {
