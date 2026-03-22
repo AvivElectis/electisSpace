@@ -7,11 +7,11 @@ const config: CapacitorConfig = {
     appName: 'electisSpace',
     webDir: 'dist',
     server: {
-        androidScheme: 'https',
+        androidScheme: isDev ? 'http' : 'https',
         // Allow cleartext HTTP for dev server access from emulator
-        allowNavigation: isDev ? ['10.0.2.2:*'] : undefined,
-        // For dev on emulator: point API to host machine's Docker backend
-        ...(isDev ? { cleartext: true } : {}),
+        allowNavigation: isDev ? ['10.0.2.2:*', 'localhost:*'] : undefined,
+        // For dev on emulator: point WebView to Vite dev server for live reload
+        ...(isDev ? { url: 'http://localhost:3000', cleartext: true } : {}),
     },
     plugins: {
         CapacitorHttp: {
