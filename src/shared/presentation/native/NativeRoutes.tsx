@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Route } from 'react-router-dom';
 import { NativeShell } from './NativeShell';
-import { Box, Typography } from '@mui/material';
 
 const NativeDashboardPage = lazy(() =>
     import('@features/dashboard/presentation/native/NativeDashboardPage').then((m) => ({
@@ -69,14 +68,85 @@ const NativeSettingsPage = lazy(() =>
     }))
 );
 
-function NativePlaceholder({ name }: { name: string }) {
-    return (
-        <Box sx={{ p: 2, textAlign: 'center', mt: 4 }}>
-            <Typography variant="h6" color="text.secondary">{name}</Typography>
-            <Typography variant="body2" color="text.secondary">Coming soon</Typography>
-        </Box>
-    );
-}
+// ---- Settings sub-pages ----
+
+const NativeProfilePage = lazy(() =>
+    import('@features/settings/presentation/native/NativeProfilePage').then((m) => ({
+        default: m.NativeProfilePage,
+    }))
+);
+
+const NativeUsersListPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeUsersListPage').then((m) => ({
+        default: m.NativeUsersListPage,
+    }))
+);
+
+const NativeUserFormPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeUserFormPage').then((m) => ({
+        default: m.NativeUserFormPage,
+    }))
+);
+
+const NativeElevateUserPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeElevateUserPage').then((m) => ({
+        default: m.NativeElevateUserPage,
+    }))
+);
+
+const NativeCompaniesListPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeCompaniesListPage').then((m) => ({
+        default: m.NativeCompaniesListPage,
+    }))
+);
+
+const NativeCompanyFormPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeCompanyFormPage').then((m) => ({
+        default: m.NativeCompanyFormPage,
+    }))
+);
+
+const NativeCompanyFeaturesPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeCompanyFeaturesPage').then((m) => ({
+        default: m.NativeCompanyFeaturesPage,
+    }))
+);
+
+const NativeStoresListPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeStoresListPage').then((m) => ({
+        default: m.NativeStoresListPage,
+    }))
+);
+
+const NativeStoreFormPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeStoreFormPage').then((m) => ({
+        default: m.NativeStoreFormPage,
+    }))
+);
+
+const NativeStoreFeaturesPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeStoreFeaturesPage').then((m) => ({
+        default: m.NativeStoreFeaturesPage,
+    }))
+);
+
+const NativeRolesListPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeRolesListPage').then((m) => ({
+        default: m.NativeRolesListPage,
+    }))
+);
+
+const NativeRoleFormPage = lazy(() =>
+    import('@features/settings/presentation/native/NativeRoleFormPage').then((m) => ({
+        default: m.NativeRoleFormPage,
+    }))
+);
+
+const NativeAboutPage = lazy(() =>
+    import('@features/settings/presentation/NativeAboutPage').then((m) => ({
+        default: m.NativeAboutPage,
+    }))
+);
 
 export function getNativeRoutes() {
     return (
@@ -95,17 +165,33 @@ export function getNativeRoutes() {
             <Route path="labels/link" element={<Suspense fallback={null}><NativeLinkLabelPage /></Suspense>} />
             <Route path="aims-management" element={<Suspense fallback={null}><NativeAimsPage /></Suspense>} />
             <Route path="settings" element={<Suspense fallback={null}><NativeSettingsPage /></Suspense>} />
-            <Route path="settings/profile" element={<NativePlaceholder name="Profile" />} />
-            <Route path="settings/users" element={<NativePlaceholder name="Users" />} />
-            <Route path="settings/users/new" element={<NativePlaceholder name="Add User" />} />
-            <Route path="settings/users/:id" element={<NativePlaceholder name="Edit User" />} />
-            <Route path="settings/companies" element={<NativePlaceholder name="Companies" />} />
-            <Route path="settings/companies/new" element={<NativePlaceholder name="Add Company" />} />
-            <Route path="settings/companies/:id" element={<NativePlaceholder name="Edit Company" />} />
-            <Route path="settings/roles" element={<NativePlaceholder name="Roles" />} />
-            <Route path="settings/roles/new" element={<NativePlaceholder name="Add Role" />} />
-            <Route path="settings/roles/:id" element={<NativePlaceholder name="Edit Role" />} />
-            <Route path="settings/about" element={<NativePlaceholder name="About" />} />
+
+            {/* Settings sub-pages */}
+            <Route path="settings/profile" element={<Suspense fallback={null}><NativeProfilePage /></Suspense>} />
+
+            {/* Users */}
+            <Route path="settings/users" element={<Suspense fallback={null}><NativeUsersListPage /></Suspense>} />
+            <Route path="settings/users/new" element={<Suspense fallback={null}><NativeUserFormPage /></Suspense>} />
+            <Route path="settings/users/:id" element={<Suspense fallback={null}><NativeUserFormPage /></Suspense>} />
+            <Route path="settings/users/:id/elevate" element={<Suspense fallback={null}><NativeElevateUserPage /></Suspense>} />
+
+            {/* Companies */}
+            <Route path="settings/companies" element={<Suspense fallback={null}><NativeCompaniesListPage /></Suspense>} />
+            <Route path="settings/companies/new" element={<Suspense fallback={null}><NativeCompanyFormPage /></Suspense>} />
+            <Route path="settings/companies/:id" element={<Suspense fallback={null}><NativeCompanyFormPage /></Suspense>} />
+            <Route path="settings/companies/:id/features" element={<Suspense fallback={null}><NativeCompanyFeaturesPage /></Suspense>} />
+            <Route path="settings/companies/:id/stores" element={<Suspense fallback={null}><NativeStoresListPage /></Suspense>} />
+            <Route path="settings/companies/:id/stores/new" element={<Suspense fallback={null}><NativeStoreFormPage /></Suspense>} />
+            <Route path="settings/companies/:id/stores/:sid" element={<Suspense fallback={null}><NativeStoreFormPage /></Suspense>} />
+            <Route path="settings/companies/:id/stores/:sid/features" element={<Suspense fallback={null}><NativeStoreFeaturesPage /></Suspense>} />
+
+            {/* Roles */}
+            <Route path="settings/roles" element={<Suspense fallback={null}><NativeRolesListPage /></Suspense>} />
+            <Route path="settings/roles/new" element={<Suspense fallback={null}><NativeRoleFormPage /></Suspense>} />
+            <Route path="settings/roles/:id" element={<Suspense fallback={null}><NativeRoleFormPage /></Suspense>} />
+
+            {/* About */}
+            <Route path="settings/about" element={<Suspense fallback={null}><NativeAboutPage /></Suspense>} />
         </Route>
     );
 }
