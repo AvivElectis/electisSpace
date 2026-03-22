@@ -416,6 +416,12 @@
             "pushResult": "נדחפו: {{processed}} עובדו, {{pending}} עדיין ממתינים",
             "fullResult": "סנכרון מלא הושלם",
             "error": "הסנכרון נכשל"
+        },
+        "native": {
+            "all": "הכל",
+            "details": "פרטי מרחב",
+            "labelInfo": "מידע תגית",
+            "assignedLabels": "תגיות מוקצות"
         }
     },
     "conference": {
@@ -464,7 +470,15 @@
         "flipPageSuccess": "סטטוס החדר שונה בהצלחה",
         "inMeeting": "בפגישה",
         "loadingPages": "טוען סטטוס חדרים...",
-        "labels": "תגיות"
+        "labels": "תגיות",
+        "idCannotChange": "לא ניתן לשנות את המזהה לאחר יצירה",
+        "idAutoFormat": "מזהה מספרי (לדוגמה: 01, 02)",
+        "roomNamePlaceholder": "לדוגמה: חדר ישיבות א",
+        "native": {
+            "all": "הכל",
+            "roomDetails": "פרטי חדר",
+            "hasActiveMeeting": "יש פגישה פעילה"
+        }
     },
     "sync": {
         "title": "סינכרון",

@@ -21,6 +21,42 @@ const NativePersonFormPage = lazy(() =>
     }))
 );
 
+const NativeSpacesListPage = lazy(() =>
+    import('@features/space/presentation/native/NativeSpacesListPage').then((m) => ({
+        default: m.NativeSpacesListPage,
+    }))
+);
+
+const NativeSpaceFormPage = lazy(() =>
+    import('@features/space/presentation/native/NativeSpaceFormPage').then((m) => ({
+        default: m.NativeSpaceFormPage,
+    }))
+);
+
+const NativeConferencePage = lazy(() =>
+    import('@features/conference/presentation/native/NativeConferencePage').then((m) => ({
+        default: m.NativeConferencePage,
+    }))
+);
+
+const NativeConferenceFormPage = lazy(() =>
+    import('@features/conference/presentation/native/NativeConferenceFormPage').then((m) => ({
+        default: m.NativeConferenceFormPage,
+    }))
+);
+
+const NativeLabelsPage = lazy(() =>
+    import('@features/labels/presentation/native/NativeLabelsPage').then((m) => ({
+        default: m.NativeLabelsPage,
+    }))
+);
+
+const NativeLinkLabelPage = lazy(() =>
+    import('@features/labels/presentation/native/NativeLinkLabelPage').then((m) => ({
+        default: m.NativeLinkLabelPage,
+    }))
+);
+
 function NativePlaceholder({ name }: { name: string }) {
     return (
         <Box sx={{ p: 2, textAlign: 'center', mt: 4 }}>
@@ -37,14 +73,14 @@ export function getNativeRoutes() {
             <Route path="people" element={<Suspense fallback={null}><NativePeopleListPage /></Suspense>} />
             <Route path="people/new" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
             <Route path="people/:id/edit" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
-            <Route path="spaces" element={<NativePlaceholder name="Spaces" />} />
-            <Route path="spaces/new" element={<NativePlaceholder name="Add Space" />} />
-            <Route path="spaces/:id/edit" element={<NativePlaceholder name="Edit Space" />} />
-            <Route path="conference" element={<NativePlaceholder name="Conference" />} />
-            <Route path="conference/new" element={<NativePlaceholder name="Add Room" />} />
-            <Route path="conference/:id/edit" element={<NativePlaceholder name="Edit Room" />} />
-            <Route path="labels" element={<NativePlaceholder name="Labels" />} />
-            <Route path="labels/link" element={<NativePlaceholder name="Link Label" />} />
+            <Route path="spaces" element={<Suspense fallback={null}><NativeSpacesListPage /></Suspense>} />
+            <Route path="spaces/new" element={<Suspense fallback={null}><NativeSpaceFormPage /></Suspense>} />
+            <Route path="spaces/:id/edit" element={<Suspense fallback={null}><NativeSpaceFormPage /></Suspense>} />
+            <Route path="conference" element={<Suspense fallback={null}><NativeConferencePage /></Suspense>} />
+            <Route path="conference/new" element={<Suspense fallback={null}><NativeConferenceFormPage /></Suspense>} />
+            <Route path="conference/:id/edit" element={<Suspense fallback={null}><NativeConferenceFormPage /></Suspense>} />
+            <Route path="labels" element={<Suspense fallback={null}><NativeLabelsPage /></Suspense>} />
+            <Route path="labels/link" element={<Suspense fallback={null}><NativeLinkLabelPage /></Suspense>} />
             <Route path="aims-management" element={<NativePlaceholder name="AIMS" />} />
             <Route path="settings" element={<NativePlaceholder name="Settings" />} />
             <Route path="settings/profile" element={<NativePlaceholder name="Profile" />} />

@@ -413,6 +413,12 @@
             "pushResult": "Pushed: {{processed}} processed, {{pending}} still pending",
             "fullResult": "Full sync complete",
             "error": "Sync failed"
+        },
+        "native": {
+            "all": "All",
+            "details": "Space Details",
+            "labelInfo": "Label Info",
+            "assignedLabels": "Assigned labels"
         }
     },
     "conference": {
@@ -456,7 +462,15 @@
         "flipPageSuccess": "Room status changed successfully",
         "inMeeting": "In a Meeting",
         "loadingPages": "Loading room status...",
-        "labels": "Labels"
+        "labels": "Labels",
+        "idCannotChange": "ID cannot be changed after creation",
+        "idAutoFormat": "Numeric ID (e.g., 01, 02)",
+        "roomNamePlaceholder": "e.g., Board Room A",
+        "native": {
+            "all": "All",
+            "roomDetails": "Room Details",
+            "hasActiveMeeting": "Has Active Meeting"
+        }
     },
     "sync": {
         "title": "Synchronization",
