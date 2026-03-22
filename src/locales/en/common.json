@@ -1803,5 +1803,9 @@
         "help": "Help & Manual",
         "about": "About",
         "logout": "Logout"
+    },
+    "native": {
+        "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+        "deleteConfirmGeneric": "Are you sure you want to delete this item? This action cannot be undone."
     }
 }
