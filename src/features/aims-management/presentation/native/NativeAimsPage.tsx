@@ -209,11 +209,15 @@ function Section({ title, count, children, loading, error, emptyText }: SectionP
 // ---------------------------------------------------------------------------
 
 const SYNC_INTERVAL_OPTIONS = [
+    { value: 10, label: '10s' },
+    { value: 30, label: '30s' },
+    { value: 60, label: '1 min' },
+    { value: 120, label: '2 min' },
     { value: 300, label: '5 min' },
+    { value: 600, label: '10 min' },
     { value: 900, label: '15 min' },
     { value: 1800, label: '30 min' },
     { value: 3600, label: '1 hr' },
-    { value: 0, label: 'Manual' },
 ];
 
 interface ConnectionHeaderProps {

@@ -94,6 +94,10 @@ export function NativeLoginPage() {
     const [biometricAvailable, setBiometricAvailable] = useState(false);
     const autoSubmitRef = useRef(false);
 
+    // Biometric enrollment prompt (shown after successful password login with trustDevice)
+    const [showBiometricEnrollment, setShowBiometricEnrollment] = useState(false);
+    const [biometricEnrollLoading, setBiometricEnrollLoading] = useState(false);
+
     // Check biometric availability on mount (only on native)
     useEffect(() => {
         if (Capacitor.isNativePlatform()) {
@@ -110,6 +114,17 @@ export function NativeLoginPage() {
         }
     }, [isAuthenticated, isInitialized, navigate]);
 
+    // After successful 2FA, check whether to prompt biometric enrollment
+    const handlePostLoginNavigation = async (trusted: boolean) => {
+        if (trusted && Capacitor.isNativePlatform() && biometricAvailable) {
+            // Device token was already stored by authService.verify2FA.
+            // Show enrollment prompt so user can confirm biometrics work.
+            setShowBiometricEnrollment(true);
+        } else {
+            navigate('/');
+        }
+    };
+
     // Auto-submit OTP when 6 digits are entered
     useEffect(() => {
         if (verificationCode.length === 6 && showVerification && !isLoading && !autoSubmitRef.current) {
@@ -117,12 +132,13 @@ export function NativeLoginPage() {
             clearError();
             verify2FA(verificationCode, trustDevice).then((success) => {
                 if (success) {
-                    navigate('/');
+                    handlePostLoginNavigation(trustDevice);
                 }
                 autoSubmitRef.current = false;
             });
         }
-    }, [verificationCode, showVerification, isLoading, verify2FA, clearError, navigate, trustDevice]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [verificationCode, showVerification, isLoading, verify2FA, clearError, trustDevice]);
 
     // Reset autoSubmitRef when code drops below 6 digits
     useEffect(() => {
@@ -219,13 +235,37 @@ export function NativeLoginPage() {
         clearError();
         const success = await verify2FA(verificationCode, trustDevice);
         if (success) {
-            navigate('/');
+            await handlePostLoginNavigation(trustDevice);
         }
     };
 
     const handleResendCode = async () => {
         clearError();
         await resendCode();
+    };
+
+    const handleEnableBiometric = async () => {
+        setBiometricEnrollLoading(true);
+        try {
+            const passed = await biometricService.authenticate(t('auth.biometric.enrollReason', 'Confirm your identity to enable biometric login'));
+            if (passed) {
+                // Device token already stored — biometrics are now wired up
+                navigate('/');
+            } else {
+                // Biometric verification failed — still navigate, enrollment just didn't complete
+                navigate('/');
+            }
+        } catch {
+            navigate('/');
+        } finally {
+            setBiometricEnrollLoading(false);
+            setShowBiometricEnrollment(false);
+        }
+    };
+
+    const handleSkipBiometricEnrollment = () => {
+        setShowBiometricEnrollment(false);
+        navigate('/');
     };
 
     const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
@@ -448,8 +488,79 @@ export function NativeLoginPage() {
                     </Alert>
                 )}
 
-                {/* === FORGOT PASSWORD FLOW === */}
-                {showForgotPassword ? (
+                {/* === BIOMETRIC ENROLLMENT PROMPT (after successful login with trustDevice) === */}
+                {showBiometricEnrollment ? (
+                    <Box
+                        component="section"
+                        sx={{
+                            width: '100%',
+                            bgcolor: SURFACE_LOWEST,
+                            borderRadius: `${nativeRadii.card}px`,
+                            p: 4,
+                            boxShadow: '0 4px 40px rgba(24,28,30,0.06)',
+                            border: `1px solid ${SURFACE_LOW}`,
+                            textAlign: 'center',
+                        }}
+                    >
+                        <FingerprintIcon sx={{ fontSize: 64, color: PRIMARY, mb: 2 }} />
+                        <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ fontFamily: nativeFonts.heading, fontWeight: 700, mb: 1 }}
+                        >
+                            {t('auth.biometric.enrollTitle', 'Enable Biometric Login?')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            {t('auth.biometric.enrollHint', 'Use your fingerprint or face to sign in faster next time.')}
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                size="large"
+                                onClick={handleEnableBiometric}
+                                disabled={biometricEnrollLoading}
+                                startIcon={
+                                    biometricEnrollLoading
+                                        ? <CircularProgress size={20} color="inherit" />
+                                        : <FingerprintIcon />
+                                }
+                                sx={{
+                                    height: 52,
+                                    borderRadius: '999px',
+                                    textTransform: 'none',
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    fontFamily: nativeFonts.body,
+                                    background: `linear-gradient(135deg, ${PRIMARY} 0%, ${PRIMARY_LIGHT} 100%)`,
+                                    boxShadow: `0 8px 20px ${alpha(PRIMARY, 0.3)}`,
+                                }}
+                            >
+                                {biometricEnrollLoading
+                                    ? t('login.verifying', 'Verifying...')
+                                    : t('auth.biometric.enrollEnable', 'Enable')}
+                            </Button>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={handleSkipBiometricEnrollment}
+                                disabled={biometricEnrollLoading}
+                                sx={{
+                                    height: 48,
+                                    borderRadius: '999px',
+                                    textTransform: 'none',
+                                    fontFamily: nativeFonts.body,
+                                    fontWeight: 600,
+                                }}
+                            >
+                                {t('auth.biometric.enrollSkip', 'Skip')}
+                            </Button>
+                        </Box>
+                    </Box>
+
+                ) : /* === FORGOT PASSWORD FLOW === */
+                showForgotPassword ? (
                     <Box
                         component="section"
                         sx={{
@@ -984,7 +1095,7 @@ export function NativeLoginPage() {
                 )}
 
                 {/* Biometric Quick Login (bottom, only when biometric is available) */}
-                {biometricAvailable && !showVerification && !showBiometric && !showForgotPassword && (
+                {biometricAvailable && !showVerification && !showBiometric && !showForgotPassword && !showBiometricEnrollment && (
                     <Box sx={{ mt: 6, pb: 4, textAlign: 'center' }}>
                         <Box
                             component="button"
