@@ -1,15 +1,19 @@
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNavTabs } from '../hooks/useNavTabs';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { glass, nativeSizing } from '../themes/nativeTokens';
 
 export function NativeBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
+    const { t } = useTranslation();
     const navTabs = useNavTabs();
+    const { getLabel } = useSpaceTypeLabels();
 
     const activeValue = navTabs.find(tab => tab.value === location.pathname)?.value ?? false;
 
@@ -45,7 +49,7 @@ export function NativeBottomNav() {
                 {navTabs.map(tab => (
                     <BottomNavigationAction
                         key={tab.value}
-                        label={tab.label}
+                        label={tab.dynamicLabel ? getLabel('plural') : t(tab.labelKey)}
                         value={tab.value}
                         icon={tab.icon}
                     />

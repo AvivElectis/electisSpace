@@ -33,7 +33,7 @@ export function NativeSpacesListPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    useSetNativeTitle(t('navigation.spaces'));
+    useSetNativeTitle(getLabel('plural'));
 
     const isAppReady = useAuthStore((state) => state.isAppReady);
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
