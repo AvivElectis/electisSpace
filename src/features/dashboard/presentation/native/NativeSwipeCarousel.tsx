@@ -1,8 +1,7 @@
 import { memo, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { alpha } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import { nativeSpacing } from '@shared/presentation/themes/nativeTokens';
 
 export interface NativeSwipeCarouselProps {
@@ -10,18 +9,20 @@ export interface NativeSwipeCarouselProps {
 }
 
 /**
- * NativeSwipeCarousel — horizontal swipeable card carousel with dot indicators.
- * Supports RTL (Hebrew), 50px swipe threshold, smooth 0.3s transitions.
- * Tap dots to navigate; shows "N/total" counter.
+ * NativeSwipeCarousel — horizontal swipeable card carousel with live drag.
+ * Follows the finger during drag, snaps on release. RTL-aware.
  */
 export const NativeSwipeCarousel = memo(function NativeSwipeCarousel({ children }: NativeSwipeCarouselProps) {
     const theme = useTheme();
     const isRtl = theme.direction === 'rtl';
     const [activeIndex, setActiveIndex] = useState(0);
+    const [dragOffset, setDragOffset] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const touchStartX = useRef(0);
     const touchStartY = useRef(0);
+    const isScrolling = useRef<boolean | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    // Filter out falsy children (null/undefined/false)
     const slides = children.filter(Boolean);
     const count = slides.length;
 
@@ -30,32 +31,59 @@ export const NativeSwipeCarousel = memo(function NativeSwipeCarousel({ children 
 
     const goTo = useCallback((index: number) => {
         setActiveIndex(Math.max(0, Math.min(index, count - 1)));
+        setDragOffset(0);
     }, [count]);
 
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
         touchStartX.current = e.touches[0].clientX;
         touchStartY.current = e.touches[0].clientY;
+        isScrolling.current = null;
+        setIsDragging(true);
     }, []);
 
-    const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-        const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-        const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        const deltaX = e.touches[0].clientX - touchStartX.current;
+        const deltaY = e.touches[0].clientY - touchStartY.current;
 
-        // Ignore if vertical scroll dominates
-        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
-        if (Math.abs(deltaX) < 50) return;
-
-        // In RTL, swipe left (negative deltaX) moves to previous; swipe right moves to next
-        const swipedLeft = isRtl ? deltaX > 0 : deltaX < 0;
-        if (swipedLeft) {
-            goTo(activeIndex + 1);
-        } else {
-            goTo(activeIndex - 1);
+        // Determine if horizontal or vertical scroll on first move
+        if (isScrolling.current === null) {
+            isScrolling.current = Math.abs(deltaY) > Math.abs(deltaX);
         }
-    }, [isRtl, activeIndex, goTo]);
+        if (isScrolling.current) return; // Vertical scroll — don't intercept
 
-    // Translation: in LTR, negative translate moves right, in RTL positive translate moves right
-    const translatePercent = activeIndex * (100 / count);
+        e.preventDefault(); // Prevent vertical scroll while swiping horizontally
+        const containerWidth = containerRef.current?.clientWidth ?? 1;
+        // Convert pixel offset to percentage of slide width, with resistance at edges
+        let offset = (deltaX / containerWidth) * 100;
+        if (isRtl) offset = -offset;
+
+        // Rubber-band effect at edges
+        if ((activeIndex === 0 && offset > 0) || (activeIndex === count - 1 && offset < 0)) {
+            offset *= 0.3;
+        }
+
+        setDragOffset(offset);
+    }, [activeIndex, count, isRtl]);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsDragging(false);
+
+        const threshold = 20; // percentage threshold to snap
+        if (Math.abs(dragOffset) > threshold) {
+            if (dragOffset < 0) {
+                goTo(activeIndex + 1);
+            } else {
+                goTo(activeIndex - 1);
+            }
+        } else {
+            setDragOffset(0);
+        }
+    }, [dragOffset, activeIndex, goTo]);
+
+    // Calculate transform: base position + drag offset
+    const basePercent = activeIndex * (100 / count);
+    const dragPercent = (dragOffset / 100) * (100 / count);
+    const translatePercent = basePercent - dragPercent;
     const transform = isRtl
         ? `translateX(${translatePercent}%)`
         : `translateX(-${translatePercent}%)`;
@@ -99,16 +127,20 @@ export const NativeSwipeCarousel = memo(function NativeSwipeCarousel({ children 
 
             {/* Slide track */}
             <Box
+                ref={containerRef}
                 onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                sx={{ overflow: 'hidden' }}
+                sx={{ overflow: 'hidden', touchAction: 'pan-y' }}
             >
                 <Box
                     sx={{
                         display: 'flex',
                         width: `${count * 100}%`,
-                        transition: 'transform 0.3s ease',
+                        // Smooth spring animation on release, instant follow during drag
+                        transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                         transform,
+                        willChange: 'transform',
                     }}
                 >
                     {slides.map((slide, i) => (
