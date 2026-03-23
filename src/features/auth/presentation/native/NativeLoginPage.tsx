@@ -229,6 +229,7 @@ export function NativeLoginPage() {
         '& .MuiFilledInput-root': {
             borderRadius: `${nativeRadii.input}px`,
             backgroundColor: SURFACE_LOW,
+            paddingTop: '20px',
             '&:before': { display: 'none' },
             '&:after': { display: 'none' },
             '&:hover': { backgroundColor: SURFACE_LOW },
@@ -242,10 +243,18 @@ export function NativeLoginPage() {
             fontFamily: nativeFonts.body,
             fontSize: '0.875rem',
             fontWeight: 600,
-            color: 'text.primary',
+            color: 'text.secondary',
+            '&.Mui-focused': { color: PRIMARY },
+        },
+        '& .MuiInputLabel-root.MuiInputLabel-shrink': {
+            transform: 'translate(12px, 4px) scale(0.75)',
+        },
+        '& .MuiInputAdornment-root': {
+            marginTop: '0 !important',
         },
         '& .MuiInputAdornment-root svg': {
             color: 'text.secondary',
+            fontSize: '1.25rem',
         },
         '& .MuiFilledInput-root.Mui-focused .MuiInputAdornment-root svg': {
             color: PRIMARY,
@@ -335,41 +344,19 @@ export function NativeLoginPage() {
                 {/* Logo & Branding */}
                 <Box sx={{ textAlign: 'center', mb: 5 }}>
                     <Box
+                        component="img"
+                        src={`${import.meta.env.BASE_URL}logos/logo_fixed_02.png`}
+                        alt="electisSpace"
                         sx={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: '16px',
-                            background: `linear-gradient(135deg, ${PRIMARY} 0%, ${PRIMARY_LIGHT} 100%)`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mx: 'auto',
-                            mb: 2,
-                            boxShadow: `0 8px 24px ${alpha(PRIMARY, 0.25)}`,
+                            height: 80,
+                            width: 'auto',
+                            mb: 1,
+                            objectFit: 'contain',
+                            imageRendering: 'smooth',
                         }}
-                    >
-                        <Box
-                            component="img"
-                            src={`${import.meta.env.BASE_URL}logos/logo_fixed_02.png`}
-                            alt="electisSpace"
-                            sx={{
-                                width: 44,
-                                height: 44,
-                                objectFit: 'contain',
-                                filter: 'brightness(0) invert(1)',
-                            }}
-                        />
-                    </Box>
-                    <Typography
-                        variant="h5"
-                        sx={{
-                            fontFamily: nativeFonts.heading,
-                            fontWeight: 800,
-                            color: PRIMARY,
-                            letterSpacing: '-0.5px',
-                        }}
-                    >
-                        electisSpace
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                        {t('login.subtitle', 'Sign in to access your dashboard')}
                     </Typography>
                 </Box>
 
