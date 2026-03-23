@@ -895,6 +895,18 @@
             "confirmPassword": "אשר סיסמה חדשה",
             "changePassword": "שנה סיסמה",
             "password": "סיסמה",
+            "biometric": {
+                "title": "כניסה ביומטרית",
+                "statusEnabled": "כניסה ביומטרית פעילה",
+                "statusDisabled": "כניסה ביומטרית לא הוגדרה",
+                "hintEnabled": "ניתן להתחבר באמצעות טביעת אצבע או זיהוי פנים",
+                "hintDisabled": "הפעל כדי להתחבר מהר יותר עם טביעת אצבע או זיהוי פנים",
+                "enable": "הפעל כניסה ביומטרית",
+                "disable": "בטל כניסה ביומטרית",
+                "enabled": "כניסה ביומטרית הופעלה",
+                "disabled": "כניסה ביומטרית בוטלה",
+                "enableFailed": "הפעלת כניסה ביומטרית נכשלה"
+            },
             "resetPassword": "אפס סיסמה",
             "leaveEmptyNoChange": "השאר ריק לשמירת הסיסמה הנוכחית",
             "accountStats": "פעילות חשבון",
