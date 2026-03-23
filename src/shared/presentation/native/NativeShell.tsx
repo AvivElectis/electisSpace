@@ -14,6 +14,7 @@ import { NativeAppBar } from './NativeAppBar';
 import { NativeBottomNav } from './NativeBottomNav';
 import { NativePageTitleProvider } from './NativePageTitleContext';
 import { SphereLoader } from '../components/SphereLoader';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { nativeSizing } from '../themes/nativeTokens';
 
 export function NativeShell() {
@@ -75,9 +76,11 @@ export function NativeShell() {
                     <NativeAppBar />
 
                     <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <StoreRequiredGuard>
-                            <Outlet />
-                        </StoreRequiredGuard>
+                        <ErrorBoundary showDetails>
+                            <StoreRequiredGuard>
+                                <Outlet />
+                            </StoreRequiredGuard>
+                        </ErrorBoundary>
                     </Box>
 
                     {/* Sync Status Indicator — wrapped in Box for positioning since component has no sx prop */}
