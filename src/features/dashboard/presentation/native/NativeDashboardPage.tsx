@@ -265,13 +265,8 @@ export function NativeDashboardPage() {
         },
         can('labels') && {
             icon: <LinkIcon />,
-            label: t('labels.linkLabel', 'Link Label'),
+            label: t('labels.linkLabel'),
             onClick: () => navigate('/labels/link'),
-        },
-        {
-            icon: <SyncIcon />,
-            label: t('dashboard.syncNow', 'Sync Now'),
-            onClick: handleSyncNow,
         },
     ].filter(Boolean) as { icon: React.ReactNode; label: string; onClick: () => void }[];
 

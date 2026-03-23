@@ -38,10 +38,10 @@ export function NativeAppBar() {
                 ) : (
                     <Box
                         component="img"
-                        src={`${import.meta.env.BASE_URL}logos/logo_fixed_02.png`}
+                        src="/logos/logo_fixed_02.png"
                         alt="electisSpace"
                         sx={{
-                            height: 28,
+                            height: 30,
                             width: 'auto',
                             objectFit: 'contain',
                             filter: 'brightness(0) invert(1)',

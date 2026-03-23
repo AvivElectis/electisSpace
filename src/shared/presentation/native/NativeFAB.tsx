@@ -108,11 +108,10 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                                 </Typography>
                             </Box>
                             <Fab
-                                size="medium"
                                 color="primary"
                                 onClick={() => handleActionTap(action)}
                                 aria-label={action.label}
-                                sx={{ width: 48, height: 48 }}
+                                sx={{ width: 56, height: 56 }}
                             >
                                 {action.icon}
                             </Fab>
