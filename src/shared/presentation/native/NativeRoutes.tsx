@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react';
-import { Route } from 'react-router-dom';
+import { Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { tokenManager } from '@shared/infrastructure/services/apiClient';
 import { NativeShell } from './NativeShell';
 
 const NativeDashboardPage = lazy(() =>
@@ -148,9 +150,21 @@ const NativeAboutPage = lazy(() =>
     }))
 );
 
+function ProtectedNativeShell() {
+    // Inline auth check — redirect to /login if not authenticated
+    const { isAuthenticated, isInitialized } = useAuthStore();
+    const hasToken = tokenManager.getAccessToken();
+
+    if (!isInitialized) return null; // Still loading
+    if (!isAuthenticated && !hasToken) {
+        return <Navigate to="/login" replace />;
+    }
+    return <NativeShell />;
+}
+
 export function getNativeRoutes() {
     return (
-        <Route element={<NativeShell />}>
+        <Route element={<ProtectedNativeShell />}>
             <Route index element={<Suspense fallback={null}><NativeDashboardPage /></Suspense>} />
             <Route path="people" element={<Suspense fallback={null}><NativePeopleListPage /></Suspense>} />
             <Route path="people/new" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
