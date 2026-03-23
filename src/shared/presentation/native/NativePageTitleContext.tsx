@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 interface NativePageTitle {
     title: string;
@@ -20,12 +20,7 @@ export function NativePageTitleProvider({ children }: { children: ReactNode }) {
     });
 
     const setPageTitle = useCallback((title: string, showBackArrow = false, actions?: ReactNode) => {
-        setPageTitleState((prev) => {
-            if (prev.title === title && prev.showBackArrow === showBackArrow && prev.actions === actions) {
-                return prev; // same reference → no re-render
-            }
-            return { title, showBackArrow, actions };
-        });
+        setPageTitleState({ title, showBackArrow, actions });
     }, []);
 
     return (
@@ -41,13 +36,17 @@ export function useNativePageTitle() {
     return ctx;
 }
 
+/**
+ * Hook for native pages to set their title on mount.
+ * Only re-sets when title or showBackArrow change (not actions, since
+ * ReactNode creates new references each render).
+ */
 export function useSetNativeTitle(title: string, showBackArrow = false, actions?: ReactNode) {
     const { setPageTitle } = useNativePageTitle();
-    // Must run in useEffect to avoid setState-during-render infinite loops.
-    // The page is a child of the NativePageTitleProvider, so calling setPageTitle
-    // during render would trigger provider re-render → page re-render → repeat.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const actionsRef = useRef(actions);
+    actionsRef.current = actions;
+
     useEffect(() => {
-        setPageTitle(title, showBackArrow, actions);
-    }, [title, showBackArrow, actions, setPageTitle]);
+        setPageTitle(title, showBackArrow, actionsRef.current);
+    }, [title, showBackArrow, setPageTitle]);
 }
