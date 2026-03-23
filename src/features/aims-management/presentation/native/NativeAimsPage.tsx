@@ -20,6 +20,9 @@ import {
     Collapse,
     ButtonBase,
     Alert,
+    Select,
+    MenuItem,
+    FormControl,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
@@ -204,12 +207,22 @@ function Section({ title, count, children, loading, error, emptyText }: SectionP
 // Connection status header
 // ---------------------------------------------------------------------------
 
+const SYNC_INTERVAL_OPTIONS = [
+    { value: 300, label: '5 min' },
+    { value: 900, label: '15 min' },
+    { value: 1800, label: '30 min' },
+    { value: 3600, label: '1 hr' },
+    { value: 0, label: 'Manual' },
+];
+
 interface ConnectionHeaderProps {
     isConnected: boolean;
     serverUrl?: string;
     lastSync?: Date;
     autoSyncEnabled: boolean;
+    autoSyncInterval: number;
     onAutoSyncChange: (enabled: boolean) => void;
+    onIntervalChange: (interval: number) => void;
     onSyncNow: () => void;
     syncing: boolean;
 }
@@ -219,7 +232,9 @@ function ConnectionHeader({
     serverUrl,
     lastSync,
     autoSyncEnabled,
+    autoSyncInterval,
     onAutoSyncChange,
+    onIntervalChange,
     onSyncNow,
     syncing,
 }: ConnectionHeaderProps) {
@@ -257,15 +272,8 @@ function ConnectionHeader({
                     {t('sync.lastSync')}: {lastSyncText}
                 </Typography>
 
-                {/* Controls */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mt: 1.5,
-                    }}
-                >
+                {/* Auto-sync toggle + interval */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
                     <FormControlLabel
                         control={
                             <Switch
@@ -277,9 +285,28 @@ function ConnectionHeader({
                         label={
                             <Typography variant="caption">{t('sync.autoSync')}</Typography>
                         }
-                        sx={{ m: 0 }}
+                        sx={{ m: 0, flex: 1 }}
                     />
 
+                    {autoSyncEnabled && (
+                        <FormControl size="small" sx={{ minWidth: 90 }}>
+                            <Select
+                                value={autoSyncInterval}
+                                onChange={(e) => onIntervalChange(Number(e.target.value))}
+                                sx={{ fontSize: '0.75rem', height: 32 }}
+                            >
+                                {SYNC_INTERVAL_OPTIONS.filter((o) => o.value > 0).map((opt) => (
+                                    <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem' }}>
+                                        {opt.label}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+                </Box>
+
+                {/* Sync Now button */}
+                <Box sx={{ mt: 1.5 }}>
                     <ButtonBase
                         onClick={onSyncNow}
                         disabled={syncing}
@@ -293,6 +320,8 @@ function ConnectionHeader({
                             bgcolor: nativeColors.primary.main,
                             color: nativeColors.primary.contrastText,
                             minHeight: 36,
+                            width: '100%',
+                            justifyContent: 'center',
                             opacity: syncing ? 0.6 : 1,
                         }}
                     >
@@ -301,7 +330,7 @@ function ConnectionHeader({
                         ) : (
                             <SyncIcon sx={{ fontSize: 16 }} />
                         )}
-                        <Typography variant="caption" fontWeight={600} sx={{ color: 'inherit' }}>
+                        <Typography variant="caption" fontWeight={600} sx={{ color: 'inherit', ml: 0.5 }}>
                             {t('sync.syncNow')}
                         </Typography>
                     </ButtonBase>
@@ -320,7 +349,7 @@ export function NativeAimsPage() {
     useSetNativeTitle(t('navigation.aimsManagement'));
 
     const { activeStoreId, isAppReady } = useAuthStore();
-    const { syncState, autoSyncEnabled, setAutoSyncEnabled } = useSyncStore();
+    const { syncState, autoSyncEnabled, autoSyncInterval, setAutoSyncEnabled, setAutoSyncInterval } = useSyncStore();
 
     const { gateways, gatewaysLoading, gatewaysError, fetchGateways } = useGateways(activeStoreId);
     const { labels, labelsLoading, labelsError, stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
@@ -450,7 +479,9 @@ export function NativeAimsPage() {
                 serverUrl={syncState.lastError ? undefined : t('sync.solumMode')}
                 lastSync={syncState.lastSync}
                 autoSyncEnabled={autoSyncEnabled}
+                autoSyncInterval={autoSyncInterval}
                 onAutoSyncChange={setAutoSyncEnabled}
+                onIntervalChange={setAutoSyncInterval}
                 onSyncNow={handleSyncNow}
                 syncing={syncing}
             />

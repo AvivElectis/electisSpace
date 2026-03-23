@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Button, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { NativePage } from './NativePage';
 import { useSetNativeTitle } from './NativePageTitleContext';
 
@@ -13,6 +14,14 @@ interface NativeFormPageProps {
     hideDelete?: boolean;
 }
 
+async function triggerSaveHaptic() {
+    try {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+    } catch {
+        // Haptics not available on web — ignore
+    }
+}
+
 export function NativeFormPage({
     title,
     children,
@@ -22,9 +31,14 @@ export function NativeFormPage({
 }: NativeFormPageProps) {
     const { t } = useTranslation();
 
+    const handleSave = async () => {
+        await triggerSaveHaptic();
+        await onSave();
+    };
+
     const saveButton = (
         <Button
-            onClick={onSave}
+            onClick={handleSave}
             disabled={isSaving}
             sx={{
                 color: 'primary.contrastText',

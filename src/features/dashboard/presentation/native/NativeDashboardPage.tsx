@@ -59,6 +59,8 @@ export function NativeDashboardPage() {
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
 
+    const [isSyncing, setIsSyncing] = useState(false);
+
     // Sync push callback
     const handleSync = useCallback(async () => {
         if (!activeStoreId) return;
@@ -68,6 +70,19 @@ export function NativeDashboardPage() {
             logger.warn('NativeDashboardPage', 'Sync push failed', { error: error?.message });
         }
     }, [activeStoreId]);
+
+    // Full sync for the dashboard quick button
+    const handleSyncNow = useCallback(async () => {
+        if (!activeStoreId || isSyncing) return;
+        setIsSyncing(true);
+        try {
+            await syncApi.push(activeStoreId);
+        } catch (error: any) {
+            logger.warn('NativeDashboardPage', 'Quick sync failed', { error: error?.message });
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [activeStoreId, isSyncing]);
 
     // Controllers
     const spaceController = useSpaceController({
@@ -223,6 +238,8 @@ export function NativeDashboardPage() {
                 storeSummary={aimsStoreSummary}
                 labelModels={aimsLabelModels}
                 isMobile
+                onSyncNow={handleSyncNow}
+                isSyncing={isSyncing}
             />
         ),
     ].filter(Boolean) as React.ReactNode[];

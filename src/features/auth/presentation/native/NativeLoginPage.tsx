@@ -79,6 +79,17 @@ export function NativeLoginPage() {
     const [showBiometric, setShowBiometric] = useState(false);
     const [biometricLoading, setBiometricLoading] = useState(false);
 
+    // Forgot password flow
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotCode, setForgotCode] = useState('');
+    const [forgotNewPassword, setForgotNewPassword] = useState('');
+    const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+    const [forgotStep, setForgotStep] = useState<'email' | 'reset'>('email');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotError, setForgotError] = useState<string | null>(null);
+    const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+
     // Track biometric availability on mount
     const [biometricAvailable, setBiometricAvailable] = useState(false);
     const autoSubmitRef = useRef(false);
@@ -215,6 +226,62 @@ export function NativeLoginPage() {
     const handleResendCode = async () => {
         clearError();
         await resendCode();
+    };
+
+    const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setForgotError(null);
+        setForgotSuccess(null);
+
+        if (forgotStep === 'email') {
+            if (!forgotEmail.trim()) {
+                setForgotError(t('login.forgotPassword.emailRequired', 'Please enter your email address'));
+                return;
+            }
+            setForgotLoading(true);
+            try {
+                await authService.forgotPassword(forgotEmail.trim());
+                setForgotSuccess(t('login.forgotPassword.codeSent', 'A reset code has been sent to your email'));
+                setForgotStep('reset');
+            } catch (err: any) {
+                setForgotError(err.response?.data?.message || t('login.forgotPassword.sendError', 'Failed to send reset email. Please try again.'));
+            } finally {
+                setForgotLoading(false);
+            }
+        } else {
+            if (!forgotCode.trim()) {
+                setForgotError(t('login.forgotPassword.codeRequired', 'Please enter the reset code'));
+                return;
+            }
+            if (!forgotNewPassword) {
+                setForgotError(t('login.forgotPassword.newPasswordRequired', 'Please enter a new password'));
+                return;
+            }
+            if (forgotNewPassword !== forgotConfirmPassword) {
+                setForgotError(t('validation.passwordsMustMatch', 'Passwords must match'));
+                return;
+            }
+            setForgotLoading(true);
+            try {
+                await authService.resetPassword(forgotEmail.trim(), forgotCode.trim(), forgotNewPassword);
+                setForgotSuccess(t('login.forgotPassword.resetSuccess', 'Password reset successfully. You can now sign in.'));
+                // Return to login after a short delay
+                setTimeout(() => {
+                    setShowForgotPassword(false);
+                    setForgotStep('email');
+                    setForgotEmail('');
+                    setForgotCode('');
+                    setForgotNewPassword('');
+                    setForgotConfirmPassword('');
+                    setForgotError(null);
+                    setForgotSuccess(null);
+                }, 2000);
+            } catch (err: any) {
+                setForgotError(err.response?.data?.message || t('login.forgotPassword.resetError', 'Failed to reset password. Please check the code and try again.'));
+            } finally {
+                setForgotLoading(false);
+            }
+        }
     };
 
     const handleLanguageChange = async (_: React.MouseEvent<HTMLElement>, newLang: string | null) => {
@@ -381,8 +448,194 @@ export function NativeLoginPage() {
                     </Alert>
                 )}
 
-                {/* === BIOMETRIC PROMPT (after password login, device token exists) === */}
-                {showBiometric ? (
+                {/* === FORGOT PASSWORD FLOW === */}
+                {showForgotPassword ? (
+                    <Box
+                        component="section"
+                        sx={{
+                            width: '100%',
+                            bgcolor: SURFACE_LOWEST,
+                            borderRadius: `${nativeRadii.card}px`,
+                            p: 4,
+                            boxShadow: '0 4px 40px rgba(24,28,30,0.06)',
+                            border: `1px solid ${SURFACE_LOW}`,
+                        }}
+                    >
+                        <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ fontFamily: nativeFonts.heading, fontWeight: 700, mb: 1 }}
+                        >
+                            {t('login.forgotPassword.title', 'Reset Password')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            {forgotStep === 'email'
+                                ? t('login.forgotPassword.emailHint', 'Enter your email address and we will send you a reset code.')
+                                : t('login.forgotPassword.codeHint', 'Enter the code sent to your email and choose a new password.')}
+                        </Typography>
+
+                        {forgotError && (
+                            <Alert severity="error" onClose={() => setForgotError(null)} sx={{ mb: 2, borderRadius: `${nativeRadii.card}px` }}>
+                                {forgotError}
+                            </Alert>
+                        )}
+                        {forgotSuccess && (
+                            <Alert severity="success" sx={{ mb: 2, borderRadius: `${nativeRadii.card}px` }}>
+                                {forgotSuccess}
+                            </Alert>
+                        )}
+
+                        <Box component="form" onSubmit={handleForgotPasswordSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <TextField
+                                fullWidth
+                                variant="filled"
+                                label={t('login.email', 'Email Address')}
+                                type="email"
+                                value={forgotEmail}
+                                onChange={(e) => setForgotEmail(e.target.value)}
+                                required
+                                autoFocus={forgotStep === 'email'}
+                                disabled={forgotStep === 'reset' || forgotLoading}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <EmailIcon fontSize="small" />
+                                        </InputAdornment>
+                                    ),
+                                    disableUnderline: true,
+                                }}
+                                sx={fieldSx}
+                            />
+
+                            {forgotStep === 'reset' && (
+                                <>
+                                    <TextField
+                                        fullWidth
+                                        variant="filled"
+                                        label={t('login.forgotPassword.resetCode', 'Reset Code')}
+                                        type="text"
+                                        value={forgotCode}
+                                        onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        required
+                                        autoFocus
+                                        placeholder="000000"
+                                        inputProps={{
+                                            maxLength: 6,
+                                            style: {
+                                                textAlign: 'center',
+                                                fontSize: '1.5rem',
+                                                letterSpacing: '10px',
+                                                fontFamily: nativeFonts.body,
+                                                fontWeight: 700,
+                                            },
+                                        }}
+                                        InputProps={{ disableUnderline: true }}
+                                        sx={fieldSx}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        variant="filled"
+                                        label={t('auth.newPassword', 'New Password')}
+                                        type="password"
+                                        value={forgotNewPassword}
+                                        onChange={(e) => setForgotNewPassword(e.target.value)}
+                                        required
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <LockIcon fontSize="small" />
+                                                </InputAdornment>
+                                            ),
+                                            disableUnderline: true,
+                                        }}
+                                        sx={fieldSx}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        variant="filled"
+                                        label={t('auth.confirmPassword', 'Confirm Password')}
+                                        type="password"
+                                        value={forgotConfirmPassword}
+                                        onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                                        required
+                                        error={!!(forgotNewPassword && forgotConfirmPassword && forgotNewPassword !== forgotConfirmPassword)}
+                                        helperText={
+                                            forgotNewPassword && forgotConfirmPassword && forgotNewPassword !== forgotConfirmPassword
+                                                ? t('validation.passwordsMustMatch', 'Passwords must match')
+                                                : undefined
+                                        }
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <LockIcon fontSize="small" />
+                                                </InputAdornment>
+                                            ),
+                                            disableUnderline: true,
+                                        }}
+                                        sx={fieldSx}
+                                    />
+                                </>
+                            )}
+
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    onClick={() => {
+                                        if (forgotStep === 'reset') {
+                                            setForgotStep('email');
+                                            setForgotCode('');
+                                            setForgotNewPassword('');
+                                            setForgotConfirmPassword('');
+                                            setForgotError(null);
+                                            setForgotSuccess(null);
+                                        } else {
+                                            setShowForgotPassword(false);
+                                            setForgotStep('email');
+                                            setForgotError(null);
+                                            setForgotSuccess(null);
+                                        }
+                                    }}
+                                    disabled={forgotLoading}
+                                    sx={{
+                                        borderRadius: `${nativeRadii.button}px`,
+                                        textTransform: 'none',
+                                        fontFamily: nativeFonts.body,
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {t('login.back', 'Back')}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    fullWidth
+                                    variant="contained"
+                                    disabled={forgotLoading}
+                                    endIcon={
+                                        forgotLoading
+                                            ? <CircularProgress size={16} color="inherit" />
+                                            : undefined
+                                    }
+                                    sx={{
+                                        height: 48,
+                                        borderRadius: `${nativeRadii.button}px`,
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        fontFamily: nativeFonts.body,
+                                        background: `linear-gradient(135deg, ${PRIMARY} 0%, ${PRIMARY_LIGHT} 100%)`,
+                                        boxShadow: `0 8px 20px ${alpha(PRIMARY, 0.3)}`,
+                                    }}
+                                >
+                                    {forgotStep === 'email'
+                                        ? t('login.forgotPassword.sendCode', 'Send Reset Code')
+                                        : t('login.forgotPassword.resetButton', 'Reset Password')}
+                                </Button>
+                            </Box>
+                        </Box>
+                    </Box>
+
+                ) : /* === BIOMETRIC PROMPT (after password login, device token exists) === */
+                showBiometric ? (
                     <Box sx={{ textAlign: 'center', width: '100%' }}>
                         <FingerprintIcon sx={{ fontSize: 80, color: PRIMARY, mb: 2 }} />
                         <Typography
@@ -589,7 +842,11 @@ export function NativeLoginPage() {
                                 <Typography
                                     component="a"
                                     href="#"
-                                    onClick={(e) => e.preventDefault()}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setForgotEmail(email);
+                                        setShowForgotPassword(true);
+                                    }}
                                     variant="body2"
                                     sx={{
                                         color: PRIMARY,
@@ -727,7 +984,7 @@ export function NativeLoginPage() {
                 )}
 
                 {/* Biometric Quick Login (bottom, only when biometric is available) */}
-                {biometricAvailable && !showVerification && !showBiometric && (
+                {biometricAvailable && !showVerification && !showBiometric && !showForgotPassword && (
                     <Box sx={{ mt: 6, pb: 4, textAlign: 'center' }}>
                         <Box
                             component="button"

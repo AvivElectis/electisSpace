@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Box, Fab, Typography, ClickAwayListener, Zoom } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { nativeSizing } from '../themes/nativeTokens';
 
 export interface NativeFABAction {
@@ -16,9 +17,14 @@ export interface NativeFABProps {
     mainIcon?: ReactNode;
 }
 
-function triggerHaptic() {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate(10);
+async function triggerHaptic() {
+    try {
+        await Haptics.impact({ style: ImpactStyle.Light });
+    } catch {
+        // Haptics not available on web — fall back to vibrate
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate(10);
+        }
     }
 }
 
@@ -28,7 +34,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     const bottomOffset = `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`;
 
     const handleMainTap = () => {
-        triggerHaptic();
+        triggerHaptic().catch(() => {});
         if (actions.length === 1) {
             actions[0].onClick();
         } else {
@@ -37,7 +43,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     };
 
     const handleActionTap = (action: NativeFABAction) => {
-        triggerHaptic();
+        triggerHaptic().catch(() => {});
         action.onClick();
         setOpen(false);
     };

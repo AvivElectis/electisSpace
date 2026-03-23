@@ -1,6 +1,7 @@
-import { Box, Card, CardContent, Typography, Stack, Grid, LinearProgress, Chip, Button } from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, Grid, LinearProgress, Chip, Button, CircularProgress } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RouterIcon from '@mui/icons-material/Router';
+import SyncIcon from '@mui/icons-material/Sync';
 import LabelIcon from '@mui/icons-material/Label';
 import UpdateOutlined from '@mui/icons-material/Update';
 import BatteryChargingFullOutlined from '@mui/icons-material/BatteryChargingFull';
@@ -14,6 +15,8 @@ interface DashboardAimsCardProps {
     storeSummary: any;
     labelModels: any[];
     isMobile?: boolean;
+    onSyncNow?: () => void;
+    isSyncing?: boolean;
 }
 
 /** Compact progress bar for dashboard sub-sections */
@@ -50,7 +53,7 @@ function SectionIcon({ icon, bgcolor }: { icon: React.ReactNode; bgcolor: string
     );
 }
 
-export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: DashboardAimsCardProps) {
+export function DashboardAimsCard({ storeSummary, labelModels, isMobile, onSyncNow, isSyncing }: DashboardAimsCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
@@ -97,6 +100,23 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile }: Dashb
                         </Typography>
                         <ArrowForwardIcon fontSize="small" color="action" />
                     </Stack>
+
+                    {/* Sync Now button (mobile native only) */}
+                    {onSyncNow && (
+                        <Box sx={{ mb: 2 }}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                size="small"
+                                startIcon={isSyncing ? <CircularProgress size={14} /> : <SyncIcon />}
+                                onClick={onSyncNow}
+                                disabled={isSyncing}
+                                sx={{ textTransform: 'none' }}
+                            >
+                                {t('sync.syncNow')}
+                            </Button>
+                        </Box>
+                    )}
 
                     {/* Hero — gateway health */}
                     <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
