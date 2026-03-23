@@ -45,6 +45,7 @@ import { useLabelsOverview } from '../../application/useLabelsOverview';
 import { useArticles } from '../../application/useArticles';
 import { useTemplates } from '../../application/useTemplates';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
+import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
 import { logger } from '@shared/infrastructure/services/logger';
 
@@ -350,10 +351,18 @@ export function NativeAimsPage() {
 
     const { activeStoreId, isAppReady } = useAuthStore();
     const syncState = useSyncStore((s) => s.syncState);
-    const autoSyncEnabled = useSyncStore((s) => s.autoSyncEnabled);
-    const autoSyncInterval = useSyncStore((s) => s.autoSyncInterval);
-    const setAutoSyncEnabled = useSyncStore((s) => s.setAutoSyncEnabled);
-    const setAutoSyncInterval = useSyncStore((s) => s.setAutoSyncInterval);
+    // Read auto-sync from settings store (source of truth), write to both
+    const autoSyncEnabled = useSettingsStore((s) => s.settings.autoSyncEnabled ?? false);
+    const autoSyncInterval = useSettingsStore((s) => s.settings.autoSyncInterval ?? 300);
+    const updateSettings = useSettingsStore((s) => s.updateSettings);
+    const setAutoSyncEnabled = useCallback((enabled: boolean) => {
+        updateSettings({ autoSyncEnabled: enabled });
+        useSyncStore.getState().setAutoSyncEnabled(enabled);
+    }, [updateSettings]);
+    const setAutoSyncInterval = useCallback((interval: number) => {
+        updateSettings({ autoSyncInterval: interval });
+        useSyncStore.getState().setAutoSyncInterval(interval);
+    }, [updateSettings]);
 
     const { gateways, gatewaysLoading, gatewaysError, fetchGateways } = useGateways(activeStoreId);
     const { labels, labelsLoading, labelsError, stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
