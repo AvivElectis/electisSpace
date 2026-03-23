@@ -265,7 +265,7 @@ export function NativeDashboardPage() {
         },
         can('labels') && {
             icon: <LinkIcon />,
-            label: t('labels.linkLabel'),
+            label: t('dashboard.linkLabel'),
             onClick: () => navigate('/labels/link'),
         },
     ].filter(Boolean) as { icon: React.ReactNode; label: string; onClick: () => void }[];
