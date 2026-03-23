@@ -349,7 +349,11 @@ export function NativeAimsPage() {
     useSetNativeTitle(t('navigation.aimsManagement'));
 
     const { activeStoreId, isAppReady } = useAuthStore();
-    const { syncState, autoSyncEnabled, autoSyncInterval, setAutoSyncEnabled, setAutoSyncInterval } = useSyncStore();
+    const syncState = useSyncStore((s) => s.syncState);
+    const autoSyncEnabled = useSyncStore((s) => s.autoSyncEnabled);
+    const autoSyncInterval = useSyncStore((s) => s.autoSyncInterval);
+    const setAutoSyncEnabled = useSyncStore((s) => s.setAutoSyncEnabled);
+    const setAutoSyncInterval = useSyncStore((s) => s.setAutoSyncInterval);
 
     const { gateways, gatewaysLoading, gatewaysError, fetchGateways } = useGateways(activeStoreId);
     const { labels, labelsLoading, labelsError, stats: labelStats, fetchLabels } = useLabelsOverview(activeStoreId);
