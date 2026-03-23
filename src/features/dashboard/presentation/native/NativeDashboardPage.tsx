@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
-import SyncIcon from '@mui/icons-material/Sync';
 import LinkIcon from '@mui/icons-material/Link';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 

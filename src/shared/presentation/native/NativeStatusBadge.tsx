@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Chip } from '@mui/material';
 import { nativeColors } from '../themes/nativeTokens';
 
@@ -13,7 +14,7 @@ const COLOR_MAP = {
     info: { bg: `${nativeColors.status.info}22`, text: nativeColors.status.info },
 } as const;
 
-export function NativeStatusBadge({ label, color }: NativeStatusBadgeProps) {
+export const NativeStatusBadge = memo(function NativeStatusBadge({ label, color }: NativeStatusBadgeProps) {
     const { bg, text } = COLOR_MAP[color];
     return (
         <Chip
@@ -29,4 +30,4 @@ export function NativeStatusBadge({ label, color }: NativeStatusBadgeProps) {
             }}
         />
     );
-}
+});

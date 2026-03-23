@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Paper } from '@mui/material';
 import type { PaperProps } from '@mui/material';
 import { nativeColors, nativeRadii, nativeShadows } from '../themes/nativeTokens';
@@ -6,7 +7,7 @@ export interface NativeCardProps extends Omit<PaperProps, 'elevation'> {
     accentColor?: string;
 }
 
-export function NativeCard({ accentColor, sx, children, ...rest }: NativeCardProps) {
+export const NativeCard = memo(function NativeCard({ accentColor, sx, children, ...rest }: NativeCardProps) {
     return (
         <Paper
             elevation={0}
@@ -26,4 +27,4 @@ export function NativeCard({ accentColor, sx, children, ...rest }: NativeCardPro
             {children}
         </Paper>
     );
-}
+});

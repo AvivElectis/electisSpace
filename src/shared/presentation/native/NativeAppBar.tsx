@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -6,7 +7,7 @@ import { useNativePageTitle } from './NativePageTitleContext';
 import { nativeGradients, nativeSizing } from '../themes/nativeTokens';
 import { CompanyStoreSelector } from '@features/auth/presentation/CompanyStoreSelector';
 
-export function NativeAppBar() {
+export const NativeAppBar = memo(function NativeAppBar() {
     const navigate = useNavigate();
     const { pageTitle } = useNativePageTitle();
 
@@ -108,4 +109,4 @@ export function NativeAppBar() {
             </Toolbar>
         </AppBar>
     );
-}
+});

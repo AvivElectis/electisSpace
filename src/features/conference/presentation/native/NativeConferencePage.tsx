@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useDeferredValue } from 'react';
+import { useEffect, useMemo, useState, useDeferredValue, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -130,13 +130,17 @@ export function NativeConferencePage() {
         },
     ], [t, occupiedRooms, availableRooms]);
 
-    const handleItemTap = (room: ConferenceRoom) => {
-        navigate(`/conference/${room.id}/edit`);
-    };
+    const handleFilterChange = useCallback((v: string) => {
+        setStatusFilter(v as StatusFilter);
+    }, []);
 
-    const handleRefresh = async () => {
+    const handleItemTap = useCallback((room: ConferenceRoom) => {
+        navigate(`/conference/${room.id}/edit`);
+    }, [navigate]);
+
+    const handleRefresh = useCallback(async () => {
         await conferenceController.fetchRooms();
-    };
+    }, [conferenceController]);
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
@@ -156,7 +160,7 @@ export function NativeConferencePage() {
             <NativeChipBar
                 chips={filterChips}
                 activeValue={statusFilter}
-                onChange={(v) => setStatusFilter(v as StatusFilter)}
+                onChange={handleFilterChange}
             />
 
             {/* Grouped list */}

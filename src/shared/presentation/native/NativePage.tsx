@@ -19,6 +19,8 @@ export function NativePage({ children, noPadding = false, onRefresh }: NativePag
                 px: noPadding ? 0 : `${nativeSpacing.pagePadding}px`,
                 pt: noPadding ? 0 : 1,
                 pb: `calc(${nativeSizing.bottomNavHeight + 32}px + env(safe-area-inset-bottom))`,
+                willChange: 'transform',
+                WebkitOverflowScrolling: 'touch',
             }}
         >
             {children}

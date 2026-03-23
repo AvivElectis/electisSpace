@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Fab, Switch, FormControlLabel } from '@mui/material';
@@ -94,11 +94,11 @@ export function NativeLabelsPage() {
         { label: t('labels.unlinked'), value: unlinkedCount, color: nativeColors.status.warning },
     ], [t, labels.length, linkedCount, unlinkedCount]);
 
-    const handleRefresh = async () => {
+    const handleRefresh = useCallback(async () => {
         if (activeStoreId) await fetchLabels(activeStoreId);
-    };
+    }, [activeStoreId, fetchLabels]);
 
-    const handleLinkTap = async (label: LabelArticleLink) => {
+    const handleLinkTap = useCallback(async (label: LabelArticleLink) => {
         if (!activeStoreId) return;
         if (label.articleId) {
             // Unlink
@@ -107,7 +107,7 @@ export function NativeLabelsPage() {
             // Navigate to link page with pre-filled label code
             navigate(`/labels/link?labelCode=${encodeURIComponent(label.labelCode)}`);
         }
-    };
+    }, [activeStoreId, fetchLabels, unlinkLabelFromArticle, navigate]);
 
     const totalPages = Math.ceil(filteredLabels.length / PAGE_SIZE);
 

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Typography } from '@mui/material';
 import { nativeSpacing } from '../themes/nativeTokens';
 
@@ -11,7 +12,7 @@ export interface NativeStatBarProps {
     stats: NativeStatItem[];
 }
 
-export function NativeStatBar({ stats }: NativeStatBarProps) {
+export const NativeStatBar = memo(function NativeStatBar({ stats }: NativeStatBarProps) {
     return (
         <Box
             sx={{
@@ -59,4 +60,4 @@ export function NativeStatBar({ stats }: NativeStatBarProps) {
             ))}
         </Box>
     );
-}
+});

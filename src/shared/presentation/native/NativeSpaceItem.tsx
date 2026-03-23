@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Typography } from '@mui/material';
 import ChairIcon from '@mui/icons-material/Chair';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
@@ -21,7 +22,7 @@ function getSpaceIcon(spaceType?: string) {
     return <BusinessIcon />;
 }
 
-export function NativeSpaceItem({ spaceId, spaceType, assignedPerson, isLinked }: NativeSpaceItemProps) {
+export const NativeSpaceItem = memo(function NativeSpaceItem({ spaceId, spaceType, assignedPerson, isLinked }: NativeSpaceItemProps) {
     const { t } = useTranslation();
 
     return (
@@ -80,4 +81,4 @@ export function NativeSpaceItem({ spaceId, spaceType, assignedPerson, isLinked }
             )}
         </Box>
     );
-}
+});

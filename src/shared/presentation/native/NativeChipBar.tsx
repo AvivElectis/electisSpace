@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Chip } from '@mui/material';
 import { nativeSpacing } from '../themes/nativeTokens';
 
@@ -12,7 +13,7 @@ export interface NativeChipBarProps {
     onChange: (value: string) => void;
 }
 
-export function NativeChipBar({ chips, activeValue, onChange }: NativeChipBarProps) {
+export const NativeChipBar = memo(function NativeChipBar({ chips, activeValue, onChange }: NativeChipBarProps) {
     return (
         <Box
             sx={{
@@ -42,4 +43,4 @@ export function NativeChipBar({ chips, activeValue, onChange }: NativeChipBarPro
             })}
         </Box>
     );
-}
+});

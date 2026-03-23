@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useDeferredValue } from 'react';
+import { useEffect, useMemo, useState, useDeferredValue, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -133,13 +133,17 @@ export function NativeSpacesListPage() {
         },
     ], [t, linkedSpaces, unlinkedSpaces]);
 
-    const handleItemTap = (space: Space) => {
-        navigate(`/spaces/${space.id}/edit`);
-    };
+    const handleFilterChange = useCallback((v: string) => {
+        setAssignmentFilter(v as AssignmentFilter);
+    }, []);
 
-    const handleRefresh = async () => {
+    const handleItemTap = useCallback((space: Space) => {
+        navigate(`/spaces/${space.id}/edit`);
+    }, [navigate]);
+
+    const handleRefresh = useCallback(async () => {
         await fetchSpaces();
-    };
+    }, [fetchSpaces]);
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
@@ -159,7 +163,7 @@ export function NativeSpacesListPage() {
             <NativeChipBar
                 chips={filterChips}
                 activeValue={assignmentFilter}
-                onChange={(v) => setAssignmentFilter(v as AssignmentFilter)}
+                onChange={handleFilterChange}
             />
 
             {/* Grouped list */}

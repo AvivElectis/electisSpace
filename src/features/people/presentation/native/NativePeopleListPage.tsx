@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useDeferredValue } from 'react';
+import { useEffect, useMemo, useState, useDeferredValue, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -128,13 +128,17 @@ export function NativePeopleListPage() {
         },
     ], [t, assignedPeople, unassignedPeople]);
 
-    const handleItemTap = (person: Person) => {
-        navigate(`/people/${person.id}/edit`);
-    };
+    const handleFilterChange = useCallback((v: string) => {
+        setAssignmentFilter(v as typeof assignmentFilter);
+    }, []);
 
-    const handleRefresh = async () => {
+    const handleItemTap = useCallback((person: Person) => {
+        navigate(`/people/${person.id}/edit`);
+    }, [navigate]);
+
+    const handleRefresh = useCallback(async () => {
         await fetchPeople();
-    };
+    }, [fetchPeople]);
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
@@ -162,7 +166,7 @@ export function NativePeopleListPage() {
             <NativeChipBar
                 chips={filterChips}
                 activeValue={assignmentFilter}
-                onChange={(v) => setAssignmentFilter(v as typeof assignmentFilter)}
+                onChange={handleFilterChange}
             />
 
             {/* Grouped list */}

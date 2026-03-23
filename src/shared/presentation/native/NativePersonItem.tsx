@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Avatar, Typography, Chip } from '@mui/material';
 import { nativeColors } from '../themes/nativeTokens';
 
@@ -9,7 +10,7 @@ export interface NativePersonItemProps {
     avatarColor?: string;
 }
 
-export function NativePersonItem({
+export const NativePersonItem = memo(function NativePersonItem({
     name,
     subtitle,
     spaceBadge,
@@ -80,4 +81,4 @@ export function NativePersonItem({
             )}
         </Box>
     );
-}
+});

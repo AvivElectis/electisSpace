@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Typography, IconButton } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
@@ -16,7 +17,7 @@ export interface NativeLabelCardProps {
     onViewImages?: () => void;
 }
 
-export function NativeLabelCard({
+export const NativeLabelCard = memo(function NativeLabelCard({
     labelCode,
     articleName,
     thumbnailUrl,
@@ -108,4 +109,4 @@ export function NativeLabelCard({
             </Box>
         </NativeCard>
     );
-}
+});

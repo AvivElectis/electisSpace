@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Typography, Avatar, AvatarGroup } from '@mui/material';
 import { NativeCard } from './NativeCard';
 import { NativeStatusBadge } from './NativeStatusBadge';
@@ -17,7 +18,7 @@ const STATUS_CONFIG = {
     upcoming: { color: 'warning' as const, accentColor: nativeColors.status.warning },
 } as const;
 
-export function NativeRoomCard({ roomName, status, meetingInfo, participants = [] }: NativeRoomCardProps) {
+export const NativeRoomCard = memo(function NativeRoomCard({ roomName, status, meetingInfo, participants = [] }: NativeRoomCardProps) {
     const { t } = useTranslation();
     const { color, accentColor } = STATUS_CONFIG[status];
 
@@ -68,4 +69,4 @@ export function NativeRoomCard({ roomName, status, meetingInfo, participants = [
             </Box>
         </NativeCard>
     );
-}
+});

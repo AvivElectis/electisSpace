@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -41,10 +42,11 @@ export function NativeShell() {
 
     useAndroidBackButton({});
 
-    const syncStatus =
+    const syncStatus = useMemo(() =>
         syncState.status === 'syncing' ? 'syncing' :
         syncState.status === 'error' ? 'error' :
-        syncState.isConnected ? 'connected' : 'disconnected';
+        syncState.isConnected ? 'connected' : 'disconnected'
+    , [syncState.status, syncState.isConnected]);
 
     return (
         <SyncProvider value={syncController}>

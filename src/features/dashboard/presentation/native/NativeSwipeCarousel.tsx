@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { memo, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -14,7 +14,7 @@ export interface NativeSwipeCarouselProps {
  * Supports RTL (Hebrew), 50px swipe threshold, smooth 0.3s transitions.
  * Tap dots to navigate; shows "N/total" counter.
  */
-export function NativeSwipeCarousel({ children }: NativeSwipeCarouselProps) {
+export const NativeSwipeCarousel = memo(function NativeSwipeCarousel({ children }: NativeSwipeCarouselProps) {
     const theme = useTheme();
     const isRtl = theme.direction === 'rtl';
     const [activeIndex, setActiveIndex] = useState(0);
@@ -28,16 +28,16 @@ export function NativeSwipeCarousel({ children }: NativeSwipeCarouselProps) {
     if (count === 0) return null;
     if (count === 1) return <Box sx={{ px: `${nativeSpacing.pagePadding}px` }}>{slides[0]}</Box>;
 
-    const goTo = (index: number) => {
+    const goTo = useCallback((index: number) => {
         setActiveIndex(Math.max(0, Math.min(index, count - 1)));
-    };
+    }, [count]);
 
-    const handleTouchStart = (e: React.TouchEvent) => {
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
         touchStartX.current = e.touches[0].clientX;
         touchStartY.current = e.touches[0].clientY;
-    };
+    }, []);
 
-    const handleTouchEnd = (e: React.TouchEvent) => {
+    const handleTouchEnd = useCallback((e: React.TouchEvent) => {
         const deltaX = e.changedTouches[0].clientX - touchStartX.current;
         const deltaY = e.changedTouches[0].clientY - touchStartY.current;
 
@@ -52,7 +52,7 @@ export function NativeSwipeCarousel({ children }: NativeSwipeCarouselProps) {
         } else {
             goTo(activeIndex - 1);
         }
-    };
+    }, [isRtl, activeIndex, goTo]);
 
     // Translation: in LTR, negative translate moves right, in RTL positive translate moves right
     const translatePercent = activeIndex * (100 / count);
@@ -128,4 +128,4 @@ export function NativeSwipeCarousel({ children }: NativeSwipeCarouselProps) {
             </Box>
         </Box>
     );
-}
+});

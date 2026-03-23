@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
@@ -7,7 +8,7 @@ import { useNavTabs } from '../hooks/useNavTabs';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { glass, nativeSizing } from '../themes/nativeTokens';
 
-export function NativeBottomNav() {
+export const NativeBottomNav = memo(function NativeBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
@@ -57,4 +58,4 @@ export function NativeBottomNav() {
             </BottomNavigation>
         </Paper>
     );
-}
+});
