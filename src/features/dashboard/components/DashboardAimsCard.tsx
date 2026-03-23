@@ -101,23 +101,6 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile, onSyncN
                         <ArrowForwardIcon fontSize="small" color="action" />
                     </Stack>
 
-                    {/* Sync Now button (mobile native only) */}
-                    {onSyncNow && (
-                        <Box sx={{ mb: 2 }}>
-                            <Button
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                                startIcon={isSyncing ? <CircularProgress size={14} /> : <SyncIcon />}
-                                onClick={onSyncNow}
-                                disabled={isSyncing}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                {t('sync.syncNow')}
-                            </Button>
-                        </Box>
-                    )}
-
                     {/* Hero — gateway health */}
                     <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
                         <Typography variant="h2" fontWeight={700} color="primary.main" dir="ltr">
@@ -228,6 +211,23 @@ export function DashboardAimsCard({ storeSummary, labelModels, isMobile, onSyncN
                                     />
                                 ))}
                             </Box>
+                        </Box>
+                    )}
+
+                    {/* Sync Now button — at bottom of card */}
+                    {onSyncNow && (
+                        <Box sx={{ mt: 2, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                size="small"
+                                startIcon={isSyncing ? <CircularProgress size={14} /> : <SyncIcon />}
+                                onClick={onSyncNow}
+                                disabled={isSyncing}
+                                sx={{ textTransform: 'none' }}
+                            >
+                                {t('sync.syncNow')}
+                            </Button>
                         </Box>
                     )}
                 </CardContent>
