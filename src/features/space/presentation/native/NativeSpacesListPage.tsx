@@ -32,12 +32,12 @@ type AssignmentFilter = 'all' | 'assigned' | 'unassigned';
 export function NativeSpacesListPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { getLabel } = useSpaceTypeLabels();
 
     useSetNativeTitle(getLabel('plural'));
 
     const isAppReady = useAuthStore((state) => state.isAppReady);
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
-    const { getLabel } = useSpaceTypeLabels();
 
     const spaces = useSpacesStore((state) => state.spaces);
     const fetchSpaces = useSpacesStore((state) => state.fetchSpaces);
