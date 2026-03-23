@@ -37,18 +37,19 @@ export const NativeAppBar = memo(function NativeAppBar() {
                         <ArrowBackIcon />
                     </IconButton>
                 ) : (
-                    <Box
-                        component="img"
-                        src="/logos/logo_fixed_02.png"
-                        alt="electisSpace"
+                    <Typography
+                        variant="subtitle1"
                         sx={{
-                            height: 34,
-                            width: 'auto',
-                            objectFit: 'contain',
-                            ml: 0.5,
-                            filter: 'brightness(0) invert(1) drop-shadow(0 0 1px rgba(255,255,255,0.5))',
+                            fontFamily: '"Manrope", sans-serif',
+                            fontWeight: 800,
+                            color: 'primary.contrastText',
+                            ml: 1,
+                            letterSpacing: '-0.3px',
+                            fontSize: '1.1rem',
                         }}
-                    />
+                    >
+                        electis<Box component="span" sx={{ fontWeight: 400, opacity: 0.85 }}>Space</Box>
+                    </Typography>
                 )}
 
                 <Typography
