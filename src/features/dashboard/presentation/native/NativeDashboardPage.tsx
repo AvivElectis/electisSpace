@@ -5,7 +5,8 @@ import { Box } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import SyncIcon from '@mui/icons-material/Sync';
-import LabelIcon from '@mui/icons-material/Label';
+import LinkIcon from '@mui/icons-material/Link';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 
 // Data hooks — same as DashboardPage
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -249,7 +250,7 @@ export function NativeDashboardPage() {
     // --- FAB actions ---
     const fabActions = [
         can('spaces') && {
-            icon: <PersonAddIcon />,
+            icon: isPeopleManagerMode ? <PersonAddIcon /> : <AddBusinessIcon />,
             label: isPeopleManagerMode
                 ? t('dashboard.addPerson', 'Add Person')
                 : t('dashboard.addSpace', 'Add Space'),
@@ -259,13 +260,13 @@ export function NativeDashboardPage() {
         },
         can('conference') && {
             icon: <MeetingRoomIcon />,
-            label: t('conference.addRoom'),
+            label: t('conference.addRoom', 'Add Room'),
             onClick: () => navigate('/conference/new'),
         },
         can('labels') && {
-            icon: <LabelIcon />,
-            label: t('navigation.labels'),
-            onClick: () => navigate('/labels'),
+            icon: <LinkIcon />,
+            label: t('labels.linkLabel', 'Link Label'),
+            onClick: () => navigate('/labels/link'),
         },
         {
             icon: <SyncIcon />,
