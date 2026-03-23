@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { Box, Fab, Typography, ClickAwayListener, Zoom } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,6 +26,9 @@ async function triggerHaptic() {
     }
 }
 
+/**
+ * Floating Action Button — renders via portal to avoid overflow:auto clipping.
+ */
 export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     const [open, setOpen] = useState(false);
 
@@ -45,26 +49,23 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
         setOpen(false);
     };
 
-    if (actions.length === 1) {
-        return (
-            <Fab
-                color="primary"
-                onClick={handleMainTap}
-                aria-label={actions[0].label}
-                sx={{
-                    position: 'fixed',
-                    bottom: bottomOffset,
-                    insetInlineEnd: 16,
-                    width: 60,
-                    height: 60,
-                }}
-            >
-                {mainIcon ?? <AddIcon sx={{ fontSize: 28 }} />}
-            </Fab>
-        );
-    }
-
-    return (
+    const fab = actions.length === 1 ? (
+        <Fab
+            color="primary"
+            onClick={handleMainTap}
+            aria-label={actions[0].label}
+            sx={{
+                position: 'fixed',
+                bottom: bottomOffset,
+                insetInlineEnd: 16,
+                width: 60,
+                height: 60,
+                zIndex: 1050,
+            }}
+        >
+            {mainIcon ?? <AddIcon sx={{ fontSize: 28 }} />}
+        </Fab>
+    ) : (
         <ClickAwayListener onClickAway={() => setOpen(false)}>
             <Box
                 sx={{
@@ -75,7 +76,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                     flexDirection: 'column',
                     alignItems: 'flex-end',
                     gap: 1.5,
-                    zIndex: (theme) => theme.zIndex.fab,
+                    zIndex: 1050,
                 }}
             >
                 {/* Sub-actions */}
@@ -124,4 +125,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
             </Box>
         </ClickAwayListener>
     );
+
+    // Portal to document.body — avoids overflow:auto clipping from NativePage
+    return createPortal(fab, document.body);
 }
