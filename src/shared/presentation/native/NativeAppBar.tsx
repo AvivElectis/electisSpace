@@ -51,7 +51,16 @@ export function NativeAppBar() {
 
                 {!pageTitle.showBackArrow && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CompanyStoreSelector compact />
+                        <Box sx={{
+                            '& .MuiButton-root, & .MuiTypography-root, & .MuiSvgIcon-root': {
+                                color: 'primary.contrastText !important',
+                            },
+                            '& .MuiButton-root': {
+                                borderColor: 'rgba(255,255,255,0.3)',
+                            },
+                        }}>
+                            <CompanyStoreSelector compact />
+                        </Box>
                         <IconButton
                             onClick={() => navigate('/settings')}
                             sx={{ color: 'primary.contrastText' }}
