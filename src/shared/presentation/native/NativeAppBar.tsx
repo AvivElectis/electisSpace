@@ -38,28 +38,17 @@ export const NativeAppBar = memo(function NativeAppBar() {
                     </IconButton>
                 ) : (
                     <Box
+                        component="img"
+                        src="/logos/logo_fixed_02.png"
+                        alt="electisSpace"
                         sx={{
-                            height: 28,
-                            px: 1,
-                            py: 0.25,
-                            bgcolor: 'rgba(255,255,255,0.9)',
-                            borderRadius: '6px',
-                            display: 'flex',
-                            alignItems: 'center',
+                            height: 34,
+                            width: 'auto',
+                            objectFit: 'contain',
                             ml: 0.5,
+                            filter: 'brightness(0) invert(1) drop-shadow(0 0 1px rgba(255,255,255,0.5))',
                         }}
-                    >
-                        <Box
-                            component="img"
-                            src="/logos/logo_fixed_02.png"
-                            alt="electisSpace"
-                            sx={{
-                                height: 20,
-                                width: 'auto',
-                                objectFit: 'contain',
-                            }}
-                        />
-                    </Box>
+                    />
                 )}
 
                 <Typography

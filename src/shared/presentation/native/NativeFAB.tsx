@@ -78,18 +78,6 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                     zIndex: (theme) => theme.zIndex.fab,
                 }}
             >
-                {/* Backdrop overlay when open */}
-                {open && (
-                    <Box
-                        sx={{
-                            position: 'fixed',
-                            inset: 0,
-                            bgcolor: 'rgba(0,0,0,0.3)',
-                            zIndex: -1,
-                        }}
-                    />
-                )}
-
                 {/* Sub-actions */}
                 {actions.map((action, idx) => (
                     <Zoom key={idx} in={open} style={{ transitionDelay: open ? `${idx * 50}ms` : '0ms' }}>
