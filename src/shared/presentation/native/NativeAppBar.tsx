@@ -37,18 +37,28 @@ export function NativeAppBar() {
                     </IconButton>
                 ) : (
                     <Box
-                        component="img"
-                        src="/logos/logo_fixed_02.png"
-                        alt="electisSpace"
                         sx={{
-                            height: 30,
-                            width: 'auto',
-                            objectFit: 'contain',
-                            filter: 'brightness(0) invert(1)',
+                            height: 28,
+                            px: 1,
+                            py: 0.25,
+                            bgcolor: 'rgba(255,255,255,0.9)',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
                             ml: 0.5,
-                            mr: 0.5,
                         }}
-                    />
+                    >
+                        <Box
+                            component="img"
+                            src="/logos/logo_fixed_02.png"
+                            alt="electisSpace"
+                            sx={{
+                                height: 20,
+                                width: 'auto',
+                                objectFit: 'contain',
+                            }}
+                        />
+                    </Box>
                 )}
 
                 <Typography
