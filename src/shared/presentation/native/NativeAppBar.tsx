@@ -27,7 +27,7 @@ export function NativeAppBar() {
                     gap: 0.5,
                 }}
             >
-                {pageTitle.showBackArrow && (
+                {pageTitle.showBackArrow ? (
                     <IconButton
                         onClick={() => navigate(-1)}
                         sx={{ color: 'primary.contrastText' }}
@@ -35,6 +35,20 @@ export function NativeAppBar() {
                     >
                         <ArrowBackIcon />
                     </IconButton>
+                ) : (
+                    <Box
+                        component="img"
+                        src={`${import.meta.env.BASE_URL}logos/logo_fixed_02.png`}
+                        alt="electisSpace"
+                        sx={{
+                            height: 28,
+                            width: 'auto',
+                            objectFit: 'contain',
+                            filter: 'brightness(0) invert(1)',
+                            ml: 0.5,
+                            mr: 0.5,
+                        }}
+                    />
                 )}
 
                 <Typography
@@ -42,7 +56,7 @@ export function NativeAppBar() {
                     fontWeight={700}
                     color="primary.contrastText"
                     noWrap
-                    sx={{ flex: 1, ml: pageTitle.showBackArrow ? 0 : 1 }}
+                    sx={{ flex: 1, ml: pageTitle.showBackArrow ? 0 : 0.5 }}
                 >
                     {pageTitle.title}
                 </Typography>
@@ -52,11 +66,22 @@ export function NativeAppBar() {
                 {!pageTitle.showBackArrow && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Box sx={{
-                            '& .MuiButton-root, & .MuiTypography-root, & .MuiSvgIcon-root': {
-                                color: 'primary.contrastText !important',
+                            // Force ALL child elements white on the blue gradient
+                            '& *': {
+                                color: '#ffffff !important',
+                                borderColor: 'rgba(255,255,255,0.4) !important',
+                            },
+                            '& .MuiIconButton-root': {
+                                background: 'rgba(255,255,255,0.15) !important',
+                                '&:hover': { background: 'rgba(255,255,255,0.25) !important' },
                             },
                             '& .MuiButton-root': {
-                                borderColor: 'rgba(255,255,255,0.3)',
+                                background: 'rgba(255,255,255,0.15) !important',
+                                '&:hover': { background: 'rgba(255,255,255,0.25) !important' },
+                            },
+                            // Force the icon-only mobile button to show
+                            '& .MuiIconButton-root svg': {
+                                color: '#ffffff !important',
                             },
                         }}>
                             <CompanyStoreSelector compact />

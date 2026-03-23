@@ -21,10 +21,7 @@ async function triggerHaptic() {
     try {
         await Haptics.impact({ style: ImpactStyle.Light });
     } catch {
-        // Haptics not available on web — fall back to vibrate
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-            navigator.vibrate(10);
-        }
+        // Haptics not available
     }
 }
 
@@ -58,9 +55,11 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                     position: 'fixed',
                     bottom: bottomOffset,
                     insetInlineEnd: 16,
+                    width: 60,
+                    height: 60,
                 }}
             >
-                {mainIcon ?? <AddIcon />}
+                {mainIcon ?? <AddIcon sx={{ fontSize: 28 }} />}
             </Fab>
         );
     }
@@ -76,19 +75,32 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                     flexDirection: 'column',
                     alignItems: 'flex-end',
                     gap: 1.5,
+                    zIndex: (theme) => theme.zIndex.fab,
                 }}
             >
+                {/* Backdrop overlay when open */}
+                {open && (
+                    <Box
+                        sx={{
+                            position: 'fixed',
+                            inset: 0,
+                            bgcolor: 'rgba(0,0,0,0.3)',
+                            zIndex: -1,
+                        }}
+                    />
+                )}
+
                 {/* Sub-actions */}
                 {actions.map((action, idx) => (
-                    <Zoom key={idx} in={open} style={{ transitionDelay: open ? `${idx * 40}ms` : '0ms' }}>
+                    <Zoom key={idx} in={open} style={{ transitionDelay: open ? `${idx * 50}ms` : '0ms' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <Box
                                 sx={{
                                     bgcolor: 'background.paper',
-                                    px: 1.5,
-                                    py: 0.5,
+                                    px: 2,
+                                    py: 0.75,
                                     borderRadius: 2,
-                                    boxShadow: 2,
+                                    boxShadow: 3,
                                 }}
                             >
                                 <Typography variant="body2" fontWeight={600} noWrap>
@@ -96,10 +108,11 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                                 </Typography>
                             </Box>
                             <Fab
-                                size="small"
+                                size="medium"
                                 color="primary"
                                 onClick={() => handleActionTap(action)}
                                 aria-label={action.label}
+                                sx={{ width: 48, height: 48 }}
                             >
                                 {action.icon}
                             </Fab>
@@ -113,11 +126,13 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                     onClick={handleMainTap}
                     aria-label="actions"
                     sx={{
+                        width: 60,
+                        height: 60,
                         transition: 'transform 0.2s ease',
                         transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
                     }}
                 >
-                    {open ? <CloseIcon /> : (mainIcon ?? <AddIcon />)}
+                    {open ? <CloseIcon sx={{ fontSize: 28 }} /> : (mainIcon ?? <AddIcon sx={{ fontSize: 28 }} />)}
                 </Fab>
             </Box>
         </ClickAwayListener>

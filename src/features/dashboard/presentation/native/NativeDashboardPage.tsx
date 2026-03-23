@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import SyncIcon from '@mui/icons-material/Sync';
+import LabelIcon from '@mui/icons-material/Label';
 
 // Data hooks — same as DashboardPage
 import { useSpaceController } from '@features/space/application/useSpaceController';
@@ -247,18 +249,28 @@ export function NativeDashboardPage() {
     // --- FAB actions ---
     const fabActions = [
         can('spaces') && {
-            icon: isPeopleManagerMode ? <PersonAddIcon /> : <PersonAddIcon />,
+            icon: <PersonAddIcon />,
             label: isPeopleManagerMode
                 ? t('dashboard.addPerson', 'Add Person')
                 : t('dashboard.addSpace', 'Add Space'),
             onClick: isPeopleManagerMode
                 ? () => navigate('/people/new')
-                : () => setSpaceDialogOpen(true),
+                : () => navigate('/spaces/new'),
         },
         can('conference') && {
             icon: <MeetingRoomIcon />,
             label: t('conference.addRoom'),
             onClick: () => navigate('/conference/new'),
+        },
+        can('labels') && {
+            icon: <LabelIcon />,
+            label: t('navigation.labels'),
+            onClick: () => navigate('/labels'),
+        },
+        {
+            icon: <SyncIcon />,
+            label: t('dashboard.syncNow', 'Sync Now'),
+            onClick: handleSyncNow,
         },
     ].filter(Boolean) as { icon: React.ReactNode; label: string; onClick: () => void }[];
 

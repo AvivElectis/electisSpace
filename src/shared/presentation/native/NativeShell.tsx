@@ -83,13 +83,16 @@ export function NativeShell() {
                         </ErrorBoundary>
                     </Box>
 
-                    {/* Sync Status Indicator — wrapped in Box for positioning since component has no sx prop */}
+                    {/* Sync Status Indicator — positioned at top under app bar, not overlapping FABs */}
                     <Box
                         sx={{
                             position: 'fixed',
-                            bottom: `calc(${nativeSizing.bottomNavHeight + 8}px + env(safe-area-inset-bottom))`,
-                            insetInlineEnd: 16,
+                            top: `calc(${nativeSizing.appBarHeight}px + max(env(safe-area-inset-top, 0px), 28px) + 8px)`,
+                            insetInlineStart: 12,
                             zIndex: (theme) => theme.zIndex.appBar - 1,
+                            transform: 'scale(0.85)',
+                            transformOrigin: 'top left',
+                            opacity: 0.9,
                         }}
                     >
                         <SyncStatusIndicator
