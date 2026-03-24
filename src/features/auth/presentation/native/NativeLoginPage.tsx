@@ -90,8 +90,9 @@ export function NativeLoginPage() {
     const [forgotError, setForgotError] = useState<string | null>(null);
     const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
-    // Track biometric availability on mount
+    // Track biometric availability AND stored device token on mount
     const [biometricAvailable, setBiometricAvailable] = useState(false);
+    const [hasStoredToken, setHasStoredToken] = useState(false);
     const autoSubmitRef = useRef(false);
 
     // Biometric enrollment prompt (shown after successful password login with trustDevice)
@@ -104,14 +105,17 @@ export function NativeLoginPage() {
         if (!Capacitor.isNativePlatform()) return;
 
         const init = async () => {
-            const available = await biometricService.isAvailable().catch(() => false);
+            const [available, deviceToken, deviceId] = await Promise.all([
+                biometricService.isAvailable().catch(() => false),
+                deviceTokenStorage.getDeviceToken(),
+                deviceTokenStorage.getDeviceId(),
+            ]);
             setBiometricAvailable(available);
+            setHasStoredToken(!!(deviceToken && deviceId));
 
             // Auto-attempt biometric login if device token exists
-            if (available && !biometricAttempted.current) {
+            if (available && !biometricAttempted.current && deviceToken && deviceId) {
                 biometricAttempted.current = true;
-                const deviceToken = await deviceTokenStorage.getDeviceToken();
-                const deviceId = await deviceTokenStorage.getDeviceId();
                 if (deviceToken && deviceId) {
                     setBiometricLoading(true);
                     try {
@@ -1124,7 +1128,7 @@ export function NativeLoginPage() {
                 )}
 
                 {/* Biometric Quick Login (bottom, only when biometric is available) */}
-                {biometricAvailable && !showVerification && !showBiometric && !showForgotPassword && !showBiometricEnrollment && (
+                {biometricAvailable && hasStoredToken && !showVerification && !showBiometric && !showForgotPassword && !showBiometricEnrollment && (
                     <Box sx={{ mt: 6, pb: 4, textAlign: 'center' }}>
                         <Box
                             component="button"
