@@ -14,7 +14,11 @@ export function PageTransition({ children }: PageTransitionProps) {
         prevPathRef.current = location.pathname;
 
         if ('startViewTransition' in document) {
-            (document as any).startViewTransition(() => {});
+            try {
+                (document as any).startViewTransition(() => {});
+            } catch {
+                // View Transition may throw "InvalidStateError" on some Android devices
+            }
         }
     }, [location.pathname]);
 
