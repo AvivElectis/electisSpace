@@ -4,6 +4,7 @@
  * @description Business logic for spaces management.
  */
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
+import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import { spacesRepository } from './repository.js';
 import type { SpacesUserContext, CreateSpaceInput, UpdateSpaceInput, ListSpacesFilters } from './types.js';
 import type { Prisma } from '@prisma/client';
@@ -87,8 +88,30 @@ export const spacesService = {
         const existing = await spacesRepository.findByIdWithAccess(id, storeIds);
         if (!existing) throw new Error('NOT_FOUND');
 
+        const linkedLabels = (existing as any).assignedLabels as string[] | undefined;
+        if (linkedLabels && linkedLabels.length > 0) {
+            appLogger.warn('SpacesService', `Deleting space ${existing.externalId} which has ${linkedLabels.length} linked label(s)`, {
+                spaceId: id,
+                externalId: existing.externalId,
+                storeId: existing.storeId,
+                linkedLabels,
+                triggeredBy: user.id,
+            });
+        } else {
+            appLogger.info('SpacesService', `Deleting space ${existing.externalId} (no linked labels)`, {
+                spaceId: id,
+                externalId: existing.externalId,
+                storeId: existing.storeId,
+                triggeredBy: user.id,
+            });
+        }
+
         await syncQueueService.queueDelete(existing.storeId, 'space', existing.id, existing.externalId);
         await spacesRepository.delete(id);
+
+        return {
+            linkedLabels: linkedLabels || [],
+        };
     },
 
     async assignLabel(id: string, labelCode: string, user: SpacesUserContext) {

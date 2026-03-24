@@ -396,6 +396,28 @@ export class SyncQueueProcessor {
             return;
         }
 
+        // Check if this article has linked labels (audit trail)
+        let linkedLabels: string[] = [];
+        try {
+            const articleInfos = await aimsGateway.pullArticleInfo(storeId);
+            const info = articleInfos.find(i => String(i.articleId) === externalId);
+            if (info?.assignedLabel && info.assignedLabel.length > 0) {
+                linkedLabels = info.assignedLabel;
+            }
+        } catch {
+            // Non-fatal — proceed with deletion even if label check fails
+        }
+
+        if (linkedLabels.length > 0) {
+            appLogger.warn('SyncQueue', `Deleting article ${externalId} (${entityType}/${entityId}) from AIMS — has ${linkedLabels.length} linked label(s): ${linkedLabels.join(', ')}`, {
+                storeId, entityType, entityId, externalId, linkedLabels,
+            });
+        } else {
+            appLogger.info('SyncQueue', `Deleting article ${externalId} (${entityType}/${entityId}) from AIMS (no linked labels)`, {
+                storeId, entityType, entityId, externalId,
+            });
+        }
+
         // Delete from AIMS
         await aimsGateway.deleteArticles(storeId, [externalId]);
     }

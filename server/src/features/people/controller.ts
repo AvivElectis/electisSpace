@@ -248,7 +248,7 @@ export const peopleController = {
      */
     async provisionSlots(req: Request, res: Response, next: NextFunction) {
         try {
-            const { storeId, totalSpaces, previousTotal } = req.body;
+            const { storeId, totalSpaces, previousTotal, force } = req.body;
             if (!storeId || typeof storeId !== 'string') {
                 throw badRequest('storeId is required');
             }
@@ -256,9 +256,10 @@ export const peopleController = {
                 throw badRequest('totalSpaces must be a number between 0 and 10000');
             }
             const prevTotal = typeof previousTotal === 'number' ? previousTotal : 0;
+            const forceDelete = force === true;
 
             const user = getUserContext(req);
-            const result = await peopleService.provisionSlots(storeId, totalSpaces, prevTotal, user);
+            const result = await peopleService.provisionSlots(storeId, totalSpaces, prevTotal, user, forceDelete);
             res.json(result);
         } catch (error: any) {
             if (error.message === 'FORBIDDEN') return next(forbidden('Access denied to this store'));

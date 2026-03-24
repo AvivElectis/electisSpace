@@ -313,7 +313,8 @@ export const peopleService = {
         storeId: string,
         totalSpaces: number,
         previousTotal: number,
-        user: PeopleUserContext
+        user: PeopleUserContext,
+        force: boolean = false,
     ) {
         validateStoreAccess(storeId, user);
 
@@ -384,15 +385,52 @@ export const peopleService = {
             appLogger.info('PeopleService', `Pushed ${articles.length} slot articles to AIMS`);
         }
 
-        // If totalSpaces decreased, delete excess slot articles from AIMS
+        // If totalSpaces decreased, check for labels before deleting excess slot articles
         if (previousTotal > totalSpaces) {
             const excessIds: string[] = [];
             for (let i = totalSpaces + 1; i <= previousTotal; i++) {
                 excessIds.push(String(i));
             }
+
             if (excessIds.length > 0) {
+                // Check if any excess slots have labels assigned via AIMS article info
+                const affectedLabels: { articleId: string; labelCode: string }[] = [];
+                try {
+                    const articleInfos = await aimsGateway.pullArticleInfo(storeId);
+                    for (const excessId of excessIds) {
+                        const info = articleInfos.find(i => String(i.articleId) === excessId);
+                        if (info?.assignedLabel && info.assignedLabel.length > 0) {
+                            for (const labelCode of info.assignedLabel) {
+                                affectedLabels.push({ articleId: excessId, labelCode });
+                            }
+                        }
+                    }
+                } catch (error: any) {
+                    appLogger.warn('PeopleService', `Could not check labels for excess slots: ${error.message}`);
+                }
+
+                if (affectedLabels.length > 0 && !force) {
+                    appLogger.warn('PeopleService', `provisionSlots: ${affectedLabels.length} label(s) linked to excess slots — returning confirmation request`, { affectedLabels });
+                    return {
+                        provisioned: articles.length,
+                        deleted: 0,
+                        requiresConfirmation: true,
+                        affectedLabels,
+                        message: `Reducing seats will unlink ${affectedLabels.length} label(s). Set force=true to confirm.`,
+                    };
+                }
+
+                if (affectedLabels.length > 0 && force) {
+                    appLogger.warn('PeopleService', `provisionSlots: FORCE deleting ${excessIds.length} excess slots with ${affectedLabels.length} linked label(s)`, { affectedLabels, excessIds });
+                }
+
+                // Safe to delete (no labels or force=true)
                 await aimsGateway.deleteArticles(storeId, excessIds);
-                appLogger.info('PeopleService', `Deleted ${excessIds.length} excess slot articles from AIMS`);
+                appLogger.info('PeopleService', `Deleted ${excessIds.length} excess slot articles from AIMS`, {
+                    excessIds,
+                    hadLinkedLabels: affectedLabels.length > 0,
+                    forced: force,
+                });
             }
         }
 

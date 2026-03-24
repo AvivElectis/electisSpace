@@ -438,29 +438,30 @@ export class AimsSyncReconciliationJob {
             }
         }
 
-        // 4b. People mode: delete extras from AIMS (with safety check)
+        // 4b. People mode: log extra articles but NEVER auto-delete from reconcile.
+        //     Auto-deletion caused label unassignment when articles with linked labels
+        //     were removed. Articles should only be deleted via explicit user action
+        //     (provisionSlots reduction, space/room deletion).
         if (isPeopleMode && extraInAims.length > 0) {
-            // Mass-deletion safeguard: if we're about to delete a large portion of AIMS
-            // articles while expected is very small, something is likely wrong (e.g., people
-            // mode flag lost, DB query returned empty). Refuse to delete and log an error.
-            const MIN_DELETION_THRESHOLD = 5;
-            if (
-                extraInAims.length >= MIN_DELETION_THRESHOLD &&
-                aimsMap.size > 0 &&
-                extraInAims.length > aimsMap.size * 0.5
-            ) {
-                appLogger.error('AimsReconcile', `SAFETY: Refusing to delete ${extraInAims.length} of ${aimsMap.size} AIMS articles for ${storeName} (${mode}). Expected map has ${expectedMap.size} articles. This looks like a data issue — skipping deletion to protect existing articles.`, { ids: extraInAims.slice(0, 20) });
-                result.error = `Safety: refused mass deletion of ${extraInAims.length}/${aimsMap.size} articles`;
-            } else {
-                try {
-                    await aimsGateway.deleteArticles(storeId, extraInAims);
-                    result.deleted = extraInAims.length;
-                } catch (error: any) {
-                    appLogger.error('AimsReconcile', `Delete failed for ${storeName}: ${error.message}`);
-                    // Non-fatal — we still pushed successfully
-                    result.error = `Delete failed (${extraInAims.length} stale articles): ${error.message}`;
+            // Check which extras have labels assigned (from article info data)
+            const extrasWithLabels: string[] = [];
+            const extrasWithoutLabels: string[] = [];
+            for (const extraId of extraInAims) {
+                const info = aimsArticleInfos.find(i => String(i.articleId) === extraId);
+                if (info?.assignedLabel && info.assignedLabel.length > 0) {
+                    extrasWithLabels.push(`${extraId} (labels: ${info.assignedLabel.join(', ')})`);
+                } else {
+                    extrasWithoutLabels.push(extraId);
                 }
             }
+
+            if (extrasWithLabels.length > 0) {
+                appLogger.warn('AimsReconcile', `${storeName}: ${extrasWithLabels.length} extra article(s) in AIMS have labels assigned — skipping auto-delete to protect label links: ${extrasWithLabels.slice(0, 10).join('; ')}${extrasWithLabels.length > 10 ? '...' : ''}`);
+            }
+            if (extrasWithoutLabels.length > 0) {
+                appLogger.info('AimsReconcile', `${storeName}: ${extrasWithoutLabels.length} extra article(s) in AIMS without labels — skipping auto-delete (use provisionSlots or manual deletion): ${extrasWithoutLabels.slice(0, 10).join(', ')}${extrasWithoutLabels.length > 10 ? '...' : ''}`);
+            }
+            // Do NOT delete — result.deleted stays 0
         }
 
         // 5. Sync assignedLabels using the already-fetched article info + post-sync validation
