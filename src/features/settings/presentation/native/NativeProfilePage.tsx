@@ -8,7 +8,7 @@ import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { Capacitor } from '@capacitor/core';
 
-import api from '@shared/infrastructure/services/apiClient';
+import { authService } from '@shared/infrastructure/services/authService';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { biometricService } from '@shared/infrastructure/services/biometricService';
 import { deviceTokenStorage } from '@shared/infrastructure/services/deviceTokenStorage';
@@ -62,9 +62,9 @@ export function NativeProfilePage() {
             const passed = await biometricService.authenticate(t('auth.biometric.reason', 'Verify to enable biometric login'));
             if (passed) {
                 // Request a device token from the server
-                const resp = await api.post('/auth/device-token');
-                if (resp.data?.deviceToken) {
-                    await deviceTokenStorage.setDeviceToken(resp.data.deviceToken);
+                const resp = await authService.requestDeviceToken();
+                if (resp.deviceToken) {
+                    await deviceTokenStorage.setDeviceToken(resp.deviceToken);
                     setHasDeviceToken(true);
                     setSuccess(t('settings.users.biometric.enabled', 'Biometric login enabled'));
                 }
@@ -109,21 +109,18 @@ export function NativeProfilePage() {
 
         try {
             // Update profile info via PATCH /users/me
-            const resp = await api.patch('/users/me', {
+            const updatedUser = await authService.updateProfile({
                 firstName: firstName.trim() || undefined,
                 lastName: lastName.trim() || undefined,
             });
             // Update auth store with new user data
-            if (resp.data) {
-                setUser({ ...user!, ...resp.data });
+            if (updatedUser) {
+                setUser({ ...user!, ...updatedUser });
             }
 
             // Change password if provided (already validated above)
             if (newPassword) {
-                await api.post('/users/me/change-password', {
-                    currentPassword,
-                    newPassword,
-                });
+                await authService.changeOwnPassword(currentPassword, newPassword);
                 setCurrentPassword('');
                 setNewPassword('');
                 setConfirmPassword('');

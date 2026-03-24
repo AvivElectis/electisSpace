@@ -17,7 +17,7 @@ import { useSettingsStore } from '@features/settings/infrastructure/settingsStor
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAimsOverview } from '@features/aims-management/application/useAimsOverview';
-import { syncApi } from '@shared/infrastructure/services/syncApi';
+import { useBackendSyncContext } from '@features/sync/application/SyncContext';
 import { logger } from '@shared/infrastructure/services/logger';
 
 // Dashboard cards (reuse mobile layout)
@@ -59,6 +59,7 @@ export function NativeDashboardPage() {
 
     const activeStoreId = useAuthStore((s) => s.activeStoreId);
     const isAppReady = useAuthStore((s) => s.isAppReady);
+    const { push } = useBackendSyncContext();
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
 
@@ -68,24 +69,24 @@ export function NativeDashboardPage() {
     const handleSync = useCallback(async () => {
         if (!activeStoreId) return;
         try {
-            await syncApi.push(activeStoreId);
+            await push();
         } catch (error: any) {
             logger.warn('NativeDashboardPage', 'Sync push failed', { error: error?.message });
         }
-    }, [activeStoreId]);
+    }, [activeStoreId, push]);
 
     // Full sync for the dashboard quick button
     const handleSyncNow = useCallback(async () => {
         if (!activeStoreId || isSyncing) return;
         setIsSyncing(true);
         try {
-            await syncApi.push(activeStoreId);
+            await push();
         } catch (error: any) {
             logger.warn('NativeDashboardPage', 'Quick sync failed', { error: error?.message });
         } finally {
             setIsSyncing(false);
         }
-    }, [activeStoreId, isSyncing]);
+    }, [activeStoreId, isSyncing, push]);
 
     // Controllers
     const spaceController = useSpaceController({

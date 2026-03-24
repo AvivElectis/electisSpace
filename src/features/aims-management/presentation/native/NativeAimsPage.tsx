@@ -46,7 +46,7 @@ import { useArticles } from '../../application/useArticles';
 import { useTemplates } from '../../application/useTemplates';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { syncApi } from '@shared/infrastructure/services/syncApi';
+import { useBackendSyncContext } from '@features/sync/application/SyncContext';
 import { logger } from '@shared/infrastructure/services/logger';
 
 type ActiveTab = 'articles' | 'gateways' | 'labels' | 'templates';
@@ -356,6 +356,7 @@ export function NativeAimsPage() {
     const activeStoreId = useAuthStore((s) => s.activeStoreId);
     const isAppReady = useAuthStore((s) => s.isAppReady);
     const syncState = useSyncStore((s) => s.syncState);
+    const { push } = useBackendSyncContext();
     // Read auto-sync from settings store (source of truth), write to both
     const autoSyncEnabled = useSettingsStore((s) => s.settings.autoSyncEnabled ?? false);
     const autoSyncInterval = useSettingsStore((s) => s.settings.autoSyncInterval ?? 300);
@@ -412,13 +413,13 @@ export function NativeAimsPage() {
         if (!activeStoreId) return;
         setSyncing(true);
         try {
-            await syncApi.push(activeStoreId);
+            await push();
         } catch (err: any) {
             logger.warn('NativeAimsPage', 'Sync now failed', { error: err?.message });
         } finally {
             setSyncing(false);
         }
-    }, [activeStoreId]);
+    }, [activeStoreId, push]);
 
     const handleToggleItem = useCallback((id: string) => {
         setExpandedId((prev) => (prev === id ? null : id));

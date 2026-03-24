@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useTheme } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNavTabs } from '../hooks/useNavTabs';
@@ -10,10 +9,19 @@ import { glass, nativeSizing } from '../themes/nativeTokens';
 
 const bottomNavInnerSx = { height: nativeSizing.bottomNavHeight, bgcolor: 'transparent' } as const;
 
+const paperSx = {
+    position: 'fixed',
+    bottom: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+    zIndex: (theme: any) => theme.zIndex.appBar,
+    ...glass,
+    paddingBottom: 'env(safe-area-inset-bottom)',
+} as const;
+
 export const NativeBottomNav = memo(function NativeBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
-    const theme = useTheme();
     const { t } = useTranslation();
     const navTabs = useNavTabs();
     const { getLabel } = useSpaceTypeLabels();
@@ -32,16 +40,6 @@ export const NativeBottomNav = memo(function NativeBottomNav() {
             // Haptics not available
         }
         navigate(newValue);
-    };
-
-    const paperSx = {
-        position: 'fixed',
-        bottom: 0,
-        insetInlineStart: 0,
-        insetInlineEnd: 0,
-        zIndex: theme.zIndex.appBar,
-        ...glass,
-        paddingBottom: 'env(safe-area-inset-bottom)',
     };
 
     return (

@@ -70,6 +70,9 @@ const COLOR_MAP: Record<SectionColor, string> = {
     primary: nativeColors.primary.main,
 };
 
+const sectionBoxSx = { mb: `${nativeSpacing.sectionGap}px`, px: `${nativeSpacing.pagePadding}px` } as const;
+const labelBaseSx = { fontWeight: 700, lineHeight: 1.2, letterSpacing: '0.08em' } as const;
+
 export function NativeGroupedList<T>({
     sections,
     renderItem,
@@ -96,21 +99,18 @@ export function NativeGroupedList<T>({
         <Box sx={outerScrollSx}>
             {sections.map((section) => {
                 const color = COLOR_MAP[section.color];
-                const sectionBoxSx = { mb: `${nativeSpacing.sectionGap}px`, px: `${nativeSpacing.pagePadding}px` };
-                const iconSx = { color, ...sectionIconWrapperSx };
-                const labelSx = { color, fontWeight: 700, lineHeight: 1.2, letterSpacing: '0.08em' };
                 return (
                     <Box key={section.title} sx={sectionBoxSx}>
                         {/* Section header */}
                         <Box sx={sectionHeaderSx}>
                             {section.icon && (
-                                <Box sx={iconSx}>
+                                <Box sx={{ color, ...sectionIconWrapperSx }}>
                                     {section.icon}
                                 </Box>
                             )}
                             <Typography
                                 variant="overline"
-                                sx={labelSx}
+                                sx={{ color, ...labelBaseSx }}
                             >
                                 {section.title} ({section.count})
                             </Typography>

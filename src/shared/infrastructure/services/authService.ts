@@ -272,6 +272,29 @@ export const authService = {
     },
 
     /**
+     * Update current user's profile (first name, last name)
+     */
+    updateProfile: async (data: { firstName?: string; lastName?: string }): Promise<User> => {
+        const response = await api.patch<User>('/users/me', data);
+        return response.data;
+    },
+
+    /**
+     * Change password for the currently logged-in user (via /users/me/change-password)
+     */
+    changeOwnPassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+        await api.post('/users/me/change-password', { currentPassword, newPassword });
+    },
+
+    /**
+     * Request a device token for biometric / persistent login
+     */
+    requestDeviceToken: async (): Promise<{ deviceToken: string }> => {
+        const response = await api.post<{ deviceToken: string }>('/auth/device-token');
+        return response.data;
+    },
+
+    /**
      * Authenticate with device token (no 2FA required)
      */
     deviceAuth: async (deviceToken: string, deviceId: string): Promise<LoginResponse> => {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import { Box } from '@mui/material';
 import { List as VirtualList } from 'react-window';
@@ -70,7 +70,7 @@ export function NativeVirtualizedList<T>({
         return () => observer.disconnect();
     }, []);
 
-    const rowProps = useCallback(
+    const rowPropsValue = useMemo(
         () => ({
             items: items as unknown[],
             renderItem: renderItem as (item: unknown) => ReactNode,
@@ -106,7 +106,7 @@ export function NativeVirtualizedList<T>({
                 rowCount={items.length}
                 rowHeight={itemHeight}
                 rowComponent={RowComponent}
-                rowProps={rowProps()}
+                rowProps={rowPropsValue}
             />
         </Box>
     );
