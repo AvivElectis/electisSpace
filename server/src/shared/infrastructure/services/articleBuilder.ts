@@ -217,8 +217,10 @@ function buildArticle(
  * that would cause unnecessary re-pushes every reconciliation cycle.
  */
 export function articleNeedsUpdate(expected: AimsArticle, aims: AimsArticle): boolean {
-    // Compare article name
-    if ((expected.articleName || '') !== (aims.articleName || aims.article_name || '')) return true;
+    // Compare article name — normalize: trim, collapse whitespace
+    const eName = (expected.articleName || '').trim();
+    const aName = (aims.articleName || (aims as any).article_name || '').trim();
+    if (eName !== aName) return true;
 
     // Compare nfcUrl (AIMS returns empty string or undefined for empty)
     if ((expected.nfcUrl || '') !== (aims.nfcUrl ?? '')) return true;
@@ -229,11 +231,41 @@ export function articleNeedsUpdate(expected: AimsArticle, aims: AimsArticle): bo
     // AIMS sometimes returns fields flat (top-level) instead of nested in `data`
     const aimsFlat = aims as Record<string, unknown>;
     for (const [key, val] of Object.entries(eData)) {
-        const expectedVal = String(val ?? '');
+        // Normalize: treat null/undefined/empty as identical
+        const expectedVal = (val == null || val === '') ? '' : String(val).trim();
         // Check nested data first, then fall back to top-level flat field
-        const aimsVal = String(aData[key] ?? aimsFlat[key] ?? '');
+        const rawAims = aData[key] ?? aimsFlat[key];
+        const aimsVal = (rawAims == null || rawAims === '') ? '' : String(rawAims).trim();
         if (expectedVal !== aimsVal) return true;
     }
 
     return false;
+}
+
+/**
+ * Returns the list of differing fields between expected and AIMS articles.
+ * Used for diagnostic logging.
+ */
+export function getArticleDiffs(expected: AimsArticle, aims: AimsArticle): string[] {
+    const diffs: string[] = [];
+
+    const eName = (expected.articleName || '').trim();
+    const aName = (aims.articleName || (aims as any).article_name || '').trim();
+    if (eName !== aName) diffs.push(`articleName: "${eName}" vs "${aName}"`);
+
+    const eNfc = expected.nfcUrl || '';
+    const aNfc = aims.nfcUrl ?? '';
+    if (eNfc !== aNfc) diffs.push(`nfcUrl: "${eNfc}" vs "${aNfc}"`);
+
+    const eData = expected.data ?? {};
+    const aData = aims.data ?? {};
+    const aimsFlat = aims as Record<string, unknown>;
+    for (const [key, val] of Object.entries(eData)) {
+        const expectedVal = (val == null || val === '') ? '' : String(val).trim();
+        const rawAims = aData[key] ?? aimsFlat[key];
+        const aimsVal = (rawAims == null || rawAims === '') ? '' : String(rawAims).trim();
+        if (expectedVal !== aimsVal) diffs.push(`data.${key}: "${expectedVal}" vs "${aimsVal}"`);
+    }
+
+    return diffs;
 }

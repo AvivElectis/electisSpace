@@ -29,6 +29,7 @@ import {
     buildEmptySlotArticle,
     buildConferenceArticle,
     articleNeedsUpdate,
+    getArticleDiffs,
     type ConferenceMappingConfig,
 } from '../services/articleBuilder.js';
 import type { ArticleFormat } from '../services/solumService.js';
@@ -340,7 +341,8 @@ export class AimsSyncReconciliationJob {
             } else if (articleNeedsUpdate(article, aimsArticle)) {
                 // Changed → update (AIMS upserts on push)
                 toPush.push(article);
-                if (pushReasons.length < 5) pushReasons.push(`${artId}: changed`);
+                const diffs = getArticleDiffs(article, aimsArticle);
+                if (pushReasons.length < 5) pushReasons.push(`${artId}: changed [${diffs.join(', ')}]`);
             } else {
                 result.unchanged++;
             }
