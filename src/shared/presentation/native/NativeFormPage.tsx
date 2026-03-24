@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Button, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -31,15 +31,24 @@ export function NativeFormPage({
 }: NativeFormPageProps) {
     const { t } = useTranslation();
 
+    const [localSaving, setLocalSaving] = useState(false);
+    const effectivelySaving = isSaving || localSaving;
+
     const handleSave = async () => {
-        await triggerSaveHaptic();
-        await onSave();
+        if (effectivelySaving) return;
+        setLocalSaving(true);
+        try {
+            await triggerSaveHaptic();
+            await onSave();
+        } finally {
+            setLocalSaving(false);
+        }
     };
 
     const saveButton = (
         <Button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={effectivelySaving}
             sx={{
                 color: 'primary.contrastText',
                 fontWeight: 700,
@@ -48,7 +57,7 @@ export function NativeFormPage({
             }}
             size="small"
         >
-            {isSaving ? (
+            {effectivelySaving ? (
                 <CircularProgress size={18} sx={{ color: 'primary.contrastText' }} />
             ) : (
                 saveLabel ?? t('common.save')
@@ -56,7 +65,7 @@ export function NativeFormPage({
         </Button>
     );
 
-    useSetNativeTitle(title, true, saveButton, isSaving);
+    useSetNativeTitle(title, true, saveButton, effectivelySaving);
 
     return <NativePage>{children}</NativePage>;
 }

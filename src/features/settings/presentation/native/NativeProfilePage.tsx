@@ -20,7 +20,8 @@ import { nativeSpacing } from '@shared/presentation/themes/nativeTokens';
 
 export function NativeProfilePage() {
     const { t } = useTranslation();
-    const { user, setUser } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
+    const setUser = useAuthStore((s) => s.setUser);
 
     const [firstName, setFirstName] = useState(user?.firstName || '');
     const [lastName, setLastName] = useState(user?.lastName || '');

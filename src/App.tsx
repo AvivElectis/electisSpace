@@ -2,6 +2,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { HashRouter } from 'react-router-dom';
 import { createAppTheme } from './theme';
+import { createNativeTheme } from '@shared/presentation/themes/nativeTheme';
 import { AppRoutes } from './AppRoutes';
 import { MainLayout } from './shared/presentation/layouts/MainLayout';
 import { NotificationContainer } from './shared/presentation/components/NotificationContainer';
@@ -54,7 +55,10 @@ function App() {
   const isNative = Capacitor.isNativePlatform();
 
   // Create theme based on direction and platform
-  const theme = useMemo(() => createAppTheme(direction, isNative), [direction, isNative]);
+  const theme = useMemo(
+    () => (isNative ? createNativeTheme(direction) : createAppTheme(direction, isNative)),
+    [direction, isNative]
+  );
 
   // Update document direction
   useEffect(() => {

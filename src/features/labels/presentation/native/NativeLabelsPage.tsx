@@ -34,17 +34,15 @@ export function NativeLabelsPage() {
     const activeStoreId = useAuthStore((s) => s.activeStoreId);
     const isAppReady = useAuthStore((s) => s.isAppReady);
 
-    const {
-        labels,
-        isLoading,
-        error,
-        filterLinkedOnly,
-        fetchLabels,
-        unlinkLabelFromArticle,
-        setFilterLinkedOnly,
-        setSearchQuery,
-        searchQuery,
-    } = useLabelsStore();
+    const labels = useLabelsStore((s) => s.labels);
+    const isLoading = useLabelsStore((s) => s.isLoading);
+    const error = useLabelsStore((s) => s.error);
+    const filterLinkedOnly = useLabelsStore((s) => s.filterLinkedOnly);
+    const fetchLabels = useLabelsStore((s) => s.fetchLabels);
+    const unlinkLabelFromArticle = useLabelsStore((s) => s.unlinkLabelFromArticle);
+    const setFilterLinkedOnly = useLabelsStore((s) => s.setFilterLinkedOnly);
+    const searchQuery = useLabelsStore((s) => s.searchQuery);
+    const setSearchQuery = useLabelsStore((s) => s.setSearchQuery);
 
     // Fetch on mount / store switch
     useEffect(() => {

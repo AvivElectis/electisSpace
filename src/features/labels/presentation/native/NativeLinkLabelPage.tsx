@@ -28,7 +28,7 @@ export function NativeLinkLabelPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const { activeStoreId } = useAuthStore();
+    const activeStoreId = useAuthStore((s) => s.activeStoreId);
     const { linkLabelToArticle } = useLabelsStore();
 
     const initialLabelCode = searchParams.get('labelCode') || '';
