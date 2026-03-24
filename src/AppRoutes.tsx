@@ -90,17 +90,21 @@ export function AppRoutes() {
             {/* Native Routes — wrapped in NativeShell, rendered only on native platform */}
             {isNative && getNativeRoutes()}
 
-            {/* Protected Routes */}
-            <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/spaces" element={<ProtectedRoute><ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/conference" element={<ProtectedRoute><ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/audit-log" element={<ProtectedRoute><SuspenseRoute><AuditLogPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/aims-management" element={<ProtectedRoute><ProtectedFeature feature="aims-management" minimumStoreRole="STORE_MANAGER" requireAll fallback={<Navigate to="/" replace />}><SuspenseRoute><AimsManagementPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SuspenseRoute><NativeSettingsPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/manual" element={<ProtectedRoute><SuspenseRoute><NativeManualPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/about" element={<ProtectedRoute><SuspenseRoute><NativeAboutPage /></SuspenseRoute></ProtectedRoute>} />
+            {/* Protected Routes — web only */}
+            {!isNative && (
+                <>
+                    <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
+                    <Route path="/spaces" element={<ProtectedRoute><ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+                    <Route path="/conference" element={<ProtectedRoute><ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+                    <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+                    <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+                    <Route path="/audit-log" element={<ProtectedRoute><SuspenseRoute><AuditLogPage /></SuspenseRoute></ProtectedRoute>} />
+                    <Route path="/aims-management" element={<ProtectedRoute><ProtectedFeature feature="aims-management" minimumStoreRole="STORE_MANAGER" requireAll fallback={<Navigate to="/" replace />}><SuspenseRoute><AimsManagementPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><SuspenseRoute><NativeSettingsPage /></SuspenseRoute></ProtectedRoute>} />
+                    <Route path="/manual" element={<ProtectedRoute><SuspenseRoute><NativeManualPage /></SuspenseRoute></ProtectedRoute>} />
+                    <Route path="/about" element={<ProtectedRoute><SuspenseRoute><NativeAboutPage /></SuspenseRoute></ProtectedRoute>} />
+                </>
+            )}
 
             <Route path="*" element={<SuspenseRoute><NotFoundPage /></SuspenseRoute>} />
         </Routes>

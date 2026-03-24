@@ -283,7 +283,8 @@
         "never": "אף פעם",
         "refresh": "רענן",
         "retry": "נסה שוב",
-        "type": "סוג"
+        "type": "סוג",
+        "noResults": "לא נמצאו תוצאות"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -1713,6 +1714,7 @@
         "search": "חפש תגיות או מוצרים...",
         "filterLinkedOnly": "הצג מקושרים בלבד",
         "showImagePreviews": "הצג תצוגה מקדימה של תמונות",
+        "count": "{{count}} תגיות",
         "totalCount": "{{count}} תגיות",
         "totalCountShort": "תגיות",
         "noLabels": "לא נמצאו תגיות",

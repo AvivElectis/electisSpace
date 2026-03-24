@@ -89,6 +89,7 @@ export function NativePersonFormPage() {
                 if (config.visible === false) return false;
                 return true;
             })
+            .sort(([, a], [, b]) => (a.order ?? Infinity) - (b.order ?? Infinity))
             .map(([fieldKey, config]) => {
                 const labelEn = (config.friendlyNameEn && config.friendlyNameEn !== fieldKey)
                     ? config.friendlyNameEn
@@ -354,7 +355,7 @@ export function NativePersonFormPage() {
                         </Box>
                         {existingPerson.assignedLabels && existingPerson.assignedLabels.length > 0 && (
                             <Chip
-                                label={`${existingPerson.assignedLabels.length} label${existingPerson.assignedLabels.length !== 1 ? 's' : ''}`}
+                                label={t('labels.count', { count: existingPerson.assignedLabels.length })}
                                 size="small"
                                 sx={{
                                     ml: 'auto',

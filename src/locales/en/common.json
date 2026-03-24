@@ -280,7 +280,8 @@
         "never": "Never",
         "refresh": "Refresh",
         "retry": "Retry",
-        "type": "Type"
+        "type": "Type",
+        "noResults": "No results found"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -1701,6 +1702,7 @@
         "search": "Search labels or articles...",
         "filterLinkedOnly": "Show linked only",
         "showImagePreviews": "Show image previews",
+        "count": "{{count}} labels",
         "totalCount": "{{count}} labels",
         "totalCountShort": "labels",
         "noLabels": "No labels found",

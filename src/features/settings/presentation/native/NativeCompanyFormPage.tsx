@@ -94,14 +94,14 @@ export function NativeCompanyFormPage() {
                         }
                     }
                 })
-                .catch(() => {})
+                .catch(() => setError(t('common.error')))
                 .finally(() => setLoading(false));
 
             // Load stores
             setStoresLoading(true);
             companyService.getStores(id, { limit: 100 })
                 .then((resp) => setStores(resp.stores))
-                .catch(() => {})
+                .catch(() => setError(t('common.error')))
                 .finally(() => setStoresLoading(false));
         }
     }, [id]);

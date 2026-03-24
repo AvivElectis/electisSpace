@@ -63,7 +63,7 @@ export function NativeStoreFormPage() {
                         setCodeValid(true);
                     }
                 })
-                .catch(() => {})
+                .catch(() => setError(t('common.error')))
                 .finally(() => setLoading(false));
         }
     }, [sid, companyId]);

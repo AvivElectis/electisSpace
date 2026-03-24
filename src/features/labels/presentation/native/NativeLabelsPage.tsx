@@ -142,9 +142,7 @@ export function NativeLabelsPage() {
             <Box
                 sx={{
                     flex: 1,
-                    overflowY: 'auto',
                     px: `${nativeSpacing.pagePadding}px`,
-                    pb: `calc(${nativeSizing.bottomNavHeight}px + 80px + env(safe-area-inset-bottom, 0px))`,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 1,

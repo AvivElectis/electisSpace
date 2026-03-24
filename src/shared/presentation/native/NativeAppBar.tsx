@@ -1,8 +1,10 @@
 import { memo } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useNavigationType } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useNativePageTitle } from './NativePageTitleContext';
 import { nativeGradients, nativeSizing } from '../themes/nativeTokens';
 import { CompanyStoreSelector } from '@features/auth/presentation/CompanyStoreSelector';
@@ -56,10 +58,13 @@ const settingsButtonSx = { color: 'primary.contrastText' } as const;
 
 export const NativeAppBar = memo(function NativeAppBar() {
     const navigate = useNavigate();
+    useNavigationType(); // ensure hook is registered; actual nav state read via window.history.state
     const { pageTitle } = useNativePageTitle();
+    const { i18n } = useTranslation();
+    const isRtl = i18n.dir() === 'rtl';
 
     const handleBack = () => {
-        if (window.history.length > 1) {
+        if (window.history.state?.idx > 0) {
             navigate(-1);
         } else {
             navigate('/', { replace: true });
@@ -79,7 +84,7 @@ export const NativeAppBar = memo(function NativeAppBar() {
                         sx={backButtonSx}
                         size="small"
                     >
-                        <ArrowBackIcon />
+                        {isRtl ? <ArrowForwardIcon /> : <ArrowBackIcon />}
                     </IconButton>
                 ) : (
                     <Typography
