@@ -138,9 +138,10 @@ export function NativeConferencePage() {
         navigate(`/conference/${room.id}/edit`);
     }, [navigate]);
 
+    const fetchRooms = conferenceController.fetchRooms;
     const handleRefresh = useCallback(async () => {
-        await conferenceController.fetchRooms();
-    }, [conferenceController]);
+        await fetchRooms();
+    }, [fetchRooms]);
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Fab, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, Button, Fab, Switch, FormControlLabel } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import LabelIcon from '@mui/icons-material/Label';
 
@@ -180,26 +180,26 @@ export function NativeLabelsPage() {
 
                 {/* Pagination controls */}
                 {totalPages > 1 && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, py: 2 }}>
-                        <Typography
-                            variant="body2"
-                            color={page > 0 ? 'primary' : 'text.disabled'}
-                            sx={{ cursor: page > 0 ? 'pointer' : 'default' }}
-                            onClick={() => page > 0 && setPage((p) => p - 1)}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, py: 2 }}>
+                        <Button
+                            size="small"
+                            disabled={page === 0}
+                            onClick={() => setPage((p) => p - 1)}
+                            sx={{ minWidth: 48, minHeight: 48 }}
                         >
-                            ‹ {t('common.prev', 'Prev')}
-                        </Typography>
+                            {t('common.prev', 'Prev')}
+                        </Button>
                         <Typography variant="body2" color="text.secondary">
                             {page + 1} / {totalPages}
                         </Typography>
-                        <Typography
-                            variant="body2"
-                            color={page < totalPages - 1 ? 'primary' : 'text.disabled'}
-                            sx={{ cursor: page < totalPages - 1 ? 'pointer' : 'default' }}
-                            onClick={() => page < totalPages - 1 && setPage((p) => p + 1)}
+                        <Button
+                            size="small"
+                            disabled={page >= totalPages - 1}
+                            onClick={() => setPage((p) => p + 1)}
+                            sx={{ minWidth: 48, minHeight: 48 }}
                         >
-                            {t('common.next', 'Next')} ›
-                        </Typography>
+                            {t('common.next', 'Next')}
+                        </Button>
                     </Box>
                 )}
             </Box>

@@ -91,13 +91,13 @@ export const NativeLabelCard = memo(function NativeLabelCard({
                 {/* Actions */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flexShrink: 0 }}>
                     {onViewImages && (
-                        <IconButton size="small" onClick={onViewImages} aria-label={t('labels.viewImages', 'View images')}>
+                        <IconButton size="medium" onClick={onViewImages} aria-label={t('labels.viewImages', 'View images')}>
                             <ImageIcon fontSize="small" />
                         </IconButton>
                     )}
                     {onLink && (
                         <IconButton
-                            size="small"
+                            size="medium"
                             onClick={onLink}
                             aria-label={isLinked ? t('labels.unlink', 'Unlink') : t('labels.link', 'Link')}
                             sx={{ color: isLinked ? nativeColors.status.success : 'text.secondary' }}

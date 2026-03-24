@@ -18,7 +18,11 @@ export const NativeBottomNav = memo(function NativeBottomNav() {
     const navTabs = useNavTabs();
     const { getLabel } = useSpaceTypeLabels();
 
-    const activeValue = navTabs.find(tab => tab.value === location.pathname)?.value ?? false;
+    // Match sub-routes too (e.g., /people/new still highlights People tab)
+    const activeValue = navTabs.find(tab => {
+        if (tab.value === '/') return location.pathname === '/';
+        return location.pathname === tab.value || location.pathname.startsWith(tab.value + '/');
+    })?.value ?? false;
 
     const handleChange = async (_event: React.SyntheticEvent, newValue: string) => {
         if (newValue === activeValue) return;

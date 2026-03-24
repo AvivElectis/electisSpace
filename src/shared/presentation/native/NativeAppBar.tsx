@@ -82,7 +82,7 @@ export const NativeAppBar = memo(function NativeAppBar() {
                     <IconButton
                         onClick={handleBack}
                         sx={backButtonSx}
-                        size="small"
+                        size="medium"
                     >
                         {isRtl ? <ArrowForwardIcon /> : <ArrowBackIcon />}
                     </IconButton>
@@ -116,7 +116,7 @@ export const NativeAppBar = memo(function NativeAppBar() {
                         <IconButton
                             onClick={() => navigate('/settings')}
                             sx={settingsButtonSx}
-                            size="small"
+                            size="medium"
                         >
                             <SettingsIcon />
                         </IconButton>
