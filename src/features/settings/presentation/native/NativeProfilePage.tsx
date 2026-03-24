@@ -108,21 +108,19 @@ export function NativeProfilePage() {
         setSuccess(null);
 
         try {
-            // Update profile info
-            if (user?.id) {
-                const resp = await api.put(`/users/${user.id}`, {
-                    firstName: firstName.trim() || undefined,
-                    lastName: lastName.trim() || undefined,
-                });
-                // Update auth store with new user data
-                if (resp.data?.user) {
-                    setUser(resp.data.user);
-                }
+            // Update profile info via PATCH /users/me
+            const resp = await api.patch('/users/me', {
+                firstName: firstName.trim() || undefined,
+                lastName: lastName.trim() || undefined,
+            });
+            // Update auth store with new user data
+            if (resp.data) {
+                setUser({ ...user!, ...resp.data });
             }
 
             // Change password if provided (already validated above)
             if (newPassword) {
-                await api.post('/auth/change-password', {
+                await api.post('/users/me/change-password', {
                     currentPassword,
                     newPassword,
                 });

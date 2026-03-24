@@ -195,8 +195,10 @@ export function NativeSettingsPage() {
     ];
 
     const handleLogout = useCallback(async () => {
-        await logout();
+        // Navigate first, then logout — prevents AppLoadingScreen from blocking
         navigate('/login', { replace: true });
+        // Small delay so navigation renders before state reset
+        setTimeout(() => { logout(); }, 100);
     }, [logout, navigate]);
 
     const handleTabChange = useCallback((value: string) => {

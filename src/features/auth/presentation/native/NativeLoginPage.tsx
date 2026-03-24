@@ -98,14 +98,43 @@ export function NativeLoginPage() {
     const [showBiometricEnrollment, setShowBiometricEnrollment] = useState(false);
     const [biometricEnrollLoading, setBiometricEnrollLoading] = useState(false);
 
-    // Check biometric availability on mount (only on native)
+    // Check biometric availability and auto-attempt on mount (only on native)
+    const biometricAttempted = useRef(false);
     useEffect(() => {
-        if (Capacitor.isNativePlatform()) {
-            biometricService.isAvailable().then(setBiometricAvailable).catch(() => {
-                setBiometricAvailable(false);
-            });
-        }
-    }, []);
+        if (!Capacitor.isNativePlatform()) return;
+
+        const init = async () => {
+            const available = await biometricService.isAvailable().catch(() => false);
+            setBiometricAvailable(available);
+
+            // Auto-attempt biometric login if device token exists
+            if (available && !biometricAttempted.current) {
+                biometricAttempted.current = true;
+                const deviceToken = await deviceTokenStorage.getDeviceToken();
+                const deviceId = await deviceTokenStorage.getDeviceId();
+                if (deviceToken && deviceId) {
+                    setBiometricLoading(true);
+                    try {
+                        const passed = await biometricService.authenticate(
+                            t('auth.biometric.reason', 'Verify your identity')
+                        );
+                        if (passed) {
+                            await authService.deviceAuth(deviceToken, deviceId);
+                            const { user: freshUser } = await authService.me();
+                            setUser(freshUser);
+                            navigate('/', { replace: true });
+                            return;
+                        }
+                    } catch {
+                        // Biometric failed or device token invalid — show normal login
+                    } finally {
+                        setBiometricLoading(false);
+                    }
+                }
+            }
+        };
+        init();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Redirect to dashboard if already authenticated
     useEffect(() => {
