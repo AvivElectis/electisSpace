@@ -9,6 +9,7 @@ import PeopleIcon from '@mui/icons-material/People';
 
 import { userService, type User } from '@shared/infrastructure/services/userService';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 import { NativePage } from '@shared/presentation/native/NativePage';
 import { NativeGroupedList } from '@shared/presentation/native/NativeGroupedList';
@@ -43,6 +44,7 @@ export function NativeUsersListPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { isPlatformAdmin, isCompanyAdmin } = useAuthContext();
+    const isAppReady = useAuthStore((s) => s.isAppReady);
 
     useSetNativeTitle(t('settings.users.title'));
 
@@ -60,8 +62,10 @@ export function NativeUsersListPage() {
     };
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (isAppReady) {
+            fetchUsers();
+        }
+    }, [isAppReady]);
 
     const filteredUsers = useMemo(() => {
         if (!deferredSearch) return users;

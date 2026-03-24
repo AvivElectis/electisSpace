@@ -69,10 +69,6 @@ const LogsViewerTab = lazy(() =>
     import('../LogsViewerTab').then((m) => ({ default: m.LogsViewerTab }))
 );
 
-const EnhancedUserDialog = lazy(() =>
-    import('../EnhancedUserDialog').then((m) => ({ default: m.EnhancedUserDialog }))
-);
-
 // ---------------------------------------------------------------------------
 // Loading fallback
 // ---------------------------------------------------------------------------
@@ -173,7 +169,6 @@ export function NativeSettingsPage() {
     useAutoLock();
 
     const [currentTab, setCurrentTab] = useState<SettingsTab>('app');
-    const [profileOpen, setProfileOpen] = useState(false);
 
     // Role checks — same logic as old NativeSettingsPage / SettingsDialog
     const isPlatformAdmin = user?.globalRole === 'PLATFORM_ADMIN';
@@ -276,7 +271,7 @@ export function NativeSettingsPage() {
                 <QuickAction
                     icon={<PersonIcon />}
                     label={t('nativeSettings.profile')}
-                    onClick={() => setProfileOpen(true)}
+                    onClick={() => navigate('/settings/profile')}
                 />
                 <QuickAction
                     icon={<HelpOutlineIcon />}
@@ -318,18 +313,6 @@ export function NativeSettingsPage() {
                 <Suspense fallback={<TabLoadingFallback />}>{renderPanel()}</Suspense>
             </Box>
 
-            {/* Profile dialog */}
-            {profileOpen && (
-                <Suspense fallback={null}>
-                    <EnhancedUserDialog
-                        open={profileOpen}
-                        onClose={() => setProfileOpen(false)}
-                        onSave={() => setProfileOpen(false)}
-                        user={user as any}
-                        profileMode
-                    />
-                </Suspense>
-            )}
         </NativePage>
     );
 }

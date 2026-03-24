@@ -32,6 +32,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  // Skip entirely in dev mode (Vite dev server)
+  if (request.url.includes('localhost:') || request.url.includes('127.0.0.1:')) {
+    return;
+  }
+
   // Skip non-GET, API calls, and SSE connections
   if (
     request.method !== 'GET' ||

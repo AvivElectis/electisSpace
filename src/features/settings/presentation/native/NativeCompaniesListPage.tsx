@@ -11,6 +11,7 @@ import CloudOffIcon from '@mui/icons-material/CloudOff';
 
 import { companyService, type Company } from '@shared/infrastructure/services/companyService';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { useAuthStore } from '@features/auth/infrastructure/authStore';
 
 import { NativePage } from '@shared/presentation/native/NativePage';
 import { NativeGroupedList } from '@shared/presentation/native/NativeGroupedList';
@@ -24,6 +25,7 @@ export function NativeCompaniesListPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { isPlatformAdmin } = useAuthContext();
+    const isAppReady = useAuthStore((s) => s.isAppReady);
 
     useSetNativeTitle(t('settings.companies.title'));
 
@@ -41,8 +43,10 @@ export function NativeCompaniesListPage() {
     };
 
     useEffect(() => {
-        fetchCompanies();
-    }, []);
+        if (isAppReady) {
+            fetchCompanies();
+        }
+    }, [isAppReady]);
 
     const filtered = useMemo(() => {
         if (!deferredSearch) return companies;

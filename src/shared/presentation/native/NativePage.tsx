@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { Box } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 import { nativeSizing, nativeSpacing, nativeColors } from '../themes/nativeTokens';
 import { PullToRefresh } from '../components/PullToRefresh';
 import type { ReactNode } from 'react';
@@ -20,14 +21,21 @@ interface NativePageProps {
 }
 
 export function NativePage({ children, noPadding = false, onRefresh }: NativePageProps) {
+    const location = useLocation();
+    const scrollRef = useRef<HTMLDivElement>(null);
+
     const pageSx = useMemo(() => ({
         ...pageBaseSx,
         px: noPadding ? 0 : `${nativeSpacing.pagePadding}px`,
         pt: noPadding ? 0 : 1,
     }), [noPadding]);
 
+    useEffect(() => {
+        scrollRef.current?.scrollTo(0, 0);
+    }, [location.pathname]);
+
     const content = (
-        <Box sx={pageSx}>
+        <Box ref={scrollRef} sx={pageSx}>
             {children}
         </Box>
     );

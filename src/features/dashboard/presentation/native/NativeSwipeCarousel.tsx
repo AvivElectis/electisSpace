@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useCallback } from 'react';
+import { memo, useState, useRef, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -41,28 +41,38 @@ export const NativeSwipeCarousel = memo(function NativeSwipeCarousel({ children 
         setIsDragging(true);
     }, []);
 
-    const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        const deltaX = e.touches[0].clientX - touchStartX.current;
-        const deltaY = e.touches[0].clientY - touchStartY.current;
+    // Register touchmove with { passive: false } so e.preventDefault() works on Android.
+    // React JSX event props don't support passive option, so we use a ref + addEventListener.
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
 
-        // Determine if horizontal or vertical scroll on first move
-        if (isScrolling.current === null) {
-            isScrolling.current = Math.abs(deltaY) > Math.abs(deltaX);
-        }
-        if (isScrolling.current) return; // Vertical scroll — don't intercept
+        const handleTouchMove = (e: TouchEvent) => {
+            const deltaX = e.touches[0].clientX - touchStartX.current;
+            const deltaY = e.touches[0].clientY - touchStartY.current;
 
-        e.preventDefault(); // Prevent vertical scroll while swiping horizontally
-        const containerWidth = containerRef.current?.clientWidth ?? 1;
-        // Convert pixel offset to percentage of slide width, with resistance at edges
-        let offset = (deltaX / containerWidth) * 100;
-        if (isRtl) offset = -offset;
+            // Determine if horizontal or vertical scroll on first move
+            if (isScrolling.current === null) {
+                isScrolling.current = Math.abs(deltaY) > Math.abs(deltaX);
+            }
+            if (isScrolling.current) return; // Vertical scroll — don't intercept
 
-        // Rubber-band effect at edges
-        if ((activeIndex === 0 && offset > 0) || (activeIndex === count - 1 && offset < 0)) {
-            offset *= 0.3;
-        }
+            e.preventDefault(); // Prevent vertical scroll while swiping horizontally
+            const containerWidth = el.clientWidth || 1;
+            // Convert pixel offset to percentage of slide width, with resistance at edges
+            let offset = (deltaX / containerWidth) * 100;
+            if (isRtl) offset = -offset;
 
-        setDragOffset(offset);
+            // Rubber-band effect at edges
+            if ((activeIndex === 0 && offset > 0) || (activeIndex === count - 1 && offset < 0)) {
+                offset *= 0.3;
+            }
+
+            setDragOffset(offset);
+        };
+
+        el.addEventListener('touchmove', handleTouchMove, { passive: false });
+        return () => el.removeEventListener('touchmove', handleTouchMove);
     }, [activeIndex, count, isRtl]);
 
     const handleTouchEnd = useCallback(() => {
@@ -129,7 +139,6 @@ export const NativeSwipeCarousel = memo(function NativeSwipeCarousel({ children 
             <Box
                 ref={containerRef}
                 onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 sx={{ overflow: 'hidden', touchAction: 'pan-y' }}
             >
