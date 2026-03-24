@@ -194,16 +194,22 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
 
         try {
             logger.info('LabelsStore', 'Linking label to article via server API', { labelCode, articleId });
-
             await labelsApi.link(storeId, labelCode, articleId, templateName);
-
-            // Refresh labels list
-            await get().fetchLabels(storeId);
             logger.info('LabelsStore', 'Label linked successfully');
         } catch (error: any) {
             logger.error('LabelsStore', 'Failed to link label', { error: error.message });
             set({ error: error.message, isLoading: false });
             throw error;
+        }
+
+        // Refresh labels list — separate try/catch so a refresh failure
+        // doesn't show as a "link failed" error when the link actually succeeded
+        try {
+            await get().fetchLabels(storeId);
+        } catch {
+            // Refresh failed but the link succeeded — don't overwrite success
+            set({ isLoading: false });
+            logger.warn('LabelsStore', 'Label linked but failed to refresh labels list');
         }
     },
 
@@ -213,16 +219,21 @@ export const useLabelsStore = create<LabelsState>((set, get) => ({
 
         try {
             logger.info('LabelsStore', 'Unlinking label via server API', { labelCode });
-
             await labelsApi.unlink(storeId, labelCode);
-
-            // Refresh labels list
-            await get().fetchLabels(storeId);
             logger.info('LabelsStore', 'Label unlinked successfully');
         } catch (error: any) {
             logger.error('LabelsStore', 'Failed to unlink label', { error: error.message });
             set({ error: error.message, isLoading: false });
             throw error;
+        }
+
+        // Refresh labels list — separate try/catch so a refresh failure
+        // doesn't show as an "unlink failed" error when the unlink succeeded
+        try {
+            await get().fetchLabels(storeId);
+        } catch {
+            set({ isLoading: false });
+            logger.warn('LabelsStore', 'Label unlinked but failed to refresh labels list');
         }
     },
 

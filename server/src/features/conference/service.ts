@@ -121,10 +121,32 @@ export const conferenceService = {
             throw 'NOT_FOUND';
         }
 
+        const linkedLabels = existing.assignedLabels || [];
+        if (existing.labelCode && !linkedLabels.includes(existing.labelCode)) {
+            linkedLabels.push(existing.labelCode);
+        }
+
+        if (linkedLabels.length > 0) {
+            appLogger.warn('ConferenceService', `Deleting conference room ${existing.externalId} which has ${linkedLabels.length} linked label(s)`, {
+                roomId,
+                externalId: existing.externalId,
+                storeId: existing.storeId,
+                linkedLabels,
+            });
+        } else {
+            appLogger.info('ConferenceService', `Deleting conference room ${existing.externalId} (no linked labels)`, {
+                roomId,
+                externalId: existing.externalId,
+                storeId: existing.storeId,
+            });
+        }
+
         // Queue sync job to delete from AIMS first (with 'C' prefix)
         await syncQueueService.queueDelete(existing.storeId, 'conference', existing.id, `C${existing.externalId}`);
 
         await conferenceRepository.delete(roomId);
+
+        return { linkedLabels };
     },
 
     /**
