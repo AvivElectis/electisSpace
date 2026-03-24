@@ -86,6 +86,9 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'es2020',
+    cssCodeSplit: true,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -105,6 +108,13 @@ export default defineConfig({
             if (id.includes('axios') || id.includes('papaparse') || id.includes('date-fns')) {
               return 'utils-vendor';
             }
+            if (id.includes('@capacitor')) {
+              return 'native-vendor';
+            }
+          }
+          // Split native-only UI code into a separate chunk
+          if (id.includes('src/shared/presentation/native') || id.includes('src/shared/hooks/useAndroid') || id.includes('src/shared/hooks/useNative')) {
+            return 'native-shell';
           }
         },
       },

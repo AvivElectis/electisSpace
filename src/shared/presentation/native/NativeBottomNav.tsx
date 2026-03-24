@@ -8,6 +8,8 @@ import { useNavTabs } from '../hooks/useNavTabs';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { glass, nativeSizing } from '../themes/nativeTokens';
 
+const bottomNavInnerSx = { height: nativeSizing.bottomNavHeight, bgcolor: 'transparent' } as const;
+
 export const NativeBottomNav = memo(function NativeBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -28,24 +30,26 @@ export const NativeBottomNav = memo(function NativeBottomNav() {
         navigate(newValue);
     };
 
+    const paperSx = {
+        position: 'fixed',
+        bottom: 0,
+        insetInlineStart: 0,
+        insetInlineEnd: 0,
+        zIndex: theme.zIndex.appBar,
+        ...glass,
+        paddingBottom: 'env(safe-area-inset-bottom)',
+    };
+
     return (
         <Paper
             elevation={0}
-            sx={{
-                position: 'fixed',
-                bottom: 0,
-                insetInlineStart: 0,
-                insetInlineEnd: 0,
-                zIndex: theme.zIndex.appBar,
-                ...glass,
-                paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
+            sx={paperSx}
         >
             <BottomNavigation
                 showLabels
                 value={activeValue}
                 onChange={handleChange}
-                sx={{ height: nativeSizing.bottomNavHeight, bgcolor: 'transparent' }}
+                sx={bottomNavInnerSx}
             >
                 {navTabs.map(tab => (
                     <BottomNavigationAction

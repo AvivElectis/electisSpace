@@ -7,6 +7,43 @@ import { useTranslation } from 'react-i18next';
 import { NativeCard } from './NativeCard';
 import { nativeColors, nativeSpacing, nativeSizing } from '../themes/nativeTokens';
 
+const emptyStateSx = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 } as const;
+
+const outerScrollSx = {
+    flex: 1,
+    overflowY: 'auto',
+    pb: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
+} as const;
+
+const sectionHeaderSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 } as const;
+
+const sectionIconWrapperSx = { display: 'flex', alignItems: 'center' } as const;
+
+const buttonBaseSx = {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    px: `${nativeSpacing.cardPadding}px`,
+    py: 1.5,
+    minHeight: `${nativeSizing.touchMinHeight}px`,
+    textAlign: 'start',
+} as const;
+
+const itemContentSx = { flex: 1, overflow: 'hidden' } as const;
+
+const chevronSx = { color: 'text.disabled', flexShrink: 0, ms: 1 } as const;
+
+const dividerSx = { height: 1, bgcolor: nativeColors.surface.low, mx: 2 } as const;
+
+const itemWrapperSx = { display: 'contents' } as const;
+
+const fabSx = {
+    position: 'fixed',
+    bottom: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
+    insetInlineEnd: 16,
+} as const;
+
 type SectionColor = 'success' | 'warning' | 'error' | 'info' | 'primary';
 
 export interface NativeGroupedListSection<T> {
@@ -50,34 +87,31 @@ export function NativeGroupedList<T>({
 
     if (!hasItems && emptyState) {
         return (
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+            <Box sx={emptyStateSx}>
                 {emptyState}
             </Box>
         );
     }
 
     return (
-        <Box
-            sx={{
-                flex: 1,
-                overflowY: 'auto',
-                pb: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
-            }}
-        >
+        <Box sx={outerScrollSx}>
             {sections.map((section) => {
                 const color = COLOR_MAP[section.color];
+                const sectionBoxSx = { mb: `${nativeSpacing.sectionGap}px`, px: `${nativeSpacing.pagePadding}px` };
+                const iconSx = { color, ...sectionIconWrapperSx };
+                const labelSx = { color, fontWeight: 700, lineHeight: 1.2, letterSpacing: '0.08em' };
                 return (
-                    <Box key={section.title} sx={{ mb: `${nativeSpacing.sectionGap}px`, px: `${nativeSpacing.pagePadding}px` }}>
+                    <Box key={section.title} sx={sectionBoxSx}>
                         {/* Section header */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Box sx={sectionHeaderSx}>
                             {section.icon && (
-                                <Box sx={{ color, display: 'flex', alignItems: 'center' }}>
+                                <Box sx={iconSx}>
                                     {section.icon}
                                 </Box>
                             )}
                             <Typography
                                 variant="overline"
-                                sx={{ color, fontWeight: 700, lineHeight: 1.2, letterSpacing: '0.08em' }}
+                                sx={labelSx}
                             >
                                 {section.title} ({section.count})
                             </Typography>
@@ -87,27 +121,18 @@ export function NativeGroupedList<T>({
                         {section.items.length > 0 && (
                             <NativeCard>
                                 {section.items.map((item, idx) => (
-                                    <Box key={keyExtractor(item)}>
+                                    <Box key={keyExtractor(item)} sx={itemWrapperSx}>
                                         {idx > 0 && (
-                                            <Box sx={{ height: 1, bgcolor: nativeColors.surface.low, mx: 2 }} />
+                                            <Box sx={dividerSx} />
                                         )}
                                         <ButtonBase
                                             onClick={() => onItemTap(item)}
-                                            sx={{
-                                                width: '100%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                px: `${nativeSpacing.cardPadding}px`,
-                                                py: 1.5,
-                                                minHeight: `${nativeSizing.touchMinHeight}px`,
-                                                textAlign: 'start',
-                                            }}
+                                            sx={buttonBaseSx}
                                         >
-                                            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                                            <Box sx={itemContentSx}>
                                                 {renderItem(item)}
                                             </Box>
-                                            <ChevronIcon sx={{ color: 'text.disabled', flexShrink: 0, ms: 1 }} />
+                                            <ChevronIcon sx={chevronSx} />
                                         </ButtonBase>
                                     </Box>
                                 ))}
@@ -122,11 +147,7 @@ export function NativeGroupedList<T>({
                 <Fab
                     color="primary"
                     onClick={fab.onClick}
-                    sx={{
-                        position: 'fixed',
-                        bottom: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
-                        insetInlineEnd: 16,
-                    }}
+                    sx={fabSx}
                 >
                     {fab.icon ?? <AddIcon />}
                 </Fab>

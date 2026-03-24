@@ -7,6 +7,53 @@ import { useNativePageTitle } from './NativePageTitleContext';
 import { nativeGradients, nativeSizing } from '../themes/nativeTokens';
 import { CompanyStoreSelector } from '@features/auth/presentation/CompanyStoreSelector';
 
+const appBarSx = {
+    background: nativeGradients.appBar,
+    paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)',
+} as const;
+
+const toolbarSx = {
+    minHeight: `${nativeSizing.appBarHeight}px !important`,
+    height: nativeSizing.appBarHeight,
+    px: 1,
+    gap: 0.5,
+} as const;
+
+const backButtonSx = { color: 'primary.contrastText' } as const;
+
+const brandTextSx = {
+    fontFamily: '"Manrope", sans-serif',
+    fontWeight: 800,
+    color: 'primary.contrastText',
+    ml: 1,
+    letterSpacing: '-0.3px',
+    fontSize: '1.1rem',
+} as const;
+
+const brandSpanSx = { fontWeight: 400, opacity: 0.85 } as const;
+
+const selectorWrapperSx = {
+    '& *': {
+        color: '#ffffff !important',
+        borderColor: 'rgba(255,255,255,0.4) !important',
+    },
+    '& .MuiIconButton-root': {
+        background: 'rgba(255,255,255,0.15) !important',
+        '&:hover': { background: 'rgba(255,255,255,0.25) !important' },
+    },
+    '& .MuiButton-root': {
+        background: 'rgba(255,255,255,0.15) !important',
+        '&:hover': { background: 'rgba(255,255,255,0.25) !important' },
+    },
+    '& .MuiIconButton-root svg': {
+        color: '#ffffff !important',
+    },
+} as const;
+
+const rightClusterSx = { display: 'flex', alignItems: 'center', gap: 0.5 } as const;
+
+const settingsButtonSx = { color: 'primary.contrastText' } as const;
+
 export const NativeAppBar = memo(function NativeAppBar() {
     const navigate = useNavigate();
     const { pageTitle } = useNativePageTitle();
@@ -15,23 +62,13 @@ export const NativeAppBar = memo(function NativeAppBar() {
         <AppBar
             position="sticky"
             elevation={0}
-            sx={{
-                background: nativeGradients.appBar,
-                paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)',
-            }}
+            sx={appBarSx}
         >
-            <Toolbar
-                sx={{
-                    minHeight: `${nativeSizing.appBarHeight}px !important`,
-                    height: nativeSizing.appBarHeight,
-                    px: 1,
-                    gap: 0.5,
-                }}
-            >
+            <Toolbar sx={toolbarSx}>
                 {pageTitle.showBackArrow ? (
                     <IconButton
                         onClick={() => navigate(-1)}
-                        sx={{ color: 'primary.contrastText' }}
+                        sx={backButtonSx}
                         size="small"
                     >
                         <ArrowBackIcon />
@@ -39,16 +76,9 @@ export const NativeAppBar = memo(function NativeAppBar() {
                 ) : (
                     <Typography
                         variant="subtitle1"
-                        sx={{
-                            fontFamily: '"Manrope", sans-serif',
-                            fontWeight: 800,
-                            color: 'primary.contrastText',
-                            ml: 1,
-                            letterSpacing: '-0.3px',
-                            fontSize: '1.1rem',
-                        }}
+                        sx={brandTextSx}
                     >
-                        electis<Box component="span" sx={{ fontWeight: 400, opacity: 0.85 }}>Space</Box>
+                        electis<Box component="span" sx={brandSpanSx}>Space</Box>
                     </Typography>
                 )}
 
@@ -65,31 +95,14 @@ export const NativeAppBar = memo(function NativeAppBar() {
                 {pageTitle.actions}
 
                 {!pageTitle.showBackArrow && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{
-                            // Force ALL child elements white on the blue gradient
-                            '& *': {
-                                color: '#ffffff !important',
-                                borderColor: 'rgba(255,255,255,0.4) !important',
-                            },
-                            '& .MuiIconButton-root': {
-                                background: 'rgba(255,255,255,0.15) !important',
-                                '&:hover': { background: 'rgba(255,255,255,0.25) !important' },
-                            },
-                            '& .MuiButton-root': {
-                                background: 'rgba(255,255,255,0.15) !important',
-                                '&:hover': { background: 'rgba(255,255,255,0.25) !important' },
-                            },
-                            // Force the icon-only mobile button to show
-                            '& .MuiIconButton-root svg': {
-                                color: '#ffffff !important',
-                            },
-                        }}>
+                    <Box sx={rightClusterSx}>
+                        {/* Force ALL child elements white on the blue gradient */}
+                        <Box sx={selectorWrapperSx}>
                             <CompanyStoreSelector compact />
                         </Box>
                         <IconButton
                             onClick={() => navigate('/settings')}
-                            sx={{ color: 'primary.contrastText' }}
+                            sx={settingsButtonSx}
                             size="small"
                         >
                             <SettingsIcon />

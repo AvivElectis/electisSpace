@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -18,7 +18,36 @@ import { SphereLoader } from '../components/SphereLoader';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { nativeSizing } from '../themes/nativeTokens';
 
-export function NativeShell() {
+const shellRootSx = {
+    minHeight: '100vh',
+    bgcolor: 'background.default',
+    display: 'flex',
+    flexDirection: 'column',
+} as const;
+
+const storeSwitchOverlaySx = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: (theme: { zIndex: { modal: number } }) => theme.zIndex.modal + 1,
+    bgcolor: 'background.default',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+} as const;
+
+const mainContentSx = { flex: 1, display: 'flex', flexDirection: 'column' } as const;
+
+const syncIndicatorSx = {
+    position: 'fixed',
+    top: `calc(${nativeSizing.appBarHeight}px + max(env(safe-area-inset-top, 0px), 28px) + 8px)`,
+    insetInlineStart: 12,
+    zIndex: (theme: { zIndex: { appBar: number } }) => theme.zIndex.appBar - 1,
+    transform: 'scale(0.85)',
+    transformOrigin: 'top left',
+    opacity: 0.9,
+} as const;
+
+export const NativeShell = memo(function NativeShell() {
     useNativeInit();
 
     const { isAuthenticated } = useAuthContext();
@@ -51,33 +80,16 @@ export function NativeShell() {
     return (
         <SyncProvider value={syncController}>
             <NativePageTitleProvider>
-                <Box
-                    sx={{
-                        minHeight: '100vh',
-                        bgcolor: 'background.default',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
+                <Box sx={shellRootSx}>
                     {isSwitchingStore && (
-                        <Box
-                            sx={{
-                                position: 'fixed',
-                                inset: 0,
-                                zIndex: (theme) => theme.zIndex.modal + 1,
-                                bgcolor: 'background.default',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
+                        <Box sx={storeSwitchOverlaySx}>
                             <SphereLoader />
                         </Box>
                     )}
 
                     <NativeAppBar />
 
-                    <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box component="main" sx={mainContentSx}>
                         <ErrorBoundary showDetails>
                             <StoreRequiredGuard>
                                 <Outlet />
@@ -86,17 +98,7 @@ export function NativeShell() {
                     </Box>
 
                     {/* Sync Status Indicator — positioned at top under app bar, not overlapping FABs */}
-                    <Box
-                        sx={{
-                            position: 'fixed',
-                            top: `calc(${nativeSizing.appBarHeight}px + max(env(safe-area-inset-top, 0px), 28px) + 8px)`,
-                            insetInlineStart: 12,
-                            zIndex: (theme) => theme.zIndex.appBar - 1,
-                            transform: 'scale(0.85)',
-                            transformOrigin: 'top left',
-                            opacity: 0.9,
-                        }}
-                    >
+                    <Box sx={syncIndicatorSx}>
                         <SyncStatusIndicator
                             status={syncStatus}
                             lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
@@ -115,4 +117,4 @@ export function NativeShell() {
             </NativePageTitleProvider>
         </SyncProvider>
     );
-}
+});
