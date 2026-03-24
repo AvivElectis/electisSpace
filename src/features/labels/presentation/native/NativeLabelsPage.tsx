@@ -107,7 +107,7 @@ export function NativeLabelsPage() {
             // Navigate to link page with pre-filled label code
             navigate(`/labels/link?labelCode=${encodeURIComponent(label.labelCode)}`);
         }
-    }, [activeStoreId, fetchLabels, unlinkLabelFromArticle, navigate]);
+    }, [activeStoreId, unlinkLabelFromArticle, navigate]);
 
     const totalPages = Math.ceil(filteredLabels.length / PAGE_SIZE);
 
@@ -162,7 +162,7 @@ export function NativeLabelsPage() {
                             icon={<LabelIcon />}
                             title={
                                 searchQuery || filterLinkedOnly
-                                    ? t('labels.noLabels')
+                                    ? t('common.noResults', 'No results found')
                                     : t('labels.noLabels')
                             }
                         />

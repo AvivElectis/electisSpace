@@ -43,12 +43,18 @@ export function NativeElevateUserPage() {
                                 ? 'APP_VIEWER'
                                 : 'USER';
                         setSelectedRole(role);
+                    } else {
+                        setError(t('settings.users.userNotFound', 'User not found'));
+                        setLoadingUser(false);
+                        return;
                     }
                 })
-                .catch(() => {})
+                .catch(() => {
+                    setError(t('common.error'));
+                })
                 .finally(() => setLoadingUser(false));
         }
-    }, [id]);
+    }, [id, t]);
 
     const handleSave = async () => {
         if (!id || !user) return;

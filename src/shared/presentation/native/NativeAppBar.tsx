@@ -58,6 +58,14 @@ export const NativeAppBar = memo(function NativeAppBar() {
     const navigate = useNavigate();
     const { pageTitle } = useNativePageTitle();
 
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate('/', { replace: true });
+        }
+    };
+
     return (
         <AppBar
             position="sticky"
@@ -67,7 +75,7 @@ export const NativeAppBar = memo(function NativeAppBar() {
             <Toolbar sx={toolbarSx}>
                 {pageTitle.showBackArrow ? (
                     <IconButton
-                        onClick={() => navigate(-1)}
+                        onClick={handleBack}
                         sx={backButtonSx}
                         size="small"
                     >

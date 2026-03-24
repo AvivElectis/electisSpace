@@ -8,7 +8,6 @@ export interface NativeVirtualizedListProps<T> {
     items: T[];
     renderItem: (item: T) => ReactNode;
     onItemTap: (item: T) => void;
-    keyExtractor: (item: T) => string;
     itemHeight?: number;
     emptyState?: ReactNode;
 }
@@ -55,7 +54,6 @@ export function NativeVirtualizedList<T>({
     items,
     renderItem,
     onItemTap,
-    keyExtractor: _keyExtractor,
     itemHeight = 72,
     emptyState,
 }: NativeVirtualizedListProps<T>) {

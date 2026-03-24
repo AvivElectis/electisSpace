@@ -57,7 +57,7 @@ export function NativeRoleFormPage() {
         if (isEditMode) {
             fetchRoles(activeCompanyId || undefined).finally(() => setLoadingRole(false));
         }
-    }, []);
+    }, [isEditMode, activeCompanyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (existingRole) {

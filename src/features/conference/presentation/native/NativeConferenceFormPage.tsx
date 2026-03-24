@@ -94,6 +94,10 @@ export function NativeConferenceFormPage() {
     };
 
     const handleSave = async () => {
+        if (!isEditMode && !roomId.trim()) {
+            setIdError(t('validation.required', { field: t('conference.roomId') }));
+            return;
+        }
         setSaving(true);
         try {
             const participants = participantsText

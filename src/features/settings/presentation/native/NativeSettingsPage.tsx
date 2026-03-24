@@ -17,6 +17,7 @@
 
 import { useState, lazy, Suspense, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Browser } from '@capacitor/browser';
 import { useTranslation } from 'react-i18next';
 import {
     Box,
@@ -165,7 +166,7 @@ export function NativeSettingsPage() {
     const settingsController = useSettingsController();
     const { user, logout } = useAuthStore();
 
-    useSetNativeTitle(t('settings.title'), true);
+    useSetNativeTitle(t('settings.title'));
 
     // Enable auto-lock
     useAutoLock();
@@ -279,7 +280,11 @@ export function NativeSettingsPage() {
                 <QuickAction
                     icon={<HelpOutlineIcon />}
                     label={t('nativeSettings.help')}
-                    onClick={() => navigate('/manual')}
+                    onClick={() =>
+                        Browser.open({ url: 'https://github.com/AvivElectis/electisSpace/wiki' }).catch(() =>
+                            window.open('https://github.com/AvivElectis/electisSpace/wiki', '_blank')
+                        )
+                    }
                 />
                 <QuickAction
                     icon={<InfoOutlinedIcon />}

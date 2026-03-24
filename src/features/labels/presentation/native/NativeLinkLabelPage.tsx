@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Alert, Autocomplete, CircularProgress } from '@mui/material';
@@ -90,18 +90,6 @@ export function NativeLinkLabelPage() {
             setIsSubmitting(false);
         }
     }, [labelCode, articleId, templateName, activeStoreId, linkLabelToArticle, navigate, t]);
-
-    // Auto-submit when both fields are prefilled and article is valid
-    const autoSubmittedRef = useRef(false);
-    useEffect(() => {
-        if (autoSubmittedRef.current || isSubmitting || !articles.length) return;
-        if (!labelCode.trim() || !articleId.trim()) return;
-        const validArticle = articles.some((a) => a.id === articleId.trim());
-        if (validArticle) {
-            autoSubmittedRef.current = true;
-            handleSubmit();
-        }
-    }, [labelCode, articleId, articles, isSubmitting, handleSubmit]);
 
     const pageTitle = t('labels.link.title');
 

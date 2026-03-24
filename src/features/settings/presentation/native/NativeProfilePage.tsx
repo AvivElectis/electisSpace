@@ -90,6 +90,18 @@ export function NativeProfilePage() {
     };
 
     const handleSave = async () => {
+        // Password validation FIRST — before any API calls
+        if (newPassword) {
+            if (newPassword !== confirmPassword) {
+                setError(t('validation.passwordsMustMatch', 'Passwords must match'));
+                return;
+            }
+            if (!currentPassword) {
+                setError(t('validation.currentPasswordRequired', 'Current password is required'));
+                return;
+            }
+        }
+
         setSaving(true);
         setError(null);
         setSuccess(null);
@@ -107,18 +119,8 @@ export function NativeProfilePage() {
                 }
             }
 
-            // Change password if provided
+            // Change password if provided (already validated above)
             if (newPassword) {
-                if (newPassword !== confirmPassword) {
-                    setError(t('validation.passwordsMustMatch', 'Passwords must match'));
-                    setSaving(false);
-                    return;
-                }
-                if (!currentPassword) {
-                    setError(t('validation.currentPasswordRequired', 'Current password is required'));
-                    setSaving(false);
-                    return;
-                }
                 await api.post('/auth/change-password', {
                     currentPassword,
                     newPassword,

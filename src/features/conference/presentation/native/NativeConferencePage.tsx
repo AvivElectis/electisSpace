@@ -49,9 +49,9 @@ export function NativeConferencePage() {
         solumMappingConfig: settings.solumMappingConfig,
     });
 
-    // Fetch rooms on mount / store switch
+    // Fetch rooms on mount / store switch — regardless of working mode
     useEffect(() => {
-        if (isAppReady && activeStoreId && settings.workingMode === 'SOLUM_API' && settings.solumConfig) {
+        if (isAppReady && activeStoreId) {
             conferenceController.fetchRooms().catch(() => {
                 if (solumToken && settings.solumMappingConfig) {
                     conferenceController.fetchFromSolum().catch(() => {});

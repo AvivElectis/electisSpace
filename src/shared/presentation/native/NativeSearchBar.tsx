@@ -38,6 +38,11 @@ export function NativeSearchBar({
         [controlledExpanded, onExpandedChange]
     );
 
+    // Cleanup debounce timer on unmount
+    useEffect(() => {
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, []);
+
     // Sync external value → input
     useEffect(() => {
         setInputValue(value);

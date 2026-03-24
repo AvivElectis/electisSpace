@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Switch, FormControlLabel, Alert, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import { Box, Typography, Switch, FormControlLabel, Alert, MenuItem, Select, InputLabel, FormControl, CircularProgress } from '@mui/material';
 
 import { userService, type User } from '@shared/infrastructure/services/userService';
 import api from '@shared/infrastructure/services/apiClient';
@@ -33,6 +33,7 @@ export function NativeUserFormPage() {
     const [password, setPassword] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [companyRoleId, setCompanyRoleId] = useState('role-employee');
+    const [loading, setLoading] = useState(isEditMode);
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -40,6 +41,7 @@ export function NativeUserFormPage() {
     // Load user in edit mode
     useEffect(() => {
         if (id) {
+            setLoading(true);
             userService.getAll({ limit: 200 })
                 .then((resp) => {
                     const found = resp.data.find((u) => u.id === id);
@@ -54,11 +56,16 @@ export function NativeUserFormPage() {
                         if (firstCompany?.roleId) {
                             setCompanyRoleId(firstCompany.roleId);
                         }
+                    } else {
+                        setError(t('settings.users.userNotFound', 'User not found'));
                     }
                 })
-                .catch(() => {});
+                .catch(() => {
+                    setError(t('common.error'));
+                })
+                .finally(() => setLoading(false));
         }
-    }, [id]);
+    }, [id, t]);
 
     const pageTitle = isEditMode
         ? t('settings.users.editUser')
@@ -118,6 +125,11 @@ export function NativeUserFormPage() {
 
     return (
         <NativeFormPage title={pageTitle} onSave={handleSave} isSaving={saving}>
+            {loading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <CircularProgress />
+                </Box>
+            )}
             {error && (
                 <Box sx={{ px: `${nativeSpacing.pagePadding}px`, pt: 1 }}>
                     <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>
