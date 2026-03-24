@@ -75,3 +75,4 @@ my-video/
 replacements.txt
 electisspace_dev.dump
 emulator-*.png
+.mcp.json
