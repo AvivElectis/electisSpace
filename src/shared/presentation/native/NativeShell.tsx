@@ -1,6 +1,8 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, useEffect } from 'react';
 import { Box } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useBackendSyncController } from '@features/sync/application/useBackendSyncController';
@@ -47,8 +49,40 @@ const syncIndicatorSx = {
     opacity: 0.9,
 } as const;
 
+const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 export const NativeShell = memo(function NativeShell() {
     useNativeInit();
+
+    // Track app background time — require re-auth after 5 minutes
+    const backgroundTimeRef = useRef<number | null>(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const handlePause = () => {
+            backgroundTimeRef.current = Date.now();
+        };
+        const handleResume = () => {
+            if (backgroundTimeRef.current) {
+                const elapsed = Date.now() - backgroundTimeRef.current;
+                backgroundTimeRef.current = null;
+                if (elapsed >= SESSION_TIMEOUT_MS) {
+                    // Session expired — force re-login
+                    navigate('/login', { replace: true });
+                }
+            }
+        };
+
+        const pauseListener = App.addListener('pause', handlePause);
+        const resumeListener = App.addListener('resume', handleResume);
+
+        return () => {
+            pauseListener.then(h => h.remove());
+            resumeListener.then(h => h.remove());
+        };
+    }, [navigate]);
 
     const { isAuthenticated } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);

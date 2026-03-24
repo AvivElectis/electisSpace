@@ -66,11 +66,11 @@ export function NativeProfilePage() {
                 if (resp.data?.deviceToken) {
                     await deviceTokenStorage.setDeviceToken(resp.data.deviceToken);
                     setHasDeviceToken(true);
-                    setSuccess(t('settings.biometric.enabled', 'Biometric login enabled'));
+                    setSuccess(t('settings.users.biometric.enabled', 'Biometric login enabled'));
                 }
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || t('settings.biometric.enableFailed', 'Failed to enable biometric login'));
+            setError(err.response?.data?.message || t('settings.users.biometric.enableFailed', 'Failed to enable biometric login'));
         } finally {
             setBiometricLoading(false);
         }
@@ -82,7 +82,7 @@ export function NativeProfilePage() {
         try {
             await deviceTokenStorage.removeDeviceToken();
             setHasDeviceToken(false);
-            setSuccess(t('settings.biometric.disabled', 'Biometric login disabled'));
+            setSuccess(t('settings.users.biometric.disabled', 'Biometric login disabled'));
         } catch {
             setError(t('common.error'));
         } finally {
@@ -200,19 +200,19 @@ export function NativeProfilePage() {
 
             {/* Biometric Login — only on native with biometric hardware */}
             {Capacitor.isNativePlatform() && biometricAvailable && (
-                <NativeFormSection title={t('settings.biometric.title', 'Biometric Login')}>
+                <NativeFormSection title={t('settings.users.biometric.title', 'Biometric Login')}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                         <FingerprintIcon sx={{ fontSize: 40, color: hasDeviceToken ? 'success.main' : 'text.secondary' }} />
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="body2" fontWeight={600}>
                                 {hasDeviceToken
-                                    ? t('settings.biometric.statusEnabled', 'Biometric login is enabled')
-                                    : t('settings.biometric.statusDisabled', 'Biometric login is not set up')}
+                                    ? t('settings.users.biometric.statusEnabled', 'Biometric login is enabled')
+                                    : t('settings.users.biometric.statusDisabled', 'Biometric login is not set up')}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
                                 {hasDeviceToken
-                                    ? t('settings.biometric.hintEnabled', 'You can log in using fingerprint or face recognition')
-                                    : t('settings.biometric.hintDisabled', 'Enable to log in faster with fingerprint or face recognition')}
+                                    ? t('settings.users.biometric.hintEnabled', 'You can log in using fingerprint or face recognition')
+                                    : t('settings.users.biometric.hintDisabled', 'Enable to log in faster with fingerprint or face recognition')}
                             </Typography>
                         </Box>
                         {hasDeviceToken && <CheckCircleIcon color="success" />}
@@ -224,11 +224,11 @@ export function NativeProfilePage() {
                         onClick={hasDeviceToken ? handleDisableBiometric : handleEnableBiometric}
                         disabled={biometricLoading}
                         startIcon={biometricLoading ? <CircularProgress size={18} /> : <FingerprintIcon />}
-                        sx={{ textTransform: 'none', minHeight: 48 }}
+                        sx={{ textTransform: 'none', minHeight: 48, gap: 1 }}
                     >
                         {hasDeviceToken
-                            ? t('settings.biometric.disable', 'Disable Biometric Login')
-                            : t('settings.biometric.enable', 'Enable Biometric Login')}
+                            ? t('settings.users.biometric.disable', 'Disable Biometric Login')
+                            : t('settings.users.biometric.enable', 'Enable Biometric Login')}
                     </Button>
                 </NativeFormSection>
             )}
