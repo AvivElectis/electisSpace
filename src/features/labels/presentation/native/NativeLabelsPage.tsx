@@ -31,7 +31,8 @@ export function NativeLabelsPage() {
 
     useSetNativeTitle(t('navigation.labels'));
 
-    const { activeStoreId, isAppReady } = useAuthStore();
+    const activeStoreId = useAuthStore((s) => s.activeStoreId);
+    const isAppReady = useAuthStore((s) => s.isAppReady);
 
     const {
         labels,

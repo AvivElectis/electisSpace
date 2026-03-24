@@ -67,7 +67,7 @@ export const NativeShell = memo(function NativeShell() {
         autoSyncInterval,
     });
 
-    const { syncState } = useSyncStore();
+    const syncState = useSyncStore((s) => s.syncState);
 
     useAndroidBackButton({});
 

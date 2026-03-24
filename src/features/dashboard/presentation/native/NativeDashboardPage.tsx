@@ -57,7 +57,8 @@ export function NativeDashboardPage() {
     // Set app bar title
     useSetNativeTitle(t('navigation.dashboard'));
 
-    const { activeStoreId, isAppReady } = useAuthStore();
+    const activeStoreId = useAuthStore((s) => s.activeStoreId);
+    const isAppReady = useAuthStore((s) => s.isAppReady);
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
 
@@ -183,12 +184,15 @@ export function NativeDashboardPage() {
     // --- Pull-to-refresh ---
     const handleRefresh = useCallback(async () => {
         if (!isAppReady || !activeStoreId) return;
-        spaceController.fetchSpaces();
-        conferenceController.fetchRooms();
-        peopleStore.fetchPeople();
+        const promises: Promise<void>[] = [
+            spaceController.fetchSpaces(),
+            conferenceController.fetchRooms(),
+            peopleStore.fetchPeople(),
+        ];
         if (canAccessAims) {
-            await fetchAimsOverview();
+            promises.push(fetchAimsOverview());
         }
+        await Promise.all(promises);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAppReady, activeStoreId, canAccessAims]);
 

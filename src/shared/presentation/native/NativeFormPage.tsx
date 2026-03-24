@@ -56,7 +56,7 @@ export function NativeFormPage({
         </Button>
     );
 
-    useSetNativeTitle(title, true, saveButton);
+    useSetNativeTitle(title, true, saveButton, isSaving);
 
     return <NativePage>{children}</NativePage>;
 }

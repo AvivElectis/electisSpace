@@ -38,15 +38,17 @@ export function useNativePageTitle() {
 
 /**
  * Hook for native pages to set their title on mount.
- * Only re-sets when title or showBackArrow change (not actions, since
- * ReactNode creates new references each render).
+ * Only re-sets when title, showBackArrow, or actionsDep change (not actions directly,
+ * since ReactNode creates new references each render). Pass actionsDep to trigger
+ * re-runs when action content changes (e.g. isSaving state).
  */
-export function useSetNativeTitle(title: string, showBackArrow = false, actions?: ReactNode) {
+export function useSetNativeTitle(title: string, showBackArrow = false, actions?: ReactNode, actionsDep?: unknown) {
     const { setPageTitle } = useNativePageTitle();
     const actionsRef = useRef(actions);
     actionsRef.current = actions;
 
     useEffect(() => {
         setPageTitle(title, showBackArrow, actionsRef.current);
-    }, [title, showBackArrow, setPageTitle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [title, showBackArrow, setPageTitle, actionsDep]);
 }

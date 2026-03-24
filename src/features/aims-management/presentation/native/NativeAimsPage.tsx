@@ -353,7 +353,8 @@ export function NativeAimsPage() {
     const { t } = useTranslation();
     useSetNativeTitle(t('navigation.aimsManagement'));
 
-    const { activeStoreId, isAppReady } = useAuthStore();
+    const activeStoreId = useAuthStore((s) => s.activeStoreId);
+    const isAppReady = useAuthStore((s) => s.isAppReady);
     const syncState = useSyncStore((s) => s.syncState);
     // Read auto-sync from settings store (source of truth), write to both
     const autoSyncEnabled = useSettingsStore((s) => s.settings.autoSyncEnabled ?? false);

@@ -164,7 +164,8 @@ export function NativeSettingsPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const settingsController = useSettingsController();
-    const { user, logout } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
+    const logout = useAuthStore((s) => s.logout);
 
     useSetNativeTitle(t('settings.title'));
 
