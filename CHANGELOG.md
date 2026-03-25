@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.14.1] — 2026-03-25 — Total Spaces Edit Guard
+
+### Fixed
+- **Total spaces input locked by default** — requires Edit → Save to change, preventing accidental seat count changes that could delete AIMS articles and unlink labels
+- Edit button uses outlined style with tooltip, consistent with theme, mobile-responsive sizing
+- Added EN + HE translations for edit tooltip
+
 ## [2.14.0] — 2026-03-16 — Native App Adaptations
 
 ### Added

@@ -1352,6 +1352,7 @@
         "unassignSpace": "בטל הקצאת {{spaceTypeSingular}}",
         "unassignSpaceConfirm": "האם אתה בטוח שברצונך לבטל את הקצאת {{spaceTypeSingularDef}}? פעולה זו גם תנקה את {{spaceTypeSingularDef}} ב-AIMS.",
         "totalSpaces": "סה\"כ {{spaceTypePlural}}",
+        "editTotalSpaces": "ערוך סה\"כ {{spaceTypePlural}}",
         "spacesAssigned": "{{assigned}} מתוך {{total}} {{spaceTypePlural}} מוקצים",
         "available": "זמין",
         "bulkAssign": "הקצאה מרובה של {{spaceTypePlural}}",
