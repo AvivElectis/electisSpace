@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useDeferredValue, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box, SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
@@ -219,34 +220,37 @@ export function NativePeopleListPage() {
                 }
             />
 
-            {/* SpeedDial: Add Person + Import CSV */}
-            <SpeedDial
-                ariaLabel={t('people.addPerson')}
-                sx={fabSx}
-                icon={<SpeedDialIcon />}
-                open={speedDialOpen}
-                onOpen={() => setSpeedDialOpen(true)}
-                onClose={() => setSpeedDialOpen(false)}
-            >
-                <SpeedDialAction
-                    icon={<PersonAddIcon />}
-                    tooltipTitle={t('people.addPerson')}
-                    tooltipOpen
-                    onClick={() => {
-                        setSpeedDialOpen(false);
-                        navigate('/people/new');
-                    }}
-                />
-                <SpeedDialAction
-                    icon={<UploadFileIcon />}
-                    tooltipTitle={t('people.uploadCSV')}
-                    tooltipOpen
-                    onClick={() => {
-                        setSpeedDialOpen(false);
-                        navigate('/people/import');
-                    }}
-                />
-            </SpeedDial>
+            {/* SpeedDial — portal to body to avoid overflow clipping */}
+            {createPortal(
+                <SpeedDial
+                    ariaLabel={t('people.addPerson')}
+                    sx={fabSx}
+                    icon={<SpeedDialIcon />}
+                    open={speedDialOpen}
+                    onOpen={() => setSpeedDialOpen(true)}
+                    onClose={() => setSpeedDialOpen(false)}
+                >
+                    <SpeedDialAction
+                        icon={<PersonAddIcon />}
+                        tooltipTitle={t('people.addPerson')}
+                        tooltipOpen
+                        onClick={() => {
+                            setSpeedDialOpen(false);
+                            navigate('/people/new');
+                        }}
+                    />
+                    <SpeedDialAction
+                        icon={<UploadFileIcon />}
+                        tooltipTitle={t('people.uploadCSV')}
+                        tooltipOpen
+                        onClick={() => {
+                            setSpeedDialOpen(false);
+                            navigate('/people/import');
+                        }}
+                    />
+                </SpeedDial>,
+                document.body
+            )}
         </NativePage>
     );
 }

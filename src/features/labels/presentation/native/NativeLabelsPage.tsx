@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Fab, Switch, FormControlLabel } from '@mui/material';
@@ -232,15 +233,18 @@ export function NativeLabelsPage() {
                 )}
             </Box>
 
-            {/* FAB: Link Label */}
-            <Fab
-                color="primary"
-                onClick={() => navigate('/labels/link')}
-                sx={fabSx}
-                aria-label={t('labels.linkNew')}
-            >
-                <LinkIcon />
-            </Fab>
+            {/* FAB: Link Label — portal to body to avoid overflow clipping */}
+            {createPortal(
+                <Fab
+                    color="primary"
+                    onClick={() => navigate('/labels/link')}
+                    sx={fabSx}
+                    aria-label={t('labels.linkNew')}
+                >
+                    <LinkIcon />
+                </Fab>,
+                document.body
+            )}
         </NativePage>
     );
 }

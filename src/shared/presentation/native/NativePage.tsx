@@ -7,7 +7,8 @@ import type { ReactNode } from 'react';
 
 const pageBaseSx = {
     flex: 1,
-    overflow: 'auto',
+    overflowY: 'auto',
+    overflowX: 'hidden',
     bgcolor: nativeColors.surface.base,
     pb: `calc(${nativeSizing.bottomNavHeight + 32}px + env(safe-area-inset-bottom))`,
     willChange: 'transform',

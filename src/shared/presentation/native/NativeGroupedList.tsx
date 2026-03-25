@@ -13,6 +13,7 @@ const emptyStateSx = { flex: 1, display: 'flex', alignItems: 'center', justifyCo
 const outerScrollSx = {
     flex: 1,
     overflowY: 'auto',
+    overflowX: 'hidden',
 } as const;
 
 const sectionHeaderSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 } as const;
