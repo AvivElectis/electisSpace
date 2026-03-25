@@ -1,4 +1,4 @@
-import { Box, Paper, Stack, TextField, LinearProgress, Typography, Chip, Collapse, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Paper, Stack, TextField, LinearProgress, Typography, Chip, Collapse, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import EditIcon from '@mui/icons-material/Edit';
@@ -107,32 +107,73 @@ export function PeopleStatsPanel({
             {canEdit && (
                 isEditing ? (
                     <>
-                        <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={handleSaveEdit}
-                            title={t('common.save')}
-                        >
-                            <SaveIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            size="small"
-                            color="default"
-                            onClick={handleCancelEdit}
-                            title={t('common.cancel')}
-                        >
-                            <CloseIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title={t('common.save')} arrow>
+                            <IconButton
+                                size={compact ? 'small' : 'medium'}
+                                onClick={handleSaveEdit}
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'success.main',
+                                    color: 'success.main',
+                                    borderRadius: 1,
+                                    '&:hover': {
+                                        borderColor: 'success.dark',
+                                        bgcolor: (t) => `${t.palette.success.main}08`,
+                                    },
+                                    width: compact ? 34 : 40,
+                                    height: compact ? 34 : 40,
+                                }}
+                            >
+                                <SaveIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title={t('common.cancel')} arrow>
+                            <IconButton
+                                size={compact ? 'small' : 'medium'}
+                                onClick={handleCancelEdit}
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: (t) => t.palette.mode === 'dark'
+                                        ? 'rgba(255,255,255,0.23)'
+                                        : 'rgba(0,0,0,0.23)',
+                                    color: 'text.secondary',
+                                    borderRadius: 1,
+                                    '&:hover': {
+                                        borderColor: 'error.main',
+                                        color: 'error.main',
+                                        bgcolor: (t) => `${t.palette.error.main}08`,
+                                    },
+                                    width: compact ? 34 : 40,
+                                    height: compact ? 34 : 40,
+                                }}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
                     </>
                 ) : (
-                    <IconButton
-                        size="small"
-                        color="default"
-                        onClick={handleStartEdit}
-                        title={t('common.edit')}
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
+                    <Tooltip title={tWithSpaceType('people.editTotalSpaces', { defaultValue: 'Edit total spaces' })} arrow placement="top">
+                        <IconButton
+                            size={compact ? 'small' : 'medium'}
+                            onClick={handleStartEdit}
+                            sx={{
+                                border: '1px solid',
+                                borderColor: (t) => t.palette.mode === 'dark'
+                                    ? 'rgba(255,255,255,0.23)'
+                                    : 'rgba(0,0,0,0.23)',
+                                color: 'primary.main',
+                                borderRadius: 1,
+                                '&:hover': {
+                                    borderColor: 'primary.main',
+                                    bgcolor: (t) => `${t.palette.primary.main}08`,
+                                },
+                                width: compact ? 34 : 40,
+                                height: compact ? 34 : 40,
+                            }}
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
                 )
             )}
         </Stack>

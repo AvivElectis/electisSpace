@@ -1340,6 +1340,7 @@
         "unassignSpace": "Unassign {{spaceTypeSingular}}",
         "unassignSpaceConfirm": "Are you sure you want to unassign this {{spaceTypeSingular}}? This will also clear {{spaceTypeSingularDef}} in AIMS.",
         "totalSpaces": "Total {{spaceTypePlural}}",
+        "editTotalSpaces": "Edit total {{spaceTypePlural}}",
         "spacesAssigned": "{{assigned}} of {{total}} {{spaceTypePlural}} assigned",
         "available": "available",
         "bulkAssign": "Bulk Assign {{spaceTypePlural}}",
