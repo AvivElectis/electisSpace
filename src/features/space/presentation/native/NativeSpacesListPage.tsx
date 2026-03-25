@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
+import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -40,6 +41,7 @@ export function NativeSpacesListPage() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
 
     const spaces = useSpacesStore((state) => state.spaces);
+    const isLoading = useSpacesStore((state) => state.isLoading);
     const fetchSpaces = useSpacesStore((state) => state.fetchSpaces);
     const settings = useSettingsStore((state) => state.settings);
 
@@ -158,6 +160,15 @@ export function NativeSpacesListPage() {
         />
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ), [settings.solumMappingConfig, nameFieldKey, getLabel]);
+
+    // Show skeleton on first load (no cached data yet)
+    if (isLoading && spaces.length === 0) {
+        return (
+            <NativePage>
+                <NativeListSkeleton showStatBar showChipBar />
+            </NativePage>
+        );
+    }
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>

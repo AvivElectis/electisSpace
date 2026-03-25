@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Fab, Switch, FormControlLabel } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import LabelIcon from '@mui/icons-material/Label';
+import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
 
 import { useLabelsStore } from '@features/labels/infrastructure/labelsStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -137,6 +138,15 @@ export function NativeLabelsPage() {
     }, [labels, handleLinkTap]);
 
     const totalPages = Math.ceil(filteredLabels.length / PAGE_SIZE);
+
+    // Show skeleton on first load (no cached data yet)
+    if (isLoading && labels.length === 0) {
+        return (
+            <NativePage>
+                <NativeListSkeleton showStatBar />
+            </NativePage>
+        );
+    }
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>

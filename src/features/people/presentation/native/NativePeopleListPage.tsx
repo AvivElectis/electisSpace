@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 
 import { usePeopleStore } from '../../infrastructure/peopleStore';
+import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { usePeopleFilters } from '../../application/usePeopleFilters';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
@@ -37,6 +38,7 @@ export function NativePeopleListPage() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
 
     const people = usePeopleStore((state) => state.people);
+    const isLoading = usePeopleStore((state) => state.isLoading);
     const fetchPeople = usePeopleStore((state) => state.fetchPeople);
 
     const settings = useSettingsStore((state) => state.settings);
@@ -149,6 +151,15 @@ export function NativePeopleListPage() {
         />
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ), [nameFieldKey]);
+
+    // Show skeleton on first load (no cached data yet)
+    if (isLoading && people.length === 0) {
+        return (
+            <NativePage>
+                <NativeListSkeleton showStatBar showChipBar />
+            </NativePage>
+        );
+    }
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>

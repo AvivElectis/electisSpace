@@ -35,6 +35,7 @@ import { NativeCard } from '@shared/presentation/native/NativeCard';
 import { NativeStatBar } from '@shared/presentation/native/NativeStatBar';
 import { NativeStatusBadge } from '@shared/presentation/native/NativeStatusBadge';
 import { NativeEmptyState } from '@shared/presentation/native/NativeEmptyState';
+import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
 import { useSetNativeTitle } from '@shared/presentation/native/NativePageTitleContext';
 import { nativeColors, nativeSpacing, nativeSizing } from '@shared/presentation/themes/nativeTokens';
 
@@ -469,6 +470,15 @@ export function NativeAimsPage() {
                 <Alert severity="info" sx={{ m: 2, borderRadius: 2 }}>
                     {t('aims.selectStore')}
                 </Alert>
+            </NativePage>
+        );
+    }
+
+    // Show skeleton on first load before any data arrives
+    if (gatewaysLoading && gateways.length === 0 && labels.length === 0) {
+        return (
+            <NativePage>
+                <NativeListSkeleton showStatBar showChipBar rows={4} />
             </NativePage>
         );
     }

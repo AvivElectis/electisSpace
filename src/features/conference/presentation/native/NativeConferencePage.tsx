@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 
 import { useConferenceController } from '@features/conference/application/useConferenceController';
+import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useBackendSyncContext } from '@features/sync/application/SyncContext';
@@ -66,6 +67,7 @@ export function NativeConferencePage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
     const rooms = conferenceController.conferenceRooms;
+    const isFetching = conferenceController.isFetching;
 
     // Stats
     const occupiedCount = useMemo(() => rooms.filter((r) => r.hasMeeting).length, [rooms]);
@@ -152,6 +154,15 @@ export function NativeConferencePage() {
         />
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ), []);
+
+    // Show skeleton on first load (no cached data yet)
+    if (isFetching && rooms.length === 0) {
+        return (
+            <NativePage>
+                <NativeListSkeleton showStatBar showChipBar />
+            </NativePage>
+        );
+    }
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>

@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Button, CircularProgress } from '@mui/material';
+import { Button, CircularProgress, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { NativePage } from './NativePage';
@@ -67,5 +67,22 @@ export function NativeFormPage({
 
     useSetNativeTitle(title, true, saveButton, effectivelySaving);
 
-    return <NativePage>{children}</NativePage>;
+    return (
+        <NativePage>
+            {/* Subtle save-progress indicator below the app bar */}
+            {effectivelySaving && (
+                <LinearProgress
+                    sx={{
+                        position: 'sticky',
+                        top: 0,
+                        mx: -2,
+                        zIndex: 10,
+                        height: 3,
+                        borderRadius: 0,
+                    }}
+                />
+            )}
+            {children}
+        </NativePage>
+    );
 }
