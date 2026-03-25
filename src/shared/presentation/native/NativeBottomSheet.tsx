@@ -13,6 +13,15 @@ import SearchIcon from '@mui/icons-material/Search';
 import CheckIcon from '@mui/icons-material/Check';
 import { useTranslation } from 'react-i18next';
 import { nativeColors, nativeRadii } from '../themes/nativeTokens';
+
+const sheetPaperSx = {
+    borderTopLeftRadius: `${nativeRadii.card}px`,
+    borderTopRightRadius: `${nativeRadii.card}px`,
+    maxHeight: '50vh',
+    display: 'flex',
+    flexDirection: 'column',
+    pb: 'env(safe-area-inset-bottom)',
+} as const;
 import { NativeTextField } from './NativeTextField';
 
 export interface NativeBottomSheetItem {
@@ -70,16 +79,7 @@ export function NativeBottomSheet({
             onClose={handleClose}
             onOpen={() => {/* controlled externally */}}
             disableSwipeToOpen
-            PaperProps={{
-                sx: {
-                    borderTopLeftRadius: `${nativeRadii.card}px`,
-                    borderTopRightRadius: `${nativeRadii.card}px`,
-                    maxHeight: '50vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    pb: 'env(safe-area-inset-bottom)',
-                },
-            }}
+            PaperProps={{ sx: sheetPaperSx }}
         >
             {/* Drag handle */}
             <Box

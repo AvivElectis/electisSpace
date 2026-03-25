@@ -59,7 +59,7 @@ export interface NativeGroupedListProps<T> {
     onItemTap: (item: T) => void;
     keyExtractor: (item: T) => string;
     emptyState?: ReactNode;
-    fab?: { icon?: ReactNode; onClick: () => void };
+    fab?: { icon?: ReactNode; onClick: () => void; ariaLabel?: string };
 }
 
 const COLOR_MAP: Record<SectionColor, string> = {
@@ -147,6 +147,7 @@ export function NativeGroupedList<T>({
                     color="primary"
                     onClick={fab.onClick}
                     sx={fabSx}
+                    aria-label={fab.ariaLabel ?? 'add'}
                 >
                     {fab.icon ?? <AddIcon />}
                 </Fab>

@@ -63,6 +63,9 @@ export function NativePeopleListPage() {
     // Assignment filter chip state
     const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
 
+    // SpeedDial state (must be before any conditional returns — Rules of Hooks)
+    const [speedDialOpen, setSpeedDialOpen] = useState(false);
+
     const filters: PeopleFilters = {
         searchQuery: deferredSearch,
         assignmentStatus: assignmentFilter,
@@ -162,8 +165,6 @@ export function NativePeopleListPage() {
             </NativePage>
         );
     }
-
-    const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
     const fabSx = {
         position: 'fixed',
