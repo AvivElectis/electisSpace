@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Box, ButtonBase, Typography, Fab, Tooltip } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -141,8 +142,8 @@ export function NativeGroupedList<T>({
                 );
             })}
 
-            {/* FAB */}
-            {fab && (
+            {/* FAB — portal to body to avoid overflow:auto clipping */}
+            {fab && createPortal(
                 <Tooltip
                     title={fab.ariaLabel ?? ''}
                     placement="left"
@@ -158,7 +159,8 @@ export function NativeGroupedList<T>({
                     >
                         {fab.icon ?? <AddIcon />}
                     </Fab>
-                </Tooltip>
+                </Tooltip>,
+                document.body
             )}
         </Box>
     );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, lazy, Suspense, useState, useRef } from 'react';
+import { useEffect, useMemo, useCallback, lazy, Suspense, useState, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -256,28 +256,37 @@ export function NativeDashboardPage() {
         ),
     ].filter(Boolean) as React.ReactNode[];
 
-    // --- FAB actions ---
-    const fabActions = [
-        (isPeopleManagerMode ? can('people') : can('spaces')) && {
+    // --- FAB actions — driven by enabled features, not hardcoded ---
+    const featureActions: { feature: string; icon: ReactNode; label: string; route: string }[] = useMemo(() => [
+        {
+            feature: isPeopleManagerMode ? 'people' : 'spaces',
             icon: isPeopleManagerMode ? <PersonAddIcon /> : <AddBusinessIcon />,
             label: isPeopleManagerMode
                 ? t('dashboard.addPerson', 'Add Person')
                 : t('dashboard.addSpace', 'Add Space'),
-            onClick: isPeopleManagerMode
-                ? () => navigate('/people/new')
-                : () => navigate('/spaces/new'),
+            route: isPeopleManagerMode ? '/people/new' : '/spaces/new',
         },
-        can('conference') && {
+        {
+            feature: 'conference',
             icon: <MeetingRoomIcon />,
             label: t('conference.addRoom', 'Add Room'),
-            onClick: () => navigate('/conference/new'),
+            route: '/conference/new',
         },
-        can('labels') && {
+        {
+            feature: 'labels',
             icon: <LinkIcon />,
             label: t('dashboard.linkLabel'),
-            onClick: () => navigate('/labels/link'),
+            route: '/labels/link',
         },
-    ].filter(Boolean) as { icon: React.ReactNode; label: string; onClick: () => void }[];
+    ], [isPeopleManagerMode, t]);
+
+    const fabActions = featureActions
+        .filter(action => can(action.feature as any))
+        .map(({ icon, label, route }) => ({
+            icon,
+            label,
+            onClick: () => navigate(route),
+        }));
 
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
