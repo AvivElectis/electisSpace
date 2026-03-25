@@ -140,6 +140,16 @@ export function NativePeopleListPage() {
         await fetchPeople();
     }, [fetchPeople]);
 
+    const renderPersonItem = useCallback((person: Person) => (
+        <NativePersonItem
+            name={getDisplayName(person)}
+            subtitle={getSubtitle(person)}
+            spaceBadge={person.assignedSpaceId ? `#${person.assignedSpaceId}` : undefined}
+            isAssigned={!!person.assignedSpaceId}
+        />
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), [nameFieldKey]);
+
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
             {/* Stat bar */}
@@ -172,14 +182,7 @@ export function NativePeopleListPage() {
             {/* Grouped list */}
             <NativeGroupedList<Person>
                 sections={sections}
-                renderItem={(person) => (
-                    <NativePersonItem
-                        name={getDisplayName(person)}
-                        subtitle={getSubtitle(person)}
-                        spaceBadge={person.assignedSpaceId ? `#${person.assignedSpaceId}` : undefined}
-                        isAssigned={!!person.assignedSpaceId}
-                    />
-                )}
+                renderItem={renderPersonItem}
                 onItemTap={handleItemTap}
                 keyExtractor={(person) => person.id}
                 emptyState={

@@ -143,6 +143,16 @@ export function NativeConferencePage() {
         await fetchRooms();
     }, [fetchRooms]);
 
+    const renderRoomItem = useCallback((room: ConferenceRoom) => (
+        <NativeRoomCard
+            roomName={room.roomName || room.data?.roomName || room.id}
+            status={getRoomStatus(room)}
+            meetingInfo={getMeetingInfo(room)}
+            participants={room.participants || []}
+        />
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), []);
+
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
             {/* Stat bar */}
@@ -167,14 +177,7 @@ export function NativeConferencePage() {
             {/* Grouped list */}
             <NativeGroupedList<ConferenceRoom>
                 sections={sections}
-                renderItem={(room) => (
-                    <NativeRoomCard
-                        roomName={room.roomName || room.data?.roomName || room.id}
-                        status={getRoomStatus(room)}
-                        meetingInfo={getMeetingInfo(room)}
-                        participants={room.participants || []}
-                    />
-                )}
+                renderItem={renderRoomItem}
                 onItemTap={handleItemTap}
                 keyExtractor={(room) => room.id}
                 emptyState={

@@ -12,6 +12,20 @@ export interface NativeVirtualizedListProps<T> {
     emptyState?: ReactNode;
 }
 
+// Hoisted sx objects — evaluated once at module load, not per-render
+const rowOuterSx = {
+    px: `${nativeSpacing.pagePadding}px`,
+    cursor: 'pointer',
+    '&:active': { bgcolor: nativeColors.surface.low },
+} as const;
+
+const rowInnerSx = {
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    borderBottom: `1px solid ${nativeColors.surface.low}`,
+} as const;
+
 interface RowProps {
     items: NativeVirtualizedListProps<unknown>['items'];
     renderItem: NativeVirtualizedListProps<unknown>['renderItem'];
@@ -30,20 +44,9 @@ function RowComponent({
         <Box
             style={style}
             onClick={() => onItemTap(item)}
-            sx={{
-                px: `${nativeSpacing.pagePadding}px`,
-                cursor: 'pointer',
-                '&:active': { bgcolor: nativeColors.surface.low },
-            }}
+            sx={rowOuterSx}
         >
-            <Box
-                sx={{
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    borderBottom: `1px solid ${nativeColors.surface.low}`,
-                }}
-            >
+            <Box sx={rowInnerSx}>
                 {renderItem(item)}
             </Box>
         </Box>

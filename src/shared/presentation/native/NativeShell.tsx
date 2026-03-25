@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useEffect } from 'react';
+import { memo, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -111,6 +111,10 @@ export const NativeShell = memo(function NativeShell() {
         syncState.isConnected ? 'connected' : 'disconnected'
     , [syncState.status, syncState.isConnected]);
 
+    const handleSyncClick = useCallback(() => {
+        syncController.sync().catch(() => {/* handled in controller */});
+    }, [syncController]);
+
     return (
         <SyncProvider value={syncController}>
             <NativePageTitleProvider>
@@ -137,7 +141,7 @@ export const NativeShell = memo(function NativeShell() {
                             status={syncStatus}
                             lastSyncTime={syncState.lastSync ? new Date(syncState.lastSync).toLocaleString() : undefined}
                             errorMessage={syncState.lastError}
-                            onSyncClick={() => syncController.sync().catch(() => {/* handled in controller */})}
+                            onSyncClick={handleSyncClick}
                             serverConnected={syncController.serverConnected}
                             aimsConnected={syncState.isConnected}
                             syncStartedAt={syncState.syncStartedAt}

@@ -20,6 +20,27 @@ import type { LabelArticleLink } from '@features/labels/domain/types';
 
 const PAGE_SIZE = 25;
 
+// sx objects hoisted to module level — nativeSpacing/nativeSizing are static constants, safe to evaluate here
+const labelsListSx = {
+    flex: 1,
+    px: `${nativeSpacing.pagePadding}px`,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+} as const;
+
+const fabSx = {
+    position: 'fixed',
+    bottom: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
+    insetInlineEnd: 16,
+} as const;
+
+const emptyStateWrapperSx = { mt: 4, display: 'flex', justifyContent: 'center' } as const;
+
+const paginationSx = { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, py: 2 } as const;
+
+const prevNextButtonSx = { minWidth: 48, minHeight: 48 } as const;
+
 /**
  * NativeLabelsPage — Android-native Labels list.
  * Shows label cards with linked/unlinked status, thumbnails.
@@ -108,6 +129,13 @@ export function NativeLabelsPage() {
         }
     }, [activeStoreId, unlinkLabelFromArticle, navigate]);
 
+    // Stable callback keyed by labelCode — avoids creating a new closure per label per render.
+    // Trade-off: requires a labels.find() lookup per tap, which is negligible for typical list sizes.
+    const handleLinkTapByCode = useCallback((labelCode: string) => {
+        const label = labels.find((l) => l.labelCode === labelCode);
+        if (label) handleLinkTap(label);
+    }, [labels, handleLinkTap]);
+
     const totalPages = Math.ceil(filteredLabels.length / PAGE_SIZE);
 
     return (
@@ -138,15 +166,7 @@ export function NativeLabelsPage() {
             </Box>
 
             {/* Labels list */}
-            <Box
-                sx={{
-                    flex: 1,
-                    px: `${nativeSpacing.pagePadding}px`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                }}
-            >
+            <Box sx={labelsListSx}>
                 {error && (
                     <Typography variant="body2" color="error" sx={{ mt: 2, textAlign: 'center' }}>
                         {error}
@@ -154,7 +174,7 @@ export function NativeLabelsPage() {
                 )}
 
                 {!isLoading && !error && paginatedLabels.length === 0 && (
-                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                    <Box sx={emptyStateWrapperSx}>
                         <NativeEmptyState
                             icon={<LabelIcon />}
                             title={
@@ -172,18 +192,18 @@ export function NativeLabelsPage() {
                         labelCode={label.labelCode}
                         articleName={label.articleName || label.articleId || undefined}
                         isLinked={!!label.articleId}
-                        onLink={() => handleLinkTap(label)}
+                        onLink={() => handleLinkTapByCode(label.labelCode)}
                     />
                 ))}
 
                 {/* Pagination controls */}
                 {totalPages > 1 && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, py: 2 }}>
+                    <Box sx={paginationSx}>
                         <Button
                             size="small"
                             disabled={page === 0}
                             onClick={() => setPage((p) => p - 1)}
-                            sx={{ minWidth: 48, minHeight: 48 }}
+                            sx={prevNextButtonSx}
                         >
                             {t('common.prev', 'Prev')}
                         </Button>
@@ -194,7 +214,7 @@ export function NativeLabelsPage() {
                             size="small"
                             disabled={page >= totalPages - 1}
                             onClick={() => setPage((p) => p + 1)}
-                            sx={{ minWidth: 48, minHeight: 48 }}
+                            sx={prevNextButtonSx}
                         >
                             {t('common.next', 'Next')}
                         </Button>
@@ -206,11 +226,7 @@ export function NativeLabelsPage() {
             <Fab
                 color="primary"
                 onClick={() => navigate('/labels/link')}
-                sx={{
-                    position: 'fixed',
-                    bottom: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
-                    insetInlineEnd: 16,
-                }}
+                sx={fabSx}
                 aria-label={t('labels.linkNew')}
             >
                 <LinkIcon />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, lazy, Suspense, useState } from 'react';
+import { useEffect, useMemo, useCallback, lazy, Suspense, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -64,6 +64,7 @@ export function NativeDashboardPage() {
     const { getLabel } = useSpaceTypeLabels();
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const lastFetchedRef = useRef(0);
 
     // Sync push callback
     const handleSync = useCallback(async () => {
@@ -102,7 +103,10 @@ export function NativeDashboardPage() {
         solumMappingConfig: settingsController.settings.solumMappingConfig,
     });
 
-    const peopleStore = usePeopleStore();
+    const peopleFetchPeople = usePeopleStore((s) => s.fetchPeople);
+    const people = usePeopleStore((s) => s.people);
+    const peopleLists = usePeopleStore((s) => s.peopleLists);
+    const activeListName = usePeopleStore((s) => s.activeListName);
 
     // Feature access
     const { canAccessFeature: can } = useAuthContext();
@@ -111,15 +115,16 @@ export function NativeDashboardPage() {
     const { storeSummary: aimsStoreSummary, labelModels: aimsLabelModels, fetchOverview: fetchAimsOverview } =
         useAimsOverview(activeStoreId);
 
-    // Fetch data on mount / store switch
+    // Fetch data on mount / store switch (skip if data is less than 30 seconds old)
     useEffect(() => {
-        if (isAppReady && activeStoreId) {
-            spaceController.fetchSpaces();
-            conferenceController.fetchRooms();
-            peopleStore.fetchPeople();
-            if (canAccessAims) {
-                fetchAimsOverview();
-            }
+        if (!isAppReady || !activeStoreId) return;
+        if (Date.now() - lastFetchedRef.current < 30_000) return; // Fresh enough
+        lastFetchedRef.current = Date.now();
+        spaceController.fetchSpaces();
+        conferenceController.fetchRooms();
+        peopleFetchPeople();
+        if (canAccessAims) {
+            fetchAimsOverview();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAppReady, activeStoreId, canAccessAims]);
@@ -157,14 +162,14 @@ export function NativeDashboardPage() {
     // --- Stats: People ---
     const settings = useSettingsStore((state) => state.settings);
     const isPeopleManagerMode = settings.peopleManagerEnabled === true;
-    const totalPeople = peopleStore.people.length;
-    const assignedPeople = peopleStore.people.filter((p) => p.assignedSpaceId).length;
+    const totalPeople = people.length;
+    const assignedPeople = people.filter((p) => p.assignedSpaceId).length;
     const unassignedPeople = totalPeople - assignedPeople;
-    const savedLists = peopleStore.peopleLists.length;
+    const savedLists = peopleLists.length;
 
     const peopleAssignedLabelsCount = useMemo(
-        () => peopleStore.people.reduce((count, p) => count + (p.assignedLabels?.length || 0), 0),
-        [peopleStore.people]
+        () => people.reduce((count, p) => count + (p.assignedLabels?.length || 0), 0),
+        [people]
     );
 
     const spaceTypeIcon =
@@ -188,7 +193,7 @@ export function NativeDashboardPage() {
         const promises: Promise<void>[] = [
             spaceController.fetchSpaces(),
             conferenceController.fetchRooms(),
-            peopleStore.fetchPeople(),
+            peopleFetchPeople(),
         ];
         if (canAccessAims) {
             promises.push(fetchAimsOverview());
@@ -221,7 +226,7 @@ export function NativeDashboardPage() {
                 unassignedPeople={unassignedPeople}
                 assignedLabelsCount={peopleAssignedLabelsCount}
                 savedLists={savedLists}
-                activeListName={peopleStore.activeListName}
+                activeListName={activeListName}
                 isMobile
             />
         ),

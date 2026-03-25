@@ -23,17 +23,6 @@ const toolbarSx = {
 
 const backButtonSx = { color: 'primary.contrastText' } as const;
 
-const brandTextSx = {
-    fontFamily: '"Manrope", sans-serif',
-    fontWeight: 800,
-    color: 'primary.contrastText',
-    ml: 1,
-    letterSpacing: '-0.3px',
-    fontSize: '1.1rem',
-} as const;
-
-const brandSpanSx = { fontWeight: 400, opacity: 0.85 } as const;
-
 const selectorWrapperSx = {
     '& *': {
         color: '#ffffff !important',

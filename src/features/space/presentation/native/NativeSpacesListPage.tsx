@@ -145,6 +145,20 @@ export function NativeSpacesListPage() {
         await fetchSpaces();
     }, [fetchSpaces]);
 
+    const renderSpaceItem = useCallback((space: Space) => (
+        <NativeSpaceItem
+            spaceId={space.externalId || space.id}
+            spaceType={settings.solumMappingConfig?.uniqueIdField
+                ? getLabel('singular')
+                : undefined}
+            assignedPerson={getDisplayName(space) !== (space.externalId || space.id)
+                ? getDisplayName(space)
+                : undefined}
+            isLinked={!!space.labelCode || (space.assignedLabels && space.assignedLabels.length > 0)}
+        />
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), [settings.solumMappingConfig, nameFieldKey, getLabel]);
+
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
             {/* Stat bar */}
@@ -169,18 +183,7 @@ export function NativeSpacesListPage() {
             {/* Grouped list */}
             <NativeGroupedList<Space>
                 sections={sections}
-                renderItem={(space) => (
-                    <NativeSpaceItem
-                        spaceId={space.externalId || space.id}
-                        spaceType={settings.solumMappingConfig?.uniqueIdField
-                            ? getLabel('singular')
-                            : undefined}
-                        assignedPerson={getDisplayName(space) !== (space.externalId || space.id)
-                            ? getDisplayName(space)
-                            : undefined}
-                        isLinked={!!space.labelCode || (space.assignedLabels && space.assignedLabels.length > 0)}
-                    />
-                )}
+                renderItem={renderSpaceItem}
                 onItemTap={handleItemTap}
                 keyExtractor={(space) => space.id}
                 emptyState={
