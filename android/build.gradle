@@ -22,6 +22,15 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // Force consistent Kotlin stdlib across ALL modules (including Cordova plugins)
+    configurations.all {
+        resolutionStrategy {
+            force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+        }
+    }
 }
 
 task clean(type: Delete) {
