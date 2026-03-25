@@ -258,7 +258,7 @@ export function NativeDashboardPage() {
 
     // --- FAB actions ---
     const fabActions = [
-        can('spaces') && {
+        (isPeopleManagerMode ? can('people') : can('spaces')) && {
             icon: isPeopleManagerMode ? <PersonAddIcon /> : <AddBusinessIcon />,
             label: isPeopleManagerMode
                 ? t('dashboard.addPerson', 'Add Person')
