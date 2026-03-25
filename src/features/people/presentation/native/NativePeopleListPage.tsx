@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useDeferredValue, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
 
 import { usePeopleStore } from '../../infrastructure/peopleStore';
 import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
@@ -10,6 +10,8 @@ import { usePeopleFilters } from '../../application/usePeopleFilters';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 
 import PeopleIcon from '@mui/icons-material/People';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 import { NativePage } from '@shared/presentation/native/NativePage';
 import { NativeGroupedList } from '@shared/presentation/native/NativeGroupedList';
@@ -19,7 +21,7 @@ import { NativeSearchBar } from '@shared/presentation/native/NativeSearchBar';
 import { NativeChipBar } from '@shared/presentation/native/NativeChipBar';
 import { NativeEmptyState } from '@shared/presentation/native/NativeEmptyState';
 import { useSetNativeTitle } from '@shared/presentation/native/NativePageTitleContext';
-import { nativeColors } from '@shared/presentation/themes/nativeTokens';
+import { nativeColors, nativeSizing } from '@shared/presentation/themes/nativeTokens';
 
 import type { Person, PeopleFilters } from '../../domain/types';
 
@@ -161,6 +163,14 @@ export function NativePeopleListPage() {
         );
     }
 
+    const [speedDialOpen, setSpeedDialOpen] = useState(false);
+
+    const fabSx = {
+        position: 'fixed',
+        bottom: `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`,
+        insetInlineEnd: 16,
+    } as const;
+
     return (
         <NativePage onRefresh={handleRefresh} noPadding>
             {/* Stat bar */}
@@ -190,7 +200,7 @@ export function NativePeopleListPage() {
                 onChange={handleFilterChange}
             />
 
-            {/* Grouped list */}
+            {/* Grouped list — no FAB here; SpeedDial below handles actions */}
             <NativeGroupedList<Person>
                 sections={sections}
                 renderItem={renderPersonItem}
@@ -206,8 +216,36 @@ export function NativePeopleListPage() {
                         }
                     />
                 }
-                fab={{ onClick: () => navigate('/people/new') }}
             />
+
+            {/* SpeedDial: Add Person + Import CSV */}
+            <SpeedDial
+                ariaLabel={t('people.addPerson')}
+                sx={fabSx}
+                icon={<SpeedDialIcon />}
+                open={speedDialOpen}
+                onOpen={() => setSpeedDialOpen(true)}
+                onClose={() => setSpeedDialOpen(false)}
+            >
+                <SpeedDialAction
+                    icon={<PersonAddIcon />}
+                    tooltipTitle={t('people.addPerson')}
+                    tooltipOpen
+                    onClick={() => {
+                        setSpeedDialOpen(false);
+                        navigate('/people/new');
+                    }}
+                />
+                <SpeedDialAction
+                    icon={<UploadFileIcon />}
+                    tooltipTitle={t('people.uploadCSV')}
+                    tooltipOpen
+                    onClick={() => {
+                        setSpeedDialOpen(false);
+                        navigate('/people/import');
+                    }}
+                />
+            </SpeedDial>
         </NativePage>
     );
 }

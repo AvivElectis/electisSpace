@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState, useDeferredValue, useCallback } from 'react';
+import { useEffect, useMemo, useState, useDeferredValue, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, Snackbar, Alert } from '@mui/material';
 
 import { useConferenceController } from '@features/conference/application/useConferenceController';
 import { NativeListSkeleton } from '@shared/presentation/native/NativeListSkeleton';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useBackendSyncContext } from '@features/sync/application/SyncContext';
+import { useAuthContext } from '@features/auth/application/useAuthContext';
+import { conferenceApi } from '@features/conference/infrastructure/conferenceApi';
 
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import FlipIcon from '@mui/icons-material/Flip';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 
 import { NativePage } from '@shared/presentation/native/NativePage';
 import { NativeRoomCard } from '@shared/presentation/native/NativeRoomCard';
@@ -61,6 +67,71 @@ export function NativeConferencePage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAppReady, activeStoreId]);
+
+    // Simple conference mode — feature flag driven (same logic as web ConferencePage)
+    const { activeStoreEffectiveFeatures } = useAuthContext();
+    const isSimpleMode = activeStoreEffectiveFeatures?.simpleConferenceMode ?? false;
+
+    const [labelPages, setLabelPages] = useState<Record<string, number>>({});
+    const [flippingRoomId, setFlippingRoomId] = useState<string | null>(null);
+    const [flipSnackbar, setFlipSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
+    const labelPagesFetchedRef = useRef(false);
+
+    // Fetch label pages from AIMS when simple mode is active
+    useEffect(() => {
+        if (!isSimpleMode || !isAppReady || !activeStoreId || labelPagesFetchedRef.current) return;
+        labelPagesFetchedRef.current = true;
+        conferenceApi.getLabelPages(activeStoreId)
+            .then((pages) => setLabelPages(pages))
+            .catch(() => {});
+    }, [isSimpleMode, isAppReady, activeStoreId]);
+
+    // Reset label pages fetch ref when store or mode changes
+    useEffect(() => {
+        labelPagesFetchedRef.current = false;
+    }, [activeStoreId, isSimpleMode]);
+
+    // Get the current label page for a room (used to derive occupied/available in simple mode)
+    const getRoomPage = useCallback((room: ConferenceRoom): number => {
+        const codes: string[] = [];
+        if (room.labelCode) codes.push(room.labelCode);
+        if (room.assignedLabels?.length) {
+            for (const lc of room.assignedLabels) {
+                if (!codes.includes(lc)) codes.push(lc);
+            }
+        }
+        if (codes.length === 0) return 1;
+        for (const code of codes) {
+            if (labelPages[code] !== undefined) return labelPages[code];
+        }
+        return 1;
+    }, [labelPages]);
+
+    // Flip to the opposite page (1=available, 2=occupied)
+    const handleFlipPage = useCallback(async (room: ConferenceRoom) => {
+        if (flippingRoomId) return; // Prevent concurrent flips
+        const serverId = room.serverId || room.id;
+        const currentPage = getRoomPage(room);
+        const targetPage = currentPage === 2 ? 1 : 2;
+        setFlippingRoomId(room.id);
+        try {
+            const result = await conferenceApi.flipPage(serverId, targetPage);
+            if (result.labelCodes) {
+                setLabelPages((prev) => {
+                    const next = { ...prev };
+                    for (const lc of result.labelCodes) {
+                        next[lc] = targetPage;
+                    }
+                    return next;
+                });
+            }
+            setFlipSnackbar({ message: t('conference.flipPageSuccess'), severity: 'success' });
+        } catch {
+            setFlipSnackbar({ message: t('conference.flipPageFailed'), severity: 'error' });
+        } finally {
+            setFlippingRoomId(null);
+        }
+    }, [flippingRoomId, getRoomPage, t]);
 
     const [searchQuery, setSearchQuery] = useState('');
     const deferredSearch = useDeferredValue(searchQuery);
@@ -145,15 +216,53 @@ export function NativeConferencePage() {
         await fetchRooms();
     }, [fetchRooms]);
 
-    const renderRoomItem = useCallback((room: ConferenceRoom) => (
-        <NativeRoomCard
-            roomName={room.roomName || room.data?.roomName || room.id}
-            status={getRoomStatus(room)}
-            meetingInfo={getMeetingInfo(room)}
-            participants={room.participants || []}
-        />
+    const renderRoomItem = useCallback((room: ConferenceRoom) => {
+        if (!isSimpleMode) {
+            return (
+                <NativeRoomCard
+                    roomName={room.roomName || room.data?.roomName || room.id}
+                    status={getRoomStatus(room)}
+                    meetingInfo={getMeetingInfo(room)}
+                    participants={room.participants || []}
+                />
+            );
+        }
+
+        // Simple mode: show flip button alongside the room card
+        const currentPage = getRoomPage(room);
+        const isOccupied = currentPage === 2;
+        const isFlipping = flippingRoomId === room.id;
+
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                    <NativeRoomCard
+                        roomName={room.roomName || room.data?.roomName || room.id}
+                        status={isOccupied ? 'occupied' : 'available'}
+                        meetingInfo={getMeetingInfo(room)}
+                        participants={room.participants || []}
+                    />
+                </Box>
+                <Tooltip title={isOccupied ? t('conference.setAvailable', 'Set Available') : t('conference.setOccupied', 'Set Occupied')}>
+                    <span>
+                        <IconButton
+                            size="medium"
+                            color={isOccupied ? 'success' : 'error'}
+                            disabled={isFlipping}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleFlipPage(room);
+                            }}
+                            sx={{ flexShrink: 0 }}
+                        >
+                            {isFlipping ? <CircularProgress size={20} /> : <FlipIcon />}
+                        </IconButton>
+                    </span>
+                </Tooltip>
+            </Box>
+        );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    ), []);
+    }, [isSimpleMode, flippingRoomId, labelPages, handleFlipPage, t]);
 
     // Show skeleton on first load (no cached data yet)
     if (isFetching && rooms.length === 0) {
@@ -203,6 +312,23 @@ export function NativeConferencePage() {
                 }
                 fab={{ onClick: () => navigate('/conference/new') }}
             />
+
+            {/* Flip page feedback snackbar (simple mode) */}
+            <Snackbar
+                open={!!flipSnackbar}
+                autoHideDuration={3000}
+                onClose={() => setFlipSnackbar(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setFlipSnackbar(null)}
+                    severity={flipSnackbar?.severity ?? 'success'}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {flipSnackbar?.message}
+                </Alert>
+            </Snackbar>
         </NativePage>
     );
 }

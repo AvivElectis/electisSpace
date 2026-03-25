@@ -22,6 +22,12 @@ const NativePersonFormPage = lazy(() =>
     }))
 );
 
+const NativePeopleImportPage = lazy(() =>
+    import('@features/people/presentation/native/NativePeopleImportPage').then((m) => ({
+        default: m.NativePeopleImportPage,
+    }))
+);
+
 const NativeSpacesListPage = lazy(() =>
     import('@features/space/presentation/native/NativeSpacesListPage').then((m) => ({
         default: m.NativeSpacesListPage,
@@ -168,6 +174,7 @@ export function getNativeRoutes() {
             <Route index element={<Suspense fallback={null}><NativeDashboardPage /></Suspense>} />
             <Route path="people" element={<Suspense fallback={null}><NativePeopleListPage /></Suspense>} />
             <Route path="people/new" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
+            <Route path="people/import" element={<Suspense fallback={null}><NativePeopleImportPage /></Suspense>} />
             <Route path="people/:id/edit" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
             <Route path="spaces" element={<Suspense fallback={null}><NativeSpacesListPage /></Suspense>} />
             <Route path="spaces/new" element={<Suspense fallback={null}><NativeSpaceFormPage /></Suspense>} />
