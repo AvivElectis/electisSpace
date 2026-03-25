@@ -84,7 +84,7 @@ export function createNativeTheme(direction: 'ltr' | 'rtl') {
             MuiFab: {
                 styleOverrides: {
                     root: {
-                        borderRadius: nativeRadii.button,
+                        borderRadius: '50%', // Keep FABs circular (don't apply nativeRadii)
                     },
                 },
             },

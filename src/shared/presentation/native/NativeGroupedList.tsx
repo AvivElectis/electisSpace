@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Box, ButtonBase, Typography, Fab } from '@mui/material';
+import { Box, ButtonBase, Typography, Fab, Tooltip } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import AddIcon from '@mui/icons-material/Add';
@@ -143,14 +143,22 @@ export function NativeGroupedList<T>({
 
             {/* FAB */}
             {fab && (
-                <Fab
-                    color="primary"
-                    onClick={fab.onClick}
-                    sx={fabSx}
-                    aria-label={fab.ariaLabel ?? 'add'}
+                <Tooltip
+                    title={fab.ariaLabel ?? ''}
+                    placement="left"
+                    arrow
+                    enterTouchDelay={300}
+                    leaveTouchDelay={1500}
                 >
-                    {fab.icon ?? <AddIcon />}
-                </Fab>
+                    <Fab
+                        color="primary"
+                        onClick={fab.onClick}
+                        sx={fabSx}
+                        aria-label={fab.ariaLabel ?? 'add'}
+                    >
+                        {fab.icon ?? <AddIcon />}
+                    </Fab>
+                </Tooltip>
             )}
         </Box>
     );
