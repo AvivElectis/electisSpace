@@ -87,12 +87,18 @@ export const NativeAppBar = memo(function NativeAppBar() {
                         {isRtl ? <ArrowForwardIcon /> : <ArrowBackIcon />}
                     </IconButton>
                 ) : (
-                    <Typography
-                        variant="subtitle1"
-                        sx={brandTextSx}
-                    >
-                        electis<Box component="span" sx={brandSpanSx}>Space</Box>
-                    </Typography>
+                    <Box
+                        component="img"
+                        src="/logos/newLogo.png"
+                        alt="electisSpace"
+                        sx={{
+                            height: 30,
+                            width: 'auto',
+                            objectFit: 'contain',
+                            ml: 0.5,
+                            borderRadius: '6px',
+                        }}
+                    />
                 )}
 
                 <Typography
