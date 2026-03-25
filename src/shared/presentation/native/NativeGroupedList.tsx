@@ -147,7 +147,7 @@ export function NativeGroupedList<T>({
             {fab && createPortal(
                 <Tooltip
                     title={fab.ariaLabel ?? ''}
-                    placement="left"
+                    placement={isRtl ? 'right' : 'left'}
                     arrow
                     enterTouchDelay={300}
                     leaveTouchDelay={1500}

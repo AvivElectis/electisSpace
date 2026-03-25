@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { Box, Fab, Typography, ClickAwayListener, Zoom, Tooltip } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -35,6 +36,9 @@ const bottomOffset = `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-a
  */
 export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     const [open, setOpen] = useState(false);
+    const { i18n } = useTranslation();
+    const isRtl = i18n.dir() === 'rtl';
+    const tooltipPlacement = isRtl ? 'right' : 'left';
 
     const handleMainTap = () => {
         triggerHaptic().catch(() => {});
@@ -54,7 +58,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     const fab = actions.length === 1 ? (
         <Tooltip
             title={actions[0].label}
-            placement="left"
+            placement={tooltipPlacement}
             arrow
             enterTouchDelay={300}
             leaveTouchDelay={1500}
@@ -108,7 +112,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                             </Box>
                             <Tooltip
                                 title={action.label}
-                                placement="left"
+                                placement={tooltipPlacement}
                                 arrow
                                 enterTouchDelay={300}
                                 leaveTouchDelay={1500}
@@ -129,7 +133,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
                 {/* Main FAB */}
                 <Tooltip
                     title={open ? '' : actions.map(a => a.label).join(', ')}
-                    placement="left"
+                    placement={tooltipPlacement}
                     arrow
                     enterTouchDelay={300}
                     leaveTouchDelay={1500}
