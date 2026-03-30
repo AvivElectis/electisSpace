@@ -84,8 +84,9 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
     }, [t]);
 
     const handleEmailChange = useCallback((value: string) => {
-        setEmail(value);
-        if (!isEdit) checkEmailExists(value);
+        const lowered = value.toLowerCase();
+        setEmail(lowered);
+        if (!isEdit) checkEmailExists(lowered);
     }, [isEdit, checkEmailExists]);
 
     useEffect(() => {
@@ -493,7 +494,7 @@ export function useUserDialogState({ open, onSave, user, profileMode }: Params) 
             } else {
                 // Create new user
                 const createUserData: Record<string, any> = {
-                    email: email.trim(),
+                    email: email.trim().toLowerCase(),
                     firstName: firstName.trim() || undefined,
                     lastName: lastName.trim() || undefined,
                     phone: phone.trim() || undefined,
