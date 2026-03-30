@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.2] — 2026-03-30 — AIMS Token & Error Handling Fix
+
+### Fixed
+- **Label link/unlink returns 500 instead of proper error** — `solumService` inner catches were stripping `error.response`, causing `withRetry` to misidentify 403s as network errors and retry 3× unnecessarily (~18s delay), then letting the error escape as 500 to the client
+- **AIMS token refresh not implemented** — refresh tokens were stored but never used; added `refreshToken()` method calling AIMS `/api/v2/token/refresh` and updated `getToken()` to try refresh before falling back to full re-login
+- **All `withTokenRetry` paths now wrap retry failures** as `AimsOperationError` with correct HTTP status codes instead of letting plain `Error` escape as 500
+- **JWT expired logged as ERROR** — `TokenExpiredError` and `JsonWebTokenError` (expected auth flow) now logged at `warn` level instead of `error`, reducing log noise
+
+### Changed
+- All 13 `solumService` error wrapping sites now use `wrapError()` helper that preserves the original axios `response` object
+- `aimsGateway.getToken()` now attempts token refresh before full login, reducing Azure AD B2C load and improving token rotation
+
 ## [2.14.1] — 2026-03-25 — Total Spaces Edit Guard
 
 ### Fixed
