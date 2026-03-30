@@ -49,12 +49,12 @@ const syncIndicatorSx = {
     opacity: 0.9,
 } as const;
 
-const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
 
 export const NativeShell = memo(function NativeShell() {
     useNativeInit();
 
-    // Track app background time — require re-auth after 5 minutes
+    // Track app background time — require re-auth after 1 hour
     const backgroundTimeRef = useRef<number | null>(null);
     const navigate = useNavigate();
 
@@ -64,12 +64,24 @@ export const NativeShell = memo(function NativeShell() {
         const handlePause = () => {
             backgroundTimeRef.current = Date.now();
         };
-        const handleResume = () => {
+        const handleResume = async () => {
             if (backgroundTimeRef.current) {
                 const elapsed = Date.now() - backgroundTimeRef.current;
                 backgroundTimeRef.current = null;
                 if (elapsed >= SESSION_TIMEOUT_MS) {
-                    // Session expired — force re-login
+                    // Session expired — check if device lock is enrolled
+                    try {
+                        const { deviceLockPreference } = await import('@shared/infrastructure/services/deviceLockPreference');
+                        const { deviceTokenStorage } = await import('@shared/infrastructure/services/deviceTokenStorage');
+                        const isDeviceLockEnabled = await deviceLockPreference.isEnabled();
+                        const hasToken = await deviceTokenStorage.getDeviceToken();
+                        if (isDeviceLockEnabled && hasToken) {
+                            navigate('/device-lock', { replace: true });
+                            return;
+                        }
+                    } catch {
+                        // Preference check failed — fall back to login
+                    }
                     navigate('/login', { replace: true });
                 }
             }
@@ -111,9 +123,11 @@ export const NativeShell = memo(function NativeShell() {
         syncState.isConnected ? 'connected' : 'disconnected'
     , [syncState.status, syncState.isConnected]);
 
+    const syncRef = useRef(syncController.sync);
+    syncRef.current = syncController.sync;
     const handleSyncClick = useCallback(() => {
-        syncController.sync().catch(() => {/* handled in controller */});
-    }, [syncController]);
+        syncRef.current().catch(() => {/* handled in controller */});
+    }, []);
 
     return (
         <SyncProvider value={syncController}>

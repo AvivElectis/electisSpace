@@ -13,6 +13,7 @@ import { useNotifications } from '@shared/infrastructure/store/rootStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
 import { validateArticleFormat } from '../domain/validation';
+import { logger } from '@shared/infrastructure/services/logger';
 import type { ArticleFormat } from '../domain/types';
 
 /**
@@ -84,7 +85,7 @@ export function useConfigurationController() {
             // The article format is already saved by the server endpoint, but the derived
             // mapping config (including mappingInfo) needs explicit saving
             saveFieldMappingsToServer(activeCompanyId).catch((err) => {
-                console.warn('[ConfigController] Failed to save field mappings after schema fetch:', err);
+                logger.warn('Settings', 'Failed to save field mappings after schema fetch', { error: err instanceof Error ? err.message : String(err) });
             });
 
             const sourceLabel = response.source === 'db' ? '(from server)' : '(fetched from AIMS)';

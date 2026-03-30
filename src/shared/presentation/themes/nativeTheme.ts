@@ -58,6 +58,13 @@ export function createNativeTheme(direction: 'ltr' | 'rtl') {
                         minHeight: 48,
                         textTransform: 'none' as const,
                         fontWeight: 600,
+                        gap: 8,
+                    },
+                    startIcon: {
+                        marginInlineEnd: 4,
+                    },
+                    endIcon: {
+                        marginInlineStart: 4,
                     },
                 },
             },
@@ -65,6 +72,29 @@ export function createNativeTheme(direction: 'ltr' | 'rtl') {
                 styleOverrides: {
                     root: {
                         borderRadius: nativeRadii.chip,
+                        gap: 4,
+                    },
+                    icon: {
+                        marginInlineStart: 4,
+                        marginInlineEnd: -2,
+                    },
+                    deleteIcon: {
+                        marginInlineStart: -2,
+                        marginInlineEnd: 4,
+                    },
+                },
+            },
+            MuiListItemIcon: {
+                styleOverrides: {
+                    root: {
+                        minWidth: 40,
+                    },
+                },
+            },
+            MuiBottomNavigationAction: {
+                styleOverrides: {
+                    root: {
+                        gap: 2,
                     },
                 },
             },
@@ -76,7 +106,14 @@ export function createNativeTheme(direction: 'ltr' | 'rtl') {
                     root: {
                         '& .MuiFilledInput-root': {
                             borderRadius: nativeRadii.input,
+                            gap: 8,
+                            alignItems: 'center',
                             '&::before, &::after': { display: 'none' },
+                        },
+                        '& .MuiInputAdornment-root': {
+                            marginTop: '0 !important',
+                            display: 'flex',
+                            alignItems: 'center',
                         },
                     },
                 },
@@ -84,7 +121,7 @@ export function createNativeTheme(direction: 'ltr' | 'rtl') {
             MuiFab: {
                 styleOverrides: {
                     root: {
-                        borderRadius: '50%', // Keep FABs circular (don't apply nativeRadii)
+                        borderRadius: '50%',
                     },
                 },
             },

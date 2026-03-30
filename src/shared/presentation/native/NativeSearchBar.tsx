@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { memo, useState, useRef, useCallback, useEffect } from 'react';
 import { IconButton, TextField, InputAdornment, Collapse } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
@@ -13,7 +13,7 @@ export interface NativeSearchBarProps {
     onExpandedChange?: (expanded: boolean) => void;
 }
 
-export function NativeSearchBar({
+export const NativeSearchBar = memo(function NativeSearchBar({
     value,
     onChange,
     placeholder,
@@ -109,4 +109,4 @@ export function NativeSearchBar({
             />
         </Collapse>
     );
-}
+});

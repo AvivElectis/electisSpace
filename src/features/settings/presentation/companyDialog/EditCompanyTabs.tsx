@@ -84,6 +84,7 @@ import type { SolumMappingConfig, SolumFieldMapping } from '@features/settings/d
 import { generateInitialMapping } from '@features/settings/domain/generateInitialMapping';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
+import { logger } from '@shared/infrastructure/services/logger';
 
 const AIMSSettingsDialog = lazy(() => import('../AIMSSettingsDialog'));
 
@@ -301,7 +302,7 @@ export function EditCompanyTabs({ state, onClose, open }: Props) {
         companyService.getStores(companyId)
             .then(res => { if (!cancelled) setStores(res.stores); })
             .catch((err) => {
-                console.error('Failed to fetch stores:', err);
+                logger.error('Settings', 'Failed to fetch stores', { error: err instanceof Error ? err.message : String(err) });
             })
             .finally(() => { if (!cancelled) setStoresLoading(false); });
 
@@ -318,7 +319,7 @@ export function EditCompanyTabs({ state, onClose, open }: Props) {
             })
             .catch((err) => {
                 if (cancelled) return;
-                console.error('Failed to fetch company settings:', err);
+                logger.error('Settings', 'Failed to fetch company settings', { error: err instanceof Error ? err.message : String(err) });
             });
 
         return () => { cancelled = true; };

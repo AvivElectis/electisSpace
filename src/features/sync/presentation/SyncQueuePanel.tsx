@@ -39,6 +39,7 @@ import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import GroupIcon from '@mui/icons-material/Group';
 import { useTranslation } from 'react-i18next';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
+import { logger } from '@shared/infrastructure/services/logger';
 import type { SyncQueueItem, SyncEntityType, SyncItemStatus } from '@shared/infrastructure/services/syncApi';
 
 interface SyncQueuePanelProps {
@@ -105,7 +106,7 @@ export function SyncQueuePanel({
                 total: response.pagination.total,
             });
         } catch (error) {
-            console.error('Failed to fetch sync queue:', error);
+            logger.error('Sync', 'Failed to fetch sync queue', { error: error instanceof Error ? error.message : String(error) });
         } finally {
             setLoading(false);
         }
@@ -130,7 +131,7 @@ export function SyncQueuePanel({
             await syncApi.retryItem(itemId);
             await fetchQueue();
         } catch (error) {
-            console.error('Retry failed:', error);
+            logger.error('Sync', 'Retry failed', { error: error instanceof Error ? error.message : String(error) });
         } finally {
             setRetrying(null);
         }
@@ -144,7 +145,7 @@ export function SyncQueuePanel({
             await syncApi.retryAllFailed(storeId);
             await fetchQueue();
         } catch (error) {
-            console.error('Retry all failed:', error);
+            logger.error('Sync', 'Retry all failed', { error: error instanceof Error ? error.message : String(error) });
         } finally {
             setLoading(false);
         }
@@ -158,7 +159,7 @@ export function SyncQueuePanel({
             await syncApi.clearFailed(storeId);
             await fetchQueue();
         } catch (error) {
-            console.error('Clear failed:', error);
+            logger.error('Sync', 'Clear failed', { error: error instanceof Error ? error.message : String(error) });
         } finally {
             setLoading(false);
         }

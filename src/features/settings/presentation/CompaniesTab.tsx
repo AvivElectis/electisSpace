@@ -44,6 +44,7 @@ import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { companyService, type Company, type CompanyQueryParams } from '@shared/infrastructure/services/companyService';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
+import { logger } from '@shared/infrastructure/services/logger';
 
 // Lazy load dialogs - using default exports
 const CompanyDialog = lazy(() => import('./CompanyDialog'));
@@ -93,7 +94,7 @@ export function CompaniesTab() {
             setCompanies(response.data);
             setTotal(response.pagination.total);
         } catch (err) {
-            console.error('Failed to fetch companies:', err);
+            logger.error('Settings', 'Failed to fetch companies', { error: err instanceof Error ? err.message : String(err) });
             setError(t('settings.companies.fetchError', 'Failed to load companies'));
         } finally {
             setLoading(false);
@@ -166,7 +167,7 @@ export function CompaniesTab() {
                 await companyService.delete(company.id);
                 fetchCompanies();
             } catch (err) {
-                console.error('Failed to delete company:', err);
+                logger.error('Settings', 'Failed to delete company', { error: err instanceof Error ? err.message : String(err) });
                 setError(t('settings.companies.deleteError', 'Failed to delete company'));
             }
         }

@@ -70,6 +70,7 @@ export function NativeLoginPage() {
         isAuthenticated,
         isInitialized,
         setUser,
+        setInitialized,
     } = useAuthStore();
 
     const [email, setEmail] = useState('');
@@ -101,8 +102,10 @@ export function NativeLoginPage() {
     const [showBiometricEnrollment, setShowBiometricEnrollment] = useState(false);
     const [biometricEnrollLoading, setBiometricEnrollLoading] = useState(false);
 
-    // Check biometric availability and auto-attempt on mount (only on native)
-    const biometricAttempted = useRef(false);
+    // Check biometric availability on mount (only on native)
+    // NOTE: Auto-trigger is disabled — the biometric AuthActivity causes Android to
+    // destroy/recreate MainActivity, which kills the WebView and loses the callback.
+    // Instead, the user taps the biometric button on the login form.
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
 
@@ -114,30 +117,6 @@ export function NativeLoginPage() {
             ]);
             setBiometricAvailable(available);
             setHasStoredToken(!!(deviceToken && deviceId));
-
-            // Auto-attempt biometric login if device token exists
-            if (available && !biometricAttempted.current && deviceToken && deviceId) {
-                biometricAttempted.current = true;
-                if (deviceToken && deviceId) {
-                    setBiometricLoading(true);
-                    try {
-                        const passed = await biometricService.authenticate(
-                            t('auth.biometric.reason', 'Verify your identity')
-                        );
-                        if (passed) {
-                            await authService.deviceAuth(deviceToken, deviceId);
-                            const { user: freshUser } = await authService.me();
-                            setUser(freshUser);
-                            navigate('/', { replace: true });
-                            return;
-                        }
-                    } catch {
-                        // Biometric failed or device token invalid — show normal login
-                    } finally {
-                        setBiometricLoading(false);
-                    }
-                }
-            }
         };
         init();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -149,12 +128,17 @@ export function NativeLoginPage() {
         }
     }, [isAuthenticated, isInitialized, navigate]);
 
-    // After successful 2FA, check whether to prompt biometric enrollment
-    const handlePostLoginNavigation = async (trusted: boolean) => {
-        if (trusted && Capacitor.isNativePlatform() && biometricAvailable) {
-            // Device token was already stored by authService.verify2FA.
-            // Show enrollment prompt so user can confirm biometrics work.
-            setShowBiometricEnrollment(true);
+    // After successful 2FA, prompt device lock enrollment on Android
+    // Always offer on native (regardless of "trust device" checkbox — device lock replaces that concept)
+    const handlePostLoginNavigation = async (_trusted: boolean) => {
+        if (Capacitor.isNativePlatform() && biometricAvailable) {
+            const { deviceLockPreference } = await import('@shared/infrastructure/services/deviceLockPreference');
+            const alreadyEnabled = await deviceLockPreference.isEnabled();
+            if (alreadyEnabled) {
+                navigate('/');
+            } else {
+                setShowBiometricEnrollment(true);
+            }
         } else {
             navigate('/');
         }
@@ -207,24 +191,27 @@ export function NativeLoginPage() {
         setBiometricLoading(true);
         clearError();
         try {
-            const passed = await biometricService.authenticate(t('auth.biometric.reason'));
+            const passed = await biometricService.authenticate(t('auth.deviceLock.reason', 'Verify your identity'));
             if (passed) {
                 const deviceToken = await deviceTokenStorage.getDeviceToken();
                 const deviceId = await deviceTokenStorage.getDeviceId();
                 if (deviceToken && deviceId) {
                     try {
                         await authService.deviceAuth(deviceToken, deviceId);
-                        // Access token is now set by deviceAuth; fetch user info
                         const { user: freshUser } = await authService.me();
                         setUser(freshUser);
-                        navigate('/');
+                        setInitialized(true);
+                        // Ensure device lock is enabled since auth succeeded
+                        const { deviceLockPreference } = await import('@shared/infrastructure/services/deviceLockPreference');
+                        await deviceLockPreference.setEnabled(true);
+                        navigate('/', { replace: true });
                         return;
                     } catch {
                         // Device token expired or invalid — fall back to code input
                     }
                 }
             }
-            // Biometric failed or device token invalid — show normal 2FA input
+            // Verification failed or device token invalid — show normal 2FA input
             setShowBiometric(false);
             setShowVerification(true);
         } finally {
@@ -233,7 +220,7 @@ export function NativeLoginPage() {
     };
 
     const handleBiometricQuickLogin = async () => {
-        // Direct biometric login from bottom button (before email/password)
+        // Direct device auth from bottom button (before email/password)
         setBiometricLoading(true);
         clearError();
         try {
@@ -242,17 +229,21 @@ export function NativeLoginPage() {
                 deviceTokenStorage.getDeviceId(),
             ]);
             if (!deviceToken || !deviceId) {
-                // No stored device token — can't do biometric shortcut
                 setBiometricLoading(false);
                 return;
             }
-            const passed = await biometricService.authenticate(t('auth.biometric.reason'));
+            const passed = await biometricService.authenticate(
+                t('auth.deviceLock.reason', 'Verify your identity')
+            );
             if (passed) {
                 try {
                     await authService.deviceAuth(deviceToken, deviceId);
                     const { user: freshUser } = await authService.me();
                     setUser(freshUser);
-                    navigate('/');
+                    setInitialized(true);
+                    const { deviceLockPreference } = await import('@shared/infrastructure/services/deviceLockPreference');
+                    await deviceLockPreference.setEnabled(true);
+                    navigate('/', { replace: true });
                     return;
                 } catch {
                     // Token expired — fall through to password form
@@ -282,19 +273,20 @@ export function NativeLoginPage() {
     const handleEnableBiometric = async () => {
         setBiometricEnrollLoading(true);
         try {
-            const passed = await biometricService.authenticate(t('auth.biometric.enrollReason', 'Confirm your identity to enable biometric login'));
+            const passed = await biometricService.authenticate(
+                t('auth.deviceLock.enrollReason', 'Confirm your identity to enable quick unlock')
+            );
             if (passed) {
-                // Device token already stored — biometrics are now wired up
-                navigate('/');
-            } else {
-                // Biometric verification failed — still navigate, enrollment just didn't complete
-                navigate('/');
+                // Save device lock preference — enables lock screen on session timeout
+                const { deviceLockPreference } = await import('@shared/infrastructure/services/deviceLockPreference');
+                await deviceLockPreference.setEnabled(true);
             }
         } catch {
-            navigate('/');
+            // Verification failed — skip silently
         } finally {
             setBiometricEnrollLoading(false);
             setShowBiometricEnrollment(false);
+            navigate('/');
         }
     };
 
@@ -393,10 +385,17 @@ export function NativeLoginPage() {
         },
         '& .MuiInputAdornment-root': {
             marginTop: '0 !important',
+            display: 'flex',
+            alignItems: 'center',
+            marginInlineEnd: 8,
         },
         '& .MuiInputAdornment-root svg': {
             color: 'text.secondary',
             fontSize: '1.25rem',
+        },
+        '& .MuiFilledInput-input': {
+            paddingTop: '22px',
+            paddingBottom: '6px',
         },
         '& .MuiFilledInput-root.Mui-focused .MuiInputAdornment-root svg': {
             color: PRIMARY,
@@ -543,10 +542,10 @@ export function NativeLoginPage() {
                             gutterBottom
                             sx={{ fontFamily: nativeFonts.heading, fontWeight: 700, mb: 1 }}
                         >
-                            {t('auth.biometric.enrollTitle', 'Enable Biometric Login?')}
+                            {t('auth.deviceLock.enrollTitle', 'Enable Quick Unlock?')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            {t('auth.biometric.enrollHint', 'Use your fingerprint or face to sign in faster next time.')}
+                            {t('auth.deviceLock.enrollHint', 'Use your fingerprint, face, or PIN to sign in faster next time.')}
                         </Typography>
 
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -574,7 +573,7 @@ export function NativeLoginPage() {
                             >
                                 {biometricEnrollLoading
                                     ? t('login.verifying', 'Verifying...')
-                                    : t('auth.biometric.enrollEnable', 'Enable')}
+                                    : t('auth.deviceLock.enrollEnable', 'Enable')}
                             </Button>
                             <Button
                                 fullWidth
@@ -589,7 +588,7 @@ export function NativeLoginPage() {
                                     fontWeight: 600,
                                 }}
                             >
-                                {t('auth.biometric.enrollSkip', 'Skip')}
+                                {t('auth.deviceLock.enrollSkip', 'Skip')}
                             </Button>
                         </Box>
                     </Box>

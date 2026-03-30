@@ -48,17 +48,22 @@ function NativePullToRefresh({ onRefresh, children }: PullToRefreshProps) {
         if (!container) return;
 
         // Only track pull when scrolled to top
-        if (container.scrollTop !== 0) return;
+        if (container.scrollTop > 0) return;
 
         startYRef.current = e.touches[0].clientY;
         hapticFiredRef.current = false;
     }, []);
 
-    const handleTouchMove = useCallback(async (e: TouchEvent<HTMLDivElement>) => {
+    const handleTouchMove = useCallback((e: TouchEvent<HTMLDivElement>) => {
         if (startYRef.current === null || isRefreshing) return;
 
         const container = containerRef.current;
-        if (!container || container.scrollTop !== 0) return;
+        if (!container || container.scrollTop > 0) {
+            // User scrolled down after starting — cancel pull gesture
+            startYRef.current = null;
+            setPullDistance(0);
+            return;
+        }
 
         const delta = e.touches[0].clientY - startYRef.current;
 
@@ -71,14 +76,10 @@ function NativePullToRefresh({ onRefresh, children }: PullToRefreshProps) {
         const clamped = Math.min(delta, MAX_PULL);
         setPullDistance(clamped);
 
-        // Fire haptic once when crossing threshold
+        // Fire haptic once when crossing threshold (non-blocking)
         if (clamped >= PULL_THRESHOLD && !hapticFiredRef.current) {
             hapticFiredRef.current = true;
-            try {
-                await Haptics.impact({ style: ImpactStyle.Medium });
-            } catch {
-                // Silently ignore if haptics unavailable
-            }
+            Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
         }
     }, [isRefreshing]);
 
@@ -117,7 +118,7 @@ function NativePullToRefresh({ onRefresh, children }: PullToRefreshProps) {
                 flex: 1,
                 overflow: 'auto',
                 position: 'relative',
-                overscrollBehaviorY: 'contain',
+                WebkitOverflowScrolling: 'touch',
             }}
         >
             {/* Pull indicator */}

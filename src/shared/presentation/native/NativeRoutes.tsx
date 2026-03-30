@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { tokenManager } from '@shared/infrastructure/services/apiClient';
+import { ProtectedFeature } from '@features/auth/presentation/ProtectedFeature';
 import { NativeShell } from './NativeShell';
 
 const NativeDashboardPage = lazy(() =>
@@ -172,19 +173,19 @@ export function getNativeRoutes() {
     return (
         <Route element={<ProtectedNativeShell />}>
             <Route index element={<Suspense fallback={null}><NativeDashboardPage /></Suspense>} />
-            <Route path="people" element={<Suspense fallback={null}><NativePeopleListPage /></Suspense>} />
-            <Route path="people/new" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
-            <Route path="people/import" element={<Suspense fallback={null}><NativePeopleImportPage /></Suspense>} />
-            <Route path="people/:id/edit" element={<Suspense fallback={null}><NativePersonFormPage /></Suspense>} />
-            <Route path="spaces" element={<Suspense fallback={null}><NativeSpacesListPage /></Suspense>} />
-            <Route path="spaces/new" element={<Suspense fallback={null}><NativeSpaceFormPage /></Suspense>} />
-            <Route path="spaces/:id/edit" element={<Suspense fallback={null}><NativeSpaceFormPage /></Suspense>} />
-            <Route path="conference" element={<Suspense fallback={null}><NativeConferencePage /></Suspense>} />
-            <Route path="conference/new" element={<Suspense fallback={null}><NativeConferenceFormPage /></Suspense>} />
-            <Route path="conference/:id/edit" element={<Suspense fallback={null}><NativeConferenceFormPage /></Suspense>} />
-            <Route path="labels" element={<Suspense fallback={null}><NativeLabelsPage /></Suspense>} />
-            <Route path="labels/link" element={<Suspense fallback={null}><NativeLinkLabelPage /></Suspense>} />
-            <Route path="aims-management" element={<Suspense fallback={null}><NativeAimsPage /></Suspense>} />
+            <Route path="people" element={<ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativePeopleListPage /></Suspense></ProtectedFeature>} />
+            <Route path="people/new" element={<ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativePersonFormPage /></Suspense></ProtectedFeature>} />
+            <Route path="people/import" element={<ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativePeopleImportPage /></Suspense></ProtectedFeature>} />
+            <Route path="people/:id/edit" element={<ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativePersonFormPage /></Suspense></ProtectedFeature>} />
+            <Route path="spaces" element={<ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeSpacesListPage /></Suspense></ProtectedFeature>} />
+            <Route path="spaces/new" element={<ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeSpaceFormPage /></Suspense></ProtectedFeature>} />
+            <Route path="spaces/:id/edit" element={<ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeSpaceFormPage /></Suspense></ProtectedFeature>} />
+            <Route path="conference" element={<ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeConferencePage /></Suspense></ProtectedFeature>} />
+            <Route path="conference/new" element={<ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeConferenceFormPage /></Suspense></ProtectedFeature>} />
+            <Route path="conference/:id/edit" element={<ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeConferenceFormPage /></Suspense></ProtectedFeature>} />
+            <Route path="labels" element={<ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeLabelsPage /></Suspense></ProtectedFeature>} />
+            <Route path="labels/link" element={<ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeLinkLabelPage /></Suspense></ProtectedFeature>} />
+            <Route path="aims-management" element={<ProtectedFeature feature="aims-management" minimumStoreRole="STORE_MANAGER" requireAll fallback={<Navigate to="/" replace />}><Suspense fallback={null}><NativeAimsPage /></Suspense></ProtectedFeature>} />
             <Route path="settings" element={<Suspense fallback={null}><NativeSettingsPage /></Suspense>} />
 
             {/* Settings sub-pages */}

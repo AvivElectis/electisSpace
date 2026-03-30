@@ -100,7 +100,7 @@ export const deviceTokenStorage = {
                 }
             }
             if (!deviceId) {
-                deviceId = crypto.randomUUID();
+                deviceId = (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`);
                 if (isNative) {
                     await Preferences.set({ key: DEVICE_ID_KEY, value: deviceId });
                 } else {
@@ -114,7 +114,7 @@ export const deviceTokenStorage = {
             // Last resort: use localStorage only
             let deviceId = localStorage.getItem(DEVICE_ID_KEY);
             if (!deviceId) {
-                deviceId = crypto.randomUUID();
+                deviceId = (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`);
                 localStorage.setItem(DEVICE_ID_KEY, deviceId);
             }
             return deviceId;

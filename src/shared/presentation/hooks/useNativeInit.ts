@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { useNativePlatform } from './useNativePlatform';
 
+let initialized = false;
+
 export function useNativeInit() {
     const { isNative } = useNativePlatform();
 
     useEffect(() => {
-        if (!isNative) return;
+        if (!isNative || initialized) return;
+        initialized = true;
 
         // Set CSS custom properties for native layout adjustments
         document.documentElement.style.setProperty('--native-bottom-nav-offset', '88px'); // 56px nav + 32px spacing

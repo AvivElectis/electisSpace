@@ -5,6 +5,7 @@
  * Used by useStoreEvents hook to keep all clients in sync.
  */
 import { tokenManager } from './apiClient';
+import { logger } from './logger';
 
 // For SSE, connect directly to backend (bypasses Vite proxy which buffers SSE)
 // IMPORTANT: Use 127.0.0.1 (IPv4) instead of localhost to avoid WSL/IPv6 routing issues
@@ -60,7 +61,7 @@ export function connectToStoreEvents(
     const token = tokenManager.getAccessToken();
     const url = `${API_BASE_URL}/stores/${storeId}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
-    if (isDev) console.debug('[StoreEventsService] Connecting to SSE:', { url: url.replace(/token=[^&]+/, 'token=***'), storeId });
+    logger.debug('Sync', 'SSE connecting', { storeId });
 
     eventSource = new EventSource(url, { withCredentials: true });
 
@@ -75,14 +76,14 @@ export function connectToStoreEvents(
             }
             onEvent(data);
         } catch (err) {
-            console.error('[StoreEventsService] Failed to parse SSE message:', err);
+            logger.error('Sync', 'Failed to parse SSE message', { error: String(err) });
             // Ignore malformed events
         }
     };
 
     eventSource.onerror = (e) => {
         consecutiveErrors++;
-        console.error('[StoreEventsService] SSE error:', e, 'readyState:', eventSource?.readyState, 'consecutiveErrors:', consecutiveErrors);
+        logger.error('Sync', 'SSE error', { readyState: eventSource?.readyState, consecutiveErrors });
         if (consecutiveErrors >= 5) {
             // Circuit breaker: stop reconnecting after 5 consecutive failures (likely auth expired)
             if (eventSource) {
@@ -94,7 +95,7 @@ export function connectToStoreEvents(
     };
 
     eventSource.onopen = () => {
-        if (isDev) console.debug('[StoreEventsService] SSE connection opened');
+        logger.debug('Sync', 'SSE connection opened');
     };
 
     return {

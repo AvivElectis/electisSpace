@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, memo, useState } from 'react';
 import { Button, CircularProgress, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -14,15 +14,11 @@ interface NativeFormPageProps {
     hideDelete?: boolean;
 }
 
-async function triggerSaveHaptic() {
-    try {
-        await Haptics.impact({ style: ImpactStyle.Medium });
-    } catch {
-        // Haptics not available on web — ignore
-    }
+function triggerSaveHaptic() {
+    Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
 }
 
-export function NativeFormPage({
+export const NativeFormPage = memo(function NativeFormPage({
     title,
     children,
     onSave,
@@ -85,4 +81,4 @@ export function NativeFormPage({
             {children}
         </NativePage>
     );
-}
+});

@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { TextField } from '@mui/material';
 import type { TextFieldProps } from '@mui/material';
 import { nativeRadii, nativeSizing } from '../themes/nativeTokens';
 
 export type NativeTextFieldProps = Omit<TextFieldProps, 'variant'>;
 
-export function NativeTextField({ sx, ...rest }: NativeTextFieldProps) {
+export const NativeTextField = memo(function NativeTextField({ sx, ...rest }: NativeTextFieldProps) {
     return (
         <TextField
             variant="filled"
@@ -27,4 +28,4 @@ export function NativeTextField({ sx, ...rest }: NativeTextFieldProps) {
             {...rest}
         />
     );
-}
+});

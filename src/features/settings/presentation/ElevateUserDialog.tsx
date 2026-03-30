@@ -28,6 +28,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '@shared/infrastructure/services/apiClient';
+import { logger } from '@shared/infrastructure/services/logger';
 import type { User } from '@shared/infrastructure/services/userService';
 
 type AppRole = 'PLATFORM_ADMIN' | 'APP_VIEWER' | 'USER';
@@ -80,7 +81,7 @@ export function ElevateUserDialog({ open, onClose, onSuccess, user, allowedRoles
             });
             onSuccess();
         } catch (err: any) {
-            console.error('Failed to change user role:', err);
+            logger.error('Settings', 'Failed to change user role', { error: err?.message || String(err) });
             setError(
                 err.response?.data?.message ||
                 t('settings.users.elevateError')

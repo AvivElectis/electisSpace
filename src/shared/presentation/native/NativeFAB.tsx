@@ -19,12 +19,8 @@ export interface NativeFABProps {
     mainIcon?: ReactNode;
 }
 
-async function triggerHaptic() {
-    try {
-        await Haptics.impact({ style: ImpactStyle.Light });
-    } catch {
-        // Haptics not available
-    }
+function triggerHaptic() {
+    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
 }
 
 const bottomOffset = `calc(${nativeSizing.bottomNavHeight}px + 16px + env(safe-area-inset-bottom, 0px))`;
@@ -41,7 +37,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     const tooltipPlacement = isRtl ? 'right' : 'left';
 
     const handleMainTap = () => {
-        triggerHaptic().catch(() => {});
+        triggerHaptic();
         if (actions.length === 1) {
             actions[0].onClick();
         } else {
@@ -50,7 +46,7 @@ export function NativeFAB({ actions, mainIcon }: NativeFABProps) {
     };
 
     const handleActionTap = (action: NativeFABAction) => {
-        triggerHaptic().catch(() => {});
+        triggerHaptic();
         action.onClick();
         setOpen(false);
     };

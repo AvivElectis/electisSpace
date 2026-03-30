@@ -21,7 +21,6 @@ import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useCommandPalette } from '@features/quick-actions/application/useCommandPalette';
 import { useNavTabs } from '../hooks/useNavTabs';
 import { useNativePlatform } from '../hooks/useNativePlatform';
-import { useNativeInit } from '../hooks/useNativeInit';
 import { useAndroidBackButton } from '../hooks/useAndroidBackButton';
 
 // Lazy load CommandPalette
@@ -70,7 +69,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     const [profileOpen, setProfileOpen] = useState(false);
     const commandPalette = useCommandPalette();
     const { isNative } = useNativePlatform();
-    useNativeInit();
     const { syncState, setWorkingMode } = useSyncStore();
     const { isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
@@ -90,7 +88,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     const setSpaces = useSpacesStore(state => state.setSpaces);
 
     // Android hardware back button: close open overlays first, then navigate back
+    // Skip when native — NativeShell handles its own back button to avoid duplicate listeners
     useAndroidBackButton({
+        disabled: isNative,
         onCloseDialog: useCallback(() => {
             if (settingsOpen) { setSettingsOpen(false); return true; }
             if (manualOpen) { setManualOpen(false); return true; }

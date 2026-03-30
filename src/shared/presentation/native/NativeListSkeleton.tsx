@@ -10,6 +10,7 @@
  *   }
  */
 
+import { memo } from 'react';
 import { Box, Skeleton } from '@mui/material';
 import { nativeSpacing, nativeRadii } from '../themes/nativeTokens';
 
@@ -22,7 +23,7 @@ export interface NativeListSkeletonProps {
     showChipBar?: boolean;
 }
 
-export function NativeListSkeleton({
+export const NativeListSkeleton = memo(function NativeListSkeleton({
     rows = 5,
     showStatBar = false,
     showChipBar = false,
@@ -126,4 +127,4 @@ export function NativeListSkeleton({
             </Box>
         </Box>
     );
-}
+});

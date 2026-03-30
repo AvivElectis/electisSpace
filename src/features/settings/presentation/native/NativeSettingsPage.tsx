@@ -163,7 +163,7 @@ export function NativeSettingsPage() {
     const user = useAuthStore((s) => s.user);
     const logout = useAuthStore((s) => s.logout);
 
-    useSetNativeTitle(t('settings.title'));
+    useSetNativeTitle(t('settings.title'), true);
 
     // Enable auto-lock
     useAutoLock();

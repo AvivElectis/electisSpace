@@ -1637,6 +1637,19 @@
             "reason": "Verify your identity",
             "loginWithBiometric": "Login with biometrics",
             "notAvailable": "Biometric authentication not available"
+        },
+        "deviceLock": {
+            "reason": "Verify your identity",
+            "title": "Tap to Unlock",
+            "subtitle": "Use your fingerprint, face, or PIN to continue",
+            "failed": "Verification failed. Try again.",
+            "expired": "Session expired. Please log in with your password.",
+            "usePassword": "Use password instead",
+            "enrollReason": "Confirm your identity to enable quick unlock",
+            "enrollTitle": "Enable Quick Unlock?",
+            "enrollHint": "Use your fingerprint, face, or PIN to sign in faster next time.",
+            "enrollEnable": "Enable",
+            "enrollSkip": "Skip"
         }
     },
     "roles": {

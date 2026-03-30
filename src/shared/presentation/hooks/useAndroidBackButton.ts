@@ -9,7 +9,7 @@
  * Only active when running on Android.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { App } from '@capacitor/app';
 import { useTranslation } from 'react-i18next';
@@ -18,9 +18,11 @@ import { useNativePlatform } from './useNativePlatform';
 interface UseAndroidBackButtonOptions {
     /** Return true if a dialog was closed (suppresses further back navigation) */
     onCloseDialog?: () => boolean;
+    /** Skip listener registration (e.g., MainLayout skips when NativeShell handles it) */
+    disabled?: boolean;
 }
 
-export function useAndroidBackButton({ onCloseDialog }: UseAndroidBackButtonOptions = {}) {
+export function useAndroidBackButton({ onCloseDialog, disabled }: UseAndroidBackButtonOptions = {}) {
     const { isAndroid } = useNativePlatform();
     const navigate = useNavigate();
     const location = useLocation();
@@ -29,42 +31,50 @@ export function useAndroidBackButton({ onCloseDialog }: UseAndroidBackButtonOpti
     // Track last back-press time for double-tap exit detection
     const lastBackPressRef = useRef<number>(0);
 
+    // Use refs to avoid re-registering the listener on every navigation/callback change
+    const locationRef = useRef(location.pathname);
+    locationRef.current = location.pathname;
+
+    const onCloseDialogRef = useRef(onCloseDialog);
+    onCloseDialogRef.current = onCloseDialog;
+
+    const handleBackButton = useCallback(() => {
+        // Priority 1: Close open dialog
+        if (onCloseDialogRef.current && onCloseDialogRef.current()) {
+            return;
+        }
+
+        // Priority 2: Navigate back if not on root
+        const isRoot =
+            locationRef.current === '/' || locationRef.current === '';
+
+        if (!isRoot) {
+            navigate(-1);
+            return;
+        }
+
+        // Priority 3: Double-tap to exit
+        const now = Date.now();
+        const DOUBLE_TAP_WINDOW = 2000; // ms
+
+        if (now - lastBackPressRef.current < DOUBLE_TAP_WINDOW) {
+            App.exitApp();
+            return;
+        }
+
+        lastBackPressRef.current = now;
+        showExitToast(t('app.pressAgainToExit'));
+    }, [navigate, t]);
+
     useEffect(() => {
-        if (!isAndroid) return;
+        if (!isAndroid || disabled) return;
 
-        const handle = App.addListener('backButton', () => {
-            // Priority 1: Close open dialog
-            if (onCloseDialog && onCloseDialog()) {
-                return;
-            }
-
-            // Priority 2: Navigate back if not on root
-            const isRoot =
-                location.pathname === '/' || location.pathname === '';
-
-            if (!isRoot) {
-                navigate(-1);
-                return;
-            }
-
-            // Priority 3: Double-tap to exit
-            const now = Date.now();
-            const DOUBLE_TAP_WINDOW = 2000; // ms
-
-            if (now - lastBackPressRef.current < DOUBLE_TAP_WINDOW) {
-                App.exitApp();
-                return;
-            }
-
-            lastBackPressRef.current = now;
-            showExitToast(t('app.pressAgainToExit'));
-        });
+        const handle = App.addListener('backButton', handleBackButton);
 
         return () => {
             handle.then(h => h.remove());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAndroid, location.pathname, navigate, onCloseDialog, t]);
+    }, [isAndroid, disabled, handleBackButton]);
 }
 
 /**

@@ -43,6 +43,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     allowedHosts: true, // Allow Android emulator (10.0.2.2) and other hosts
+    hmr: {
+      // Use protocol/host so HMR works through adb reverse on physical devices
+      protocol: 'ws',
+      host: 'localhost',
+      port: 3000,
+    },
     proxy: {
       // Backend API proxy - SSE requires special handling
       '/api': {

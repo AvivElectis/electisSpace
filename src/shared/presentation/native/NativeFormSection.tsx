@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import { NativeCard } from './NativeCard';
@@ -8,7 +9,7 @@ interface NativeFormSectionProps {
     children: ReactNode;
 }
 
-export function NativeFormSection({ title, children }: NativeFormSectionProps) {
+export const NativeFormSection = memo(function NativeFormSection({ title, children }: NativeFormSectionProps) {
     return (
         <Box sx={{ mb: `${nativeSpacing.sectionGap}px` }}>
             <Typography
@@ -29,4 +30,4 @@ export function NativeFormSection({ title, children }: NativeFormSectionProps) {
             </NativeCard>
         </Box>
     );
-}
+});

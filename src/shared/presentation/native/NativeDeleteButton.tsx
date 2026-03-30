@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import {
     Button,
     Dialog,
@@ -18,7 +18,7 @@ interface NativeDeleteButtonProps {
     label?: string;
 }
 
-export function NativeDeleteButton({
+export const NativeDeleteButton = memo(function NativeDeleteButton({
     onDelete,
     isDeleting = false,
     itemName,
@@ -31,11 +31,7 @@ export function NativeDeleteButton({
     const handleClose = () => setConfirmOpen(false);
 
     const handleConfirm = async () => {
-        try {
-            await Haptics.impact({ style: ImpactStyle.Heavy });
-        } catch {
-            // Haptics not available on web — ignore
-        }
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
         setConfirmOpen(false);
         await onDelete();
     };
@@ -78,4 +74,4 @@ export function NativeDeleteButton({
             </Dialog>
         </>
     );
-}
+});

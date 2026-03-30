@@ -26,9 +26,10 @@
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
     "android:build": "npm run build && cap sync && cap copy android",
-    "android:dev": "cross-env VITE_API_BASE_URL=http://10.0.2.2:3001/api/v1 npm run build && cap sync android && cd android && gradlew.bat assembleDebug",
-    "android:prod": "cross-env VITE_API_BASE_URL=https://solum.co.il/api/v1 npm run build && cap sync android && cd android && gradlew.bat assembleDebug",
-    "android:install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.electisspace.app/.MainActivity"
+    "android:dev": "cross-env CAPACITOR_ENV=dev VITE_API_BASE_URL=http://10.0.2.2:3001/api/v1 npm run build && cap sync android && cd android && gradlew.bat assembleDebug",
+    "android:prod": "cross-env CAPACITOR_ENV=prod VITE_API_BASE_URL=https://solum.co.il/api/v1 npm run build && cap sync android && cd android && gradlew.bat assembleRelease",
+    "android:install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.electisspace.app/.MainActivity",
+    "android:install:release": "adb install -r android/app/build/outputs/apk/release/app-release.apk && adb shell am start -n com.electisspace.app/.MainActivity"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

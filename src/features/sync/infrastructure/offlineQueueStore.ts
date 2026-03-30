@@ -49,6 +49,9 @@ const generateId = (): string => {
     return `offline_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 };
 
+// Maximum queue items to prevent localStorage bloat on Android
+const MAX_QUEUE_SIZE = 500;
+
 export const useOfflineQueueStore = create<OfflineQueueState>()(
     persist(
         (set, get) => ({
@@ -67,9 +70,14 @@ export const useOfflineQueueStore = create<OfflineQueueState>()(
                     timestamp: Date.now(),
                     retryCount: 0,
                 };
-                set((state) => ({
-                    items: [...state.items, newItem],
-                }));
+                set((state) => {
+                    let items = [...state.items, newItem];
+                    // Evict oldest items if queue exceeds limit
+                    if (items.length > MAX_QUEUE_SIZE) {
+                        items = items.slice(items.length - MAX_QUEUE_SIZE);
+                    }
+                    return { items };
+                });
                 return id;
             },
 

@@ -93,7 +93,7 @@ export function PeopleSaveListDialog({ open, onClose }: PeopleSaveListDialogProp
             setError(null);
             onClose();
         } catch (err: any) {
-            console.error('[PeopleSaveListDialog] Error:', err);
+            logger.error('People', 'Failed to save people list', { error: err?.message || String(err) });
             if (err?.response?.status === 409) {
                 setError(t('lists.nameExists') || 'A list with this name already exists');
             } else if (err?.response?.data?.error?.message) {

@@ -410,12 +410,12 @@ export const useAuthStore = create<AuthState>()(
                             user: null,
                             isAuthenticated: false,
                             isLoading: false,
-                            isInitialized: false,
+                            isInitialized: true, // Stay initialized — we know user needs to log in
                             error: null,
                             pendingEmail: null,
                             activeCompanyId: null,
                             activeStoreId: null,
-                            isAppReady: false,
+                            isAppReady: true, // Stay ready — show login form, not loading screen
                         }, false, 'logout/complete');
                     }
                 },

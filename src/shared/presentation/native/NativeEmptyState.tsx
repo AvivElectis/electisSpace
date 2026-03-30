@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { nativeSpacing, nativeColors, nativeRadii } from '../themes/nativeTokens';
@@ -9,7 +10,7 @@ export interface NativeEmptyStateProps {
     action?: { label: string; onClick: () => void };
 }
 
-export function NativeEmptyState({ icon, title, subtitle, action }: NativeEmptyStateProps) {
+export const NativeEmptyState = memo(function NativeEmptyState({ icon, title, subtitle, action }: NativeEmptyStateProps) {
     return (
         <Box
             sx={{
@@ -70,4 +71,4 @@ export function NativeEmptyState({ icon, title, subtitle, action }: NativeEmptyS
             )}
         </Box>
     );
-}
+});

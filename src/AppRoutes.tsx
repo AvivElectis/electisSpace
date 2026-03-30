@@ -15,6 +15,9 @@ const LoginPage = lazy(() =>
 const NativeLoginPage = lazy(() =>
     import('@features/auth/presentation/native/NativeLoginPage').then(m => ({ default: m.NativeLoginPage }))
 );
+const DeviceLockScreen = lazy(() =>
+    import('@features/auth/presentation/native/DeviceLockScreen').then(m => ({ default: m.DeviceLockScreen }))
+);
 const DashboardPage = lazy(() =>
     import('@features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))
 );
@@ -86,6 +89,9 @@ export function AppRoutes() {
         <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<SuspenseRoute>{isNative ? <NativeLoginPage /> : <LoginPage />}</SuspenseRoute>} />
+
+            {/* Device Lock Screen — Android native only, outside ProtectedNativeShell */}
+            {isNative && <Route path="/device-lock" element={<SuspenseRoute><DeviceLockScreen /></SuspenseRoute>} />}
 
             {/* Native Routes — wrapped in NativeShell, rendered only on native platform */}
             {isNative && getNativeRoutes()}

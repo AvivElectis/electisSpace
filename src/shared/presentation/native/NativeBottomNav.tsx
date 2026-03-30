@@ -32,12 +32,17 @@ export const NativeBottomNav = memo(function NativeBottomNav() {
         return location.pathname === tab.value || location.pathname.startsWith(tab.value + '/');
     })?.value ?? false;
 
-    const handleChange = async (_event: React.SyntheticEvent, newValue: string) => {
-        if (newValue === activeValue) return;
-        try {
-            await Haptics.impact({ style: ImpactStyle.Light });
-        } catch {
-            // Haptics not available
+    const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+        if (newValue === activeValue) {
+            // Re-tap on active tab: if on a sub-route, go to tab root
+            // If already on tab root, go to dashboard
+            if (location.pathname !== newValue) {
+                navigate(newValue);
+            } else if (newValue !== '/') {
+                navigate('/');
+            }
+            return;
         }
         navigate(newValue);
     };

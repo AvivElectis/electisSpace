@@ -19,6 +19,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
+import { logger } from '@shared/infrastructure/services/logger';
 import type { SyncStatusResponse } from '@shared/infrastructure/services/syncApi';
 
 interface BackendSyncStatusBadgeProps {
@@ -51,7 +52,7 @@ export function BackendSyncStatusBadge({
             const response = await syncApi.getStatus(storeId);
             setStatus(response);
         } catch (error) {
-            console.error('Failed to fetch sync status:', error);
+            logger.error('Sync', 'Failed to fetch sync status', { error: error instanceof Error ? error.message : String(error) });
             setStatus(null);
         } finally {
             setLoading(false);

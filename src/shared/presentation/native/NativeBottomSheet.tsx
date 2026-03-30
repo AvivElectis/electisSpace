@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { memo, useState, type ReactNode } from 'react';
 import {
     SwipeableDrawer,
     Box,
@@ -41,7 +41,7 @@ interface NativeBottomSheetProps {
     searchable?: boolean;
 }
 
-export function NativeBottomSheet({
+export const NativeBottomSheet = memo(function NativeBottomSheet({
     open,
     onClose,
     onSelect,
@@ -166,4 +166,4 @@ export function NativeBottomSheet({
             </List>
         </SwipeableDrawer>
     );
-}
+});
