@@ -638,10 +638,13 @@ export class AIMSGateway {
                 const result = await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
 
                 // Check AIMS response body for non-success responseCode
+                // AIMS uses various success codes: "0000", "SUCCESS", "200"
                 const responseCode = result?.responseCode || '';
                 const responseMessage = typeof result?.responseMessage === 'string' ? result.responseMessage : '';
+                const isSuccess = !responseCode || responseCode === '0000' || responseCode === '200'
+                    || responseCode.toUpperCase() === 'SUCCESS';
 
-                if (responseCode && responseCode !== '0000' && responseCode.toUpperCase() !== 'SUCCESS') {
+                if (!isSuccess) {
                     const combinedMsg = `${responseCode}: ${responseMessage}`;
 
                     // Auto-whitelist on whitelist-related errors
@@ -654,7 +657,9 @@ export class AIMSGateway {
                             const retryResult = await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
                             const retryCode = retryResult?.responseCode || '';
                             const retryMsg = typeof retryResult?.responseMessage === 'string' ? retryResult.responseMessage : '';
-                            if (retryCode && retryCode !== '0000' && retryCode.toUpperCase() !== 'SUCCESS') {
+                            const retryIsSuccess = !retryCode || retryCode === '0000' || retryCode === '200'
+                                || retryCode.toUpperCase() === 'SUCCESS';
+                            if (!retryIsSuccess) {
                                 throw new AimsOperationError(
                                     `Link label failed after whitelist: ${retryCode}: ${retryMsg}`,
                                     retryCode,
