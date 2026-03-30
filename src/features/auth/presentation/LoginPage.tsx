@@ -304,7 +304,7 @@ export function LoginPage() {
                                 label={t('login.email', 'Email Address')}
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => setEmail(e.target.value.toLowerCase())}
                                 required
                                 autoComplete="email"
                                 autoFocus

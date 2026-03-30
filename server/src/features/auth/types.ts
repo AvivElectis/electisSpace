@@ -12,25 +12,25 @@ import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResol
 // ======================
 
 export const loginSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
     password: z.string().min(1, 'Password is required'),
 });
 
 export const verify2FASchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
     code: z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must contain only digits'),
 });
 
 export const resendCodeSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
 });
 
 export const forgotPasswordSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
 });
 
 export const resetPasswordSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
     code: z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must contain only digits'),
     newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
@@ -60,7 +60,7 @@ export const deviceAuthSchema = z.object({
 });
 
 export const verify2FAWithDeviceSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
     code: z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must contain only digits'),
     deviceId: z.string().optional(),
     deviceName: z.string().optional(),
