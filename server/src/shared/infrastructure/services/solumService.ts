@@ -40,6 +40,17 @@ const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
 const MAX_RETRY_DELAY_MS = 10000; // 10 seconds
 
 /**
+ * Wrap an error with a descriptive message while preserving
+ * the original axios `response` property so that `withRetry`
+ * can inspect the HTTP status code.
+ */
+function wrapError(label: string, error: any): Error {
+    const wrapped = new Error(`${label}: ${error.message}`) as any;
+    if (error.response) wrapped.response = error.response;
+    return wrapped;
+}
+
+/**
  * Check if an error is retryable (transient failure)
  */
 function isRetryableError(error: AxiosError): boolean {
@@ -198,6 +209,30 @@ export class SolumService {
     }
 
     /**
+     * Refresh an AIMS token using the refresh token from a previous login.
+     * Endpoint: POST /common/api/v2/token/refresh
+     */
+    async refreshToken(config: SolumConfig, refreshTokenValue: string): Promise<SolumTokens> {
+        const url = this.buildUrl(config, '/common/api/v2/token/refresh');
+
+        try {
+            const response = await this.client.post(url, {
+                refreshToken: refreshTokenValue,
+            });
+
+            const tokenData = response.data.responseMessage;
+            return {
+                accessToken: tokenData.access_token,
+                refreshToken: tokenData.refresh_token,
+                expiresAt: Date.now() + (tokenData.expires_in * 1000),
+            };
+        } catch (error: any) {
+            const status = error.response?.status || 'unknown';
+            throw new Error(`SoluM token refresh failed: ${status}`);
+        }
+    }
+
+    /**
      * Check connectivity/health
      * Tries to login or ping a public endpoint if available.
      * Since SoluM doesn't have a public ping without auth, we might just return true if login works
@@ -267,7 +302,7 @@ export class SolumService {
                 });
                 return response.data as ArticleFormat;
             } catch (error: any) {
-                throw new Error(`Fetch article format failed: ${error.message}`);
+                throw wrapError('Fetch article format failed', error);
             }
         });
     }
@@ -285,7 +320,7 @@ export class SolumService {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
             } catch (error: any) {
-                throw new Error(`Save article format failed: ${error.message}`);
+                throw wrapError('Save article format failed', error);
             }
         });
     }
@@ -304,7 +339,7 @@ export class SolumService {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
             } catch (error: any) {
-                throw new Error(`Push articles failed: ${error.message}`);
+                throw wrapError('Push articles failed', error);
             }
         });
     }
@@ -324,7 +359,7 @@ export class SolumService {
                     data: { articleDeleteList: articleIds }
                 });
             } catch (error: any) {
-                throw new Error(`Delete articles failed: ${error.message}`);
+                throw wrapError('Delete articles failed', error);
             }
         });
     }
@@ -458,7 +493,7 @@ export class SolumService {
 
                 return response.data || {};
             } catch (error: any) {
-                throw new Error(`Fetch label images failed: ${error.message}`);
+                throw wrapError('Fetch label images failed', error);
             }
         });
     }
@@ -485,7 +520,7 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw new Error(`Link label failed: ${error.message}`);
+                throw wrapError('Link label failed', error);
             }
         });
     }
@@ -505,7 +540,7 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw new Error(`Unlink label failed: ${error.message}`);
+                throw wrapError('Unlink label failed', error);
             }
         });
     }
@@ -529,7 +564,7 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw new Error(`Change label page failed: ${error.message}`);
+                throw wrapError('Change label page failed', error);
             }
         });
     }
@@ -568,7 +603,7 @@ export class SolumService {
                 });
                 return this.extractResponseData(response.data, 'fetchLabelTypeInfo') as AimsLabelTypeInfo;
             } catch (error: any) {
-                throw new Error(`Fetch label type info failed: ${error.message}`);
+                throw wrapError('Fetch label type info failed', error);
             }
         });
     }
@@ -588,7 +623,7 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw new Error(`Push label image failed: ${error.message}`);
+                throw wrapError('Push label image failed', error);
             }
         });
     }
@@ -608,7 +643,7 @@ export class SolumService {
                 });
                 return this.extractResponseData(response.data, 'fetchDitherPreview');
             } catch (error: any) {
-                throw new Error(`Fetch dither preview failed: ${error.message}`);
+                throw wrapError('Fetch dither preview failed', error);
             }
         });
     }
@@ -639,7 +674,7 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw new Error(`Whitelist label failed: ${error.response?.data?.responseMessage || error.message}`);
+                throw wrapError('Whitelist label failed', error);
             }
         });
     }
@@ -659,7 +694,7 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw new Error(`Blink label failed: ${error.message}`);
+                throw wrapError('Blink label failed', error);
             }
         });
     }

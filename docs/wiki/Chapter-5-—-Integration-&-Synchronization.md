@@ -131,7 +131,30 @@ The Article Builder maps entity data to the AIMS article format:
 3. **Global field assignments** (from company settings) inject static values across all articles.
 4. **Conference mapping** maps `meetingName`, `meetingTime`, and `participants` to configurable AIMS fields.
 
-### 5.5 Label Operations
+### 5.5 AIMS Token Management
+
+AIMS uses Azure AD B2C for authentication. Tokens are managed by `AIMSGateway` with a multi-layer strategy:
+
+```
+getToken(companyId)
+  ├─ 1. Check in-memory cache (valid if > 5 min before expiry)
+  ├─ 2. Singleflight dedup (await in-flight login for same company)
+  ├─ 3. Try refresh token (POST /api/v2/token/refresh)
+  └─ 4. Fall back to full login (POST /api/v2/token) with retry
+```
+
+| Concept | Detail |
+|---------|--------|
+| **Cache** | `tokenCache` Map keyed by `companyId`, stores `accessToken`, `refreshToken`, `expiresAt` |
+| **Expiry buffer** | 5 minutes before actual expiry (`TOKEN_EXPIRY_BUFFER`) |
+| **Refresh** | Uses stored `refreshToken` via `/api/v2/token/refresh` before attempting full login |
+| **Login retry** | `loginWithRetry()` retries up to 3× on 429/5xx with exponential backoff + jitter |
+| **Singleflight** | `inflightLogins` Map prevents concurrent duplicate logins for the same company |
+| **Token refresh on 401/403** | All AIMS operations (`withTokenRetry`, `linkLabel`, etc.) invalidate cache and re-authenticate on auth errors |
+
+**Error preservation**: All `solumService` methods use `wrapError()` to preserve the original axios `error.response` when wrapping errors. This ensures `withRetry` can correctly identify HTTP status codes (e.g., 403 vs network error) and skip unnecessary retries.
+
+### 5.6 Label Operations
 
 Labels are the physical e-ink devices managed through AIMS:
 
