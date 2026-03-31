@@ -1705,6 +1705,7 @@
             "button": "Link",
             "labelRequired": "Label code is required",
             "articleRequired": "Article ID is required",
+            "success": "Label linked successfully",
             "error": "Failed to link label",
             "linkFailed": "Failed to link label",
             "linkFailedWhitelist": "Label not whitelisted. Auto-whitelist failed.",

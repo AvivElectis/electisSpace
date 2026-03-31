@@ -60,6 +60,7 @@ export function LinkLabelDialog({
     const [articleId, setArticleId] = useState(initialArticleId);
     const [templateName, setTemplateName] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Scanner state
@@ -77,6 +78,7 @@ export function LinkLabelDialog({
             setArticleId(initialArticleId);
             setTemplateName('');
             setError(null);
+            setSuccess(null);
         }
     }, [open, initialLabelCode, initialArticleId]);
 
@@ -128,6 +130,7 @@ export function LinkLabelDialog({
 
     const handleSubmit = useCallback(async () => {
         setError(null);
+        setSuccess(null);
 
         // Validation
         if (!labelCode.trim()) {
@@ -142,13 +145,20 @@ export function LinkLabelDialog({
         setIsSubmitting(true);
         try {
             await onLink(labelCode.trim(), articleId.trim(), templateName.trim() || undefined);
-            onClose();
+            // Show success and clear fields for next assignment
+            setSuccess(t('labels.link.success', 'Label linked successfully'));
+            setLabelCode('');
+            setArticleId('');
+            setTemplateName('');
+            autoSubmittedRef.current = false;
+            // Auto-dismiss success after 1.5 seconds
+            setTimeout(() => setSuccess(null), 1500);
         } catch (err: any) {
             setError(err.message || t('labels.link.error', 'Failed to link label'));
         } finally {
             setIsSubmitting(false);
         }
-    }, [labelCode, articleId, templateName, onLink, onClose, t]);
+    }, [labelCode, articleId, templateName, onLink, t]);
 
     // Auto-submit: when both label code and a valid article are present, submit immediately
     const autoSubmittedRef = useRef(false);
@@ -187,6 +197,11 @@ export function LinkLabelDialog({
 
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+                        {success && (
+                            <Alert severity="success">
+                                {success}
+                            </Alert>
+                        )}
                         {error && (
                             <Alert severity="error" onClose={() => setError(null)}>
                                 {error}

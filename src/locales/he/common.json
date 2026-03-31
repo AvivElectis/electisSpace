@@ -1717,6 +1717,7 @@
             "button": "קשר",
             "labelRequired": "קוד תגית הוא שדה חובה",
             "articleRequired": "מזהה מוצר הוא שדה חובה",
+            "success": "התגית קושרה בהצלחה",
             "error": "שגיאה בקישור התגית",
             "linkFailed": "שיוך תגית נכשל",
             "linkFailedWhitelist": "התגית אינה ב-Whitelist. הוספה אוטומטית נכשלה.",
