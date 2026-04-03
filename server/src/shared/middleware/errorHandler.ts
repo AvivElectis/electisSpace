@@ -33,8 +33,6 @@ export const errorHandler = (
     res: Response,
     _next: NextFunction
 ): void => {
-    appLogger.error('ErrorHandler', err.message, { stack: err.stack });
-
     const response: ErrorResponse = {
         error: {
             code: 'INTERNAL_ERROR',
@@ -70,6 +68,13 @@ export const errorHandler = (
         statusCode = 401;
         response.error.code = 'TOKEN_EXPIRED';
         response.error.message = 'Authentication token has expired';
+    }
+
+    // Log JWT errors at warn level (expected flow — client auto-refreshes), everything else at error
+    if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+        appLogger.warn('ErrorHandler', err.message);
+    } else {
+        appLogger.error('ErrorHandler', err.message, { stack: err.stack });
     }
 
     // Include stack trace in development

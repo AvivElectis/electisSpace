@@ -89,6 +89,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                 minHeight: { xs: 48, sm: 64 },
                 px: { xs: .5, sm: 3 },
                 pt: { xs: 0.5, sm: 1 },
+                overflow: 'hidden',
             }}>
                 {/* Mobile Menu Button (left side on mobile) */}
                 {onMenuClick && (
@@ -186,6 +187,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                     </Tooltip>
                     <LanguageSwitcher />
 
+                    {/* Settings — hidden on mobile (shown in second row), visible on md+ */}
                     {user && (user.globalRole === 'PLATFORM_ADMIN' ||
                         user.companies?.some(c => c.roleId === 'role-admin') ||
                         user.stores?.some(s => s.roleId === 'role-admin' || s.roleId === 'role-manager')) && (
@@ -193,7 +195,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                             color={iconColor}
                             onClick={onSettingsClick}
                             aria-label="Settings"
-                            sx={{ mx: .5, boxShadow: 1 }}
+                            sx={{ mx: .5, boxShadow: 1, display: { xs: 'none', md: 'inline-flex' } }}
                         >
                             <SettingsIcon />
                         </IconButton>
@@ -289,7 +291,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                 </Box>
             </Toolbar>
 
-            {/* App Title + Store Selector - Second row on mobile and tablet portrait */}
+            {/* App Title + Store Selector + Settings - Second row on mobile and tablet portrait */}
             <Box
                 sx={{
                     display: { xs: 'flex', md: 'none' },
@@ -298,6 +300,7 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                     pb: 1,
                     px: 2,
                     gap: 1,
+                    overflow: 'hidden',
                 }}
             >
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -327,7 +330,22 @@ export function AppHeader({ onSettingsClick, onMenuClick, onManualClick, onEditP
                         </Typography>
                     )}
                 </Box>
-                {user && <CompanyStoreSelector />}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    {user && <CompanyStoreSelector />}
+                    {/* Settings button — mobile only (hidden on md+ where it's in the first row) */}
+                    {user && (user.globalRole === 'PLATFORM_ADMIN' ||
+                        user.companies?.some(c => c.roleId === 'role-admin') ||
+                        user.stores?.some(s => s.roleId === 'role-admin' || s.roleId === 'role-manager')) && (
+                        <IconButton
+                            color={iconColor}
+                            onClick={onSettingsClick}
+                            aria-label="Settings"
+                            sx={{ boxShadow: 1 }}
+                        >
+                            <SettingsIcon />
+                        </IconButton>
+                    )}
+                </Box>
             </Box>
         </AppBar>
     );

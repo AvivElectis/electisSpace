@@ -54,7 +54,7 @@ export const storeRefSchema = z.discriminatedUnion('type', [
 
 // Create user with company/store
 export const createUserSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').transform(v => v.toLowerCase()),
     firstName: z.string().max(100).optional(),
     lastName: z.string().max(100).optional(),
     phone: z.string().max(50).optional().nullable(),

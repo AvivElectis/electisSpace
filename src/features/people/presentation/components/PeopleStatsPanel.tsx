@@ -1,6 +1,9 @@
-import { Box, Paper, Stack, TextField, LinearProgress, Typography, Chip, Collapse, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Paper, Stack, TextField, LinearProgress, Typography, Chip, Collapse, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import CloseIcon from '@mui/icons-material/Close';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -16,7 +19,9 @@ interface PeopleStatsPanelProps {
 }
 
 /**
- * PeopleStatsPanel - Space allocation statistics and progress
+ * PeopleStatsPanel - Space allocation statistics and progress.
+ * The total spaces input is locked by default to prevent accidental changes.
+ * Users must tap Edit, change the value, then tap Save to commit.
  */
 export function PeopleStatsPanel({
     totalSpaces,
@@ -32,6 +37,27 @@ export function PeopleStatsPanel({
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [expanded, setExpanded] = useState(false);
     const { getLabel } = useSpaceTypeLabels();
+
+    // Edit mode state — field is disabled until user explicitly clicks Edit
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(totalSpaces);
+
+    const handleStartEdit = () => {
+        setEditValue(totalSpaces);
+        setIsEditing(true);
+    };
+
+    const handleCancelEdit = () => {
+        setEditValue(totalSpaces);
+        setIsEditing(false);
+    };
+
+    const handleSaveEdit = () => {
+        if (editValue !== totalSpaces && editValue >= 0) {
+            onTotalSpacesChange(editValue);
+        }
+        setIsEditing(false);
+    };
 
     // Helper for translations with space type
     const tWithSpaceType = useCallback(
@@ -49,6 +75,109 @@ export function PeopleStatsPanel({
 
     // Space allocation progress
     const allocationProgress = totalSpaces > 0 ? (assignedSpaces / totalSpaces) * 100 : 0;
+
+    /** Renders the total spaces field with edit/save/cancel controls */
+    const renderTotalSpacesField = (compact: boolean) => (
+        <Stack direction="row" gap={0.5} alignItems="center">
+            <TextField
+                label={tWithSpaceType('people.totalSpaces')}
+                type="number"
+                size="small"
+                value={isEditing ? editValue : totalSpaces}
+                onChange={(e) => setEditValue(Number(e.target.value))}
+                disabled={!isEditing}
+                sx={{
+                    width: compact ? 80 : 'fit-content',
+                    '& .MuiInputBase-input': {
+                        px: compact ? 1 : 1.5,
+                        py: compact ? 0.5 : 1,
+                        fontSize: compact ? '0.875rem' : '1rem',
+                    },
+                    '& .MuiInputLabel-root': { fontSize: compact ? '0.875rem' : '1rem' },
+                    // Highlight the field when editing
+                    ...(isEditing && {
+                        '& .MuiOutlinedInput-root': {
+                            borderColor: theme.palette.primary.main,
+                            '& fieldset': { borderColor: theme.palette.primary.main, borderWidth: 2 },
+                        },
+                    }),
+                }}
+                inputProps={{ min: 0 }}
+            />
+            {canEdit && (
+                isEditing ? (
+                    <>
+                        <Tooltip title={t('common.save')} arrow>
+                            <IconButton
+                                size={compact ? 'small' : 'medium'}
+                                onClick={handleSaveEdit}
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'success.main',
+                                    color: 'success.main',
+                                    borderRadius: 1,
+                                    '&:hover': {
+                                        borderColor: 'success.dark',
+                                        bgcolor: (t) => `${t.palette.success.main}08`,
+                                    },
+                                    width: compact ? 34 : 40,
+                                    height: compact ? 34 : 40,
+                                }}
+                            >
+                                <SaveIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title={t('common.cancel')} arrow>
+                            <IconButton
+                                size={compact ? 'small' : 'medium'}
+                                onClick={handleCancelEdit}
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: (t) => t.palette.mode === 'dark'
+                                        ? 'rgba(255,255,255,0.23)'
+                                        : 'rgba(0,0,0,0.23)',
+                                    color: 'text.secondary',
+                                    borderRadius: 1,
+                                    '&:hover': {
+                                        borderColor: 'error.main',
+                                        color: 'error.main',
+                                        bgcolor: (t) => `${t.palette.error.main}08`,
+                                    },
+                                    width: compact ? 34 : 40,
+                                    height: compact ? 34 : 40,
+                                }}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                ) : (
+                    <Tooltip title={tWithSpaceType('people.editTotalSpaces', { defaultValue: 'Edit total spaces' })} arrow placement="top">
+                        <IconButton
+                            size={compact ? 'small' : 'medium'}
+                            onClick={handleStartEdit}
+                            sx={{
+                                border: '1px solid',
+                                borderColor: (t) => t.palette.mode === 'dark'
+                                    ? 'rgba(255,255,255,0.23)'
+                                    : 'rgba(0,0,0,0.23)',
+                                color: 'primary.main',
+                                borderRadius: 1,
+                                '&:hover': {
+                                    borderColor: 'primary.main',
+                                    bgcolor: (t) => `${t.palette.primary.main}08`,
+                                },
+                                width: compact ? 34 : 40,
+                                height: compact ? 34 : 40,
+                            }}
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                )
+            )}
+        </Stack>
+    );
 
     // Mobile: compact collapsible stats
     if (isMobile) {
@@ -88,20 +217,7 @@ export function PeopleStatsPanel({
                 <Collapse in={expanded}>
                     <Box sx={{ px: 1.5, pb: 1.5 }}>
                         <Stack direction="row" gap={1} alignItems="center" mb={1}>
-                            <TextField
-                                label={tWithSpaceType('people.totalSpaces')}
-                                type="number"
-                                size="small"
-                                value={totalSpaces}
-                                onChange={(e) => onTotalSpacesChange(Number(e.target.value))}
-                                disabled={!canEdit}
-                                sx={{
-                                    width: 80,
-                                    '& .MuiInputBase-input': { px: 1, py: 0.5, fontSize: '0.875rem' },
-                                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
-                                }}
-                                inputProps={{ min: 0 }}
-                            />
+                            {renderTotalSpacesField(true)}
                             <Box sx={{ flex: 1 }}>
                                 <Typography variant="caption" color="text.secondary">
                                     {availableSpaces} {t('people.available')}
@@ -118,25 +234,12 @@ export function PeopleStatsPanel({
         );
     }
 
-    // Desktop: full layout (unchanged)
+    // Desktop: full layout
     return (
         <Paper sx={{ p: 2, mb: 3 }}>
             <Stack direction="row" gap={3} alignItems="flex-start">
                 <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, width: '100%' }}>
-                    <TextField
-                        label={tWithSpaceType('people.totalSpaces')}
-                        type="number"
-                        size="small"
-                        value={totalSpaces}
-                        onChange={(e) => onTotalSpacesChange(Number(e.target.value))}
-                        disabled={!canEdit}
-                        sx={{
-                            width: 'fit-content',
-                            '& .MuiInputBase-input': { px: 1.5, py: 1, fontSize: '1rem' },
-                            '& .MuiInputLabel-root': { fontSize: '1rem' },
-                        }}
-                        inputProps={{ min: 0 }}
-                    />
+                    {renderTotalSpacesField(false)}
                     <Box sx={{ flex: 1, width: 'auto' }}>
                         <Stack direction="row" justifyContent="space-between" gap={1} mb={0.5}>
                             <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>

@@ -191,7 +191,8 @@ export class AIMSGateway {
     }
 
     /**
-     * Get authenticated token for a company (with caching)
+     * Get authenticated token for a company (with caching).
+     * Strategy: cache → refresh token → full login
      */
     async getToken(companyId: string): Promise<string> {
         // Check cache first
@@ -213,15 +214,28 @@ export class AIMSGateway {
             throw new Error(`No AIMS credentials configured for company ${companyId}`);
         }
 
-        // Login to get new tokens (with singleflight dedup)
         const config: SolumConfig = {
             baseUrl: credentials.baseUrl,
-            companyName: '', // Not needed for login
+            companyName: '', // Not needed for login/refresh
             cluster: credentials.cluster,
             username: credentials.username,
             password: credentials.password,
         };
 
+        // Try refresh token first if we have one cached
+        if (cached?.tokens.refreshToken) {
+            try {
+                const tokens = await solumService.refreshToken(config, cached.tokens.refreshToken);
+                tokenCache.set(companyId, { tokens, companyId });
+                appLogger.info('AimsGateway', `Token refreshed for company ${companyId}`);
+                return tokens.accessToken;
+            } catch (refreshError: any) {
+                appLogger.warn('AimsGateway', `Token refresh failed for company ${companyId}, falling back to login: ${refreshError.message}`);
+                // Fall through to full login
+            }
+        }
+
+        // Full login (with singleflight dedup)
         const loginPromise = loginWithRetry(config);
         inflightLogins.set(companyId, loginPromise);
 
@@ -341,7 +355,9 @@ export class AIMSGateway {
                 await solumService.pushArticles(currentConfig, currentToken, batch);
             } catch (error: any) {
                 // On auth error, refresh token and retry (once per push operation)
-                if (!retriedAuth && (error.message?.includes('401') || error.message?.includes('403'))) {
+                const batchStatus = error.response?.status;
+                const batchMsg = error.message || '';
+                if (!retriedAuth && (batchStatus === 401 || batchStatus === 403 || batchMsg.includes('401') || batchMsg.includes('403'))) {
                     const storeConfig = await this.getStoreConfig(storeId);
                     if (storeConfig) {
                         this.invalidateToken(storeConfig.companyId);
@@ -649,10 +665,13 @@ export class AIMSGateway {
                 const result = await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
 
                 // Check AIMS response body for non-success responseCode
+                // AIMS uses various success codes: "0000", "SUCCESS", "200"
                 const responseCode = result?.responseCode || '';
                 const responseMessage = typeof result?.responseMessage === 'string' ? result.responseMessage : '';
+                const isSuccess = !responseCode || responseCode === '0000' || responseCode === '200'
+                    || responseCode.toUpperCase() === 'SUCCESS';
 
-                if (responseCode && responseCode !== '0000' && responseCode.toUpperCase() !== 'SUCCESS') {
+                if (!isSuccess) {
                     const combinedMsg = `${responseCode}: ${responseMessage}`;
 
                     // Auto-whitelist on whitelist-related errors
@@ -665,7 +684,9 @@ export class AIMSGateway {
                             const retryResult = await solumService.linkLabel(config, currentToken, labelCode, articleId, templateName);
                             const retryCode = retryResult?.responseCode || '';
                             const retryMsg = typeof retryResult?.responseMessage === 'string' ? retryResult.responseMessage : '';
-                            if (retryCode && retryCode !== '0000' && retryCode.toUpperCase() !== 'SUCCESS') {
+                            const retryIsSuccess = !retryCode || retryCode === '0000' || retryCode === '200'
+                                || retryCode.toUpperCase() === 'SUCCESS';
+                            if (!retryIsSuccess) {
                                 throw new AimsOperationError(
                                     `Link label failed after whitelist: ${retryCode}: ${retryMsg}`,
                                     retryCode,
@@ -727,9 +748,29 @@ export class AIMSGateway {
                     const storeConfig = await this.getStoreConfig(storeId);
                     if (storeConfig) {
                         this.invalidateToken(storeConfig.companyId);
-                        const newToken = await this.getToken(storeConfig.companyId);
-                        return await solumService.linkLabel(storeConfig.config, newToken, labelCode, articleId, templateName);
+                        try {
+                            const newToken = await this.getToken(storeConfig.companyId);
+                            return await solumService.linkLabel(storeConfig.config, newToken, labelCode, articleId, templateName);
+                        } catch (retryError: any) {
+                            const retryStatus = retryError.response?.status;
+                            const retryMsg = retryError.message || msg;
+                            appLogger.error('AimsGateway', `Link label failed after token refresh for ${labelCode} -> ${articleId}`, { error: retryMsg, status: retryStatus });
+                            throw new AimsOperationError(
+                                retryMsg,
+                                retryStatus === 403 ? 'AIMS_FORBIDDEN' : 'AIMS_AUTH_ERROR',
+                                retryMsg,
+                                retryStatus && retryStatus >= 400 && retryStatus < 600 ? retryStatus : 502
+                            );
+                        }
                     }
+                    // No store config — still an auth error from AIMS, not an internal error
+                    appLogger.error('AimsGateway', `Link label auth error for ${labelCode} -> ${articleId}, no store config found`, { error: msg, status });
+                    throw new AimsOperationError(
+                        msg || 'AIMS authentication error',
+                        status === 403 ? 'AIMS_FORBIDDEN' : 'AIMS_AUTH_ERROR',
+                        msg,
+                        status || 502
+                    );
                 }
 
                 // Wrap unexpected errors with context
@@ -751,16 +792,28 @@ export class AIMSGateway {
      */
     async unlinkLabel(storeId: string, labelCode: string): Promise<AimsApiResponse> {
         const { token, config } = await this.getTokenForStore(storeId);
-        
+
         try {
             return await solumService.unlinkLabel(config, token, labelCode);
         } catch (error: any) {
-            if (error.message?.includes('401') || error.message?.includes('403')) {
+            const status = error.response?.status;
+            const msg = error.message || '';
+            if (status === 401 || status === 403 || msg.includes('401') || msg.includes('403')) {
                 const storeConfig = await this.getStoreConfig(storeId);
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
-                    const newToken = await this.getToken(storeConfig.companyId);
-                    return await solumService.unlinkLabel(storeConfig.config, newToken, labelCode);
+                    try {
+                        const newToken = await this.getToken(storeConfig.companyId);
+                        return await solumService.unlinkLabel(storeConfig.config, newToken, labelCode);
+                    } catch (retryError: any) {
+                        const retryStatus = retryError.response?.status;
+                        throw new AimsOperationError(
+                            retryError.message || msg,
+                            retryStatus === 403 ? 'AIMS_FORBIDDEN' : 'AIMS_AUTH_ERROR',
+                            retryError.message || msg,
+                            retryStatus && retryStatus >= 400 && retryStatus < 600 ? retryStatus : 502
+                        );
+                    }
                 }
             }
             throw error;
@@ -857,12 +910,24 @@ export class AIMSGateway {
         try {
             return await fn(token, config);
         } catch (error: any) {
-            if (error.message?.includes('401') || error.message?.includes('403')) {
+            const status = error.response?.status;
+            const msg = error.message || '';
+            if (status === 401 || status === 403 || msg.includes('401') || msg.includes('403')) {
                 const storeConfig = await this.getStoreConfig(storeId);
                 if (storeConfig) {
                     this.invalidateToken(storeConfig.companyId);
-                    const newToken = await this.getToken(storeConfig.companyId);
-                    return await fn(newToken, storeConfig.config);
+                    try {
+                        const newToken = await this.getToken(storeConfig.companyId);
+                        return await fn(newToken, storeConfig.config);
+                    } catch (retryError: any) {
+                        const retryStatus = retryError.response?.status;
+                        throw new AimsOperationError(
+                            retryError.message || msg,
+                            retryStatus === 403 ? 'AIMS_FORBIDDEN' : 'AIMS_AUTH_ERROR',
+                            retryError.message || msg,
+                            retryStatus && retryStatus >= 400 && retryStatus < 600 ? retryStatus : 502
+                        );
+                    }
                 }
             }
             throw error;
