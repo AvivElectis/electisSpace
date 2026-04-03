@@ -205,11 +205,8 @@ export const authController = {
             const { refreshToken: _rtk, ...safeRefreshResult } = result;
             res.json(safeRefreshResult);
         } catch (error: any) {
-            if (error.message === 'INVALID_TOKEN' || error.message === 'TOKEN_NOT_FOUND') {
+            if (error.message === 'INVALID_TOKEN' || error.message === 'TOKEN_NOT_FOUND' || error.message === 'USER_NOT_FOUND') {
                 return next(unauthorized('Invalid refresh token'));
-            }
-            if (error.message === 'USER_NOT_FOUND') {
-                return next(unauthorized('User not found or inactive'));
             }
             next(error);
         }
@@ -490,7 +487,8 @@ export const authController = {
 
             // Verify user access to this store
             const hasAccess = req.user!.stores.some((s: any) => s.id === storeId) ||
-                req.user!.globalRole === 'PLATFORM_ADMIN';
+                req.user!.globalRole === 'PLATFORM_ADMIN' ||
+                req.user!.companies?.some((c: any) => c.allStoresAccess);
 
             if (!hasAccess) {
                 return next(unauthorized('You do not have access to this store'));
@@ -510,12 +508,12 @@ export const authController = {
             // Invalidate cached token first to force a fresh login
             aimsGateway.invalidateToken(storeConfig.companyId);
 
-            // Get fresh token
-            const accessToken = await aimsGateway.getToken(storeConfig.companyId);
+            // Get fresh token with actual expiry from AIMS
+            const { accessToken, expiresAt } = await aimsGateway.getTokenWithExpiry(storeConfig.companyId);
 
             res.json({
                 accessToken,
-                expiresAt: Date.now() + 3600000, // 1 hour
+                expiresAt,
             });
         } catch (error: any) {
             appLogger.error('Auth', `AIMS token refresh failed: ${error.message}`);

@@ -90,7 +90,7 @@ export const useAuthWatchdog = () => {
         }
 
         // Only start watchdog if authenticated and not on login page
-        if (!isAuthenticated || location.pathname === '/login') {
+        if (!isAuthenticated || locationRef.current === '/login') {
             return;
         }
 
@@ -109,12 +109,12 @@ export const useAuthWatchdog = () => {
                 logger.info('AuthWatchdog', 'Watchdog stopped');
             }
         };
-    }, [isAuthenticated, location.pathname, performValidation]);
+    }, [isAuthenticated, performValidation]);
 
     // Validate on window focus (user returns to app)
     useEffect(() => {
         const handleFocus = () => {
-            if (isAuthenticated && location.pathname !== '/login') {
+            if (isAuthenticated && locationRef.current !== '/login') {
                 logger.debug('AuthWatchdog', 'Window focused, validating session');
                 performValidation();
             }
@@ -125,7 +125,7 @@ export const useAuthWatchdog = () => {
         return () => {
             window.removeEventListener('focus', handleFocus);
         };
-    }, [isAuthenticated, location.pathname, performValidation]);
+    }, [isAuthenticated, performValidation]);
 
     // Validate on online event (network reconnected) with a small delay
     // to allow the network stack to fully stabilize before making API calls
@@ -133,7 +133,7 @@ export const useAuthWatchdog = () => {
         let onlineTimer: ReturnType<typeof setTimeout> | null = null;
 
         const handleOnline = () => {
-            if (isAuthenticated && location.pathname !== '/login') {
+            if (isAuthenticated && locationRef.current !== '/login') {
                 logger.debug('AuthWatchdog', 'Network reconnected, validating session after delay');
                 onlineTimer = setTimeout(() => performValidation(), 3000);
             }
@@ -147,5 +147,5 @@ export const useAuthWatchdog = () => {
                 clearTimeout(onlineTimer);
             }
         };
-    }, [isAuthenticated, location.pathname, performValidation]);
+    }, [isAuthenticated, performValidation]);
 };

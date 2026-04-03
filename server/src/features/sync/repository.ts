@@ -234,14 +234,16 @@ export const syncRepository = {
         updates: { id: string; data: Prisma.InputJsonValue; labelCode: string | null }[],
         now: Date,
     ) {
-        const ops: Prisma.PrismaPromise<any>[] = [];
-
+        // Creates can be done in a single createMany call
         if (creates.length > 0) {
-            ops.push(prisma.space.createMany({ data: creates }));
+            await prisma.space.createMany({ data: creates });
         }
 
-        for (const u of updates) {
-            ops.push(prisma.space.update({
+        // Chunk updates to avoid oversized transactions
+        const CHUNK_SIZE = 200;
+        for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
+            const chunk = updates.slice(i, i + CHUNK_SIZE);
+            const ops = chunk.map(u => prisma.space.update({
                 where: { id: u.id },
                 data: {
                     data: u.data,
@@ -250,9 +252,6 @@ export const syncRepository = {
                     lastSyncedAt: now,
                 },
             }));
-        }
-
-        if (ops.length > 0) {
             await prisma.$transaction(ops);
         }
     },

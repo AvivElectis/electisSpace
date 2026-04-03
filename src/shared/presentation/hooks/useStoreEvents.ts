@@ -8,6 +8,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
+import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { connectToStoreEvents, type StoreEvent } from '@shared/infrastructure/services/storeEventsService';
 import { setSseClientId } from '@shared/infrastructure/services/sseClientId';
 import { logger } from '@shared/infrastructure/services/logger';
@@ -19,6 +20,8 @@ interface UseStoreEventsOptions {
     onListFreed?: (event: StoreEvent) => void;
     /** Called when people data changed by another user */
     onPeopleChanged?: (event: StoreEvent) => void;
+    /** Called when spaces data changed (e.g. after sync pull) */
+    onSpacesChanged?: (event: StoreEvent) => void;
     /** Called when another user updates a list */
     onListUpdated?: (event: StoreEvent) => void;
     /** Called when conference data changed by another user */
@@ -29,6 +32,7 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
     const activeStoreId = useAuthStore(state => state.activeStoreId);
     const tokenVersion = useAuthStore(state => state.tokenVersion);
     const fetchPeople = usePeopleStore(state => state.fetchPeople);
+    const fetchSpaces = useSpacesStore(state => state.fetchSpaces);
     const disconnectRef = useRef<(() => void) | null>(null);
     const getClientIdRef = useRef<(() => string | null) | null>(null);
 
@@ -50,6 +54,15 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
                     logger.warn('StoreEvents', 'Failed to refetch people after SSE event', { error: err.message });
                 });
                 optionsRef.current.onPeopleChanged?.(event);
+                break;
+
+            case 'spaces:changed':
+                logger.info('StoreEvents', 'Spaces changed after sync', { action: event.action });
+                // Refetch spaces from server to stay in sync
+                fetchSpaces().catch(err => {
+                    logger.warn('StoreEvents', 'Failed to refetch spaces after SSE event', { error: err.message });
+                });
+                optionsRef.current.onSpacesChanged?.(event);
                 break;
 
             case 'list:loaded':
@@ -107,7 +120,7 @@ export function useStoreEvents(options: UseStoreEventsOptions = {}) {
                 optionsRef.current.onConferenceChanged?.(event);
                 break;
         }
-    }, [fetchPeople]);
+    }, [fetchPeople, fetchSpaces]);
 
     useEffect(() => {
         if (!activeStoreId || tokenVersion === 0) {
