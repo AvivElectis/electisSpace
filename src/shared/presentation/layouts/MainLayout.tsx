@@ -7,8 +7,6 @@ import { checkNavigationGuard } from '../navigationGuard';
 import { AppHeader } from './AppHeader';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
-import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
-
 import { useBackendSyncController } from '@features/sync/application/useBackendSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
@@ -89,7 +87,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     // Only allow sync when auth session is fully restored and valid
     const authReady = isAuthenticated && isInitialized;
     const effectiveStoreId = authReady ? activeStoreId : null;
-    const setSpaces = useSpacesStore(state => state.setSpaces);
 
     // Android hardware back button: close open overlays first, then navigate back
     useAndroidBackButton({
