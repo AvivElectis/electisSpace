@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **SSE reconnect storm** — removed `tokenVersion` bump from `validateSession`, eliminating 60-second SSE reconnect cycles
+- **Auth watchdog** — removed `location.pathname` from interval deps, preventing spurious `/me` calls on navigation
+- **Token refresh rejection** — added explicit `Promise.reject` after failed refresh, preventing `undefined` crashes
+- **Refresh token lookup** — added `expiresAt` DB filter, eliminating O(n) bcrypt comparisons on expired tokens
+- **AIMS token expiry** — return actual expiry from AIMS instead of hard-coded 1 hour, reducing unnecessary refresh calls
+- **AIMS batch auth retry** — allow token re-auth on any batch index, fixing partial push failures mid-batch
+- **AIMS login retry** — added network error (DNS/timeout) retry to `loginWithRetry`
+- **SSE zombie clients** — added socket error handler to detect disconnected clients immediately
+- **Stale storeId guard** — auto-sync timer validates storeId to prevent cross-store data contamination
+- **Uniform refresh errors** — consistent error messages on refresh endpoint to prevent user enumeration
+
+### Changed
+- **Spaces sync** — replaced post-pull 10k-record fetch with SSE `spaces:changed` broadcast pattern
+- **AIMS health cache** — added 30-second TTL cache to prevent full AIMS login on every status poll
+- **Batch upsert chunking** — `batchUpsertSpaces` now processes 200-record chunks instead of unbounded transactions
+
 ## [2.14.0] — 2026-03-16 — Native App Adaptations
 
 ### Added
