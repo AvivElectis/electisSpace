@@ -178,6 +178,7 @@ api.interceptors.response.use(
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new Event('auth:logout'));
                 }
+                return Promise.reject(new Error('Session expired'));
             } catch (refreshError) {
                 tokenManager.clearTokens();
                 if (typeof window !== 'undefined') {

@@ -476,7 +476,6 @@ export const useAuthStore = create<AuthState>()(
                             lastValidation: Date.now(),
                             activeCompanyId,
                             activeStoreId,
-                            tokenVersion: get().tokenVersion + 1,
                         }, false, 'validateSession/success');
                         return { valid: true, networkError: false };
                     } catch (error) {

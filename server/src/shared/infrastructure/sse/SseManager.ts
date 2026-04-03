@@ -24,7 +24,7 @@ export interface SseClient {
 }
 
 export interface StoreEvent {
-    type: 'people:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed' | 'conference:page-flip';
+    type: 'people:changed' | 'spaces:changed' | 'list:loaded' | 'list:freed' | 'list:updated' | 'conference:changed' | 'conference:page-flip';
     payload: Record<string, unknown>;
     /** If set, this client will NOT receive the event (originator) */
     excludeClientId?: string;

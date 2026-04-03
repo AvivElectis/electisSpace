@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSyncStore } from '../infrastructure/syncStore';
 import { syncApi } from '@shared/infrastructure/services/syncApi';
-import { spacesApi } from '@shared/infrastructure/services/spacesApi';
 import { logger } from '@shared/infrastructure/services/logger';
 import { checkServerHealth } from '@shared/infrastructure/services/apiClient';
-import type { Space } from '@shared/domain/types';
 import type { SyncStatusResponse, PullSyncResult, PushSyncResult } from '@shared/infrastructure/services/syncApi';
 
 /**
@@ -61,7 +59,6 @@ interface UseBackendSyncControllerProps {
     storeId: string | null;
     autoSyncEnabled: boolean;
     autoSyncInterval?: number;  // in seconds
-    onSpaceUpdate?: (spaces: Space[]) => void;
     onSyncComplete?: (result: PullSyncResult | PushSyncResult) => void;
     onError?: (error: Error) => void;
 }
@@ -70,7 +67,6 @@ export function useBackendSyncController({
     storeId,
     autoSyncEnabled: autoSyncEnabledProp,
     autoSyncInterval: autoSyncIntervalProp = 300,
-    onSpaceUpdate,
     onSyncComplete,
     onError,
 }: UseBackendSyncControllerProps) {
@@ -87,6 +83,8 @@ export function useBackendSyncController({
     const [serverConnected, setServerConnected] = useState<boolean>(false);
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastStoreIdRef = useRef<string | null>(null);
+    const currentStoreIdRef = useRef<string | null>(storeId);
+    currentStoreIdRef.current = storeId;
     const syncInFlightRef = useRef<boolean>(false);
 
     // Sync settings to store
@@ -256,11 +254,8 @@ export function useBackendSyncController({
         try {
             const result = await syncApi.pull(storeId);
 
-            // Fetch updated spaces if callback provided
-            if (onSpaceUpdate) {
-                const spacesResponse = await spacesApi.list({ storeId, limit: 10000 });
-                onSpaceUpdate(spacesResponse.data);
-            }
+            // Spaces refresh is now handled via SSE 'spaces:changed' event
+            // broadcast by the server after sync pull completes
 
             const status = await refreshStatus();
             setSyncState({
@@ -296,7 +291,7 @@ export function useBackendSyncController({
         } finally {
             syncInFlightRef.current = false;
         }
-    }, [storeId, setSyncState, onSpaceUpdate, onSyncComplete, onError, refreshStatus]);
+    }, [storeId, setSyncState, onSyncComplete, onError, refreshStatus]);
 
     /**
      * Push pending changes to AIMS (upload)
@@ -369,11 +364,8 @@ export function useBackendSyncController({
         try {
             const result = await syncApi.fullSync(storeId);
 
-            // Fetch updated spaces if callback provided
-            if (onSpaceUpdate) {
-                const spacesResponse = await spacesApi.list({ storeId, limit: 10000 });
-                onSpaceUpdate(spacesResponse.data);
-            }
+            // Spaces refresh is now handled via SSE 'spaces:changed' event
+            // broadcast by the server after sync pull completes
 
             await refreshStatus();
             setSyncState({
@@ -408,7 +400,7 @@ export function useBackendSyncController({
         } finally {
             syncInFlightRef.current = false;
         }
-    }, [storeId, setSyncState, onSpaceUpdate, onSyncComplete, onError, refreshStatus]);
+    }, [storeId, setSyncState, onSyncComplete, onError, refreshStatus]);
 
     // Keep a ref to the sync function to avoid resetting the timer when dependencies change
     const syncRef = useRef(pull);
@@ -445,7 +437,10 @@ export function useBackendSyncController({
             clearInterval(autoSyncTimerRef.current);
         }
 
+        const capturedStoreId = storeId;
         autoSyncTimerRef.current = setInterval(() => {
+            // Skip if store changed between timer creation and tick
+            if (capturedStoreId !== currentStoreIdRef.current) return;
             logger.info('BackendSyncController', 'Auto-sync triggered by timer');
             syncRef.current().catch((error: any) => {
                 logger.error('BackendSyncController', 'Auto-sync failed', { error });

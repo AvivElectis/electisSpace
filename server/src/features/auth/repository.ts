@@ -181,6 +181,7 @@ export const authRepository = {
             where: {
                 userId,
                 revoked: false,
+                expiresAt: { gt: new Date() },
             },
         });
     },

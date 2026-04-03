@@ -4,6 +4,7 @@
  * @description Business logic for sync operations.
  */
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
+import { sseManager } from '../../shared/infrastructure/sse/SseManager.js';
 import { syncQueueProcessor } from '../../shared/infrastructure/jobs/SyncQueueProcessor.js';
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import { syncRepository } from './repository.js';
@@ -271,6 +272,14 @@ export const syncService = {
         stats.unchanged = stats.total - stats.created - stats.updated;
 
         await syncRepository.updateStoreLastSync(storeId);
+
+        // Notify frontend clients that spaces have been updated
+        if (stats.created > 0 || stats.updated > 0) {
+            sseManager.broadcastToStore(storeId, {
+                type: 'spaces:changed',
+                payload: { action: 'sync-completed', stats },
+            });
+        }
 
         return {
             message: 'Pull completed',

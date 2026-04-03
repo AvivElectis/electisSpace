@@ -57,6 +57,10 @@ const inflightLogins = new Map<string, Promise<SolumTokens>>();
 const formatCache = new Map<string, FormatCacheEntry>();
 const FORMAT_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+// In-memory health check cache (per store) — avoids re-login on every status poll
+const healthCache = new Map<string, { healthy: boolean; checkedAt: number }>();
+const HEALTH_CACHE_TTL = 30 * 1000; // 30 seconds
+
 // AIMS enforces a maximum of 500 articles per POST request
 const AIMS_BATCH_SIZE = 500;
 
@@ -84,7 +88,8 @@ async function loginWithRetry(config: SolumConfig): Promise<SolumTokens> {
             // Retryable: 429 or 5xx (check both numeric status and message text)
             const is429 = status === 429 || msg.includes('429');
             const is5xx = (status >= 500 && status < 600) || /\b5\d{2}\b/.test(msg);
-            if (attempt < LOGIN_MAX_RETRIES && (is429 || is5xx)) {
+            const isNetworkError = !error.response && !status;
+            if (attempt < LOGIN_MAX_RETRIES && (is429 || is5xx || isNetworkError)) {
                 const delay = LOGIN_BASE_DELAY * Math.pow(2, attempt) * (0.8 + Math.random() * 0.4);
                 appLogger.warn('AimsGateway', `login failed (attempt ${attempt + 1}/${LOGIN_MAX_RETRIES + 1}), retrying in ${Math.round(delay)}ms: ${msg}`);
                 await sleep(delay);
@@ -233,6 +238,19 @@ export class AIMSGateway {
     }
 
     /**
+     * Get authenticated token with its expiry time for a company
+     */
+    async getTokenWithExpiry(companyId: string): Promise<{ accessToken: string; expiresAt: number }> {
+        // Ensure token is fresh
+        await this.getToken(companyId);
+        const cached = tokenCache.get(companyId);
+        if (!cached) {
+            throw new Error(`No cached token for company ${companyId}`);
+        }
+        return { accessToken: cached.tokens.accessToken, expiresAt: cached.tokens.expiresAt };
+    }
+
+    /**
      * Get authenticated token for a store (uses company's token)
      */
     async getTokenForStore(storeId: string): Promise<{ token: string; config: SolumConfig }> {
@@ -313,25 +331,26 @@ export class AIMSGateway {
             appLogger.info('AimsGateway', `Pushing ${articles.length} articles in ${batches.length} batches of up to ${AIMS_BATCH_SIZE}`);
         }
 
+        let currentToken = token;
+        let currentConfig = config;
+        let retriedAuth = false;
+
         for (let idx = 0; idx < batches.length; idx++) {
             const batch = batches[idx];
             try {
-                await solumService.pushArticles(config, token, batch);
+                await solumService.pushArticles(currentConfig, currentToken, batch);
             } catch (error: any) {
-                // If authentication error on first batch, retry with refreshed token
-                if (idx === 0 && (error.message?.includes('401') || error.message?.includes('403'))) {
+                // On auth error, refresh token and retry (once per push operation)
+                if (!retriedAuth && (error.message?.includes('401') || error.message?.includes('403'))) {
                     const storeConfig = await this.getStoreConfig(storeId);
                     if (storeConfig) {
                         this.invalidateToken(storeConfig.companyId);
-                        const newToken = await this.getToken(storeConfig.companyId);
-                        const freshConfig = storeConfig.config;
-                        // Retry current batch
-                        await solumService.pushArticles(freshConfig, newToken, batch);
-                        // Continue remaining batches with new token
-                        for (let j = idx + 1; j < batches.length; j++) {
-                            await solumService.pushArticles(freshConfig, newToken, batches[j]);
-                        }
-                        return;
+                        currentToken = await this.getToken(storeConfig.companyId);
+                        currentConfig = storeConfig.config;
+                        retriedAuth = true;
+                        // Retry current batch with fresh token
+                        await solumService.pushArticles(currentConfig, currentToken, batch);
+                        continue;
                     }
                 }
                 throw error;
@@ -474,18 +493,26 @@ export class AIMSGateway {
 
     /**
      * Check AIMS connectivity for a store
-     * Uses getToken (with singleflight + cache) to avoid duplicate logins
+     * Uses getToken (with singleflight + cache) to avoid duplicate logins.
+     * Results are cached for 30 seconds to avoid triggering a full AIMS login on every status poll.
      */
     async checkHealth(storeId: string): Promise<boolean> {
+        const cached = healthCache.get(storeId);
+        if (cached && Date.now() - cached.checkedAt < HEALTH_CACHE_TTL) {
+            return cached.healthy;
+        }
+
         try {
             const storeConfig = await this.getStoreConfig(storeId);
             if (!storeConfig) return false;
-            
+
             // Use getToken which has singleflight dedup + token caching
             // If we can get a valid token, AIMS is reachable
             await this.getToken(storeConfig.companyId);
+            healthCache.set(storeId, { healthy: true, checkedAt: Date.now() });
             return true;
         } catch {
+            healthCache.set(storeId, { healthy: false, checkedAt: Date.now() });
             return false;
         }
     }

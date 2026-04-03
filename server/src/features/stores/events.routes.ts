@@ -1,11 +1,15 @@
 /**
  * Store Events Route — Server-Sent Events endpoint
- * 
+ *
  * GET /api/v1/stores/:storeId/events
- * 
+ *
  * Clients subscribe to real-time updates for a specific store.
  * Events are emitted when people are created/deleted/assigned or
  * when a user loads/frees a list.
+ *
+ * SECURITY NOTE: EventSource cannot set custom headers, so the JWT is passed
+ * as a ?token= query parameter. Ensure Nginx log_format is configured to
+ * scrub or mask the token parameter to prevent JWT exposure in access logs.
  */
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
@@ -77,6 +81,12 @@ router.get(
                 clearInterval(keepAlive);
             }
         }, 30000);
+
+        // Handle async socket errors (e.g. broken pipe after client disconnect)
+        res.socket?.on('error', () => {
+            clearInterval(keepAlive);
+            sseManager.removeClient(clientId);
+        });
 
         // Clean up on disconnect
         req.on('close', () => {

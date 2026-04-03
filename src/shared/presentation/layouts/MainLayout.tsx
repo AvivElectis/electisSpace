@@ -117,17 +117,6 @@ export function MainLayout({ children }: MainLayoutProps) {
      * People data comes from the server DB (loaded by PeopleManagerView).
      * Only populate the spaces store when NOT in People Manager mode.
      */
-    const handleSpaceUpdate = useCallback((spaces: any[]) => {
-        if ((activeStoreEffectiveFeatures?.peopleEnabled ?? peopleManagerEnabled) && workingMode === 'SOLUM_API') {
-            logger.info('MainLayout', 'Skipping spaces update (people managed by server)', {
-                articlesCount: spaces.length
-            });
-            return;
-        }
-
-        setSpaces(spaces);
-    }, [setSpaces, peopleManagerEnabled, workingMode, activeStoreEffectiveFeatures]);
-
     // Build navigation tabs (permission-filtered, reactive to store/mode changes)
     const navTabs = useNavTabs();
 
@@ -136,7 +125,6 @@ export function MainLayout({ children }: MainLayoutProps) {
         storeId: effectiveStoreId,
         autoSyncEnabled: autoSyncEnabled,
         autoSyncInterval: autoSyncInterval,
-        onSpaceUpdate: handleSpaceUpdate,
         onError: (error) => {
             logger.error('MainLayout', 'Backend sync error', { error: error.message });
         },
