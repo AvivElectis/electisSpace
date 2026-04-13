@@ -65,20 +65,24 @@ function normalizeArticleData(raw: unknown): Record<string, unknown> {
 
 /**
  * Extract roomName from AIMS article.
- * Priority: articleName → data.roomName → data.name → fallback to externalId.
+ * Priority: articleName → normalizedData.roomName → normalizedData.name → fallback to externalId.
+ *
+ * Both `articleName` and `normalizedData` must already be normalized (CSV-unescaped)
+ * by the caller before being passed here.
  */
-function extractRoomName(article: RawAimsArticle, externalId: string): string {
-    if (article.articleName && typeof article.articleName === 'string') {
-        return article.articleName;
+function extractRoomName(
+    articleName: string | undefined,
+    normalizedData: Record<string, unknown>,
+    externalId: string,
+): string {
+    if (articleName) {
+        return articleName;
     }
-    const data = article.data && typeof article.data === 'object'
-        ? (article.data as Record<string, unknown>)
-        : {};
-    if (typeof data.roomName === 'string' && data.roomName) {
-        return normalizeStringValue(data.roomName) as string;
+    if (typeof normalizedData.roomName === 'string' && normalizedData.roomName) {
+        return normalizedData.roomName;
     }
-    if (typeof data.name === 'string' && data.name) {
-        return normalizeStringValue(data.name) as string;
+    if (typeof normalizedData.name === 'string' && normalizedData.name) {
+        return normalizedData.name;
     }
     return `Conference ${externalId}`;
 }
@@ -127,7 +131,11 @@ export const conferenceSyncService = {
             }
 
             const normalizedData = normalizeArticleData(article.data);
-            const roomName = extractRoomName(article, externalId);
+            const normalizedArticleName =
+                typeof article.articleName === 'string' && article.articleName
+                    ? (normalizeStringValue(article.articleName) as string)
+                    : undefined;
+            const roomName = extractRoomName(normalizedArticleName, normalizedData, externalId);
             const existing = await conferenceRepository.findByExternalId(storeId, externalId);
 
             if (existing) {

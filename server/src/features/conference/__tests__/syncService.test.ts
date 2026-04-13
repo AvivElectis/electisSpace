@@ -113,6 +113,19 @@ describe('conferenceSyncService.upsertManyFromArticles', () => {
         expect(mockConferenceCreate).not.toHaveBeenCalled();
     });
 
+    it('unescapes articleName when it carries CSV-style double quotes', async () => {
+        mockFindByExternalId.mockResolvedValue(null);
+        mockConferenceCreate.mockResolvedValue({});
+        await conferenceSyncService.upsertManyFromArticles(
+            [{ articleId: 'C101', articleName: '"Room""A"', data: {} }],
+            'store-1',
+            user,
+        );
+        expect(mockConferenceCreate).toHaveBeenCalledWith(
+            expect.objectContaining({ data: expect.objectContaining({ roomName: 'Room"A' }) }),
+        );
+    });
+
     it('unescapes CSV-style double-quoted strings in name field', async () => {
         mockFindByExternalId.mockResolvedValue(null);
         mockConferenceCreate.mockResolvedValue({});
