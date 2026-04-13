@@ -5,6 +5,7 @@
  */
 import { syncQueueService } from '../../shared/infrastructure/services/syncQueueService.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
+import { prisma } from '../../config/index.js';
 import { spacesRepository } from './repository.js';
 import type { SpacesUserContext, CreateSpaceInput, UpdateSpaceInput, ListSpacesFilters } from './types.js';
 import type { Prisma } from '@prisma/client';
@@ -112,6 +113,62 @@ export const spacesService = {
         return {
             linkedLabels: linkedLabels || [],
         };
+    },
+
+    async deleteBulk(ids: string[], user: SpacesUserContext) {
+        const storeIds = getEffectiveStoreIds(user);
+
+        const found = await prisma.space.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, storeId: true, externalId: true, assignedLabels: true },
+        });
+
+        // Access check: any row outside the user's effective stores → FORBIDDEN.
+        if (storeIds !== undefined) {
+            const forbidden = found.filter((row) => !storeIds.includes(row.storeId));
+            if (forbidden.length > 0) {
+                const err = new Error('FORBIDDEN');
+                (err as any).forbiddenIds = forbidden.map((f) => f.id);
+                throw err;
+            }
+        }
+
+        const foundIds = new Set(found.map((f) => f.id));
+        const alreadyGone = ids.filter((id) => !foundIds.has(id));
+        const accessible = found;
+
+        if (accessible.length === 0) {
+            appLogger.info('SpacesService', `Bulk delete: nothing to delete`, {
+                requested: ids.length,
+                alreadyGone: alreadyGone.length,
+                triggeredBy: user.id,
+            });
+            return { deleted: [] as string[], alreadyGone };
+        }
+
+        await prisma.$transaction(async (tx) => {
+            for (const row of accessible) {
+                await syncQueueService.queueDelete(row.storeId, 'space', row.id, row.externalId);
+            }
+            await tx.space.deleteMany({
+                where: { id: { in: accessible.map((a) => a.id) } },
+            });
+        });
+
+        const linkedLabelRows = accessible.filter((row) => {
+            const labels = row.assignedLabels as string[] | undefined;
+            return labels && labels.length > 0;
+        });
+
+        appLogger.info('SpacesService', `Bulk delete complete`, {
+            requested: ids.length,
+            deleted: accessible.length,
+            alreadyGone: alreadyGone.length,
+            withLinkedLabels: linkedLabelRows.length,
+            triggeredBy: user.id,
+        });
+
+        return { deleted: accessible.map((a) => a.id), alreadyGone };
     },
 
     async assignLabel(id: string, labelCode: string, user: SpacesUserContext) {

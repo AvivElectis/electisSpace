@@ -27,6 +27,10 @@ export const assignLabelSchema = z.object({
     labelCode: z.string(),
 });
 
+export const bulkDeleteSpacesSchema = z.object({
+    ids: z.array(z.string().min(1)).min(1, 'At least one id is required'),
+});
+
 // ======================
 // DTOs
 // ======================
@@ -34,6 +38,7 @@ export const assignLabelSchema = z.object({
 export type CreateSpaceInput = z.infer<typeof createSpaceSchema>;
 export type UpdateSpaceInput = z.infer<typeof updateSpaceSchema>;
 export type AssignLabelInput = z.infer<typeof assignLabelSchema>;
+export type BulkDeleteSpacesInput = z.infer<typeof bulkDeleteSpacesSchema>;
 
 // ======================
 // Filter Types
