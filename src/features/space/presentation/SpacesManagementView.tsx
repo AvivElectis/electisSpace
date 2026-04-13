@@ -149,7 +149,7 @@ function SpacesDesktopTable({
                             checked={isSelected}
                             onChange={() => onToggleSelect?.(space.id)}
                             onClick={(e) => e.stopPropagation()}
-                            inputProps={{ 'aria-label': `Select ${space.externalId || space.id}` }}
+                            inputProps={{ 'aria-label': t('spaces.selectMode.selectItem', { id: space.externalId || space.id }) }}
                             size="small"
                         />
                     </Box>
@@ -221,6 +221,7 @@ function SpacesDesktopTable({
                             indeterminate={!!selectedIds && selectedIds.size > 0 && selectedIds.size < spaces.length}
                             checked={spaces.length > 0 && selectedIds?.size === spaces.length}
                             onChange={(e) => onSelectAll?.(e.target.checked)}
+                            inputProps={{ 'aria-label': t('spaces.selectMode.selectAll') }}
                             size="small"
                         />
                     </Box>
@@ -514,6 +515,12 @@ export function SpacesManagementView() {
         });
     }, []);
 
+    const handleSelectAll = useCallback((checked: boolean) => {
+        setSelectedIds(checked
+            ? new Set(filteredAndSortedSpaces.map((s) => s.id))
+            : new Set());
+    }, [filteredAndSortedSpaces]);
+
     // Memoized event handlers
     const handleDelete = useCallback(async (id: string) => {
         const confirmed = await confirm({
@@ -776,7 +783,7 @@ export function SpacesManagementView() {
                     sx={{
                         position: isMobile ? 'fixed' : 'sticky',
                         bottom: isMobile ? 0 : 'auto',
-                        top: isMobile ? 'auto' : 0,
+                        top: isMobile ? 'auto' : 64,
                         left: 0,
                         right: 0,
                         zIndex: (theme) => theme.zIndex.appBar - 1,
@@ -873,7 +880,7 @@ export function SpacesManagementView() {
                                                     checked={isSelected}
                                                     onChange={() => toggleSelection(space.id)}
                                                     onClick={(e) => e.stopPropagation()}
-                                                    inputProps={{ 'aria-label': `Select ${space.externalId || space.id}` }}
+                                                    inputProps={{ 'aria-label': t('spaces.selectMode.selectItem', { id: space.externalId || space.id }) }}
                                                     size="small"
                                                 />
                                             )}
@@ -982,13 +989,7 @@ export function SpacesManagementView() {
                     selectMode={selectMode}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelection}
-                    onSelectAll={(checked) => {
-                        if (checked) {
-                            setSelectedIds(new Set(filteredAndSortedSpaces.map((s) => s.id)));
-                        } else {
-                            setSelectedIds(new Set());
-                        }
-                    }}
+                    onSelectAll={handleSelectAll}
                 />)
             )}
             {/* Panels below table — both desktop and mobile */}

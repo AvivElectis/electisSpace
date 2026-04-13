@@ -417,7 +417,9 @@
         },
         "selectMode": {
             "selectedCount": "{{count}} נבחרו",
-            "deleteSelected": "מחק נבחרים"
+            "deleteSelected": "מחק נבחרים",
+            "selectItem": "בחירת {{id}}",
+            "selectAll": "בחירת כל הנראים"
         },
         "bulkDelete": {
             "confirm": "למחוק {{count}} מרחבים? פעולה זו אינה ניתנת לביטול.",

@@ -414,7 +414,9 @@
         },
         "selectMode": {
             "selectedCount": "{{count}} selected",
-            "deleteSelected": "Delete selected"
+            "deleteSelected": "Delete selected",
+            "selectItem": "Select {{id}}",
+            "selectAll": "Select all visible"
         },
         "bulkDelete": {
             "confirm": "Delete {{count}} spaces? This cannot be undone.",
