@@ -280,7 +280,8 @@
         "never": "Never",
         "refresh": "Refresh",
         "retry": "Retry",
-        "type": "Type"
+        "type": "Type",
+        "select": "Select"
     },
     "offline": {
         "banner": "You are offline. Changes will be synced when you reconnect.",
@@ -410,6 +411,15 @@
             "pushResult": "Pushed: {{processed}} processed, {{pending}} still pending",
             "fullResult": "Full sync complete",
             "error": "Sync failed"
+        },
+        "selectMode": {
+            "selectedCount": "{{count}} selected",
+            "deleteSelected": "Delete selected"
+        },
+        "bulkDelete": {
+            "confirm": "Delete {{count}} spaces? This cannot be undone.",
+            "success": "{{count}} spaces deleted",
+            "error": "Failed to delete selected spaces"
         }
     },
     "conference": {

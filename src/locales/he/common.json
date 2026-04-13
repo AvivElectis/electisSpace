@@ -283,7 +283,8 @@
         "never": "אף פעם",
         "refresh": "רענן",
         "retry": "נסה שוב",
-        "type": "סוג"
+        "type": "סוג",
+        "select": "בחירה"
     },
     "offline": {
         "banner": "אתה במצב לא מקוון. השינויים יסונכרנו כשתתחבר מחדש.",
@@ -413,6 +414,15 @@
             "pushResult": "נדחפו: {{processed}} עובדו, {{pending}} עדיין ממתינים",
             "fullResult": "סנכרון מלא הושלם",
             "error": "הסנכרון נכשל"
+        },
+        "selectMode": {
+            "selectedCount": "{{count}} נבחרו",
+            "deleteSelected": "מחק נבחרים"
+        },
+        "bulkDelete": {
+            "confirm": "למחוק {{count}} מרחבים? פעולה זו אינה ניתנת לביטול.",
+            "success": "{{count}} מרחבים נמחקו",
+            "error": "מחיקת המרחבים הנבחרים נכשלה"
         }
     },
     "conference": {
