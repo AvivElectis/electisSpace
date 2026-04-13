@@ -245,6 +245,48 @@ describe('SpacesStore', () => {
         });
     });
 
+    describe('deleteSpacesBulk', () => {
+        it('removes both deleted and alreadyGone ids from state in one update', async () => {
+            const { spacesApi } = await import('../infrastructure/spacesApi');
+            useSpacesStore.setState({
+                spaces: [
+                    { id: 'a', externalId: 'A', data: {}, syncStatus: 'SYNCED' },
+                    { id: 'b', externalId: 'B', data: {}, syncStatus: 'SYNCED' },
+                    { id: 'c', externalId: 'C', data: {}, syncStatus: 'SYNCED' },
+                ] as any,
+                isLoading: false,
+                error: null,
+            });
+
+            vi.spyOn(spacesApi, 'deleteBulk').mockResolvedValue({
+                deleted: ['a'],
+                alreadyGone: ['b'],
+            });
+
+            const ok = await useSpacesStore.getState().deleteSpacesBulk(['a', 'b']);
+
+            expect(ok).toBe(true);
+            const remaining = useSpacesStore.getState().spaces.map((s) => s.id);
+            expect(remaining).toEqual(['c']);
+        });
+
+        it('leaves state unchanged and returns false on API failure', async () => {
+            const { spacesApi } = await import('../infrastructure/spacesApi');
+            useSpacesStore.setState({
+                spaces: [{ id: 'a', externalId: 'A', data: {}, syncStatus: 'SYNCED' }] as any,
+                isLoading: false,
+                error: null,
+            });
+
+            vi.spyOn(spacesApi, 'deleteBulk').mockRejectedValue(new Error('boom'));
+
+            const ok = await useSpacesStore.getState().deleteSpacesBulk(['a']);
+
+            expect(ok).toBe(false);
+            expect(useSpacesStore.getState().spaces).toHaveLength(1);
+        });
+    });
+
     describe('Clear All Data', () => {
         it('should clear all state', () => {
             const { setSpaces, addSpacesList, setActiveListName, clearAllData } = useSpacesStore.getState();

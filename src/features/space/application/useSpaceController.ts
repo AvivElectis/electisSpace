@@ -38,6 +38,7 @@ export function useSpaceController({
         createSpace: createInStore,
         updateSpace: updateInStore,
         deleteSpace: deleteInStore,
+        deleteSpacesBulk: deleteSpacesBulkInStore,
         fetchSpaces: fetchFromStore,
         // List Management
         addSpacesList,
@@ -214,6 +215,7 @@ export function useSpaceController({
         addSpace,
         updateSpace,
         deleteSpace,
+        deleteSpacesBulk: deleteSpacesBulkInStore,
         findSpaceById,
         importFromSync,
         fetchFromSolum,

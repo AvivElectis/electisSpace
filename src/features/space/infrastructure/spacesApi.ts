@@ -158,6 +158,18 @@ export const spacesApi = {
     },
 
     /**
+     * Delete many spaces in a single request.
+     * Idempotent: ids already gone on the server are returned as `alreadyGone`.
+     */
+    deleteBulk: async (ids: string[]): Promise<{ deleted: string[]; alreadyGone: string[] }> => {
+        const response = await api.post<{ deleted: string[]; alreadyGone: string[] }>(
+            '/spaces/bulk-delete',
+            { ids },
+        );
+        return response.data;
+    },
+
+    /**
      * Get sync status for a store's spaces
      */
     syncStatus: async (storeId: string) => {
