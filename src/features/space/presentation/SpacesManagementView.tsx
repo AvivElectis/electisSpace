@@ -636,17 +636,6 @@ export function SpacesManagementView() {
                     >
                         {getLabel('add')}
                     </Button>
-                    <Tooltip title={t('common.select')}>
-                        <span>
-                            <IconButton
-                                color={selectMode ? 'primary' : 'default'}
-                                disabled={!canEdit}
-                                onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-                            >
-                                <ChecklistIcon />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
                 </Box>
             </Stack>
 
@@ -722,17 +711,6 @@ export function SpacesManagementView() {
                             <FilterListIcon />
                         </Badge>
                     </IconButton>
-                    <Tooltip title={t('common.select')}>
-                        <span>
-                            <IconButton
-                                color={selectMode ? 'primary' : 'default'}
-                                disabled={!canEdit}
-                                onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-                            >
-                                <ChecklistIcon />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
                     <Collapse in={searchOpen}>
                         <TextField
                             fullWidth
@@ -774,6 +752,27 @@ export function SpacesManagementView() {
                         }
                     }}
                 />
+            )}
+            {/* Table-level actions — Select Mode trigger.
+                Shown directly above the table on both desktop and mobile so
+                the affordance is attached to the data it modifies, not the
+                page toolbar. Hidden while select mode is active — the
+                selection bar below carries its own Cancel button. */}
+            {!selectMode && (
+                <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+                    <Tooltip title={t('common.select')}>
+                        <span>
+                            <IconButton
+                                size={isMobile ? 'medium' : 'small'}
+                                disabled={!canEdit || filteredAndSortedSpaces.length === 0}
+                                onClick={() => setSelectMode(true)}
+                                aria-label={t('common.select')}
+                            >
+                                <ChecklistIcon />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                </Stack>
             )}
             {/* Selection Bar */}
             {selectMode && (
