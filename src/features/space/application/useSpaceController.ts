@@ -156,13 +156,20 @@ export function useSpaceController({
     /**
      * Delete space
      * Deletes from server DB (which queues AIMS sync), then triggers push.
+     *
+     * Note: we do NOT pre-check that the space exists in the local `spaces`
+     * array. A "Space not found" guard here closes over a snapshot of `spaces`
+     * and races with sequential deletes — an in-flight delete started before
+     * a state update can fail the guard with stale data even though the row
+     * exists on the server. The server is the source of truth: it will return
+     * 404 if the row is really gone, and `deleteInStore` returns false in that
+     * case which we propagate through the existing error path. Keeping `spaces`
+     * out of the dep array also prevents the callback from being rebuilt on
+     * every store update.
      */
     const deleteSpace = useCallback(
         async (id: string): Promise<void> => {
             logger.info('SpaceController', 'Deleting space', { id });
-
-            const existingSpace = spaces.find(s => s.id === id);
-            if (!existingSpace) throw new Error('Space not found');
 
             // Delete from Server DB — server queues AIMS delete automatically
             const success = await deleteInStore(id);
@@ -179,7 +186,7 @@ export function useSpaceController({
                 }
             }
         },
-        [spaces, deleteInStore, onSync]
+        [deleteInStore, onSync]
     );
 
     /**

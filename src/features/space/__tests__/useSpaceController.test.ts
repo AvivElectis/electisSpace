@@ -307,18 +307,27 @@ describe('useSpaceController', () => {
             expect(result.current.spaces).toHaveLength(0);
         });
 
-        it('should throw error for non-existent space', async () => {
+        it('delegates to the server without pre-checking the local snapshot', async () => {
             const { result } = renderHook(() =>
                 useSpaceController({
                     csvConfig: mockCsvConfig,
                 })
             );
 
-            await expect(
-                act(async () => {
-                    await result.current.deleteSpace('NON-EXISTENT');
-                })
-            ).rejects.toThrow('Space not found');
+            // The controller no longer pre-checks against the local `spaces`
+            // array — that guard closed over a stale snapshot and raced with
+            // sequential deletes (an in-flight delete that started before a
+            // state update could throw "Space not found" even when the row
+            // really existed on the server). The server is now the source of
+            // truth: when the API succeeds (the mock always does), the
+            // controller resolves regardless of the local state. When the API
+            // fails, the store returns false and the controller throws
+            // "Failed to delete space on server" via the existing error path.
+            await act(async () => {
+                await expect(
+                    result.current.deleteSpace('NON-EXISTENT'),
+                ).resolves.toBeUndefined();
+            });
         });
     });
 

@@ -1340,9 +1340,27 @@ git commit -m "test(e2e): spaces bulk delete via select mode"
 
 ---
 
-## Task 9: Investigate the sequential-delete bug (evidence first)
+## Task 9: Investigate the sequential-delete bug (evidence first) — DONE
 
-**Purpose:** §3b of the spec. No fix is written here — only repro and evidence. The fix (if any beyond the already-shipped race guard from Task 3) is in Task 10.
+**Investigation summary (filled in 2026-04-13):**
+
+1. **Server path (verified live):** Issued 5 sequential `DELETE /api/v1/spaces/:id` requests via curl with a real auth token against the dev API. All 5 returned HTTP 204 and the row count in `spaces` table dropped from 21 → 16 in step. Sync queue items advanced through PENDING/PROCESSING → COMPLETED. **The server delete path is correct.** The earlier observed "first 4 fail, last succeeds" pattern was an artifact of CRLF line endings in a Bash `for` loop on Windows, NOT a server bug.
+
+2. **Server-side note:** During delete, `SyncQueueProcessor` tries to `prisma.space.update(syncStatus='SYNCED', ...)` AFTER `prisma.space.delete(...)` has removed the row. This produces a `prisma:error … No record was found for an update` which is caught and logged at debug level. Cosmetic, not a functional bug; the delete succeeds.
+
+3. **Client path (root cause identified by code reading):** `useSpaceController.deleteSpace` had two related defects:
+   - **Stale-closure guard** (line 164 before fix): `const existingSpace = spaces.find(s => s.id === id); if (!existingSpace) throw new Error('Space not found');`. `spaces` is a closure capture from the render that built this `useCallback`. The callback's dep array included `spaces`, so the callback was rebuilt on every store update — but a click handler that captured an OLDER callback reference (via `handleDelete` → `spaceController.deleteSpace`) could enter the function with a stale `spaces` snapshot. In rapid sequential delete sessions where multiple in-flight callbacks coexist (one awaiting confirm dialog while another's already running), the second callback could fire its guard against a `spaces` snapshot that still contained a row already removed elsewhere — or, more commonly, against a snapshot that no longer contained a row that was real on the server. Either way the guard threw "Space not found", which the UI swallowed via the existing error confirm dialog → user sees "delete failed", row appears un-deleted.
+   - **`spaces` in the dep array** also caused the entire `deleteSpace` callback to be rebuilt on every store update, propagating new references through `spaceController` → `handleDelete` → row component. With react-window's virtualization re-renders, this thrash made the stale-closure bug easier to hit.
+
+**Observed failure category:** A (UI shows the row as still present / "delete failed" while the DB is in fact correct from the user's perspective), driven by client-side stale closure rather than any server-side issue.
+
+**Fix (applied in Task 10):** remove the local `existingSpace` pre-check entirely and drop `spaces` from the `deleteSpace` callback's dep array. The server is the source of truth — if the row really doesn't exist the API returns 404, the store returns false, and the existing `if (!success) throw new Error("Failed to delete space on server")` branch surfaces it. The unit test that asserted the old "Space not found" guard is updated to assert the new delegate-to-server behavior.
+
+**Pull-time race guard from Task 3** still has independent value: it prevents a separate class of race (a pull from AIMS arriving between local delete and queue-push) from re-creating the row. Worth keeping regardless of the stale-closure fix.
+
+---
+
+**Original investigation steps (kept for reference):**
 
 **Files:**
 - Modify: this plan file to record findings inline.
