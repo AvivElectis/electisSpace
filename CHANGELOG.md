@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Spaces bulk delete** — new "Select Mode" toggle on the spaces table (desktop and mobile) reveals row checkboxes, a select-all-visible header checkbox, and a sticky/fixed selection bar with a "Delete selected" action.
+- **`POST /api/v1/spaces/bulk-delete`** — atomic, idempotent endpoint accepting `{ ids: string[] }`. Forbidden ids (cross-store access) are rejected with 403 before anything is deleted; missing ids are returned as `alreadyGone` and treated as success so HTTP DELETE retries are safe.
+
 ### Fixed
+- **AIMS pull misclassified conference rooms** — `pullFromAims` in the spaces sync service used to ingest every article as a space, including `C`-prefixed articles that belong to conference rooms. It now partitions articles by prefix: non-C articles go through the existing space upsert; C-prefixed articles are routed to a new `conferenceSyncService.upsertManyFromArticles` when the conference feature is enabled for the company, or skipped entirely when it is not. Pre-existing C-prefixed rows in the `space` table from earlier pulls are not auto-cleaned — users remove them via the new bulk delete UI.
+- **Pull/delete race** — pulling spaces from AIMS could re-create a space that had just been deleted locally if the delete had not yet been pushed to AIMS. `pullFromAims` now reads non-terminal `DELETE` queue items from `sync_queue` and skips any external id that has a delete in flight. Applied symmetrically for the conference path.
+- **Sequential single-delete bug** — `useSpaceController.deleteSpace` had a stale-closure pre-check (`spaces.find(s => s.id === id) || throw 'Space not found'`) and listed `spaces` in its `useCallback` dep array. In rapid sequential delete sessions this could throw against an out-of-date snapshot, leaving the user with rows that "wouldn't delete". The pre-check is removed; the server is now the source of truth, with the existing `Failed to delete space on server` branch surfacing real failures.
 - **SSE reconnect storm** — removed `tokenVersion` bump from `validateSession`, eliminating 60-second SSE reconnect cycles
 - **Auth watchdog** — removed `location.pathname` from interval deps, preventing spurious `/me` calls on navigation
 - **Token refresh rejection** — added explicit `Promise.reject` after failed refresh, preventing `undefined` crashes
