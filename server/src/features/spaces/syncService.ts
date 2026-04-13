@@ -8,6 +8,9 @@ import { prisma } from '../../config/index.js';
 import { aimsGateway } from '../../shared/infrastructure/services/aimsGateway.js';
 import { syncQueueProcessor } from '../../shared/infrastructure/jobs/SyncQueueProcessor.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
+import { extractCompanyFeatures, extractStoreFeatures, resolveEffectiveFeatures } from '../../shared/utils/featureResolution.js';
+import { conferenceSyncService } from '../conference/syncService.js';
+import type { RawAimsArticle } from '../conference/syncService.js';
 import type { SpacesUserContext } from './types.js';
 import type { Prisma } from '@prisma/client';
 
@@ -26,6 +29,7 @@ export interface SyncResult {
     unchanged: number;
     deleted: number;
     errors: string[];
+    conference?: { created: number; updated: number; unchanged: number; skipped: number };
 }
 
 export const spacesSyncService = {
@@ -43,6 +47,50 @@ export const spacesSyncService = {
             const articles = await aimsGateway.pullArticleInfo(storeId);
             result.total = articles.length;
 
+            // --- Race guard: build a set of space externalIds with a pending DELETE ---
+            const pendingDeleteItems = await prisma.syncQueueItem.findMany({
+                where: {
+                    storeId,
+                    entityType: 'space',
+                    action: 'DELETE',
+                    status: { in: ['PENDING', 'PROCESSING'] },
+                },
+                select: { payload: true },
+            });
+            const pendingDeleteExternalIds = new Set<string>();
+            for (const item of pendingDeleteItems) {
+                const payload = item.payload as { externalId?: string } | null;
+                if (payload?.externalId) {
+                    pendingDeleteExternalIds.add(String(payload.externalId));
+                }
+            }
+
+            // --- Partition articles into space vs conference ---
+            const spaceArticles: RawAimsArticle[] = [];
+            const conferenceArticles: RawAimsArticle[] = [];
+            for (const article of articles as RawAimsArticle[]) {
+                const id = article.articleId;
+                if (id && id[0].toUpperCase() === 'C') {
+                    conferenceArticles.push(article);
+                } else {
+                    spaceArticles.push(article);
+                }
+            }
+
+            // --- Determine conference feature flag for this store ---
+            const store = await prisma.store.findUnique({
+                where: { id: storeId },
+                include: { company: true },
+            });
+            const companyFeatures = extractCompanyFeatures(
+                (store?.company?.settings ?? null) as Record<string, unknown> | null,
+            );
+            const storeFeatures = extractStoreFeatures(
+                (store?.settings ?? null) as Record<string, unknown> | null,
+            );
+            const effectiveFeatures = resolveEffectiveFeatures(companyFeatures, storeFeatures ?? undefined);
+            const conferenceEnabled = effectiveFeatures.conferenceEnabled;
+
             // Pre-fetch all existing spaces for this store to avoid N+1 queries
             const existingSpaces = await prisma.space.findMany({
                 where: { storeId },
@@ -52,10 +100,16 @@ export const spacesSyncService = {
                 existingSpaces.map(s => [s.externalId, s])
             );
 
-            for (const article of articles) {
+            // --- Space upsert loop (non-C articles only) ---
+            for (const article of spaceArticles) {
                 const articleId = article.articleId;
                 if (!articleId) {
                     result.errors.push(`Article missing articleId`);
+                    continue;
+                }
+
+                // Race guard: skip articles whose externalId has a pending DELETE
+                if (pendingDeleteExternalIds.has(String(articleId))) {
                     continue;
                 }
 
@@ -64,7 +118,7 @@ export const spacesSyncService = {
 
                     // The /config/article/info endpoint returns data as a nested object
                     const rawData: Record<string, unknown> = article.data && typeof article.data === 'object'
-                        ? { ...article.data }
+                        ? { ...article.data as Record<string, unknown> }
                         : {};
                     // Unescape CSV-style double-quoting: "ד""ר" → ד"ר
                     const articleData: Record<string, unknown> = {};
@@ -112,13 +166,29 @@ export const spacesSyncService = {
                 }
             }
 
+            // --- Conference path ---
+            if (conferenceArticles.length > 0) {
+                if (conferenceEnabled) {
+                    result.conference = await conferenceSyncService.upsertManyFromArticles(conferenceArticles, storeId);
+                } else {
+                    appLogger.info(
+                        'spacesSyncService',
+                        `Skipped ${conferenceArticles.length} C-prefixed article(s) — conference feature disabled for store ${storeId}`,
+                        { count: conferenceArticles.length, storeId },
+                    );
+                }
+            }
+
             // Update store sync timestamp
             await prisma.store.update({
                 where: { id: storeId },
                 data: { lastAimsSyncAt: new Date() },
             });
 
-            appLogger.info('spacesSyncService', `Pull from AIMS complete for store ${storeId}`, { ...result });
+            appLogger.info('spacesSyncService', `Pull from AIMS complete for store ${storeId}`, {
+                ...result,
+                ...(result.conference ? { conference: result.conference } : {}),
+            });
         } catch (err) {
             appLogger.error('spacesSyncService', `Pull from AIMS failed for store ${storeId}`, { error: String(err) });
             throw err;
