@@ -555,7 +555,22 @@ export function SpacesManagementView() {
         try {
             const ok = await spaceController.deleteSpacesBulk(ids);
             if (ok) {
+                await confirm({
+                    title: t('spaces.bulkDelete.success', { count: ids.length }),
+                    message: '',
+                    confirmLabel: t('common.close'),
+                    severity: 'success',
+                    showCancel: false,
+                });
                 exitSelectMode();
+            } else {
+                await confirm({
+                    title: t('common.error'),
+                    message: t('spaces.bulkDelete.error'),
+                    confirmLabel: t('common.close'),
+                    severity: 'error',
+                    showCancel: false,
+                });
             }
         } catch (error) {
             await confirm({
