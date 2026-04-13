@@ -182,6 +182,34 @@ export function useSpaceController({
         [spaces, deleteInStore, onSync]
     );
 
+    /**
+     * Bulk delete spaces.
+     * Deletes from server DB (which queues AIMS sync), then triggers push.
+     */
+    const deleteSpacesBulk = useCallback(
+        async (ids: string[]): Promise<boolean> => {
+            logger.info('SpaceController', 'Bulk deleting spaces', { count: ids.length });
+
+            const ok = await deleteSpacesBulkInStore(ids);
+            if (!ok) {
+                logger.warn('SpaceController', 'Bulk delete failed at store layer');
+                return false;
+            }
+
+            logger.info('SpaceController', 'Spaces bulk-deleted from Server DB', { count: ids.length });
+
+            if (onSync) {
+                try {
+                    await onSync();
+                } catch (error) {
+                    logger.warn('SpaceController', 'Sync after bulk delete failed', { error });
+                }
+            }
+            return true;
+        },
+        [deleteSpacesBulkInStore, onSync],
+    );
+
     // Helpers
     const findSpaceById = useCallback((id: string) => spaces.find(s => s.id === id), [spaces]);
     const importFromSync = useCallback((is: Space[]) => setSpaces(is), [setSpaces]);
@@ -215,7 +243,7 @@ export function useSpaceController({
         addSpace,
         updateSpace,
         deleteSpace,
-        deleteSpacesBulk: deleteSpacesBulkInStore,
+        deleteSpacesBulk,
         findSpaceById,
         importFromSync,
         fetchFromSolum,
