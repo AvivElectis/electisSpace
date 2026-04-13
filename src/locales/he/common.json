@@ -445,6 +445,7 @@
         "totalRooms": "סה\"כ חדרים",
         "withLabels": "עם תגיות",
         "noScheduledMeetings": "אין פגישות מתוכננות",
+        "linkLabelFirst": "יש לשייך תווית לחדר כדי להחליף את תצוגת המסך",
         "roomId": "מזהה חדר",
         "labelCode": "קוד תגית",
         "meetingName": "שם פגישה",

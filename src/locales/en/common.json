@@ -442,6 +442,7 @@
         "totalRooms": "Total Rooms",
         "withLabels": "With Labels",
         "noScheduledMeetings": "No scheduled meetings",
+        "linkLabelFirst": "Link a label to this room to flip the display",
         "roomId": "Room ID",
         "labelCode": "Label Code",
         "meetingName": "Meeting Name",

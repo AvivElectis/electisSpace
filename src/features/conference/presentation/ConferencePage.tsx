@@ -372,22 +372,33 @@ export function ConferencePage() {
                                 ...(room.assignedLabels || []),
                             ]).size;
 
+                            // Toggle is always visible so every room in simple mode has a
+                            // consistent affordance. When there are no labels linked to the
+                            // room, the controls stay visible but disabled and a small hint
+                            // explains what the user needs to do — clicking would fail
+                            // server-side with NO_LABEL_ASSIGNED anyway.
+                            const toggleDisabled = isFlipping || !canEdit || !hasLabels;
+                            const toggleTooltip = !hasLabels
+                                ? t('conference.linkLabelFirst')
+                                : !canEdit
+                                    ? ''
+                                    : '';
                             return (
                                 <Card
                                     key={room.id}
                                     variant="outlined"
                                     sx={{
                                         transition: 'background-color 0.2s',
-                                        bgcolor: roomPage === 2 ? 'error.50' : 'transparent',
-                                        borderColor: roomPage === 2 ? 'error.main' : 'divider',
+                                        bgcolor: roomPage === 2 && hasLabels ? 'error.50' : 'transparent',
+                                        borderColor: roomPage === 2 && hasLabels ? 'error.main' : 'divider',
                                     }}
                                 >
                                     <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
                                         <Stack
-                                            direction="row"
-                                            alignItems="center"
+                                            direction={{ xs: 'column', sm: 'row' }}
+                                            alignItems={{ xs: 'stretch', sm: 'center' }}
                                             justifyContent="space-between"
-                                            gap={2}
+                                            gap={{ xs: 1, sm: 2 }}
                                         >
                                             {/* Room info */}
                                             <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
@@ -399,7 +410,7 @@ export function ConferencePage() {
                                                 >
                                                     {room.id}
                                                 </Typography>
-                                                <Typography variant="body1" fontWeight={500} noWrap>
+                                                <Typography variant="body1" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
                                                     {room.roomName || room.data?.roomName || room.id}
                                                 </Typography>
                                                 {hasLabels && labelCount > 1 && (
@@ -412,46 +423,53 @@ export function ConferencePage() {
                                                 )}
                                             </Stack>
 
-                                            {/* Status radio */}
-                                            {hasLabels ? (
-                                                <RadioGroup
-                                                    row
-                                                    value={String(roomPage)}
-                                                    onChange={(_e, value) => {
-                                                        if (!isFlipping && canEdit) {
-                                                            handleFlipPage(room, Number(value));
-                                                        }
-                                                    }}
-                                                >
-                                                    <FormControlLabel
-                                                        value="1"
-                                                        disabled={isFlipping || !canEdit}
-                                                        control={<Radio size="small" color="success" />}
-                                                        label={
-                                                            <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
-                                                                {t('conference.available')}
-                                                            </Typography>
-                                                        }
-                                                        sx={{ mr: 1 }}
-                                                    />
-                                                    <FormControlLabel
-                                                        value="2"
-                                                        disabled={isFlipping || !canEdit}
-                                                        control={<Radio size="small" color="error" />}
-                                                        label={
-                                                            <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
-                                                                {t('conference.inMeeting')}
-                                                            </Typography>
-                                                        }
-                                                    />
-                                                    {isFlipping && <CircularProgress size={20} sx={{ ml: 1 }} />}
-                                                </RadioGroup>
-                                            ) : (
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {t('conference.noScheduledMeetings')}
-                                                </Typography>
-                                            )}
+                                            {/* Status radio — always visible, disabled when no labels are linked */}
+                                            <Tooltip title={toggleTooltip} placement="top" disableHoverListener={!toggleTooltip}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+                                                    <RadioGroup
+                                                        row
+                                                        value={String(roomPage)}
+                                                        onChange={(_e, value) => {
+                                                            if (!toggleDisabled) {
+                                                                handleFlipPage(room, Number(value));
+                                                            }
+                                                        }}
+                                                    >
+                                                        <FormControlLabel
+                                                            value="1"
+                                                            disabled={toggleDisabled}
+                                                            control={<Radio size="small" color="success" />}
+                                                            label={
+                                                                <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                                    {t('conference.available')}
+                                                                </Typography>
+                                                            }
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                        <FormControlLabel
+                                                            value="2"
+                                                            disabled={toggleDisabled}
+                                                            control={<Radio size="small" color="error" />}
+                                                            label={
+                                                                <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                                    {t('conference.inMeeting')}
+                                                                </Typography>
+                                                            }
+                                                        />
+                                                        {isFlipping && <CircularProgress size={20} sx={{ ml: 1 }} />}
+                                                    </RadioGroup>
+                                                </Box>
+                                            </Tooltip>
                                         </Stack>
+                                        {!hasLabels && (
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}
+                                            >
+                                                {t('conference.linkLabelFirst')}
+                                            </Typography>
+                                        )}
                                     </CardContent>
                                 </Card>
                             );
