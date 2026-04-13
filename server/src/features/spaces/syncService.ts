@@ -47,16 +47,25 @@ export const spacesSyncService = {
             const articles = await aimsGateway.pullArticleInfo(storeId);
             result.total = articles.length;
 
-            // --- Race guard: build a set of space externalIds with a pending DELETE ---
-            const pendingDeleteItems = await prisma.syncQueueItem.findMany({
-                where: {
-                    storeId,
-                    entityType: 'space',
-                    action: 'DELETE',
-                    status: { in: ['PENDING', 'PROCESSING'] },
-                },
-                select: { payload: true },
-            });
+            // --- Race guard + store fetch in parallel ---
+            const [pendingDeleteItems, store] = await Promise.all([
+                prisma.syncQueueItem.findMany({
+                    where: {
+                        storeId,
+                        entityType: 'space',
+                        action: 'DELETE',
+                        status: { in: ['PENDING', 'PROCESSING'] },
+                    },
+                    select: { payload: true },
+                }),
+                prisma.store.findUnique({
+                    where: { id: storeId },
+                    include: { company: true },
+                }),
+            ]);
+
+            if (!store) throw new Error(`Store ${storeId} not found during pull`);
+
             const pendingDeleteExternalIds = new Set<string>();
             for (const item of pendingDeleteItems) {
                 const payload = item.payload as { externalId?: string } | null;
@@ -78,15 +87,11 @@ export const spacesSyncService = {
             }
 
             // --- Determine conference feature flag for this store ---
-            const store = await prisma.store.findUnique({
-                where: { id: storeId },
-                include: { company: true },
-            });
             const companyFeatures = extractCompanyFeatures(
-                (store?.company?.settings ?? null) as Record<string, unknown> | null,
+                (store.company?.settings ?? null) as Record<string, unknown> | null,
             );
             const storeFeatures = extractStoreFeatures(
-                (store?.settings ?? null) as Record<string, unknown> | null,
+                (store.settings ?? null) as Record<string, unknown> | null,
             );
             const effectiveFeatures = resolveEffectiveFeatures(companyFeatures, storeFeatures ?? undefined);
             const conferenceEnabled = effectiveFeatures.conferenceEnabled;
@@ -187,7 +192,6 @@ export const spacesSyncService = {
 
             appLogger.info('spacesSyncService', `Pull from AIMS complete for store ${storeId}`, {
                 ...result,
-                ...(result.conference ? { conference: result.conference } : {}),
             });
         } catch (err) {
             appLogger.error('spacesSyncService', `Pull from AIMS failed for store ${storeId}`, { error: String(err) });

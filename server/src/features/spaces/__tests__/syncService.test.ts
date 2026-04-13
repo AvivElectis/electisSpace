@@ -167,4 +167,14 @@ describe('spacesSyncService.pullFromAims', () => {
         );
         expect(mockSpaceCreate).not.toHaveBeenCalled();
     });
+
+    it('throws when the store is not found during pull', async () => {
+        mockPullArticleInfo.mockResolvedValue([]);
+        mockSyncQueueFindMany.mockResolvedValue([]);
+        mockStoreFindUnique.mockResolvedValue(null);
+
+        await expect(spacesSyncService.pullFromAims('store-1', mockUser)).rejects.toThrow(
+            /not found/i,
+        );
+    });
 });
