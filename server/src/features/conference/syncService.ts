@@ -3,6 +3,8 @@
  *
  * Handles pull-from-AIMS for C-prefixed articles → ConferenceRoom upserts.
  * Called by spacesSyncService.pullFromAims when the conference feature is enabled.
+ * Store-access validation is the caller's responsibility — this service does not
+ * check user permissions.
  */
 import { prisma } from '../../config/index.js';
 import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
@@ -11,12 +13,6 @@ import { conferenceRepository } from './repository.js';
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface ConferenceSyncUserContext {
-    id: string;
-    globalRole?: string;
-    stores?: { id: string }[];
-}
 
 export interface ConferencePullResult {
     created: number;
@@ -37,7 +33,12 @@ export interface RawAimsArticle {
 
 /**
  * Unescape CSV-style double-quoting from AIMS: "ד""ר" → ד"ר
+ *
+ * Overload: when called with a string the return type is string;
+ * when called with an unknown value the return type is unknown.
  */
+function normalizeStringValue(value: string): string;
+function normalizeStringValue(value: unknown): unknown;
 function normalizeStringValue(value: unknown): unknown {
     if (
         typeof value === 'string' &&
@@ -95,7 +96,6 @@ export const conferenceSyncService = {
     async upsertManyFromArticles(
         articles: RawAimsArticle[],
         storeId: string,
-        user: ConferenceSyncUserContext,
     ): Promise<ConferencePullResult> {
         const result: ConferencePullResult = { created: 0, updated: 0, unchanged: 0, skipped: 0 };
 
@@ -113,6 +113,7 @@ export const conferenceSyncService = {
         const pendingDeleteExternalIds = new Set<string>();
         for (const item of pendingDeletes) {
             const payload = item.payload as { externalId?: string } | null;
+            // payload.externalId is conventionally prefixed with 'C' (see conference/service.ts:145); guard defensively.
             if (payload?.externalId && payload.externalId.startsWith('C')) {
                 pendingDeleteExternalIds.add(payload.externalId.slice(1));
             }
@@ -130,39 +131,35 @@ export const conferenceSyncService = {
                 continue;
             }
 
-            const normalizedData = normalizeArticleData(article.data);
-            const normalizedArticleName =
-                typeof article.articleName === 'string' && article.articleName
-                    ? (normalizeStringValue(article.articleName) as string)
-                    : undefined;
-            const roomName = extractRoomName(normalizedArticleName, normalizedData, externalId);
-            const existing = await conferenceRepository.findByExternalId(storeId, externalId);
+            try {
+                const normalizedData = normalizeArticleData(article.data);
+                const normalizedArticleName =
+                    typeof article.articleName === 'string' && article.articleName
+                        ? normalizeStringValue(article.articleName)
+                        : undefined;
+                const roomName = extractRoomName(normalizedArticleName, normalizedData, externalId);
+                const existing = await conferenceRepository.findByExternalId(storeId, externalId);
 
-            if (existing) {
-                // Detect change: compare roomName (primary identifier pulled from AIMS)
-                const existingRoomName = existing.roomName ?? '';
-                if (existingRoomName === roomName) {
-                    result.unchanged++;
+                if (existing) {
+                    // roomName is the only field synced from AIMS today; if other AIMS-sourced fields are added, change detection must widen.
+                    const existingRoomName = existing.roomName ?? '';
+                    if (existingRoomName === roomName) {
+                        result.unchanged++;
+                    } else {
+                        await conferenceRepository.syncUpdate(existing.id, { roomName });
+                        result.updated++;
+                    }
                 } else {
-                    await prisma.conferenceRoom.update({
-                        where: { id: existing.id },
-                        data: {
-                            roomName,
-                            syncStatus: 'SYNCED',
-                        },
-                    });
-                    result.updated++;
+                    await conferenceRepository.syncCreate({ storeId, externalId, roomName });
+                    result.created++;
                 }
-            } else {
-                await prisma.conferenceRoom.create({
-                    data: {
-                        storeId,
-                        externalId,
-                        roomName,
-                        syncStatus: 'SYNCED',
-                    },
-                });
-                result.created++;
+            } catch (err) {
+                appLogger.warn(
+                    'conferenceSyncService',
+                    `Failed to upsert conference article externalId=${externalId}; skipping`,
+                    { externalId, error: err },
+                );
+                result.skipped++;
             }
         }
 
