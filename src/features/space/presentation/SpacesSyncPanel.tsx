@@ -76,7 +76,24 @@ export function SpacesSyncPanel({ onSyncComplete }: SpacesSyncPanelProps) {
         setLastResult(null);
         try {
             const result = await spacesApi.syncPull(activeStoreId);
-            setLastResult(t('spaces.sync.pullResult', { created: result.created, updated: result.updated, unchanged: result.unchanged }));
+            if (result.conference) {
+                setLastResult(
+                    t('spaces.sync.pullResultWithConference', {
+                        created: result.created,
+                        updated: result.updated,
+                        confCreated: result.conference.created,
+                        confUpdated: result.conference.updated,
+                    }),
+                );
+            } else {
+                setLastResult(
+                    t('spaces.sync.pullResult', {
+                        created: result.created,
+                        updated: result.updated,
+                        unchanged: result.unchanged,
+                    }),
+                );
+            }
             await fetchStatus();
             onSyncComplete?.();
         } catch (err) {

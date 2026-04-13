@@ -411,6 +411,7 @@
             "push": "דחיפה ל-AIMS",
             "fullSync": "סנכרון מלא",
             "pullResult": "נמשכו: {{created}} חדשים, {{updated}} עודכנו, {{unchanged}} ללא שינוי",
+            "pullResultWithConference": "נמשכו {{created}} מרחבים חדשים, {{updated}} עודכנו; {{confCreated}} חדרי ישיבות חדשים, {{confUpdated}} עודכנו",
             "pushResult": "נדחפו: {{processed}} עובדו, {{pending}} עדיין ממתינים",
             "fullResult": "סנכרון מלא הושלם",
             "error": "הסנכרון נכשל"

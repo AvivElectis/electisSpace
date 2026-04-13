@@ -408,6 +408,7 @@
             "push": "Push to AIMS",
             "fullSync": "Full Sync",
             "pullResult": "Pulled: {{created}} new, {{updated}} updated, {{unchanged}} unchanged",
+            "pullResultWithConference": "Pulled {{created}} new, {{updated}} updated spaces; {{confCreated}} new, {{confUpdated}} updated conference rooms",
             "pushResult": "Pushed: {{processed}} processed, {{pending}} still pending",
             "fullResult": "Full sync complete",
             "error": "Sync failed"

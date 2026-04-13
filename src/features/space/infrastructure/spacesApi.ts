@@ -137,7 +137,13 @@ export const spacesApi = {
      * Pull spaces from AIMS
      */
     syncPull: async (storeId: string) => {
-        const response = await api.post<{ total: number; created: number; updated: number; unchanged: number }>('/spaces/sync/pull', { storeId });
+        const response = await api.post<{
+            total: number;
+            created: number;
+            updated: number;
+            unchanged: number;
+            conference?: { created: number; updated: number; unchanged: number; skipped: number };
+        }>('/spaces/sync/pull', { storeId });
         return response.data;
     },
 
