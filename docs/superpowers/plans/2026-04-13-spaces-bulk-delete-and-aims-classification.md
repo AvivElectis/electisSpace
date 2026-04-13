@@ -72,6 +72,28 @@ git add docs/superpowers/plans/2026-04-13-spaces-bulk-delete-and-aims-classifica
 git commit -m "docs(plan): record conference feature-flag accessor finding"
 ```
 
+**Finding:**
+
+The conference feature-enabled flag lives in `Company.settings` (JSON column) under `companyFeatures.conferenceEnabled`. There is no single pre-built "is feature enabled" helper; instead, there are two utility functions that work together:
+
+1. **`extractCompanyFeatures(settings: Record<string, unknown> | null | undefined): CompanyFeatures`**
+   - **Path:** `server/src/shared/utils/featureResolution.ts`
+   - **Signature:** Extracts the `companyFeatures` sub-object from a Company's settings JSON. Returns all features enabled by default if no explicit config exists (backward compat for legacy companies).
+   - **Returned type:** `CompanyFeatures` interface with fields: `spacesEnabled`, `peopleEnabled`, `conferenceEnabled`, `simpleConferenceMode`, `labelsEnabled`, `aimsManagementEnabled`.
+
+2. **`resolveEffectiveFeatures(companyFeatures: CompanyFeatures | undefined | null, storeFeatures?: CompanyFeatures | undefined | null): CompanyFeatures`**
+   - **Path:** `server/src/shared/utils/featureResolution.ts`
+   - **Signature:** Resolves effective features with store-level overrides. Store override takes precedence; if not set, uses company features.
+
+**To resolve company features from a store ID:**
+
+1. Fetch the store with its company: Use `storeRepository.findByIdWithDetails(storeId)` or direct Prisma query `prisma.store.findUnique({ where: { id: storeId }, include: { company: true } })`.
+2. Extract company features: Call `extractCompanyFeatures(company.settings as Record<string, unknown>)`.
+3. Check for store override: Call `extractStoreFeatures(store.settings as Record<string, unknown>)` — returns `CompanyFeatures | null`.
+4. Resolve effective: Call `resolveEffectiveFeatures(companyFeatures, storeFeatures)`.
+
+**Access pattern in Task 3 (`spacesSyncService.pullFromAims`):** Fetch the store with company relation, extract company features, check `conferenceEnabled`, and route C-prefixed articles accordingly.
+
 ---
 
 ## Task 2: New `conferenceSyncService.upsertManyFromArticles`
