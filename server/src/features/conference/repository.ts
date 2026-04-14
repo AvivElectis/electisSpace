@@ -112,6 +112,35 @@ export const conferenceRepository = {
     },
 
     /**
+     * Create a conference room from a sync pull (sets syncStatus SYNCED, not PENDING).
+     * Use instead of `create` on the AIMS pull path so the record isn't immediately
+     * re-queued for a push it doesn't need.
+     */
+    async syncCreate(data: { storeId: string; externalId: string; roomName: string }) {
+        return prisma.conferenceRoom.create({
+            data: {
+                storeId: data.storeId,
+                externalId: data.externalId,
+                roomName: data.roomName,
+                syncStatus: 'SYNCED',
+            },
+        });
+    },
+
+    /**
+     * Update a conference room from a sync pull (sets syncStatus SYNCED, not PENDING).
+     */
+    async syncUpdate(roomId: string, data: { roomName: string }) {
+        return prisma.conferenceRoom.update({
+            where: { id: roomId },
+            data: {
+                roomName: data.roomName,
+                syncStatus: 'SYNCED',
+            },
+        });
+    },
+
+    /**
      * Toggle meeting status
      */
     async toggleMeeting(roomId: string, hasMeeting: boolean, meetingData?: ToggleMeetingDTO) {

@@ -564,7 +564,24 @@ export class SolumService {
                 });
                 return response.data;
             } catch (error: any) {
-                throw wrapError('Change label page failed', error);
+                // SoluM uses HTTP 405 for "Parameter is invalid" on this
+                // endpoint (e.g. PAGE_CAN_NOT_BE_GREATER_THAN_MAX_PAGES when
+                // the target label only has one page loaded). Capture the
+                // response body for observability AND attach the SoluM
+                // responseMessage to the thrown error so the controller can
+                // surface it to the client instead of a generic 500.
+                const solumMessage = error?.response?.data?.responseMessage as string | undefined;
+                appLogger.warn('SolumService', 'changeLabelPage call failed', {
+                    url,
+                    requestBody: { pageChangeList },
+                    status: error?.response?.status,
+                    solumResponse: error?.response?.data,
+                });
+                const wrapped = wrapError('Change label page failed', error) as any;
+                if (solumMessage) {
+                    wrapped.solumMessage = solumMessage;
+                }
+                throw wrapped;
             }
         });
     }

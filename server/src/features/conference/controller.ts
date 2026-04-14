@@ -31,6 +31,12 @@ function mapServiceError(error: unknown): Error {
     if (error === 'NO_LABEL_ASSIGNED') {
         return notFound('No label assigned to this room');
     }
+    // SoluM passes a raw responseMessage upstream when the hardware/API
+    // rejects a flip — surface it as a 400 so the client snackbar can show
+    // the actual reason instead of a generic "flip failed".
+    if (error instanceof Error && (error as any).solumMessage) {
+        return badRequest((error as any).solumMessage as string);
+    }
     if (error instanceof Error) {
         return error;
     }

@@ -10,6 +10,7 @@ router.use(authenticate);
 router.use(restrictAppViewer());
 
 router.get('/', requirePermission('spaces', 'read'), spacesController.list);
+router.post('/bulk-delete', requirePermission('spaces', 'delete'), spacesController.deleteBulk);
 router.get('/:id', requirePermission('spaces', 'read'), spacesController.getById);
 router.post('/', requirePermission('spaces', 'create'), spacesController.create);
 router.patch('/:id', requirePermission('spaces', 'update'), spacesController.update);

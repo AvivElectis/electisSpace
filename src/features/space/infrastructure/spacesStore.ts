@@ -27,6 +27,7 @@ export interface SpacesStore {
     createSpace: (data: { externalId: string; labelCode?: string; data?: Record<string, unknown> }) => Promise<Space | null>;
     updateSpace: (id: string, updates: Partial<Space>) => Promise<Space | null>;
     deleteSpace: (id: string) => Promise<boolean>;
+    deleteSpacesBulk: (ids: string[]) => Promise<boolean>;
 
     // Spaces List Management
     addSpacesList: (list: SpacesList) => void;
@@ -147,6 +148,23 @@ export const useSpacesStore = create<SpacesStore>()(
                     } catch (error) {
                         const message = error instanceof Error ? error.message : 'Failed to delete space';
                         set({ error: message, isLoading: false }, false, 'deleteSpace/error');
+                        return false;
+                    }
+                },
+
+                deleteSpacesBulk: async (ids) => {
+                    set({ isLoading: true, error: null }, false, 'deleteSpacesBulk/start');
+                    try {
+                        const { deleted, alreadyGone } = await spacesApi.deleteBulk(ids);
+                        const removed = new Set([...deleted, ...alreadyGone]);
+                        set((state) => ({
+                            spaces: state.spaces.filter((s) => !removed.has(s.id)),
+                            isLoading: false,
+                        }), false, 'deleteSpacesBulk/success');
+                        return true;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Failed to bulk delete spaces';
+                        set({ error: message, isLoading: false }, false, 'deleteSpacesBulk/error');
                         return false;
                     }
                 },

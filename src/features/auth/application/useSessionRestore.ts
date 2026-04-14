@@ -143,8 +143,15 @@ export const useSessionRestore = () => {
     }, [setUser, setInitialized, setAppReady]);
 
     useEffect(() => {
-        restoreSession();
-    }, [restoreSession]);
+        // Re-run when isInitialized flips to false — e.g. after `logout()` which
+        // sets user=null, isInitialized=false, isAppReady=false. Without this
+        // dependency, the effect only runs on mount and the app is stuck on the
+        // AppLoadingScreen forever (isAppReady never becomes true again) until a
+        // manual browser refresh re-mounts the component.
+        if (!isInitialized) {
+            restoreSession();
+        }
+    }, [restoreSession, isInitialized]);
 
     return { isInitialized };
 };

@@ -38,6 +38,7 @@ export function useSpaceController({
         createSpace: createInStore,
         updateSpace: updateInStore,
         deleteSpace: deleteInStore,
+        deleteSpacesBulk: deleteSpacesBulkInStore,
         fetchSpaces: fetchFromStore,
         // List Management
         addSpacesList,
@@ -155,13 +156,20 @@ export function useSpaceController({
     /**
      * Delete space
      * Deletes from server DB (which queues AIMS sync), then triggers push.
+     *
+     * Note: we do NOT pre-check that the space exists in the local `spaces`
+     * array. A "Space not found" guard here closes over a snapshot of `spaces`
+     * and races with sequential deletes — an in-flight delete started before
+     * a state update can fail the guard with stale data even though the row
+     * exists on the server. The server is the source of truth: it will return
+     * 404 if the row is really gone, and `deleteInStore` returns false in that
+     * case which we propagate through the existing error path. Keeping `spaces`
+     * out of the dep array also prevents the callback from being rebuilt on
+     * every store update.
      */
     const deleteSpace = useCallback(
         async (id: string): Promise<void> => {
             logger.info('SpaceController', 'Deleting space', { id });
-
-            const existingSpace = spaces.find(s => s.id === id);
-            if (!existingSpace) throw new Error('Space not found');
 
             // Delete from Server DB — server queues AIMS delete automatically
             const success = await deleteInStore(id);
@@ -178,7 +186,35 @@ export function useSpaceController({
                 }
             }
         },
-        [spaces, deleteInStore, onSync]
+        [deleteInStore, onSync]
+    );
+
+    /**
+     * Bulk delete spaces.
+     * Deletes from server DB (which queues AIMS sync), then triggers push.
+     */
+    const deleteSpacesBulk = useCallback(
+        async (ids: string[]): Promise<boolean> => {
+            logger.info('SpaceController', 'Bulk deleting spaces', { count: ids.length });
+
+            const ok = await deleteSpacesBulkInStore(ids);
+            if (!ok) {
+                logger.warn('SpaceController', 'Bulk delete failed at store layer');
+                return false;
+            }
+
+            logger.info('SpaceController', 'Spaces bulk-deleted from Server DB', { count: ids.length });
+
+            if (onSync) {
+                try {
+                    await onSync();
+                } catch (error) {
+                    logger.warn('SpaceController', 'Sync after bulk delete failed', { error });
+                }
+            }
+            return true;
+        },
+        [deleteSpacesBulkInStore, onSync],
     );
 
     // Helpers
@@ -214,6 +250,7 @@ export function useSpaceController({
         addSpace,
         updateSpace,
         deleteSpace,
+        deleteSpacesBulk,
         findSpaceById,
         importFromSync,
         fetchFromSolum,

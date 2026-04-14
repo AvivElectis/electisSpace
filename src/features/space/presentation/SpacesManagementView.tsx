@@ -17,6 +17,7 @@ import {
     Fab,
     Badge,
     alpha,
+    Checkbox,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -32,6 +33,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import React, { useState, useEffect, useMemo, useCallback, useDeferredValue, lazy, Suspense } from 'react';
 import { List as VirtualList } from 'react-window';
 import { useTranslation } from 'react-i18next';
@@ -107,11 +109,16 @@ interface SpacesDesktopTableProps {
     onEdit: (space: Space) => void;
     onDelete: (id: string) => void;
     onAdd?: () => void;
+    selectMode?: boolean;
+    selectedIds?: Set<string>;
+    onToggleSelect?: (id: string) => void;
+    onSelectAll?: (checked: boolean) => void;
 }
 
 function SpacesDesktopTable({
     spaces, isFetching, visibleFields, nameFieldKey,
     sortConfig, searchQuery, canEdit, onSort, onEdit, onDelete, onAdd,
+    selectMode = false, selectedIds, onToggleSelect, onSelectAll,
 }: SpacesDesktopTableProps) {
     const { t, i18n } = useTranslation();
     const { getLabel } = useSpaceTypeLabels();
@@ -119,19 +126,34 @@ function SpacesDesktopTable({
     const VirtualRow = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
         const space = spaces[index];
         if (!space) return null;
+        const isSelected = selectedIds?.has(space.id) ?? false;
         return (
             <Box
                 style={style}
+                onClick={selectMode ? () => onToggleSelect?.(space.id) : undefined}
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    bgcolor: 'background.paper',
-                    '&:hover': { bgcolor: 'action.hover' },
+                    bgcolor: isSelected ? 'action.selected' : 'background.paper',
+                    '&:hover': { bgcolor: selectMode ? 'action.selected' : 'action.hover' },
                     boxSizing: 'border-box',
+                    cursor: selectMode ? 'pointer' : 'default',
                 }}
             >
+                {/* Checkbox (select mode) */}
+                {selectMode && (
+                    <Box sx={{ ...cellSx, width: 48, flexShrink: 0 }}>
+                        <Checkbox
+                            checked={isSelected}
+                            onChange={() => onToggleSelect?.(space.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            inputProps={{ 'aria-label': t('spaces.selectMode.selectItem', { id: space.externalId || space.id }) }}
+                            size="small"
+                        />
+                    </Box>
+                )}
                 {/* ID */}
                 <Box sx={{ ...cellSx, width: 120, flexShrink: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
@@ -151,27 +173,29 @@ function SpacesDesktopTable({
                     </Box>
                 ))}
                 {/* Actions */}
-                <Box sx={{ ...cellSx, width: 100, flexShrink: 0 }}>
-                    <Stack direction="row" gap={0.5} justifyContent="center">
-                        <Tooltip title={t('common.edit')}>
-                            <span>
-                            <IconButton size="small" color="primary" disabled={!canEdit} onClick={() => onEdit(space)}>
-                                <EditIcon fontSize="small" />
-                            </IconButton>
-                            </span>
-                        </Tooltip>
-                        <Tooltip title={t('common.delete')}>
-                            <span>
-                            <IconButton size="small" color="error" disabled={!canEdit} onClick={() => onDelete(space.id)}>
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                            </span>
-                        </Tooltip>
-                    </Stack>
-                </Box>
+                {!selectMode && (
+                    <Box sx={{ ...cellSx, width: 100, flexShrink: 0 }}>
+                        <Stack direction="row" gap={0.5} justifyContent="center">
+                            <Tooltip title={t('common.edit')}>
+                                <span>
+                                <IconButton size="small" color="primary" disabled={!canEdit} onClick={() => onEdit(space)}>
+                                    <EditIcon fontSize="small" />
+                                </IconButton>
+                                </span>
+                            </Tooltip>
+                            <Tooltip title={t('common.delete')}>
+                                <span>
+                                <IconButton size="small" color="error" disabled={!canEdit} onClick={() => onDelete(space.id)}>
+                                    <DeleteIcon fontSize="small" />
+                                </IconButton>
+                                </span>
+                            </Tooltip>
+                        </Stack>
+                    </Box>
+                )}
             </Box>
         );
-    }, [spaces, visibleFields, nameFieldKey, t, onEdit, onDelete]);
+    }, [spaces, visibleFields, nameFieldKey, t, onEdit, onDelete, selectMode, selectedIds, onToggleSelect]);
 
     const listHeight = Math.min(spaces.length * ROW_HEIGHT, window.innerHeight * 0.65);
     const TypedVirtualList = VirtualList as any;
@@ -190,6 +214,18 @@ function SpacesDesktopTable({
                     minHeight: 42,
                 }}
             >
+                {/* Select-all checkbox (select mode) */}
+                {selectMode && (
+                    <Box sx={{ ...headerCellSx, width: 48, flexShrink: 0, cursor: 'default' }}>
+                        <Checkbox
+                            indeterminate={!!selectedIds && selectedIds.size > 0 && selectedIds.size < spaces.length}
+                            checked={spaces.length > 0 && selectedIds?.size === spaces.length}
+                            onChange={(e) => onSelectAll?.(e.target.checked)}
+                            inputProps={{ 'aria-label': t('spaces.selectMode.selectAll') }}
+                            size="small"
+                        />
+                    </Box>
+                )}
                 {/* ID */}
                 <Box sx={{ ...headerCellSx, width: 120, flexShrink: 0 }} onClick={() => onSort('id')}>
                     {t('spaces.id')}
@@ -210,9 +246,11 @@ function SpacesDesktopTable({
                     </Box>
                 ))}
                 {/* Actions */}
-                <Box sx={{ ...headerCellSx, width: 100, flexShrink: 0, cursor: 'default' }}>
-                    {t('spaces.actions')}
-                </Box>
+                {!selectMode && (
+                    <Box sx={{ ...headerCellSx, width: 100, flexShrink: 0, cursor: 'default' }}>
+                        {t('spaces.actions')}
+                    </Box>
+                )}
             </Box>
 
             {/* Virtualized Body */}
@@ -322,6 +360,10 @@ export function SpacesManagementView() {
     const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSpace, setEditingSpace] = useState<Space | undefined>(undefined);
+
+    // Select-mode state
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     // Sort Config State
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -454,6 +496,31 @@ export function SpacesManagementView() {
         return result;
     }, [spaceController.spaces, deferredSearchQuery, sortConfig]);
 
+    // Clear selection when search changes (keeps selection predictable)
+    useEffect(() => {
+        setSelectedIds(new Set());
+    }, [debouncedSearchQuery]);
+
+    const exitSelectMode = useCallback(() => {
+        setSelectMode(false);
+        setSelectedIds(new Set());
+    }, []);
+
+    const toggleSelection = useCallback((id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
+    const handleSelectAll = useCallback((checked: boolean) => {
+        setSelectedIds(checked
+            ? new Set(filteredAndSortedSpaces.map((s) => s.id))
+            : new Set());
+    }, [filteredAndSortedSpaces]);
+
     // Memoized event handlers
     const handleDelete = useCallback(async (id: string) => {
         const confirmed = await confirm({
@@ -478,6 +545,50 @@ export function SpacesManagementView() {
             }
         }
     }, [confirm, t, getLabel, spaceController]);
+
+    const handleBulkDelete = useCallback(async () => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+
+        const confirmed = await confirm({
+            title: t('common.dialog.delete'),
+            message: t('spaces.bulkDelete.confirm', { count: ids.length }),
+            confirmLabel: t('common.dialog.delete'),
+            cancelLabel: t('common.dialog.cancel'),
+            severity: 'error',
+        });
+        if (!confirmed) return;
+
+        try {
+            const ok = await spaceController.deleteSpacesBulk(ids);
+            if (ok) {
+                await confirm({
+                    title: t('spaces.bulkDelete.success', { count: ids.length }),
+                    message: '',
+                    confirmLabel: t('common.close'),
+                    severity: 'success',
+                    showCancel: false,
+                });
+                exitSelectMode();
+            } else {
+                await confirm({
+                    title: t('common.error'),
+                    message: t('spaces.bulkDelete.error'),
+                    confirmLabel: t('common.close'),
+                    severity: 'error',
+                    showCancel: false,
+                });
+            }
+        } catch (error) {
+            await confirm({
+                title: t('common.error'),
+                message: t('spaces.bulkDelete.error'),
+                confirmLabel: t('common.close'),
+                severity: 'error',
+                showCancel: false,
+            });
+        }
+    }, [selectedIds, t, confirm, spaceController, exitSelectMode]);
 
     const handleAdd = useCallback(() => {
         setEditingSpace(undefined);
@@ -506,7 +617,7 @@ export function SpacesManagementView() {
         <Box>
             {/* Header Section — hidden on native (shown in NativeAppHeader) */}
             <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 }, display: 'var(--native-page-header-display, flex)' }}>
-                <Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                         {getLabel('plural')}
                     </Typography>
@@ -514,6 +625,21 @@ export function SpacesManagementView() {
                         {t('spaces.total')} {getLabel('plural')} - {spaceController.spaces.length}
                     </Typography>
                 </Box>
+
+                {/* Mobile: filter/search trigger sits at the opposite end of the
+                    title row so it's always reachable in the header line. */}
+                {isMobile && (
+                    <Tooltip title={t('common.search')}>
+                        <IconButton
+                            onClick={() => setSearchOpen(!searchOpen)}
+                            color={searchQuery ? 'primary' : 'default'}
+                        >
+                            <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
+                                <FilterListIcon />
+                            </Badge>
+                        </IconButton>
+                    </Tooltip>
+                )}
 
                 <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                     <Button
@@ -589,37 +715,28 @@ export function SpacesManagementView() {
                     </Collapse>
                 </Paper>
             )}
-            {/* Search — filter icon on mobile, inline on desktop */}
+            {/* Search — collapsible on mobile (toggled from the header icon),
+                inline on desktop. The trigger lives in the header row above. */}
             {isMobile ? (
-                <Box sx={{ mb: 2 }}>
-                    <IconButton
-                        onClick={() => setSearchOpen(!searchOpen)}
-                        color={searchQuery ? 'primary' : 'default'}
-                    >
-                        <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
-                            <FilterListIcon />
-                        </Badge>
-                    </IconButton>
-                    <Collapse in={searchOpen}>
-                        <TextField
-                            fullWidth
-                            placeholder={t('spaces.searchPlaceholder')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            size="small"
-                            sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon fontSize="small" />
-                                        </InputAdornment>
-                                    ),
-                                }
-                            }}
-                        />
-                    </Collapse>
-                </Box>
+                <Collapse in={searchOpen}>
+                    <TextField
+                        fullWidth
+                        placeholder={t('spaces.searchPlaceholder')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        size="small"
+                        sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                            }
+                        }}
+                    />
+                </Collapse>
             ) : (
                 <TextField
                     fullWidth
@@ -641,6 +758,61 @@ export function SpacesManagementView() {
                         }
                     }}
                 />
+            )}
+            {/* Table-level actions — Select Mode trigger.
+                Shown directly above the table on both desktop and mobile so
+                the affordance is attached to the data it modifies, not the
+                page toolbar. Hidden while select mode is active — the
+                selection bar below carries its own Cancel button. */}
+            {!selectMode && (
+                <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+                    <Tooltip title={t('common.select')}>
+                        <span>
+                            <IconButton
+                                size={isMobile ? 'medium' : 'small'}
+                                disabled={!canEdit || filteredAndSortedSpaces.length === 0}
+                                onClick={() => setSelectMode(true)}
+                                aria-label={t('common.select')}
+                            >
+                                <ChecklistIcon />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                </Stack>
+            )}
+            {/* Selection Bar */}
+            {selectMode && (
+                <Paper
+                    role="toolbar"
+                    elevation={3}
+                    sx={{
+                        position: isMobile ? 'fixed' : 'sticky',
+                        bottom: isMobile ? 0 : 'auto',
+                        top: isMobile ? 'auto' : 64,
+                        left: 0,
+                        right: 0,
+                        zIndex: (theme) => theme.zIndex.appBar - 1,
+                        px: 2,
+                        py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        mb: isMobile ? 0 : 2,
+                    }}
+                >
+                    <Typography aria-live="polite" sx={{ flex: 1 }}>
+                        {t('spaces.selectMode.selectedCount', { count: selectedIds.size })}
+                    </Typography>
+                    <Button onClick={exitSelectMode}>{t('common.cancel')}</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        disabled={selectedIds.size === 0 || spaceController.isFetching}
+                        onClick={handleBulkDelete}
+                    >
+                        {t('spaces.selectMode.deleteSelected')}
+                    </Button>
+                </Paper>
             )}
             {/* Spaces Table / Mobile Card View */}
             {isMobile ? (
@@ -674,6 +846,7 @@ export function SpacesManagementView() {
                         <Stack gap={1}>
                             {filteredAndSortedSpaces.map((space) => {
                                 const isExpanded = expandedCardId === space.id;
+                                const isSelected = selectedIds.has(space.id);
                                 const firstField = visibleFields[0];
                                 const previewValue = firstField ? space.data[firstField.key] : undefined;
 
@@ -682,7 +855,7 @@ export function SpacesManagementView() {
                                         key={space.id}
                                         sx={{
                                             borderRadius: 3,
-                                            bgcolor: 'background.paper',
+                                            bgcolor: isSelected ? 'action.selected' : 'background.paper',
                                             overflow: 'hidden',
                                             transition: 'box-shadow 0.25s ease',
                                             boxShadow: isExpanded
@@ -692,7 +865,10 @@ export function SpacesManagementView() {
                                     >
                                         {/* Card header — always visible */}
                                         <Box
-                                            onClick={() => setExpandedCardId(prev => prev === space.id ? null : space.id)}
+                                            onClick={() => selectMode
+                                                ? toggleSelection(space.id)
+                                                : setExpandedCardId(prev => prev === space.id ? null : space.id)
+                                            }
                                             sx={{
                                                 cursor: 'pointer',
                                                 px: 2,
@@ -703,6 +879,16 @@ export function SpacesManagementView() {
                                                 '&:active': { opacity: 0.7 },
                                             }}
                                         >
+                                            {/* Checkbox (select mode) */}
+                                            {selectMode && (
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelection(space.id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    inputProps={{ 'aria-label': t('spaces.selectMode.selectItem', { id: space.externalId || space.id }) }}
+                                                    size="small"
+                                                />
+                                            )}
                                             {/* ID badge — start-aligned, rounded pill */}
                                             <Box sx={{
                                                 bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
@@ -730,18 +916,20 @@ export function SpacesManagementView() {
                                             >
                                                 {previewValue || '–'}
                                             </Typography>
-                                            {/* Chevron */}
-                                            <KeyboardArrowDownIcon sx={{
-                                                color: 'text.disabled',
-                                                fontSize: '1.4rem',
-                                                transition: 'transform 0.25s ease',
-                                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                flexShrink: 0,
-                                            }} />
+                                            {/* Chevron (non-select mode only) */}
+                                            {!selectMode && (
+                                                <KeyboardArrowDownIcon sx={{
+                                                    color: 'text.disabled',
+                                                    fontSize: '1.4rem',
+                                                    transition: 'transform 0.25s ease',
+                                                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                    flexShrink: 0,
+                                                }} />
+                                            )}
                                         </Box>
 
-                                        {/* Expanded details */}
-                                        {isExpanded && (
+                                        {/* Expanded details (non-select mode only) */}
+                                        {!selectMode && isExpanded && (
                                             <Box sx={{ px: 2, pb: 1.5 }}>
                                                 {/* Fields grid */}
                                                 {visibleFields.length > 0 && (
@@ -803,6 +991,10 @@ export function SpacesManagementView() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onAdd={handleAdd}
+                    selectMode={selectMode}
+                    selectedIds={selectedIds}
+                    onToggleSelect={toggleSelection}
+                    onSelectAll={handleSelectAll}
                 />)
             )}
             {/* Panels below table — both desktop and mobile */}

@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.15.0] — 2026-04-13 — Spaces Bulk Delete + Conference Simple Mode + UX
+
+> Client v2.15.0 / Server v2.10.0
+
+### Added
+- **Spaces bulk delete** — new "Select Mode" toggle directly above the spaces table (desktop + mobile) reveals row checkboxes, a select-all-visible header checkbox, and a sticky/fixed selection bar with a red "Delete selected" action. Per-row Edit/Delete are hidden in select mode to prevent accidents. Filter/search change clears selection. Translation keys in EN + HE.
+- **`POST /api/v1/spaces/bulk-delete`** — atomic, idempotent endpoint accepting `{ ids: string[] }`. Forbidden ids (cross-store access) are rejected with 403 before anything is deleted; missing ids are returned as `alreadyGone` and treated as success so HTTP DELETE retries are safe. Single `prisma.$transaction` running per-row `syncQueueService.queueDelete` then a single `space.deleteMany`.
+- **Conference simple-mode flip toggle is always visible** — every room renders the Available / In Meeting toggle. When a room has zero linked labels the toggle stays visible but disabled, with a tooltip and italic footer line saying "Link a label to this room to flip the display" (`conference.linkLabelFirst` in EN + HE).
+- **Conference cards desktop redesign** — simple mode now uses a CSS grid (`md: repeat(2, 1fr)`, `lg: repeat(3, 1fr)`) of compact cards with a pill-style monospace room-id badge and a `ToggleButtonGroup` segmented control. Hover state lifts the card border. Mobile keeps the existing RadioGroup + stacked-card layout unchanged.
+- **Pull-from-AIMS toast shows conference counts** when the response includes them — `spaces.sync.pullResultWithConference` translation key in both locales.
+
 ### Fixed
+- **AIMS pull misclassified conference rooms** — `pullFromAims` in the spaces sync service used to ingest every article as a space, including `C`-prefixed articles that belong to conference rooms. It now partitions articles by prefix: non-C articles go through the existing space upsert; C-prefixed articles are routed to a new `conferenceSyncService.upsertManyFromArticles` when the conference feature is enabled for the company, or skipped entirely when it is not. Pre-existing C-prefixed rows in the `space` table from earlier pulls are not auto-cleaned — users remove them via the new bulk delete UI.
+- **Pull/delete race** — pulling spaces from AIMS could re-create a space that had just been deleted locally if the delete had not yet been pushed to AIMS. `pullFromAims` now reads non-terminal `DELETE` queue items from `sync_queue` and skips any external id that has a delete in flight. Applied symmetrically for the conference path.
+- **Sequential single-delete bug** — `useSpaceController.deleteSpace` had a stale-closure pre-check (`spaces.find(s => s.id === id) || throw 'Space not found'`) and listed `spaces` in its `useCallback` dep array. In rapid sequential delete sessions this could throw against an out-of-date snapshot, leaving the user with rows that "wouldn't delete". The pre-check is removed; the server is now the source of truth, with the existing `Failed to delete space on server` branch surfacing real failures.
+- **Logout stuck on loader** — `useSessionRestore`'s effect only ran once per mount because its dep was a stable `restoreSession` callback. After `logout()` flipped `isInitialized` and `isAppReady` to false, the app rendered `AppLoadingScreen` forever until a manual browser refresh. Effect now re-runs when `isInitialized` flips, so the logout → login screen transition works without a refresh.
+- **SoluM page-flip errors are now readable** — SoluM's `POST /labels/page` returns HTTP 405 + a `responseMessage` field for hardware/validation errors (e.g. `PAGE_CAN_NOT_BE_GREATER_THAN_MAX_PAGES(1)` when the target label only has one page loaded). Previously this collapsed to a generic 500. Now `solumService` extracts the message, the controller maps it to a 400 with the raw text, and the client humanizes it (replace underscores with spaces, lowercase, capitalize first letter) for the snackbar — so the user sees "Page can not be greater than max pages(1)" instead of a generic failure.
+- **Conference toggle border-radius in RTL** — MUI's `ToggleButtonGroup` rounds outer corners with physical `borderTopLeftRadius` / `borderTopRightRadius`, which inverts in RTL (rounded corners ended up on the inside in Hebrew). Override with logical properties (`borderStartStartRadius`, `borderEndEndRadius`) so the outer corners stay outer in both LTR and RTL.
+- **Hebrew text in conference toggle** was visually small at the LTR font size — bumped to `0.85rem` when `i18n.language === 'he'` so glyphs read clearly.
 - **SSE reconnect storm** — removed `tokenVersion` bump from `validateSession`, eliminating 60-second SSE reconnect cycles
 - **Auth watchdog** — removed `location.pathname` from interval deps, preventing spurious `/me` calls on navigation
 - **Token refresh rejection** — added explicit `Promise.reject` after failed refresh, preventing `undefined` crashes
@@ -22,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Uniform refresh errors** — consistent error messages on refresh endpoint to prevent user enumeration
 
 ### Changed
+- **Mobile filter trigger lives in the page header** on both spaces and people. The filter `IconButton` now sits at the opposite end of the title row (tapping it opens a collapsible search/filter panel) instead of standing alone above the search section.
+- **People list management panel renders below the people table on mobile** (mirrors the spaces page pattern), so the table is the first thing a phone user reaches without scrolling past list metadata. Desktop position above the table is unchanged.
 - **Spaces sync** — replaced post-pull 10k-record fetch with SSE `spaces:changed` broadcast pattern
 - **AIMS health cache** — added 30-second TTL cache to prevent full AIMS login on every status poll
 - **Batch upsert chunking** — `batchUpsertSpaces` now processes 200-record chunks instead of unbounded transactions

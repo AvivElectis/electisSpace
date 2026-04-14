@@ -7,7 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { notFound, conflict, badRequest, forbidden } from '../../shared/middleware/index.js';
 import { spacesService } from './service.js';
 import { spacesSyncService } from './syncService.js';
-import { createSpaceSchema, updateSpaceSchema, assignLabelSchema } from './types.js';
+import { createSpaceSchema, updateSpaceSchema, assignLabelSchema, bulkDeleteSpacesSchema } from './types.js';
 import type { SpacesUserContext } from './types.js';
 
 function getUserContext(req: Request): SpacesUserContext {
@@ -73,6 +73,19 @@ export const spacesController = {
             res.status(204).send();
         } catch (error: any) {
             if (error.message === 'NOT_FOUND') return next(notFound('Space'));
+            next(error);
+        }
+    },
+
+    async deleteBulk(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { ids } = bulkDeleteSpacesSchema.parse(req.body);
+            const result = await spacesService.deleteBulk(ids, getUserContext(req));
+            res.json(result);
+        } catch (error: any) {
+            if (error.message === 'FORBIDDEN') {
+                return next(forbidden('One or more spaces belong to a store you cannot access'));
+            }
             next(error);
         }
     },

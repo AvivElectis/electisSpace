@@ -137,7 +137,13 @@ export const spacesApi = {
      * Pull spaces from AIMS
      */
     syncPull: async (storeId: string) => {
-        const response = await api.post<{ total: number; created: number; updated: number; unchanged: number }>('/spaces/sync/pull', { storeId });
+        const response = await api.post<{
+            total: number;
+            created: number;
+            updated: number;
+            unchanged: number;
+            conference?: { created: number; updated: number; unchanged: number; skipped: number };
+        }>('/spaces/sync/pull', { storeId });
         return response.data;
     },
 
@@ -154,6 +160,18 @@ export const spacesApi = {
      */
     syncFull: async (storeId: string) => {
         const response = await api.post('/spaces/sync/full', { storeId });
+        return response.data;
+    },
+
+    /**
+     * Delete many spaces in a single request.
+     * Idempotent: ids already gone on the server are returned as `alreadyGone`.
+     */
+    deleteBulk: async (ids: string[]): Promise<{ deleted: string[]; alreadyGone: string[] }> => {
+        const response = await api.post<{ deleted: string[]; alreadyGone: string[] }>(
+            '/spaces/bulk-delete',
+            { ids },
+        );
         return response.data;
     },
 
