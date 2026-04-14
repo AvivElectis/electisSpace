@@ -58,6 +58,21 @@ import { EmptyState } from '@shared/presentation/components/EmptyState';
 const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
 
 /**
+ * Turn a SCREAMING_SNAKE_CASE backend message like
+ * "PAGE_CAN_NOT_BE_GREATER_THAN_MAX_PAGES(1)" into
+ * "Page can not be greater than max pages(1)".
+ *
+ * Replaces underscores with spaces, lowercases everything, then capitalizes
+ * the first letter. Leaves parenthesized suffixes and other punctuation
+ * untouched.
+ */
+function humanizeApiMessage(raw: string): string {
+    const spaced = raw.replace(/_/g, ' ').toLowerCase();
+    if (spaced.length === 0) return spaced;
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
  * Conference Rooms Page - Clean Card-based Design
  */
 export function ConferencePage() {
@@ -158,8 +173,15 @@ export function ConferencePage() {
                 });
             }
             setFlipSnackbar({ message: t('conference.flipPageSuccess'), severity: 'success' });
-        } catch {
-            setFlipSnackbar({ message: t('conference.flipPageFailed'), severity: 'error' });
+        } catch (err) {
+            // Surface the server-side reason when present (e.g. SoluM's raw
+            // responseMessage for hardware errors like
+            // PAGE_CAN_NOT_BE_GREATER_THAN_MAX_PAGES(1)). Normalize it to
+            // human form: replace underscores with spaces and lowercase the
+            // whole thing, then capitalize the first letter.
+            const apiMessage = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message;
+            const prettyMessage = apiMessage ? humanizeApiMessage(apiMessage) : t('conference.flipPageFailed');
+            setFlipSnackbar({ message: prettyMessage, severity: 'error' });
         } finally {
             setFlippingRoomId(null);
         }
