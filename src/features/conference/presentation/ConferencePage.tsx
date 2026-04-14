@@ -26,9 +26,12 @@ import {
     RadioGroup,
     FormControlLabel,
     CircularProgress,
+    ToggleButton,
+    ToggleButtonGroup,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
 import EditIcon from '@mui/icons-material/Edit';
@@ -76,7 +79,8 @@ function humanizeApiMessage(raw: string): string {
  * Conference Rooms Page - Clean Card-based Design
  */
 export function ConferencePage() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isHebrew = i18n.language === 'he';
     const isAppReady = useAuthStore((state) => state.isAppReady);
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const { settings } = useSettingsStore();
@@ -383,7 +387,8 @@ export function ConferencePage() {
                         actionLabel={canEdit ? t('conference.addRoom') : undefined}
                         onAction={canEdit ? handleAdd : undefined}
                     />
-                ) : (
+                ) : isMobile ? (
+                    /* Mobile: single column list — user confirmed "already good", keep it. */
                     <Stack gap={1}>
                         {filteredRooms.map((room) => {
                             const roomPage = getRoomPage(room);
@@ -394,17 +399,9 @@ export function ConferencePage() {
                                 ...(room.assignedLabels || []),
                             ]).size;
 
-                            // Toggle is always visible so every room in simple mode has a
-                            // consistent affordance. When there are no labels linked to the
-                            // room, the controls stay visible but disabled and a small hint
-                            // explains what the user needs to do — clicking would fail
-                            // server-side with NO_LABEL_ASSIGNED anyway.
                             const toggleDisabled = isFlipping || !canEdit || !hasLabels;
-                            const toggleTooltip = !hasLabels
-                                ? t('conference.linkLabelFirst')
-                                : !canEdit
-                                    ? ''
-                                    : '';
+                            const toggleTooltip = !hasLabels ? t('conference.linkLabelFirst') : '';
+
                             return (
                                 <Card
                                     key={room.id}
@@ -416,14 +413,8 @@ export function ConferencePage() {
                                     }}
                                 >
                                     <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-                                        <Stack
-                                            direction={{ xs: 'column', sm: 'row' }}
-                                            alignItems={{ xs: 'stretch', sm: 'center' }}
-                                            justifyContent="space-between"
-                                            gap={{ xs: 1, sm: 2 }}
-                                        >
-                                            {/* Room info */}
-                                            <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
+                                        <Stack direction="column" alignItems="stretch" gap={1}>
+                                            <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0 }}>
                                                 <Typography
                                                     variant="body2"
                                                     fontWeight={700}
@@ -444,10 +435,8 @@ export function ConferencePage() {
                                                     />
                                                 )}
                                             </Stack>
-
-                                            {/* Status radio — always visible, disabled when no labels are linked */}
                                             <Tooltip title={toggleTooltip} placement="top" disableHoverListener={!toggleTooltip}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                     <RadioGroup
                                                         row
                                                         value={String(roomPage)}
@@ -497,6 +486,176 @@ export function ConferencePage() {
                             );
                         })}
                     </Stack>
+                ) : (
+                    /* Desktop: compact cards in a responsive grid with a segmented
+                       toggle. Two columns on md, three on lg+. Smaller padding, a
+                       pill-style room-id badge, and a ToggleButtonGroup that aligns
+                       the two options on a single crisp baseline — no stray radio
+                       circles, no shifted labels. */
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: { md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
+                            gap: 1.25,
+                        }}
+                    >
+                        {filteredRooms.map((room) => {
+                            const roomPage = getRoomPage(room);
+                            const isFlipping = flippingRoomId === room.id;
+                            const hasLabels = !!(room.labelCode || (room.assignedLabels && room.assignedLabels.length > 0));
+                            const labelCount = new Set([
+                                ...(room.labelCode ? [room.labelCode] : []),
+                                ...(room.assignedLabels || []),
+                            ]).size;
+                            const toggleDisabled = isFlipping || !canEdit || !hasLabels;
+                            const toggleTooltip = !hasLabels ? t('conference.linkLabelFirst') : '';
+                            const isBusy = roomPage === 2 && hasLabels;
+
+                            return (
+                                <Card
+                                    key={room.id}
+                                    variant="outlined"
+                                    sx={{
+                                        borderRadius: 2,
+                                        transition: 'border-color 0.2s, background-color 0.2s, box-shadow 0.2s',
+                                        bgcolor: (theme) =>
+                                            isBusy ? alpha(theme.palette.error.main, 0.04) : 'background.paper',
+                                        borderColor: isBusy ? 'error.main' : 'divider',
+                                        '&:hover': {
+                                            borderColor: hasLabels
+                                                ? (isBusy ? 'error.main' : 'primary.main')
+                                                : 'divider',
+                                            boxShadow: hasLabels ? 1 : 'none',
+                                        },
+                                    }}
+                                >
+                                    <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
+                                        {/* Title row */}
+                                        <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1, minWidth: 0 }}>
+                                            <Box
+                                                dir="ltr"
+                                                sx={{
+                                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                                                    color: 'primary.main',
+                                                    px: 0.875,
+                                                    py: 0.125,
+                                                    borderRadius: 1,
+                                                    fontWeight: 700,
+                                                    fontSize: '0.72rem',
+                                                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                                                    letterSpacing: 0.2,
+                                                    whiteSpace: 'nowrap',
+                                                    flexShrink: 0,
+                                                    lineHeight: 1.5,
+                                                }}
+                                            >
+                                                {room.id}
+                                            </Box>
+                                            <Typography
+                                                variant="body2"
+                                                fontWeight={600}
+                                                noWrap
+                                                sx={{ flex: 1, minWidth: 0, fontSize: '0.9rem' }}
+                                            >
+                                                {room.roomName || room.data?.roomName || room.id}
+                                            </Typography>
+                                            {hasLabels && labelCount > 1 && (
+                                                <Chip
+                                                    label={labelCount}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{
+                                                        height: 18,
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: 600,
+                                                        '& .MuiChip-label': { px: 0.75 },
+                                                    }}
+                                                />
+                                            )}
+                                        </Stack>
+
+                                        {/* Segmented status toggle */}
+                                        <Tooltip title={toggleTooltip} placement="top" disableHoverListener={!toggleTooltip}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <ToggleButtonGroup
+                                                    exclusive
+                                                    size="small"
+                                                    value={String(roomPage)}
+                                                    disabled={toggleDisabled}
+                                                    onChange={(_e, value) => {
+                                                        if (value !== null && !toggleDisabled) {
+                                                            handleFlipPage(room, Number(value));
+                                                        }
+                                                    }}
+                                                    sx={(theme) => ({
+                                                        width: '100%',
+                                                        '& .MuiToggleButton-root': {
+                                                            flex: 1,
+                                                            py: 0.375,
+                                                            px: 1.25,
+                                                            // Hebrew glyphs render visually smaller than Latin
+                                                            // at the same em — bump the size up so the labels
+                                                            // are readable on the compact desktop card.
+                                                            fontSize: isHebrew ? '0.85rem' : '0.72rem',
+                                                            fontWeight: 600,
+                                                            textTransform: 'none',
+                                                            lineHeight: 1.5,
+                                                            borderColor: 'divider',
+                                                            transition: 'all 0.15s',
+                                                            // MUI rounds the outer corners with physical
+                                                            // border-top-left/right-radius, which inverts
+                                                            // in RTL (rounded corners end up on the inside).
+                                                            // Force everything square then re-round using
+                                                            // logical properties so the outer corners stay
+                                                            // outer in both LTR and RTL.
+                                                            borderRadius: 0,
+                                                            '&:first-of-type': {
+                                                                borderStartStartRadius: theme.shape.borderRadius,
+                                                                borderEndStartRadius: theme.shape.borderRadius,
+                                                            },
+                                                            '&:last-of-type': {
+                                                                borderStartEndRadius: theme.shape.borderRadius,
+                                                                borderEndEndRadius: theme.shape.borderRadius,
+                                                            },
+                                                        },
+                                                        '& .MuiToggleButton-root.Mui-selected': {
+                                                            fontWeight: 700,
+                                                        },
+                                                    })}
+                                                >
+                                                    <ToggleButton value="1" color="success">
+                                                        {t('conference.available')}
+                                                    </ToggleButton>
+                                                    <ToggleButton value="2" color="error">
+                                                        {t('conference.inMeeting')}
+                                                    </ToggleButton>
+                                                </ToggleButtonGroup>
+                                                {isFlipping && (
+                                                    <CircularProgress size={16} sx={{ flexShrink: 0 }} />
+                                                )}
+                                            </Box>
+                                        </Tooltip>
+
+                                        {!hasLabels && (
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{
+                                                    display: 'block',
+                                                    mt: 0.75,
+                                                    fontStyle: 'italic',
+                                                    fontSize: '0.7rem',
+                                                    lineHeight: 1.4,
+                                                }}
+                                            >
+                                                {t('conference.linkLabelFirst')}
+                                            </Typography>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </Box>
                 )}
 
                 {/* Page flip snackbar */}
