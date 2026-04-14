@@ -617,7 +617,7 @@ export function SpacesManagementView() {
         <Box>
             {/* Header Section — hidden on native (shown in NativeAppHeader) */}
             <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 }, display: 'var(--native-page-header-display, flex)' }}>
-                <Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
                         {getLabel('plural')}
                     </Typography>
@@ -625,6 +625,21 @@ export function SpacesManagementView() {
                         {t('spaces.total')} {getLabel('plural')} - {spaceController.spaces.length}
                     </Typography>
                 </Box>
+
+                {/* Mobile: filter/search trigger sits at the opposite end of the
+                    title row so it's always reachable in the header line. */}
+                {isMobile && (
+                    <Tooltip title={t('common.search')}>
+                        <IconButton
+                            onClick={() => setSearchOpen(!searchOpen)}
+                            color={searchQuery ? 'primary' : 'default'}
+                        >
+                            <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
+                                <FilterListIcon />
+                            </Badge>
+                        </IconButton>
+                    </Tooltip>
+                )}
 
                 <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                     <Button
@@ -700,37 +715,28 @@ export function SpacesManagementView() {
                     </Collapse>
                 </Paper>
             )}
-            {/* Search — filter icon on mobile, inline on desktop */}
+            {/* Search — collapsible on mobile (toggled from the header icon),
+                inline on desktop. The trigger lives in the header row above. */}
             {isMobile ? (
-                <Box sx={{ mb: 2 }}>
-                    <IconButton
-                        onClick={() => setSearchOpen(!searchOpen)}
-                        color={searchQuery ? 'primary' : 'default'}
-                    >
-                        <Badge badgeContent={searchQuery ? 1 : 0} color="primary">
-                            <FilterListIcon />
-                        </Badge>
-                    </IconButton>
-                    <Collapse in={searchOpen}>
-                        <TextField
-                            fullWidth
-                            placeholder={t('spaces.searchPlaceholder')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            size="small"
-                            sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon fontSize="small" />
-                                        </InputAdornment>
-                                    ),
-                                }
-                            }}
-                        />
-                    </Collapse>
-                </Box>
+                <Collapse in={searchOpen}>
+                    <TextField
+                        fullWidth
+                        placeholder={t('spaces.searchPlaceholder')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        size="small"
+                        sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                            }
+                        }}
+                    />
+                </Collapse>
             ) : (
                 <TextField
                     fullWidth

@@ -158,6 +158,10 @@ export function PeopleManagerView() {
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
     const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+    // Lifted filter-panel open state — the toggle icon now lives in PeopleToolbar
+    // so it can sit at the opposite end of the title row in the header line.
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const activeFilterCount = (searchQuery ? 1 : 0) + (assignmentFilter !== 'all' ? 1 : 0);
 
     const filters: PeopleFilters = {
         searchQuery: deferredSearchQuery,
@@ -487,6 +491,9 @@ export function PeopleManagerView() {
                 canEdit={canEdit}
                 onAddPerson={handleAdd}
                 onUploadCSV={() => setCSVUploadOpen(true)}
+                filtersOpen={filtersOpen}
+                onFiltersToggle={() => setFiltersOpen(prev => !prev)}
+                activeFilterCount={activeFilterCount}
             />
 
             {/* Space Allocation Panel */}
@@ -500,18 +507,23 @@ export function PeopleManagerView() {
                 onTotalSpacesChange={peopleController.setTotalSpaces}
             />
 
-             {/* List Management Panel */}
-            <PeopleListPanel
-                onManageLists={() => setListsManagerOpen(true)}
-                onSaveAsNew={() => setSaveListOpen(true)}
-            />
+            {/* List Management Panel — desktop: above table, mobile: below table
+                (mirrors the spaces page pattern so the table is the first thing
+                a mobile user reaches without scrolling past list metadata). */}
+            {!isMobile && (
+                <PeopleListPanel
+                    onManageLists={() => setListsManagerOpen(true)}
+                    onSaveAsNew={() => setSaveListOpen(true)}
+                />
+            )}
 
-            {/* Search and Filter Bar */}
+            {/* Search and Filter Bar — controlled by PeopleToolbar's header icon on mobile */}
             <PeopleFiltersBar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 assignmentFilter={assignmentFilter}
                 onAssignmentFilterChange={setAssignmentFilter}
+                open={filtersOpen}
             />
 
             {/* Bulk Actions */}
@@ -543,6 +555,18 @@ export function PeopleManagerView() {
                 onAssignSpace={handleAssignSpace}
                 onUnassignSpace={handleUnassignSpace}
             />
+
+            {/* List Management Panel on mobile — appears below the table so the
+                table is the first thing a phone user reaches. Same panel as the
+                desktop position; only the location differs. */}
+            {isMobile && (
+                <Box sx={{ mt: 2 }}>
+                    <PeopleListPanel
+                        onManageLists={() => setListsManagerOpen(true)}
+                        onSaveAsNew={() => setSaveListOpen(true)}
+                    />
+                </Box>
+            )}
 
 
             {/* Mobile: Unassign All button at the bottom of the page */}

@@ -1,7 +1,5 @@
-import { Stack, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, IconButton, Badge, Collapse, Box, useMediaQuery, useTheme } from '@mui/material';
+import { Stack, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Collapse, Box, useMediaQuery, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface PeopleFiltersBarProps {
@@ -9,11 +7,15 @@ interface PeopleFiltersBarProps {
     onSearchChange: (value: string) => void;
     assignmentFilter: 'all' | 'assigned' | 'unassigned';
     onAssignmentFilterChange: (value: 'all' | 'assigned' | 'unassigned') => void;
+    /** Mobile-only: controls whether the collapsible search panel is open.
+     *  The trigger lives in the page header (PeopleToolbar) so the icon can
+     *  sit next to the title rather than above the filter bar itself. */
+    open?: boolean;
 }
 
 /**
  * PeopleFiltersBar - Search and filter controls
- * Mobile: collapsed behind a filter icon button
+ * Mobile: collapsed behind a filter icon button living in the page header
  * Desktop: always visible inline
  */
 export function PeopleFiltersBar({
@@ -21,31 +23,17 @@ export function PeopleFiltersBar({
     onSearchChange,
     assignmentFilter,
     onAssignmentFilterChange,
+    open = false,
 }: PeopleFiltersBarProps) {
     const { t } = useTranslation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const [filtersOpen, setFiltersOpen] = useState(false);
 
-    // Count active filters for badge
-    const activeFilterCount = (searchQuery ? 1 : 0) + (assignmentFilter !== 'all' ? 1 : 0);
-
-    // Mobile: filter icon + cancel-all on same row, collapsible panel below
+    // Mobile: collapsible panel only — the trigger is owned by PeopleToolbar
     if (isMobile) {
         return (
-            <Box sx={{ mb: 2 }}>
-                <Stack direction="row" alignItems="center">
-                    <IconButton
-                        onClick={() => setFiltersOpen(!filtersOpen)}
-                        color={activeFilterCount > 0 ? 'primary' : 'default'}
-                    >
-                        <Badge badgeContent={activeFilterCount} color="primary">
-                            <FilterListIcon />
-                        </Badge>
-                    </IconButton>
-                </Stack>
-
-                <Collapse in={filtersOpen}>
+            <Box sx={{ mb: open ? 2 : 0 }}>
+                <Collapse in={open}>
                     <Stack gap={1.5}>
                         <TextField
                             placeholder={t('people.searchPlaceholder')}
