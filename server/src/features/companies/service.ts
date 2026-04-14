@@ -341,6 +341,37 @@ export const companyService = {
             throw new Error(`Company ${company.id} not found after creation`);
         }
 
+        // Best-effort: push article format from the wizard to AIMS.
+        // The wizard fetches the format from AIMS, lets the user edit it, then
+        // hands it back here. Without this push, edits live only in our DB
+        // until the user re-saves through the Edit Company flow. Mirrors the
+        // logic in settingsService.updateArticleFormat — DB is source of truth,
+        // so failures are logged but do not fail company creation.
+        if (fullData.articleFormat && data.aimsConfig?.baseUrl && data.aimsConfig?.username && encryptedPassword) {
+            try {
+                aimsGateway.invalidateFormatCache(company.id);
+                const firstStore = await prisma.store.findFirst({
+                    where: { companyId: company.id },
+                    orderBy: { createdAt: 'asc' },
+                });
+                if (firstStore) {
+                    const storeConfig = await aimsGateway.getStoreConfig(firstStore.id);
+                    if (storeConfig) {
+                        const token = await aimsGateway.getToken(company.id);
+                        const { solumService } = await import('../../shared/infrastructure/services/solumService.js');
+                        await solumService.saveArticleFormat(
+                            storeConfig.config,
+                            token,
+                            fullData.articleFormat as any,
+                        );
+                        appLogger.info('CompanyService', `Article format pushed to AIMS for new company ${company.id}`);
+                    }
+                }
+            } catch (error: any) {
+                appLogger.error('CompanyService', `Failed to push article format to AIMS on create (DB saved OK): ${error.message}`);
+            }
+        }
+
         return {
             id: finalCompany.id,
             code: finalCompany.code,

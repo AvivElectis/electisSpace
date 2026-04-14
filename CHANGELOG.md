@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.15.1] — 2026-04-14 — Wizard Article Format AIMS Push Fix
+
+> Client v2.15.1 / Server v2.10.1
+
+### Fixed
+- **Create Company Wizard — article format edits now reach AIMS** — when the wizard fetched the article format, let the user edit it, and then created the company, the edited format was only persisted in the local database. The user then had to re-open the company via Edit and save the format a second time for AIMS to actually receive it. `companyService.create` now mirrors `settingsService.updateArticleFormat` and performs a best-effort push to AIMS after the create transaction commits: invalidates the format cache, looks up the first store, fetches an AIMS token, and calls `solumService.saveArticleFormat`. Failures are logged (DB remains source of truth) so they never block company creation.
+
 ## [2.15.0] — 2026-04-13 — Spaces Bulk Delete + Conference Simple Mode + UX
 
 > Client v2.15.0 / Server v2.10.0
