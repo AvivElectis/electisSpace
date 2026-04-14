@@ -113,6 +113,26 @@ The reconciliation job ensures eventual consistency even if individual push sync
 - **Spaces mode** (AIMS = source of truth): Expected articles = all spaces + conference rooms. Extra articles in AIMS that are not in the DB are **imported into the DB** as new spaces. Articles are **never deleted from AIMS** during reconciliation — deletion only happens via explicit user action through the SyncQueueProcessor. A race condition guard checks for pending DELETE queue items to avoid re-importing recently deleted spaces.
 - **People mode** (DB = source of truth): Expected articles = assigned people (keyed by `assignedSpaceId`) + empty slot articles for unoccupied spaces + conference rooms. Extra articles in AIMS are deleted, with a mass-deletion safety check (refuses if deleting ≥5 articles AND >50% of AIMS total).
 
+#### Pull-from-AIMS Article Classification (`spacesSyncService.pullFromAims`, v2.10.0+)
+
+When a user clicks **Pull from AIMS** on the spaces page, the synchronous endpoint (separate from the periodic reconciliation job above) partitions the returned articles by `articleId` prefix before upserting:
+
+```mermaid
+graph LR
+    PULL[pullArticleInfo<br/>from AIMS] --> PART{First char of<br/>articleId is C?}
+    PART -->|no| SPACES[Upsert into space table]
+    PART -->|yes| FLAG{Conference<br/>feature enabled<br/>for company?}
+    FLAG -->|yes| CONF[conferenceSyncService<br/>upsertManyFromArticles<br/>strip C prefix → conference_rooms]
+    FLAG -->|no| SKIP[Drop silently<br/>info log]
+```
+
+- The conference flag is resolved via `extractCompanyFeatures(store.company.settings)` + `extractStoreFeatures(store.settings)` + `resolveEffectiveFeatures(...)` — store override wins, falls back to company default.
+- The `C` prefix check is case-insensitive (`articleId[0].toUpperCase() === 'C'`) to match the existing frontend `filterConferenceArticles` helper.
+- `conferenceSyncService.upsertManyFromArticles` lives in `server/src/features/conference/syncService.ts`. It strips the `C` prefix to derive the local `externalId`, applies the same CSV-quote unescaping the spaces sync uses, and writes via dedicated `conferenceRepository.syncCreate` / `syncUpdate` methods which mark new rows `syncStatus: 'SYNCED'` (the user-action `create`/`update` methods default to `PENDING`).
+- A **pull-time race guard** is applied symmetrically for both spaces and conference: before upsert, the service queries `prisma.syncQueueItem` for non-terminal `DELETE` items (`status IN ('PENDING','PROCESSING')`) and skips any externalId currently in flight. This prevents a pull arriving between a local delete and its AIMS push from re-creating the row. Source of truth is the DB; no in-memory cache.
+- The `SyncResult` returned to the client gains an optional `conference: { created, updated, unchanged, skipped }` block when the conference path ran, surfaced in the pull-result toast as `spaces.sync.pullResultWithConference`.
+- Pre-existing `C`-prefixed rows that landed in the `space` table from earlier (pre-fix) pulls are intentionally **not** auto-cleaned — users remove them via the **Spaces bulk delete** Select Mode UI introduced in the same release.
+
 ### 5.4 Article Building Pipeline
 
 ```mermaid
