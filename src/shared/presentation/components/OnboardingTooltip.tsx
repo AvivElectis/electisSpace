@@ -1,6 +1,6 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { Popper, Paper, Typography, Button, Box } from '@mui/material';
+import { Popper, Paper, Typography, Button, Box, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
 
@@ -24,13 +24,15 @@ export function OnboardingTooltip({
     onSkip,
 }: OnboardingTooltipProps) {
     const { t } = useTranslation();
+    const muiTheme = useMuiTheme();
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
     const isRtl = document.dir === 'rtl';
 
     const onNextStable = useCallback(onNext, [onNext]);
 
-    // --- Find target element when step changes ---
+    // Find target element when step changes
     useEffect(() => {
         if (!step) {
             setAnchorEl(null);
@@ -44,11 +46,10 @@ export function OnboardingTooltip({
             const el = document.querySelector<HTMLElement>(step.targetSelector);
             if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
                 setAnchorEl(el);
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Set rect after scroll settles
-                setTimeout(() => {
-                    setRect(el.getBoundingClientRect());
-                }, 600);
+                if (!isMobile) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                setTimeout(() => setRect(el.getBoundingClientRect()), isMobile ? 100 : 600);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -57,14 +58,26 @@ export function OnboardingTooltip({
         }, 300);
 
         return () => clearInterval(interval);
-    }, [step, onNextStable]);
+    }, [step, onNextStable, isMobile]);
 
-    if (!step || !anchorEl || !rect || !document.body.contains(anchorEl)) return null;
+    if (!step) return null;
 
-    // Flip placement for RTL
+    // On mobile: always show centered tooltip with plain overlay (no spotlight, no Popper)
+    // On desktop: wait for anchor + rect, show spotlight if target is small enough
+    if (isMobile) {
+        return <MobileTooltip
+            step={step} currentStep={currentStep} totalSteps={totalSteps}
+            isLastStep={isLastStep} isRtl={isRtl}
+            onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+        />;
+    }
+
+    // Desktop: need anchor element found
+    if (!anchorEl || !rect || !document.body.contains(anchorEl)) return null;
+
     const placement = (() => {
-        if (step.placement === 'left') return isRtl ? 'right' : 'left';
-        if (step.placement === 'right') return isRtl ? 'left' : 'right';
+        if (step.placement === 'left') return isRtl ? 'right' as const : 'left' as const;
+        if (step.placement === 'right') return isRtl ? 'left' as const : 'right' as const;
         return step.placement;
     })();
 
@@ -72,7 +85,6 @@ export function OnboardingTooltip({
         ? `${totalSteps} / ${currentStep + 1}`
         : `${currentStep + 1} / ${totalSteps}`;
 
-    // For targets covering >50% of viewport, skip spotlight and center the tooltip
     const viewportArea = window.innerWidth * window.innerHeight;
     const targetArea = rect.width * rect.height;
     const isLargeTarget = targetArea / viewportArea > 0.5;
@@ -81,7 +93,7 @@ export function OnboardingTooltip({
         <>
             {/* Overlay */}
             <Box
-                onClick={onSkip}
+                onClick={(e) => { e.stopPropagation(); onSkip(); }}
                 sx={{
                     position: 'fixed',
                     inset: 0,
@@ -106,9 +118,7 @@ export function OnboardingTooltip({
             {/* Tooltip */}
             {isLargeTarget ? (
                 <Box sx={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: '50%',
+                    position: 'fixed', top: '50%', left: '50%',
                     transform: 'translate(-50%, -50%)',
                     zIndex: (thm) => thm.zIndex.tooltip + 1,
                 }}>
@@ -140,6 +150,47 @@ export function OnboardingTooltip({
     );
 }
 
+/** Mobile: centered tooltip with plain dark overlay, no spotlight */
+function MobileTooltip({
+    step, currentStep, totalSteps, isLastStep, isRtl,
+    onNext, onPrev, onSkip, t,
+}: {
+    step: TourStep; currentStep: number; totalSteps: number;
+    isLastStep: boolean; isRtl: boolean;
+    onNext: () => void; onPrev: () => void; onSkip: () => void;
+    t: (key: string) => string;
+}) {
+    const stepLabel = isRtl
+        ? `${totalSteps} / ${currentStep + 1}`
+        : `${currentStep + 1} / ${totalSteps}`;
+
+    return (
+        <>
+            <Box
+                onClick={(e) => { e.stopPropagation(); onSkip(); }}
+                sx={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: (thm) => thm.zIndex.tooltip - 1,
+                    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                }}
+            />
+            <Box sx={{
+                position: 'fixed', top: '50%', left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: (thm) => thm.zIndex.tooltip + 1,
+            }}>
+                <TooltipCard
+                    step={step} stepLabel={stepLabel} isRtl={isRtl}
+                    currentStep={currentStep} isLastStep={isLastStep}
+                    onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+                />
+            </Box>
+        </>
+    );
+}
+
+/** Shared tooltip card content */
 function TooltipCard({
     step, stepLabel, isRtl, currentStep, isLastStep,
     onNext, onPrev, onSkip, t,
@@ -152,6 +203,7 @@ function TooltipCard({
     return (
         <Paper
             elevation={8}
+            onClick={(e) => e.stopPropagation()}
             sx={{
                 p: 2.5,
                 width: 320,
@@ -189,7 +241,7 @@ function TooltipCard({
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography
                     component="span"
-                    onClick={onSkip}
+                    onClick={(e) => { e.stopPropagation(); onSkip(); }}
                     sx={{
                         fontSize: '12px',
                         color: 'primary.main',
@@ -206,7 +258,7 @@ function TooltipCard({
                         <Button
                             size="small"
                             variant="outlined"
-                            onClick={onPrev}
+                            onClick={(e) => { e.stopPropagation(); onPrev(); }}
                             sx={{ borderRadius: '24px', textTransform: 'none', fontSize: '13px', px: 2 }}
                         >
                             {t('onboarding.back')}
@@ -215,7 +267,7 @@ function TooltipCard({
                     <Button
                         size="small"
                         variant="contained"
-                        onClick={onNext}
+                        onClick={(e) => { e.stopPropagation(); onNext(); }}
                         sx={{ borderRadius: '24px', textTransform: 'none', fontSize: '13px', fontWeight: 600, px: 2.5 }}
                     >
                         {isLastStep ? t('onboarding.done') : t('onboarding.next')}
