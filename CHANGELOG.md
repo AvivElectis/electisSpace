@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Per-feature first-use guided tours** — onboarding tours for Dashboard (3 steps), Spaces (5), People (5), Conference (4 advanced / 3 simple), and Labels (4); custom MUI Popper tooltip with highlight overlay, step configs in `src/shared/domain/onboardingTypes.ts`, state persisted to localStorage (`electisspace_onboarding` key)
+- **Conference tour adapts to mode** — simple mode shows 3 steps (room cards, status toggle, add room), advanced mode shows 4 steps (including management tabs)
+- **Empty state improvements** — descriptive messages and CTAs on all feature pages when no data exists
+- **Clickable dashboard cards** — each card navigates to its feature page via "View All" button; zero-data cards show contextual messages instead of blank content
+- **Feature restriction info toast** — accessing a disabled feature now shows an informational toast explaining the feature is not enabled, instead of silently blocking
+- **"Restart Tours" button in Settings** — App Settings section allows users to reset all onboarding tours
+- **Full Hebrew (RTL) support for onboarding UI** — all tour step content, buttons, and tooltips translated with correct RTL positioning
+
 ## [2.15.1] — 2026-04-14 — Wizard Article Format AIMS Push Fix
 
 > Client v2.15.1 / Server v2.10.1

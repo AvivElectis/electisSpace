@@ -276,7 +276,11 @@ The app uses three breakpoint tiers: **mobile** (`xs`, <600px), **tablet** (`sm`
 
 **Shared styles:** `src/shared/presentation/styles/glassToolbar.ts` exports `glassToolbarSx` used by all feature page action toolbars.
 
-### 4.11 Android (Capacitor)
+### 4.11 Onboarding System
+
+The app includes per-feature first-use guided tours built with custom MUI Popper tooltips and a highlight overlay. Tour definitions live in `src/shared/domain/onboardingTypes.ts` with the orchestration hook in `src/shared/application/useOnboardingTour.ts`. Each feature page (Dashboard, Spaces, People, Conference, Labels) registers its own tour. Tour completion state is persisted to `localStorage` under the `electisspace_onboarding` key. The Conference tour adapts its steps based on simple vs advanced mode. Users can restart tours from Settings > App Settings.
+
+### 4.12 Android (Capacitor)
 
 The app runs on Android via Capacitor 7 with these adaptations:
 
