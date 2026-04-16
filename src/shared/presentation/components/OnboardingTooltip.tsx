@@ -55,17 +55,35 @@ export function OnboardingTooltip({
                 setAnchorRect(el.getBoundingClientRect());
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 // Update rect after scroll settles
-                setTimeout(() => setAnchorRect(el.getBoundingClientRect()), 400);
+                setTimeout(() => setAnchorRect(el.getBoundingClientRect()), 500);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
-                // Target not found or has no size — skip this step silently
                 onNextRef();
             }
         }, 300);
 
         return () => clearInterval(interval);
     }, [step, onNextRef]);
+
+    // Keep anchorRect in sync with the element's actual position (scroll, resize, layout shifts)
+    useEffect(() => {
+        if (!anchorEl) return;
+
+        const updateRect = () => {
+            if (document.body.contains(anchorEl)) {
+                setAnchorRect(anchorEl.getBoundingClientRect());
+            }
+        };
+
+        window.addEventListener('scroll', updateRect, true); // capture phase for nested scrollers
+        window.addEventListener('resize', updateRect);
+
+        return () => {
+            window.removeEventListener('scroll', updateRect, true);
+            window.removeEventListener('resize', updateRect);
+        };
+    }, [anchorEl]);
 
     // Validate anchor is still in the document layout
     if (!step || !anchorEl || !anchorRect || !document.body.contains(anchorEl)) return null;
