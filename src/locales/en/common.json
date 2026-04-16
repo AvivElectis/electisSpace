@@ -1861,6 +1861,7 @@
             "health": { "title": "Health & Preview", "body": "Check signal, battery, and toggle image preview." }
         },
         "emptyState": {
+            "dashboard": { "title": "Welcome to your store", "description": "Start by adding spaces, people, or conference rooms using the quick actions above." },
             "spaces": { "title": "No spaces yet", "description": "Create your first space to get started.", "cta": "Add Space" },
             "people": { "title": "No people added yet", "description": "Add people to assign them to spaces.", "cta": "Add Person" },
             "conference": { "title": "No conference rooms yet", "description": "Add rooms and link labels for e-ink signs.", "cta": "Add Room" },

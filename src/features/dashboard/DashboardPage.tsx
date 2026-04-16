@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Stack, useMediaQuery, useTheme, alpha } from '@mui/material';
+import { Box, Typography, Grid, Stack, Paper, useMediaQuery, useTheme, alpha } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
@@ -313,6 +313,31 @@ export function DashboardPage() {
                     </Box>
                 )}
             </Stack>
+
+            {/* Dashboard Empty State — when all counts are zero */}
+            {totalSpaces === 0 && totalRooms === 0 && totalPeople === 0 && (
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: { xs: 4, md: 6 },
+                        mb: 3,
+                        textAlign: 'center',
+                        borderRadius: 4,
+                        bgcolor: 'background.paper',
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                    }}
+                    data-tour="dashboard-stats"
+                >
+                    <Typography sx={{ fontSize: 56, mb: 1, opacity: 0.5 }}>🏢</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                        {t('onboarding.emptyState.dashboard.title', 'Welcome to your store')}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 420, mx: 'auto' }}>
+                        {t('onboarding.emptyState.dashboard.description', 'Start by adding spaces, people, or conference rooms using the quick actions above.')}
+                    </Typography>
+                </Paper>
+            )}
 
             {/* Dashboard Sections */}
             {isMobile ? (
