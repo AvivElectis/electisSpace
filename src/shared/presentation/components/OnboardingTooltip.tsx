@@ -5,13 +5,9 @@ import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
 
 interface OnboardingTooltipProps {
-    /** The current step config, or null if tour is inactive */
     step: TourStep | null;
-    /** Current step number (0-indexed) */
     currentStep: number;
-    /** Total steps in this tour */
     totalSteps: number;
-    /** Whether this is the last step */
     isLastStep: boolean;
     onNext: () => void;
     onPrev: () => void;
@@ -27,66 +23,68 @@ export function OnboardingTooltip({
     onPrev,
     onSkip,
 }: OnboardingTooltipProps) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-    // Popper renders in a portal outside ThemeProvider, so useTheme() returns default LTR.
-    // Use document.dir which is set by App.tsx based on i18n.language.
+    const [rect, setRect] = useState<DOMRect | null>(null);
+    const rafRef = useRef(0);
     const isRtl = document.dir === 'rtl';
 
-    // Stable reference for onNext to avoid re-triggering effect
-    const onNextRef = useCallback(onNext, [onNext]);
+    const onNextStable = useCallback(onNext, [onNext]);
 
-    // Find the target element when step changes
+    // --- Find target element when step changes ---
     useEffect(() => {
         if (!step) {
             setAnchorEl(null);
-            setAnchorRect(null);
+            setRect(null);
             return;
         }
 
-        // Retry finding element (it may render after a delay)
         let attempts = 0;
         const maxAttempts = 15;
         const interval = setInterval(() => {
             const el = document.querySelector<HTMLElement>(step.targetSelector);
             if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
                 setAnchorEl(el);
-                setAnchorRect(el.getBoundingClientRect());
+                setRect(el.getBoundingClientRect());
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Update rect after scroll settles
-                setTimeout(() => setAnchorRect(el.getBoundingClientRect()), 500);
+                setTimeout(() => setRect(el.getBoundingClientRect()), 500);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
-                onNextRef();
+                onNextStable();
             }
         }, 300);
 
         return () => clearInterval(interval);
-    }, [step, onNextRef]);
+    }, [step, onNextStable]);
 
-    // Keep anchorRect in sync with the element's actual position (scroll, resize, layout shifts)
+    // --- Keep rect in sync via rAF (no scroll listener, no infinite loops) ---
     useEffect(() => {
         if (!anchorEl) return;
 
-        const updateRect = () => {
-            if (document.body.contains(anchorEl)) {
-                setAnchorRect(anchorEl.getBoundingClientRect());
-            }
+        let running = true;
+        const tick = () => {
+            if (!running || !document.body.contains(anchorEl)) return;
+            const r = anchorEl.getBoundingClientRect();
+            // Only update state if position actually changed (avoids re-render storms)
+            setRect(prev => {
+                if (!prev || Math.abs(prev.top - r.top) > 1 || Math.abs(prev.left - r.left) > 1
+                    || Math.abs(prev.width - r.width) > 1 || Math.abs(prev.height - r.height) > 1) {
+                    return r;
+                }
+                return prev;
+            });
+            rafRef.current = requestAnimationFrame(tick);
         };
-
-        window.addEventListener('scroll', updateRect, true); // capture phase for nested scrollers
-        window.addEventListener('resize', updateRect);
+        rafRef.current = requestAnimationFrame(tick);
 
         return () => {
-            window.removeEventListener('scroll', updateRect, true);
-            window.removeEventListener('resize', updateRect);
+            running = false;
+            cancelAnimationFrame(rafRef.current);
         };
     }, [anchorEl]);
 
-    // Validate anchor is still in the document layout
-    if (!step || !anchorEl || !anchorRect || !document.body.contains(anchorEl)) return null;
+    if (!step || !anchorEl || !rect || !document.body.contains(anchorEl)) return null;
 
     // Flip placement for RTL
     const placement = (() => {
@@ -99,39 +97,53 @@ export function OnboardingTooltip({
         ? `${totalSteps} / ${currentStep + 1}`
         : `${currentStep + 1} / ${totalSteps}`;
 
-    // Skip spotlight for targets that cover most of the viewport (> 60% area)
+    // For targets covering >50% of viewport, skip spotlight and center the tooltip
     const viewportArea = window.innerWidth * window.innerHeight;
-    const targetArea = anchorRect.width * anchorRect.height;
-    const showSpotlight = targetArea / viewportArea < 0.6;
+    const targetArea = rect.width * rect.height;
+    const isLargeTarget = targetArea / viewportArea > 0.5;
 
     return (
         <>
-            {/* Spotlight: dark overlay with cutout around the target element */}
+            {/* Overlay */}
             <Box
                 onClick={onSkip}
                 sx={{
                     position: 'fixed',
                     inset: 0,
                     zIndex: (thm) => thm.zIndex.tooltip - 1,
-                    ...(showSpotlight ? {
-                        '&::before': {
-                            content: '""',
-                            position: 'fixed',
-                            top: anchorRect.top - 6,
-                            left: anchorRect.left - 6,
-                            width: anchorRect.width + 12,
-                            height: anchorRect.height + 12,
-                            borderRadius: '12px',
-                            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.25)',
-                        },
-                    } : {
-                        backgroundColor: 'rgba(0, 0, 0, 0.35)',
-                    }),
+                    ...(isLargeTarget
+                        ? { backgroundColor: 'rgba(0, 0, 0, 0.35)' }
+                        : {
+                            '&::before': {
+                                content: '""',
+                                position: 'fixed',
+                                top: rect.top - 6,
+                                left: rect.left - 6,
+                                width: rect.width + 12,
+                                height: rect.height + 12,
+                                borderRadius: '12px',
+                                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.25)',
+                            },
+                        }),
                 }}
             />
 
-            {/* Tooltip — anchored to target for small elements, centered for large ones */}
-            {showSpotlight ? (
+            {/* Tooltip */}
+            {isLargeTarget ? (
+                <Box sx={{
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: (thm) => thm.zIndex.tooltip + 1,
+                }}>
+                    <TooltipCard
+                        step={step} stepLabel={stepLabel} isRtl={isRtl}
+                        currentStep={currentStep} isLastStep={isLastStep}
+                        onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+                    />
+                </Box>
+            ) : (
                 <Popper
                     open
                     anchorEl={anchorEl}
@@ -142,34 +154,18 @@ export function OnboardingTooltip({
                         { name: 'preventOverflow', options: { padding: 16 } },
                     ]}
                 >
-                    <TooltipContent
+                    <TooltipCard
                         step={step} stepLabel={stepLabel} isRtl={isRtl}
                         currentStep={currentStep} isLastStep={isLastStep}
                         onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
                     />
                 </Popper>
-            ) : (
-                /* For large targets, center the tooltip on screen */
-                <Box sx={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: (thm) => thm.zIndex.tooltip + 1,
-                }}>
-                    <TooltipContent
-                        step={step} stepLabel={stepLabel} isRtl={isRtl}
-                        currentStep={currentStep} isLastStep={isLastStep}
-                        onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
-                    />
-                </Box>
             )}
         </>
     );
 }
 
-/** Inner tooltip card — shared between Popper and centered modes */
-function TooltipContent({
+function TooltipCard({
     step, stepLabel, isRtl, currentStep, isLastStep,
     onNext, onPrev, onSkip, t,
 }: {
@@ -178,89 +174,79 @@ function TooltipContent({
     onNext: () => void; onPrev: () => void; onSkip: () => void;
     t: (key: string) => string;
 }) {
-    const paperRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        paperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, [step]);
-
     return (
-                <Paper
-                    ref={paperRef}
-                    elevation={8}
+        <Paper
+            elevation={8}
+            sx={{
+                p: 2.5,
+                width: 320,
+                maxWidth: 'calc(100vw - 32px)',
+                borderRadius: '12px',
+                border: '1px solid',
+                borderColor: 'divider',
+            }}
+        >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '16px' }}>
+                    {t(step.titleKey)}
+                </Typography>
+                <Box
                     sx={{
-                        p: 2.5,
-                        width: 320,
-                        maxWidth: 'calc(100vw - 32px)',
-                        borderRadius: '12px',
-                        border: '1px solid',
-                        borderColor: 'divider',
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: '10px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        ml: 1,
                     }}
                 >
-                    {/* Header */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '16px' }}>
-                            {t(step.titleKey)}
-                        </Typography>
-                        <Box
-                            sx={{
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                px: 1,
-                                py: 0.25,
-                                borderRadius: '10px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                whiteSpace: 'nowrap',
-                                ml: 1,
-                            }}
+                    {stepLabel}
+                </Box>
+            </Box>
+
+            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.55, mb: 2.25, fontSize: '13.5px' }}>
+                {t(step.bodyKey)}
+            </Typography>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography
+                    component="span"
+                    onClick={onSkip}
+                    sx={{
+                        fontSize: '12px',
+                        color: 'primary.main',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        '&:hover': { textDecoration: 'underline' },
+                    }}
+                >
+                    {t('onboarding.skipTour')}
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    {currentStep > 0 && (
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={onPrev}
+                            sx={{ borderRadius: '24px', textTransform: 'none', fontSize: '13px', px: 2 }}
                         >
-                            {stepLabel}
-                        </Box>
-                    </Box>
-
-                    {/* Body */}
-                    <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.55, mb: 2.25, fontSize: '13.5px' }}>
-                        {t(step.bodyKey)}
-                    </Typography>
-
-                    {/* Footer */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography
-                            component="span"
-                            onClick={onSkip}
-                            sx={{
-                                fontSize: '12px',
-                                color: 'primary.main',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                '&:hover': { textDecoration: 'underline' },
-                            }}
-                        >
-                            {t('onboarding.skipTour')}
-                        </Typography>
-
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            {currentStep > 0 && (
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    onClick={onPrev}
-                                    sx={{ borderRadius: '24px', textTransform: 'none', fontSize: '13px', px: 2 }}
-                                >
-                                    {t('onboarding.back')}
-                                </Button>
-                            )}
-                            <Button
-                                size="small"
-                                variant="contained"
-                                onClick={onNext}
-                                sx={{ borderRadius: '24px', textTransform: 'none', fontSize: '13px', fontWeight: 600, px: 2.5 }}
-                            >
-                                {isLastStep ? t('onboarding.done') : t('onboarding.next')}
-                            </Button>
-                        </Box>
-                    </Box>
-                </Paper>
+                            {t('onboarding.back')}
+                        </Button>
+                    )}
+                    <Button
+                        size="small"
+                        variant="contained"
+                        onClick={onNext}
+                        sx={{ borderRadius: '24px', textTransform: 'none', fontSize: '13px', fontWeight: 600, px: 2.5 }}
+                    >
+                        {isLastStep ? t('onboarding.done') : t('onboarding.next')}
+                    </Button>
+                </Box>
+            </Box>
+        </Paper>
     );
 }
