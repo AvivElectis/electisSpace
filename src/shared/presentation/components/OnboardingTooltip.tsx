@@ -66,7 +66,8 @@ export function OnboardingTooltip({
         return () => clearInterval(interval);
     }, [step, onNextRef]);
 
-    if (!step || !anchorEl || !anchorRect) return null;
+    // Validate anchor is still in the document layout
+    if (!step || !anchorEl || !anchorRect || !document.body.contains(anchorEl)) return null;
 
     // Flip placement for RTL
     const placement = (() => {

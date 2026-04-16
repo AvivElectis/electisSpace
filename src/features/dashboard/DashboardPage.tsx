@@ -314,13 +314,13 @@ export function DashboardPage() {
                 )}
             </Stack>
 
-            {/* Dashboard Empty State — when all counts are zero */}
-            {totalSpaces === 0 && totalRooms === 0 && totalPeople === 0 && (
+            {/* Dashboard Sections */}
+            {totalSpaces === 0 && totalRooms === 0 && totalPeople === 0 ? (
+                /* Empty State — when store has no data at all */
                 <Paper
                     elevation={0}
                     sx={{
                         p: { xs: 4, md: 6 },
-                        mb: 3,
                         textAlign: 'center',
                         borderRadius: 4,
                         bgcolor: 'background.paper',
@@ -333,14 +333,11 @@ export function DashboardPage() {
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                         {t('onboarding.emptyState.dashboard.title', 'Welcome to your store')}
                     </Typography>
-                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 420, mx: 'auto' }}>
+                    <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 420, mx: 'auto' }}>
                         {t('onboarding.emptyState.dashboard.description', 'Start by adding spaces, people, or conference rooms using the quick actions above.')}
                     </Typography>
                 </Paper>
-            )}
-
-            {/* Dashboard Sections */}
-            {isMobile ? (
+            ) : isMobile ? (
                 <DashboardMobileCarousel
                     sections={[
                         can('spaces') && !isPeopleManagerMode && (
