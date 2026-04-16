@@ -57,6 +57,8 @@ import { LabelImagePreview } from './LabelImagePreview';
 import { AssignImageDialog } from './AssignImageDialog';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { logger } from '@shared/infrastructure/services/logger';
+import { useFeatureTour } from '@shared/presentation/hooks/useFeatureTour';
+import { OnboardingTooltip } from '@shared/presentation/components/OnboardingTooltip';
 
 /**
  * Labels Management Page
@@ -94,6 +96,10 @@ export function LabelsPage() {
         setFilterLinkedOnly,
         clearError,
     } = useLabelsStore();
+
+    // Onboarding tour
+    const { currentStep, totalSteps, currentTourStep, isLastStep, handleNext, handlePrev, handleSkip } =
+        useFeatureTour({ tour: 'labels' });
 
     // Pagination
     const [page, setPage] = useState(0);
@@ -504,6 +510,7 @@ export function LabelsPage() {
                 </Typography>
                 <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                     <Button
+                        data-tour="labels-link"
                         variant="contained"
                         startIcon={<AddIcon />}
                         disabled={!canEdit}
@@ -685,7 +692,7 @@ export function LabelsPage() {
             {/* Labels - Mobile Card View or Desktop Table */}
             {isMobile ? (
                 /* Mobile Card View */
-                <Box>
+                <Box data-tour="labels-table">
                     {isLoading && !paginatedLabels.length ? (
                         <Stack alignItems="center" gap={2} sx={{ py: 6 }}>
                             <CircularProgress size={36} />
@@ -752,7 +759,7 @@ export function LabelsPage() {
                 </Box>
             ) : (
                 /* Desktop Table View */
-                <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                <Paper data-tour="labels-table" sx={{ width: '100%', overflow: 'hidden' }}>
                     <TableContainer sx={{ maxHeight: { sm: 'calc(100vh - 350px)', md: 'calc(100vh - 320px)' }, overflow: 'auto' }}>
                         <Table stickyHeader sx={{ minWidth: 750 }}>
                             <TableHead>
@@ -761,7 +768,7 @@ export function LabelsPage() {
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.labelType', 'Size')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.articleId', 'Article ID')}</TableCell>
                                     <TableCell sx={{ fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.articleName', 'Article Name')}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.signal', 'Signal')}</TableCell>
+                                    <TableCell data-tour="labels-health" sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.signal', 'Signal')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.battery', 'Battery')}</TableCell>
                                     <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600, textAlign: isRtl ? 'right' : 'left' }}>{t('labels.table.status', 'Status')}</TableCell>
                                     {showImagePreviews && (
@@ -859,7 +866,7 @@ export function LabelsPage() {
                                                 </TableCell>
                                             )}
                                             <TableCell sx={{ textAlign: isRtl ? 'right' : 'left', py: 0.5, px: 1 }}>
-                                                <Stack direction="row" gap={0.5} justifyContent={!isRtl ? 'flex-end' : 'flex-start'}>
+                                                <Stack data-tour="labels-unlink" direction="row" gap={0.5} justifyContent={!isRtl ? 'flex-end' : 'flex-start'}>
                                                     {label.articleId ? (
                                                         <Tooltip title={t('labels.unlink.button', 'Unlink')}>
                                                             <span>
@@ -1044,6 +1051,16 @@ export function LabelsPage() {
 
             {/* Confirm Dialog */}
             <ConfirmDialog />
+
+            <OnboardingTooltip
+                step={currentTourStep}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                isLastStep={isLastStep}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                onSkip={handleSkip}
+            />
         </Box>
         </PullToRefresh>
     );
