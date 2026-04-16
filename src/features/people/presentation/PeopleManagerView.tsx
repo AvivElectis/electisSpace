@@ -17,6 +17,8 @@ import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { peopleApi } from '@shared/infrastructure/services/peopleApi';
+import { useFeatureTour } from '@shared/presentation/hooks/useFeatureTour';
+import { OnboardingTooltip } from '@shared/presentation/components/OnboardingTooltip';
 
 // Lazy load dialogs - not needed on initial render
 const PersonDialog = lazy(() => import('./PersonDialog').then(m => ({ default: m.PersonDialog })));
@@ -52,6 +54,10 @@ export function PeopleManagerView() {
     const { getLabel } = useSpaceTypeLabels();
     const { hasStoreRole, isAppViewer } = useAuthContext();
     const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
+
+    // Onboarding tour
+    const { currentStep, totalSteps, currentTourStep, isLastStep, handleNext, handlePrev, handleSkip } =
+        useFeatureTour({ tour: 'people' });
 
     // Helper for translations with space type
     const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
@@ -486,35 +492,41 @@ export function PeopleManagerView() {
         <PullToRefresh onRefresh={handleRefresh}>
         <Box>
             {/* Header Section */}
-            <PeopleToolbar
-                totalPeople={people.length}
-                canEdit={canEdit}
-                onAddPerson={handleAdd}
-                onUploadCSV={() => setCSVUploadOpen(true)}
-                filtersOpen={filtersOpen}
-                onFiltersToggle={() => setFiltersOpen(prev => !prev)}
-                activeFilterCount={activeFilterCount}
-            />
+            <Box data-tour="people-add">
+                <PeopleToolbar
+                    totalPeople={people.length}
+                    canEdit={canEdit}
+                    onAddPerson={handleAdd}
+                    onUploadCSV={() => setCSVUploadOpen(true)}
+                    filtersOpen={filtersOpen}
+                    onFiltersToggle={() => setFiltersOpen(prev => !prev)}
+                    activeFilterCount={activeFilterCount}
+                />
+            </Box>
 
             {/* Space Allocation Panel */}
-            <PeopleStatsPanel
-                totalSpaces={totalSpaces}
-                assignedSpaces={assignedSpaces}
-                availableSpaces={availableSpaces}
-                assignedCount={assignedCount}
-                unassignedCount={unassignedCount}
-                canEdit={canEdit}
-                onTotalSpacesChange={peopleController.setTotalSpaces}
-            />
+            <Box data-tour="people-stats">
+                <PeopleStatsPanel
+                    totalSpaces={totalSpaces}
+                    assignedSpaces={assignedSpaces}
+                    availableSpaces={availableSpaces}
+                    assignedCount={assignedCount}
+                    unassignedCount={unassignedCount}
+                    canEdit={canEdit}
+                    onTotalSpacesChange={peopleController.setTotalSpaces}
+                />
+            </Box>
 
             {/* List Management Panel — desktop: above table, mobile: below table
                 (mirrors the spaces page pattern so the table is the first thing
                 a mobile user reaches without scrolling past list metadata). */}
             {!isMobile && (
-                <PeopleListPanel
-                    onManageLists={() => setListsManagerOpen(true)}
-                    onSaveAsNew={() => setSaveListOpen(true)}
-                />
+                <Box data-tour="people-lists">
+                    <PeopleListPanel
+                        onManageLists={() => setListsManagerOpen(true)}
+                        onSaveAsNew={() => setSaveListOpen(true)}
+                    />
+                </Box>
             )}
 
             {/* Search and Filter Bar — controlled by PeopleToolbar's header icon on mobile */}
@@ -527,14 +539,16 @@ export function PeopleManagerView() {
             />
 
             {/* Bulk Actions */}
-            <PeopleBulkActionsBar
-                selectedCount={selectedIds.size}
-                canEdit={canEdit}
-                onBulkAssign={handleBulkAssign}
-                onCancelAllAssignments={handleCancelAllAssignments}
-                onRemoveSelected={handleRemoveSelectedPeople}
-                assignedCount={assignedCount}
-            />
+            <Box data-tour="people-assign">
+                <PeopleBulkActionsBar
+                    selectedCount={selectedIds.size}
+                    canEdit={canEdit}
+                    onBulkAssign={handleBulkAssign}
+                    onCancelAllAssignments={handleCancelAllAssignments}
+                    onRemoveSelected={handleRemoveSelectedPeople}
+                    assignedCount={assignedCount}
+                />
+            </Box>
 
             {/* People Table */}
             <PeopleTable
@@ -560,7 +574,7 @@ export function PeopleManagerView() {
                 table is the first thing a phone user reaches. Same panel as the
                 desktop position; only the location differs. */}
             {isMobile && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2 }} data-tour="people-lists">
                     <PeopleListPanel
                         onManageLists={() => setListsManagerOpen(true)}
                         onSaveAsNew={() => setSaveListOpen(true)}
@@ -654,12 +668,23 @@ export function PeopleManagerView() {
             <ConfirmDialog />
             <UnsavedChangesDialog />
 
+            <OnboardingTooltip
+                step={currentTourStep}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                isLastStep={isLastStep}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                onSkip={handleSkip}
+            />
+
             {/* SSE alerts — list loaded/freed by other users */}
             <Snackbar
                 open={!!sseAlert}
                 autoHideDuration={5000}
                 onClose={() => setSseAlert(null)}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                data-tour="people-alerts"
             >
                 <Alert
                     onClose={() => setSseAlert(null)}
