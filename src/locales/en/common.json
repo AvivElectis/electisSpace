@@ -357,7 +357,13 @@
         "savedLists": "{{count}} Saved Lists",
         "assignedProgress": "{{count}} of {{total}} assigned",
         "labelCoverage": "{{count}} of {{total}} with labels",
-        "availability": "{{count}} of {{total}} available"
+        "availability": "{{count}} of {{total}} available",
+        "card": {
+            "viewAll": "View All",
+            "spaces": { "empty": "No spaces created yet" },
+            "people": { "empty": "No people added yet" },
+            "conference": { "empty": "No rooms configured" }
+        }
     },
     "spaces": {
         "title": "Spaces",
@@ -1812,5 +1818,68 @@
         "help": "Help & Manual",
         "about": "About",
         "logout": "Logout"
+    },
+    "onboarding": {
+        "skipTour": "Skip Tour",
+        "next": "Next",
+        "back": "Back",
+        "done": "Done",
+        "dashboard": {
+            "statsCards": { "title": "Your Dashboard", "body": "Your store overview at a glance." },
+            "quickActions": { "title": "Quick Actions", "body": "Link labels, add spaces or rooms." },
+            "cardNavigation": { "title": "Navigate from Here", "body": "Click any card to go to that feature." }
+        },
+        "spaces": {
+            "addSpace": { "title": "Add Your First Space", "body": "Enter a unique ID and fill in the details. Link an ESL label later." },
+            "tableActions": { "title": "Edit or Delete", "body": "Edit or delete any space from the table." },
+            "search": { "title": "Search & Sort", "body": "Search by ID or any field. Click headers to sort." },
+            "lists": { "title": "Saved Lists", "body": "Save spaces as a named list to reload later." },
+            "aimsSync": { "title": "AIMS Sync", "body": "Spaces sync to AIMS automatically after changes." }
+        },
+        "people": {
+            "setSlots": { "title": "Total Slots", "body": "Set the total available slots for this store." },
+            "addPeople": { "title": "Add People", "body": "Add one by one or upload a CSV file." },
+            "assign": { "title": "Assign to Spaces", "body": "Select people and bulk assign, or click a row to assign individually." },
+            "lists": { "title": "Shift Lists", "body": "Save assignments as named lists. Load a list to swap everyone at once." },
+            "liveAlerts": { "title": "Live Alerts", "body": "Alerts appear when other users modify lists." }
+        },
+        "conference": {
+            "addRoom": { "title": "Add a Room", "body": "Enter a room ID and name. Optionally set a meeting." },
+            "editDelete": { "title": "Edit or Delete", "body": "Update or remove rooms." },
+            "search": { "title": "Search", "body": "Find rooms by name or status." },
+            "aimsSync": { "title": "AIMS Sync", "body": "Rooms sync to AIMS for label updates." }
+        },
+        "conferenceSimple": {
+            "roomCards": { "title": "Room Cards", "body": "Each card shows a room and its current status." },
+            "flipStatus": { "title": "Flip Status", "body": "Tap to toggle. The linked ESL label updates automatically." },
+            "noLabel": { "title": "No Label Linked", "body": "Rooms without labels are disabled. Link one from the Labels page." }
+        },
+        "labels": {
+            "browse": { "title": "Your Labels", "body": "All ESL devices. Blue = linked, grey = unlinked." },
+            "link": { "title": "Link a Label", "body": "Connect a label to a space, room, or person." },
+            "unlink": { "title": "Unlink", "body": "Disconnect a label from its article." },
+            "health": { "title": "Health & Preview", "body": "Check signal, battery, and toggle image preview." }
+        },
+        "emptyState": {
+            "spaces": { "title": "No spaces yet", "description": "Create your first space to get started.", "cta": "Add Space" },
+            "people": { "title": "No people added yet", "description": "Add people to assign them to spaces.", "cta": "Add Person" },
+            "conference": { "title": "No conference rooms yet", "description": "Add rooms and link labels for e-ink signs.", "cta": "Add Room" },
+            "conferenceSimple": { "title": "No rooms available", "description": "Rooms are managed in advanced mode." },
+            "labels": { "title": "No labels linked", "description": "Labels appear here once synced from AIMS." }
+        },
+        "settings": {
+            "restartTours": "Restart Tours",
+            "restartToursDescription": "Show guided tours again on each feature page.",
+            "restartToursSuccess": "Tours will show again on next visit."
+        }
+    },
+    "featureRestriction": {
+        "notAvailable": "\"{{feature}}\" is not enabled for this store. Contact your admin."
+    },
+    "features": {
+        "spaces": "Spaces",
+        "conference": "Conference Rooms",
+        "people": "People",
+        "labels": "Labels"
     }
 }
