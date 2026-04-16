@@ -1,5 +1,5 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Popper, Paper, Typography, Button, Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
@@ -26,7 +26,6 @@ export function OnboardingTooltip({
     const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
-    const rafRef = useRef(0);
     const isRtl = document.dir === 'rtl';
 
     const onNextStable = useCallback(onNext, [onNext]);
@@ -45,9 +44,11 @@ export function OnboardingTooltip({
             const el = document.querySelector<HTMLElement>(step.targetSelector);
             if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
                 setAnchorEl(el);
-                setRect(el.getBoundingClientRect());
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => setRect(el.getBoundingClientRect()), 500);
+                // Set rect after scroll settles
+                setTimeout(() => {
+                    setRect(el.getBoundingClientRect());
+                }, 600);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -57,32 +58,6 @@ export function OnboardingTooltip({
 
         return () => clearInterval(interval);
     }, [step, onNextStable]);
-
-    // --- Keep rect in sync via rAF (no scroll listener, no infinite loops) ---
-    useEffect(() => {
-        if (!anchorEl) return;
-
-        let running = true;
-        const tick = () => {
-            if (!running || !document.body.contains(anchorEl)) return;
-            const r = anchorEl.getBoundingClientRect();
-            // Only update state if position actually changed (avoids re-render storms)
-            setRect(prev => {
-                if (!prev || Math.abs(prev.top - r.top) > 1 || Math.abs(prev.left - r.left) > 1
-                    || Math.abs(prev.width - r.width) > 1 || Math.abs(prev.height - r.height) > 1) {
-                    return r;
-                }
-                return prev;
-            });
-            rafRef.current = requestAnimationFrame(tick);
-        };
-        rafRef.current = requestAnimationFrame(tick);
-
-        return () => {
-            running = false;
-            cancelAnimationFrame(rafRef.current);
-        };
-    }, [anchorEl]);
 
     if (!step || !anchorEl || !rect || !document.body.contains(anchorEl)) return null;
 
