@@ -56,6 +56,8 @@ import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { conferenceApi } from '../infrastructure/conferenceApi';
 import { logger } from '@shared/infrastructure/services/logger';
 import { EmptyState } from '@shared/presentation/components/EmptyState';
+import { useFeatureTour } from '@shared/presentation/hooks/useFeatureTour';
+import { OnboardingTooltip } from '@shared/presentation/components/OnboardingTooltip';
 
 // Lazy load dialog - not needed on initial render
 const ConferenceRoomDialog = lazy(() => import('./ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
@@ -121,6 +123,11 @@ export function ConferencePage() {
     // Simple conference mode state
     const { activeStoreEffectiveFeatures } = useAuthContext();
     const isSimpleMode = activeStoreEffectiveFeatures?.simpleConferenceMode ?? false;
+
+    // Onboarding tour
+    const { currentStep, totalSteps, currentTourStep, isLastStep, handleNext, handlePrev, handleSkip } =
+        useFeatureTour({ tour: 'conference', isSimpleMode });
+
     const [labelPages, setLabelPages] = useState<Record<string, number>>({});
     const [labelPagesLoading, setLabelPagesLoading] = useState(false);
     const [flippingRoomId, setFlippingRoomId] = useState<string | null>(null);
@@ -389,7 +396,7 @@ export function ConferencePage() {
                     />
                 ) : isMobile ? (
                     /* Mobile: single column list — user confirmed "already good", keep it. */
-                    <Stack gap={1}>
+                    <Stack gap={1} data-tour="conference-cards">
                         {filteredRooms.map((room) => {
                             const roomPage = getRoomPage(room);
                             const isFlipping = flippingRoomId === room.id;
@@ -493,6 +500,7 @@ export function ConferencePage() {
                        the two options on a single crisp baseline — no stray radio
                        circles, no shifted labels. */
                     <Box
+                        data-tour="conference-cards"
                         sx={{
                             display: 'grid',
                             gridTemplateColumns: { md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
@@ -576,7 +584,7 @@ export function ConferencePage() {
 
                                         {/* Segmented status toggle */}
                                         <Tooltip title={toggleTooltip} placement="top" disableHoverListener={!toggleTooltip}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Box data-tour="conference-flip" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <ToggleButtonGroup
                                                     exclusive
                                                     size="small"
@@ -638,6 +646,7 @@ export function ConferencePage() {
 
                                         {!hasLabels && (
                                             <Typography
+                                                data-tour="conference-no-label"
                                                 variant="caption"
                                                 color="text.secondary"
                                                 sx={{
@@ -690,6 +699,16 @@ export function ConferencePage() {
                     </Alert>
                 </Snackbar>
                 <ConfirmDialog />
+
+                <OnboardingTooltip
+                    step={currentTourStep}
+                    currentStep={currentStep}
+                    totalSteps={totalSteps}
+                    isLastStep={isLastStep}
+                    onNext={handleNext}
+                    onPrev={handlePrev}
+                    onSkip={handleSkip}
+                />
             </Box>
         );
     }
@@ -717,7 +736,7 @@ export function ConferencePage() {
                         {t('conference.manage')}
                     </Typography>
                 </Box>
-                <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
+                <Box data-tour="conference-add" sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -835,6 +854,7 @@ export function ConferencePage() {
             ) : (
                 <TextField
                     fullWidth
+                    data-tour="conference-search"
                     placeholder={t('conference.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -887,7 +907,7 @@ export function ConferencePage() {
                     onAction={!searchQuery && canEdit ? handleAdd : undefined}
                 />
             ) : (
-                <Box sx={{ maxHeight: '70vh', overflowY: 'auto', p: 1 }}>
+                <Box data-tour="conference-sync" sx={{ maxHeight: '70vh', overflowY: 'auto', p: 1 }}>
                     <Grid container spacing={3}>
                         {filteredRooms.map((room) => (
                             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={room.id}>
@@ -1016,7 +1036,7 @@ export function ConferencePage() {
                                                         <Typography variant="body2" color="text.secondary">{t('conference.noScheduledMeetings')}</Typography>
                                                     </Box>
                                                 )}
-                                                <Stack direction="row" gap={1} justifyContent="flex-end" onClick={(e) => e.stopPropagation()}>
+                                                <Stack data-tour="conference-actions" direction="row" gap={1} justifyContent="flex-end" onClick={(e) => e.stopPropagation()}>
                                                     <Tooltip title={t('common.edit')}>
                                                         <span>
                                                         <IconButton size="small" color="primary" disabled={!canEdit} onClick={() => handleEdit(room)}>
@@ -1173,6 +1193,16 @@ export function ConferencePage() {
                 </Alert>
             </Snackbar>
             <ConfirmDialog />
+
+            <OnboardingTooltip
+                step={currentTourStep}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                isLastStep={isLastStep}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                onSkip={handleSkip}
+            />
         </Box>
         </PullToRefresh>
     );
