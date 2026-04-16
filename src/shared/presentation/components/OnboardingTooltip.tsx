@@ -23,12 +23,12 @@ export function OnboardingTooltip({
     onPrev,
     onSkip,
 }: OnboardingTooltipProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const muiTheme = useMuiTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
-    const isRtl = document.dir === 'rtl';
+    const isRtl = i18n.language === 'he';
 
     const onNextStable = useCallback(onNext, [onNext]);
 
@@ -230,7 +230,7 @@ function TooltipCard({
                         ml: 1,
                     }}
                 >
-                    {stepLabel}
+                    <span dir="ltr">{stepLabel}</span>
                 </Box>
             </Box>
 
