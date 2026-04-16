@@ -1,5 +1,6 @@
 import { Box, Typography, Grid, Stack, useMediaQuery, useTheme, alpha } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
 import { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react';
 
@@ -140,6 +141,7 @@ function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | fa
 export function DashboardPage() {
     const { t } = useTranslation();
     const theme = useTheme();
+    const navigate = useNavigate();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const settingsController = useSettingsController();
     const { getLabel } = useSpaceTypeLabels();
@@ -292,15 +294,17 @@ export function DashboardPage() {
                     </Typography>
                 </Box>
                 {!isMobile && (
-                    <QuickActionsPanel
-                        isPeopleManagerMode={isPeopleManagerMode}
-                        onLinkLabel={() => setLinkLabelDialogOpen(true)}
-                        onAddSpace={() => setSpaceDialogOpen(true)}
-                        onAddConferenceRoom={() => setConferenceDialogOpen(true)}
-                        showLabels={can('labels')}
-                        showSpaces={can('spaces') || can('people')}
-                        showConference={can('conference')}
-                    />
+                    <Box data-tour="dashboard-quick-actions">
+                        <QuickActionsPanel
+                            isPeopleManagerMode={isPeopleManagerMode}
+                            onLinkLabel={() => setLinkLabelDialogOpen(true)}
+                            onAddSpace={() => setSpaceDialogOpen(true)}
+                            onAddConferenceRoom={() => setConferenceDialogOpen(true)}
+                            showLabels={can('labels')}
+                            showSpaces={can('spaces') || can('people')}
+                            showConference={can('conference')}
+                        />
+                    </Box>
                 )}
             </Stack>
 
@@ -320,6 +324,7 @@ export function DashboardPage() {
                                 onAddSpace={() => setSpaceDialogOpen(true)}
                                 hideAddButton={isMobile}
                                 isMobile={isMobile}
+                                onClick={() => navigate('/spaces')}
                             />
                         ),
                         can('people') && isPeopleManagerMode && (
@@ -332,6 +337,7 @@ export function DashboardPage() {
                                 savedLists={savedLists}
                                 activeListName={peopleStore.activeListName}
                                 isMobile={isMobile}
+                                onClick={() => navigate('/people')}
                             />
                         ),
                         can('conference') && (
@@ -346,6 +352,7 @@ export function DashboardPage() {
                                 onAddRoom={() => setConferenceDialogOpen(true)}
                                 hideAddButton={isMobile}
                                 isMobile={isMobile}
+                                onClick={() => navigate('/conference')}
                             />
                         ),
                         can('aims-management') && (
@@ -359,7 +366,7 @@ export function DashboardPage() {
                     ]}
                 />
             ) : (
-                <Grid container spacing={3}>
+                <Grid container spacing={3} data-tour="dashboard-stats">
                     {can('spaces') && !isPeopleManagerMode && (
                         <Grid size={{ xs: 12, md: 6 }}>
                             <DashboardSpacesCard
@@ -372,6 +379,7 @@ export function DashboardPage() {
                                 onAddSpace={() => setSpaceDialogOpen(true)}
                                 hideAddButton={isMobile}
                                 isMobile={isMobile}
+                                onClick={() => navigate('/spaces')}
                             />
                         </Grid>
                     )}
@@ -385,6 +393,7 @@ export function DashboardPage() {
                                 savedLists={savedLists}
                                 activeListName={peopleStore.activeListName}
                                 isMobile={isMobile}
+                                onClick={() => navigate('/people')}
                             />
                         </Grid>
                     )}
@@ -400,6 +409,7 @@ export function DashboardPage() {
                                 onAddRoom={() => setConferenceDialogOpen(true)}
                                 hideAddButton={isMobile}
                                 isMobile={isMobile}
+                                onClick={() => navigate('/conference')}
                             />
                         </Grid>
                     )}
@@ -420,12 +430,15 @@ export function DashboardPage() {
 
             {/* Mobile FAB Quick Actions — fixed position */}
             {isMobile && (
-                <Box sx={{
-                    position: 'fixed',
-                    bottom: 'calc(16px + var(--native-bottom-nav-offset, 0px))',
-                    insetInlineStart: 16,
-                    zIndex: (theme) => theme.zIndex.fab,
-                }}>
+                <Box
+                    data-tour="dashboard-quick-actions"
+                    sx={{
+                        position: 'fixed',
+                        bottom: 'calc(16px + var(--native-bottom-nav-offset, 0px))',
+                        insetInlineStart: 16,
+                        zIndex: (theme) => theme.zIndex.fab,
+                    }}
+                >
                     <QuickActionsPanel
                         isPeopleManagerMode={isPeopleManagerMode}
                         onLinkLabel={() => setLinkLabelDialogOpen(true)}

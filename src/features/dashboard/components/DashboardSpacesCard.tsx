@@ -20,6 +20,7 @@ interface DashboardSpacesCardProps {
     onAddSpace: () => void;
     hideAddButton?: boolean;
     isMobile?: boolean;
+    onClick?: () => void;
 }
 
 /**
@@ -35,6 +36,7 @@ export function DashboardSpacesCard({
     onAddSpace,
     hideAddButton,
     isMobile,
+    onClick,
 }: DashboardSpacesCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -58,7 +60,7 @@ export function DashboardSpacesCard({
 
     if (isMobile) {
         return (
-            <Card data-testid="spaces-card">
+            <Card data-testid="spaces-card" data-tour="dashboard-card-nav" onClick={onClick} sx={{ cursor: 'pointer' }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     {/* Tappable header */}
                     <Stack
@@ -129,7 +131,18 @@ export function DashboardSpacesCard({
     }
 
     return (
-        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="spaces-card">
+        <Card
+            sx={{
+                height: '100%',
+                position: 'relative',
+                overflow: 'visible',
+                cursor: 'pointer',
+                '&:hover': { boxShadow: 4, transform: 'translateY(-1px)', transition: 'all 0.2s' },
+            }}
+            data-testid="spaces-card"
+            data-tour="dashboard-card-nav"
+            onClick={onClick}
+        >
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
                     <Stack direction="row" gap={1} alignItems="center">
@@ -140,15 +153,20 @@ export function DashboardSpacesCard({
                             {spaceTypeLabel}
                         </Typography>
                     </Stack>
-                    <Button
-                        variant="text"
-                        size="small"
-                        endIcon={<ArrowForwardIcon />}
-                        onClick={() => navigate('/spaces')}
-                        sx={{ fontSize: '0.95rem' }}
-                    >
-                        {t('dashboard.toSpaceType', { type: spaceTypeLabel })}
-                    </Button>
+                    <Stack direction="row" alignItems="center" gap={1}>
+                        <Typography sx={{ color: 'primary.main', fontSize: '12px', fontWeight: 500 }}>
+                            {t('dashboard.card.viewAll')}
+                        </Typography>
+                        <Button
+                            variant="text"
+                            size="small"
+                            endIcon={<ArrowForwardIcon />}
+                            onClick={(e) => { e.stopPropagation(); navigate('/spaces'); }}
+                            sx={{ fontSize: '0.95rem' }}
+                        >
+                            {t('dashboard.toSpaceType', { type: spaceTypeLabel })}
+                        </Button>
+                    </Stack>
                 </Stack>
 
                 <Stack gap={2}>
@@ -159,6 +177,11 @@ export function DashboardSpacesCard({
                         <Typography variant="h3" fontWeight={600} color="primary.main">
                             {totalSpaces}
                         </Typography>
+                        {totalSpaces === 0 && (
+                            <Typography variant="body2" color="text.secondary">
+                                {t('dashboard.card.spaces.empty')}
+                            </Typography>
+                        )}
                     </Box>
 
                     <Grid container spacing={2}>

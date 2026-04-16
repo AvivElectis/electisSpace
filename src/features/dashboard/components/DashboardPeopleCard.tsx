@@ -14,6 +14,7 @@ interface DashboardPeopleCardProps {
     savedLists: number;
     activeListName?: string | null;
     isMobile?: boolean;
+    onClick?: () => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export function DashboardPeopleCard({
     savedLists,
     activeListName,
     isMobile,
+    onClick,
 }: DashboardPeopleCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -35,7 +37,7 @@ export function DashboardPeopleCard({
 
     if (isMobile) {
         return (
-            <Card data-testid="people-card">
+            <Card data-testid="people-card" data-tour="dashboard-card-nav" onClick={onClick} sx={{ cursor: 'pointer' }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     {/* Tappable header */}
                     <Stack
@@ -107,7 +109,18 @@ export function DashboardPeopleCard({
     }
 
     return (
-        <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }} data-testid="people-card">
+        <Card
+            sx={{
+                height: '100%',
+                position: 'relative',
+                overflow: 'visible',
+                cursor: 'pointer',
+                '&:hover': { boxShadow: 4, transform: 'translateY(-1px)', transition: 'all 0.2s' },
+            }}
+            data-testid="people-card"
+            data-tour="dashboard-card-nav"
+            onClick={onClick}
+        >
             <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                     <Stack direction="row" gap={1} alignItems="center">
@@ -124,15 +137,20 @@ export function DashboardPeopleCard({
                             />
                         )}
                     </Stack>
-                    <Button
-                        variant="text"
-                        size="small"
-                        endIcon={<ArrowForwardIcon />}
-                        onClick={() => navigate('/people')}
-                        sx={{ fontSize: '0.95rem' }}
-                    >
-                        {t('dashboard.toPeople')}
-                    </Button>
+                    <Stack direction="row" alignItems="center" gap={1}>
+                        <Typography sx={{ color: 'primary.main', fontSize: '12px', fontWeight: 500 }}>
+                            {t('dashboard.card.viewAll')}
+                        </Typography>
+                        <Button
+                            variant="text"
+                            size="small"
+                            endIcon={<ArrowForwardIcon />}
+                            onClick={(e) => { e.stopPropagation(); navigate('/people'); }}
+                            sx={{ fontSize: '0.95rem' }}
+                        >
+                            {t('dashboard.toPeople')}
+                        </Button>
+                    </Stack>
                 </Stack>
 
                 <Stack gap={3}>
@@ -143,6 +161,11 @@ export function DashboardPeopleCard({
                         <Typography variant="h3" fontWeight={600} color="primary.main">
                             {totalPeople}
                         </Typography>
+                        {totalPeople === 0 && (
+                            <Typography variant="body2" color="text.secondary">
+                                {t('dashboard.card.people.empty')}
+                            </Typography>
+                        )}
                     </Box>
 
                     <Grid container spacing={2}>
