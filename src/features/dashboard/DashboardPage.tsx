@@ -45,6 +45,8 @@ import type { Space, ConferenceRoom } from '@shared/domain/types';
 function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | false)[] }) {
     const theme = useTheme();
     const [activeIndex, setActiveIndex] = useState(0);
+    const [dragOffset, setDragOffset] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const touchStartX = useRef(0);
 
     // Filter out false/null sections
@@ -55,30 +57,53 @@ function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | fa
         setActiveIndex(Math.max(0, Math.min(index, validSections.length - 1)));
     };
 
-    // Swipe detection via touch events
+    // Swipe with finger-following
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.touches[0].clientX;
+        setIsDragging(true);
+        setDragOffset(0);
     };
 
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        const delta = e.changedTouches[0].clientX - touchStartX.current;
-        const threshold = 50; // minimum swipe distance
-        if (Math.abs(delta) < threshold) return;
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return;
+        const delta = e.touches[0].clientX - touchStartX.current;
+        setDragOffset(delta);
+    };
+
+    const handleTouchEnd = () => {
+        setIsDragging(false);
+        const threshold = 50;
+        if (Math.abs(dragOffset) < threshold) {
+            setDragOffset(0);
+            return;
+        }
 
         // In RTL, swipe directions are reversed
-        const swipedLeft = isRtl ? delta > 0 : delta < 0;
+        const swipedLeft = isRtl ? dragOffset > 0 : dragOffset < 0;
         if (swipedLeft) {
             goTo(activeIndex + 1);
         } else {
             goTo(activeIndex - 1);
         }
+        setDragOffset(0);
     };
 
     if (validSections.length === 0) return null;
     if (validSections.length === 1) return <Box>{validSections[0]}</Box>;
 
+    // Calculate the base translate for the active slide
+    const slidePercent = 100 / validSections.length;
+    const baseTranslate = activeIndex * slidePercent;
+    // Convert drag pixel offset to percentage of the track width
+    // Negative drag in LTR = move track left = show next slide
+    const trackWidthEstimate = window.innerWidth * validSections.length;
+    const dragPercent = trackWidthEstimate > 0 ? (dragOffset / trackWidthEstimate) * 100 : 0;
+    const totalTranslate = isRtl
+        ? baseTranslate + dragPercent
+        : -(baseTranslate) + dragPercent;
+
     return (
-        <Box>
+        <Box data-tour="dashboard-stats">
             {/* Dot indicators with counter */}
             <Stack direction="row" justifyContent="center" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
                 <Typography variant="caption" color="text.secondary" dir="ltr" sx={{ minWidth: 32, textAlign: 'end' }}>
@@ -102,9 +127,10 @@ function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | fa
                 ))}
             </Stack>
 
-            {/* Slide container — state-driven, no scroll needed */}
+            {/* Slide container — finger-following swipe */}
             <Box
                 onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 sx={{ overflow: 'hidden' }}
             >
@@ -112,10 +138,8 @@ function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | fa
                     sx={{
                         display: 'flex',
                         width: `${validSections.length * 100}%`,
-                        transition: 'transform 0.3s ease',
-                        // In RTL the track starts on the right, so translate positively to move left
-                        // In LTR the track starts on the left, so translate negatively to move left
-                        transform: `translateX(${isRtl ? '' : '-'}${activeIndex * (100 / validSections.length)}%)`,
+                        transition: isDragging ? 'none' : 'transform 0.3s ease',
+                        transform: `translateX(${totalTranslate}%)`,
                     }}
                 >
                     {validSections.map((section, i) => (
