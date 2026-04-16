@@ -1,5 +1,5 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Popper, Paper, Typography, Button, Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
@@ -112,22 +112,68 @@ export function OnboardingTooltip({
                 }}
             />
 
-            {/* Tooltip */}
-            <Popper
-                open
-                anchorEl={anchorEl}
-                placement={placement}
-                sx={{ zIndex: (theme) => theme.zIndex.tooltip + 1 }}
-                modifiers={[
-                    { name: 'offset', options: { offset: [0, 16] } },
-                    { name: 'preventOverflow', options: { padding: 16 } },
-                ]}
-            >
+            {/* Tooltip — anchored to target for small elements, centered for large ones */}
+            {showSpotlight ? (
+                <Popper
+                    open
+                    anchorEl={anchorEl}
+                    placement={placement}
+                    sx={{ zIndex: (thm) => thm.zIndex.tooltip + 1 }}
+                    modifiers={[
+                        { name: 'offset', options: { offset: [0, 16] } },
+                        { name: 'preventOverflow', options: { padding: 16 } },
+                    ]}
+                >
+                    <TooltipContent
+                        step={step} stepLabel={stepLabel} isRtl={isRtl}
+                        currentStep={currentStep} isLastStep={isLastStep}
+                        onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+                    />
+                </Popper>
+            ) : (
+                /* For large targets, center the tooltip on screen */
+                <Box sx={{
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: (thm) => thm.zIndex.tooltip + 1,
+                }}>
+                    <TooltipContent
+                        step={step} stepLabel={stepLabel} isRtl={isRtl}
+                        currentStep={currentStep} isLastStep={isLastStep}
+                        onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+                    />
+                </Box>
+            )}
+        </>
+    );
+}
+
+/** Inner tooltip card — shared between Popper and centered modes */
+function TooltipContent({
+    step, stepLabel, isRtl, currentStep, isLastStep,
+    onNext, onPrev, onSkip, t,
+}: {
+    step: TourStep; stepLabel: string; isRtl: boolean;
+    currentStep: number; isLastStep: boolean;
+    onNext: () => void; onPrev: () => void; onSkip: () => void;
+    t: (key: string) => string;
+}) {
+    const paperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        paperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, [step]);
+
+    return (
                 <Paper
+                    ref={paperRef}
                     elevation={8}
                     sx={{
                         p: 2.5,
                         width: 320,
+                        maxWidth: 'calc(100vw - 32px)',
                         borderRadius: '12px',
                         border: '1px solid',
                         borderColor: 'divider',
@@ -198,7 +244,5 @@ export function OnboardingTooltip({
                         </Box>
                     </Box>
                 </Paper>
-            </Popper>
-        </>
     );
 }
