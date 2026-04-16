@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useSettingsStore } from '../infrastructure/settingsStore';
+import { useOnboardingStore } from '@shared/application/onboardingStore';
+import { useNotifications } from '@shared/infrastructure/store/notificationStore';
 import { logger } from '@shared/infrastructure/services/logger';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { usePeopleStore } from '@features/people/infrastructure/peopleStore';
@@ -42,6 +44,8 @@ function clearAllDataStores(): void {
 export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
     const { t } = useTranslation();
     const { clearModeCredentials } = useSettingsStore();
+    const resetAllTours = useOnboardingStore((s) => s.resetAllTours);
+    const { showSuccess } = useNotifications();
     const [pendingMode, setPendingMode] = useState<WorkingMode | null>(null);
     const [showModeSwitchDialog, setShowModeSwitchDialog] = useState(false);
     const [isSwitching, setIsSwitching] = useState(false);
@@ -65,6 +69,11 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
         }
         setShowModeSwitchDialog(false);
         setPendingMode(null);
+    };
+
+    const handleRestartTours = () => {
+        resetAllTours();
+        showSuccess(t('onboarding.settings.restartToursSuccess'));
     };
 
     const handleCancelModeSwitch = () => {
@@ -130,6 +139,19 @@ export function AppSettingsTab({ settings, onUpdate }: AppSettingsTabProps) {
                         />
                     </Stack>
                 </Paper>
+
+                {/* Guided Tours Section */}
+                <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        {t('onboarding.settings.restartTours')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {t('onboarding.settings.restartToursDescription')}
+                    </Typography>
+                    <Button variant="outlined" size="small" onClick={handleRestartTours} sx={{ borderRadius: '24px' }}>
+                        {t('onboarding.settings.restartTours')}
+                    </Button>
+                </Box>
             </Stack>
         </Box>
     );
