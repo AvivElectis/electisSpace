@@ -1,6 +1,6 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { Popper, Paper, Typography, Button, Box, useTheme } from '@mui/material';
+import { Popper, Paper, Typography, Button, Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
 
@@ -27,11 +27,12 @@ export function OnboardingTooltip({
     onPrev,
     onSkip,
 }: OnboardingTooltipProps) {
-    const { t } = useTranslation();
-    const theme = useTheme();
+    const { t, i18n } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-    const isRtl = theme.direction === 'rtl';
+    // Popper renders in a portal outside ThemeProvider, so useTheme() returns default LTR.
+    // Use document.dir which is set by App.tsx based on i18n.language.
+    const isRtl = document.dir === 'rtl';
 
     // Stable reference for onNext to avoid re-triggering effect
     const onNextRef = useCallback(onNext, [onNext]);
