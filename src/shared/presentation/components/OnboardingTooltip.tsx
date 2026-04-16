@@ -81,6 +81,11 @@ export function OnboardingTooltip({
         ? `${totalSteps} / ${currentStep + 1}`
         : `${currentStep + 1} / ${totalSteps}`;
 
+    // Skip spotlight for targets that cover most of the viewport (> 60% area)
+    const viewportArea = window.innerWidth * window.innerHeight;
+    const targetArea = anchorRect.width * anchorRect.height;
+    const showSpotlight = targetArea / viewportArea < 0.6;
+
     return (
         <>
             {/* Spotlight: dark overlay with cutout around the target element */}
@@ -90,17 +95,20 @@ export function OnboardingTooltip({
                     position: 'fixed',
                     inset: 0,
                     zIndex: (thm) => thm.zIndex.tooltip - 1,
-                    // Use a massive box-shadow to create the dark overlay with a transparent hole
-                    '&::before': {
-                        content: '""',
-                        position: 'fixed',
-                        top: anchorRect.top - 6,
-                        left: anchorRect.left - 6,
-                        width: anchorRect.width + 12,
-                        height: anchorRect.height + 12,
-                        borderRadius: '12px',
-                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.25)',
-                    },
+                    ...(showSpotlight ? {
+                        '&::before': {
+                            content: '""',
+                            position: 'fixed',
+                            top: anchorRect.top - 6,
+                            left: anchorRect.left - 6,
+                            width: anchorRect.width + 12,
+                            height: anchorRect.height + 12,
+                            borderRadius: '12px',
+                            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.25)',
+                        },
+                    } : {
+                        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                    }),
                 }}
             />
 
