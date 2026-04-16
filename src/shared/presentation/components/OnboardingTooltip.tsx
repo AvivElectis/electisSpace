@@ -1,6 +1,6 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
-import { useEffect, useState } from 'react';
-import { Popper, Paper, Typography, Button, Box, Backdrop } from '@mui/material';
+import { useEffect, useState, useCallback } from 'react';
+import { Popper, Paper, Typography, Button, Box, Backdrop, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
 
@@ -27,37 +27,46 @@ export function OnboardingTooltip({
     onPrev,
     onSkip,
 }: OnboardingTooltipProps) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
+    const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const isRtl = i18n.dir() === 'rtl';
+    const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+    const isRtl = theme.direction === 'rtl';
+
+    // Stable reference for onNext to avoid re-triggering effect
+    const onNextRef = useCallback(onNext, [onNext]);
 
     // Find the target element when step changes
     useEffect(() => {
         if (!step) {
             setAnchorEl(null);
+            setAnchorRect(null);
             return;
         }
 
         // Retry finding element (it may render after a delay)
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 15;
         const interval = setInterval(() => {
             const el = document.querySelector<HTMLElement>(step.targetSelector);
-            if (el) {
+            if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
                 setAnchorEl(el);
+                setAnchorRect(el.getBoundingClientRect());
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Update rect after scroll settles
+                setTimeout(() => setAnchorRect(el.getBoundingClientRect()), 400);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
-                // Target not found — skip this step silently
-                onNext();
+                // Target not found or has no size — skip this step silently
+                onNextRef();
             }
-        }, 200);
+        }, 300);
 
         return () => clearInterval(interval);
-    }, [step, onNext]);
+    }, [step, onNextRef]);
 
-    if (!step || !anchorEl) return null;
+    if (!step || !anchorEl || !anchorRect) return null;
 
     // Flip placement for RTL
     const placement = (() => {
@@ -86,13 +95,13 @@ export function OnboardingTooltip({
             <Box
                 sx={{
                     position: 'fixed',
-                    top: anchorEl.getBoundingClientRect().top - 4,
-                    left: anchorEl.getBoundingClientRect().left - 4,
-                    width: anchorEl.offsetWidth + 8,
-                    height: anchorEl.offsetHeight + 8,
+                    top: anchorRect.top - 4,
+                    left: anchorRect.left - 4,
+                    width: anchorRect.width + 8,
+                    height: anchorRect.height + 8,
                     borderRadius: '12px',
                     boxShadow: '0 0 0 3px rgba(13, 71, 161, 0.25)',
-                    zIndex: (theme) => theme.zIndex.tooltip,
+                    zIndex: (thm) => thm.zIndex.tooltip,
                     pointerEvents: 'none',
                 }}
             />
@@ -101,11 +110,11 @@ export function OnboardingTooltip({
             <Box
                 sx={{
                     position: 'fixed',
-                    top: anchorEl.getBoundingClientRect().top,
-                    left: anchorEl.getBoundingClientRect().left,
-                    width: anchorEl.offsetWidth,
-                    height: anchorEl.offsetHeight,
-                    zIndex: (theme) => theme.zIndex.tooltip,
+                    top: anchorRect.top,
+                    left: anchorRect.left,
+                    width: anchorRect.width,
+                    height: anchorRect.height,
+                    zIndex: (thm) => thm.zIndex.tooltip,
                     backgroundColor: 'background.paper',
                     borderRadius: '12px',
                 }}
