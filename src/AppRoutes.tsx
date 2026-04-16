@@ -4,6 +4,8 @@ import { RouteLoadingFallback } from '@shared/presentation/components/RouteLoadi
 import { logger } from '@shared/infrastructure/services/logger';
 import { ProtectedRoute } from '@features/auth/presentation/ProtectedRoute';
 import { ProtectedFeature } from '@features/auth/presentation/ProtectedFeature';
+import { useNotifications } from '@shared/infrastructure/store/notificationStore';
+import { useTranslation } from 'react-i18next';
 
 // Lazy load all page components for code splitting
 const LoginPage = lazy(() =>
@@ -44,6 +46,28 @@ const NotFoundPage = lazy(() =>
 );
 
 /**
+ * Deduplication set to show feature restriction toast only once per feature per session
+ */
+const shownFeatures = new Set<string>();
+
+/**
+ * Shows an info toast when a user navigates to a restricted feature, then redirects to dashboard
+ */
+function FeatureRedirect({ feature }: { feature: string }) {
+    const { showInfo } = useNotifications();
+    const { t } = useTranslation();
+
+    useEffect(() => {
+        if (!shownFeatures.has(feature)) {
+            shownFeatures.add(feature);
+            showInfo(t('featureRestriction.notAvailable', { feature: t(`features.${feature}`) }));
+        }
+    }, [feature, showInfo, t]);
+
+    return <Navigate to="/" replace />;
+}
+
+/**
  * Wrapper that provides isolated Suspense boundary per route
  * This ensures the loader shows immediately when navigating
  */
@@ -81,12 +105,12 @@ export function AppRoutes() {
 
             {/* Protected Routes */}
             <Route path="/" element={<ProtectedRoute><SuspenseRoute><DashboardPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/spaces" element={<ProtectedRoute><ProtectedFeature feature="spaces" fallback={<Navigate to="/" replace />}><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/conference" element={<ProtectedRoute><ProtectedFeature feature="conference" fallback={<Navigate to="/" replace />}><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<Navigate to="/" replace />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
-            <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<Navigate to="/" replace />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/spaces" element={<ProtectedRoute><ProtectedFeature feature="spaces" fallback={<FeatureRedirect feature="spaces" />}><SuspenseRoute><SpacesPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/conference" element={<ProtectedRoute><ProtectedFeature feature="conference" fallback={<FeatureRedirect feature="conference" />}><SuspenseRoute><ConferencePage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/people" element={<ProtectedRoute><ProtectedFeature feature="people" fallback={<FeatureRedirect feature="people" />}><SuspenseRoute><PeopleManagerView /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/labels" element={<ProtectedRoute><ProtectedFeature feature="labels" fallback={<FeatureRedirect feature="labels" />}><SuspenseRoute><LabelsPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/audit-log" element={<ProtectedRoute><SuspenseRoute><AuditLogPage /></SuspenseRoute></ProtectedRoute>} />
-            <Route path="/aims-management" element={<ProtectedRoute><ProtectedFeature feature="aims-management" minimumStoreRole="STORE_MANAGER" requireAll fallback={<Navigate to="/" replace />}><SuspenseRoute><AimsManagementPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
+            <Route path="/aims-management" element={<ProtectedRoute><ProtectedFeature feature="aims-management" minimumStoreRole="STORE_MANAGER" requireAll fallback={<FeatureRedirect feature="aims-management" />}><SuspenseRoute><AimsManagementPage /></SuspenseRoute></ProtectedFeature></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SuspenseRoute><NativeSettingsPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/manual" element={<ProtectedRoute><SuspenseRoute><NativeManualPage /></SuspenseRoute></ProtectedRoute>} />
             <Route path="/about" element={<ProtectedRoute><SuspenseRoute><NativeAboutPage /></SuspenseRoute></ProtectedRoute>} />
