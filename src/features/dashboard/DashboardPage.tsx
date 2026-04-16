@@ -2,6 +2,8 @@ import { Box, Typography, Grid, Stack, useMediaQuery, useTheme, alpha } from '@m
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PullToRefresh } from '@shared/presentation/components/PullToRefresh';
+import { useFeatureTour } from '@shared/presentation/hooks/useFeatureTour';
+import { OnboardingTooltip } from '@shared/presentation/components/OnboardingTooltip';
 import { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react';
 
 // Features
@@ -147,6 +149,10 @@ export function DashboardPage() {
     const { getLabel } = useSpaceTypeLabels();
     const { syncState } = useSyncContext();
     const { activeStoreId, isAppReady } = useAuthStore();
+
+    // Onboarding tour
+    const { currentStep, totalSteps, currentTourStep, isLastStep, handleNext, handlePrev, handleSkip } =
+        useFeatureTour({ tour: 'dashboard' });
 
     // Sync push callback for CRUD operations
     const handleSync = useCallback(async () => {
@@ -484,6 +490,16 @@ export function DashboardPage() {
                     />
                 )}
             </Suspense>
+
+            <OnboardingTooltip
+                step={currentTourStep}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                isLastStep={isLastStep}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                onSkip={handleSkip}
+            />
         </Box>
         </PullToRefresh>
     );
