@@ -50,6 +50,8 @@ import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { EmptyState } from '@shared/presentation/components/EmptyState';
+import { useFeatureTour } from '@shared/presentation/hooks/useFeatureTour';
+import { OnboardingTooltip } from '@shared/presentation/components/OnboardingTooltip';
 
 import { SpacesSyncPanel } from './SpacesSyncPanel';
 
@@ -355,6 +357,10 @@ export function SpacesManagementView() {
     const { hasStoreRole, isAppViewer } = useAuthContext();
     const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
 
+    // Onboarding tour
+    const { currentStep, totalSteps, currentTourStep, isLastStep, handleNext, handlePrev, handleSkip } =
+        useFeatureTour({ tour: 'spaces' });
+
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
@@ -641,7 +647,7 @@ export function SpacesManagementView() {
                     </Tooltip>
                 )}
 
-                <Box sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
+                <Box data-tour="spaces-add" sx={{ ...glassToolbarSx, display: { xs: 'none', md: 'inline-flex' } }}>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -656,7 +662,7 @@ export function SpacesManagementView() {
 
             {/* List Management Panel — desktop: above table, mobile: below table */}
             {!isMobile && (
-                <Paper sx={{ mb: 2, overflow: 'hidden' }}>
+                <Paper data-tour="spaces-lists" sx={{ mb: 2, overflow: 'hidden' }}>
                     <Stack
                         direction="row"
                         alignItems="center"
@@ -743,6 +749,7 @@ export function SpacesManagementView() {
                     placeholder={t('spaces.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    data-tour="spaces-search"
                     sx={{
                         mb: 3,
                         maxWidth: 400,
@@ -765,7 +772,7 @@ export function SpacesManagementView() {
                 page toolbar. Hidden while select mode is active — the
                 selection bar below carries its own Cancel button. */}
             {!selectMode && (
-                <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+                <Stack data-tour="spaces-table-actions" direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
                     <Tooltip title={t('common.select')}>
                         <span>
                             <IconButton
@@ -1053,7 +1060,9 @@ export function SpacesManagementView() {
                 </Paper>
             )}
             {/* AIMS Sync Panel — always at page bottom */}
-            <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
+            <Box data-tour="spaces-sync">
+                <SpacesSyncPanel onSyncComplete={() => spaceController.fetchSpaces?.()} />
+            </Box>
             {/* Mobile FAB — Add Space */}
             {isMobile && (
                 <Fab
@@ -1109,6 +1118,16 @@ export function SpacesManagementView() {
                     />
                 )}
             </Suspense>
+
+            <OnboardingTooltip
+                step={currentTourStep}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                isLastStep={isLastStep}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                onSkip={handleSkip}
+            />
         </Box>
         </PullToRefresh>
     );
