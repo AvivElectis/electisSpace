@@ -1,6 +1,6 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { Popper, Paper, Typography, Button, Box, Backdrop, useTheme } from '@mui/material';
+import { Popper, Paper, Typography, Button, Box, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
 
@@ -82,42 +82,24 @@ export function OnboardingTooltip({
 
     return (
         <>
-            {/* Spotlight backdrop */}
-            <Backdrop
-                open
-                sx={{
-                    zIndex: (theme) => theme.zIndex.tooltip - 1,
-                    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-                }}
+            {/* Spotlight: dark overlay with cutout around the target element */}
+            <Box
                 onClick={onSkip}
-            />
-
-            {/* Highlight ring on target */}
-            <Box
                 sx={{
                     position: 'fixed',
-                    top: anchorRect.top - 4,
-                    left: anchorRect.left - 4,
-                    width: anchorRect.width + 8,
-                    height: anchorRect.height + 8,
-                    borderRadius: '12px',
-                    boxShadow: '0 0 0 3px rgba(13, 71, 161, 0.25)',
-                    zIndex: (thm) => thm.zIndex.tooltip,
-                    pointerEvents: 'none',
-                }}
-            />
-
-            {/* Make target clickable above backdrop */}
-            <Box
-                sx={{
-                    position: 'fixed',
-                    top: anchorRect.top,
-                    left: anchorRect.left,
-                    width: anchorRect.width,
-                    height: anchorRect.height,
-                    zIndex: (thm) => thm.zIndex.tooltip,
-                    backgroundColor: 'background.paper',
-                    borderRadius: '12px',
+                    inset: 0,
+                    zIndex: (thm) => thm.zIndex.tooltip - 1,
+                    // Use a massive box-shadow to create the dark overlay with a transparent hole
+                    '&::before': {
+                        content: '""',
+                        position: 'fixed',
+                        top: anchorRect.top - 6,
+                        left: anchorRect.left - 6,
+                        width: anchorRect.width + 12,
+                        height: anchorRect.height + 12,
+                        borderRadius: '12px',
+                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.25)',
+                    },
                 }}
             />
 
