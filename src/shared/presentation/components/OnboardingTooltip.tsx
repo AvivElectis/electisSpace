@@ -40,6 +40,35 @@ export function OnboardingTooltip({
 
     const onNextStable = useCallback(onNext, [onNext]);
 
+    // Lock user scroll (wheel/touch/keyboard) while the tour is active.
+    // Programmatic scrollIntoView below still works — it doesn't dispatch user events.
+    useEffect(() => {
+        if (!step) return;
+
+        const block = (e: Event) => {
+            const target = e.target as HTMLElement | null;
+            // Let the tooltip card itself receive scroll events (buttons, etc.)
+            if (target && target.closest('[data-onboarding-card]')) return;
+            e.preventDefault();
+        };
+        const blockKeys = (e: KeyboardEvent) => {
+            const scrollKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '];
+            if (!scrollKeys.includes(e.key)) return;
+            const target = e.target as HTMLElement | null;
+            if (target && target.closest('[data-onboarding-card]')) return;
+            e.preventDefault();
+        };
+
+        window.addEventListener('wheel', block, { passive: false });
+        window.addEventListener('touchmove', block, { passive: false });
+        window.addEventListener('keydown', blockKeys);
+        return () => {
+            window.removeEventListener('wheel', block);
+            window.removeEventListener('touchmove', block);
+            window.removeEventListener('keydown', blockKeys);
+        };
+    }, [step]);
+
     // Find target element when step changes; update anchor + rect ASAP.
     // Card + spotlight stay mounted — CSS transitions glide them between steps.
     useEffect(() => {
@@ -63,9 +92,13 @@ export function OnboardingTooltip({
             setAnchorEl(el);
             const elRect = el.getBoundingClientRect();
             const vh = window.innerHeight;
-            const needsScroll = elRect.top < 40 || elRect.bottom > vh - 40;
+            // Keep a wider bottom safe-zone on mobile: the FAB covers ~90px at the bottom,
+            // so anything within that band is visually obscured and needs to be scrolled up.
+            const bottomSafe = isMobile ? 110 : 60;
+            const topSafe = isMobile ? 80 : 60;
+            const needsScroll = elRect.top < topSafe || elRect.bottom > vh - bottomSafe;
             if (!needsScroll) {
-                // Already visible — commit rect now, no wait
+                // Already comfortably in view — commit rect now, no wait
                 setRect(elRect);
                 return;
             }
@@ -75,7 +108,7 @@ export function OnboardingTooltip({
                 if (document.body.contains(el)) {
                     setRect(el.getBoundingClientRect());
                 }
-            }, 220);
+            }, 260);
         };
 
         // Try immediately — target is usually already mounted
@@ -249,6 +282,7 @@ function TooltipCard({
 }) {
     return (
         <Paper
+            data-onboarding-card
             elevation={8}
             onClick={(e) => e.stopPropagation()}
             sx={{

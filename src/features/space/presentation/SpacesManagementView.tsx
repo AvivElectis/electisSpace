@@ -637,6 +637,7 @@ export function SpacesManagementView() {
                 {isMobile && (
                     <Tooltip title={t('common.search')}>
                         <IconButton
+                            data-tour="spaces-search"
                             onClick={() => setSearchOpen(!searchOpen)}
                             color={searchQuery ? 'primary' : 'default'}
                         >
@@ -1006,7 +1007,7 @@ export function SpacesManagementView() {
             )}
             {/* Panels below table — both desktop and mobile */}
             {isMobile && (
-                <Paper sx={{ mb: 2, mt: 2, overflow: 'hidden' }}>
+                <Paper data-tour="spaces-lists" sx={{ mb: 2, mt: 2, overflow: 'hidden' }}>
                     <Stack
                         direction="row"
                         alignItems="center"
