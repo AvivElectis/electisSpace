@@ -10,8 +10,16 @@ FROM node:20-alpine AS frontend
 
 WORKDIR /app
 
+# Harden npm against transient CI network failures (ECONNRESET on the registry).
+# Per-request retries + generous timeouts; wrapped in a shell retry so a full
+# connection drop mid-install gets a second or third chance.
+ENV NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=180000 \
+    NPM_CONFIG_FETCH_TIMEOUT=300000
+
 COPY package*.json ./
-RUN npm ci
+RUN npm ci || (echo "npm ci retry 1/2" && sleep 15 && npm ci) || (echo "npm ci retry 2/2" && sleep 45 && npm ci)
 
 COPY src/ ./src/
 COPY public/ ./public/
