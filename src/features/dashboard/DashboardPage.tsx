@@ -103,9 +103,9 @@ function DashboardMobileCarousel({ sections }: { sections: (React.ReactNode | fa
         : -(baseTranslate) + dragPercent;
 
     return (
-        <Box data-tour="dashboard-stats">
-            {/* Dot indicators with counter */}
-            <Stack direction="row" justifyContent="center" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
+        <Box>
+            {/* Dot indicators with counter — also the spotlight target for the "stats overview" step */}
+            <Stack data-tour="dashboard-stats" direction="row" justifyContent="center" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
                 <Typography variant="caption" color="text.secondary" dir="ltr" sx={{ minWidth: 32, textAlign: 'end' }}>
                     {activeIndex + 1}/{validSections.length}
                 </Typography>
@@ -480,10 +480,9 @@ export function DashboardPage() {
             {/* Bottom spacer so content isn't hidden behind the fixed FAB on mobile */}
             {isMobile && <Box sx={{ height: 104 }} />}
 
-            {/* Mobile FAB Quick Actions — fixed position */}
+            {/* Mobile FAB Quick Actions — fixed position. data-tour lives on the Fab itself (inside the panel). */}
             {isMobile && (
                 <Box
-                    data-tour="dashboard-quick-actions"
                     sx={{
                         position: 'fixed',
                         bottom: 'calc(16px + var(--native-bottom-nav-offset, 0px))',

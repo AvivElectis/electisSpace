@@ -49,6 +49,16 @@ export function OnboardingTooltip({
             return;
         }
 
+        // Find the first *visible* match. A data-tour attribute often has both
+        // a desktop and a mobile variant in the DOM, one hidden via display rules.
+        const findVisible = (): HTMLElement | null => {
+            const matches = document.querySelectorAll<HTMLElement>(step.targetSelector);
+            for (const el of matches) {
+                if (el.offsetWidth > 0 && el.offsetHeight > 0) return el;
+            }
+            return null;
+        };
+
         const applyElement = (el: HTMLElement) => {
             setAnchorEl(el);
             const elRect = el.getBoundingClientRect();
@@ -69,8 +79,8 @@ export function OnboardingTooltip({
         };
 
         // Try immediately — target is usually already mounted
-        const immediate = document.querySelector<HTMLElement>(step.targetSelector);
-        if (immediate && immediate.offsetWidth > 0 && immediate.offsetHeight > 0) {
+        const immediate = findVisible();
+        if (immediate) {
             applyElement(immediate);
             return;
         }
@@ -79,8 +89,8 @@ export function OnboardingTooltip({
         let attempts = 0;
         const maxAttempts = 40;
         const interval = setInterval(() => {
-            const el = document.querySelector<HTMLElement>(step.targetSelector);
-            if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+            const el = findVisible();
+            if (el) {
                 applyElement(el);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
@@ -115,9 +125,10 @@ export function OnboardingTooltip({
 
     return (
         <>
-            {/* Click-catch layer — tapping anywhere skips the tour */}
+            {/* Click-catch layer — blocks interaction with the app; does NOT dismiss the tour.
+                Only the Skip Tour link or the Done button end the tour. */}
             <Box
-                onClick={(e) => { e.stopPropagation(); onSkip(); }}
+                onClick={(e) => e.stopPropagation()}
                 sx={{
                     position: 'fixed',
                     inset: 0,

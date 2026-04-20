@@ -1064,6 +1064,7 @@ export function ConferencePage() {
             {/* Mobile FAB — Add Room */}
             {isMobile && (
                 <Fab
+                    data-tour="conference-add"
                     color="primary"
                     variant="extended"
                     onClick={handleAdd}

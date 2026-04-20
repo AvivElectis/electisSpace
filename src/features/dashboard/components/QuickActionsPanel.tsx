@@ -93,8 +93,9 @@ export function QuickActionsPanel({
         return (
             <ClickAwayListener onClickAway={() => open && setOpen(false)}>
                 <Box sx={{ display: 'flex', flexDirection: 'column-reverse', alignItems: 'flex-start' }}>
-                    {/* FAB trigger — always at the bottom */}
+                    {/* FAB trigger — always at the bottom. Tour spotlight focuses here, not the expanded menu area. */}
                     <Fab
+                        data-tour="dashboard-quick-actions"
                         color="primary"
                         size="large"
                         onClick={() => setOpen((prev) => !prev)}

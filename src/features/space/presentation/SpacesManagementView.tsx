@@ -1066,6 +1066,7 @@ export function SpacesManagementView() {
             {/* Mobile FAB — Add Space */}
             {isMobile && (
                 <Fab
+                    data-tour="spaces-add"
                     color="primary"
                     variant="extended"
                     onClick={handleAdd}
