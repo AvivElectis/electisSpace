@@ -46,10 +46,8 @@ export function OnboardingTooltip({
             const el = document.querySelector<HTMLElement>(step.targetSelector);
             if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
                 setAnchorEl(el);
-                if (!isMobile) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                setTimeout(() => setRect(el.getBoundingClientRect()), isMobile ? 100 : 600);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => setRect(el.getBoundingClientRect()), isMobile ? 350 : 600);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -62,18 +60,20 @@ export function OnboardingTooltip({
 
     if (!step) return null;
 
-    // On mobile: always show centered tooltip with plain overlay (no spotlight, no Popper)
-    // On desktop: wait for anchor + rect, show spotlight if target is small enough
+    // Need anchor element + rect for both mobile and desktop (to draw spotlight)
+    if (!anchorEl || !rect || !document.body.contains(anchorEl)) return null;
+
+    const stepLabelShared = isRtl
+        ? `${totalSteps} / ${currentStep + 1}`
+        : `${currentStep + 1} / ${totalSteps}`;
+
     if (isMobile) {
         return <MobileTooltip
-            step={step} currentStep={currentStep} totalSteps={totalSteps}
-            isLastStep={isLastStep} isRtl={isRtl}
+            step={step} rect={rect} stepLabel={stepLabelShared}
+            currentStep={currentStep} isLastStep={isLastStep} isRtl={isRtl}
             onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
         />;
     }
-
-    // Desktop: need anchor element found
-    if (!anchorEl || !rect || !document.body.contains(anchorEl)) return null;
 
     const placement = (() => {
         if (step.placement === 'left') return isRtl ? 'right' as const : 'left' as const;
@@ -81,9 +81,7 @@ export function OnboardingTooltip({
         return step.placement;
     })();
 
-    const stepLabel = isRtl
-        ? `${totalSteps} / ${currentStep + 1}`
-        : `${currentStep + 1} / ${totalSteps}`;
+    const stepLabel = stepLabelShared;
 
     const viewportArea = window.innerWidth * window.innerHeight;
     const targetArea = rect.width * rect.height;
@@ -150,41 +148,70 @@ export function OnboardingTooltip({
     );
 }
 
-/** Mobile: centered tooltip with plain dark overlay, no spotlight */
+/** Mobile: spotlight around target + card pinned to opposite half of screen */
 function MobileTooltip({
-    step, currentStep, totalSteps, isLastStep, isRtl,
+    step, rect, stepLabel, currentStep, isLastStep, isRtl,
     onNext, onPrev, onSkip, t,
 }: {
-    step: TourStep; currentStep: number; totalSteps: number;
-    isLastStep: boolean; isRtl: boolean;
+    step: TourStep; rect: DOMRect; stepLabel: string;
+    currentStep: number; isLastStep: boolean; isRtl: boolean;
     onNext: () => void; onPrev: () => void; onSkip: () => void;
     t: (key: string) => string;
 }) {
-    const stepLabel = isRtl
-        ? `${totalSteps} / ${currentStep + 1}`
-        : `${currentStep + 1} / ${totalSteps}`;
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const targetFillsViewport = (rect.width * rect.height) / (vw * vh) > 0.7;
+    const rectCenterY = rect.top + rect.height / 2;
+    const cardAtBottom = rectCenterY < vh / 2;
 
     return (
         <>
+            {/* Overlay with spotlight cutout (or plain dim if target fills screen) */}
             <Box
                 onClick={(e) => { e.stopPropagation(); onSkip(); }}
                 sx={{
                     position: 'fixed',
                     inset: 0,
                     zIndex: (thm) => thm.zIndex.tooltip - 1,
-                    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                    ...(targetFillsViewport
+                        ? { backgroundColor: 'rgba(0, 0, 0, 0.45)' }
+                        : {
+                            '&::before': {
+                                content: '""',
+                                position: 'fixed',
+                                top: rect.top - 6,
+                                left: rect.left - 6,
+                                width: rect.width + 12,
+                                height: rect.height + 12,
+                                borderRadius: '12px',
+                                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(13, 71, 161, 0.5)',
+                            },
+                        }),
                 }}
             />
+            {/* Card pinned to opposite half so it doesn't cover the spotlight */}
             <Box sx={{
-                position: 'fixed', top: '50%', left: '50%',
-                transform: 'translate(-50%, -50%)',
+                position: 'fixed',
+                left: 0,
+                right: 0,
+                ...(targetFillsViewport
+                    ? { top: '50%', transform: 'translateY(-50%)' }
+                    : cardAtBottom
+                        ? { bottom: 16 }
+                        : { top: 16 }),
                 zIndex: (thm) => thm.zIndex.tooltip + 1,
+                display: 'flex',
+                justifyContent: 'center',
+                px: 2,
+                pointerEvents: 'none',
             }}>
-                <TooltipCard
-                    step={step} stepLabel={stepLabel} isRtl={isRtl}
-                    currentStep={currentStep} isLastStep={isLastStep}
-                    onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
-                />
+                <Box sx={{ pointerEvents: 'auto' }}>
+                    <TooltipCard
+                        step={step} stepLabel={stepLabel} isRtl={isRtl}
+                        currentStep={currentStep} isLastStep={isLastStep}
+                        onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+                    />
+                </Box>
             </Box>
         </>
     );
