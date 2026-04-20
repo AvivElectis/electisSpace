@@ -2,14 +2,12 @@ import { Box, Container, Tabs, Tab, useMediaQuery, useTheme, Drawer, List, ListI
 import CloseIcon from '@mui/icons-material/Close';
 import { type ReactNode, useState, useEffect, useCallback, lazy, Suspense, useTransition, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { checkNavigationGuard } from '../navigationGuard';
 import { AppHeader } from './AppHeader';
 import { useSyncStore } from '@features/sync/infrastructure/syncStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useBackendSyncController } from '@features/sync/application/useBackendSyncController';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
-import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { SphereLoader } from '../components/SphereLoader';
 import { logger } from '@shared/infrastructure/services/logger';
 import { prefetchRoute, prefetchAllRoutes } from '../utils/routePrefetch';
@@ -63,7 +61,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const { t } = useTranslation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [manualOpen, setManualOpen] = useState(false);
@@ -72,14 +69,13 @@ export function MainLayout({ children }: MainLayoutProps) {
     const { isNative } = useNativePlatform();
     useNativeInit();
     const { syncState, setWorkingMode } = useSyncStore();
-    const { isAuthenticated, activeStoreEffectiveFeatures } = useAuthContext();
+    const { isAuthenticated } = useAuthContext();
     const isInitialized = useAuthStore(state => state.isInitialized);
     const isSwitchingStore = useAuthStore(state => state.isSwitchingStore);
     const currentUser = useAuthStore(state => state.user);
     
     // Select individual primitives to avoid re-renders on unrelated settings changes
     const workingMode = useSettingsStore(state => state.settings.workingMode);
-    const peopleManagerEnabled = useSettingsStore(state => state.settings.peopleManagerEnabled);
     const autoSyncEnabled = useSettingsStore(state => state.settings.autoSyncEnabled);
     const autoSyncInterval = useSettingsStore(state => state.settings.autoSyncInterval);
     const activeStoreId = useSettingsStore(state => state.activeStoreId);
@@ -104,10 +100,6 @@ export function MainLayout({ children }: MainLayoutProps) {
         setWorkingMode(workingMode);
     }, [workingMode, setWorkingMode]);
 
-    // Determine if People Manager mode is enabled
-    // Use effective features from auth context (company/store level) with fallback to legacy settings
-    const isPeopleManagerMode = (activeStoreEffectiveFeatures?.peopleEnabled ?? peopleManagerEnabled) && workingMode === 'SOLUM_API';
-
     /**
      * Combined space update handler
      * In People Manager mode, AIMS articles represent people, not spaces.
@@ -126,10 +118,6 @@ export function MainLayout({ children }: MainLayoutProps) {
             logger.error('MainLayout', 'Backend sync error', { error: error.message });
         },
     });
-
-    // Get active list name for tab label
-
-    const { getLabel } = useSpaceTypeLabels();
 
     const { sync } = syncController;
 
