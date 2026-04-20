@@ -19,7 +19,8 @@ const CARD_W = 320;
 const CARD_H = 200;
 const OFFSET = 16;
 const MARGIN = 16;
-const SLIDE = 'cubic-bezier(0.4, 0, 0.2, 1)';
+const SLIDE = 'cubic-bezier(0.2, 0.9, 0.3, 1)';
+const SLIDE_MS = 240;
 
 export function OnboardingTooltip({
     step,
@@ -39,9 +40,8 @@ export function OnboardingTooltip({
 
     const onNextStable = useCallback(onNext, [onNext]);
 
-    // Find target element when step changes; update anchor + rect after scroll settles.
-    // Card + spotlight stay mounted throughout the tour — CSS transitions on top/left/w/h
-    // smoothly glide between steps.
+    // Find target element when step changes; update anchor + rect ASAP.
+    // Card + spotlight stay mounted — CSS transitions glide them between steps.
     useEffect(() => {
         if (!step) {
             setAnchorEl(null);
@@ -49,23 +49,48 @@ export function OnboardingTooltip({
             return;
         }
 
+        const applyElement = (el: HTMLElement) => {
+            setAnchorEl(el);
+            const elRect = el.getBoundingClientRect();
+            const vh = window.innerHeight;
+            const needsScroll = elRect.top < 40 || elRect.bottom > vh - 40;
+            if (!needsScroll) {
+                // Already visible — commit rect now, no wait
+                setRect(elRect);
+                return;
+            }
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Short settle for the smooth scroll; measure the final rect
+            setTimeout(() => {
+                if (document.body.contains(el)) {
+                    setRect(el.getBoundingClientRect());
+                }
+            }, 220);
+        };
+
+        // Try immediately — target is usually already mounted
+        const immediate = document.querySelector<HTMLElement>(step.targetSelector);
+        if (immediate && immediate.offsetWidth > 0 && immediate.offsetHeight > 0) {
+            applyElement(immediate);
+            return;
+        }
+
+        // Fallback: fast poll for async-rendered targets
         let attempts = 0;
-        const maxAttempts = 15;
+        const maxAttempts = 40;
         const interval = setInterval(() => {
             const el = document.querySelector<HTMLElement>(step.targetSelector);
             if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
-                setAnchorEl(el);
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => setRect(el.getBoundingClientRect()), isMobile ? 350 : 500);
+                applyElement(el);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
                 onNextStable();
             }
-        }, 300);
+        }, 60);
 
         return () => clearInterval(interval);
-    }, [step, onNextStable, isMobile]);
+    }, [step, onNextStable]);
 
     if (!step) return null;
     if (!anchorEl || !rect || !document.body.contains(anchorEl)) return null;
@@ -98,7 +123,7 @@ export function OnboardingTooltip({
                     inset: 0,
                     zIndex: (thm) => thm.zIndex.tooltip - 2,
                     backgroundColor: isLargeTarget ? 'rgba(0, 0, 0, 0.45)' : 'transparent',
-                    transition: `background-color 280ms ${SLIDE}`,
+                    transition: `background-color ${SLIDE_MS}ms ${SLIDE}`,
                 }}
             />
 
@@ -114,7 +139,7 @@ export function OnboardingTooltip({
                     boxShadow: isMobile
                         ? '0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(13, 71, 161, 0.5)'
                         : '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.35)',
-                    transition: `top 340ms ${SLIDE}, left 340ms ${SLIDE}, width 340ms ${SLIDE}, height 340ms ${SLIDE}, box-shadow 340ms ${SLIDE}`,
+                    transition: `top ${SLIDE_MS}ms ${SLIDE}, left ${SLIDE_MS}ms ${SLIDE}, width ${SLIDE_MS}ms ${SLIDE}, height ${SLIDE_MS}ms ${SLIDE}, box-shadow ${SLIDE_MS}ms ${SLIDE}`,
                     pointerEvents: 'none',
                     zIndex: (thm) => thm.zIndex.tooltip - 1,
                 }} />
@@ -126,7 +151,7 @@ export function OnboardingTooltip({
                 top: `${cardPos.top}px`,
                 left: `${cardPos.left}px`,
                 width: `${CARD_W}px`,
-                transition: `top 340ms ${SLIDE}, left 340ms ${SLIDE}`,
+                transition: `top ${SLIDE_MS}ms ${SLIDE}, left ${SLIDE_MS}ms ${SLIDE}`,
                 zIndex: (thm) => thm.zIndex.tooltip + 1,
                 willChange: 'top, left',
             }}>
