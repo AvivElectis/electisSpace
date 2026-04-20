@@ -1,6 +1,6 @@
 // src/shared/presentation/components/OnboardingTooltip.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { Popper, Paper, Typography, Button, Box, Fade, Grow, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
+import { Paper, Typography, Button, Box, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { TourStep } from '@shared/domain/onboardingTypes';
 
@@ -13,6 +13,13 @@ interface OnboardingTooltipProps {
     onPrev: () => void;
     onSkip: () => void;
 }
+
+// Card dimensions — kept in sync with TooltipCard's Paper width + estimated height
+const CARD_W = 320;
+const CARD_H = 200;
+const OFFSET = 16;
+const MARGIN = 16;
+const SLIDE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 export function OnboardingTooltip({
     step,
@@ -28,22 +35,19 @@ export function OnboardingTooltip({
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
-    const [cardVisible, setCardVisible] = useState(false);
     const isRtl = i18n.language === 'he';
 
     const onNextStable = useCallback(onNext, [onNext]);
 
-    // Find target element when step changes.
-    // Transition choreography: hide card → let spotlight slide to new rect → show card.
+    // Find target element when step changes; update anchor + rect after scroll settles.
+    // Card + spotlight stay mounted throughout the tour — CSS transitions on top/left/w/h
+    // smoothly glide between steps.
     useEffect(() => {
         if (!step) {
             setAnchorEl(null);
             setRect(null);
-            setCardVisible(false);
             return;
         }
-
-        setCardVisible(false);
 
         let attempts = 0;
         const maxAttempts = 15;
@@ -52,10 +56,7 @@ export function OnboardingTooltip({
             if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
                 setAnchorEl(el);
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => {
-                    setRect(el.getBoundingClientRect());
-                    setCardVisible(true);
-                }, isMobile ? 350 : 600);
+                setTimeout(() => setRect(el.getBoundingClientRect()), isMobile ? 350 : 500);
                 clearInterval(interval);
             } else if (++attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -67,21 +68,17 @@ export function OnboardingTooltip({
     }, [step, onNextStable, isMobile]);
 
     if (!step) return null;
-
-    // Need anchor element + rect for both mobile and desktop (to draw spotlight)
     if (!anchorEl || !rect || !document.body.contains(anchorEl)) return null;
 
-    const stepLabelShared = isRtl
+    const stepLabel = isRtl
         ? `${totalSteps} / ${currentStep + 1}`
         : `${currentStep + 1} / ${totalSteps}`;
 
-    if (isMobile) {
-        return <MobileTooltip
-            step={step} rect={rect} stepLabel={stepLabelShared} cardVisible={cardVisible}
-            currentStep={currentStep} isLastStep={isLastStep} isRtl={isRtl}
-            onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
-        />;
-    }
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const viewportArea = vw * vh;
+    const targetArea = rect.width * rect.height;
+    const isLargeTarget = targetArea / viewportArea > (isMobile ? 0.7 : 0.5);
 
     const placement = (() => {
         if (step.placement === 'left') return isRtl ? 'right' as const : 'left' as const;
@@ -89,11 +86,7 @@ export function OnboardingTooltip({
         return step.placement;
     })();
 
-    const stepLabel = stepLabelShared;
-
-    const viewportArea = window.innerWidth * window.innerHeight;
-    const targetArea = rect.width * rect.height;
-    const isLargeTarget = targetArea / viewportArea > 0.5;
+    const cardPos = computeCardPosition(rect, placement, vw, vh, isMobile, isLargeTarget);
 
     return (
         <>
@@ -104,8 +97,8 @@ export function OnboardingTooltip({
                     position: 'fixed',
                     inset: 0,
                     zIndex: (thm) => thm.zIndex.tooltip - 2,
-                    backgroundColor: isLargeTarget ? 'rgba(0, 0, 0, 0.35)' : 'transparent',
-                    transition: 'background-color 250ms ease',
+                    backgroundColor: isLargeTarget ? 'rgba(0, 0, 0, 0.45)' : 'transparent',
+                    transition: `background-color 280ms ${SLIDE}`,
                 }}
             />
 
@@ -118,132 +111,94 @@ export function OnboardingTooltip({
                     width: rect.width + 12,
                     height: rect.height + 12,
                     borderRadius: '12px',
-                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.35)',
-                    transition: 'top 320ms cubic-bezier(0.4, 0, 0.2, 1), left 320ms cubic-bezier(0.4, 0, 0.2, 1), width 320ms cubic-bezier(0.4, 0, 0.2, 1), height 320ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: isMobile
+                        ? '0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(13, 71, 161, 0.5)'
+                        : '0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(13, 71, 161, 0.35)',
+                    transition: `top 340ms ${SLIDE}, left 340ms ${SLIDE}, width 340ms ${SLIDE}, height 340ms ${SLIDE}, box-shadow 340ms ${SLIDE}`,
                     pointerEvents: 'none',
                     zIndex: (thm) => thm.zIndex.tooltip - 1,
                 }} />
             )}
 
-            {/* Tooltip card */}
-            {isLargeTarget ? (
-                <Grow in={cardVisible} timeout={{ enter: 260, exit: 160 }}>
-                    <Box sx={{
-                        position: 'fixed', top: '50%', left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        zIndex: (thm) => thm.zIndex.tooltip + 1,
-                    }}>
-                        <TooltipCard
-                            step={step} stepLabel={stepLabel} isRtl={isRtl}
-                            currentStep={currentStep} isLastStep={isLastStep}
-                            onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
-                        />
-                    </Box>
-                </Grow>
-            ) : (
-                <Popper
-                    open={cardVisible}
-                    anchorEl={anchorEl}
-                    placement={placement}
-                    transition
-                    sx={{ zIndex: (thm) => thm.zIndex.tooltip + 1 }}
-                    modifiers={[
-                        { name: 'offset', options: { offset: [0, 16] } },
-                        { name: 'preventOverflow', options: { padding: 16 } },
-                    ]}
-                >
-                    {({ TransitionProps }) => (
-                        <Grow {...TransitionProps} timeout={{ enter: 260, exit: 160 }}>
-                            <Box>
-                                <TooltipCard
-                                    step={step} stepLabel={stepLabel} isRtl={isRtl}
-                                    currentStep={currentStep} isLastStep={isLastStep}
-                                    onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
-                                />
-                            </Box>
-                        </Grow>
-                    )}
-                </Popper>
-            )}
+            {/* Card — slides from previous position to new position */}
+            <Box sx={{
+                position: 'fixed',
+                top: `${cardPos.top}px`,
+                left: `${cardPos.left}px`,
+                width: `${CARD_W}px`,
+                transition: `top 340ms ${SLIDE}, left 340ms ${SLIDE}`,
+                zIndex: (thm) => thm.zIndex.tooltip + 1,
+                willChange: 'top, left',
+            }}>
+                <TooltipCard
+                    step={step} stepLabel={stepLabel} isRtl={isRtl}
+                    currentStep={currentStep} isLastStep={isLastStep}
+                    onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
+                />
+            </Box>
         </>
     );
 }
 
-/** Mobile: animated spotlight around target + card pinned to opposite half of screen */
-function MobileTooltip({
-    step, rect, stepLabel, cardVisible, currentStep, isLastStep, isRtl,
-    onNext, onPrev, onSkip, t,
-}: {
-    step: TourStep; rect: DOMRect; stepLabel: string; cardVisible: boolean;
-    currentStep: number; isLastStep: boolean; isRtl: boolean;
-    onNext: () => void; onPrev: () => void; onSkip: () => void;
-    t: (key: string) => string;
-}) {
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
-    const targetFillsViewport = (rect.width * rect.height) / (vw * vh) > 0.7;
-    const rectCenterY = rect.top + rect.height / 2;
-    const cardAtBottom = rectCenterY < vh / 2;
+function computeCardPosition(
+    rect: DOMRect,
+    placement: 'top' | 'bottom' | 'left' | 'right',
+    vw: number,
+    vh: number,
+    isMobile: boolean,
+    isLargeTarget: boolean,
+): { top: number; left: number } {
+    // Centered when target is too big to point at meaningfully
+    if (isLargeTarget) {
+        return {
+            top: Math.max(MARGIN, vh / 2 - CARD_H / 2),
+            left: Math.max(MARGIN, vw / 2 - CARD_W / 2),
+        };
+    }
 
-    return (
-        <>
-            {/* Click-catch layer */}
-            <Box
-                onClick={(e) => { e.stopPropagation(); onSkip(); }}
-                sx={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: (thm) => thm.zIndex.tooltip - 2,
-                    backgroundColor: targetFillsViewport ? 'rgba(0, 0, 0, 0.45)' : 'transparent',
-                    transition: 'background-color 250ms ease',
-                }}
-            />
+    // On mobile, always pin horizontally centered and choose top/bottom based on rect position
+    if (isMobile) {
+        const rectCenterY = rect.top + rect.height / 2;
+        const showAtBottom = rectCenterY < vh / 2;
+        return {
+            top: showAtBottom ? vh - CARD_H - MARGIN : MARGIN,
+            left: Math.max(MARGIN, vw / 2 - CARD_W / 2),
+        };
+    }
 
-            {/* Animated spotlight — slides between targets */}
-            {!targetFillsViewport && (
-                <Box sx={{
-                    position: 'fixed',
-                    top: rect.top - 6,
-                    left: rect.left - 6,
-                    width: rect.width + 12,
-                    height: rect.height + 12,
-                    borderRadius: '12px',
-                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(13, 71, 161, 0.5)',
-                    transition: 'top 320ms cubic-bezier(0.4, 0, 0.2, 1), left 320ms cubic-bezier(0.4, 0, 0.2, 1), width 320ms cubic-bezier(0.4, 0, 0.2, 1), height 320ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    pointerEvents: 'none',
-                    zIndex: (thm) => thm.zIndex.tooltip - 1,
-                }} />
-            )}
+    // Desktop: position relative to target per placement
+    let top: number;
+    let left: number;
+    switch (placement) {
+        case 'top':
+            top = rect.top - CARD_H - OFFSET;
+            left = rect.left + rect.width / 2 - CARD_W / 2;
+            break;
+        case 'bottom':
+            top = rect.bottom + OFFSET;
+            left = rect.left + rect.width / 2 - CARD_W / 2;
+            break;
+        case 'left':
+            top = rect.top + rect.height / 2 - CARD_H / 2;
+            left = rect.left - CARD_W - OFFSET;
+            break;
+        case 'right':
+        default:
+            top = rect.top + rect.height / 2 - CARD_H / 2;
+            left = rect.right + OFFSET;
+            break;
+    }
 
-            {/* Card pinned to opposite half, fades + grows on each step */}
-            <Fade in={cardVisible} timeout={{ enter: 240, exit: 160 }}>
-                <Box sx={{
-                    position: 'fixed',
-                    left: 0,
-                    right: 0,
-                    ...(targetFillsViewport
-                        ? { top: '50%', transform: 'translateY(-50%)' }
-                        : cardAtBottom
-                            ? { bottom: 16 }
-                            : { top: 16 }),
-                    zIndex: (thm) => thm.zIndex.tooltip + 1,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    px: 2,
-                    pointerEvents: 'none',
-                    transition: 'top 260ms ease, bottom 260ms ease',
-                }}>
-                    <Box sx={{ pointerEvents: 'auto' }}>
-                        <TooltipCard
-                            step={step} stepLabel={stepLabel} isRtl={isRtl}
-                            currentStep={currentStep} isLastStep={isLastStep}
-                            onNext={onNext} onPrev={onPrev} onSkip={onSkip} t={t}
-                        />
-                    </Box>
-                </Box>
-            </Fade>
-        </>
-    );
+    // If the requested placement is off-screen, flip to the opposite side
+    if (top < MARGIN) top = rect.bottom + OFFSET;
+    if (top + CARD_H + MARGIN > vh) top = rect.top - CARD_H - OFFSET;
+    if (left < MARGIN) left = rect.right + OFFSET;
+    if (left + CARD_W + MARGIN > vw) left = rect.left - CARD_W - OFFSET;
+
+    // Final clamp to viewport
+    top = Math.max(MARGIN, Math.min(vh - CARD_H - MARGIN, top));
+    left = Math.max(MARGIN, Math.min(vw - CARD_W - MARGIN, left));
+    return { top, left };
 }
 
 /** Shared tooltip card content */
@@ -262,7 +217,7 @@ function TooltipCard({
             onClick={(e) => e.stopPropagation()}
             sx={{
                 p: 2.5,
-                width: 320,
+                width: CARD_W,
                 maxWidth: 'calc(100vw - 32px)',
                 borderRadius: '12px',
                 border: '1px solid',
