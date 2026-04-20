@@ -251,7 +251,12 @@ describe('AuthService', () => {
             mockRepo.findUserByEmail.mockResolvedValue(makeUser());
             mockRepo.findValidVerificationCode.mockResolvedValue({ id: 'code-1' });
             await authService.resetPassword('test@electis.co.il', '123456', 'newpass12');
-            expect(mockRepo.markCodeAsUsed).toHaveBeenCalledWith('code-1');
+            // Code is marked used inside the atomic transaction (receives the code ID).
+            expect(mockRepo.executePasswordResetTransaction).toHaveBeenCalledWith(
+                'user-1',
+                expect.any(String),
+                'code-1',
+            );
         });
     });
 
