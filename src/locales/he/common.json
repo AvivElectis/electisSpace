@@ -980,6 +980,7 @@
             "conferenceStandard": "רגיל",
             "conferenceSimple": "פשוט",
             "spaceTypeLabel": "סוג חלל",
+            "peopleTypeLabel": "סוג מקצוע",
             "aimsManagement": "ניהול AIMS",
             "aimsManagementDesc": "הפעל את לשונית ניהול AIMS לתצורה מתקדמת של תגיות ונתבים",
             "wizardStep1": "חיבור AIMS",
@@ -1269,6 +1270,48 @@
             "edit": "ערוך תג אישי",
             "delete": "מחק תג אישי",
             "list": "רשימת תגים אישיים"
+        }
+    },
+    "peopleTypes": {
+        "people": {
+            "singular": "אדם",
+            "singularDef": "האדם",
+            "plural": "אנשים",
+            "pluralDef": "האנשים",
+            "add": "הוסף אדם",
+            "edit": "ערוך אדם",
+            "delete": "מחק אדם",
+            "list": "רשימת אנשים"
+        },
+        "doctors": {
+            "singular": "רופא/ה",
+            "singularDef": "הרופא/ה",
+            "plural": "רופאים/ות",
+            "pluralDef": "הרופאים/ות",
+            "add": "הוסף רופא/ה",
+            "edit": "ערוך רופא/ה",
+            "delete": "מחק רופא/ה",
+            "list": "רשימת רופאים/ות"
+        },
+        "lawyers": {
+            "singular": "עורך/ת דין",
+            "singularDef": "עורך/ת הדין",
+            "plural": "עורכי/ות דין",
+            "pluralDef": "עורכי/ות הדין",
+            "add": "הוסף עורך/ת דין",
+            "edit": "ערוך עורך/ת דין",
+            "delete": "מחק עורך/ת דין",
+            "list": "רשימת עורכי/ות דין"
+        },
+        "employees": {
+            "singular": "עובד/ת",
+            "singularDef": "העובד/ת",
+            "plural": "עובדים/ות",
+            "pluralDef": "העובדים/ות",
+            "add": "הוסף עובד/ת",
+            "edit": "ערוך עובד/ת",
+            "delete": "מחק עובד/ת",
+            "list": "רשימת עובדים/ות"
         }
     },
     "appLogs": {

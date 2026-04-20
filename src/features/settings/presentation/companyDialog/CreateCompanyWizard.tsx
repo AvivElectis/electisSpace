@@ -250,6 +250,7 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                 })),
                 companyFeatures: formData.features,
                 spaceType: formData.spaceType,
+                peopleType: formData.peopleType,
                 articleFormat: formData.articleFormat ? (formData.articleFormat as unknown as Record<string, unknown>) : undefined,
                 fieldMapping: formData.fieldMapping ? (formData.fieldMapping as unknown as Record<string, unknown>) : undefined,
             };
@@ -312,10 +313,11 @@ export function CreateCompanyWizard({ onClose, onSave }: Props) {
                     <FeaturesStep
                         features={formData.features}
                         spaceType={formData.spaceType}
+                        peopleType={formData.peopleType}
                         hasConferenceMapping={
                             !!(formData.fieldMapping?.conferenceMapping?.meetingName)
                         }
-                        onUpdate={(features, spaceType) => updateFormData({ features, spaceType })}
+                        onUpdate={(features, spaceType, peopleType) => updateFormData({ features, spaceType, peopleType })}
                     />
                 );
             case 5:

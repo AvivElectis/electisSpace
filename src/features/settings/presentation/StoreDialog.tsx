@@ -46,7 +46,7 @@ import {
 import { settingsService } from '@shared/infrastructure/services/settingsService';
 import type { LogoConfig } from '../domain/types';
 import { MAX_LOGO_SIZE, ALLOWED_LOGO_FORMATS } from '../domain/types';
-import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import type { CompanyFeatures, SpaceType, PeopleType } from '@shared/infrastructure/services/authService';
 import { logger } from '@shared/infrastructure/services/logger';
 import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
@@ -107,6 +107,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
     const [overrideEnabled, setOverrideEnabled] = useState(false);
     const [storeFeatures, setStoreFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
     const [storeSpaceType, setStoreSpaceType] = useState<SpaceType>('office');
+    const [storePeopleType, setStorePeopleType] = useState<PeopleType>('people');
 
     // Divergence detection: keys where store override differs from company default
     const featureDivergences = useMemo(() => {
@@ -140,10 +141,12 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                     setOverrideEnabled(true);
                     setStoreFeatures(store.storeFeatures);
                     setStoreSpaceType(store.storeSpaceType ?? 'office');
+                    setStorePeopleType(store.storePeopleType ?? 'people');
                 } else {
                     setOverrideEnabled(false);
                     setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
                     setStoreSpaceType('office');
+                    setStorePeopleType('people');
                 }
                 // Fetch store settings to check for logo overrides
                 settingsService.getStoreSettings(store.id).then((res) => {
@@ -174,6 +177,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                 setOverrideEnabled(false);
                 setStoreFeatures({ ...DEFAULT_COMPANY_FEATURES });
                 setStoreSpaceType('office');
+                setStorePeopleType('people');
                 setLogoOverrideEnabled(false);
                 setStoreLogo1(undefined);
                 setStoreLogo2(undefined);
@@ -276,6 +280,7 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                     isActive,
                     storeFeatures: overrideEnabled ? storeFeatures : null,
                     storeSpaceType: overrideEnabled ? storeSpaceType : null,
+                    storePeopleType: overrideEnabled ? storePeopleType : null,
                 };
                 await companyService.updateStore(store.id, updateData);
 
@@ -451,6 +456,22 @@ export function StoreDialog({ open, onClose, onSave, companyId, companyFeatures,
                                             <MenuItem value="person-tag">{t('settings.personTags')}</MenuItem>
                                         </Select>
                                     </FormControl>
+
+                                    {storeFeatures.peopleEnabled && (
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>{t('settings.companies.peopleTypeLabel', 'People Profession')}</InputLabel>
+                                            <Select
+                                                value={storePeopleType}
+                                                label={t('settings.companies.peopleTypeLabel', 'People Profession')}
+                                                onChange={(e) => setStorePeopleType(e.target.value as PeopleType)}
+                                            >
+                                                <MenuItem value="people">{t('peopleTypes.people.plural')}</MenuItem>
+                                                <MenuItem value="doctors">{t('peopleTypes.doctors.plural')}</MenuItem>
+                                                <MenuItem value="lawyers">{t('peopleTypes.lawyers.plural')}</MenuItem>
+                                                <MenuItem value="employees">{t('peopleTypes.employees.plural')}</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    )}
 
                                     <Typography variant="caption" color="text.secondary">
                                         {t('settings.companies.enabledFeatures', 'Enabled Features')}

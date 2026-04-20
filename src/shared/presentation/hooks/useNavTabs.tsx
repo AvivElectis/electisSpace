@@ -8,6 +8,7 @@ import RouterIcon from '@mui/icons-material/Router';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 import type { Feature } from '@features/auth/application/permissionHelpers';
 
 export interface NavTab {
@@ -24,6 +25,7 @@ export function useNavTabs(): NavTab[] {
     const { canAccessFeature, activeStoreEffectiveFeatures } = useAuthContext();
     const workingMode = useSettingsStore(state => state.settings.workingMode);
     const peopleManagerEnabled = useSettingsStore(state => state.settings.peopleManagerEnabled);
+    const { getLabel: getPeopleLabel, peopleType } = usePeopleTypeLabels();
 
     return useMemo(() => {
         const isPeopleManagerMode =
@@ -40,10 +42,10 @@ export function useNavTabs(): NavTab[] {
             },
             {
                 labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces',
-                label: isPeopleManagerMode ? t('navigation.people') : t('navigation.spaces'),
+                label: isPeopleManagerMode ? getPeopleLabel('plural') : t('navigation.spaces'),
                 value: isPeopleManagerMode ? '/people' : '/spaces',
                 icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
-                dynamicLabel: !isPeopleManagerMode,
+                dynamicLabel: true,
                 feature: isPeopleManagerMode ? 'people' : 'spaces',
             },
             {
@@ -70,5 +72,5 @@ export function useNavTabs(): NavTab[] {
         ];
 
         return allNavTabs.filter(tab => !tab.feature || canAccessFeature(tab.feature));
-    }, [t, canAccessFeature, activeStoreEffectiveFeatures, workingMode, peopleManagerEnabled]);
+    }, [t, canAccessFeature, activeStoreEffectiveFeatures, workingMode, peopleManagerEnabled, getPeopleLabel, peopleType]);
 }

@@ -78,6 +78,7 @@ export function createDefaultSettings(): SettingsData {
         appName: 'electis Space',
         appSubtitle: 'ESL Management System',
         spaceType: 'office',
+        peopleType: 'people',
         workingMode: 'SOLUM_API',
         csvConfig: {
             delimiter: ';',
@@ -130,6 +131,7 @@ export function sanitizeSettings(settings: SettingsData): Partial<SettingsData> 
         appName: settings.appName,
         appSubtitle: settings.appSubtitle,
         spaceType: settings.spaceType,
+        peopleType: settings.peopleType,
         workingMode: settings.workingMode,
         csvConfig: settings.csvConfig,
         logos: settings.logos,

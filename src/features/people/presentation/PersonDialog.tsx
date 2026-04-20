@@ -17,6 +17,7 @@ import { usePeopleController } from '../application/usePeopleController';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 import { SpaceSelector } from './SpaceSelector';
 import type { Person } from '../domain/types';
 
@@ -38,6 +39,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
     const settings = useSettingsStore((state) => state.settings);
     const peopleController = usePeopleController();
     const { getLabel } = useSpaceTypeLabels();
+    const { getLabel: getPeopleLabel } = usePeopleTypeLabels();
 
     // Helper for translations with space type
     const tWithSpaceType = useCallback((key: string, options?: Record<string, unknown>) => {
@@ -233,7 +235,7 @@ export function PersonDialog({ open, onClose, person }: PersonDialogProps) {
                 dir={isRtl ? 'rtl' : 'ltr'}
             >
                 <DialogTitle sx={{ textAlign: isRtl ? 'right' : 'left' }}>
-                    {isEditMode ? t('people.editPerson') : t('people.addPerson')}
+                    {isEditMode ? getPeopleLabel('edit') : getPeopleLabel('add')}
                 </DialogTitle>
                 <DialogContent>
                     <Stack gap={2} sx={{ mt: 1 }}>

@@ -11,7 +11,7 @@ import {
     type UpdateAimsConfigDto,
 } from '@shared/infrastructure/services/companyService';
 import { fieldMappingService } from '@shared/infrastructure/services/fieldMappingService';
-import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import type { CompanyFeatures, SpaceType, PeopleType } from '@shared/infrastructure/services/authService';
 import { DEFAULT_COMPANY_FEATURES } from '@shared/infrastructure/services/authService';
 
 interface Params {
@@ -63,6 +63,7 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
     // Company Features State
     const [companyFeatures, setCompanyFeatures] = useState<CompanyFeatures>({ ...DEFAULT_COMPANY_FEATURES });
     const [spaceType, setSpaceType] = useState<SpaceType>('office');
+    const [peopleType, setPeopleType] = useState<PeopleType>('people');
 
     // Initialize form when dialog opens
     useEffect(() => {
@@ -98,6 +99,7 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                 // Initialize features from company data
                 setCompanyFeatures(company.companyFeatures ?? { ...DEFAULT_COMPANY_FEATURES });
                 setSpaceType((company.spaceType as SpaceType) ?? 'office');
+                setPeopleType((company.peopleType as PeopleType) ?? 'people');
 
                 if (company.aimsConfigured) {
                     checkConnectionStatus(company.id);
@@ -117,6 +119,7 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                 setCodeValid(null);
                 setCompanyFeatures({ ...DEFAULT_COMPANY_FEATURES });
                 setSpaceType('office');
+                setPeopleType('people');
             }
         } else {
             if (healthCheckIntervalRef.current) {
@@ -297,6 +300,7 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
                     isActive,
                     companyFeatures,
                     spaceType,
+                    peopleType,
                 };
                 await companyService.update(company.id, updateData);
                 if (aimsChanged && aimsBaseUrl && aimsCluster && aimsUsername) {
@@ -333,7 +337,7 @@ export function useCompanyDialogState({ open, onSave, company }: Params) {
         handleAimsFieldChange,
 
         // Company Features
-        companyFeatures, spaceType, setSpaceType,
+        companyFeatures, spaceType, setSpaceType, peopleType, setPeopleType,
         handleFeatureToggle,
 
         // Edit Mode
