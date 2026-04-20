@@ -10,10 +10,16 @@ FROM node:22-alpine AS server-builder
 
 WORKDIR /app
 
+# Harden npm against transient CI network failures (ECONNRESET on the registry).
+ENV NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=180000 \
+    NPM_CONFIG_FETCH_TIMEOUT=300000
+
 COPY server/package*.json ./
 COPY server/prisma ./prisma/
 
-RUN npm ci
+RUN npm ci || (echo "npm ci retry 1/2" && sleep 15 && npm ci) || (echo "npm ci retry 2/2" && sleep 45 && npm ci)
 RUN npx prisma generate
 
 COPY server/prisma.config.ts ./prisma.config.ts
@@ -37,8 +43,14 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY server/package*.json ./
 
+# Inherit the same retry envs via ENV so npm ci below benefits from them too.
+ENV NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=180000 \
+    NPM_CONFIG_FETCH_TIMEOUT=300000
+
 # Install production dependencies only
-RUN npm ci --only=production
+RUN npm ci --omit=dev || (echo "npm ci retry 1/2" && sleep 15 && npm ci --omit=dev) || (echo "npm ci retry 2/2" && sleep 45 && npm ci --omit=dev)
 
 # Copy Prisma schema, config, and generated client
 COPY --from=server-builder /app/prisma ./prisma
