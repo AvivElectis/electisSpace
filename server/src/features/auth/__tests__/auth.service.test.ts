@@ -54,10 +54,13 @@ vi.mock('../../../shared/infrastructure/services/appLogger.js', () => ({
 vi.mock('../../../shared/utils/featureResolution.js', () => ({
     extractCompanyFeatures: vi.fn(() => ({})),
     extractSpaceType: vi.fn(() => 'retail'),
+    extractPeopleType: vi.fn(() => 'people'),
     extractStoreFeatures: vi.fn(() => null),
     extractStoreSpaceType: vi.fn(() => null),
+    extractStorePeopleType: vi.fn(() => null),
     resolveEffectiveFeatures: vi.fn(() => ({})),
     resolveEffectiveSpaceType: vi.fn(() => 'retail'),
+    resolveEffectivePeopleType: vi.fn(() => 'people'),
 }));
 
 vi.mock('bcrypt', () => ({
@@ -248,7 +251,12 @@ describe('AuthService', () => {
             mockRepo.findUserByEmail.mockResolvedValue(makeUser());
             mockRepo.findValidVerificationCode.mockResolvedValue({ id: 'code-1' });
             await authService.resetPassword('test@electis.co.il', '123456', 'newpass12');
-            expect(mockRepo.markCodeAsUsed).toHaveBeenCalledWith('code-1');
+            // Code is marked used inside the atomic transaction (receives the code ID).
+            expect(mockRepo.executePasswordResetTransaction).toHaveBeenCalledWith(
+                'user-1',
+                expect.any(String),
+                'code-1',
+            );
         });
     });
 

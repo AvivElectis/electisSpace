@@ -20,6 +20,7 @@ import { logger } from '@shared/infrastructure/services/logger';
 
 // Lazy load dialogs - not needed on initial render
 const SpaceDialog = lazy(() => import('@features/space/presentation/SpaceDialog').then(m => ({ default: m.SpaceDialog })));
+const PersonDialog = lazy(() => import('@features/people/presentation/PersonDialog').then(m => ({ default: m.PersonDialog })));
 const ConferenceRoomDialog = lazy(() => import('@features/conference/presentation/ConferenceRoomDialog').then(m => ({ default: m.ConferenceRoomDialog })));
 const LinkLabelDialog = lazy(() => import('@features/labels/presentation/LinkLabelDialog').then(m => ({ default: m.LinkLabelDialog })));
 
@@ -230,6 +231,14 @@ export function DashboardPage() {
 
     // Dialogs State
     const [spaceDialogOpen, setSpaceDialogOpen] = useState(false);
+    const [personDialogOpen, setPersonDialogOpen] = useState(false);
+    // Dashboard quick action: open the correct dialog based on the current mode.
+    // In people mode, the "Add Person" form lives in the people feature — route to PersonDialog so the
+    // dashboard flow matches the People page flow (single source of truth for the person form).
+    const openAddPrimary = useCallback(() => {
+        if (isPeopleManagerMode) setPersonDialogOpen(true);
+        else setSpaceDialogOpen(true);
+    }, [isPeopleManagerMode]);
     const [conferenceDialogOpen, setConferenceDialogOpen] = useState(false);
     const [linkLabelDialogOpen, setLinkLabelDialogOpen] = useState(false);
 
@@ -295,7 +304,7 @@ export function DashboardPage() {
                     <QuickActionsPanel
                         isPeopleManagerMode={isPeopleManagerMode}
                         onLinkLabel={() => setLinkLabelDialogOpen(true)}
-                        onAddSpace={() => setSpaceDialogOpen(true)}
+                        onAddSpace={openAddPrimary}
                         onAddConferenceRoom={() => setConferenceDialogOpen(true)}
                         showLabels={can('labels')}
                         showSpaces={can('spaces') || can('people')}
@@ -429,7 +438,7 @@ export function DashboardPage() {
                     <QuickActionsPanel
                         isPeopleManagerMode={isPeopleManagerMode}
                         onLinkLabel={() => setLinkLabelDialogOpen(true)}
-                        onAddSpace={() => setSpaceDialogOpen(true)}
+                        onAddSpace={openAddPrimary}
                         onAddConferenceRoom={() => setConferenceDialogOpen(true)}
                         showLabels={can('labels')}
                         showSpaces={can('spaces') || can('people')}
@@ -451,6 +460,13 @@ export function DashboardPage() {
                         csvConfig={settingsController.settings.csvConfig}
                         spaceTypeLabel={getLabel('singular')}
                         existingIds={spaceController.spaces.map((s) => s.id)}
+                    />
+                )}
+
+                {personDialogOpen && (
+                    <PersonDialog
+                        open={personDialogOpen}
+                        onClose={() => setPersonDialogOpen(false)}
                     />
                 )}
 

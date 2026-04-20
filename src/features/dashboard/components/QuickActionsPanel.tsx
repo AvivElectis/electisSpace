@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Button, Fab, Stack, ClickAwayListener } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -52,6 +53,7 @@ export function QuickActionsPanel({
     showConference = true,
 }: QuickActionsPanelProps) {
     const { t } = useTranslation();
+    const { getLabel: getPeopleLabel } = usePeopleTypeLabels();
     const [open, setOpen] = useState(false);
 
     const handleAction = (callback: () => void) => {
@@ -73,7 +75,7 @@ export function QuickActionsPanel({
             variant: 'outlined' as const,
             icon: <AddIcon sx={{ fontSize: '1.5rem !important' }} />,
             label: isPeopleManagerMode
-                ? t('dashboard.addPerson', 'Add Person')
+                ? getPeopleLabel('add')
                 : t('dashboard.addSpace', 'Add Space'),
             onClick: onAddSpace,
         },

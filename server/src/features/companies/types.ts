@@ -4,7 +4,7 @@
  * @description Type definitions, interfaces, and validation schemas for the companies feature.
  */
 import { z } from 'zod';
-import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResolution.js';
+import type { CompanyFeatures, SpaceType, PeopleType } from '../../shared/utils/featureResolution.js';
 
 // ======================
 // Validation Schemas
@@ -40,6 +40,9 @@ export const companyFeaturesSchema = z.object({
 /** Space type enum */
 export const spaceTypeSchema = z.enum(['office', 'room', 'chair', 'person-tag']);
 
+/** People profession enum — used when People Manager Mode is active */
+export const peopleTypeSchema = z.enum(['people', 'doctors', 'lawyers', 'employees']);
+
 /** Store to create alongside company */
 export const createStoreSchema = z.object({
     code: z.string().min(1, 'Store code is required'),
@@ -56,6 +59,7 @@ export const createCompanySchema = z.object({
     aimsConfig: aimsConfigSchema.optional(),
     companyFeatures: companyFeaturesSchema.optional(),
     spaceType: spaceTypeSchema.optional(),
+    peopleType: peopleTypeSchema.optional(),
 });
 
 /** Extended create company schema with multi-store + config (backward-compatible) */
@@ -73,6 +77,7 @@ export const updateCompanySchema = z.object({
     isActive: z.boolean().optional(),
     companyFeatures: companyFeaturesSchema.optional(),
     spaceType: spaceTypeSchema.optional(),
+    peopleType: peopleTypeSchema.optional(),
 });
 
 /** Update AIMS config schema - password is optional (only updates if provided) */
@@ -120,6 +125,7 @@ export interface CreateCompanyDto {
     };
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+    peopleType?: PeopleType;
 }
 
 export interface CreateCompanyFullDto extends CreateCompanyDto {
@@ -135,6 +141,7 @@ export interface UpdateCompanyDto {
     isActive?: boolean;
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+    peopleType?: PeopleType;
 }
 
 export interface UpdateAimsConfigDto {
@@ -162,6 +169,7 @@ export interface CompanyListItem {
     aimsConfigured: boolean;
     companyFeatures: CompanyFeatures;
     spaceType: SpaceType;
+    peopleType: PeopleType;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -200,6 +208,7 @@ export interface CompanyDetails {
     // Company-level features and space type
     companyFeatures: CompanyFeatures;
     spaceType: SpaceType;
+    peopleType: PeopleType;
 }
 
 export interface StoreListItem {

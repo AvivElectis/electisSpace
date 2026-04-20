@@ -12,6 +12,7 @@ import { usePeopleStore } from '../infrastructure/peopleStore';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
 import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
@@ -50,6 +51,7 @@ export function PeopleManagerView() {
     const activeStoreId = useAuthStore((state) => state.activeStoreId);
     const settings = useSettingsStore((state) => state.settings);
     const { getLabel } = useSpaceTypeLabels();
+    const { getLabel: getPeopleLabel } = usePeopleTypeLabels();
     const { hasStoreRole, isAppViewer } = useAuthContext();
     const canEdit = hasStoreRole('STORE_EMPLOYEE') && !isAppViewer;
 
@@ -307,7 +309,7 @@ export function PeopleManagerView() {
     // Action handlers
     const handleDelete = useCallback(async (id: string) => {
         const confirmed = await confirm({
-            title: t('people.deletePerson'),
+            title: getPeopleLabel('delete'),
             message: t('common.dialog.areYouSure'),
             confirmLabel: t('common.dialog.delete'),
             cancelLabel: t('common.dialog.cancel'),
@@ -602,7 +604,7 @@ export function PeopleManagerView() {
                     }}
                 >
                     <AddIcon sx={{ mr: 1, fontSize: '1.5rem' }} />
-                    {t('people.addPerson')}
+                    {getPeopleLabel('add')}
                 </Fab>
             )}
 

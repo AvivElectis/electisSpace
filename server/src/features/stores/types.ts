@@ -4,7 +4,7 @@
  * @description Validation schemas, DTOs and types for store management.
  */
 import { z } from 'zod';
-import { companyFeaturesSchema, spaceTypeSchema } from '../companies/types.js';
+import { companyFeaturesSchema, spaceTypeSchema, peopleTypeSchema } from '../companies/types.js';
 
 // ======================
 // Validation Schemas
@@ -32,6 +32,7 @@ export const updateStoreSchema = z.object({
     isActive: z.boolean().optional(),
     storeFeatures: companyFeaturesSchema.nullable().optional(),
     storeSpaceType: spaceTypeSchema.nullable().optional(),
+    storePeopleType: peopleTypeSchema.nullable().optional(),
 });
 
 // ======================

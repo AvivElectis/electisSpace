@@ -7,7 +7,7 @@
  * COMPANY_ADMIN+ can manage stores within their company.
  */
 import api from './apiClient';
-import type { CompanyFeatures, SpaceType } from './authService';
+import type { CompanyFeatures, SpaceType, PeopleType } from './authService';
 
 // ============================================================================
 // Types
@@ -34,6 +34,7 @@ export interface CompanyStore {
     };
     storeFeatures?: CompanyFeatures | null;
     storeSpaceType?: SpaceType | null;
+    storePeopleType?: PeopleType | null;
 }
 
 /** Company entity */
@@ -59,6 +60,7 @@ export interface Company {
     };
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+    peopleType?: PeopleType;
 }
 
 /** Paginated list response */
@@ -86,6 +88,7 @@ export interface CreateCompanyDto {
     };
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+    peopleType?: PeopleType;
 }
 
 /** Extended create company DTO (wizard with multi-store + config) */
@@ -103,6 +106,7 @@ export interface UpdateCompanyDto {
     isActive?: boolean;
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+    peopleType?: PeopleType;
 }
 
 /** Update AIMS configuration DTO - matches backend aimsConfigSchema */
@@ -129,6 +133,7 @@ export interface UpdateStoreDto {
     isActive?: boolean;
     storeFeatures?: CompanyFeatures | null;
     storeSpaceType?: SpaceType | null;
+    storePeopleType?: PeopleType | null;
 }
 
 /** Query parameters for company list */

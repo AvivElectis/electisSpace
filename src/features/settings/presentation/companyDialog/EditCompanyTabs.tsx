@@ -1099,6 +1099,21 @@ export function EditCompanyTabs({ state, onClose, open }: Props) {
                                     </Select>
                                 </FormControl>
                             )}
+                            {state.companyFeatures.peopleEnabled && (
+                                <FormControl size="small" sx={{ minWidth: 180 }}>
+                                    <InputLabel>{t('settings.companies.peopleTypeLabel', 'People Profession')}</InputLabel>
+                                    <Select
+                                        value={state.peopleType}
+                                        label={t('settings.companies.peopleTypeLabel', 'People Profession')}
+                                        onChange={(e) => state.setPeopleType(e.target.value as any)}
+                                    >
+                                        <MenuItem value="people">{t('peopleTypes.people.plural')}</MenuItem>
+                                        <MenuItem value="doctors">{t('peopleTypes.doctors.plural')}</MenuItem>
+                                        <MenuItem value="lawyers">{t('peopleTypes.lawyers.plural')}</MenuItem>
+                                        <MenuItem value="employees">{t('peopleTypes.employees.plural')}</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            )}
                         </Box>
 
                         {/* Conference — single toggle with mode selector */}

@@ -13,8 +13,10 @@ import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
     DEFAULT_COMPANY_FEATURES,
     DEFAULT_SPACE_TYPE,
+    DEFAULT_PEOPLE_TYPE,
     extractCompanyFeatures,
     extractSpaceType,
+    extractPeopleType,
 } from '../../shared/utils/featureResolution.js';
 import type {
     CompanyListParams,
@@ -111,6 +113,7 @@ export const companyService = {
                     aimsConfigured: !!(c.aimsBaseUrl && c.aimsUsername),
                     companyFeatures: extractCompanyFeatures(settings),
                     spaceType: extractSpaceType(settings),
+                    peopleType: extractPeopleType(settings),
                     createdAt: c.createdAt,
                     updatedAt: c.updatedAt,
                 };
@@ -146,6 +149,7 @@ export const companyService = {
                         aimsConfigured: !!(uc.company.aimsBaseUrl && uc.company.aimsUsername),
                         companyFeatures: extractCompanyFeatures(settings),
                         spaceType: extractSpaceType(settings),
+                        peopleType: extractPeopleType(settings),
                         createdAt: uc.company.createdAt,
                         updatedAt: uc.company.updatedAt,
                     };
@@ -209,6 +213,7 @@ export const companyService = {
                 // Company-level features and space type
                 companyFeatures: extractCompanyFeatures(settings),
                 spaceType: extractSpaceType(settings),
+                peopleType: extractPeopleType(settings),
             },
             stores: company.stores.map(s => ({
                 id: s.id,
@@ -259,6 +264,7 @@ export const companyService = {
         // Build initial settings with company features
         const companyFeatures = data.companyFeatures ?? DEFAULT_COMPANY_FEATURES;
         const spaceType = data.spaceType ?? DEFAULT_SPACE_TYPE;
+        const peopleType = data.peopleType ?? DEFAULT_PEOPLE_TYPE;
 
         // Check for extended wizard fields
         const fullData = data as CreateCompanyFullDto;
@@ -267,6 +273,7 @@ export const companyService = {
         const initialSettings: Record<string, unknown> = {
             companyFeatures: { ...companyFeatures },
             spaceType,
+            peopleType,
             peopleManagerEnabled: companyFeatures.peopleEnabled,
         };
 
@@ -385,6 +392,7 @@ export const companyService = {
             aimsConfigured: !!(company.aimsBaseUrl && company.aimsUsername),
             companyFeatures,
             spaceType,
+            peopleType,
             createdAt: finalCompany.createdAt,
             updatedAt: finalCompany.updatedAt,
         };
@@ -402,7 +410,7 @@ export const companyService = {
             isActive: data.isActive,
         };
 
-        if (data.companyFeatures || data.spaceType) {
+        if (data.companyFeatures || data.spaceType || data.peopleType) {
             // Fetch existing company to merge settings
             const existing = await companyRepository.findById(id);
             if (!existing) throw new Error('COMPANY_NOT_FOUND');
@@ -427,6 +435,9 @@ export const companyService = {
             if (data.spaceType) {
                 newSettings.spaceType = data.spaceType;
             }
+            if (data.peopleType) {
+                newSettings.peopleType = data.peopleType;
+            }
 
             updateData.settings = newSettings;
         }
@@ -446,6 +457,7 @@ export const companyService = {
             isActive: company.isActive,
             companyFeatures: extractCompanyFeatures(updatedSettings),
             spaceType: extractSpaceType(updatedSettings),
+            peopleType: extractPeopleType(updatedSettings),
             updatedAt: company.updatedAt,
         };
     },

@@ -368,13 +368,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                             <ListItemIcon>
                                                 {tab.icon}
                                             </ListItemIcon>
-                                            <ListItemText
-                                                primary={
-                                                    tab.dynamicLabel && !isPeopleManagerMode
-                                                        ? getLabel('plural')
-                                                        : t(tab.labelKey)
-                                                }
-                                            />
+                                            <ListItemText primary={tab.label} />
                                         </ListItemButton>
                                     </ListItem>
                                 ))}
@@ -415,11 +409,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 {navTabs.map(tab => (
                                     <Tab
                                         key={tab.value}
-                                        label={
-                                            tab.dynamicLabel && !isPeopleManagerMode
-                                                ? getLabel('plural')
-                                                : t(tab.labelKey)
-                                        }
+                                        label={tab.label}
                                         value={tab.value}
                                         icon={tab.icon}
                                         iconPosition="start"

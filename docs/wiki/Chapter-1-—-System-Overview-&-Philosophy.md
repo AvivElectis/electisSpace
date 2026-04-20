@@ -6,8 +6,8 @@ electisSpace is a B2B SaaS platform for Electronic Shelf Label (ESL) management 
 
 The platform supports two primary working modes:
 
-- **Spaces Mode** — Manages physical spaces (desks, rooms, chairs) with labels displaying space-related data.
-- **People Manager Mode** — Manages people assignments to numbered slots, with labels displaying person-related data.
+- **Spaces Mode** — Manages physical spaces (desks, rooms, chairs) with labels displaying space-related data. The physical noun shown across the UI is controlled by the per-store `spaceType` setting (`office | room | chair | person-tag`).
+- **People Manager Mode** — Manages people assignments to numbered slots, with labels displaying person-related data. The profession shown across the UI (nav, page headers, dialogs, dashboard card, empty states) is controlled by the per-store `peopleType` setting (`people | doctors | lawyers | employees`), with gender-inclusive Hebrew labels. Both settings live under the existing `settings` JSON column on Company (default) and Store (override), resolved into `effectiveSpaceType` / `effectivePeopleType` on the auth session response.
 
 ### 1.2 Core Tech Stack
 

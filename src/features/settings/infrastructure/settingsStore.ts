@@ -226,6 +226,9 @@ export const useSettingsStore = create<SettingsStore>()(
                             if (companySettings.spaceType) {
                                 updates.spaceType = companySettings.spaceType;
                             }
+                            if (companySettings.peopleType) {
+                                updates.peopleType = companySettings.peopleType;
+                            }
                         }
 
                         if (articleFormatResponse.articleFormat) {
@@ -314,6 +317,7 @@ export const useSettingsStore = create<SettingsStore>()(
                         if (otherSettings.appName !== undefined) companyWideSettings.appName = otherSettings.appName;
                         if (otherSettings.appSubtitle !== undefined) companyWideSettings.appSubtitle = otherSettings.appSubtitle;
                         if (otherSettings.spaceType) companyWideSettings.spaceType = otherSettings.spaceType;
+                        if (otherSettings.peopleType) companyWideSettings.peopleType = otherSettings.peopleType;
 
                         const savePromises: Promise<unknown>[] = [
                             settingsService.updateStoreSettings(activeStoreId, settingsForServer),

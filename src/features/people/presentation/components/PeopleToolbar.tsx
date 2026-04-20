@@ -4,6 +4,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useTranslation } from 'react-i18next';
 import { glassToolbarSx } from '@shared/presentation/styles/glassToolbar';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 
 interface PeopleToolbarProps {
     totalPeople: number;
@@ -32,15 +33,16 @@ export function PeopleToolbar({
     activeFilterCount = 0,
 }: PeopleToolbarProps) {
     const { t } = useTranslation();
+    const { getLabel } = usePeopleTypeLabels();
 
     return (
         <Stack direction="row" alignItems="center" gap={2} sx={{ mb: { xs: 2, sm: 2 }, display: 'var(--native-page-header-display, flex)' }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography variant="h4" sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontSize: { xs: '1.25rem', sm: '2rem' }, mb: 0.5 }}>
-                    {t('people.title')}
+                    {getLabel('plural')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    {t('people.total')} - {totalPeople}
+                    {t('spaces.total')} {getLabel('plural')} - {totalPeople}
                 </Typography>
             </Box>
 
@@ -67,7 +69,7 @@ export function PeopleToolbar({
                     disabled={!canEdit}
                     sx={{ whiteSpace: 'nowrap' }}
                 >
-                    {t('people.addPerson')}
+                    {getLabel('add')}
                 </Button>
                 <Button
                     variant="outlined"

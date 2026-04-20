@@ -3,7 +3,7 @@
  */
 import type { ArticleFormat } from '@features/configuration/domain/types';
 import type { SolumMappingConfig } from '@features/settings/domain/types';
-import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import type { CompanyFeatures, SpaceType, PeopleType } from '@shared/infrastructure/services/authService';
 
 export interface WizardStoreData {
     code: string;
@@ -39,6 +39,7 @@ export interface WizardFormData {
     // Step 5: Features
     features: CompanyFeatures;
     spaceType: SpaceType;
+    peopleType: PeopleType;
 }
 
 export const INITIAL_WIZARD_DATA: WizardFormData = {
@@ -64,4 +65,5 @@ export const INITIAL_WIZARD_DATA: WizardFormData = {
         aimsManagementEnabled: false,
     },
     spaceType: 'office',
+    peopleType: 'people',
 };

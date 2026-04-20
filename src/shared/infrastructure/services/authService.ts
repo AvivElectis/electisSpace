@@ -26,6 +26,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
 };
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
+export type PeopleType = 'people' | 'doctors' | 'lawyers' | 'employees';
 
 export interface Store {
     id: string;
@@ -38,6 +39,7 @@ export interface Store {
     companyName: string;
     effectiveFeatures?: CompanyFeatures;
     effectiveSpaceType?: SpaceType;
+    effectivePeopleType?: PeopleType;
 }
 
 export interface Company {
@@ -49,6 +51,7 @@ export interface Company {
     allStoresAccess: boolean;
     companyFeatures?: CompanyFeatures;
     spaceType?: SpaceType;
+    peopleType?: PeopleType;
 }
 
 export interface User {

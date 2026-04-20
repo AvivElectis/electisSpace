@@ -5,7 +5,7 @@
  */
 import { z } from 'zod';
 import { GlobalRole } from '@prisma/client';
-import type { CompanyFeatures, SpaceType } from '../../shared/utils/featureResolution.js';
+import type { CompanyFeatures, SpaceType, PeopleType } from '../../shared/utils/featureResolution.js';
 
 // ======================
 // Validation Schemas
@@ -95,6 +95,7 @@ export interface StoreInfo {
     companyName: string;
     effectiveFeatures: CompanyFeatures;
     effectiveSpaceType: SpaceType;
+    effectivePeopleType: PeopleType;
 }
 
 export interface CompanyInfo {
@@ -105,6 +106,7 @@ export interface CompanyInfo {
     allStoresAccess: boolean;
     companyFeatures: CompanyFeatures;
     spaceType: SpaceType;
+    peopleType: PeopleType;
 }
 
 export interface UserInfo {

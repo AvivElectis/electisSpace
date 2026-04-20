@@ -19,6 +19,7 @@ export interface CompanyFeatures {
 }
 
 export type SpaceType = 'office' | 'room' | 'chair' | 'person-tag';
+export type PeopleType = 'people' | 'doctors' | 'lawyers' | 'employees';
 
 export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
     spacesEnabled: false,
@@ -30,6 +31,7 @@ export const DEFAULT_COMPANY_FEATURES: CompanyFeatures = {
 };
 
 export const DEFAULT_SPACE_TYPE: SpaceType = 'office';
+export const DEFAULT_PEOPLE_TYPE: PeopleType = 'people';
 
 // ======================
 // Resolution Functions
@@ -55,6 +57,17 @@ export function resolveEffectiveSpaceType(
 ): SpaceType {
     if (storeSpaceType) return storeSpaceType;
     return companySpaceType ?? DEFAULT_SPACE_TYPE;
+}
+
+/**
+ * Resolve effective people type: store override wins if present, otherwise company default.
+ */
+export function resolveEffectivePeopleType(
+    companyPeopleType: PeopleType | undefined | null,
+    storePeopleType?: PeopleType | undefined | null,
+): PeopleType {
+    if (storePeopleType) return storePeopleType;
+    return companyPeopleType ?? DEFAULT_PEOPLE_TYPE;
 }
 
 /** All features enabled — used for backward compatibility when no features are configured.
@@ -105,6 +118,14 @@ export function extractSpaceType(settings: Record<string, unknown> | null | unde
 }
 
 /**
+ * Extract peopleType from a settings JSON object.
+ */
+export function extractPeopleType(settings: Record<string, unknown> | null | undefined): PeopleType {
+    if (!settings || !settings.peopleType) return DEFAULT_PEOPLE_TYPE;
+    return settings.peopleType as PeopleType;
+}
+
+/**
  * Extract store-level feature overrides from a store's settings JSON.
  * Returns null if no override is set (meaning inherit from company).
  */
@@ -120,4 +141,13 @@ export function extractStoreFeatures(settings: Record<string, unknown> | null | 
 export function extractStoreSpaceType(settings: Record<string, unknown> | null | undefined): SpaceType | null {
     if (!settings || !settings.storeSpaceType) return null;
     return settings.storeSpaceType as SpaceType;
+}
+
+/**
+ * Extract store-level people type override from a store's settings JSON.
+ * Returns null if no override is set (meaning inherit from company).
+ */
+export function extractStorePeopleType(settings: Record<string, unknown> | null | undefined): PeopleType | null {
+    if (!settings || !settings.storePeopleType) return null;
+    return settings.storePeopleType as PeopleType;
 }

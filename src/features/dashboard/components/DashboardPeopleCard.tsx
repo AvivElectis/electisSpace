@@ -5,6 +5,7 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MobileStatTile } from './MobileStatTile';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 
 interface DashboardPeopleCardProps {
     totalPeople: number;
@@ -29,6 +30,7 @@ export function DashboardPeopleCard({
     isMobile,
 }: DashboardPeopleCardProps) {
     const { t } = useTranslation();
+    const { getLabel } = usePeopleTypeLabels();
     const navigate = useNavigate();
 
     const assignedPercent = totalPeople > 0 ? Math.round((assignedPeople / totalPeople) * 100) : 0;
@@ -47,7 +49,7 @@ export function DashboardPeopleCard({
                     >
                         <PeopleIcon color="primary" sx={{ fontSize: 24 }} />
                         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
-                            {t('people.title')}
+                            {getLabel('plural')}
                         </Typography>
                         {activeListName && (
                             <Chip label={activeListName} size="small" color="primary" variant="outlined" />
@@ -61,7 +63,7 @@ export function DashboardPeopleCard({
                             {totalPeople}
                         </Typography>
                         <Typography variant="subtitle2" color="text.secondary">
-                            {t('people.total')}
+                            {t('spaces.total')} {getLabel('plural')}
                         </Typography>
                     </Box>
 
@@ -113,7 +115,7 @@ export function DashboardPeopleCard({
                     <Stack direction="row" gap={1} alignItems="center">
                         <PeopleIcon color="primary" sx={{ fontSize: 28 }} />
                         <Typography variant="h6" fontWeight={600} sx={{ px: 1 }}>
-                            {t('people.title')}
+                            {getLabel('plural')}
                         </Typography>
                         {activeListName && (
                             <Chip
@@ -131,14 +133,14 @@ export function DashboardPeopleCard({
                         onClick={() => navigate('/people')}
                         sx={{ fontSize: '0.95rem' }}
                     >
-                        {t('dashboard.toPeople')}
+                        {getLabel('plural')}
                     </Button>
                 </Stack>
 
                 <Stack gap={3}>
                     <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            {t('people.total')}
+                            {t('spaces.total')} {getLabel('plural')}
                         </Typography>
                         <Typography variant="h3" fontWeight={600} color="primary.main">
                             {totalPeople}

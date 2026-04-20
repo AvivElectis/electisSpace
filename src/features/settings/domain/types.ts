@@ -40,6 +40,8 @@ export interface SettingsData {
     appName: string;
     appSubtitle: string;
     spaceType: 'office' | 'room' | 'chair' | 'person-tag';
+    /** Profession label used app-wide when People Manager Mode is active (changes "Person" → "Doctor" etc.). */
+    peopleType: 'people' | 'doctors' | 'lawyers' | 'employees';
 
     // Working mode (SoluM API only)
     workingMode: import('@shared/domain/types').WorkingMode;

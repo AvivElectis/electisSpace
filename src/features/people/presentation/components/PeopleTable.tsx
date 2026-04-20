@@ -20,6 +20,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
+import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 import { List as VirtualList } from 'react-window';
 import { PeopleTableRow, type PeopleTableTranslations } from './PeopleTableRow';
 import type { Person } from '../../domain/types';
@@ -107,6 +108,7 @@ export function PeopleTable({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { getLabel } = useSpaceTypeLabels();
+    const { getLabel: getPeopleLabel } = usePeopleTypeLabels();
 
     // Helper for translations with space type
     const tWithSpaceType = useCallback(
@@ -193,7 +195,8 @@ export function PeopleTable({
                         <Typography variant="body1" color="text.secondary">
                             {searchQuery || assignmentFilter !== 'all'
                                 ? t('people.noResults')
-                                : t('people.noPeopleYet')}
+                                : t('people.noPeopleYet', { items: getPeopleLabel('plural').toLowerCase() })}
+
                         </Typography>
                     </Paper>
                 ) : (
@@ -428,7 +431,7 @@ export function PeopleTable({
                     <Typography variant="body2" color="text.secondary">
                         {searchQuery || assignmentFilter !== 'all'
                             ? t('people.noResults')
-                            : t('people.noPeopleYet')}
+                            : t('people.noPeopleYet', { items: getPeopleLabel('plural').toLowerCase() })}
                     </Typography>
                 </Box>
             ) : (

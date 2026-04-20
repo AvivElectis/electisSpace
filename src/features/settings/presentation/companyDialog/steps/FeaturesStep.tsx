@@ -16,18 +16,20 @@ import {
     Stack,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import type { CompanyFeatures, SpaceType } from '@shared/infrastructure/services/authService';
+import type { CompanyFeatures, SpaceType, PeopleType } from '@shared/infrastructure/services/authService';
 
 interface FeaturesStepProps {
     features: CompanyFeatures;
     spaceType: SpaceType;
+    peopleType: PeopleType;
     hasConferenceMapping: boolean;
-    onUpdate: (features: CompanyFeatures, spaceType: SpaceType) => void;
+    onUpdate: (features: CompanyFeatures, spaceType: SpaceType, peopleType: PeopleType) => void;
 }
 
 export function FeaturesStep({
     features,
     spaceType,
+    peopleType,
     hasConferenceMapping,
     onUpdate,
 }: FeaturesStepProps) {
@@ -47,11 +49,15 @@ export function FeaturesStep({
             updated.simpleConferenceMode = false;
         }
 
-        onUpdate(updated, spaceType);
+        onUpdate(updated, spaceType, peopleType);
     };
 
     const handleSpaceTypeChange = (value: SpaceType) => {
-        onUpdate(features, value);
+        onUpdate(features, value, peopleType);
+    };
+
+    const handlePeopleTypeChange = (value: PeopleType) => {
+        onUpdate(features, spaceType, value);
     };
 
     const featureCards = [
@@ -131,6 +137,25 @@ export function FeaturesStep({
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 5.5 }}>
                                     {card.desc}
                                 </Typography>
+
+                                {/* People profession selector — only when People is enabled */}
+                                {card.key === 'peopleEnabled' && card.enabled && (
+                                    <Box sx={{ ml: 5.5, mt: 1 }}>
+                                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                                            <InputLabel>{t('settings.companies.peopleTypeLabel', 'People Profession')}</InputLabel>
+                                            <Select
+                                                value={peopleType}
+                                                label={t('settings.companies.peopleTypeLabel', 'People Profession')}
+                                                onChange={(e) => handlePeopleTypeChange(e.target.value as PeopleType)}
+                                            >
+                                                <MenuItem value="people">{t('peopleTypes.people.plural')}</MenuItem>
+                                                <MenuItem value="doctors">{t('peopleTypes.doctors.plural')}</MenuItem>
+                                                <MenuItem value="lawyers">{t('peopleTypes.lawyers.plural')}</MenuItem>
+                                                <MenuItem value="employees">{t('peopleTypes.employees.plural')}</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Box>
+                                )}
 
                                 {/* Conference mode selector */}
                                 {card.key === 'conferenceEnabled' && card.enabled && (
