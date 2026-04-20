@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.16.0] — 2026-04-20 — People Profession Type + Dashboard Add Person Form Fix
+
+> Client v2.16.0 / Server v2.11.0
+
+### Added
+- **People Profession setting** — a per-store enum (`people | doctors | lawyers | employees`) that swaps the "Person / People" wording across the app when People Manager Mode is active. Stored under the existing `settings` JSON column on Company (company-wide default) and Store (optional override); no DB migration. Default `people` preserves current behavior for existing deployments.
+- **Selector UIs** — new "People Profession" dropdown in:
+  - Create Company wizard — Features step (shown only when People feature is enabled)
+  - Edit Company dialog — Features tab (shown next to the Spaces/People selector when People is on)
+  - Store Dialog — when the store overrides company features
+- **`usePeopleTypeLabels()` hook** (mirrors `useSpaceTypeLabels`): returns `{ getLabel, peopleType }` with keys `singular | singularDef | plural | pluralDef | add | edit | delete | list`. All user-visible "Person / People" surfaces route through it — main nav tab, People page header + FAB, `PersonDialog` title, `PeopleTable` empty state, Dashboard people card (title + "Total X" label + "To X" button), and the Dashboard quick-action "Add Person" button.
+- **i18n entries** for all four professions in EN + HE (`src/locales/*/common.json` → `peopleTypes.*`). Hebrew uses gender-inclusive slash syntax (`עורך/ת דין`, `רופא/ה`, `עובד/ת`); `אדם / אנשים` already gender-neutral so unchanged.
+- **Auth session carries the resolved profession** — `/login`, `/refresh`, `/me` responses now include `effectivePeopleType` on each store and `peopleType` on each company, so the client renders the right label immediately on reload with no second fetch. Follows the existing `effectiveSpaceType` resolution pattern (store override > company default).
+
+### Fixed
+- **Dashboard "Add Person" opens the wrong form** — the quick-action button in People Manager Mode was opening `SpaceDialog` (space fields) instead of `PersonDialog` (dynamic person fields from `solumMappingConfig` + the space-assignment selector). Dashboard now lazy-loads `PersonDialog` from the people feature and routes the Add button based on `isPeopleManagerMode`, so the form users see from the dashboard is the same form they see from the People page.
+- **`resetPassword` test assertion was stale** — asserted on a separate `markCodeAsUsed` call; the service was refactored at some point to mark the code used inside `executePasswordResetTransaction(userId, hash, codeId)`. Assertion now checks the transaction call with the code ID as the third argument.
+
+### Changed
+- **Main nav tab label reflects the current profession** — `useNavTabs` now computes the primary slot label internally using either `useSpaceTypeLabels('plural')` or `usePeopleTypeLabels('plural')` depending on mode. `MainLayout` renders `tab.label` directly (previously it overrode the label for dynamic tabs, but the override only handled the space-type case and silently fell back to `t('navigation.people')` in people mode). The drawer entries and desktop tabs now both say e.g. "Doctors" instead of "People".
+
 ## [2.15.1] — 2026-04-14 — Wizard Article Format AIMS Push Fix
 
 > Client v2.15.1 / Server v2.10.1
