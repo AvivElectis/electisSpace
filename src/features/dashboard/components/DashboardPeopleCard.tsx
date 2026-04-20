@@ -63,7 +63,7 @@ export function DashboardPeopleCard({
                             {totalPeople}
                         </Typography>
                         <Typography variant="subtitle2" color="text.secondary">
-                            {t('people.total')}
+                            {t('spaces.total')} {getLabel('plural')}
                         </Typography>
                     </Box>
 
@@ -133,14 +133,14 @@ export function DashboardPeopleCard({
                         onClick={() => navigate('/people')}
                         sx={{ fontSize: '0.95rem' }}
                     >
-                        {t('dashboard.toPeople')}
+                        {getLabel('plural')}
                     </Button>
                 </Stack>
 
                 <Stack gap={3}>
                     <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            {t('people.total')}
+                            {t('spaces.total')} {getLabel('plural')}
                         </Typography>
                         <Typography variant="h3" fontWeight={600} color="primary.main">
                             {totalPeople}

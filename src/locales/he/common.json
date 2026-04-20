@@ -1399,7 +1399,7 @@
         "unassigned": "לא מוקצה",
         "searchPlaceholder": "חיפוש אנשים...",
         "noResults": "לא נמצאו אנשים התואמים את הקריטריון",
-        "noPeopleYet": "עדיין אין אנשים. העלה CSV או הוסף אנשים ידנית.",
+        "noPeopleYet": "עדיין אין {{items}}. העלה CSV או הוסף {{items}} ידנית.",
         "selectedCount": "{{count}} נבחרו",
         "selectAll": "בחר הכל",
         "assignSpaces": "הקצה {{spaceTypePlural}}",

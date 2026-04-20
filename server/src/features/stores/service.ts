@@ -12,10 +12,13 @@ import { storeCodeSchema } from './types.js';
 import {
     extractCompanyFeatures,
     extractSpaceType,
+    extractPeopleType,
     extractStoreFeatures,
     extractStoreSpaceType,
+    extractStorePeopleType,
     resolveEffectiveFeatures,
     resolveEffectiveSpaceType,
+    resolveEffectivePeopleType,
 } from '../../shared/utils/featureResolution.js';
 
 // ======================
@@ -239,7 +242,11 @@ export const storeService = {
         };
 
         // Handle store feature overrides via settings JSON
-        if (data.storeFeatures !== undefined || data.storeSpaceType !== undefined) {
+        if (
+            data.storeFeatures !== undefined ||
+            data.storeSpaceType !== undefined ||
+            data.storePeopleType !== undefined
+        ) {
             const existingSettings = (existingStore.settings as Record<string, unknown>) || {};
             const newSettings = { ...existingSettings };
 
@@ -254,6 +261,12 @@ export const storeService = {
                 delete newSettings.storeSpaceType;
             } else if (data.storeSpaceType) {
                 newSettings.storeSpaceType = data.storeSpaceType;
+            }
+
+            if (data.storePeopleType === null) {
+                delete newSettings.storePeopleType;
+            } else if (data.storePeopleType) {
+                newSettings.storePeopleType = data.storePeopleType;
             }
 
             updateData.settings = newSettings;

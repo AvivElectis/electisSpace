@@ -54,10 +54,13 @@ vi.mock('../../../shared/infrastructure/services/appLogger.js', () => ({
 vi.mock('../../../shared/utils/featureResolution.js', () => ({
     extractCompanyFeatures: vi.fn(() => ({})),
     extractSpaceType: vi.fn(() => 'retail'),
+    extractPeopleType: vi.fn(() => 'people'),
     extractStoreFeatures: vi.fn(() => null),
     extractStoreSpaceType: vi.fn(() => null),
+    extractStorePeopleType: vi.fn(() => null),
     resolveEffectiveFeatures: vi.fn(() => ({})),
     resolveEffectiveSpaceType: vi.fn(() => 'retail'),
+    resolveEffectivePeopleType: vi.fn(() => 'people'),
 }));
 
 vi.mock('bcrypt', () => ({

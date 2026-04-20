@@ -15,10 +15,13 @@ import { appLogger } from '../../shared/infrastructure/services/appLogger.js';
 import {
     extractCompanyFeatures,
     extractSpaceType,
+    extractPeopleType,
     extractStoreFeatures,
     extractStoreSpaceType,
+    extractStorePeopleType,
     resolveEffectiveFeatures,
     resolveEffectiveSpaceType,
+    resolveEffectivePeopleType,
 } from '../../shared/utils/featureResolution.js';
 import crypto from 'crypto';
 import type {
@@ -73,8 +76,10 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
         const storeSettings = us.store.settings as Record<string, unknown> | null;
         const companyFeatures = extractCompanyFeatures(companySettings);
         const companySpaceType = extractSpaceType(companySettings);
+        const companyPeopleType = extractPeopleType(companySettings);
         const storeFeatures = extractStoreFeatures(storeSettings);
         const storeSpaceType = extractStoreSpaceType(storeSettings);
+        const storePeopleType = extractStorePeopleType(storeSettings);
 
         return {
             id: us.storeId,
@@ -86,6 +91,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
             companyName: us.store.company.name,
             effectiveFeatures: resolveEffectiveFeatures(companyFeatures, storeFeatures),
             effectiveSpaceType: resolveEffectiveSpaceType(companySpaceType, storeSpaceType),
+            effectivePeopleType: resolveEffectivePeopleType(companyPeopleType, storePeopleType),
         };
     });
 
@@ -106,8 +112,10 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
             const storeSettings = store.settings as Record<string, unknown> | null;
             const companyFeatures = extractCompanyFeatures(companySettings);
             const companySpaceType = extractSpaceType(companySettings);
+            const companyPeopleType = extractPeopleType(companySettings);
             const storeFeatures = extractStoreFeatures(storeSettings);
             const storeSpaceType = extractStoreSpaceType(storeSettings);
+            const storePeopleType = extractStorePeopleType(storeSettings);
 
             stores.push({
                 id: store.id,
@@ -119,6 +127,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
                 companyName: store.company.name,
                 effectiveFeatures: resolveEffectiveFeatures(companyFeatures, storeFeatures),
                 effectiveSpaceType: resolveEffectiveSpaceType(companySpaceType, storeSpaceType),
+                effectivePeopleType: resolveEffectivePeopleType(companyPeopleType, storePeopleType),
             });
         }
     }
@@ -133,6 +142,7 @@ async function mapUserToInfo(user: UserWithRelations): Promise<UserInfo> {
             allStoresAccess: uc.allStoresAccess,
             companyFeatures: extractCompanyFeatures(companySettings),
             spaceType: extractSpaceType(companySettings),
+            peopleType: extractPeopleType(companySettings),
         };
     });
 

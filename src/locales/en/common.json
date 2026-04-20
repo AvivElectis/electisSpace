@@ -1387,7 +1387,7 @@
         "unassigned": "Unassigned",
         "searchPlaceholder": "Search people...",
         "noResults": "No people found matching your criteria",
-        "noPeopleYet": "No people yet. Upload a CSV or add people manually.",
+        "noPeopleYet": "No {{items}} yet. Upload a CSV or add {{items}} manually.",
         "selectedCount": "{{count}} selected",
         "selectAll": "Select All",
         "assignSpaces": "Assign {{spaceTypePlural}}",

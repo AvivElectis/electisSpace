@@ -42,7 +42,7 @@ export function PeopleToolbar({
                     {getLabel('plural')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    {t('people.total')} - {totalPeople}
+                    {t('spaces.total')} {getLabel('plural')} - {totalPeople}
                 </Typography>
             </Box>
 
