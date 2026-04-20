@@ -8,6 +8,7 @@ import RouterIcon from '@mui/icons-material/Router';
 import { ConferenceIcon } from '../../../components/icons/ConferenceIcon';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
+import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 import { usePeopleTypeLabels } from '@features/settings/hooks/usePeopleTypeLabels';
 import type { Feature } from '@features/auth/application/permissionHelpers';
 
@@ -25,12 +26,15 @@ export function useNavTabs(): NavTab[] {
     const { canAccessFeature, activeStoreEffectiveFeatures } = useAuthContext();
     const workingMode = useSettingsStore(state => state.settings.workingMode);
     const peopleManagerEnabled = useSettingsStore(state => state.settings.peopleManagerEnabled);
+    const { getLabel: getSpaceLabel, spaceType } = useSpaceTypeLabels();
     const { getLabel: getPeopleLabel, peopleType } = usePeopleTypeLabels();
 
     return useMemo(() => {
         const isPeopleManagerMode =
             (activeStoreEffectiveFeatures?.peopleEnabled ?? peopleManagerEnabled) &&
             workingMode === 'SOLUM_API';
+
+        const primaryLabel = isPeopleManagerMode ? getPeopleLabel('plural') : getSpaceLabel('plural');
 
         const allNavTabs: NavTab[] = [
             {
@@ -42,7 +46,7 @@ export function useNavTabs(): NavTab[] {
             },
             {
                 labelKey: isPeopleManagerMode ? 'navigation.people' : 'navigation.spaces',
-                label: isPeopleManagerMode ? getPeopleLabel('plural') : t('navigation.spaces'),
+                label: primaryLabel,
                 value: isPeopleManagerMode ? '/people' : '/spaces',
                 icon: isPeopleManagerMode ? <PeopleIcon fontSize="small" /> : <BusinessIcon fontSize="small" />,
                 dynamicLabel: true,
@@ -72,5 +76,5 @@ export function useNavTabs(): NavTab[] {
         ];
 
         return allNavTabs.filter(tab => !tab.feature || canAccessFeature(tab.feature));
-    }, [t, canAccessFeature, activeStoreEffectiveFeatures, workingMode, peopleManagerEnabled, getPeopleLabel, peopleType]);
+    }, [t, canAccessFeature, activeStoreEffectiveFeatures, workingMode, peopleManagerEnabled, getSpaceLabel, spaceType, getPeopleLabel, peopleType]);
 }
