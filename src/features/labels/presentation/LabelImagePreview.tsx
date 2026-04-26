@@ -112,14 +112,18 @@ export function LabelImagePreview({
         }
     }, [labelCode]);
 
-    // Trigger fetch when visible
+    // Trigger fetch when visible.
+    // isLoading/hasError are intentionally excluded from deps: fetchImage flips
+    // isLoading synchronously, which would re-run this effect and abort its own
+    // in-flight request, leaving the preview stuck on the loading skeleton.
     useEffect(() => {
         if (isVisible && !imageUrl && !isLoading && !hasError) {
             const controller = new AbortController();
             fetchImage(controller.signal);
             return () => controller.abort();
         }
-    }, [isVisible, imageUrl, isLoading, hasError, fetchImage]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isVisible, imageUrl, fetchImage]);
 
     const handleClick = () => {
         onClick?.();
