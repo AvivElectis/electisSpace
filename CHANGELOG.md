@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.16.1] — 2026-04-26 — Labels Preview Images Fix
+
+> Client v2.16.1 / Server v2.11.0
+
+### Fixed
+- **Labels page preview images stuck blank** — the lazy-loading effect in `LabelImagePreview` listed `isLoading` and `hasError` in its dependency array. The effect's first run started the AIMS fetch and synchronously flipped `isLoading` to `true`; that re-ran the effect, which fired its cleanup and aborted the very fetch it had just started. With the `AbortController` tripped before the response landed, `setImageUrl` never ran and `setIsLoading(false)` was skipped (it sits behind `if (!signal?.aborted)` in `finally`), so every row stayed on the loading skeleton. Removed the self-triggering deps so the controller is only torn down on unmount, label change, or visibility change. Regressed in v2.11.0 (#133) when the `AbortController` was added.
+
 ## [2.16.0] — 2026-04-20 — People Profession Type + Dashboard Add Person Form Fix
 
 > Client v2.16.0 / Server v2.11.0
