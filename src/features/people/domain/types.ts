@@ -114,6 +114,30 @@ export function getVirtualSpaceId(person: Person): string {
     return person.virtualSpaceId || person.assignedSpaceId || person.id;
 }
 
+/**
+ * Resolve a person's user-facing display name.
+ *
+ * Mirrors the People table's Name column logic: prefers the field configured
+ * as the article-name in the SoluM mapping (settings.solumMappingConfig.mappingInfo.articleName),
+ * which is the same key the table shows. Falls back to common name keys for
+ * stores without a configured mapping. Never exposes the raw UUID.
+ */
+export function getPersonDisplayName(
+    person: Person,
+    nameFieldKey: string | undefined,
+    fallback: string,
+): string {
+    if (nameFieldKey) {
+        const v = person.data[nameFieldKey];
+        if (v && v.trim()) return v;
+    }
+    for (const key of ['name', 'Name', 'NAME', 'fullName']) {
+        const v = person.data[key];
+        if (v && v.trim()) return v;
+    }
+    return fallback;
+}
+
 export interface PeopleList {
     id: string;
     name: string;           // Display name (with spaces)

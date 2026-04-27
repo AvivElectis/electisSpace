@@ -1380,6 +1380,7 @@
         "removeSelectedPeopleConfirm": "Are you sure you want to permanently delete {{count}} selected people? This action cannot be undone.",
         "id": "ID",
         "name": "Name",
+        "unnamedPerson": "Unnamed person",
         "assignedSpace": "Assigned {{spaceTypeSingular}}",
         "filterStatus": "Filter Status",
         "all": "All",

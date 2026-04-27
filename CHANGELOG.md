@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Occupied-space chip showed the wrong field** — when a person already held a space, the assignment dialog and selector chip displayed `Object.values(person.data)[0]`, which is whatever CSV column was first. For stores whose first column is e.g. "Title" (JMED) the chip showed "Doctor" instead of the person's name; when title was empty it fell through to the raw UUID. `SpaceSelectionDialog`, `SpaceSelector`, and the `personName` prop in `PeopleManagerView` now go through a new `getPersonDisplayName()` helper in `people/domain/types.ts` which resolves the name field from `solumMappingConfig.mappingInfo.articleName` (the same field the People table's Name column uses), falls back through `name`/`Name`/`NAME`/`fullName`, and finally to a translatable `people.unnamedPerson` label — never the UUID.
+
 ## [2.16.1] — 2026-04-26 — Labels Preview Images Fix
 
 > Client v2.16.1 / Server v2.11.0

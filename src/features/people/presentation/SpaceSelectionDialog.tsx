@@ -14,6 +14,7 @@ import {
 import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
+import { getPersonDisplayName } from '../domain/types';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 
@@ -60,6 +61,8 @@ export function SpaceSelectionDialog({
     }, [t, getLabel]);
 
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
+    const nameFieldKey = settings.solumMappingConfig?.mappingInfo?.articleName;
+    const unnamedFallback = t('people.unnamedPerson');
     const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
 
     // Determine text direction based on language
@@ -73,9 +76,10 @@ export function SpaceSelectionDialog({
         const assignedSpaces = new Map<string, string>();
         people.forEach(person => {
             if (person.assignedSpaceId && person.id !== personId) {
-                // Find person's display name for tooltip
-                const displayName = Object.values(person.data)[0] || person.id;
-                assignedSpaces.set(person.assignedSpaceId, displayName);
+                assignedSpaces.set(
+                    person.assignedSpaceId,
+                    getPersonDisplayName(person, nameFieldKey, unnamedFallback),
+                );
             }
         });
 
@@ -91,7 +95,7 @@ export function SpaceSelectionDialog({
         }
 
         return options;
-    }, [totalSpaces, people, personId]);
+    }, [totalSpaces, people, personId, nameFieldKey, unnamedFallback]);
 
     // Get available spaces count
     const availableCount = useMemo(() => {
