@@ -16,10 +16,14 @@ export type StoreEventType = 'connected' | 'people:changed' | 'spaces:changed' |
 export interface StoreEvent {
     type: StoreEventType;
     timestamp: string;
-    // people:changed, conference:changed
-    action?: 'create' | 'delete' | 'assign' | 'unassign' | 'update' | 'toggle' | 'page-flip';
+    // people:changed, conference:changed, spaces:changed
+    action?: 'create' | 'delete' | 'assign' | 'unassign' | 'update' | 'toggle' | 'page-flip' | 'assign-label' | 'bulk-delete';
     personId?: string;
     spaceId?: string;
+    // spaces:changed
+    externalId?: string;
+    labelCode?: string;
+    count?: number;
     // list:loaded
     listId?: string;
     listName?: string;

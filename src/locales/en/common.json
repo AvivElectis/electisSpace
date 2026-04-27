@@ -362,6 +362,7 @@
     "spaces": {
         "title": "Spaces",
         "manage": "Manage your spaces and label assignments",
+        "spacesChangedByOther": "{{user}} updated spaces",
         "addSpace": "Add Space",
         "editSpace": "Edit Space",
         "deleteSpace": "Delete Space",
