@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Spaces SSE live updates** — `spacesController` now publishes `spaces:changed` over the existing per-store SSE channel on `create`, `update`, `delete`, `bulk-delete`, and `assignLabel`, mirroring the conference/people pattern (`userName`, `excludeClientId`). Client-side `SpacesManagementView` mounts `useStoreEvents({ onSpacesChanged })`, so the spaces table now auto-refetches when another user mutates a space and shows a Snackbar with the originating user. The `useStoreEvents` hook already had the `spaces:changed` branch wired up but no consumer was mounting the hook on the spaces page. `spacesService.deleteBulk` now returns the unique `storeIds` of affected rows so the controller can broadcast once per store. Added test coverage for the new return shape and for cross-store dedup; existing deleteBulk tests updated for the new shape.
+
 ## [2.16.1] — 2026-04-26 — Labels Preview Images Fix
 
 > Client v2.16.1 / Server v2.11.0
