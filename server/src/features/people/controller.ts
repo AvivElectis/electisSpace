@@ -110,9 +110,17 @@ export const peopleController = {
 
             const id = req.params.id as string;
             const user = getUserContext(req);
-            
+
             const result = await peopleService.update(id, validation.data, user);
             res.json(result);
+
+            // Broadcast people change to other clients
+            const sseClientId = req.headers['x-sse-client-id'] as string | undefined;
+            sseManager.broadcastToStore((result as any).storeId, {
+                type: 'people:changed',
+                payload: { action: 'update', personId: result.id },
+                excludeClientId: sseClientId,
+            });
         } catch (error: any) {
             if (error.message === 'NOT_FOUND') return next(notFound('Person'));
             next(error);

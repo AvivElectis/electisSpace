@@ -365,6 +365,7 @@
     "spaces": {
         "title": "חללים",
         "manage": "נהל את החללים ושיוכי התגיות שלך",
+        "spacesChangedByOther": "{{user}} עדכן/ה חללים",
         "addSpace": "הוסף חלל",
         "editSpace": "ערוך חלל",
         "deleteSpace": "מחק חלל",

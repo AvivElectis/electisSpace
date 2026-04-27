@@ -143,7 +143,7 @@ export const spacesService = {
                 alreadyGone: alreadyGone.length,
                 triggeredBy: user.id,
             });
-            return { deleted: [] as string[], alreadyGone };
+            return { deleted: [] as string[], alreadyGone, storeIds: [] as string[] };
         }
 
         await prisma.$transaction(async (tx) => {
@@ -168,7 +168,8 @@ export const spacesService = {
             triggeredBy: user.id,
         });
 
-        return { deleted: accessible.map((a) => a.id), alreadyGone };
+        const affectedStoreIds = Array.from(new Set(accessible.map((a) => a.storeId)));
+        return { deleted: accessible.map((a) => a.id), alreadyGone, storeIds: affectedStoreIds };
     },
 
     async assignLabel(id: string, labelCode: string, user: SpacesUserContext) {

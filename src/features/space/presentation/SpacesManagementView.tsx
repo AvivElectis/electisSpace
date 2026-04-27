@@ -18,6 +18,8 @@ import {
     Badge,
     alpha,
     Checkbox,
+    Snackbar,
+    Alert,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -46,6 +48,7 @@ import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels'
 import type { Space } from '@shared/domain/types';
 import { useConfirmDialog } from '@shared/presentation/hooks/useConfirmDialog';
 import { useUnsavedListGuard } from '@shared/presentation/hooks/useUnsavedListGuard';
+import { useStoreEvents } from '@shared/presentation/hooks/useStoreEvents';
 import { useSpacesStore } from '@features/space/infrastructure/spacesStore';
 import { useAuthStore } from '@features/auth/infrastructure/authStore';
 import { useAuthContext } from '@features/auth/application/useAuthContext';
@@ -336,6 +339,19 @@ export function SpacesManagementView() {
             }
         }
     }, [activeListName, activeListId, lists]);
+
+    // SSE real-time sync — auto-refetch happens inside the hook on spaces:changed.
+    // Toast lets the user know who triggered the change.
+    const [sseAlert, setSseAlert] = useState<string | null>(null);
+    useStoreEvents({
+        onSpacesChanged: (event) => {
+            const user = event.userName || t('common.anotherUser', { defaultValue: 'Another user' });
+            setSseAlert(t('spaces.spacesChangedByOther', {
+                defaultValue: '{{user}} updated spaces',
+                user,
+            }));
+        },
+    });
 
     // Get sync context for triggering push after CRUD operations
     const { push } = useBackendSyncContext();
@@ -1109,6 +1125,23 @@ export function SpacesManagementView() {
                     />
                 )}
             </Suspense>
+
+            {/* SSE alert — spaces changed by another user */}
+            <Snackbar
+                open={!!sseAlert}
+                autoHideDuration={5000}
+                onClose={() => setSseAlert(null)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSseAlert(null)}
+                    severity="info"
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {sseAlert}
+                </Alert>
+            </Snackbar>
         </Box>
         </PullToRefresh>
     );

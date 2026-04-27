@@ -60,6 +60,7 @@ import { spacesService } from '../service.js';
 // ============================================================================
 
 const userInStore1 = { id: 'user-1', stores: [{ id: 'store-1' }], globalRole: 'USER' as any };
+const adminUser = { id: 'admin-1', stores: [], globalRole: 'PLATFORM_ADMIN' as any };
 
 beforeEach(() => {
     mockSpaceFindMany.mockReset();
@@ -90,7 +91,7 @@ describe('spacesService.deleteBulk', () => {
         expect(mockQueueDelete).toHaveBeenCalledWith('store-1', 'space', 'a', 'E-A');
         expect(mockQueueDelete).toHaveBeenCalledWith('store-1', 'space', 'b', 'E-B');
         expect(mockSpaceDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ['a', 'b'] } } });
-        expect(result).toEqual({ deleted: ['a', 'b'], alreadyGone: [] });
+        expect(result).toEqual({ deleted: ['a', 'b'], alreadyGone: [], storeIds: ['store-1'] });
     });
 
     it('throws FORBIDDEN when an id belongs to a store the user cannot access', async () => {
@@ -117,14 +118,30 @@ describe('spacesService.deleteBulk', () => {
 
         const result = await spacesService.deleteBulk(['a', 'ghost'], userInStore1);
 
-        expect(result).toEqual({ deleted: ['a'], alreadyGone: ['ghost'] });
+        expect(result).toEqual({ deleted: ['a'], alreadyGone: ['ghost'], storeIds: ['store-1'] });
         expect(mockQueueDelete).toHaveBeenCalledTimes(1);
     });
 
     it('returns empty deleted with all-alreadyGone when no rows exist', async () => {
         mockSpaceFindMany.mockResolvedValue([]);
         const result = await spacesService.deleteBulk(['ghost1', 'ghost2'], userInStore1);
-        expect(result).toEqual({ deleted: [], alreadyGone: ['ghost1', 'ghost2'] });
+        expect(result).toEqual({ deleted: [], alreadyGone: ['ghost1', 'ghost2'], storeIds: [] });
         expect(mockTransaction).not.toHaveBeenCalled();
+    });
+
+    it('returns unique storeIds across multiple stores when all are accessible', async () => {
+        mockSpaceFindMany.mockResolvedValue([
+            { id: 'a', storeId: 'store-1', externalId: 'E-A', assignedLabels: [] },
+            { id: 'b', storeId: 'store-1', externalId: 'E-B', assignedLabels: [] },
+            { id: 'c', storeId: 'store-2', externalId: 'E-C', assignedLabels: [] },
+        ]);
+        mockTransaction.mockImplementation(async (fn: any) => {
+            return fn({ space: { deleteMany: mockSpaceDeleteMany } });
+        });
+        mockSpaceDeleteMany.mockResolvedValue({ count: 3 });
+
+        const result = await spacesService.deleteBulk(['a', 'b', 'c'], adminUser);
+
+        expect(result.storeIds.sort()).toEqual(['store-1', 'store-2']);
     });
 });
