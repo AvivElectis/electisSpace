@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **People `PATCH` updates didn't push live to other clients** — `peopleController.create`, `delete`, `assign`, and `unassign` all called `sseManager.broadcastToStore` with a `people:changed` event, but the `update` handler at `server/src/features/people/controller.ts:104` did not. Editing a person's data (name, department, custom fields) updated the database and synced to AIMS, but other browsers in the same store kept showing the stale row until they manually refreshed or another mutation triggered a refetch. Added the missing broadcast with `action: 'update'`, mirroring the create-path payload and respecting `excludeClientId` so the originating client doesn't refetch unnecessarily. The client's `useStoreEvents` already calls `fetchPeople()` for any `people:changed` action, so no client change is needed.
+
 ## [2.16.1] — 2026-04-26 — Labels Preview Images Fix
 
 > Client v2.16.1 / Server v2.11.0
