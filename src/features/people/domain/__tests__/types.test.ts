@@ -12,6 +12,7 @@ import {
     setPersonListMembership,
     removePersonFromList,
     getVirtualSpaceId,
+    getPersonDisplayName,
     toStorageName,
     toDisplayName,
     validateListName,
@@ -450,6 +451,63 @@ describe('People Domain Types', () => {
         it('should reject hyphen', () => {
             const result = validateListName('Team-Alpha');
             expect(result.valid).toBe(false);
+        });
+    });
+
+    describe('getPersonDisplayName', () => {
+        const fallback = 'Unnamed';
+
+        it('uses configured nameFieldKey when present and non-empty', () => {
+            const person: Person = {
+                id: 'p1',
+                data: { title: 'Doctor', fullName: 'Jane Doe' },
+            };
+            expect(getPersonDisplayName(person, 'fullName', fallback)).toBe('Jane Doe');
+        });
+
+        it('does not pick a different field even if it appears first in data', () => {
+            const person: Person = {
+                id: 'p1',
+                data: { title: 'Doctor', name: 'Alice' },
+            };
+            expect(getPersonDisplayName(person, 'name', fallback)).toBe('Alice');
+        });
+
+        it('falls back to common name keys when nameFieldKey is undefined', () => {
+            const person: Person = {
+                id: 'p1',
+                data: { title: 'Doctor', name: 'Bob' },
+            };
+            expect(getPersonDisplayName(person, undefined, fallback)).toBe('Bob');
+        });
+
+        it('falls back to common name keys when configured field is empty', () => {
+            const person: Person = {
+                id: 'p1',
+                data: { fullName: '', name: 'Carol' },
+            };
+            expect(getPersonDisplayName(person, 'fullName', fallback)).toBe('Carol');
+        });
+
+        it('returns fallback when no name fields have values, never the id', () => {
+            const person: Person = {
+                id: '8b4c2eaa-1234-5678-9abc-def012345678',
+                data: { title: 'Doctor', email: '' },
+            };
+            expect(getPersonDisplayName(person, undefined, fallback)).toBe(fallback);
+        });
+
+        it('treats whitespace-only values as empty', () => {
+            const person: Person = {
+                id: 'p1',
+                data: { fullName: '   ', name: 'Dan' },
+            };
+            expect(getPersonDisplayName(person, 'fullName', fallback)).toBe('Dan');
+        });
+
+        it('returns fallback for empty data object', () => {
+            const person: Person = { id: 'p1', data: {} };
+            expect(getPersonDisplayName(person, 'fullName', fallback)).toBe(fallback);
         });
     });
 });

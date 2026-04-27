@@ -37,6 +37,7 @@ import {
 } from './components';
 
 import type { Person, PeopleFilters } from '../domain/types';
+import { getPersonDisplayName } from '../domain/types';
 
 /**
  * People Manager View - Main component for managing people and space assignments
@@ -648,7 +649,7 @@ export function PeopleManagerView() {
                         }}
                         onSelect={handleSpaceSelected}
                         personId={spaceSelectPerson?.id || ''}
-                        personName={spaceSelectPerson ? Object.values(spaceSelectPerson.data)[0] : undefined}
+                        personName={spaceSelectPerson ? getPersonDisplayName(spaceSelectPerson, nameFieldKey, t('people.unnamedPerson')) : undefined}
                     />
                 )}
             </Suspense>

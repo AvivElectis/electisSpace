@@ -1392,6 +1392,7 @@
         "removeSelectedPeopleConfirm": "האם אתה בטוח שברצונך למחוק לצמיתות {{count}} אנשים שנבחרו? לא ניתן לבטל פעולה זו.",
         "id": "מזהה",
         "name": "שם",
+        "unnamedPerson": "אדם ללא שם",
         "assignedSpace": "{{spaceTypeSingular}} מוקצה",
         "filterStatus": "סנן לפי סטטוס",
         "all": "הכל",

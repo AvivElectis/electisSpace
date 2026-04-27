@@ -8,6 +8,7 @@ import {
 import { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePeopleStore } from '../infrastructure/peopleStore';
+import { getPersonDisplayName } from '../domain/types';
 import { useSettingsStore } from '@features/settings/infrastructure/settingsStore';
 import { useSpaceTypeLabels } from '@features/settings/hooks/useSpaceTypeLabels';
 
@@ -61,6 +62,8 @@ export function SpaceSelector({
     }, [t, getLabel]);
 
     const totalSpaces = settings.peopleManagerConfig?.totalSpaces || 0;
+    const nameFieldKey = settings.solumMappingConfig?.mappingInfo?.articleName;
+    const unnamedFallback = t('people.unnamedPerson');
 
     // Determine text direction based on language
     const isRtl = i18n.language === 'he';
@@ -73,9 +76,10 @@ export function SpaceSelector({
         const assignedSpaces = new Map<string, string>();
         people.forEach(person => {
             if (person.assignedSpaceId && person.id !== excludePersonId) {
-                // Find person's display name for tooltip
-                const displayName = Object.values(person.data)[0] || person.id;
-                assignedSpaces.set(person.assignedSpaceId, displayName);
+                assignedSpaces.set(
+                    person.assignedSpaceId,
+                    getPersonDisplayName(person, nameFieldKey, unnamedFallback),
+                );
             }
         });
 
@@ -92,7 +96,7 @@ export function SpaceSelector({
         }
 
         return options;
-    }, [totalSpaces, people, excludePersonId, t]);
+    }, [totalSpaces, people, excludePersonId, t, nameFieldKey, unnamedFallback, tWithSpaceType]);
 
     // Find current selection
     const selectedOption = useMemo(() => {
